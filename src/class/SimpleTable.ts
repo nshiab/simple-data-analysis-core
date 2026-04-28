@@ -68,7 +68,6 @@ import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
 import createDirectory from "../helpers/createDirectory.ts";
-import { getSheetData, overwriteSheetData } from "@nshiab/journalism-google";
 import rewind from "../helpers/rewind.ts";
 import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logData from "../helpers/logData.ts";
@@ -6488,94 +6487,6 @@ export default class SimpleTable extends Simple {
     } else {
       throw new Error(`Unknown extension ${fileExtension}`);
     }
-  }
-
-  /**
-   * Clears a Google Sheet and populates it with the table's data.
-   * This method uses the `overwriteSheetData` function from the [journalism library](https://jsr.io/@nshiab/journalism/doc/~/overwriteSheetData). Refer to its documentation for more details.
-   *
-   * By default, authentication is handled via environment variables (GOOGLE_PRIVATE_KEY and GOOGLE_SERVICE_ACCOUNT_EMAIL). Alternatively, you can use GOOGLE_APPLICATION_CREDENTIALS pointing to a service account JSON file. For detailed setup instructions, refer to the node-google-spreadsheet authentication guide: https://theoephraim.github.io/node-google-spreadsheet/#/guides/authentication.
-   *
-   * @param sheetUrl - The URL pointing to a specific Google Sheet (e.g., `"https://docs.google.com/spreadsheets/d/.../edit#gid=0"`).
-   * @param options - An optional object with configuration options:
-   * @param options.prepend - Text to be added before the data in the sheet.
-   * @param options.lastUpdate - If `true`, adds a row before the data with the date of the update.
-   * @param options.timeZone - If `lastUpdate` is `true`, this option allows formatting the date to a specific time zone.
-   * @param options.raw - If `true`, Google Sheets will not attempt to guess the data type and will not format or parse the values.
-   * @param options.apiEmail - If your API email is stored under a different environment variable name, use this option to specify it.
-   * @param options.apiKey - If your API key is stored under a different environment variable name, use this option to specify it.
-   * @returns A promise that resolves when the data has been written to the Google Sheet.
-   * @category Exporting Data
-   *
-   * @example
-   * ```ts
-   * // Write table data to a Google Sheet
-   * await table.toSheet("https://docs.google.com/spreadsheets/d/.../edit#gid=0");
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Write data to a Google Sheet, prepending a message and including the last update timestamp
-   * await table.toSheet("https://docs.google.com/spreadsheets/d/.../edit#gid=0", {
-   *   prepend: "Report generated on:",
-   *   lastUpdate: true,
-   *   timeZone: "Canada/Eastern",
-   * });
-   * ```
-   */
-  async toSheet(sheetUrl: string, options: {
-    prepend?: string;
-    lastUpdate?: boolean;
-    timeZone?:
-      | "Canada/Atlantic"
-      | "Canada/Central"
-      | "Canada/Eastern"
-      | "Canada/Mountain"
-      | "Canada/Newfoundland"
-      | "Canada/Pacific"
-      | "Canada/Saskatchewan"
-      | "Canada/Yukon";
-    raw?: boolean;
-    apiEmail?: string;
-    apiKey?: string;
-  } = {}): Promise<void> {
-    await overwriteSheetData(await this.getData(), sheetUrl, options);
-  }
-
-  /**
-   * Loads data from a Google Sheet into the table.
-   * This method uses the `getSheetData` function from the [journalism library](https://jsr.io/@nshiab/journalism). Refer to its documentation for more details.
-   *
-   * By default, authentication is handled via environment variables (GOOGLE_PRIVATE_KEY and GOOGLE_SERVICE_ACCOUNT_EMAIL). Alternatively, you can use GOOGLE_APPLICATION_CREDENTIALS pointing to a service account JSON file. For detailed setup instructions, refer to the node-google-spreadsheet authentication guide: https://theoephraim.github.io/node-google-spreadsheet/#/guides/authentication.
-   *
-   * @param sheetUrl - The URL pointing to a specific Google Sheet (e.g., `"https://docs.google.com/spreadsheets/d/.../edit#gid=0"`).
-   * @param options - An optional object with configuration options:
-   * @param options.skip - The number of rows to skip from the top of the sheet before reading data. Useful when the sheet contains metadata or headers that should not be included in the data.
-   * @param options.apiEmail - If your API email is stored under a different environment variable name, use this option to specify it.
-   * @param options.apiKey - If your API key is stored under a different environment variable name, use this option to specify it.
-   * @returns A promise that resolves when the data has been loaded into the table.
-   * @category Loading Data
-   *
-   * @example
-   * ```ts
-   * // Load data from a Google Sheet
-   * await table.loadSheet("https://docs.google.com/spreadsheets/d/.../edit#gid=0");
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Load data from a Google Sheet, skipping the first 2 rows (e.g., to skip a prepended message and timestamp)
-   * await table.loadSheet("https://docs.google.com/spreadsheets/d/.../edit#gid=0", {
-   *   skip: 2,
-   * });
-   * ```
-   */
-  async loadSheet(sheetUrl: string, options: {
-    skip?: number;
-    apiEmail?: string;
-    apiKey?: string;
-  } = {}): Promise<void> {
-    await this.loadArray(await getSheetData(sheetUrl, options));
   }
 
   /**
