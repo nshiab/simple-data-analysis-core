@@ -1,16 +1,19 @@
 # The Simple Data Analysis Library
 
 To install the library with Deno, use:
+
 ```bash
 deno add jsr:@nshiab/simple-data-analysis
 ```
 
 To install the library with Node.js, use:
+
 ```bash
 npx jsr add @nshiab/simple-data-analysis
 ```
 
 To start, create a SimpleDB instance and then a SimpleTable from this instance:
+
 ```ts
 import { SimpleDB } from "@nshiab/simple-data-analysis";
 
@@ -25,7 +28,8 @@ await sdb.done(); // Ensure to call done when you're finished.
 
 ## class SimpleDB
 
-Manages a DuckDB database instance, providing a simplified interface for database operations.
+Manages a DuckDB database instance, providing a simplified interface for
+database operations.
 
 ### Constructor
 
@@ -33,17 +37,25 @@ Creates a new SimpleDB instance.
 
 #### Parameters
 
-* **`options`**: Configuration options for the SimpleDB instance.
-* **`options.file`**: The path to the database file. If not provided, an in-memory database is used.
-* **`options.overwrite`**: A flag indicating whether to overwrite the database file if it already exists.
-* **`options.logDuration`**: A flag indicating whether to log the total execution duration.
-* **`options.nbRowsToLog`**: The number of rows to display when logging a table.
-* **`options.nbCharactersToLog`**: The maximum number of characters to display for text-based cells.
-* **`options.types`**: A flag indicating whether to include data types when logging a table.
-* **`options.cacheVerbose`**: A flag indicating whether to log verbose cache-related messages.
-* **`options.debug`**: A flag indicating whether to log debugging information.
-* **`options.duckDbCache`**: A flag indicating whether to use DuckDB's external file cache.
-* **`options.progressBar`**: A flag indicating whether to display a progress bar for long-running operations.
+- **`options`**: Configuration options for the SimpleDB instance.
+- **`options.file`**: The path to the database file. If not provided, an
+  in-memory database is used.
+- **`options.overwrite`**: A flag indicating whether to overwrite the database
+  file if it already exists.
+- **`options.logDuration`**: A flag indicating whether to log the total
+  execution duration.
+- **`options.nbRowsToLog`**: The number of rows to display when logging a table.
+- **`options.nbCharactersToLog`**: The maximum number of characters to display
+  for text-based cells.
+- **`options.types`**: A flag indicating whether to include data types when
+  logging a table.
+- **`options.cacheVerbose`**: A flag indicating whether to log verbose
+  cache-related messages.
+- **`options.debug`**: A flag indicating whether to log debugging information.
+- **`options.duckDbCache`**: A flag indicating whether to use DuckDB's external
+  file cache.
+- **`options.progressBar`**: A flag indicating whether to display a progress bar
+  for long-running operations.
 
 ### Methods
 
@@ -52,14 +64,17 @@ Creates a new SimpleDB instance.
 Creates a new SimpleTable instance within the database.
 
 ##### Signature
+
 ```typescript
 newTable(name?: string, projections?: Record<string, string>): SimpleTable;
 ```
 
 ##### Parameters
 
-* **`name`**: The name of the new table. If not provided, a default name is generated (e.g., "table1").
-* **`projections`**: An object mapping column names to their geospatial projections.
+- **`name`**: The name of the new table. If not provided, a default name is
+  generated (e.g., "table1").
+- **`projections`**: An object mapping column names to their geospatial
+  projections.
 
 ##### Returns
 
@@ -82,13 +97,14 @@ const employees = sdb.newTable("employees");
 Retrieves an existing SimpleTable instance from the database.
 
 ##### Signature
+
 ```typescript
 async getTable(name: string): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`name`**: The name of the table to retrieve.
+- **`name`**: The name of the table to retrieve.
 
 ##### Returns
 
@@ -106,13 +122,15 @@ const employees = await sdb.getTable("employees");
 Removes one or more tables from the database.
 
 ##### Signature
+
 ```typescript
 async removeTables(tables: SimpleTable | string | (SimpleTable | string)[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`tables`**: A single table or an array of tables to remove, specified by name or as SimpleTable instances.
+- **`tables`**: A single table or an array of tables to remove, specified by
+  name or as SimpleTable instances.
 
 ##### Returns
 
@@ -142,13 +160,15 @@ await sdb.removeTables(employeesTable);
 Selects one or more tables to keep in the database, removing all others.
 
 ##### Signature
+
 ```typescript
 async selectTables(tables: SimpleTable | string | (SimpleTable | string)[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`tables`**: A single table or an array of tables to select, specified by name or as SimpleTable instances.
+- **`tables`**: A single table or an array of tables to select, specified by
+  name or as SimpleTable instances.
 
 ##### Returns
 
@@ -178,6 +198,7 @@ await sdb.selectTables(employeesTable);
 Returns an array of all table names in the database, sorted alphabetically.
 
 ##### Signature
+
 ```typescript
 async getTableNames(): Promise<string[]>;
 ```
@@ -196,9 +217,11 @@ console.log(tableNames); // Output: ["employees", "customers"]
 
 #### `logTableNames`
 
-Logs the names of all tables in the database to the console, sorted alphabetically.
+Logs the names of all tables in the database to the console, sorted
+alphabetically.
 
 ##### Signature
+
 ```typescript
 async logTableNames(): Promise<void>;
 ```
@@ -220,6 +243,7 @@ await sdb.logTableNames();
 Returns an array of all SimpleTable instances in the database.
 
 ##### Signature
+
 ```typescript
 async getTables(): Promise<SimpleTable[]>;
 ```
@@ -240,13 +264,14 @@ const tables = await sdb.getTables();
 Checks if a table exists in the database.
 
 ##### Signature
+
 ```typescript
 async hasTable(table: SimpleTable | string): Promise<boolean>;
 ```
 
 ##### Parameters
 
-* **`table`**: The name of the table or a SimpleTable instance.
+- **`table`**: The name of the table or a SimpleTable instance.
 
 ##### Returns
 
@@ -272,13 +297,15 @@ console.log(existsInstance); // Output: true or false
 Returns a list of installed DuckDB extensions.
 
 ##### Signature
+
 ```typescript
 async getExtensions(): Promise<Record<string, string | number | boolean | Date | null>[]>;
 ```
 
 ##### Returns
 
-A promise that resolves to an array of objects, each representing an installed extension.
+A promise that resolves to an array of objects, each representing an installed
+extension.
 
 ##### Examples
 
@@ -292,37 +319,45 @@ console.log(extensions); // Output: [{ extension_name: "spatial", loaded: true, 
 
 Executes a custom SQL query directly against the DuckDB instance.
 
-If you want to force the returned data to match the types of the columns, you can use the `types` option.
+If you want to force the returned data to match the types of the columns, you
+can use the `types` option.
 
 ##### Signature
+
 ```typescript
 async customQuery(query: string, options?: { returnDataFrom?: "query" | "none"; table?: string; types?: Record<string, string> }): Promise<Record<string, string | number | boolean | Date | null>[] | null>;
 ```
 
 ##### Parameters
 
-* **`query`**: The SQL query string to execute.
-* **`options`**: Configuration options for the query.
-* **`options.returnDataFrom`**: Specifies whether to return data from the query. Can be `"query"` to return data or `"none"` (default) to not return data.
-* **`options.table`**: The name of the table associated with the query, primarily used for debugging and logging.
-* **`options.types`**: An optional object specifying data types for the query parameters.
+- **`query`**: The SQL query string to execute.
+- **`options`**: Configuration options for the query.
+- **`options.returnDataFrom`**: Specifies whether to return data from the query.
+  Can be `"query"` to return data or `"none"` (default) to not return data.
+- **`options.table`**: The name of the table associated with the query,
+  primarily used for debugging and logging.
+- **`options.types`**: An optional object specifying data types for the query
+  parameters.
 
 ##### Returns
 
-A promise that resolves to the query result as an array of objects if `returnDataFrom` is `"query"`, otherwise `null`.
+A promise that resolves to the query result as an array of objects if
+`returnDataFrom` is `"query"`, otherwise `null`.
 
 ##### Examples
 
 ```ts
 // Execute a query without returning data
-await sdb.customQuery("CREATE TABLE young_employees AS SELECT * FROM employees WHERE age > 30");
+await sdb.customQuery(
+  "CREATE TABLE young_employees AS SELECT * FROM employees WHERE age > 30",
+);
 ```
 
 ```ts
 // Execute a query and return the results
 const youngEmployees = await sdb.customQuery(
   "SELECT * FROM employees WHERE age < 30",
-  { returnDataFrom: "query" }
+  { returnDataFrom: "query" },
 );
 console.log(youngEmployees);
 ```
@@ -333,16 +368,19 @@ Loads a database from a specified file into the current SimpleDB instance.
 Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite).
 
 ##### Signature
+
 ```typescript
 async loadDB(file: string, options?: { name?: string; detach?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`file`**: The absolute path to the database file (e.g., "./my_database.db").
-* **`options`**: Configuration options for loading the database.
-* **`options.name`**: The name to assign to the loaded database within the DuckDB instance. Defaults to the file name without extension.
-* **`options.detach`**: If `true` (default), the database is detached after loading its contents into memory. If `false`, the database remains attached.
+- **`file`**: The absolute path to the database file (e.g., "./my_database.db").
+- **`options`**: Configuration options for loading the database.
+- **`options.name`**: The name to assign to the loaded database within the
+  DuckDB instance. Defaults to the file name without extension.
+- **`options.detach`**: If `true` (default), the database is detached after
+  loading its contents into memory. If `false`, the database remains attached.
 
 ##### Returns
 
@@ -367,19 +405,22 @@ await sdb.loadDB("./archive.db", { name: "archive_db" });
 
 #### `writeDB`
 
-Writes the current state of the database to a specified file.
-Supported output file types are `.db` (DuckDB) and `.sqlite` (SQLite).
+Writes the current state of the database to a specified file. Supported output
+file types are `.db` (DuckDB) and `.sqlite` (SQLite).
 
 ##### Signature
+
 ```typescript
 async writeDB(file: string, options?: { noMetaData?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`file`**: The absolute path to the output file (e.g., "./my_exported_database.db").
-* **`options`**: Configuration options for writing the database.
-* **`options.noMetaData`**: If `true`, metadata files (projections, indexes) are not created alongside the database file. Defaults to `false`.
+- **`file`**: The absolute path to the output file (e.g.,
+  "./my_exported_database.db").
+- **`options`**: Configuration options for writing the database.
+- **`options.noMetaData`**: If `true`, metadata files (projections, indexes) are
+  not created alongside the database file. Defaults to `false`.
 
 ##### Returns
 
@@ -399,10 +440,12 @@ await sdb.writeDB("./my_exported_database.sqlite", { noMetaData: true });
 
 #### `done`
 
-Frees up memory by closing the database connection and instance, and cleans up the cache.
-If the database is file-based, it also compacts the database file to optimize storage.
+Frees up memory by closing the database connection and instance, and cleans up
+the cache. If the database is file-based, it also compacts the database file to
+optimize storage.
 
 ##### Signature
+
 ```typescript
 async done(): Promise<SimpleDB>;
 ```
@@ -446,16 +489,15 @@ await sdb.done();
 // Create a database instance with custom options
 const sdb = new SimpleDB({
   debug: true, // Enable debugging output
-  nbRowsToLog: 20 // Set the number of rows to log by default
+  nbRowsToLog: 20, // Set the number of rows to log by default
 });
 ```
 
-
-
 ## class SimpleTable
 
-Represents a table within a SimpleDB database, capable of handling tabular, geospatial, and vector data.
-SimpleTable instances are typically created via a SimpleDB instance.
+Represents a table within a SimpleDB database, capable of handling tabular,
+geospatial, and vector data. SimpleTable instances are typically created via a
+SimpleDB instance.
 
 ### Constructor
 
@@ -463,14 +505,18 @@ Creates an instance of SimpleTable.
 
 #### Parameters
 
-* **`name`**: The name of the table.
-* **`projections`**: An object mapping column names to their geospatial projections.
-* **`simpleDB`**: The SimpleDB instance that this table belongs to.
-* **`options`**: An optional object with configuration options:
-* **`options.debug`**: A boolean indicating whether to enable debug mode.
-* **`options.nbRowsToLog`**: The number of rows to log when displaying table data.
-* **`options.nbCharactersToLog`**: The maximum number of characters to log for strings. Useful to avoid logging large text content.
-* **`options.types`**: A boolean indicating whether to include data types when logging a table.
+- **`name`**: The name of the table.
+- **`projections`**: An object mapping column names to their geospatial
+  projections.
+- **`simpleDB`**: The SimpleDB instance that this table belongs to.
+- **`options`**: An optional object with configuration options:
+- **`options.debug`**: A boolean indicating whether to enable debug mode.
+- **`options.nbRowsToLog`**: The number of rows to log when displaying table
+  data.
+- **`options.nbCharactersToLog`**: The maximum number of characters to log for
+  strings. Useful to avoid logging large text content.
+- **`options.types`**: A boolean indicating whether to include data types when
+  logging a table.
 
 ### Methods
 
@@ -479,13 +525,14 @@ Creates an instance of SimpleTable.
 Renames the current table.
 
 ##### Signature
+
 ```typescript
 async renameTable(name: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`name`**: The new name for the table.
+- **`name`**: The new name for the table.
 
 ##### Returns
 
@@ -500,17 +547,20 @@ await table.renameTable("new_employees");
 
 #### `setTypes`
 
-Sets the data types for columns in a new table. If the table already exists, it will be replaced.
-To convert the types of an existing table, use the `.convert()` method instead.
+Sets the data types for columns in a new table. If the table already exists, it
+will be replaced. To convert the types of an existing table, use the
+`.convert()` method instead.
 
 ##### Signature
+
 ```typescript
 async setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "geometry">): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`types`**: An object specifying the column names and their target data types (JavaScript or SQL types).
+- **`types`**: An object specifying the column names and their target data types
+  (JavaScript or SQL types).
 
 ##### Returns
 
@@ -532,17 +582,20 @@ await table.setTypes({
 Loads an array of JavaScript objects into the table.
 
 ##### Signature
+
 ```typescript
 async loadArray(arrayOfObjects: Record<string, unknown>[]): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`arrayOfObjects`**: An array of objects, where each object represents a row and its properties represent columns.
+- **`arrayOfObjects`**: An array of objects, where each object represents a row
+  and its properties represent columns.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the data has been loaded.
+A promise that resolves to the SimpleTable instance after the data has been
+loaded.
 
 ##### Examples
 
@@ -550,47 +603,72 @@ A promise that resolves to the SimpleTable instance after the data has been load
 // Load data from an array of objects
 const data = [
   { letter: "a", number: 1 },
-  { letter: "b", number: 2 }
+  { letter: "b", number: 2 },
 ];
 await table.loadArray(data);
 ```
 
 #### `loadData`
 
-Loads data from one or more local or remote files into the table.
-Supported file formats include CSV, JSON, Parquet, and Excel.
+Loads data from one or more local or remote files into the table. Supported file
+formats include CSV, JSON, Parquet, and Excel.
 
 ##### Signature
+
 ```typescript
 async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`files`**: The path(s) or URL(s) of the file(s) containing the data to be loaded.
-* **`options`**: An optional object with configuration options:
-* **`options.fileType`**: The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
-* **`options.autoDetect`**: A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-* **`options.limit`**: A number indicating the maximum number of rows to load. Defaults to all rows.
-* **`options.fileName`**: A boolean indicating whether to include the file name as a new column in the loaded data. Defaults to `false`.
-* **`options.unifyColumns`**: A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
-* **`options.columnTypes`**: An object mapping column names to their expected data types. By default, types are inferred.
-* **`options.header`**: A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
-* **`options.allText`**: A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
-* **`options.delim`**: The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
-* **`options.skip`**: The number of lines to skip at the beginning of the file. Applicable to CSV files. Defaults to `0`.
-* **`options.nullPadding`**: If `true`, when a row has fewer columns than expected, the remaining columns on the right will be padded with `NULL` values. Defaults to `false`.
-* **`options.ignoreErrors`**: If `true`, parsing errors encountered will be ignored, and rows with errors will be skipped. Defaults to `false`.
-* **`options.compression`**: The compression type of the file. Applicable to CSV files. Defaults to `none`.
-* **`options.strict`**: If `true`, an error will be thrown when encountering any issues. If `false`, structurally incorrect files will be parsed tentatively. Defaults to `true`.
-* **`options.encoding`**: The encoding of the file. Applicable to CSV files. Defaults to `utf-8`.
-* **`options.jsonFormat`**: The format of JSON files ("unstructured", "newlineDelimited", "array"). By default, the format is inferred.
-* **`options.records`**: A boolean indicating whether each line in a newline-delimited JSON file represents a record. Applicable to JSON files. By default, it's inferred.
-* **`options.sheet`**: A string indicating a specific sheet to import from an Excel file. By default, the first sheet is imported.
+- **`files`**: The path(s) or URL(s) of the file(s) containing the data to be
+  loaded.
+- **`options`**: An optional object with configuration options:
+- **`options.fileType`**: The type of file to load ("csv", "dsv", "json",
+  "parquet", "excel"). Defaults to being inferred from the file extension.
+- **`options.autoDetect`**: A boolean indicating whether to automatically detect
+  the data format. Defaults to `true`.
+- **`options.limit`**: A number indicating the maximum number of rows to load.
+  Defaults to all rows.
+- **`options.fileName`**: A boolean indicating whether to include the file name
+  as a new column in the loaded data. Defaults to `false`.
+- **`options.unifyColumns`**: A boolean indicating whether to unify columns
+  across multiple files when their structures differ. Missing columns will be
+  filled with `NULL` values. Defaults to `false`.
+- **`options.columnTypes`**: An object mapping column names to their expected
+  data types. By default, types are inferred.
+- **`options.header`**: A boolean indicating whether the file has a header row.
+  Applicable to CSV files. Defaults to `true`.
+- **`options.allText`**: A boolean indicating whether all columns should be
+  treated as text. Applicable to CSV files. Defaults to `false`.
+- **`options.delim`**: The delimiter used in the file. Applicable to CSV and DSV
+  files. By default, the delimiter is inferred.
+- **`options.skip`**: The number of lines to skip at the beginning of the file.
+  Applicable to CSV files. Defaults to `0`.
+- **`options.nullPadding`**: If `true`, when a row has fewer columns than
+  expected, the remaining columns on the right will be padded with `NULL`
+  values. Defaults to `false`.
+- **`options.ignoreErrors`**: If `true`, parsing errors encountered will be
+  ignored, and rows with errors will be skipped. Defaults to `false`.
+- **`options.compression`**: The compression type of the file. Applicable to CSV
+  files. Defaults to `none`.
+- **`options.strict`**: If `true`, an error will be thrown when encountering any
+  issues. If `false`, structurally incorrect files will be parsed tentatively.
+  Defaults to `true`.
+- **`options.encoding`**: The encoding of the file. Applicable to CSV files.
+  Defaults to `utf-8`.
+- **`options.jsonFormat`**: The format of JSON files ("unstructured",
+  "newlineDelimited", "array"). By default, the format is inferred.
+- **`options.records`**: A boolean indicating whether each line in a
+  newline-delimited JSON file represents a record. Applicable to JSON files. By
+  default, it's inferred.
+- **`options.sheet`**: A string indicating a specific sheet to import from an
+  Excel file. By default, the first sheet is imported.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the data has been loaded.
+A promise that resolves to the SimpleTable instance after the data has been
+loaded.
 
 ##### Examples
 
@@ -609,7 +687,7 @@ await table.loadData("https://some-website.com/some-data.parquet");
 await table.loadData([
   "./some-data1.json",
   "./some-data2.json",
-  "./some-data3.json"
+  "./some-data3.json",
 ]);
 ```
 
@@ -618,45 +696,70 @@ await table.loadData([
 await table.loadData([
   "https://some-website.com/some-data1.parquet",
   "https://some-website.com/some-data2.parquet",
-  "https://some-website.com/some-data3.parquet"
+  "https://some-website.com/some-data3.parquet",
 ], { unifyColumns: true });
 ```
 
 #### `loadDataFromDirectory`
 
-Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local directory into the table.
+Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
+directory into the table.
 
 ##### Signature
+
 ```typescript
 async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`directory`**: The absolute path to the directory containing the data files.
-* **`options`**: An optional object with configuration options:
-* **`options.fileType`**: The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
-* **`options.autoDetect`**: A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-* **`options.limit`**: A number indicating the maximum number of rows to load. Defaults to all rows.
-* **`options.fileName`**: A boolean indicating whether to include the file name as a new column in the loaded data. Defaults to `false`.
-* **`options.unifyColumns`**: A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
-* **`options.columnTypes`**: An object mapping column names to their expected data types. By default, types are inferred.
-* **`options.header`**: A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
-* **`options.allText`**: A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
-* **`options.delim`**: The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
-* **`options.skip`**: The number of lines to skip at the beginning of the file. Applicable to CSV files. Defaults to `0`.
-* **`options.nullPadding`**: If `true`, when a row has fewer columns than expected, the remaining columns on the right will be padded with `NULL` values. Defaults to `false`.
-* **`options.ignoreErrors`**: If `true`, parsing errors encountered will be ignored, and rows with errors will be skipped. Defaults to `false`.
-* **`options.compression`**: The compression type of the file. Applicable to CSV files. Defaults to `none`.
-* **`options.strict`**: If `true`, an error will be thrown when encountering any issues. If `false`, structurally incorrect files will be parsed tentatively. Defaults to `true`.
-* **`options.encoding`**: The encoding of the files. Applicable to CSV files. Defaults to `utf-8`.
-* **`options.jsonFormat`**: The format of JSON files ("unstructured", "newlineDelimited", "array"). By default, the format is inferred.
-* **`options.records`**: A boolean indicating whether each line in a newline-delimited JSON file represents a record. Applicable to JSON files. By default, it's inferred.
-* **`options.sheet`**: A string indicating a specific sheet to import from an Excel file. By default, the first sheet is imported.
+- **`directory`**: The absolute path to the directory containing the data files.
+- **`options`**: An optional object with configuration options:
+- **`options.fileType`**: The type of file to load ("csv", "dsv", "json",
+  "parquet", "excel"). Defaults to being inferred from the file extension.
+- **`options.autoDetect`**: A boolean indicating whether to automatically detect
+  the data format. Defaults to `true`.
+- **`options.limit`**: A number indicating the maximum number of rows to load.
+  Defaults to all rows.
+- **`options.fileName`**: A boolean indicating whether to include the file name
+  as a new column in the loaded data. Defaults to `false`.
+- **`options.unifyColumns`**: A boolean indicating whether to unify columns
+  across multiple files when their structures differ. Missing columns will be
+  filled with `NULL` values. Defaults to `false`.
+- **`options.columnTypes`**: An object mapping column names to their expected
+  data types. By default, types are inferred.
+- **`options.header`**: A boolean indicating whether the file has a header row.
+  Applicable to CSV files. Defaults to `true`.
+- **`options.allText`**: A boolean indicating whether all columns should be
+  treated as text. Applicable to CSV files. Defaults to `false`.
+- **`options.delim`**: The delimiter used in the file. Applicable to CSV and DSV
+  files. By default, the delimiter is inferred.
+- **`options.skip`**: The number of lines to skip at the beginning of the file.
+  Applicable to CSV files. Defaults to `0`.
+- **`options.nullPadding`**: If `true`, when a row has fewer columns than
+  expected, the remaining columns on the right will be padded with `NULL`
+  values. Defaults to `false`.
+- **`options.ignoreErrors`**: If `true`, parsing errors encountered will be
+  ignored, and rows with errors will be skipped. Defaults to `false`.
+- **`options.compression`**: The compression type of the file. Applicable to CSV
+  files. Defaults to `none`.
+- **`options.strict`**: If `true`, an error will be thrown when encountering any
+  issues. If `false`, structurally incorrect files will be parsed tentatively.
+  Defaults to `true`.
+- **`options.encoding`**: The encoding of the files. Applicable to CSV files.
+  Defaults to `utf-8`.
+- **`options.jsonFormat`**: The format of JSON files ("unstructured",
+  "newlineDelimited", "array"). By default, the format is inferred.
+- **`options.records`**: A boolean indicating whether each line in a
+  newline-delimited JSON file represents a record. Applicable to JSON files. By
+  default, it's inferred.
+- **`options.sheet`**: A string indicating a specific sheet to import from an
+  Excel file. By default, the first sheet is imported.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the data has been loaded.
+A promise that resolves to the SimpleTable instance after the data has been
+loaded.
 
 ##### Examples
 
@@ -667,24 +770,32 @@ await table.loadDataFromDirectory("./data/");
 
 #### `loadGeoData`
 
-Loads geospatial data from an external file or URL into the table.
-The coordinates of files or URLs ending with `.json` or `.geojson` are automatically flipped to `[latitude, longitude]` axis order.
+Loads geospatial data from an external file or URL into the table. The
+coordinates of files or URLs ending with `.json` or `.geojson` are automatically
+flipped to `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async loadGeoData(file: string, options?: { toWGS84?: boolean; from?: string }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`file`**: The URL or absolute path to the external file containing the geospatial data.
-* **`options`**: An optional object with configuration options:
-* **`options.toWGS84`**: If `true`, the method will attempt to reproject the data to WGS84 with `[latitude, longitude]` axis order. If the file is `.json` or `.geojson`, coordinates are automatically flipped, and this option has no additional effect. Defaults to `false`.
-* **`options.from`**: An optional string specifying the original projection of the data, if the method is unable to detect it automatically.
+- **`file`**: The URL or absolute path to the external file containing the
+  geospatial data.
+- **`options`**: An optional object with configuration options:
+- **`options.toWGS84`**: If `true`, the method will attempt to reproject the
+  data to WGS84 with `[latitude, longitude]` axis order. If the file is `.json`
+  or `.geojson`, coordinates are automatically flipped, and this option has no
+  additional effect. Defaults to `false`.
+- **`options.from`**: An optional string specifying the original projection of
+  the data, if the method is unable to detect it automatically.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the geospatial data has been loaded.
+A promise that resolves to the SimpleTable instance after the geospatial data
+has been loaded.
 
 ##### Examples
 
@@ -705,34 +816,53 @@ await table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
 
 #### `createFtsIndex`
 
-Creates a full-text search (FTS) index on a specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
+Creates a full-text search (FTS) index on a specified text column using DuckDB's
+[FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
 
-If an FTS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
+If an FTS index already exists on the table, this method will skip creation and
+log a message (when verbose is enabled), unless the `overwrite` option is set to
+`true`.
 
 ##### Signature
+
 ```typescript
 async createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`columnId`**: The name of the column containing unique identifiers for each row.
-* **`columnText`**: The name of the column containing the text to index.
-* **`options`**: An optional object with configuration options:
-* **`options.stemmer`**: The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
-* **`options.stopwords`**: The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
-* **`options.overwrite`**: If `true`, recreates the index even if it already exists. Defaults to `false`.
-* **`options.verbose`**: If `true`, logs additional debugging information, including index creation status. Defaults to `false`.
-* **`columnId`**: The column containing the document identifiers.
-* **`columnText`**: The column containing the text to search.
-* **`options`**: An optional object with configuration options:
-* **`options.stemmer`**: The stemmer to use for the FTS index. Supports multiple languages or "none" to disable stemming. Defaults to "porter".
-* **`options.stopwords`**: The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
-* **`options.ignore`**: The regular expression of patterns to be ignored. Defaults to "(\\.|[^a-z])+".
-* **`options.stripAccents`**: A boolean indicating whether to remove accents. Defaults to true.
-* **`options.lower`**: A boolean indicating whether to convert all text to lowercase. Defaults to true.
-* **`options.overwrite`**: A boolean indicating whether to overwrite the existing FTS index. Defaults to false.
-* **`options.verbose`**: A boolean indicating whether to log additional information. Defaults to false.
+- **`columnId`**: The name of the column containing unique identifiers for each
+  row.
+- **`columnText`**: The name of the column containing the text to index.
+- **`options`**: An optional object with configuration options:
+- **`options.stemmer`**: The language stemmer to apply for word normalization.
+  Supports multiple languages or "none" to disable stemming. Defaults to
+  'porter'.
+- **`options.stopwords`**: The table containing the stopwords to use for the FTS
+  index. Supports multiple languages or "none" to disable stopwords. Defaults to
+  "english".
+- **`options.overwrite`**: If `true`, recreates the index even if it already
+  exists. Defaults to `false`.
+- **`options.verbose`**: If `true`, logs additional debugging information,
+  including index creation status. Defaults to `false`.
+- **`columnId`**: The column containing the document identifiers.
+- **`columnText`**: The column containing the text to search.
+- **`options`**: An optional object with configuration options:
+- **`options.stemmer`**: The stemmer to use for the FTS index. Supports multiple
+  languages or "none" to disable stemming. Defaults to "porter".
+- **`options.stopwords`**: The table containing the stopwords to use for the FTS
+  index. Supports multiple languages or "none" to disable stopwords. Defaults to
+  "english".
+- **`options.ignore`**: The regular expression of patterns to be ignored.
+  Defaults to "(\\.|[^a-z])+".
+- **`options.stripAccents`**: A boolean indicating whether to remove accents.
+  Defaults to true.
+- **`options.lower`**: A boolean indicating whether to convert all text to
+  lowercase. Defaults to true.
+- **`options.overwrite`**: A boolean indicating whether to overwrite the
+  existing FTS index. Defaults to false.
+- **`options.verbose`**: A boolean indicating whether to log additional
+  information. Defaults to false.
 
 ##### Returns
 
@@ -774,24 +904,37 @@ await table.createFtsIndex("Dish", "Recipe", {
 
 #### `createVssIndex`
 
-Creates a vector similarity search (VSS) index on a specified column using DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
+Creates a vector similarity search (VSS) index on a specified column using
+DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
 
-If a VSS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
+If a VSS index already exists on the table, this method will skip creation and
+log a message (when verbose is enabled), unless the `overwrite` option is set to
+`true`.
 
 ##### Signature
+
 ```typescript
 async createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: boolean; efConstruction?: number; efSearch?: number; M?: number }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing vector embeddings (must be FLOAT array type).
-* **`options`**: An optional object with configuration options:
-* **`options.overwrite`**: If `true`, drops and recreates the index even if it already exists. Defaults to `false`.
-* **`options.verbose`**: If `true`, logs additional debugging information, including index creation status. Defaults to `false`.
-* **`options.efConstruction`**: The number of candidate vertices to consider during index construction. Higher values result in more accurate indexes but increase build time. Defaults to 128.
-* **`options.efSearch`**: The number of candidate vertices to consider during search. Higher values result in more accurate searches but increase search time. Defaults to 64.
-* **`options.M`**: The maximum number of neighbors to keep for each vertex in the graph. Higher values result in more accurate indexes but increase build time and memory usage. Defaults to 16.
+- **`column`**: The name of the column containing vector embeddings (must be
+  FLOAT array type).
+- **`options`**: An optional object with configuration options:
+- **`options.overwrite`**: If `true`, drops and recreates the index even if it
+  already exists. Defaults to `false`.
+- **`options.verbose`**: If `true`, logs additional debugging information,
+  including index creation status. Defaults to `false`.
+- **`options.efConstruction`**: The number of candidate vertices to consider
+  during index construction. Higher values result in more accurate indexes but
+  increase build time. Defaults to 128.
+- **`options.efSearch`**: The number of candidate vertices to consider during
+  search. Higher values result in more accurate searches but increase search
+  time. Defaults to 64.
+- **`options.M`**: The maximum number of neighbors to keep for each vertex in
+  the graph. Higher values result in more accurate indexes but increase build
+  time and memory usage. Defaults to 16.
 
 ##### Returns
 
@@ -834,39 +977,65 @@ await table.createVssIndex("embedding_column", {
 
 #### `bm25`
 
-Performs BM25 full-text search on a text column to find the most relevant results. BM25 (Best Matching 25) is a ranking function used in information retrieval that calculates relevance scores based on term frequency and document length normalization.
+Performs BM25 full-text search on a text column to find the most relevant
+results. BM25 (Best Matching 25) is a ranking function used in information
+retrieval that calculates relevance scores based on term frequency and document
+length normalization.
 
-This method creates a full-text search index on the specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search). If the index already exists, it will be reused unless the `overwriteIndex` option is set to `true`.
+This method creates a full-text search index on the specified text column using
+DuckDB's
+[FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
+If the index already exists, it will be reused unless the `overwriteIndex`
+option is set to `true`.
 
 ##### Signature
+
 ```typescript
 async bm25(text: string, columnId: string, columnText: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`text`**: The search query text to match against the text column.
-* **`columnId`**: The name of the column containing unique identifiers for each row.
-* **`columnText`**: The name of the column containing the text to search.
-* **`nbResults`**: The number of top-ranked results to return.
-* **`options`**: An optional object with configuration options:
-* **`options.outputTable`**: The name of a new table where the results will be stored. If not provided, the current table will be replaced with the search results.
-* **`options.verbose`**: If `true`, logs additional debugging information, including FTS index creation status. Defaults to `false`.
-* **`options.k`**: The BM25 k parameter controlling term frequency saturation. Defaults to 1.2.
-* **`options.b`**: The BM25 b parameter controlling document length normalization (0-1 range). Defaults to 0.75.
-* **`options.stemmer`**: The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
-* **`options.stopwords`**: The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
-* **`options.ignore`**: The regular expression of patterns to be ignored. Defaults to "(\\.|[^a-z])+".
-* **`options.stripAccents`**: A boolean indicating whether to remove accents. Defaults to true.
-* **`options.lower`**: A boolean indicating whether to convert all text to lowercase. Defaults to true.
-* **`options.overwriteIndex`**: If `true`, drops and recreates the FTS index even if it already exists. Defaults to `false`.
-* **`options.conjunctive`**: If `true`, all terms in the query string must be present in order for a document to be retrieved. Defaults to `false`.
-* **`options.minScore`**: A threshold to filter out results with a BM25 score below this value.
-* **`options.scoreColumn`**: If provided, the BM25 score will be included in the output table under this column name.
+- **`text`**: The search query text to match against the text column.
+- **`columnId`**: The name of the column containing unique identifiers for each
+  row.
+- **`columnText`**: The name of the column containing the text to search.
+- **`nbResults`**: The number of top-ranked results to return.
+- **`options`**: An optional object with configuration options:
+- **`options.outputTable`**: The name of a new table where the results will be
+  stored. If not provided, the current table will be replaced with the search
+  results.
+- **`options.verbose`**: If `true`, logs additional debugging information,
+  including FTS index creation status. Defaults to `false`.
+- **`options.k`**: The BM25 k parameter controlling term frequency saturation.
+  Defaults to 1.2.
+- **`options.b`**: The BM25 b parameter controlling document length
+  normalization (0-1 range). Defaults to 0.75.
+- **`options.stemmer`**: The language stemmer to apply for word normalization.
+  Supports multiple languages or "none" to disable stemming. Defaults to
+  'porter'.
+- **`options.stopwords`**: The table containing the stopwords to use for the FTS
+  index. Supports multiple languages or "none" to disable stopwords. Defaults to
+  "english".
+- **`options.ignore`**: The regular expression of patterns to be ignored.
+  Defaults to "(\\.|[^a-z])+".
+- **`options.stripAccents`**: A boolean indicating whether to remove accents.
+  Defaults to true.
+- **`options.lower`**: A boolean indicating whether to convert all text to
+  lowercase. Defaults to true.
+- **`options.overwriteIndex`**: If `true`, drops and recreates the FTS index
+  even if it already exists. Defaults to `false`.
+- **`options.conjunctive`**: If `true`, all terms in the query string must be
+  present in order for a document to be retrieved. Defaults to `false`.
+- **`options.minScore`**: A threshold to filter out results with a BM25 score
+  below this value.
+- **`options.scoreColumn`**: If provided, the BM25 score will be included in the
+  output table under this column name.
 
 ##### Returns
 
-A promise that resolves to a SimpleTable instance containing the search results, ordered by relevance (best matches first).
+A promise that resolves to a SimpleTable instance containing the search results,
+ordered by relevance (best matches first).
 
 ##### Examples
 
@@ -924,12 +1093,14 @@ const french = await table.bm25("french food", "Dish", "Recipe", 5, {
   outputTable: "french",
 });
 ```
-* @example
+
+- @example
+
 ```ts
 // Filter results by a minimum BM25 score and include the score in the output
 await table.bm25("spicy noodles", "Dish", "Recipe", 10, {
   minScore: 5.5,
-  scoreColumn: "bm25_score"
+  scoreColumn: "bm25_score",
 });
 ```
 
@@ -945,13 +1116,15 @@ await table.bm25("italian sauce", "Dish", "Recipe", 5, {
 Inserts rows, provided as an array of JavaScript objects, into the table.
 
 ##### Signature
+
 ```typescript
 async insertRows(rows: Record<string, unknown>[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`rows`**: An array of objects, where each object represents a row to be inserted and its properties correspond to column names.
+- **`rows`**: An array of objects, where each object represents a row to be
+  inserted and its properties correspond to column names.
 
 ##### Returns
 
@@ -963,25 +1136,31 @@ A promise that resolves when the rows have been inserted.
 // Insert new rows into the table
 const newRows = [
   { letter: "c", number: 3 },
-  { letter: "d", number: 4 }
+  { letter: "d", number: 4 },
 ];
 await table.insertRows(newRows);
 ```
 
 #### `insertTables`
 
-Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`.
+Inserts all rows from one or more other tables into this table. If tables do not
+have the same columns, an error will be thrown unless the `unifyColumns` option
+is set to `true`.
 
 ##### Signature
+
 ```typescript
 async insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`tablesToInsert`**: The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
-* **`options`**: An optional object with configuration options:
-* **`options.unifyColumns`**: A boolean indicating whether to unify the columns of the tables. If `true`, missing columns in a table will be filled with `NULL` values. Defaults to `false`.
+- **`tablesToInsert`**: The name(s) of the table(s) or SimpleTable instance(s)
+  from which rows will be inserted.
+- **`options`**: An optional object with configuration options:
+- **`options.unifyColumns`**: A boolean indicating whether to unify the columns
+  of the tables. If `true`, missing columns in a table will be filled with
+  `NULL` values. Defaults to `false`.
 
 ##### Returns
 
@@ -1006,24 +1185,32 @@ await tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
 
 #### `cloneTable`
 
-Returns a new table with the same structure and data as this table. The data can be optionally filtered.
-Note that cloning large tables can be a slow operation.
+Returns a new table with the same structure and data as this table. The data can
+be optionally filtered. Note that cloning large tables can be a slow operation.
 
 ##### Signature
+
 ```typescript
 async cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string; columns?: string | string[] }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`nameOrOptions`**: Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
-* **`nameOrOptions.outputTable`**: The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
-* **`nameOrOptions.conditions`**: A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
-* **`nameOrOptions.columns`**: An array of column names to include in the cloned table. If not provided, all columns will be included.
+- **`nameOrOptions`**: Either a string specifying the name of the new table, or
+  an optional object with configuration options. If not provided, a default name
+  (e.g., "table1", "table2") will be generated.
+- **`nameOrOptions.outputTable`**: The name of the new table to be created in
+  the database. If not provided, a default name (e.g., "table1", "table2") will
+  be generated.
+- **`nameOrOptions.conditions`**: A SQL `WHERE` clause condition to filter the
+  data during cloning. Defaults to no condition (clones all rows).
+- **`nameOrOptions.columns`**: An array of column names to include in the cloned
+  table. If not provided, all columns will be included.
 
 ##### Returns
 
-A promise that resolves to the new SimpleTable instance containing the cloned data.
+A promise that resolves to the new SimpleTable instance containing the cloned
+data.
 
 ##### Examples
 
@@ -1057,23 +1244,25 @@ const tableB = await tableA.cloneTable({ columns: ["name", "age", "city"] });
 const tableB = await tableA.cloneTable({
   outputTable: "filtered_data",
   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
-  columns: ["name", "status", "created_date"]
+  columns: ["name", "status", "created_date"],
 });
 ```
 
 #### `cloneColumn`
 
-Clones an existing column in this table, creating a new column with identical values.
+Clones an existing column in this table, creating a new column with identical
+values.
 
 ##### Signature
+
 ```typescript
 async cloneColumn(originalColumn: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`originalColumn`**: The name of the original column to clone.
-* **`newColumn`**: The name of the new column to be created.
+- **`originalColumn`**: The name of the original column to clone.
+- **`newColumn`**: The name of the new column to be created.
 
 ##### Returns
 
@@ -1088,23 +1277,31 @@ await table.cloneColumn("firstName", "contactName");
 
 #### `cloneColumnWithOffset`
 
-Clones a column in the table and offsets its values by a specified number of rows.
-This is useful for time-series analysis or comparing values across different time points.
+Clones a column in the table and offsets its values by a specified number of
+rows. This is useful for time-series analysis or comparing values across
+different time points.
 
-**Important:** The offset is applied based on the current row order in the table. For meaningful results, ensure your data is sorted appropriately (e.g., by date/time for time-series analysis) before calling this method.
+**Important:** The offset is applied based on the current row order in the
+table. For meaningful results, ensure your data is sorted appropriately (e.g.,
+by date/time for time-series analysis) before calling this method.
 
 ##### Signature
+
 ```typescript
 async cloneColumnWithOffset(originalColumn: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`originalColumn`**: The name of the original column.
-* **`newColumn`**: The name of the new column to be created with offset values.
-* **`options`**: An optional object with configuration options:
-* **`options.offset`**: The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
-* **`options.categories`**: A string or an array of strings representing columns to partition the data by. The offset will be applied independently within each category.
+- **`originalColumn`**: The name of the original column.
+- **`newColumn`**: The name of the new column to be created with offset values.
+- **`options`**: An optional object with configuration options:
+- **`options.offset`**: The number of rows to offset the values. A positive
+  number shifts values downwards (later rows), a negative number shifts values
+  upwards (earlier rows). Defaults to `1`.
+- **`options.categories`**: A string or an array of strings representing columns
+  to partition the data by. The offset will be applied independently within each
+  category.
 
 ##### Returns
 
@@ -1132,28 +1329,52 @@ await table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
 
 ```ts
 // Clone 'stock_price' as 'prev_price_by_stock_and_exchange', offsetting by 1 row within each 'stock_symbol' and 'exchange' category
-await table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
-  offset: 1,
-  categories: ["stock_symbol", "exchange"],
-});
+await table.cloneColumnWithOffset(
+  "stock_price",
+  "prev_price_by_stock_and_exchange",
+  {
+    offset: 1,
+    categories: ["stock_symbol", "exchange"],
+  },
+);
 ```
 
 #### `fill`
 
-Fills `NULL` values in specified columns. By default, each `NULL` is replaced with the last non-`NULL` value from the preceding row. When `interpolate` is `true`, `NULL` values are replaced using linear interpolation (or extrapolation at the ends). Pass `interpolateBy` with a real numeric or date column name to use it as the X-axis, so that interpolated values are proportional to the actual distances between X-axis values rather than treating every row as equidistant. When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
+Fills `NULL` values in specified columns. By default, each `NULL` is replaced
+with the last non-`NULL` value from the preceding row. When `interpolate` is
+`true`, `NULL` values are replaced using linear interpolation (or extrapolation
+at the ends). Pass `interpolateBy` with a real numeric or date column name to
+use it as the X-axis, so that interpolated values are proportional to the actual
+distances between X-axis values rather than treating every row as equidistant.
+When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
 
 ##### Signature
+
 ```typescript
 async fill(columns: string | string[], options?: { categories?: string | string[]; interpolate?: boolean; interpolateBy?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column(s) for which to fill `NULL` values.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: A string or an array of strings representing columns to partition the data by. The fill will be applied independently within each category.
-* **`options.interpolate`**: If `true`, replaces `NULL` values with linearly interpolated values using DuckDB's `fill()` window function. When `interpolateBy` is not set, row positions are used as the X-axis, treating rows as equidistant. For `NULL` values at the ends, linear extrapolation is used. Both the column values and the X-axis values must support arithmetic. If `false` or omitted, the previous non-`NULL` value is used instead. Automatically assumed `true` when `interpolateBy` is set.
-* **`options.interpolateBy`**: A column name to use as the X-axis for interpolation instead of equidistant row positions. When provided, `interpolate` is automatically assumed `true`. Use this when rows are not evenly spaced (e.g., timestamps or non-uniform numeric indices) so that interpolated values are proportional to the actual distance between X-axis values.
+- **`columns`**: The column(s) for which to fill `NULL` values.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: A string or an array of strings representing columns
+  to partition the data by. The fill will be applied independently within each
+  category.
+- **`options.interpolate`**: If `true`, replaces `NULL` values with linearly
+  interpolated values using DuckDB's `fill()` window function. When
+  `interpolateBy` is not set, row positions are used as the X-axis, treating
+  rows as equidistant. For `NULL` values at the ends, linear extrapolation is
+  used. Both the column values and the X-axis values must support arithmetic. If
+  `false` or omitted, the previous non-`NULL` value is used instead.
+  Automatically assumed `true` when `interpolateBy` is set.
+- **`options.interpolateBy`**: A column name to use as the X-axis for
+  interpolation instead of equidistant row positions. When provided,
+  `interpolate` is automatically assumed `true`. Use this when rows are not
+  evenly spaced (e.g., timestamps or non-uniform numeric indices) so that
+  interpolated values are proportional to the actual distance between X-axis
+  values.
 
 ##### Returns
 
@@ -1198,19 +1419,25 @@ await table.fill("value", { interpolateBy: "x" });
 
 #### `sort`
 
-Sorts the rows of the table based on specified column(s) and order(s).
-If no columns are specified, all columns are sorted from left to right in ascending order.
+Sorts the rows of the table based on specified column(s) and order(s). If no
+columns are specified, all columns are sorted from left to right in ascending
+order.
 
 ##### Signature
+
 ```typescript
 async sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Record<string, string> }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`order`**: An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
-* **`options`**: An optional object with configuration options:
-* **`options.lang`**: An object mapping column names to language codes for collation (e.g., `{ column1: "fr" }`). See DuckDB Collations documentation for more details: https://duckdb.org/docs/sql/expressions/collations.
+- **`order`**: An object mapping column names to their sorting order: `"asc"`
+  for ascending or `"desc"` for descending. If `null`, all columns are sorted
+  ascendingly.
+- **`options`**: An optional object with configuration options:
+- **`options.lang`**: An object mapping column names to language codes for
+  collation (e.g., `{ column1: "fr" }`). See DuckDB Collations documentation for
+  more details: https://duckdb.org/docs/sql/expressions/collations.
 
 ##### Returns
 
@@ -1243,13 +1470,14 @@ await table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
 Selects specific columns in the table, removing all others.
 
 ##### Signature
+
 ```typescript
 async selectColumns(columns: string | string[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The name or an array of names of the columns to be selected.
+- **`columns`**: The name or an array of names of the columns to be selected.
 
 ##### Returns
 
@@ -1272,13 +1500,15 @@ await table.selectColumns("productName");
 Skips the first `n` rows of the table, effectively removing them.
 
 ##### Signature
+
 ```typescript
 async skip(nbRowsToSkip: number): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`nbRowsToSkip`**: The number of rows to skip from the beginning of the table.
+- **`nbRowsToSkip`**: The number of rows to skip from the beginning of the
+  table.
 
 ##### Returns
 
@@ -1296,13 +1526,14 @@ await table.skip(10);
 Checks if a column with the specified name exists in the table.
 
 ##### Signature
+
 ```typescript
 async hasColumn(column: string): Promise<boolean>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column to check.
+- **`column`**: The name of the column to check.
 
 ##### Returns
 
@@ -1318,18 +1549,23 @@ console.log(hasAgeColumn); // Output: true or false
 
 #### `sample`
 
-Selects random rows from the table, removing all others. You can optionally specify a seed to ensure repeatable sampling.
+Selects random rows from the table, removing all others. You can optionally
+specify a seed to ensure repeatable sampling.
 
 ##### Signature
+
 ```typescript
 async sample(quantity: number | string, options?: { seed?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`quantity`**: The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
-* **`options`**: An optional object with configuration options:
-* **`options.seed`**: A number specifying the seed for repeatable sampling. Using the same seed will always yield the same random rows. Defaults to a random seed.
+- **`quantity`**: The number of rows to select (e.g., `100`) or a percentage
+  string (e.g., `"10%"`) specifying the sampling size.
+- **`options`**: An optional object with configuration options:
+- **`options.seed`**: A number specifying the seed for repeatable sampling.
+  Using the same seed will always yield the same random rows. Defaults to a
+  random seed.
 
 ##### Returns
 
@@ -1354,23 +1590,30 @@ await table.sample("10%", { seed: 123 });
 
 #### `selectRows`
 
-Selects a specified number of rows from this table. An offset can be applied to skip initial rows, and the results can be output to a new table.
+Selects a specified number of rows from this table. An offset can be applied to
+skip initial rows, and the results can be output to a new table.
 
 ##### Signature
+
 ```typescript
 async selectRows(count: number | string, options?: { offset?: number; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`count`**: The number of rows to select.
-* **`options`**: An optional object with configuration options:
-* **`options.offset`**: The number of rows to skip from the beginning of the table before selecting. Defaults to `0`.
-* **`options.outputTable`**: If `true`, the selected rows will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be modified. Defaults to `false`.
+- **`count`**: The number of rows to select.
+- **`options`**: An optional object with configuration options:
+- **`options.offset`**: The number of rows to skip from the beginning of the
+  table before selecting. Defaults to `0`.
+- **`options.outputTable`**: If `true`, the selected rows will be stored in a
+  new table with a generated name. If a string, it will be used as the name for
+  the new table. If `false` or omitted, the current table will be modified.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the selected rows (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the selected rows
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -1391,23 +1634,28 @@ const newTable = await table.selectRows(50, { outputTable: true });
 
 ```ts
 // Select 75 rows and store them in a new table named "top_customers"
-const topCustomersTable = await table.selectRows(75, { outputTable: "top_customers" });
+const topCustomersTable = await table.selectRows(75, {
+  outputTable: "top_customers",
+});
 ```
 
 #### `removeDuplicates`
 
-Removes duplicate rows from this table, keeping only unique rows.
-Note that the resulting data order might differ from the original.
+Removes duplicate rows from this table, keeping only unique rows. Note that the
+resulting data order might differ from the original.
 
 ##### Signature
+
 ```typescript
 async removeDuplicates(options?: { on?: string | string[] }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.on`**: A column name or an array of column names to consider when identifying duplicates. If specified, duplicates are determined based only on the values in these columns. If omitted, all columns are considered.
+- **`options`**: An optional object with configuration options:
+- **`options.on`**: A column name or an array of column names to consider when
+  identifying duplicates. If specified, duplicates are determined based only on
+  the values in these columns. If omitted, all columns are considered.
 
 ##### Returns
 
@@ -1432,20 +1680,26 @@ await table.removeDuplicates({ on: ["firstName", "lastName"] });
 
 #### `removeMissing`
 
-Removes rows with missing values from this table.
-By default, missing values include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`, `"NaN"`, `"undefined"`, and empty strings `""`.
+Removes rows with missing values from this table. By default, missing values
+include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`,
+`"NaN"`, `"undefined"`, and empty strings `""`.
 
 ##### Signature
+
 ```typescript
 async removeMissing(options?: { columns?: string | string[]; missingValues?: (string | number)[]; invert?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.columns`**: A string or an array of strings specifying the columns to consider for missing values. If omitted, all columns are considered.
-* **`options.missingValues`**: An array of values to be treated as missing values instead of the default ones. Defaults to `["undefined", "NaN", "null", "NULL", ""]`.
-* **`options.invert`**: A boolean indicating whether to invert the condition. If `true`, only rows containing missing values will be kept. Defaults to `false`.
+- **`options`**: An optional object with configuration options:
+- **`options.columns`**: A string or an array of strings specifying the columns
+  to consider for missing values. If omitted, all columns are considered.
+- **`options.missingValues`**: An array of values to be treated as missing
+  values instead of the default ones. Defaults to
+  `["undefined", "NaN", "null", "NULL", ""]`.
+- **`options.invert`**: A boolean indicating whether to invert the condition. If
+  `true`, only rows containing missing values will be kept. Defaults to `false`.
 
 ##### Returns
 
@@ -1475,19 +1729,24 @@ await table.removeMissing({ columns: "age", missingValues: [-1] });
 
 #### `trim`
 
-Trims specified characters from the beginning, end, or both sides of string values in the given columns.
+Trims specified characters from the beginning, end, or both sides of string
+values in the given columns.
 
 ##### Signature
+
 ```typescript
 async trim(columns: string | string[], options?: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names to trim.
-* **`options`**: An optional object with configuration options:
-* **`options.character`**: The string to trim. Defaults to whitespace characters.
-* **`options.method`**: The trimming method to apply: `"leftTrim"` (removes from the beginning), `"rightTrim"` (removes from the end), or `"trim"` (removes from both sides). Defaults to `"trim"`.
+- **`columns`**: The column name or an array of column names to trim.
+- **`options`**: An optional object with configuration options:
+- **`options.character`**: The string to trim. Defaults to whitespace
+  characters.
+- **`options.method`**: The trimming method to apply: `"leftTrim"` (removes from
+  the beginning), `"rightTrim"` (removes from the end), or `"trim"` (removes
+  from both sides). Defaults to `"trim"`.
 
 ##### Returns
 
@@ -1512,17 +1771,20 @@ await table.trim(["description", "notes"], { method: "rightTrim" });
 
 #### `filter`
 
-Filters rows from this table based on SQL conditions. Note that it's often faster to use the `removeRows` method for simple removals.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Filters rows from this table based on SQL conditions. Note that it's often
+faster to use the `removeRows` method for simple removals. You can also use
+JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async filter(conditions: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
+- **`conditions`**: The filtering conditions specified as a SQL `WHERE` clause
+  (e.g., `"column1 > 10 AND column2 = 'value'"`).
 
 ##### Returns
 
@@ -1552,16 +1814,19 @@ await table.filter(`lastPurchaseDate >= '2023-01-01'`);
 
 #### `keep`
 
-Keeps rows in this table that have specific values in specified columns, removing all other rows.
+Keeps rows in this table that have specific values in specified columns,
+removing all other rows.
 
 ##### Signature
+
 ```typescript
 async keep(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columnsAndValues`**: An object where keys are column names and values are the specific values (or an array of values) to keep in those columns.
+- **`columnsAndValues`**: An object where keys are column names and values are
+  the specific values (or an array of values) to keep in those columns.
 
 ##### Returns
 
@@ -1584,13 +1849,15 @@ await table.keep({ status: "active" });
 Removes rows from this table that have specific values in specified columns.
 
 ##### Signature
+
 ```typescript
 async remove(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columnsAndValues`**: An object where keys are column names and values are the specific values (or an array of values) to remove from those columns.
+- **`columnsAndValues`**: An object where keys are column names and values are
+  the specific values (or an array of values) to remove from those columns.
 
 ##### Returns
 
@@ -1610,17 +1877,20 @@ await table.remove({ status: "inactive" });
 
 #### `removeRows`
 
-Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Removes rows from this table based on SQL conditions. This method is similar to
+`filter()`, but removes rows instead of keeping them. You can also use
+JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async removeRows(conditions: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"fruit = 'apple'"`).
+- **`conditions`**: The filtering conditions specified as a SQL `WHERE` clause
+  (e.g., `"fruit = 'apple'"`).
 
 ##### Returns
 
@@ -1645,7 +1915,9 @@ await table.removeRows(`price < 100 && quantity === 0`); // Using JS syntax
 
 ```ts
 // Remove rows where 'category' is 'Electronics' OR 'Appliances'
-await table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
+await table.removeRows(
+  `category === 'Electronics' || category === 'Appliances'`,
+); // Using JS syntax
 ```
 
 #### `renameColumns`
@@ -1653,13 +1925,15 @@ await table.removeRows(`category === 'Electronics' || category === 'Appliances'`
 Renames one or more columns in the table.
 
 ##### Signature
+
 ```typescript
 async renameColumns(names: Record<string, string>): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`names`**: An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
+- **`names`**: An object mapping old column names to their new column names
+  (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
 
 ##### Returns
 
@@ -1679,9 +1953,11 @@ await table.renameColumns({ "product_id": "productId" });
 
 #### `cleanColumnNames`
 
-Cleans column names by removing non-alphanumeric characters and formatting them to camel case.
+Cleans column names by removing non-alphanumeric characters and formatting them
+to camel case.
 
 ##### Signature
+
 ```typescript
 async cleanColumnNames(): Promise<void>;
 ```
@@ -1700,7 +1976,8 @@ await table.cleanColumnNames();
 
 #### `longer`
 
-Restructures this table by stacking (unpivoting) columns. This is useful for tidying up data from a wide format to a long format.
+Restructures this table by stacking (unpivoting) columns. This is useful for
+tidying up data from a wide format to a long format.
 
 For example, given a table showing employee counts per department per year:
 
@@ -1709,18 +1986,23 @@ For example, given a table showing employee counts per department per year:
 | Accounting | 10   | 9    | 15   |
 | Sales      | 52   | 75   | 98   |
 
-We can restructure it by putting all year columns into a new column named `Year` and their corresponding employee counts into a new column named `Employees`.
+We can restructure it by putting all year columns into a new column named `Year`
+and their corresponding employee counts into a new column named `Employees`.
 
 ##### Signature
+
 ```typescript
 async longer(columns: string[], columnsTo: string, valuesTo: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: An array of strings representing the names of the columns to be stacked (unpivoted).
-* **`columnsTo`**: The name of the new column that will contain the original column names (e.g., "Year").
-* **`valuesTo`**: The name of the new column that will contain the values from the stacked columns (e.g., "Employees").
+- **`columns`**: An array of strings representing the names of the columns to be
+  stacked (unpivoted).
+- **`columnsTo`**: The name of the new column that will contain the original
+  column names (e.g., "Year").
+- **`valuesTo`**: The name of the new column that will contain the values from
+  the stacked columns (e.g., "Employees").
 
 ##### Returns
 
@@ -1746,7 +2028,8 @@ The table will then look like this:
 
 #### `wider`
 
-Restructures this table by unstacking (pivoting) values, transforming data from a long format to a wide format.
+Restructures this table by unstacking (pivoting) values, transforming data from
+a long format to a wide format.
 
 For example, given a table showing employee counts per department per year:
 
@@ -1759,17 +2042,21 @@ For example, given a table showing employee counts per department per year:
 | Sales      | 2022 | 75        |
 | Sales      | 2023 | 98        |
 
-We can restructure it by creating new columns for each year, with the associated employee counts as values.
+We can restructure it by creating new columns for each year, with the associated
+employee counts as values.
 
 ##### Signature
+
 ```typescript
 async wider(columnsFrom: string, valuesFrom: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columnsFrom`**: The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
-* **`valuesFrom`**: The name of the column containing the values to be spread across the new columns (e.g., "Employees").
+- **`columnsFrom`**: The name of the column containing the values that will be
+  transformed into new column headers (e.g., "Year").
+- **`valuesFrom`**: The name of the column containing the values to be spread
+  across the new columns (e.g., "Employees").
 
 ##### Returns
 
@@ -1791,25 +2078,37 @@ The table will then look like this:
 
 #### `convert`
 
-Converts data types of specified columns to target types (JavaScript or SQL types).
+Converts data types of specified columns to target types (JavaScript or SQL
+types).
 
-When converting timestamps, dates, or times to/from strings, you must provide a `datetimeFormat` option using [DuckDB's format specifiers](https://duckdb.org/docs/sql/functions/dateformat).
+When converting timestamps, dates, or times to/from strings, you must provide a
+`datetimeFormat` option using
+[DuckDB's format specifiers](https://duckdb.org/docs/sql/functions/dateformat).
 
-When converting timestamps, dates, or times to/from numbers, the numerical representation will be in milliseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
+When converting timestamps, dates, or times to/from numbers, the numerical
+representation will be in milliseconds since the Unix epoch (1970-01-01 00:00:00
+UTC).
 
-When converting strings to numbers, commas (often used as thousand separators) will be automatically removed before conversion.
+When converting strings to numbers, commas (often used as thousand separators)
+will be automatically removed before conversion.
 
 ##### Signature
+
 ```typescript
 async convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { try?: boolean; datetimeFormat?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`types`**: An object mapping column names to their target data types for conversion.
-* **`options`**: An optional object with configuration options:
-* **`options.try`**: If `true`, values that cannot be converted will be replaced by `NULL` instead of throwing an error. Defaults to `false`.
-* **`options.datetimeFormat`**: A string specifying the format for date and time conversions. Uses `strftime` and `strptime` functions from DuckDB. For format specifiers, see [DuckDB's documentation](https://duckdb.org/docs/sql/functions/dateformat).
+- **`types`**: An object mapping column names to their target data types for
+  conversion.
+- **`options`**: An optional object with configuration options:
+- **`options.try`**: If `true`, values that cannot be converted will be replaced
+  by `NULL` instead of throwing an error. Defaults to `false`.
+- **`options.datetimeFormat`**: A string specifying the format for date and time
+  conversions. Uses `strftime` and `strptime` functions from DuckDB. For format
+  specifiers, see
+  [DuckDB's documentation](https://duckdb.org/docs/sql/functions/dateformat).
 
 ##### Returns
 
@@ -1834,7 +2133,9 @@ await table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" });
 
 ```ts
 // Convert datetime values in 'column3' to strings using a specific format
-await table.convert({ column3: "string" }, { datetimeFormat: "%Y-%m-%d %H:%M:%S" });
+await table.convert({ column3: "string" }, {
+  datetimeFormat: "%Y-%m-%d %H:%M:%S",
+});
 ```
 
 ```ts
@@ -1844,9 +2145,11 @@ await table.convert({ amount: "float" }, { try: true });
 
 #### `removeTable`
 
-Removes the table from the database. After this operation, invoking methods on this SimpleTable instance will result in an error.
+Removes the table from the database. After this operation, invoking methods on
+this SimpleTable instance will result in an error.
 
 ##### Signature
+
 ```typescript
 async removeTable(): Promise<void>;
 ```
@@ -1867,13 +2170,14 @@ await table.removeTable();
 Removes one or more columns from this table.
 
 ##### Signature
+
 ```typescript
 async removeColumns(columns: string | string[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The name or an array of names of the columns to be removed.
+- **`columns`**: The name or an array of names of the columns to be removed.
 
 ##### Returns
 
@@ -1893,20 +2197,28 @@ await table.removeColumns("tempColumn");
 
 #### `addColumn`
 
-Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
+Adds a new column to the table based on a specified data type (JavaScript or SQL
+types) and a SQL definition.
 
 ##### Signature
+
 ```typescript
 async addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "geometry", definition: string, options?: { projection?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column to be added.
-* **`type`**: The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
-* **`definition`**: A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
-* **`options`**: An optional object with configuration options:
-* **`options.projection`**: Required if the new column stores geometries. Specifies the geospatial projection of the new geometry column. You can reuse the projection of an existing geometry column (available in `table.projections`).
+- **`newColumn`**: The name of the new column to be added.
+- **`type`**: The data type for the new column. Can be a JavaScript type (e.g.,
+  `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
+- **`definition`**: A SQL expression defining how the values for the new column
+  should be computed (e.g., `"column1 + column2"`,
+  `"ST_Centroid(geom_column)"`).
+- **`options`**: An optional object with configuration options:
+- **`options.projection`**: Required if the new column stores geometries.
+  Specifies the geospatial projection of the new geometry column. You can reuse
+  the projection of an existing geometry column (available in
+  `table.projections`).
 
 ##### Returns
 
@@ -1932,13 +2244,14 @@ await table.addColumn("centroid", "geometry", `ST_Centroid("country")`, {
 Adds a new column to the table containing the row number.
 
 ##### Signature
+
 ```typescript
 async addRowNumber(newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column that will store the row number.
+- **`newColumn`**: The name of the new column that will store the row number.
 
 ##### Returns
 
@@ -1953,23 +2266,30 @@ await table.addRowNumber("rowNumber");
 
 #### `crossJoin`
 
-Performs a cross join operation with another table. A cross join returns the Cartesian product of the rows from both tables, meaning all possible pairs of rows will be in the resulting table.
-This means that if the left table has `n` rows and the right table has `m` rows, the result will have `n * m` rows.
+Performs a cross join operation with another table. A cross join returns the
+Cartesian product of the rows from both tables, meaning all possible pairs of
+rows will be in the resulting table. This means that if the left table has `n`
+rows and the right table has `m` rows, the result will have `n * m` rows.
 
 ##### Signature
+
 ```typescript
 async crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`rightTable`**: The SimpleTable instance to cross join with.
-* **`options`**: An optional object with configuration options:
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`rightTable`**: The SimpleTable instance to cross join with.
+- **`options`**: An optional object with configuration options:
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the cross-joined data (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the cross-joined
+data (either the modified current table or a new table).
 
 ##### Examples
 
@@ -1990,26 +2310,37 @@ const tableC = await tableA.crossJoin(tableB, { outputTable: "tableC" });
 
 #### `join`
 
-Merges the data of this table (considered the left table) with another table (the right table) based on a common column or multiple columns.
-Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
-This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
+Merges the data of this table (considered the left table) with another table
+(the right table) based on a common column or multiple columns. Note that the
+order of rows in the returned data is not guaranteed to be the same as in the
+original tables. This operation might create temporary files in a `.tmp` folder;
+consider adding `.tmp` to your `.gitignore`.
 
 ##### Signature
+
 ```typescript
 async join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`rightTable`**: The SimpleTable instance to be joined with this table.
-* **`options`**: An optional object with configuration options:
-* **`options.commonColumn`**: The common column(s) used for the join operation. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
-* **`options.type`**: The type of join operation to perform. Possible values are `"inner"`, `"left"` (default), `"right"`, or `"full"`.
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`rightTable`**: The SimpleTable instance to be joined with this table.
+- **`options`**: An optional object with configuration options:
+- **`options.commonColumn`**: The common column(s) used for the join operation.
+  If omitted, the method automatically searches for a column name that exists in
+  both tables. Can be a single string or an array of strings for multiple join
+  keys.
+- **`options.type`**: The type of join operation to perform. Possible values are
+  `"inner"`, `"left"` (default), `"right"`, or `"full"`.
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the joined data (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the joined data
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -2020,43 +2351,67 @@ await tableA.join(tableB);
 
 ```ts
 // Perform an inner join with 'tableB' on the 'id' column, storing results in a new table named 'tableC'
-const tableC = await tableA.join(tableB, { commonColumn: 'id', type: 'inner', outputTable: "tableC" });
+const tableC = await tableA.join(tableB, {
+  commonColumn: "id",
+  type: "inner",
+  outputTable: "tableC",
+});
 ```
 
 ```ts
 // Perform a join on multiple columns ('name' and 'category')
-await tableA.join(tableB, { commonColumn: ['name', 'category'] });
+await tableA.join(tableB, { commonColumn: ["name", "category"] });
 ```
 
 #### `fuzzyJoin`
 
-Performs a fuzzy left join between this table (considered the left table) and another table
-(the right table) based on string similarity between two text columns. Uses the
-[rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension.
+Performs a fuzzy left join between this table (considered the left table) and
+another table (the right table) based on string similarity between two text
+columns. Uses the [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz)
+DuckDB community extension.
 
-If a similarity score column is added to the results, the rows will be ordered alphabetically by the left column, and then by descending similarity score within each group of identical left column values. Otherwise, the rows will be order alphabetically by the left column and then by the right column.
+If a similarity score column is added to the results, the rows will be ordered
+alphabetically by the left column, and then by descending similarity score
+within each group of identical left column values. Otherwise, the rows will be
+order alphabetically by the left column and then by the right column.
 
-This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
+This operation might create temporary files in a `.tmp` folder; consider adding
+`.tmp` to your `.gitignore`.
 
 ##### Signature
+
 ```typescript
 async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`rightTable`**: The SimpleTable instance to be joined with this table.
-* **`leftColumn`**: The name of the column in this (left) table containing the text to compare.
-* **`rightColumn`**: The name of the column in the right table containing the text to compare.
-* **`options`**: An optional object with configuration options:
-* **`options.method`**: The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`. - `"ratio"`: Overall similarity (Levenshtein-based). - `"partial_ratio"`: Best partial/substring similarity. - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words. - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-* **`options.threshold`**: The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`.
-* **`options.similarityColumn`**: If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`rightTable`**: The SimpleTable instance to be joined with this table.
+- **`leftColumn`**: The name of the column in this (left) table containing the
+  text to compare.
+- **`rightColumn`**: The name of the column in the right table containing the
+  text to compare.
+- **`options`**: An optional object with configuration options:
+- **`options.method`**: The rapidfuzz similarity algorithm to use. Defaults to
+  `"ratio"`. - `"ratio"`: Overall similarity (Levenshtein-based). -
+  `"partial_ratio"`: Best partial/substring similarity. - `"token_sort_ratio"`:
+  Similarity after sorting tokens (words), useful for reordered words. -
+  `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates
+  and word order.
+- **`options.threshold`**: The minimum similarity score (0–100) required for two
+  rows to be joined. Defaults to `80`.
+- **`options.similarityColumn`**: If provided, a column with this name is added
+  to the result containing the similarity score (0–100). If omitted, the score
+  is not included in the output.
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the fuzzy-joined data (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the fuzzy-joined
+data (either the modified current table or a new table).
 
 ##### Examples
 
@@ -2083,28 +2438,47 @@ await tableA.fuzzyJoin(tableB, "name", "standardName", {
 
 #### `fuzzyClean`
 
-Normalizes string values in a column by detecting fuzzy duplicates and replacing them with a single canonical value.
+Normalizes string values in a column by detecting fuzzy duplicates and replacing
+them with a single canonical value.
 
-Similar strings are grouped into clusters. Matching is transitive: if `"New York"` is similar to `"New Yorke"` and
-`"New Yorke"` is similar to `"New Yorkk"`, all three land in the same cluster even if `"New York"` and `"New Yorkk"`
-would not match directly. Each cluster is then collapsed to one representative value based on the `keep` strategy.
+Similar strings are grouped into clusters. Matching is transitive: if
+`"New York"` is similar to `"New Yorke"` and `"New Yorke"` is similar to
+`"New Yorkk"`, all three land in the same cluster even if `"New York"` and
+`"New Yorkk"` would not match directly. Each cluster is then collapsed to one
+representative value based on the `keep` strategy.
 
-Similarity is computed using the [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension,
-which is installed and loaded automatically.
+Similarity is computed using the
+[rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community
+extension, which is installed and loaded automatically.
 
 ##### Signature
+
 ```typescript
 async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore" }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing the strings to normalize.
-* **`newColumn`**: The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
-* **`options`**: An optional object with configuration options:
-* **`options.method`**: The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`. - `"ratio"`: Overall similarity. - `"partial_ratio"`: Best partial/substring similarity. - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words. - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-* **`options.threshold`**: The minimum similarity score (0–100) for two strings to be considered duplicates. Defaults to `80`.
-* **`options.keep`**: The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`. - `"mostCommon"`: Keep the value that appears most frequently in the original column. - `"longestString"`: Keep the longest string in the cluster. - `"shortestString"`: Keep the shortest string in the cluster. - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string). - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
+- **`column`**: The name of the column containing the strings to normalize.
+- **`newColumn`**: The name of the column to write the normalized values to. Use
+  the same name as `column` to normalize in-place.
+- **`options`**: An optional object with configuration options:
+- **`options.method`**: The rapidfuzz similarity algorithm to use. Defaults to
+  `"ratio"`. - `"ratio"`: Overall similarity. - `"partial_ratio"`: Best
+  partial/substring similarity. - `"token_sort_ratio"`: Similarity after sorting
+  tokens (words), useful for reordered words. - `"token_set_ratio"`: Similarity
+  based on sets of tokens, ignoring duplicates and word order.
+- **`options.threshold`**: The minimum similarity score (0–100) for two strings
+  to be considered duplicates. Defaults to `80`.
+- **`options.keep`**: The strategy for choosing the canonical value within each
+  cluster of similar strings. Defaults to `"mostCommon"`. - `"mostCommon"`: Keep
+  the value that appears most frequently in the original column. -
+  `"longestString"`: Keep the longest string in the cluster. -
+  `"shortestString"`: Keep the shortest string in the cluster. -
+  `"mostCentral"`: Keep the string with the highest total similarity score to
+  all other cluster members (the most "central" string). - `"maxScore"`: Keep
+  the string that participates in the single highest-scoring pairwise match
+  within the cluster.
 
 ##### Returns
 
@@ -2119,7 +2493,10 @@ await table.fuzzyClean("city", "cityClean");
 
 ```ts
 // Normalize 'companyName' into a new column using token_sort_ratio and a stricter threshold
-await table.fuzzyClean("companyName", "companyNameClean", { method: "token_sort_ratio", threshold: 90 });
+await table.fuzzyClean("companyName", "companyNameClean", {
+  method: "token_sort_ratio",
+  threshold: 90,
+});
 ```
 
 ```ts
@@ -2132,17 +2509,24 @@ await table.fuzzyClean("category", "category", { keep: "longestString" });
 Replaces specified strings in the selected columns.
 
 ##### Signature
+
 ```typescript
 async replace(columns: string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names where string replacements will occur.
-* **`strings`**: An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
-* **`options`**: An optional object with configuration options:
-* **`options.entireString`**: A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
-* **`options.regex`**: A boolean indicating whether the `oldString` should be treated as a regular expression for global replacement. Cannot be used with `entireString: true`. Defaults to `false`.
+- **`columns`**: The column name or an array of column names where string
+  replacements will occur.
+- **`strings`**: An object mapping old strings to new strings (e.g.,
+  `{ "oldValue": "newValue" }`).
+- **`options`**: An optional object with configuration options:
+- **`options.entireString`**: A boolean indicating whether the entire cell
+  content must match the `oldString` for replacement to occur. Defaults to
+  `false` (replaces substrings).
+- **`options.regex`**: A boolean indicating whether the `oldString` should be
+  treated as a regular expression for global replacement. Cannot be used with
+  `entireString: true`. Defaults to `false`.
 
 ##### Returns
 
@@ -2157,7 +2541,10 @@ await table.replace("column1", { "kilograms": "kg" });
 
 ```ts
 // Replace "kilograms" with "kg" and "liters" with "l" in 'column1' and 'column2'
-await table.replace(["column1", "column2"], { "kilograms": "kg", "liters": "l" });
+await table.replace(["column1", "column2"], {
+  "kilograms": "kg",
+  "liters": "l",
+});
 ```
 
 ```ts
@@ -2175,13 +2562,15 @@ await table.replace("column1", { "\d+": "-" }, { regex: true });
 Converts string values in the specified columns to lowercase.
 
 ##### Signature
+
 ```typescript
 async lower(columns: string | string[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names to be converted to lowercase.
+- **`columns`**: The column name or an array of column names to be converted to
+  lowercase.
 
 ##### Returns
 
@@ -2204,13 +2593,15 @@ await table.lower(["column1", "column2"]);
 Converts string values in the specified columns to uppercase.
 
 ##### Signature
+
 ```typescript
 async upper(columns: string | string[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names to be converted to uppercase.
+- **`columns`**: The column name or an array of column names to be converted to
+  uppercase.
 
 ##### Returns
 
@@ -2230,16 +2621,18 @@ await table.upper(["column1", "column2"]);
 
 #### `capitalize`
 
-Capitalizes the first letter of each string in the specified columns and converts the rest of the string to lowercase.
+Capitalizes the first letter of each string in the specified columns and
+converts the rest of the string to lowercase.
 
 ##### Signature
+
 ```typescript
 async capitalize(columns: string | string[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names to be capitalized.
+- **`columns`**: The column name or an array of column names to be capitalized.
 
 ##### Returns
 
@@ -2262,14 +2655,15 @@ await table.capitalize(["column1", "column2"]);
 Truncates string values in a specified column to a maximum number of characters.
 
 ##### Signature
+
 ```typescript
 async truncate(column: string, length: number): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The column name containing strings to be truncated.
-* **`length`**: The maximum number of characters to keep.
+- **`column`**: The column name containing strings to be truncated.
+- **`length`**: The maximum number of characters to keep.
 
 ##### Returns
 
@@ -2289,20 +2683,25 @@ await table.truncate("name", 10);
 
 #### `splitExtract`
 
-Splits strings in a specified column by a separator and extracts a substring at a given index, storing the result in a new or existing column.
-If the index is out of bounds, an empty string will be returned for that row.
+Splits strings in a specified column by a separator and extracts a substring at
+a given index, storing the result in a new or existing column. If the index is
+out of bounds, an empty string will be returned for that row.
 
 ##### Signature
+
 ```typescript
 async splitExtract(column: string, separator: string, index: number, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing the strings to be split.
-* **`separator`**: The substring to use as a delimiter for splitting the strings.
-* **`index`**: The zero-based index of the substring to extract after splitting. For example, `0` for the first part, `1` for the second, etc.
-* **`newColumn`**: The name of the column where the extracted substrings will be stored. To overwrite the original column, use the same name as `column`.
+- **`column`**: The name of the column containing the strings to be split.
+- **`separator`**: The substring to use as a delimiter for splitting the
+  strings.
+- **`index`**: The zero-based index of the substring to extract after splitting.
+  For example, `0` for the first part, `1` for the second, etc.
+- **`newColumn`**: The name of the column where the extracted substrings will be
+  stored. To overwrite the original column, use the same name as `column`.
 
 ##### Returns
 
@@ -2324,28 +2723,36 @@ await table.splitExtract("fileName", ".", 0, "fileName");
 
 #### `splitSpread`
 
-Splits strings in a specified column by a separator and spreads the resulting parts into multiple new columns.
+Splits strings in a specified column by a separator and spreads the resulting
+parts into multiple new columns.
 
-Each part of the split string will be stored in a separate column. The number of columns created is determined by the length of the `newColumns` array.
-If a row has fewer parts than the number of new columns, a warning will be logged and the extra columns will contain empty strings (unless `noCheck` is set to true).
-If a row has more parts than the number of new columns, an error will be thrown unless `noCheck` is set to true.
+Each part of the split string will be stored in a separate column. The number of
+columns created is determined by the length of the `newColumns` array. If a row
+has fewer parts than the number of new columns, a warning will be logged and the
+extra columns will contain empty strings (unless `noCheck` is set to true). If a
+row has more parts than the number of new columns, an error will be thrown
+unless `noCheck` is set to true.
 
 ##### Signature
+
 ```typescript
 async splitSpread(column: string, separator: string, newColumns: string[], options?: { noCheck?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing the strings to be split.
-* **`separator`**: The substring to use as a delimiter for splitting the strings.
-* **`newColumns`**: An array of column names for the extracted parts.
-* **`options`**: Optional configuration.
-* **`options.noCheck`**: If true, skips all validation checks (both max and min parts). Default is false.
+- **`column`**: The name of the column containing the strings to be split.
+- **`separator`**: The substring to use as a delimiter for splitting the
+  strings.
+- **`newColumns`**: An array of column names for the extracted parts.
+- **`options`**: Optional configuration.
+- **`options.noCheck`**: If true, skips all validation checks (both max and min
+  parts). Default is false.
 
 ##### Returns
 
-A promise that resolves when the strings have been split and spread into new columns.
+A promise that resolves when the strings have been split and spread into new
+columns.
 
 ##### Examples
 
@@ -2368,17 +2775,20 @@ await table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
 
 #### `left`
 
-Extracts a specific number of characters from the beginning (left side) of string values in the specified column.
+Extracts a specific number of characters from the beginning (left side) of
+string values in the specified column.
 
 ##### Signature
+
 ```typescript
 async left(column: string, numberOfCharacters: number): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing the strings to be modified.
-* **`numberOfCharacters`**: The number of characters to extract from the left side of each string.
+- **`column`**: The name of the column containing the strings to be modified.
+- **`numberOfCharacters`**: The number of characters to extract from the left
+  side of each string.
 
 ##### Returns
 
@@ -2394,17 +2804,20 @@ await table.left("productCode", 2);
 
 #### `right`
 
-Extracts a specific number of characters from the end (right side) of string values in the specified column.
+Extracts a specific number of characters from the end (right side) of string
+values in the specified column.
 
 ##### Signature
+
 ```typescript
 async right(column: string, numberOfCharacters: number): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing the strings to be modified.
-* **`numberOfCharacters`**: The number of characters to extract from the right side of each string.
+- **`column`**: The name of the column containing the strings to be modified.
+- **`numberOfCharacters`**: The number of characters to extract from the right
+  side of each string.
 
 ##### Returns
 
@@ -2423,14 +2836,16 @@ await table.right("productCode", 2);
 Replaces `NULL` values in the specified columns with a given value.
 
 ##### Signature
+
 ```typescript
 async replaceNulls(columns: string | string[], value: number | string | Date | boolean): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names in which to replace `NULL` values.
-* **`value`**: The value to replace `NULL` occurrences with.
+- **`columns`**: The column name or an array of column names in which to replace
+  `NULL` values.
+- **`value`**: The value to replace `NULL` occurrences with.
 
 ##### Returns
 
@@ -2458,16 +2873,18 @@ await table.replaceNulls("dateColumn", new Date("2023-01-01"));
 Concatenates values from specified columns into a new column.
 
 ##### Signature
+
 ```typescript
 async concatenate(columns: string[], newColumn: string, options?: { separator?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: An array of column names whose values will be concatenated.
-* **`newColumn`**: The name of the new column to store the concatenated values.
-* **`options`**: An optional object with configuration options:
-* **`options.separator`**: The string used to separate concatenated values. Defaults to an empty string (`""`).
+- **`columns`**: An array of column names whose values will be concatenated.
+- **`newColumn`**: The name of the new column to store the concatenated values.
+- **`options`**: An optional object with configuration options:
+- **`options.separator`**: The string used to separate concatenated values.
+  Defaults to an empty string (`""`).
 
 ##### Returns
 
@@ -2489,23 +2906,29 @@ await table.concatenate(["city", "country"], "location", { separator: ", " });
 
 Concatenates values from multiple columns into a new column with labeled rows.
 
-This method creates a new column where each value is a concatenation of the specified columns,
-with each column value prefixed by its column name and a colon, followed by a newline.
-Column entries are separated by double newlines ("\n\n").
+This method creates a new column where each value is a concatenation of the
+specified columns, with each column value prefixed by its column name and a
+colon, followed by a newline. Column entries are separated by double newlines
+("\n\n").
 
-All values must be string, otherwise an error will be thrown. Use the `convert()` method first to convert non-string columns to string.
+All values must be string, otherwise an error will be thrown. Use the
+`convert()` method first to convert non-string columns to string.
 
-If a column value is `NULL`, it will be replaced by `'Unknown'` in the concatenated result.
+If a column value is `NULL`, it will be replaced by `'Unknown'` in the
+concatenated result.
 
 ##### Signature
+
 ```typescript
 async concatenateRow(columns: string[], newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: An array of column names whose values will be concatenated with labels.
-* **`newColumn`**: The name of the new column to create with the concatenated values.
+- **`columns`**: An array of column names whose values will be concatenated with
+  labels.
+- **`newColumn`**: The name of the new column to create with the concatenated
+  values.
 
 ##### Returns
 
@@ -2517,7 +2940,7 @@ A promise that resolves when the concatenation is complete.
 // Concatenate multiple string columns into a labeled text field
 await table.concatenateRow(
   ["summary", "findings", "context", "date", "quote"],
-  "fullText"
+  "fullText",
 );
 // Result in "fullText" will look like:
 // summary:
@@ -2545,19 +2968,24 @@ await table.concatenateRow(["name", "age", "salary"], "profile");
 
 #### `unnest`
 
-Unnests (expands) rows by splitting a column's string values into multiple rows based on a separator.
+Unnests (expands) rows by splitting a column's string values into multiple rows
+based on a separator.
 
-Each value in the specified column is split using the provided separator, and a new row is created for each resulting substring. All other column values are duplicated across the newly created rows.
+Each value in the specified column is split using the provided separator, and a
+new row is created for each resulting substring. All other column values are
+duplicated across the newly created rows.
 
 ##### Signature
+
 ```typescript
 async unnest(column: string, separator: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column containing string values to be split and unnested.
-* **`separator`**: The delimiter string used to split the column values.
+- **`column`**: The name of the column containing string values to be split and
+  unnested.
+- **`separator`**: The delimiter string used to split the column values.
 
 ##### Returns
 
@@ -2583,20 +3011,25 @@ await table.unnest("neighborhoods", " / ");
 
 #### `nest`
 
-Nests (collapses) rows by aggregating a column's values into a single string per group, separated by a delimiter.
+Nests (collapses) rows by aggregating a column's values into a single string per
+group, separated by a delimiter.
 
-This is the inverse operation of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
+This is the inverse operation of `unnest()`. Multiple rows are combined into
+fewer rows by grouping on specified category columns and concatenating the
+target column values with a separator.
 
 ##### Signature
+
 ```typescript
 async nest(column: string, separator: string, categories: string | string[]): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column whose values will be aggregated and concatenated.
-* **`separator`**: The delimiter string used to join the column values.
-* **`categories`**: The column name or an array of column names to group by.
+- **`column`**: The name of the column whose values will be aggregated and
+  concatenated.
+- **`separator`**: The delimiter string used to join the column values.
+- **`categories`**: The column name or an array of column names to group by.
 
 ##### Returns
 
@@ -2626,16 +3059,22 @@ await table.nest("tags", ",", ["country", "city"]);
 Rounds numeric values in specified columns.
 
 ##### Signature
+
 ```typescript
 async round(columns: string | string[], options?: { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: The column name or an array of column names containing numeric values to be rounded.
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round to. Defaults to `0` (rounds to the nearest integer).
-* **`options.method`**: The rounding method to use: `"round"` (rounds to the nearest integer, with halves rounding up), `"ceiling"` (rounds up to the nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults to `"round"`.
+- **`columns`**: The column name or an array of column names containing numeric
+  values to be rounded.
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round to. Defaults to
+  `0` (rounds to the nearest integer).
+- **`options.method`**: The rounding method to use: `"round"` (rounds to the
+  nearest integer, with halves rounding up), `"ceiling"` (rounds up to the
+  nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults
+  to `"round"`.
 
 ##### Returns
 
@@ -2668,14 +3107,16 @@ await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
 Updates values in a specified column using a SQL expression.
 
 ##### Signature
+
 ```typescript
 async updateColumn(column: string, definition: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column to be updated.
-* **`definition`**: The SQL expression used to set the new values in the column (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
+- **`column`**: The name of the column to be updated.
+- **`definition`**: The SQL expression used to set the new values in the column
+  (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
 
 ##### Returns
 
@@ -2695,7 +3136,10 @@ await table.updateColumn("price", `price * 2`);
 
 ```ts
 // Set 'status' to 'active' where 'isActive' is true
-await table.updateColumn("status", `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`);
+await table.updateColumn(
+  "status",
+  `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`,
+);
 ```
 
 #### `ranks`
@@ -2703,18 +3147,24 @@ await table.updateColumn("status", `CASE WHEN isActive THEN 'active' ELSE 'inact
 Assigns ranks to rows in a new column based on the values of a specified column.
 
 ##### Signature
+
 ```typescript
 async ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; noGaps?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`values`**: The column containing the values to be used for ranking.
-* **`newColumn`**: The name of the new column where the ranks will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.order`**: The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
-* **`options.categories`**: The column name or an array of column names that define categories for ranking. Ranks will be assigned independently within each category.
-* **`options.noGaps`**: A boolean indicating whether to assign ranks without gaps (dense ranking). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
+- **`values`**: The column containing the values to be used for ranking.
+- **`newColumn`**: The name of the new column where the ranks will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.order`**: The order of values for ranking: `"asc"` for ascending
+  (default) or `"desc"` for descending.
+- **`options.categories`**: The column name or an array of column names that
+  define categories for ranking. Ranks will be assigned independently within
+  each category.
+- **`options.noGaps`**: A boolean indicating whether to assign ranks without
+  gaps (dense ranking). If `true`, ranks will be consecutive integers (e.g., 1,
+  2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
 
 ##### Returns
 
@@ -2734,7 +3184,10 @@ await table.ranks("score", "descRank", { order: "desc" });
 
 ```ts
 // Compute ranks within 'department' categories, based on 'salary' values, without gaps
-await table.ranks("salary", "salaryRank", { categories: "department", noGaps: true });
+await table.ranks("salary", "salaryRank", {
+  categories: "department",
+  noGaps: true,
+});
 ```
 
 ```ts
@@ -2747,17 +3200,23 @@ await table.ranks("sales", "salesRank", { categories: ["department", "city"] });
 Assigns quantiles to rows in a new column based on specified column values.
 
 ##### Signature
+
 ```typescript
 async quantiles(values: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`values`**: The column containing values from which quantiles will be assigned.
-* **`nbQuantiles`**: The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
-* **`newColumn`**: The name of the new column where the assigned quantiles will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories for computing quantiles. Quantiles will be assigned independently within each category.
+- **`values`**: The column containing values from which quantiles will be
+  assigned.
+- **`nbQuantiles`**: The number of quantiles to divide the data into (e.g., `4`
+  for quartiles, `10` for deciles).
+- **`newColumn`**: The name of the new column where the assigned quantiles will
+  be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories for computing quantiles. Quantiles will be assigned
+  independently within each category.
 
 ##### Returns
 
@@ -2785,17 +3244,19 @@ await table.quantiles("sales", 4, "salesQuartile");
 Assigns bins for specified column values based on an interval size.
 
 ##### Signature
+
 ```typescript
 async bins(values: string, interval: number, newColumn: string, options?: { startValue?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`values`**: The column containing values from which bins will be computed.
-* **`interval`**: The interval size for binning the values.
-* **`newColumn`**: The name of the new column where the bins will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.startValue`**: The starting value for binning. Defaults to the minimum value in the specified column.
+- **`values`**: The column containing values from which bins will be computed.
+- **`interval`**: The interval size for binning the values.
+- **`newColumn`**: The name of the new column where the bins will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.startValue`**: The starting value for binning. Defaults to the
+  minimum value in the specified column.
 
 ##### Returns
 
@@ -2819,7 +3280,8 @@ await table.bins("column1", 10, "bins", { startValue: 0 });
 
 Computes proportions horizontally across specified columns for each row.
 
-For example, given a table showing counts of men, women, and non-binary individuals per year:
+For example, given a table showing counts of men, women, and non-binary
+individuals per year:
 
 | Year | Men | Women | NonBinary |
 | :--- | :-- | :---- | :-------- |
@@ -2827,19 +3289,24 @@ For example, given a table showing counts of men, women, and non-binary individu
 | 2022 | 354 | 278   | 56        |
 | 2023 | 856 | 321   | 221       |
 
-This method computes the proportion of men, women, and non-binary individuals on each row, adding new columns for these proportions.
+This method computes the proportion of men, women, and non-binary individuals on
+each row, adding new columns for these proportions.
 
 ##### Signature
+
 ```typescript
 async proportionsHorizontal(columns: string[], options?: { suffix?: string; decimals?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columns`**: An array of column names for which proportions will be computed on each row.
-* **`options`**: An optional object with configuration options:
-* **`options.suffix`**: A string suffix to append to the names of the new columns storing the computed proportions. Defaults to `"Perc"`.
-* **`options.decimals`**: The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
+- **`columns`**: An array of column names for which proportions will be computed
+  on each row.
+- **`options`**: An optional object with configuration options:
+- **`options.suffix`**: A string suffix to append to the names of the new
+  columns storing the computed proportions. Defaults to `"Perc"`.
+- **`options.decimals`**: The number of decimal places to round the computed
+  proportions. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -2849,7 +3316,9 @@ A promise that resolves when the horizontal proportions have been computed.
 
 ```ts
 // Compute horizontal proportions for 'Men', 'Women', and 'NonBinary' columns, rounded to 2 decimal places
-await table.proportionsHorizontal(["Men", "Women", "NonBinary"], { decimals: 2 });
+await table.proportionsHorizontal(["Men", "Women", "NonBinary"], {
+  decimals: 2,
+});
 ```
 
 The table will then look like this:
@@ -2860,11 +3329,15 @@ The table will then look like this:
 | 2022 | 354 | 278   | 56        | 0.51    | 0.4       | 0.08          |
 | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
 
-By default, the new columns will be named with a suffix of `"Perc"`. You can customize this suffix using the `suffix` option.
+By default, the new columns will be named with a suffix of `"Perc"`. You can
+customize this suffix using the `suffix` option.
 
 ```ts
 // Compute horizontal proportions with a custom suffix "Prop"
-await table.proportionsHorizontal(["Men", "Women", "NonBinary"], { suffix: "Prop", decimals: 2 });
+await table.proportionsHorizontal(["Men", "Women", "NonBinary"], {
+  suffix: "Prop",
+  decimals: 2,
+});
 ```
 
 The table will then look like this:
@@ -2877,20 +3350,28 @@ The table will then look like this:
 
 #### `proportionsVertical`
 
-Computes proportions vertically over a column's values, relative to the sum of all values in that column (or within specified categories).
+Computes proportions vertically over a column's values, relative to the sum of
+all values in that column (or within specified categories).
 
 ##### Signature
+
 ```typescript
 async proportionsVertical(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The column containing values for which proportions will be computed. The proportions are calculated based on the sum of values in the specified column.
-* **`newColumn`**: The name of the new column where the proportions will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories for computing proportions. Proportions will be calculated independently within each category.
-* **`options.decimals`**: The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
+- **`column`**: The column containing values for which proportions will be
+  computed. The proportions are calculated based on the sum of values in the
+  specified column.
+- **`newColumn`**: The name of the new column where the proportions will be
+  stored.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories for computing proportions. Proportions will be calculated
+  independently within each category.
+- **`options.decimals`**: The number of decimal places to round the computed
+  proportions. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -2905,38 +3386,62 @@ await table.proportionsVertical("column1", "perc");
 
 ```ts
 // Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-await table.proportionsVertical("column1", "perc", { categories: "column2", decimals: 2 });
+await table.proportionsVertical("column1", "perc", {
+  categories: "column2",
+  decimals: 2,
+});
 ```
 
 ```ts
 // Compute proportions for 'sales' within 'region' and 'product_type' categories
-await table.proportionsVertical("sales", "sales_proportion", { categories: ["region", "product_type"] });
+await table.proportionsVertical("sales", "sales_proportion", {
+  categories: ["region", "product_type"],
+});
 ```
 
 #### `summarize`
 
-Creates a summary table based on specified values, categories, and summary operations.
-This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
+Creates a summary table based on specified values, categories, and summary
+operations. This method allows you to aggregate data, calculate statistics
+(e.g., count, mean, sum), and group results by categorical columns.
 
 ##### Signature
+
 ```typescript
 async summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; noColumnValue?: boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`options`**: An object with configuration options for summarization:
-* **`options.values`**: The column name or an array of column names whose values will be summarized. If omitted, all columns will be summarized.
-* **`options.categories`**: The column name or an array of column names that define categories for the summarization. Results will be grouped by these categories.
-* **`options.summaries`**: The summary operations to be performed. Can be a single operation (e.g., `"mean"`), an array of operations (e.g., `["min", "max"]`), or an object mapping new column names to operations (e.g., `{ avgSalary: "mean" }`). Supported operations include: `"count"`, `"countUnique"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, `"var"`.
-* **`options.decimals`**: The number of decimal places to round the summarized values. Defaults to `undefined` (no rounding).
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-* **`options.toMs`**: If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
-* **`options.noColumnValue`**: If `true`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `false`.
+- **`options`**: An object with configuration options for summarization:
+- **`options.values`**: The column name or an array of column names whose values
+  will be summarized. If omitted, all columns will be summarized.
+- **`options.categories`**: The column name or an array of column names that
+  define categories for the summarization. Results will be grouped by these
+  categories.
+- **`options.summaries`**: The summary operations to be performed. Can be a
+  single operation (e.g., `"mean"`), an array of operations (e.g.,
+  `["min", "max"]`), or an object mapping new column names to operations (e.g.,
+  `{ avgSalary: "mean" }`). Supported operations include: `"count"`,
+  `"countUnique"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`,
+  `"sum"`, `"skew"`, `"stdDev"`, `"var"`.
+- **`options.decimals`**: The number of decimal places to round the summarized
+  values. Defaults to `undefined` (no rounding).
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
+- **`options.toMs`**: If `true`, timestamps, dates, and times will be converted
+  to milliseconds before summarizing. This is useful when summarizing mixed data
+  types (numbers and dates) as values must be of the same type for aggregation.
+- **`options.noColumnValue`**: If `true`, the default `value` column will be
+  removed. This option only works when summarizing a single column without
+  categories. Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the summarized data (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the summarized
+data (either the modified current table or a new table).
 
 ##### Examples
 
@@ -2949,13 +3454,19 @@ await table.summarize({ values: columns });
 ```ts
 // Summarize all columns and store the results in a new table with a generated name
 const columns = await table.getColumns();
-const summaryTable = await table.summarize({ values: columns, outputTable: true });
+const summaryTable = await table.summarize({
+  values: columns,
+  outputTable: true,
+});
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table named 'mySummary'
 const columns = await table.getColumns();
-const mySummaryTable = await table.summarize({ values: columns, outputTable: "mySummary" });
+const mySummaryTable = await table.summarize({
+  values: columns,
+  outputTable: "mySummary",
+});
 ```
 
 ```ts
@@ -2975,22 +3486,37 @@ await table.summarize({ values: "sales", categories: "region" });
 
 ```ts
 // Summarize 'sales' by 'region' and 'product_type' (multiple categories)
-await table.summarize({ values: "sales", categories: ["region", "product_type"] });
+await table.summarize({
+  values: "sales",
+  categories: ["region", "product_type"],
+});
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with a specific summary operation (mean)
-await table.summarize({ values: "sales", categories: "region", summaries: "mean" });
+await table.summarize({
+  values: "sales",
+  categories: "region",
+  summaries: "mean",
+});
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with specific summary operations (mean and sum)
-await table.summarize({ values: "sales", categories: "region", summaries: ["mean", "sum"] });
+await table.summarize({
+  values: "sales",
+  categories: "region",
+  summaries: ["mean", "sum"],
+});
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with custom named summary operations
-await table.summarize({ values: "sales", categories: "region", summaries: { averageSales: "mean", totalSales: "sum" } });
+await table.summarize({
+  values: "sales",
+  categories: "region",
+  summaries: { averageSales: "mean", totalSales: "sum" },
+});
 ```
 
 ```ts
@@ -3000,7 +3526,11 @@ await table.summarize({ values: ["price", "cost"], decimals: 2 });
 
 ```ts
 // Summarize 'timestamp_column' by converting to milliseconds first
-await table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
+await table.summarize({
+  values: "timestamp_column",
+  toMs: true,
+  summaries: "mean",
+});
 ```
 
 ```ts
@@ -3010,19 +3540,24 @@ await table.summarize({ values: "value_column", noColumnValue: true });
 
 #### `accumulate`
 
-Computes the cumulative sum of values in a column. For this method to work properly, ensure your data is sorted first.
+Computes the cumulative sum of values in a column. For this method to work
+properly, ensure your data is sorted first.
 
 ##### Signature
+
 ```typescript
 async accumulate(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the values to be accumulated.
-* **`newColumn`**: The name of the new column in which the computed cumulative values will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories for the accumulation. Accumulation will be performed independently within each category.
+- **`column`**: The name of the column storing the values to be accumulated.
+- **`newColumn`**: The name of the new column in which the computed cumulative
+  values will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories for the accumulation. Accumulation will be performed
+  independently within each category.
 
 ##### Returns
 
@@ -3039,35 +3574,48 @@ await table.accumulate("sales", "cumulativeSales");
 ```ts
 // Compute the cumulative sum of 'orders' within 'customer_id' categories
 // Ensure the table is sorted by 'customer_id' and then by a relevant order column (e.g., order_date).
-await table.accumulate("orders", "cumulativeOrders", { categories: "customer_id" });
+await table.accumulate("orders", "cumulativeOrders", {
+  categories: "customer_id",
+});
 ```
 
 ```ts
 // Compute the cumulative sum of 'revenue' within 'region' and 'product_category' categories
-await table.accumulate("revenue", "cumulativeRevenue", { categories: ["region", "product_category"] });
+await table.accumulate("revenue", "cumulativeRevenue", {
+  categories: ["region", "product_category"],
+});
 ```
 
 #### `rolling`
 
-Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
-For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
-For this method to work properly, ensure your data is sorted by the relevant column(s) first.
+Computes rolling aggregations (e.g., rolling average, min, max) over a specified
+column. For rows without enough preceding or following rows to form a complete
+window, `NULL` will be returned. For this method to work properly, ensure your
+data is sorted by the relevant column(s) first.
 
 ##### Signature
+
 ```typescript
 async rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the values to be aggregated.
-* **`newColumn`**: The name of the new column in which the computed rolling values will be stored.
-* **`summary`**: The aggregation function to apply: `"min"`, `"max"`, `"mean"`, `"median"`, or `"sum"`.
-* **`preceding`**: The number of preceding rows to include in the rolling window.
-* **`following`**: The number of following rows to include in the rolling window.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories for the aggregation. Rolling aggregations will be computed independently within each category.
-* **`options.decimals`**: The number of decimal places to round the aggregated values. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the column storing the values to be aggregated.
+- **`newColumn`**: The name of the new column in which the computed rolling
+  values will be stored.
+- **`summary`**: The aggregation function to apply: `"min"`, `"max"`, `"mean"`,
+  `"median"`, or `"sum"`.
+- **`preceding`**: The number of preceding rows to include in the rolling
+  window.
+- **`following`**: The number of following rows to include in the rolling
+  window.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories for the aggregation. Rolling aggregations will be computed
+  independently within each category.
+- **`options.decimals`**: The number of decimal places to round the aggregated
+  values. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3083,36 +3631,52 @@ await table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
 
 ```ts
 // Compute a rolling sum of 'transactions' within 'customer_id' categories
-await table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, { categories: "customer_id" });
+await table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, {
+  categories: "customer_id",
+});
 ```
 
 ```ts
 // Compute a rolling maximum of 'temperature' rounded to 1 decimal place
-await table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, { decimals: 1 });
+await table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, {
+  decimals: 1,
+});
 ```
 
 #### `correlations`
 
-Calculates correlations between columns. If no `x` and `y` columns are specified, the method computes the correlations for all numeric column combinations.
-Note that correlation is symmetrical: the correlation of `x` with `y` is the same as `y` with `x`.
+Calculates correlations between columns. If no `x` and `y` columns are
+specified, the method computes the correlations for all numeric column
+combinations. Note that correlation is symmetrical: the correlation of `x` with
+`y` is the same as `y` with `x`.
 
 ##### Signature
+
 ```typescript
 async correlations(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.x`**: The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
-* **`options.y`**: The name of the column for the y-values. If omitted, correlations will be computed for all numeric columns.
-* **`options.categories`**: The column name or an array of column names that define categories. Correlation calculations will be performed independently for each category.
-* **`options.decimals`**: The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`options`**: An optional object with configuration options:
+- **`options.x`**: The name of the column for the x-values. If omitted,
+  correlations will be computed for all numeric columns.
+- **`options.y`**: The name of the column for the y-values. If omitted,
+  correlations will be computed for all numeric columns.
+- **`options.categories`**: The column name or an array of column names that
+  define categories. Correlation calculations will be performed independently
+  for each category.
+- **`options.decimals`**: The number of decimal places to round the correlation
+  values. Defaults to `undefined` (no rounding).
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the correlation results (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the correlation
+results (either the modified current table or a new table).
 
 ##### Examples
 
@@ -3133,7 +3697,10 @@ await table.correlations({ x: "column1", y: "column2" });
 
 ```ts
 // Compute correlations within 'categoryColumn' and store results in a new table
-const correlationTable = await table.correlations({ categories: "categoryColumn", outputTable: true });
+const correlationTable = await table.correlations({
+  categories: "categoryColumn",
+  outputTable: true,
+});
 ```
 
 ```ts
@@ -3143,27 +3710,40 @@ await table.correlations({ decimals: 2 });
 
 #### `linearRegressions`
 
-Performs linear regression analysis. The results include the slope, the y-intercept, and the R-squared value.
-If no `x` and `y` columns are specified, the method computes linear regression analysis for all numeric column permutations.
-Note that linear regression analysis is asymmetrical: the linear regression of `x` over `y` is not the same as `y` over `x`.
+Performs linear regression analysis. The results include the slope, the
+y-intercept, and the R-squared value. If no `x` and `y` columns are specified,
+the method computes linear regression analysis for all numeric column
+permutations. Note that linear regression analysis is asymmetrical: the linear
+regression of `x` over `y` is not the same as `y` over `x`.
 
 ##### Signature
+
 ```typescript
 async linearRegressions(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.x`**: The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
-* **`options.y`**: The name of the column for the dependent variable (y-values). If omitted, linear regressions will be computed for all numeric columns as y.
-* **`options.categories`**: The column name or an array of column names that define categories. Linear regression analysis will be performed independently for each category.
-* **`options.decimals`**: The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`options`**: An optional object with configuration options:
+- **`options.x`**: The name of the column for the independent variable
+  (x-values). If omitted, linear regressions will be computed for all numeric
+  columns as x.
+- **`options.y`**: The name of the column for the dependent variable (y-values).
+  If omitted, linear regressions will be computed for all numeric columns as y.
+- **`options.categories`**: The column name or an array of column names that
+  define categories. Linear regression analysis will be performed independently
+  for each category.
+- **`options.decimals`**: The number of decimal places to round the regression
+  values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the linear regression results (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the linear
+regression results (either the modified current table or a new table).
 
 ##### Examples
 
@@ -3184,7 +3764,10 @@ await table.linearRegressions({ x: "advertising", y: "sales" });
 
 ```ts
 // Compute linear regressions within 'region' categories and store results in a new table
-const regressionTable = await table.linearRegressions({ categories: "region", outputTable: true });
+const regressionTable = await table.linearRegressions({
+  categories: "region",
+  outputTable: true,
+});
 ```
 
 ```ts
@@ -3194,19 +3777,24 @@ await table.linearRegressions({ decimals: 3 });
 
 #### `outliersIQR`
 
-Identifies outliers in a specified column using the Interquartile Range (IQR) method.
+Identifies outliers in a specified column using the Interquartile Range (IQR)
+method.
 
 ##### Signature
+
 ```typescript
 async outliersIQR(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column in which outliers will be identified.
-* **`newColumn`**: The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories. Outlier detection will be performed independently within each category.
+- **`column`**: The name of the column in which outliers will be identified.
+- **`newColumn`**: The name of the new column where the boolean results (`TRUE`
+  for outlier, `FALSE` otherwise) will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories. Outlier detection will be performed independently within
+  each category.
 
 ##### Returns
 
@@ -3229,17 +3817,22 @@ await table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
 Computes the Z-score for values in a specified column.
 
 ##### Signature
+
 ```typescript
 async zScore(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column for which Z-scores will be calculated.
-* **`newColumn`**: The name of the new column where the computed Z-scores will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories. Z-scores will be calculated independently within each category.
-* **`options.decimals`**: The number of decimal places to round the Z-score values. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the column for which Z-scores will be calculated.
+- **`newColumn`**: The name of the new column where the computed Z-scores will
+  be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories. Z-scores will be calculated independently within each
+  category.
+- **`options.decimals`**: The number of decimal places to round the Z-score
+  values. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3267,17 +3860,22 @@ await table.zScore("score", "scoreZScore", { decimals: 2 });
 Normalizes the values in a column using min-max normalization.
 
 ##### Signature
+
 ```typescript
 async normalize(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column in which values will be normalized.
-* **`newColumn`**: The name of the new column where normalized values will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.categories`**: The column name or an array of column names that define categories for the normalization. Normalization will be performed independently within each category.
-* **`options.decimals`**: The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the column in which values will be normalized.
+- **`newColumn`**: The name of the new column where normalized values will be
+  stored.
+- **`options`**: An optional object with configuration options:
+- **`options.categories`**: The column name or an array of column names that
+  define categories for the normalization. Normalization will be performed
+  independently within each category.
+- **`options.decimals`**: The number of decimal places to round the normalized
+  values. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3302,18 +3900,23 @@ await table.normalize("data", "normalizedData", { decimals: 2 });
 
 #### `updateWithJS`
 
-Updates data in the table using a JavaScript function. The function receives the existing rows as an array of objects and must return the modified rows as an array of objects.
-This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
-This method does not work with tables containing geometries.
+Updates data in the table using a JavaScript function. The function receives the
+existing rows as an array of objects and must return the modified rows as an
+array of objects. This method offers high flexibility for data manipulation but
+can be slow for large tables as it involves transferring data between DuckDB and
+JavaScript. This method does not work with tables containing geometries.
 
 ##### Signature
+
 ```typescript
 async updateWithJS(dataModifier: ((rows: Record<string, number | string | Date | boolean | null>[]) => Promise<Record<string, number | string | Date | boolean | null>[]>) | ((rows: Record<string, number | string | Date | boolean | null>[]) => Record<string, number | string | Date | boolean | null>[])): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`dataModifier`**: A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
+- **`dataModifier`**: A synchronous or asynchronous function that takes the
+  existing rows (as an array of objects) and returns the modified rows (as an
+  array of objects).
 
 ##### Returns
 
@@ -3324,7 +3927,7 @@ A promise that resolves when the data has been updated.
 ```ts
 // Add 1 to values in 'column1'. If values are not numbers, they are replaced by null.
 await table.updateWithJS((rows) => {
-  const modifiedRows = rows.map(d => ({
+  const modifiedRows = rows.map((d) => ({
     ...d,
     column1: typeof d.column1 === "number" ? d.column1 + 1 : null,
   }));
@@ -3335,9 +3938,11 @@ await table.updateWithJS((rows) => {
 ```ts
 // Convert a date string to a Date object in 'dateColumn'
 await table.updateWithJS((rows) => {
-  const modifiedRows = rows.map(d => ({
+  const modifiedRows = rows.map((d) => ({
     ...d,
-    dateColumn: typeof d.dateColumn === "string" ? new Date(d.dateColumn) : d.dateColumn,
+    dateColumn: typeof d.dateColumn === "string"
+      ? new Date(d.dateColumn)
+      : d.dateColumn,
   }));
   return modifiedRows;
 });
@@ -3348,13 +3953,15 @@ await table.updateWithJS((rows) => {
 Returns the schema of the table, including column names and their data types.
 
 ##### Signature
+
 ```typescript
 async getSchema(): Promise<Record<string, string | null>[]>;
 ```
 
 ##### Returns
 
-A promise that resolves to an array of objects, where each object represents a column with its name and data type.
+A promise that resolves to an array of objects, where each object represents a
+column with its name and data type.
 
 ##### Examples
 
@@ -3366,16 +3973,19 @@ console.table(schema); // Log the schema in a readable table format
 
 #### `getDescription`
 
-Returns descriptive statistical information about the columns, including details like data types, number of null values, and distinct values.
+Returns descriptive statistical information about the columns, including details
+like data types, number of null values, and distinct values.
 
 ##### Signature
+
 ```typescript
 async getDescription(): Promise<Record<string, unknown>[]>;
 ```
 
 ##### Returns
 
-A promise that resolves to an array of objects, each representing descriptive statistics for a column.
+A promise that resolves to an array of objects, each representing descriptive
+statistics for a column.
 
 ##### Examples
 
@@ -3390,6 +4000,7 @@ console.table(description);
 Returns the name of the table.
 
 ##### Signature
+
 ```typescript
 getTableName(): string;
 ```
@@ -3411,13 +4022,15 @@ console.log(tableName); // e.g., "employees"
 Returns a list of all column names in the table.
 
 ##### Signature
+
 ```typescript
 async getColumns(): Promise<string[]>;
 ```
 
 ##### Returns
 
-A promise that resolves to an array of strings, where each string is a column name.
+A promise that resolves to an array of strings, where each string is a column
+name.
 
 ##### Examples
 
@@ -3430,6 +4043,7 @@ console.log(columns); // e.g., ["id", "name", "age"]
 #### `normalizeString`
 
 Normalizes string values in a column by:
+
 1. Stripping accents
 2. Optionally stripping punctuation (default: true)
 3. Converting to lowercase
@@ -3440,16 +4054,18 @@ Produces identical output to `journalism-format`'s `normalizeString()` function
 for all common cases including accented Latin characters.
 
 ##### Signature
+
 ```typescript
 async normalizeString(column: string, newColumn: string, options?: { stripPunctuation?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The column containing the text to normalize
-* **`newColumn`**: The column to store the normalized results
-* **`options`**: Configuration options
-* **`options.stripPunctuation`**: Strip punctuation and underscores (default: true)
+- **`column`**: The column containing the text to normalize
+- **`newColumn`**: The column to store the normalized results
+- **`options`**: Configuration options
+- **`options.stripPunctuation`**: Strip punctuation and underscores (default:
+  true)
 
 ##### Returns
 
@@ -3465,9 +4081,13 @@ await table.normalizeString("recipeName", "recipeNameNormalized");
 
 ```ts
 // Keep punctuation for emails and URLs
-await table.normalizeString("email", "emailNormalized", { stripPunctuation: false });
+await table.normalizeString("email", "emailNormalized", {
+  stripPunctuation: false,
+});
 // "User@Example.com" → "user@example.com"
-await table.normalizeString("url", "urlNormalized", { stripPunctuation: false });
+await table.normalizeString("url", "urlNormalized", {
+  stripPunctuation: false,
+});
 // "https://Example.com/path" → "https://example.com/path"
 ```
 
@@ -3476,6 +4096,7 @@ await table.normalizeString("url", "urlNormalized", { stripPunctuation: false })
 Returns the number of columns in the table.
 
 ##### Signature
+
 ```typescript
 async getNbColumns(): Promise<number>;
 ```
@@ -3497,17 +4118,19 @@ console.log(nbColumns); // e.g., 3
 Returns the total number of characters in a column storing strings.
 
 ##### Signature
+
 ```typescript
 async getNbCharacters(column: string): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the string column to count characters from.
+- **`column`**: The name of the string column to count characters from.
 
 ##### Returns
 
-A promise that resolves to the total number of characters across all rows in the specified column.
+A promise that resolves to the total number of characters across all rows in the
+specified column.
 
 ##### Examples
 
@@ -3522,6 +4145,7 @@ console.log(totalChars); // e.g., 523
 Returns the number of rows in the table.
 
 ##### Signature
+
 ```typescript
 async getNbRows(): Promise<number>;
 ```
@@ -3540,9 +4164,11 @@ console.log(nbRows); // e.g., 100
 
 #### `getNbValues`
 
-Returns the total number of values in the table (number of columns multiplied by the number of rows).
+Returns the total number of values in the table (number of columns multiplied by
+the number of rows).
 
 ##### Signature
+
 ```typescript
 async getNbValues(): Promise<number>;
 ```
@@ -3564,13 +4190,15 @@ console.log(nbValues); // e.g., 300 (if 3 columns and 100 rows)
 Returns the data types of all columns in the table.
 
 ##### Signature
+
 ```typescript
 async getTypes(): Promise<Record<string, string>>;
 ```
 
 ##### Returns
 
-A promise that resolves to an object where keys are column names and values are their corresponding data types (e.g., `{ "id": "BIGINT", "name": "VARCHAR" }`).
+A promise that resolves to an object where keys are column names and values are
+their corresponding data types (e.g., `{ "id": "BIGINT", "name": "VARCHAR" }`).
 
 ##### Examples
 
@@ -3585,17 +4213,19 @@ console.log(dataTypes);
 Returns all values from a specific column.
 
 ##### Signature
+
 ```typescript
 async getValues(column: string): Promise<(string | number | boolean | Date | null)[]>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column from which to retrieve values.
+- **`column`**: The name of the column from which to retrieve values.
 
 ##### Returns
 
-A promise that resolves to an array containing all values from the specified column.
+A promise that resolves to an array containing all values from the specified
+column.
 
 ##### Examples
 
@@ -3610,13 +4240,14 @@ console.log(productNames); // e.g., ["Laptop", "Mouse", "Keyboard"]
 Returns the minimum value from a specific column.
 
 ##### Signature
+
 ```typescript
 async getMin(column: string): Promise<string | number | boolean | Date | null>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column from which to retrieve the minimum value.
+- **`column`**: The name of the column from which to retrieve the minimum value.
 
 ##### Returns
 
@@ -3635,13 +4266,14 @@ console.log(minPrice); // e.g., 10.50
 Returns the maximum value from a specific column.
 
 ##### Signature
+
 ```typescript
 async getMax(column: string): Promise<string | number | boolean | Date | null>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column from which to retrieve the maximum value.
+- **`column`**: The name of the column from which to retrieve the maximum value.
 
 ##### Returns
 
@@ -3657,20 +4289,23 @@ console.log(maxPrice); // e.g., 99.99
 
 #### `getExtent`
 
-Returns the extent (minimum and maximum values) of a specific column as an array.
+Returns the extent (minimum and maximum values) of a specific column as an
+array.
 
 ##### Signature
+
 ```typescript
 async getExtent(column: string): Promise<[string | number | boolean | Date | null, string | number | boolean | Date | null]>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column from which to retrieve the extent.
+- **`column`**: The name of the column from which to retrieve the extent.
 
 ##### Returns
 
-A promise that resolves to an array `[min, max]` containing the minimum and maximum values of the specified column.
+A promise that resolves to an array `[min, max]` containing the minimum and
+maximum values of the specified column.
 
 ##### Examples
 
@@ -3685,15 +4320,18 @@ console.log(tempExtent); // e.g., [15.2, 30.1]
 Returns the mean (average) value from a specific numeric column.
 
 ##### Signature
+
 ```typescript
 async getMean(column: string, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to retrieve the mean value.
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the numeric column from which to retrieve the mean
+  value.
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round the result to.
+  Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3718,15 +4356,18 @@ console.log(meanSalary); // e.g., 55000.23
 Returns the median value from a specific numeric column.
 
 ##### Signature
+
 ```typescript
 async getMedian(column: string, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to retrieve the median value.
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the numeric column from which to retrieve the median
+  value.
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round the result to.
+  Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3751,13 +4392,14 @@ console.log(medianSalary); // e.g., 50000.00
 Returns the sum of values from a specific numeric column.
 
 ##### Signature
+
 ```typescript
 async getSum(column: string): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to retrieve the sum.
+- **`column`**: The name of the numeric column from which to retrieve the sum.
 
 ##### Returns
 
@@ -3776,15 +4418,18 @@ console.log(totalQuantity); // e.g., 1250
 Returns the skewness of values from a specific numeric column.
 
 ##### Signature
+
 ```typescript
 async getSkew(column: string, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to retrieve the skewness.
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the numeric column from which to retrieve the
+  skewness.
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round the result to.
+  Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3809,15 +4454,18 @@ console.log(valuesSkew); // e.g., -0.25
 Returns the standard deviation of values from a specific numeric column.
 
 ##### Signature
+
 ```typescript
 async getStdDev(column: string, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to retrieve the standard deviation.
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the numeric column from which to retrieve the
+  standard deviation.
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round the result to.
+  Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3842,15 +4490,18 @@ console.log(scoreStdDev); // e.g., 12.345
 Returns the variance of values from a specific numeric column.
 
 ##### Signature
+
 ```typescript
 async getVar(column: string, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to retrieve the variance.
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the numeric column from which to retrieve the
+  variance.
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round the result to.
+  Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3872,19 +4523,25 @@ console.log(valuesVariance); // e.g., 10.23
 
 #### `getQuantile`
 
-Returns the value of a specific quantile from the values in a given numeric column.
+Returns the value of a specific quantile from the values in a given numeric
+column.
 
 ##### Signature
+
 ```typescript
 async getQuantile(column: string, quantile: number, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column from which to calculate the quantile.
-* **`quantile`**: The quantile to calculate, expressed as a number between 0 and 1 (e.g., `0.25` for the first quartile, `0.5` for the median, `0.75` for the third quartile).
-* **`options`**: An optional object with configuration options:
-* **`options.decimals`**: The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+- **`column`**: The name of the numeric column from which to calculate the
+  quantile.
+- **`quantile`**: The quantile to calculate, expressed as a number between 0 and
+  1 (e.g., `0.25` for the first quartile, `0.5` for the median, `0.75` for the
+  third quartile).
+- **`options`**: An optional object with configuration options:
+- **`options.decimals`**: The number of decimal places to round the result to.
+  Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -3900,26 +4557,31 @@ console.log(firstQuartile); // e.g., 15.7
 
 ```ts
 // Get the 90th percentile of 'score' values, rounded to 2 decimal places
-const ninetiethPercentile = await table.getQuantile("score", 0.9, { decimals: 2 });
+const ninetiethPercentile = await table.getQuantile("score", 0.9, {
+  decimals: 2,
+});
 console.log(ninetiethPercentile); // e.g., 88.55
 ```
 
 #### `getUniques`
 
-Returns unique values from a specific column. The values are returned in ascending order.
+Returns unique values from a specific column. The values are returned in
+ascending order.
 
 ##### Signature
+
 ```typescript
 async getUniques(column: string): Promise<(string | number | boolean | Date | null)[]>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column from which to retrieve unique values.
+- **`column`**: The name of the column from which to retrieve unique values.
 
 ##### Returns
 
-A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
+A promise that resolves to an array containing the unique values from the
+specified column, sorted in ascending order.
 
 ##### Examples
 
@@ -3931,22 +4593,25 @@ console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
 
 #### `getFirstRow`
 
-Returns the first row of the table, optionally filtered by SQL conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Returns the first row of the table, optionally filtered by SQL conditions. You
+can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async getFirstRow(options?: { conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+- **`options`**: An optional object with configuration options:
+- **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
+  clause (e.g., `"category = 'Book'"`).
 
 ##### Returns
 
-A promise that resolves to an object representing the first row, or `null` if no rows match the conditions.
+A promise that resolves to an object representing the first row, or `null` if no
+rows match the conditions.
 
 ##### Examples
 
@@ -3958,28 +4623,33 @@ console.log(firstRow);
 
 ```ts
 // Get the first row where the 'category' is 'Book'
-const firstRowBooks = await table.getFirstRow({ conditions: `category === 'Book'` }); // Using JS syntax
+const firstRowBooks = await table.getFirstRow({
+  conditions: `category === 'Book'`,
+}); // Using JS syntax
 console.log(firstRowBooks);
 ```
 
 #### `getLastRow`
 
-Returns the last row of the table, optionally filtered by SQL conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Returns the last row of the table, optionally filtered by SQL conditions. You
+can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async getLastRow(options?: { conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+- **`options`**: An optional object with configuration options:
+- **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
+  clause (e.g., `"category = 'Book'"`).
 
 ##### Returns
 
-A promise that resolves to an object representing the last row, or `null` if no rows match the conditions.
+A promise that resolves to an object representing the last row, or `null` if no
+rows match the conditions.
 
 ##### Examples
 
@@ -3991,25 +4661,30 @@ console.log(lastRow);
 
 ```ts
 // Get the last row where the 'category' is 'Book'
-const lastRowBooks = await table.getLastRow({ conditions: `category === 'Book'` }); // Using JS syntax
+const lastRowBooks = await table.getLastRow({
+  conditions: `category === 'Book'`,
+}); // Using JS syntax
 console.log(lastRowBooks);
 ```
 
 #### `getTop`
 
 Returns the top `n` rows of the table, optionally filtered by SQL conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`,
+`!==`).
 
 ##### Signature
+
 ```typescript
 async getTop(count: number, options?: { conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>[]>;
 ```
 
 ##### Parameters
 
-* **`count`**: The number of rows to return from the top of the table.
-* **`options`**: An optional object with configuration options:
-* **`options.conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Books'"`).
+- **`count`**: The number of rows to return from the top of the table.
+- **`options`**: An optional object with configuration options:
+- **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
+  clause (e.g., `"category = 'Books'"`).
 
 ##### Returns
 
@@ -4032,20 +4707,25 @@ console.log(top5Books);
 #### `getBottom`
 
 Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
-By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+By default, the last row will be returned first. To preserve the original order,
+use the `originalOrder` option. You can also use JavaScript syntax for
+conditions (e.g., `&&`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async getBottom(count: number, options?: { originalOrder?: boolean; conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>[]>;
 ```
 
 ##### Parameters
 
-* **`count`**: The number of rows to return from the bottom of the table.
-* **`options`**: An optional object with configuration options:
-* **`options.originalOrder`**: A boolean indicating whether the rows should be returned in their original order (`true`) or in reverse order (last row first, `false`). Defaults to `false`.
-* **`options.conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Books'"`).
+- **`count`**: The number of rows to return from the bottom of the table.
+- **`options`**: An optional object with configuration options:
+- **`options.originalOrder`**: A boolean indicating whether the rows should be
+  returned in their original order (`true`) or in reverse order (last row first,
+  `false`). Defaults to `false`.
+- **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
+  clause (e.g., `"category = 'Books'"`).
 
 ##### Returns
 
@@ -4061,31 +4741,38 @@ console.log(bottom10);
 
 ```ts
 // Get the last 10 rows in their original order
-const bottom10OriginalOrder = await table.getBottom(10, { originalOrder: true });
+const bottom10OriginalOrder = await table.getBottom(10, {
+  originalOrder: true,
+});
 console.log(bottom10OriginalOrder);
 ```
 
 ```ts
 // Get the last 5 rows where the 'category' is 'Books' (using JS syntax)
-const bottom5Books = await table.getBottom(5, { conditions: `category === 'Books'` });
+const bottom5Books = await table.getBottom(5, {
+  conditions: `category === 'Books'`,
+});
 console.log(bottom5Books);
 ```
 
 #### `getRow`
 
-Returns a single row that matches the specified conditions. If no row matches or if more than one row matches, an error is thrown by default.
-You can also use JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
+Returns a single row that matches the specified conditions. If no row matches or
+if more than one row matches, an error is thrown by default. You can also use
+JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async getRow(conditions: string, options?: { noCheck?: boolean }): Promise<Record<string, string | number | boolean | Date | null> | undefined>;
 ```
 
 ##### Parameters
 
-* **`conditions`**: The conditions to match, specified as a SQL `WHERE` clause.
-* **`options`**: Optional settings:
-* **`options.noCheck`**: If `true`, no error will be thrown when no row or more than one row match the condition. Defaults to `false`.
+- **`conditions`**: The conditions to match, specified as a SQL `WHERE` clause.
+- **`options`**: Optional settings:
+- **`options.noCheck`**: If `true`, no error will be thrown when no row or more
+  than one row match the condition. Defaults to `false`.
 
 ##### Returns
 
@@ -4093,7 +4780,8 @@ A promise that resolves to an object representing the matched row.
 
 ##### Throws
 
-* **`Error`**: If `noCheck` is `false` and no row or more than one row matches the conditions.
+- **`Error`**: If `noCheck` is `false` and no row or more than one row matches
+  the conditions.
 
 ##### Examples
 
@@ -4117,23 +4805,28 @@ console.log(flexibleRow);
 
 #### `getData`
 
-Returns the data from the table as an array of objects, optionally filtered by SQL conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Returns the data from the table as an array of objects, optionally filtered by
+SQL conditions. You can also use JavaScript syntax for conditions (e.g., `&&`,
+`||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async getData(options?: { columns?: string | string[]; conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>[]>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.columns`**: An array of column names to include in the result. If omitted, all columns will be included.
-* **`options.conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+- **`options`**: An optional object with configuration options:
+- **`options.columns`**: An array of column names to include in the result. If
+  omitted, all columns will be included.
+- **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
+  clause (e.g., `"category = 'Book'"`).
 
 ##### Returns
 
-A promise that resolves to an array of objects, where each object represents a row in the table.
+A promise that resolves to an array of objects, where each object represents a
+row in the table.
 
 ##### Examples
 
@@ -4151,29 +4844,37 @@ console.log(booksData);
 
 ```ts
 // Get data filtered by a condition and specific columns
-const booksData = await table.getData({ columns: ["title", "author"], conditions: `category === 'Book'` });
+const booksData = await table.getData({
+  columns: ["title", "author"],
+  conditions: `category === 'Book'`,
+});
 console.log(booksData);
 ```
 
 #### `getDataAsCSV`
 
-Returns the data from the table as a CSV string, optionally filtered by SQL conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Returns the data from the table as a CSV string, optionally filtered by SQL
+conditions. You can also use JavaScript syntax for conditions (e.g., `&&`, `||`,
+`===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async getDataAsCSV(options?: { columns?: string | string[]; conditions?: string }): Promise<string>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.columns`**: An array of column names to include in the CSV. If omitted, all columns will be included.
-* **`options.conditions`**: The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+- **`options`**: An optional object with configuration options:
+- **`options.columns`**: An array of column names to include in the CSV. If
+  omitted, all columns will be included.
+- **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
+  clause (e.g., `"category = 'Book'"`).
 
 ##### Returns
 
-A promise that resolves to a CSV-formatted string representation of the table data.
+A promise that resolves to a CSV-formatted string representation of the table
+data.
 
 ##### Examples
 
@@ -4185,30 +4886,38 @@ console.log(allDataCSV);
 
 ```ts
 // Get data filtered by a condition (using JS syntax or SQL syntax) as CSV
-const booksDataCSV = await table.getDataAsCSV({ conditions: `category === 'Book'` });
+const booksDataCSV = await table.getDataAsCSV({
+  conditions: `category === 'Book'`,
+});
 console.log(booksDataCSV);
 ```
 
 ```ts
 // Get data filtered by a condition and specific columns as CSV
-const booksDataCSV = await table.getDataAsCSV({ columns: ["title", "author"], conditions: `category === 'Book'` });
+const booksDataCSV = await table.getDataAsCSV({
+  columns: ["title", "author"],
+  conditions: `category === 'Book'`,
+});
 console.log(booksDataCSV);
 ```
 
 #### `points`
 
-Creates point geometries from longitude and latitude columns. The geometries will have `[latitude, longitude]` axis order.
+Creates point geometries from longitude and latitude columns. The geometries
+will have `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async points(columnLat: string, columnLon: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`columnLat`**: The name of the column storing the latitude values.
-* **`columnLon`**: The name of the column storing the longitude values.
-* **`newColumn`**: The name of the new column where the point geometries will be stored.
+- **`columnLat`**: The name of the column storing the latitude values.
+- **`columnLon`**: The name of the column storing the longitude values.
+- **`newColumn`**: The name of the new column where the point geometries will be
+  stored.
 
 ##### Returns
 
@@ -4226,15 +4935,19 @@ await table.points("lat", "lon", "geom");
 Adds a column with boolean values indicating the validity of geometries.
 
 ##### Signature
+
 ```typescript
 async isValidGeo(newColumn: string, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the boolean results (`TRUE` for valid, `FALSE` for invalid) will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries to be checked. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the boolean results (`TRUE`
+  for valid, `FALSE` for invalid) will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries to be
+  checked. If omitted, the method will automatically attempt to find a geometry
+  column.
 
 ##### Returns
 
@@ -4258,15 +4971,18 @@ await table.isValidGeo("isValidMyGeom", { column: "myGeom" });
 Adds a column with the number of vertices (points) in each geometry.
 
 ##### Signature
+
 ```typescript
 async nbVertices(newColumn: string, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the vertex counts will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the vertex counts will be
+  stored.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4290,13 +5006,15 @@ await table.nbVertices("myGeomVertices", { column: "myGeom" });
 Attempts to make invalid geometries valid without removing any vertices.
 
 ##### Signature
+
 ```typescript
 async fixGeo(column?: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the geometries to be fixed. If omitted, the method will automatically attempt to find a geometry column.
+- **`column`**: The name of the column storing the geometries to be fixed. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4316,18 +5034,22 @@ await table.fixGeo("myGeom");
 
 #### `isClosedGeo`
 
-Adds a column with boolean values indicating whether geometries are closed (e.g., polygons) or open (e.g., linestrings).
+Adds a column with boolean values indicating whether geometries are closed
+(e.g., polygons) or open (e.g., linestrings).
 
 ##### Signature
+
 ```typescript
 async isClosedGeo(newColumn: string, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the boolean results (`TRUE` for closed, `FALSE` for open) will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the boolean results (`TRUE`
+  for closed, `FALSE` for open) will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4347,18 +5069,22 @@ await table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
 
 #### `typeGeo`
 
-Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`, `"POLYGON"`) for each geometry.
+Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`,
+`"POLYGON"`) for each geometry.
 
 ##### Signature
+
 ```typescript
 async typeGeo(newColumn: string, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the geometry types will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the geometry types will be
+  stored.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4378,17 +5104,22 @@ await table.typeGeo("featureType", { column: "featureGeom" });
 
 #### `flipCoordinates`
 
-Flips the coordinate order of geometries in a specified column (e.g., from `[lon, lat]` to `[lat, lon]` or vice-versa).
-**Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly. It also messes up with the projections stored in `table.projections`.
+Flips the coordinate order of geometries in a specified column (e.g., from
+`[lon, lat]` to `[lat, lon]` or vice-versa). **Warning:** This method should be
+used with caution as it directly manipulates coordinate order and can affect the
+accuracy of geospatial operations if not used correctly. It also messes up with
+the projections stored in `table.projections`.
 
 ##### Signature
+
 ```typescript
 async flipCoordinates(column?: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`column`**: The name of the column storing the geometries. If omitted, the
+  method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4408,18 +5139,22 @@ await table.flipCoordinates("myGeom");
 
 #### `reducePrecision`
 
-Reduces the precision of geometries in a specified column to a given number of decimal places.
+Reduces the precision of geometries in a specified column to a given number of
+decimal places.
 
 ##### Signature
+
 ```typescript
 async reducePrecision(decimals: number, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`decimals`**: The number of decimal places to keep in the coordinates of the geometries.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`decimals`**: The number of decimal places to keep in the coordinates of the
+  geometries.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4439,20 +5174,25 @@ await table.reducePrecision(2, { column: "myGeom" });
 
 #### `reproject`
 
-Reprojects the geometries in a specified column to another Spatial Reference System (SRS).
-If reprojecting to WGS84 (`"WGS84"` or `"EPSG:4326"`), the resulting geometries will have `[latitude, longitude]` axis order.
+Reprojects the geometries in a specified column to another Spatial Reference
+System (SRS). If reprojecting to WGS84 (`"WGS84"` or `"EPSG:4326"`), the
+resulting geometries will have `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async reproject(to: string, options?: { from?: string; column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`to`**: The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
-* **`options`**: An optional object with configuration options:
-* **`options.from`**: The original projection of the geometries. If omitted, the method attempts to automatically detect it. Provide this option if auto-detection fails.
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`to`**: The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
+- **`options`**: An optional object with configuration options:
+- **`options.from`**: The original projection of the geometries. If omitted, the
+  method attempts to automatically detect it. Provide this option if
+  auto-detection fails.
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4477,20 +5217,25 @@ await table.reproject("EPSG:3347", { column: "myGeom", from: "EPSG:4326" });
 
 #### `area`
 
-Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
-The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+Computes the area of geometries in square meters (`"m2"`) or optionally square
+kilometers (`"km2"`). The input geometry is assumed to be in the EPSG:4326
+coordinate system (WGS84), with `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the computed areas will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.unit`**: The unit for the computed area: `"m2"` (square meters) or `"km2"` (square kilometers). Defaults to `"m2"`.
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the computed areas will be
+  stored.
+- **`options`**: An optional object with configuration options:
+- **`options.unit`**: The unit for the computed area: `"m2"` (square meters) or
+  `"km2"` (square kilometers). Defaults to `"m2"`.
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4515,20 +5260,25 @@ await table.area("myGeomArea", { column: "myGeom" });
 
 #### `length`
 
-Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
-The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+Computes the length of line geometries in meters (`"m"`) or optionally
+kilometers (`"km"`). The input geometry is assumed to be in the EPSG:4326
+coordinate system (WGS84), with `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the computed lengths will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.unit`**: The unit for the computed length: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the computed lengths will be
+  stored.
+- **`options`**: An optional object with configuration options:
+- **`options.unit`**: The unit for the computed length: `"m"` (meters) or `"km"`
+  (kilometers). Defaults to `"m"`.
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4553,20 +5303,25 @@ await table.length("routeLength", { column: "routeGeom" });
 
 #### `perimeter`
 
-Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
-The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+Computes the perimeter of polygon geometries in meters (`"m"`) or optionally
+kilometers (`"km"`). The input geometry is assumed to be in the EPSG:4326
+coordinate system (WGS84), with `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the computed perimeters will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.unit`**: The unit for the computed perimeter: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the computed perimeters will
+  be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.unit`**: The unit for the computed perimeter: `"m"` (meters) or
+  `"km"` (kilometers). Defaults to `"m"`.
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4591,20 +5346,25 @@ await table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
 
 #### `buffer`
 
-Computes a buffer (a polygon representing a specified distance around a geometry) for geometries in a specified column.
-The distance is in the Spatial Reference System (SRS) unit of the input geometries.
+Computes a buffer (a polygon representing a specified distance around a
+geometry) for geometries in a specified column. The distance is in the Spatial
+Reference System (SRS) unit of the input geometries.
 
 ##### Signature
+
 ```typescript
 async buffer(newColumn: string, distance: number, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the buffered geometries will be stored.
-* **`distance`**: The distance for the buffer. This value is in the units of the geometry's SRS.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the buffered geometries will
+  be stored.
+- **`distance`**: The distance for the buffer. This value is in the units of the
+  geometry's SRS.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4624,30 +5384,48 @@ await table.buffer("pointsBuffer", 10, { column: "pointsGeom" });
 
 #### `joinGeo`
 
-Merges the data of this table (considered the left table) with another table (the right table) based on a spatial relationship.
-Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
-This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
+Merges the data of this table (considered the left table) with another table
+(the right table) based on a spatial relationship. Note that the order of rows
+in the returned data is not guaranteed to be the same as in the original tables.
+This operation might create temporary files in a `.tmp` folder; consider adding
+`.tmp` to your `.gitignore`.
 
 ##### Signature
+
 ```typescript
 async joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftTableColumn?: string; rightTableColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`rightTable`**: The SimpleTable instance to be joined with this table.
-* **`method`**: The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"within"` (geometries of the left table are within a specified distance of geometries in the right table).
-* **`options`**: An optional object with configuration options:
-* **`options.leftTableColumn`**: The name of the column storing geometries in the left table (this table). If omitted, the method attempts to find one.
-* **`options.rightTableColumn`**: The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
-* **`options.type`**: The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
-* **`options.distance`**: Required if `method` is `"within"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
-* **`options.distanceMethod`**: The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate but slowest).
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`rightTable`**: The SimpleTable instance to be joined with this table.
+- **`method`**: The spatial join method to use: `"intersect"` (geometries
+  overlap), `"inside"` (geometries of the left table are entirely within
+  geometries of the right table), or `"within"` (geometries of the left table
+  are within a specified distance of geometries in the right table).
+- **`options`**: An optional object with configuration options:
+- **`options.leftTableColumn`**: The name of the column storing geometries in
+  the left table (this table). If omitted, the method attempts to find one.
+- **`options.rightTableColumn`**: The name of the column storing geometries in
+  the right table. If omitted, the method attempts to find one.
+- **`options.type`**: The type of join operation to perform: `"inner"`, `"left"`
+  (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table
+  order is important.
+- **`options.distance`**: Required if `method` is `"within"`. The target
+  distance for the spatial join. The unit depends on `distanceMethod`.
+- **`options.distanceMethod`**: The method for distance calculations: `"srs"`
+  (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326
+  input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate
+  but slowest).
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the spatially joined data (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the spatially
+joined data (either the modified current table or a new table).
 
 ##### Examples
 
@@ -4669,7 +5447,11 @@ await tableA.joinGeo(tableB, "within", { distance: 10 });
 ```ts
 // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
 // Input geometries must be in EPSG:4326.
-await tableA.joinGeo(tableB, "within", { distance: 10, distanceMethod: "haversine", unit: "km" });
+await tableA.joinGeo(tableB, "within", {
+  distance: 10,
+  distanceMethod: "haversine",
+  unit: "km",
+});
 ```
 
 ```ts
@@ -4684,18 +5466,22 @@ const tableC = await tableA.joinGeo(tableB, "intersect", {
 
 #### `intersection`
 
-Computes the intersection of two sets of geometries, creating new geometries where they overlap.
+Computes the intersection of two sets of geometries, creating new geometries
+where they overlap.
 
 ##### Signature
+
 ```typescript
 async intersection(column1: string, column2: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column1`**: The name of the first column storing geometries.
-* **`column2`**: The name of the second column storing geometries. Both columns must have the same projection.
-* **`newColumn`**: The name of the new column where the computed intersection geometries will be stored.
+- **`column1`**: The name of the first column storing geometries.
+- **`column2`**: The name of the second column storing geometries. Both columns
+  must have the same projection.
+- **`newColumn`**: The name of the new column where the computed intersection
+  geometries will be stored.
 
 ##### Returns
 
@@ -4710,18 +5496,23 @@ await table.intersection("geomA", "geomB", "intersectGeom");
 
 #### `removeIntersection`
 
-Removes the intersection of two geometries from the first geometry, effectively computing the geometric difference.
+Removes the intersection of two geometries from the first geometry, effectively
+computing the geometric difference.
 
 ##### Signature
+
 ```typescript
 async removeIntersection(column1: string, column2: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column1`**: The name of the column storing the reference geometries. These geometries will have the intersection removed.
-* **`column2`**: The name of the column storing the geometries used to compute the intersection. Both columns must have the same projection.
-* **`newColumn`**: The name of the new column where the resulting geometries (without the intersection) will be stored.
+- **`column1`**: The name of the column storing the reference geometries. These
+  geometries will have the intersection removed.
+- **`column2`**: The name of the column storing the geometries used to compute
+  the intersection. Both columns must have the same projection.
+- **`newColumn`**: The name of the new column where the resulting geometries
+  (without the intersection) will be stored.
 
 ##### Returns
 
@@ -4739,13 +5530,15 @@ await table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
 Fills holes in polygon geometries.
 
 ##### Signature
+
 ```typescript
 async fillHoles(column?: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`column`**: The name of the column storing the geometries. If omitted, the
+  method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4765,18 +5558,22 @@ await table.fillHoles("polygonGeom");
 
 #### `intersect`
 
-Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE` otherwise.
+Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE`
+otherwise.
 
 ##### Signature
+
 ```typescript
 async intersect(column1: string, column2: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column1`**: The name of the first column storing geometries.
-* **`column2`**: The name of the second column storing geometries. Both columns must have the same projection.
-* **`newColumn`**: The name of the new column where the boolean results (`TRUE` for intersection, `FALSE` otherwise) will be stored.
+- **`column1`**: The name of the first column storing geometries.
+- **`column2`**: The name of the second column storing geometries. Both columns
+  must have the same projection.
+- **`newColumn`**: The name of the new column where the boolean results (`TRUE`
+  for intersection, `FALSE` otherwise) will be stored.
 
 ##### Returns
 
@@ -4791,18 +5588,23 @@ await table.intersect("geomA", "geomB", "doIntersect");
 
 #### `inside`
 
-Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in `column2`, and `FALSE` otherwise.
+Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in
+`column2`, and `FALSE` otherwise.
 
 ##### Signature
+
 ```typescript
 async inside(column1: string, column2: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column1`**: The name of the column storing the geometries to be tested for containment.
-* **`column2`**: The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
-* **`newColumn`**: The name of the new column where the boolean results (`TRUE` for inside, `FALSE` otherwise) will be stored.
+- **`column1`**: The name of the column storing the geometries to be tested for
+  containment.
+- **`column2`**: The name of the column storing the geometries to be tested as
+  containers. Both columns must have the same projection.
+- **`newColumn`**: The name of the new column where the boolean results (`TRUE`
+  for inside, `FALSE` otherwise) will be stored.
 
 ##### Returns
 
@@ -4817,18 +5619,22 @@ await table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
 
 #### `union`
 
-Computes the union of two geometries, creating a new geometry that represents the merged area of both.
+Computes the union of two geometries, creating a new geometry that represents
+the merged area of both.
 
 ##### Signature
+
 ```typescript
 async union(column1: string, column2: string, newColumn: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column1`**: The name of the first column storing geometries.
-* **`column2`**: The name of the second column storing geometries. Both columns must have the same projection.
-* **`newColumn`**: The name of the new column where the computed union geometries will be stored.
+- **`column1`**: The name of the first column storing geometries.
+- **`column2`**: The name of the second column storing geometries. Both columns
+  must have the same projection.
+- **`newColumn`**: The name of the new column where the computed union
+  geometries will be stored.
 
 ##### Returns
 
@@ -4843,19 +5649,23 @@ await table.union("geomA", "geomB", "unionGeom");
 
 #### `latLon`
 
-Extracts the latitude and longitude coordinates from point geometries.
-The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+Extracts the latitude and longitude coordinates from point geometries. The input
+geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with
+`[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async latLon(column: string, columnLat: string, columnLon: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the point geometries.
-* **`columnLat`**: The name of the new column where the extracted latitude values will be stored.
-* **`columnLon`**: The name of the new column where the extracted longitude values will be stored.
+- **`column`**: The name of the column storing the point geometries.
+- **`columnLat`**: The name of the new column where the extracted latitude
+  values will be stored.
+- **`columnLon`**: The name of the new column where the extracted longitude
+  values will be stored.
 
 ##### Returns
 
@@ -4870,19 +5680,25 @@ await table.latLon("geom", "lat", "lon");
 
 #### `simplify`
 
-Simplifies geometries while preserving their overall coverage. A higher tolerance results in more significant simplification.
+Simplifies geometries while preserving their overall coverage. A higher
+tolerance results in more significant simplification.
 
 ##### Signature
+
 ```typescript
 async simplify(tolerance: number, options?: { column?: string; simplifyBoundary?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`tolerance`**: A numeric value representing the simplification tolerance. A higher value leads to greater simplification.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-* **`options.simplifyBoundary`**: If `true` (default), the boundary of the geometries will also be simplified. If `false`, only the interior of the geometries will be simplified, preserving the original boundary.
+- **`tolerance`**: A numeric value representing the simplification tolerance. A
+  higher value leads to greater simplification.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
+- **`options.simplifyBoundary`**: If `true` (default), the boundary of the
+  geometries will also be simplified. If `false`, only the interior of the
+  geometries will be simplified, preserving the original boundary.
 
 ##### Returns
 
@@ -4902,19 +5718,22 @@ await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
 
 #### `centroid`
 
-Computes the centroid of geometries.
-The values are returned in the SRS unit of the input geometries.
+Computes the centroid of geometries. The values are returned in the SRS unit of
+the input geometries.
 
 ##### Signature
+
 ```typescript
 async centroid(newColumn: string, options?: { column?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`newColumn`**: The name of the new column where the computed centroid geometries will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`newColumn`**: The name of the new column where the computed centroid
+  geometries will be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -4934,25 +5753,33 @@ await table.centroid("areaCentroid", { column: "areaGeom" });
 
 #### `distance`
 
-Computes the distance between geometries in two specified columns.
-By default, the distance is calculated in the Spatial Reference System (SRS) unit of the input geometries.
-You can optionally specify `"spheroid"` or `"haversine"` methods to get results in meters or kilometers.
-If using `"spheroid"` or `"haversine"`, the input geometries must be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+Computes the distance between geometries in two specified columns. By default,
+the distance is calculated in the Spatial Reference System (SRS) unit of the
+input geometries. You can optionally specify `"spheroid"` or `"haversine"`
+methods to get results in meters or kilometers. If using `"spheroid"` or
+`"haversine"`, the input geometries must be in the EPSG:4326 coordinate system
+(WGS84), with `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async distance(column1: string, column2: string, newColumn: string, options?: { unit?: "m" | "km"; method?: "srs" | "haversine" | "spheroid"; decimals?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column1`**: The name of the first column storing geometries.
-* **`column2`**: The name of the second column storing geometries.
-* **`newColumn`**: The name of the new column where the computed distances will be stored.
-* **`options`**: An optional object with configuration options:
-* **`options.method`**: The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326), or `"spheroid"` (meters, requires EPSG:4326, most accurate but slowest).
-* **`options.unit`**: If `method` is `"spheroid"` or `"haversine"`, you can choose between `"m"` (meters, default) or `"km"` (kilometers).
-* **`options.decimals`**: The number of decimal places to round the distance values. Defaults to `undefined` (no rounding).
+- **`column1`**: The name of the first column storing geometries.
+- **`column2`**: The name of the second column storing geometries.
+- **`newColumn`**: The name of the new column where the computed distances will
+  be stored.
+- **`options`**: An optional object with configuration options:
+- **`options.method`**: The method to use for distance calculations: `"srs"`
+  (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326), or
+  `"spheroid"` (meters, requires EPSG:4326, most accurate but slowest).
+- **`options.unit`**: If `method` is `"spheroid"` or `"haversine"`, you can
+  choose between `"m"` (meters, default) or `"km"` (kilometers).
+- **`options.decimals`**: The number of decimal places to round the distance
+  values. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -4974,27 +5801,37 @@ await table.distance("point1", "point2", "distance_m", { method: "haversine" });
 ```ts
 // Compute Haversine distance in kilometers, rounded to 2 decimal places
 // Input geometries must be in EPSG:4326.
-await table.distance("point1", "point2", "distance_km", { method: "haversine", unit: "km", decimals: 2 });
+await table.distance("point1", "point2", "distance_km", {
+  method: "haversine",
+  unit: "km",
+  decimals: 2,
+});
 ```
 
 ```ts
 // Compute Spheroid distance in kilometers
 // Input geometries must be in EPSG:4326.
-await table.distance("area1", "area2", "distance_spheroid_km", { method: "spheroid", unit: "km" });
+await table.distance("area1", "area2", "distance_spheroid_km", {
+  method: "spheroid",
+  unit: "km",
+});
 ```
 
 #### `unnestGeo`
 
-Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
+Unnests geometries recursively, transforming multi-part geometries (e.g.,
+MultiPolygon) into individual single-part geometries (e.g., Polygon).
 
 ##### Signature
+
 ```typescript
 async unnestGeo(column?: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the geometries to be unnested. If omitted, the method will automatically attempt to find a geometry column.
+- **`column`**: The name of the column storing the geometries to be unnested. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -5014,24 +5851,36 @@ await table.unnestGeo("multiGeom");
 
 #### `aggregateGeo`
 
-Aggregates geometries in a specified column based on a chosen aggregation method.
+Aggregates geometries in a specified column based on a chosen aggregation
+method.
 
 ##### Signature
+
 ```typescript
 async aggregateGeo(method: "union" | "intersection", options?: { column?: string; categories?: string | string[]; outputTable?: string | boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`method`**: The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
-* **`options`**: An optional object with configuration options:
-* **`options.column`**: The name of the column storing the geometries to be aggregated. If omitted, the method will automatically attempt to find a geometry column.
-* **`options.categories`**: The column name or an array of column names that define categories for the aggregation. Aggregation will be performed independently within each category.
-* **`options.outputTable`**: If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+- **`method`**: The aggregation method to apply: `"union"` (combines all
+  geometries into a single multi-geometry) or `"intersection"` (computes the
+  intersection of all geometries).
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries to be
+  aggregated. If omitted, the method will automatically attempt to find a
+  geometry column.
+- **`options.categories`**: The column name or an array of column names that
+  define categories for the aggregation. Aggregation will be performed
+  independently within each category.
+- **`options.outputTable`**: If `true`, the results will be stored in a new
+  table with a generated name. If a string, it will be used as the name for the
+  new table. If `false` or omitted, the current table will be overwritten.
+  Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the aggregated geometries (either the modified current table or a new table).
+A promise that resolves to the SimpleTable instance containing the aggregated
+geometries (either the modified current table or a new table).
 
 ##### Examples
 
@@ -5047,7 +5896,10 @@ await table.aggregateGeo("union", { categories: "country" });
 
 ```ts
 // Aggregate geometries in 'regions' column into their intersection, storing results in a new table
-const intersectionTable = await table.aggregateGeo("intersection", { column: "regions", outputTable: true });
+const intersectionTable = await table.aggregateGeo("intersection", {
+  column: "regions",
+  outputTable: true,
+});
 ```
 
 #### `linesToPolygons`
@@ -5055,13 +5907,15 @@ const intersectionTable = await table.aggregateGeo("intersection", { column: "re
 Transforms closed linestring geometries into polygon geometries.
 
 ##### Signature
+
 ```typescript
 async linesToPolygons(column?: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the linestring geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`column`**: The name of the column storing the linestring geometries. If
+  omitted, the method will automatically attempt to find a geometry column.
 
 ##### Returns
 
@@ -5081,21 +5935,26 @@ await table.linesToPolygons("routeLines");
 
 #### `getBoundingBox`
 
-Returns the bounding box of geometries in `[minLat, minLon, maxLat, maxLon]` order.
-By default, the method will try to find the column with the geometries. The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+Returns the bounding box of geometries in `[minLat, minLon, maxLat, maxLon]`
+order. By default, the method will try to find the column with the geometries.
+The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84),
+with `[latitude, longitude]` axis order.
 
 ##### Signature
+
 ```typescript
 async getBoundingBox(column?: string): Promise<[number, number, number, number]>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
+- **`column`**: The name of the column storing geometries. If omitted, the
+  method will automatically attempt to find a geometry column.
 
 ##### Returns
 
-A promise that resolves to an array `[minLat, minLon, maxLat, maxLon]` representing the bounding box.
+A promise that resolves to an array `[minLat, minLon, maxLat, maxLon]`
+representing the bounding box.
 
 ##### Examples
 
@@ -5113,24 +5972,30 @@ console.log(areaBbox);
 
 #### `getGeoData`
 
-Returns the table's geospatial data as a GeoJSON object.
-If the table has multiple geometry columns, you must specify which one to use.
-If the geometry column's projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the output GeoJSON.
+Returns the table's geospatial data as a GeoJSON object. If the table has
+multiple geometry columns, you must specify which one to use. If the geometry
+column's projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order),
+the coordinates will be flipped to follow the RFC7946 standard
+(`[longitude, latitude]` axis order) in the output GeoJSON.
 
 ##### Signature
+
 ```typescript
 async getGeoData(column?: string, options?: { rewind?: boolean }): Promise<{ type: string; features: unknown[] }>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-* **`options`**: An optional object with configuration options:
-* **`options.rewind`**: If `true`, rewinds the coordinates of polygons to follow the spherical winding order (important for D3.js). Defaults to `false`.
+- **`column`**: The name of the column storing the geometries. If omitted, the
+  method will automatically attempt to find a geometry column.
+- **`options`**: An optional object with configuration options:
+- **`options.rewind`**: If `true`, rewinds the coordinates of polygons to follow
+  the spherical winding order (important for D3.js). Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to a GeoJSON object representing the table's geospatial data.
+A promise that resolves to a GeoJSON object representing the table's geospatial
+data.
 
 ##### Examples
 
@@ -5154,21 +6019,33 @@ console.log(rewoundGeojson);
 
 #### `writeData`
 
-Writes the table's data to a file in various formats (CSV, JSON, Parquet, DuckDB, SQLite).
-If the specified path does not exist, it will be created.
+Writes the table's data to a file in various formats (CSV, JSON, Parquet,
+DuckDB, SQLite). If the specified path does not exist, it will be created.
 
 ##### Signature
+
 ```typescript
 async writeData(file: string, options?: { compression?: boolean; dataAsArrays?: boolean; formatDates?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`file`**: The absolute path to the output file (e.g., `"./output.csv"`, `"./output.json"`).
-* **`options`**: An optional object with configuration options:
-* **`options.compression`**: A boolean indicating whether to compress the output file. If `true`, CSV and JSON files will be compressed with GZIP, while Parquet files will use ZSTD. Defaults to `false`.
-* **`options.dataAsArrays`**: For JSON files only. If `true`, JSON files are written as a single object with arrays for each column (e.g., `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This can reduce file size for web projects. You can use the `arraysToData` function from the [journalism library](https://jsr.io/@nshiab/journalism/doc/~/arraysToData) to convert it back.
-* **`options.formatDates`**: For CSV and JSON files only. If `true`, date and timestamp columns will be formatted as ISO 8601 strings (e.g., `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.
+- **`file`**: The absolute path to the output file (e.g., `"./output.csv"`,
+  `"./output.json"`).
+- **`options`**: An optional object with configuration options:
+- **`options.compression`**: A boolean indicating whether to compress the output
+  file. If `true`, CSV and JSON files will be compressed with GZIP, while
+  Parquet files will use ZSTD. Defaults to `false`.
+- **`options.dataAsArrays`**: For JSON files only. If `true`, JSON files are
+  written as a single object with arrays for each column (e.g.,
+  `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This
+  can reduce file size for web projects. You can use the `arraysToData` function
+  from the
+  [journalism library](https://jsr.io/@nshiab/journalism/doc/~/arraysToData) to
+  convert it back.
+- **`options.formatDates`**: For CSV and JSON files only. If `true`, date and
+  timestamp columns will be formatted as ISO 8601 strings (e.g.,
+  `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.
 
 ##### Returns
 
@@ -5209,25 +6086,36 @@ await table.writeData("./output_dates.json", { formatDates: true });
 
 #### `writeGeoData`
 
-Writes the table's geospatial data to a file in GeoJSON or GeoParquet format.
-If the specified path does not exist, it will be created.
+Writes the table's geospatial data to a file in GeoJSON or GeoParquet format. If
+the specified path does not exist, it will be created.
 
-For GeoJSON files (`.geojson` or `.json`), if the projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the output.
+For GeoJSON files (`.geojson` or `.json`), if the projection is WGS84 or
+EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped
+to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the
+output.
 
 ##### Signature
+
 ```typescript
 async writeGeoData(file: string, options?: { precision?: number; compression?: boolean; rewind?: boolean; metadata?: unknown; formatDates?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`file`**: The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`).
-* **`options`**: An optional object with configuration options:
-* **`options.precision`**: For GeoJSON, the maximum number of figures after the decimal separator to write in coordinates. Defaults to `undefined` (full precision).
-* **`options.compression`**: For GeoParquet, if `true`, the output will be ZSTD compressed. Defaults to `false`.
-* **`options.rewind`**: For GeoJSON, if `true`, rewinds the coordinates of polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
-* **`options.metadata`**: For GeoJSON, an object to be added as top-level metadata to the GeoJSON output.
-* **`options.formatDates`**: For GeoJSON, if `true`, formats date and timestamp columns to ISO 8601 strings. Defaults to `false`.
+- **`file`**: The absolute path to the output file (e.g., `"./output.geojson"`,
+  `"./output.geoparquet"`).
+- **`options`**: An optional object with configuration options:
+- **`options.precision`**: For GeoJSON, the maximum number of figures after the
+  decimal separator to write in coordinates. Defaults to `undefined` (full
+  precision).
+- **`options.compression`**: For GeoParquet, if `true`, the output will be ZSTD
+  compressed. Defaults to `false`.
+- **`options.rewind`**: For GeoJSON, if `true`, rewinds the coordinates of
+  polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
+- **`options.metadata`**: For GeoJSON, an object to be added as top-level
+  metadata to the GeoJSON output.
+- **`options.formatDates`**: For GeoJSON, if `true`, formats date and timestamp
+  columns to ISO 8601 strings. Defaults to `false`.
 
 ##### Returns
 
@@ -5255,23 +6143,29 @@ await table.writeGeoData("./output_high_precision.geojson", {
 
 #### `cache`
 
-Caches the results of computations in `./.sda-cache`.
-You should add `./.sda-cache` to your `.gitignore` file.
+Caches the results of computations in `./.sda-cache`. You should add
+`./.sda-cache` to your `.gitignore` file.
 
 ##### Signature
+
 ```typescript
 async cache(run: () => Promise<void>, options?: { ttl?: number }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`run`**: A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
-* **`options`**: An optional object with configuration options:
-* **`options.ttl`**: Time to live (in seconds). If the data in the cache is older than this duration, the `run` function will be executed again to refresh the cache. By default, there is no TTL, meaning the cache is only invalidated if the `run` function's content changes.
+- **`run`**: A function wrapping the computations to be cached. This function
+  will be executed on the first run or if the cached data is invalid/expired.
+- **`options`**: An optional object with configuration options:
+- **`options.ttl`**: Time to live (in seconds). If the data in the cache is
+  older than this duration, the `run` function will be executed again to refresh
+  the cache. By default, there is no TTL, meaning the cache is only invalidated
+  if the `run` function's content changes.
 
 ##### Returns
 
-A promise that resolves when the computations are complete or the data is loaded from cache.
+A promise that resolves when the computations are complete or the data is loaded
+from cache.
 
 ##### Examples
 
@@ -5331,21 +6225,27 @@ await sdb.done();
 
 #### `logTable`
 
-Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
-You can optionally log the column types and filter the data based on conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Logs a specified number of rows from the table to the console. By default, the
+first 10 rows are logged. You can optionally log the column types and filter the
+data based on conditions. You can also use JavaScript syntax for conditions
+(e.g., `&&`, `||`, `===`, `!==`).
 
 ##### Signature
+
 ```typescript
 async logTable(options?: "all" | number | { nbRowsToLog?: number | "all"; types?: boolean; conditions?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`options`**: Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
-* **`options.nbRowsToLog`**: The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
-* **`options.types`**: If `true`, logs the column types along with the data. Defaults to `false`.
-* **`options.conditions`**: A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
+- **`options`**: Either the number of rows to log (a specific number or `"all"`)
+  or an object with configuration options:
+- **`options.nbRowsToLog`**: The number of rows to log. Defaults to 10 or the
+  value set in the SimpleDB instance. Use `"all"` to log all rows.
+- **`options.types`**: If `true`, logs the column types along with the data.
+  Defaults to `false`.
+- **`options.conditions`**: A SQL `WHERE` clause condition to filter the data
+  before logging. Defaults to no condition.
 
 ##### Returns
 
@@ -5380,17 +6280,21 @@ await table.logTable({ conditions: `status === 'active'` });
 
 #### `logDescription`
 
-Logs descriptive information about the columns in the table to the console. This includes details such as data types, number of null values, and number of distinct values for each column.
-It internally calls the `getDescription` method to retrieve the descriptive statistics.
+Logs descriptive information about the columns in the table to the console. This
+includes details such as data types, number of null values, and number of
+distinct values for each column. It internally calls the `getDescription` method
+to retrieve the descriptive statistics.
 
 ##### Signature
+
 ```typescript
 async logDescription(): Promise<void>;
 ```
 
 ##### Returns
 
-A promise that resolves when the column description has been logged to the console.
+A promise that resolves when the column description has been logged to the
+console.
 
 ##### Examples
 
@@ -5404,13 +6308,15 @@ await table.logDescription();
 Logs the projections of the geospatial data (if any) to the console.
 
 ##### Signature
+
 ```typescript
 async logProjections(): Promise<SimpleTable>;
 ```
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after logging the projections.
+A promise that resolves to the SimpleTable instance after logging the
+projections.
 
 ##### Examples
 
@@ -5424,13 +6330,15 @@ await table.logProjections();
 Logs the types of all columns in the table to the console.
 
 ##### Signature
+
 ```typescript
 async logTypes(): Promise<SimpleTable>;
 ```
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after logging the column types.
+A promise that resolves to the SimpleTable instance after logging the column
+types.
 
 ##### Examples
 
@@ -5441,23 +6349,28 @@ await table.logTypes();
 
 #### `logUniques`
 
-Logs unique values for a specified column to the console. By default, a maximum of 100 values are logged (depending on your runtime).
-You can optionally stringify the values to see them all.
+Logs unique values for a specified column to the console. By default, a maximum
+of 100 values are logged (depending on your runtime). You can optionally
+stringify the values to see them all.
 
 ##### Signature
+
 ```typescript
 async logUniques(column: string, options?: { stringify?: boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the column from which to retrieve and log unique values.
-* **`options`**: An optional object with configuration options:
-* **`options.stringify`**: If `true`, converts the unique values to a JSON string before logging. Defaults to `false`.
+- **`column`**: The name of the column from which to retrieve and log unique
+  values.
+- **`options`**: An optional object with configuration options:
+- **`options.stringify`**: If `true`, converts the unique values to a JSON
+  string before logging. Defaults to `false`.
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after logging the unique values.
+A promise that resolves to the SimpleTable instance after logging the unique
+values.
 
 ##### Examples
 
@@ -5473,17 +6386,20 @@ await table.logUniques("name", { stringify: true });
 
 #### `logColumns`
 
-Logs the columns in the table to the console. You can optionally include their data types.
+Logs the columns in the table to the console. You can optionally include their
+data types.
 
 ##### Signature
+
 ```typescript
 async logColumns(options?: { types?: boolean }): Promise<SimpleTable>;
 ```
 
 ##### Parameters
 
-* **`options`**: An optional object with configuration options:
-* **`options.types`**: If `true`, logs the column names along with their data types. Defaults to `false`.
+- **`options`**: An optional object with configuration options:
+- **`options.types`**: If `true`, logs the column names along with their data
+  types. Defaults to `false`.
 
 ##### Returns
 
@@ -5506,6 +6422,7 @@ await table.logColumns({ types: true });
 Logs the total number of rows in the table to the console.
 
 ##### Signature
+
 ```typescript
 async logNbRows(): Promise<SimpleTable>;
 ```
@@ -5523,18 +6440,23 @@ await table.logNbRows();
 
 #### `logBottom`
 
-Logs the bottom `n` rows of the table to the console. By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
+Logs the bottom `n` rows of the table to the console. By default, the last row
+will be returned first. To preserve the original order, use the `originalOrder`
+option.
 
 ##### Signature
+
 ```typescript
 async logBottom(count?: number, options?: { originalOrder?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`count`**: The number of rows to log from the bottom of the table. Defaults to the table's `nbRowsToLog` option if not specified.
-* **`options`**: An optional object with logging preferences.
-* **`options.originalOrder`**: If true, the rows are displayed in their original order (top to bottom). Defaults to false.
+- **`count`**: The number of rows to log from the bottom of the table. Defaults
+  to the table's `nbRowsToLog` option if not specified.
+- **`options`**: An optional object with logging preferences.
+- **`options.originalOrder`**: If true, the rows are displayed in their original
+  order (top to bottom). Defaults to false.
 
 ##### Returns
 
@@ -5562,13 +6484,14 @@ await table.logBottom(5, { originalOrder: true });
 Logs the extent (minimum and maximum values) of a numeric column to the console.
 
 ##### Signature
+
 ```typescript
 async logExtent(column: string): Promise<void>;
 ```
 
 ##### Parameters
 
-* **`column`**: The name of the numeric column for which to log the extent.
+- **`column`**: The name of the numeric column for which to log the extent.
 
 ##### Returns
 
@@ -5614,6 +6537,3 @@ await boundaries.loadGeoData("./boundaries.geojson");
 // Close the database connection
 await sdb.done();
 ```
-
-
-

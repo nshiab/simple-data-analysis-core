@@ -6564,39 +6564,6 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Creates an [Observable Plot](https://github.com/observablehq/plot) chart as an image file (.png or .svg) from the table data.
-   * To create maps, use the `writeMap` method.
-   *
-   * @param chart - A function that takes data (as an array of objects) and returns an Observable Plot chart (an `SVGSVGElement` or `HTMLElement`).
-   * @param path - The absolute path where the chart image will be saved (e.g., `"./output/chart.png"`).
-   * @param options - Optional object containing additional settings:
-   * @param options.style - A CSS string to customize the chart's appearance. This is applied to a `<div>` element wrapping the Plot chart (which has the id `chart`). Use this if the Plot `style` option is insufficient.
-   * @param options.dark - If `true`, switches the chart to dark mode. Defaults to `false`.
-   * @returns A promise that resolves when the chart image has been saved.
-   * @category Dataviz
-   *
-   * @example
-   * ```ts
-   * import { dot, plot } from "@observablehq/plot";
-   *
-   * const sdb = new SimpleDB();
-   * const table = sdb.newTable();
-   * const data = [{ year: 2024, value: 10 }, { year: 2025, value: 15 }];
-   * await table.loadArray(data);
-   *
-   * const chartFunction = (plotData: unknown[]) =>
-   *   plot({
-   *     marks: [
-   *       dot(plotData, { x: "year", y: "value" }),
-   *     ],
-   *   });
-   *
-   * const outputPath = "output/chart.png";
-   *
-   * await table.writeChart(chartFunction, outputPath);
-   * ```
-   */
-  /**
    * Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
    * You can optionally log the column types and filter the data based on conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
