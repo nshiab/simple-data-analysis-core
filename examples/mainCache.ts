@@ -1,4 +1,4 @@
-import { SimpleDB } from "@nshiab/simple-data-analysis";
+import { SimpleDB } from "@nshiab/simple-data-analysis-core";
 
 // We enable the cacheVerbose option, which will
 // log information about the cached data.
@@ -21,7 +21,7 @@ const fires = sdb.newTable("fires");
 await fires.cache(
   async () => {
     await fires.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/firesCanada2023.csv",
+      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
     );
     await fires.points("lat", "lon", "geom");
   },
@@ -37,7 +37,7 @@ const provinces = sdb.newTable("provinces");
 // starts over.
 await provinces.cache(async () => {
   await provinces.loadGeoData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 });
 

@@ -7,7 +7,7 @@ starting a conversation about a new feature or flagging a bug is already of
 great help! :)
 
 Feel free to start a
-[conversation](https://github.com/nshiab/simple-data-analysis/discussions) if
+[conversation](https://github.com/nshiab/simple-data-analysis-core/discussions) if
 some questions you have are not answered below.
 
 You can also check
@@ -17,7 +17,7 @@ resource.
 ## Creating an issue
 
 The first step is to create an issue with a clear title and a description of the
-problem you encountered: https://github.com/nshiab/simple-data-analysis/issues
+problem you encountered: https://github.com/nshiab/simple-data-analysis-core/issues
 
 If you want to solve the problem yourself, explain what you have in mind and how
 you want to proceed.
@@ -46,7 +46,7 @@ deno test -A test/unit/methods/addColumn.test.ts
 
 And here's how to run all tests, including formatting, typescript checks,
 linter, and dry run to publish on
-[JSR](https://jsr.io/@nshiab/simple-data-analysis):
+[JSR](https://jsr.io/@nshiab/simple-data-analysis-core):
 
 ```bash
 deno task all-tests

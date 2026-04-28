@@ -3,11 +3,11 @@
 SDA is an easy-to-use and high-performance TypeScript library for data analysis.
 You can use it with tabular and geospatial data.
 
-The library is available on [JSR](https://jsr.io/@nshiab/simple-data-analysis)
-with its [documentation](https://jsr.io/@nshiab/simple-data-analysis/doc).
+The library is available on [JSR](https://jsr.io/@nshiab/simple-data-analysis-core)
+with its [documentation](https://jsr.io/@nshiab/simple-data-analysis-core/doc).
 
 The documentation is also available as the markdown file
-[llm.md](https://github.com/nshiab/simple-data-analysis/blob/main/llm.md), which
+[llm.md](https://github.com/nshiab/simple-data-analysis-core/blob/main/llm.md), which
 can be passed as context to improve the use of the library by AI coding
 assistants or agents.
 
@@ -23,7 +23,7 @@ You might also find the
 [journalism library](https://github.com/nshiab/journalism) interesting.
 
 If you wish to contribute, please check the
-[guidelines](https://github.com/nshiab/simple-data-analysis/blob/main/CONTRIBUTING.md).
+[guidelines](https://github.com/nshiab/simple-data-analysis-core/blob/main/CONTRIBUTING.md).
 
 ## Quick setup
 
@@ -68,15 +68,15 @@ If you want to add the library to an existing project, run this:
 
 ```bash
 # Deno >= 2.2.x
-deno install --node-modules-dir=auto jsr:@nshiab/simple-data-analysis
+deno install --node-modules-dir=auto jsr:@nshiab/simple-data-analysis-core
 # To run with Deno
 deno run -A main.ts
 
 # Node.js
-npx jsr add @nshiab/simple-data-analysis
+npx jsr add @nshiab/simple-data-analysis-core
 
 # Bun
-bunx jsr add @nshiab/simple-data-analysis
+bunx jsr add @nshiab/simple-data-analysis-core
 ```
 
 ## Core principles
@@ -101,22 +101,12 @@ The syntax and the available methods were inspired by
 [Tidyverse](https://www.tidyverse.org/) (R).
 
 You can also write your own SQL queries if you want to (check the
-[customQuery method](https://jsr.io/@nshiab/simple-data-analysis/doc/~/SimpleDB.prototype.customQuery))
+[customQuery method](https://jsr.io/@nshiab/simple-data-analysis-core/doc/~/SimpleDB.prototype.customQuery))
 or use JavaScript to process your data (check the
-[updateWithJS method](https://jsr.io/@nshiab/simple-data-analysis/doc/~/SimpleTable.prototype.updateWithJS)).
-
-Several methods can also leverage LLMs (large language models). See
-[aiRowByRow](https://jsr.io/@nshiab/simple-data-analysis/doc/~/SimpleTable.prototype.aiRowByRow)
-for cleaning, extracting, or categorizing data, and
-[aiQuery](https://jsr.io/@nshiab/simple-data-analysis/doc/~/SimpleTable.prototype.aiQuery)
-for interacting with your data using natural language. For embeddings and
-semantic search, have a look at
-[aiEmbeddings](https://jsr.io/@nshiab/simple-data-analysis/doc/~/SimpleTable.prototype.aiEmbeddings)
-and
-[aiVectorSimilarity](https://jsr.io/@nshiab/simple-data-analysis/doc/~/SimpleTable.prototype.aiVectorSimilarity).
+[updateWithJS method](https://jsr.io/@nshiab/simple-data-analysis-core/doc/~/SimpleTable.prototype.updateWithJS)).
 
 Feel free to start a conversation or open an issue. Check how you can
-[contribute](https://github.com/nshiab/simple-data-analysis/blob/main/CONTRIBUTING.md).
+[contribute](https://github.com/nshiab/simple-data-analysis-core/blob/main/CONTRIBUTING.md).
 
 ## Performance
 
@@ -128,7 +118,7 @@ temperature per decade and city with the daily temperatures from the
 See [this repository](https://github.com/nshiab/simple-data-analysis-benchmarks)
 for the code.
 
-We ran the same calculations with **simple-data-analysis** (Node.js, Bun, and
+We ran the same calculations with **simple-data-analysis-core** (Node.js, Bun, and
 Deno), **Pandas (Python)**, and the **tidyverse (R)**.
 
 In each script, we:
@@ -150,7 +140,7 @@ With _ahccd.csv_:
 - 20 columns
 - 22,051,025 rows
 
-Thanks to DuckDB, **simple-data-analysis** is the fastest option.
+Thanks to DuckDB, **simple-data-analysis-core** is the fastest option.
 
 ![A chart showing the processing duration of multiple scripts in various languages](./assets/big-file.png)
 
@@ -175,7 +165,7 @@ And _neighbourhoods.geojson_:
 
 Each script has been run ten times on a MacBook Pro (Apple M4 Max / 64 GB).
 
-As we can see, **simple-data-analysis** is also the fastest option here.
+As we can see, **simple-data-analysis-core** is also the fastest option here.
 
 ![A chart showing the processing duration of multiple scripts in various languages, for geospatial computations](./assets/spatial.png)
 
@@ -194,7 +184,7 @@ If you are using Deno, make sure to install and enable the
 [Deno extension](https://docs.deno.com/runtime/getting_started/setup_your_environment/).
 
 ```ts
-import { SimpleDB } from "@nshiab/simple-data-analysis";
+import { SimpleDB } from "@nshiab/simple-data-analysis-core";
 // We start a SimpleDB instance.
 const sdb = new SimpleDB();
 
@@ -202,7 +192,7 @@ const sdb = new SimpleDB();
 const fires = sdb.newTable("fires");
 // We fetch the wildfires data. It's a csv.
 await fires.loadData(
-  "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/firesCanada2023.csv",
+  "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
 );
 // We create point geometries from the lat and lon columns
 // and we store the points in the new column geom
@@ -214,7 +204,7 @@ await fires.logTable();
 const provinces = sdb.newTable("provinces");
 // We fetch the provinces' boundaries. It's a geojson.
 await provinces.loadGeoData(
-  "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+  "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
 );
 // We log the provinces
 await provinces.logTable();
@@ -263,7 +253,7 @@ await sdb.done();
 
 Here's what you should see in your console if your run this script.
 
-![The console tab in VS Code showing the result of simple-data-analysis computations.](./assets/nodejs-console-with-chart.png)
+![The console tab in VS Code showing the result of simple-data-analysis-core computations.](./assets/nodejs-console-with-chart.png)
 
 You'll also find a `firesInsideProvinces.parquet` file in your folder.
 
@@ -275,7 +265,7 @@ computationally expensive operations.
 
 Here's the previous example adapted to cache data. For more information, check
 the
-[cache method documentation](https://nshiab.github.io/simple-data-analysis/classes/SimpleTable.html#cache).
+[cache method documentation](https://nshiab.github.io/simple-data-analysis-core/classes/SimpleTable.html#cache).
 
 The data is cached in the hidden folder `.sda-cache` at the root of your code
 repository. Make sure to add it to your `.gitignore`. If you want to clean your
@@ -286,7 +276,7 @@ automatically added to your `.gitignore` and you can use `npm run clean` or
 `bun run clean` or `deno task clean` to clear the cache.
 
 ```ts
-import { SimpleDB } from "@nshiab/simple-data-analysis";
+import { SimpleDB } from "@nshiab/simple-data-analysis-core";
 
 // We enable two options to make our lives easier.
 // cacheVerbose will log information about the cached
@@ -311,7 +301,7 @@ const fires = sdb.newTable("fires");
 await fires.cache(
   async () => {
     await fires.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/firesCanada2023.csv",
+      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
     );
     await fires.points("lat", "lon", "geom");
   },
@@ -327,7 +317,7 @@ const provinces = sdb.newTable("provinces");
 // starts over.
 await provinces.cache(async () => {
   await provinces.loadGeoData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 });
 
@@ -362,7 +352,6 @@ await firesInsideProvinces.cache(
 );
 
 await firesInsideProvinces.logTable({ nbRowsToLog: 13, types: true });
-await firesInsideProvinces.logBarChart("nameEnglish", "burntArea");
 
 // It's important to call done() at the end.
 // This method will remove the unused files

@@ -1,4 +1,4 @@
-import { SimpleDB } from "@nshiab/simple-data-analysis";
+import { SimpleDB } from "@nshiab/simple-data-analysis-core";
 
 // We start a SimpleDB instance.
 const sdb = new SimpleDB();
@@ -7,7 +7,7 @@ const sdb = new SimpleDB();
 const provinces = sdb.newTable("provinces");
 // We fetch the provinces' boundaries. It's a geoJSON.
 await provinces.loadGeoData(
-  "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+  "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
 );
 
 // Uncomment this line if you want to see the table.
@@ -17,7 +17,7 @@ await provinces.loadGeoData(
 const fires = sdb.newTable("fires");
 // We fetch the wildfires data. It's a CSV.
 await fires.loadData(
-  "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/firesCanada2023.csv",
+  "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
 );
 // We create point geometries from the lat and lon columns
 // and we store the points in the new column geom.
