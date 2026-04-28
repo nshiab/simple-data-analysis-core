@@ -212,7 +212,7 @@ Deno.test("should load data from a fetched csv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadData([
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis.js/main/test/data/files/data.csv",
+    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/data.csv",
   ]);
 
   const data = await table.getData();
@@ -591,7 +591,7 @@ Deno.test("should load data from a xlsx url", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadData([
-    "https://github.com/nshiab/simple-data-analysis/raw/main/test/data/files/populations-one-sheet.xlsx",
+    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/populations-one-sheet.xlsx",
   ]);
   const data = await table.getData();
 

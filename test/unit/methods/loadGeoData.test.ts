@@ -49,7 +49,7 @@ Deno.test("should load a geojson file from a URL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadGeoData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const types = await table.getTypes();
