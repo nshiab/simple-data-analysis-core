@@ -59,8 +59,5 @@ await firesInsideProvinces.sort({ burntArea: "desc" });
 // the number of rows to log.
 await firesInsideProvinces.logTable(12);
 
-// We can also log a bar chart of the burnt area.
-await firesInsideProvinces.logBarChart("nameEnglish", "burntArea");
-
 // We close everything.
 await sdb.done();
