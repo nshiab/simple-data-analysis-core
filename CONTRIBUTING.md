@@ -7,8 +7,8 @@ starting a conversation about a new feature or flagging a bug is already of
 great help! :)
 
 Feel free to start a
-[conversation](https://github.com/nshiab/simple-data-analysis-core/discussions) if
-some questions you have are not answered below.
+[conversation](https://github.com/nshiab/simple-data-analysis-core/discussions)
+if some questions you have are not answered below.
 
 You can also check
 [this tutorial](https://github.com/firstcontributions/first-contributions) as a
@@ -17,7 +17,8 @@ resource.
 ## Creating an issue
 
 The first step is to create an issue with a clear title and a description of the
-problem you encountered: https://github.com/nshiab/simple-data-analysis-core/issues
+problem you encountered:
+https://github.com/nshiab/simple-data-analysis-core/issues
 
 If you want to solve the problem yourself, explain what you have in mind and how
 you want to proceed.
