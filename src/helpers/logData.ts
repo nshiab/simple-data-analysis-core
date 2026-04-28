@@ -1,4 +1,4 @@
-import { printTable } from "@nshiab/journalism-format";
+import printTable from "./printTable.ts";
 
 export default function logData(
   types: { [key: string]: string } | null,
