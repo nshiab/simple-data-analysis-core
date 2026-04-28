@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import type SimpleTable from "../class/SimpleTable.ts";
 import crypto from "node:crypto";
-import { formatDate } from "@nshiab/journalism-format";
+import formatDate from "../helpers/formatDate.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
 
 type cacheSources = {
