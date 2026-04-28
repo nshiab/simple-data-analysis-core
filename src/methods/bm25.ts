@@ -1,4 +1,4 @@
-import { camelCase } from "@nshiab/journalism-format";
+import camelCase from "../helpers/camelCase.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import queryDB from "../helpers/queryDB.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";

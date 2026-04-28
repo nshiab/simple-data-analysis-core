@@ -4,7 +4,6 @@
     "jsr:@nshiab/journalism-ai@^1.2.18": "1.2.18",
     "jsr:@nshiab/journalism-dataviz@^1.0.10": "1.0.10",
     "jsr:@nshiab/journalism-format@^1.1.3": "1.1.5",
-    "jsr:@nshiab/journalism-format@^1.1.5": "1.1.5",
     "jsr:@nshiab/journalism-google@^1.0.6": "1.0.6",
     "jsr:@std/assert@1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.12",
@@ -33,7 +32,7 @@
     "@nshiab/journalism-ai@1.2.18": {
       "integrity": "5992a149a507addb23bf62a757654d4f49fa72737346a81aafdd610050686f8e",
       "dependencies": [
-        "jsr:@nshiab/journalism-format@^1.1.3",
+        "jsr:@nshiab/journalism-format",
         "npm:@google/genai",
         "npm:jsonrepair",
         "npm:ollama"
@@ -42,7 +41,7 @@
     "@nshiab/journalism-dataviz@1.0.10": {
       "integrity": "2403e9759379b1472c55e8e690cdfad291e79233aa1c0fc351f6d15fe6e7ba1d",
       "dependencies": [
-        "jsr:@nshiab/journalism-format@^1.1.3",
+        "jsr:@nshiab/journalism-format",
         "npm:@napi-rs/canvas",
         "npm:@observablehq/plot@~0.6.17",
         "npm:@resvg/resvg-js",
@@ -62,7 +61,7 @@
     "@nshiab/journalism-google@1.0.6": {
       "integrity": "fddfb399cf0ac1e6ffa43d566924cb36a0285f547ab8f033729e7c4292e245af",
       "dependencies": [
-        "jsr:@nshiab/journalism-format@^1.1.3",
+        "jsr:@nshiab/journalism-format",
         "npm:@google-cloud/storage",
         "npm:d3-dsv",
         "npm:google-auth-library",
@@ -1364,7 +1363,6 @@
     "dependencies": [
       "jsr:@nshiab/journalism-ai@^1.2.18",
       "jsr:@nshiab/journalism-dataviz@^1.0.10",
-      "jsr:@nshiab/journalism-format@^1.1.5",
       "jsr:@nshiab/journalism-google@^1.0.6",
       "jsr:@std/assert@1.0.19",
       "npm:@duckdb/node-api@1.4.4-r.1",
