@@ -1,4 +1,4 @@
-import { csvFormat } from "d3-dsv";
+import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
 import renameColumnQuery from "../methods/renameColumnQuery.ts";
 import replaceQuery from "../methods/replaceQuery.ts";
