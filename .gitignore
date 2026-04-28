@@ -1,0 +1,13 @@
+node_modules
+dist/
+test/output/
+.DS_Store
+.tmp
+.sda-cache
+testRoot.csv
+cov_profile
+.env
+.journalism-cache
+docs.json
+# This is a big csv file used for testing purposes
+ahccd.csv
