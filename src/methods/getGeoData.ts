@@ -1,10 +1,10 @@
-import { rewind } from "@nshiab/journalism-dataviz";
+import rewind from "../helpers/rewind.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import shouldFlipBeforeExport from "../helpers/shouldFlipBeforeExport.ts";
-// @deno-types="npm:@types/d3-geo@3"
-import type { GeoPermissibleObjects } from "d3-geo";
+// deno-lint-ignore no-explicit-any
+type GeoPermissibleObjects = any;
 
 export default async function getGeoData(
   SimpleTable: SimpleTable,

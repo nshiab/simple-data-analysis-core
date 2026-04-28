@@ -73,9 +73,9 @@ import {
   logBarChart,
   logDotChart,
   logLineChart,
-  rewind,
   saveChart,
 } from "@nshiab/journalism-dataviz";
+import rewind from "../helpers/rewind.ts";
 import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logHistogram from "../methods/logHistogram.ts";
 import logData from "../helpers/logData.ts";

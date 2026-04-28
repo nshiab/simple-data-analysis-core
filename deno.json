@@ -34,7 +34,8 @@
   "fmt": {
     "exclude": [
       ".sda-cache",
-      "test/output"
+      "test/output",
+      "src/helpers/rewind.ts"
     ]
   },
   "compilerOptions": {
