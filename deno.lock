@@ -3,8 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.12",
-    "npm:@duckdb/node-api@1.4.4-r.1": "1.4.4-r.1",
-    "npm:zod@^4.3.6": "4.3.6"
+    "npm:@duckdb/node-api@1.4.4-r.1": "1.4.4-r.1"
   },
   "jsr": {
     "@std/assert@1.0.19": {
@@ -58,16 +57,12 @@
         "@duckdb/node-bindings-linux-x64",
         "@duckdb/node-bindings-win32-x64"
       ]
-    },
-    "zod@4.3.6": {
-      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="
     }
   },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1.0.19",
-      "npm:@duckdb/node-api@1.4.4-r.1",
-      "npm:zod@^4.3.6"
+      "npm:@duckdb/node-api@1.4.4-r.1"
     ]
   }
 }
