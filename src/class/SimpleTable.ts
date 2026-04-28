@@ -65,7 +65,8 @@ import joinGeo from "../methods/joinGeo.ts";
 import shouldFlipBeforeExport from "../helpers/shouldFlipBeforeExport.ts";
 import getProjection from "../helpers/getProjection.ts";
 import cache from "../methods/cache.ts";
-import { camelCase, formatNumber } from "@nshiab/journalism-format";
+import { camelCase } from "@nshiab/journalism-format";
+import formatNumber from "../helpers/formatNumber.ts";
 import createDirectory from "../helpers/createDirectory.ts";
 import { getSheetData, overwriteSheetData } from "@nshiab/journalism-google";
 import {

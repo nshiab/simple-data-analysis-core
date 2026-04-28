@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
-import { formatNumber } from "@nshiab/journalism-format";
+import formatNumber from "../../../src/helpers/formatNumber.ts";
 
 Deno.test("should log a histogram", async () => {
   const sdb = new SimpleDB();
