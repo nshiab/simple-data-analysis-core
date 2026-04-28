@@ -3,7 +3,7 @@ import runQuery from "../helpers/runQuery.ts";
 import SimpleTable from "./SimpleTable.ts";
 import cleanCache from "../helpers/cleanCache.ts";
 import createDirectory from "../helpers/createDirectory.ts";
-import { prettyDuration } from "@nshiab/journalism-format";
+import prettyDuration from "../helpers/prettyDuration.ts";
 import Simple from "./Simple.ts";
 import queryDB from "../helpers/queryDB.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";

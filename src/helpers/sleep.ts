@@ -1,4 +1,4 @@
-import { prettyDuration } from "@nshiab/journalism-format";
+import prettyDuration from "./prettyDuration.ts";
 
 export default function sleep(
   ms: number,

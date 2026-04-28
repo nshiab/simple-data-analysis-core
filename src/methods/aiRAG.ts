@@ -1,6 +1,6 @@
 import { askAI } from "@nshiab/journalism-ai";
 import type SimpleTable from "../class/SimpleTable.ts";
-import { prettyDuration } from "@nshiab/journalism-format";
+import prettyDuration from "../helpers/prettyDuration.ts";
 import hybridSearch from "./hybridSearch.ts";
 import type { Ollama } from "ollama";
 

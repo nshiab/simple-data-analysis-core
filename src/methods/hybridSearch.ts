@@ -1,5 +1,5 @@
 import type SimpleTable from "../class/SimpleTable.ts";
-import { prettyDuration } from "@nshiab/journalism-format";
+import prettyDuration from "../helpers/prettyDuration.ts";
 import getRRFRanking from "../helpers/getRRFRanking.ts";
 import parseValue from "../helpers/parseValue.ts";
 
