@@ -24,7 +24,6 @@
   "imports": {
     "@duckdb/node-api": "npm:@duckdb/node-api@1.4.4-r.1",
     "@std/assert": "jsr:@std/assert@1.0.19",
-    "apache-arrow": "npm:apache-arrow@^21.1.0",
     "d3-dsv": "npm:d3-dsv@^3.0.1",
     "zod": "npm:zod@^4.3.6"
   },
