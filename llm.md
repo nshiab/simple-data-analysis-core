@@ -495,6 +495,11 @@ const sdb = new SimpleDB({
 
 ## class SimpleTable
 
+IMPORTANT: When extending this class, always use `this.sdb.newTable()` to create
+new tables instead of `new SimpleTable(...)` directly. This ensures subclasses
+that override `tableClass` on their parent `SimpleDB` get their own table type
+back.
+
 Represents a table within a SimpleDB database, capable of handling tabular,
 geospatial, and vector data. SimpleTable instances are typically created via a
 SimpleDB instance.
