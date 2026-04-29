@@ -139,6 +139,34 @@ export default class SimpleDB extends Simple {
    * @category Properties
    */
   overwrite: boolean;
+  /**
+   * The class used to create table instances. Defaults to `SimpleTable`.
+   * Override this property when subclassing to ensure all table-creating
+   * methods (e.g., `newTable()`, `cloneTable()`) return instances of your
+   * custom table class.
+   *
+   * @defaultValue `SimpleTable`
+   * @category Properties
+   *
+   * @example
+   * ```ts
+   * class MyTable extends SimpleTable {
+   *   customMethod() { return "hello"; }
+   * }
+   *
+   * class MyDB extends SimpleDB {
+   *   constructor(options?: SimpleDBOptions) {
+   *     super(options);
+   *     this.tableClass = MyTable;
+   *   }
+   * }
+   *
+   * const db = new MyDB();
+   * const table = db.newTable("myTable");
+   * console.log(table.customMethod()); // "hello"
+   * ```
+   */
+  tableClass: typeof SimpleTable = SimpleTable;
 
   /**
    * Creates a new SimpleDB instance.
@@ -247,8 +275,11 @@ export default class SimpleDB extends Simple {
    * @category Table Management
    */
   pushTable(table: SimpleTable): void {
-    if (!(table instanceof SimpleTable)) {
-      throw new Error("The table must be an instance of SimpleTable.");
+    const TableClass = this.tableClass;
+    if (!(table instanceof TableClass)) {
+      throw new Error(
+        `The table must be an instance of ${TableClass.name}.`,
+      );
     }
     if (this.tables.map((t) => t.name).includes(table.name)) {
       throw new Error(`Table ${table.name} already exists.`);
@@ -282,11 +313,12 @@ export default class SimpleDB extends Simple {
     projections?: { [key: string]: string },
   ): SimpleTable {
     const proj = projections ?? {};
+    const TableClass = this.tableClass;
 
     // SHOULD MATCH cloneTable
     let table;
     if (typeof name === "string") {
-      table = new SimpleTable(name, proj, this, {
+      table = new TableClass(name, proj, this, {
         debug: this.debug,
         nbRowsToLog: this.nbRowsToLog,
         nbCharactersToLog: this.nbCharactersToLog,
@@ -294,7 +326,7 @@ export default class SimpleDB extends Simple {
       });
       table.defaultTableName = false;
     } else {
-      table = new SimpleTable(`table${this.tableIncrement}`, proj, this, {
+      table = new TableClass(`table${this.tableIncrement}`, proj, this, {
         debug: this.debug,
         nbRowsToLog: this.nbRowsToLog,
         nbCharactersToLog: this.nbCharactersToLog,

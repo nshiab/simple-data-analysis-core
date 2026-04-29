@@ -101,6 +101,11 @@ import bm25 from "../methods/bm25.ts";
 import normalizeString from "../methods/normalizeString.ts";
 
 /**
+ * IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
+ * create new tables instead of `new SimpleTable(...)` directly. This ensures
+ * subclasses that override `tableClass` on their parent `SimpleDB` get their
+ * own table type back.
+ *
  * Represents a table within a SimpleDB database, capable of handling tabular, geospatial, and vector data.
  * SimpleTable instances are typically created via a SimpleDB instance.
  *
@@ -1142,38 +1147,15 @@ export default class SimpleTable extends Simple {
       newProjections = clonedProjections;
     }
 
-    // Should match newTable from SimpleDB
+    // Delegate to sdb.newTable() so subclasses using tableClass work correctly.
     let clonedTable;
     const options = typeof nameOrOptions === "string"
       ? { outputTable: nameOrOptions }
       : nameOrOptions;
     if (typeof options.outputTable === "string") {
-      clonedTable = new SimpleTable(
-        options.outputTable,
-        newProjections,
-        this.sdb,
-        {
-          debug: this.debug,
-          nbRowsToLog: this.nbRowsToLog,
-          nbCharactersToLog: this.nbCharactersToLog,
-          types: this.types,
-        },
-      );
-      clonedTable.defaultTableName = false;
+      clonedTable = this.sdb.newTable(options.outputTable, newProjections);
     } else {
-      clonedTable = new SimpleTable(
-        `table${this.sdb.tableIncrement}`,
-        newProjections,
-        this.sdb,
-        {
-          debug: this.debug,
-          nbRowsToLog: this.nbRowsToLog,
-          nbCharactersToLog: this.nbCharactersToLog,
-          types: this.types,
-        },
-      );
-      clonedTable.defaultTableName = true;
-      this.sdb.tableIncrement += 1;
+      clonedTable = this.sdb.newTable(undefined, newProjections);
     }
 
     await queryDB(
@@ -1187,7 +1169,6 @@ export default class SimpleTable extends Simple {
     );
 
     clonedTable.connection = clonedTable.sdb.connection;
-    this.sdb.pushTable(clonedTable);
 
     return clonedTable;
   }
