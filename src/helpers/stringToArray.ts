@@ -1,4 +1,4 @@
-export default function stringToArray(argument: string | string[]) {
+export default function stringToArray(argument: string | string[]): string[] {
   if (Array.isArray(argument)) {
     return argument;
   } else if (typeof argument === "string") {
