@@ -312,7 +312,7 @@ export default class SimpleTable extends Simple {
    */
   async loadArray(
     arrayOfObjects: { [key: string]: unknown }[],
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     await loadArray(this, arrayOfObjects);
 
     return this;
@@ -402,7 +402,7 @@ export default class SimpleTable extends Simple {
       // excel options
       sheet?: string;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     await queryDB(
       this,
       loadDataQuery(this.name, stringToArray(files), options),
@@ -473,7 +473,7 @@ export default class SimpleTable extends Simple {
       // excel options
       sheet?: string;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     const files = readdirSync(directory).map(
       (file) =>
         `${directory.slice(-1) === "/" ? directory : directory + "/"}${file}`,
@@ -523,7 +523,7 @@ export default class SimpleTable extends Simple {
   async loadGeoData(
     file: string,
     options: { toWGS84?: boolean; from?: string } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     const fileExtension = getExtension(file);
 
     if (fileExtension === "geoparquet" || fileExtension === "parquet") {
@@ -688,8 +688,8 @@ export default class SimpleTable extends Simple {
       overwrite?: boolean;
       verbose?: boolean;
     } = {},
-  ): Promise<SimpleTable> {
-    return await createFtsIndex(this, columnId, columnText, options);
+  ): Promise<this> {
+    return await createFtsIndex(this, columnId, columnText, options) as this;
   }
 
   /**
@@ -753,8 +753,8 @@ export default class SimpleTable extends Simple {
       efSearch?: number;
       M?: number;
     } = {},
-  ): Promise<SimpleTable> {
-    return await createVssIndex(this, column, options);
+  ): Promise<this> {
+    return (await createVssIndex(this, column, options)) as this;
   }
 
   /**
@@ -907,8 +907,15 @@ export default class SimpleTable extends Simple {
       minScore?: number;
       scoreColumn?: string;
     } = {},
-  ): Promise<SimpleTable> {
-    return await bm25(this, text, columnId, columnText, nbResults, options);
+  ): Promise<this> {
+    return await bm25(
+      this,
+      text,
+      columnId,
+      columnText,
+      nbResults,
+      options,
+    ) as this;
   }
 
   /**
@@ -1078,7 +1085,7 @@ export default class SimpleTable extends Simple {
    * @param nameOrOptions.outputTable - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
    * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
-   * @returns A promise that resolves to the new SimpleTable instance containing the cloned data.
+   * @returns A promise that resolves to a new table instance containing the cloned data.
    * @category Table Management
    *
    * @example
@@ -1127,7 +1134,7 @@ export default class SimpleTable extends Simple {
       conditions?: string;
       columns?: string | string[];
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     const columns = typeof nameOrOptions === "object" && nameOrOptions.columns
       ? stringToArray(nameOrOptions.columns)
       : [];
@@ -1170,7 +1177,7 @@ export default class SimpleTable extends Simple {
 
     clonedTable.connection = clonedTable.sdb.connection;
 
-    return clonedTable;
+    return clonedTable as this;
   }
 
   /**
@@ -1542,7 +1549,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.offset - The number of rows to skip from the beginning of the table before selecting. Defaults to `0`.
    * @param options.outputTable - If `true`, the selected rows will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be modified. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the selected rows (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the selected rows (either the modified current table or a new table).
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1572,7 +1579,7 @@ export default class SimpleTable extends Simple {
   async selectRows(
     count: number | string,
     options: { offset?: number; outputTable?: string | boolean } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
@@ -1590,9 +1597,9 @@ export default class SimpleTable extends Simple {
     );
 
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections);
+      return this.sdb.newTable(options.outputTable, this.projections) as this;
     } else {
-      return this;
+      return this as this;
     }
   }
 
@@ -2329,7 +2336,7 @@ export default class SimpleTable extends Simple {
    * @param rightTable - The SimpleTable instance to cross join with.
    * @param options - An optional object with configuration options:
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the cross-joined data (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the cross-joined data (either the modified current table or a new table).
    * @category Table Operations
    *
    * @example
@@ -2355,7 +2362,7 @@ export default class SimpleTable extends Simple {
     options: {
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     const identicalColumns = getIdenticalColumns(
       await this.getColumns(),
       await rightTable.getColumns(),
@@ -2389,10 +2396,10 @@ export default class SimpleTable extends Simple {
       ...rightTable.projections,
     };
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, allProjections);
+      return this.sdb.newTable(options.outputTable, allProjections) as this;
     } else {
       this.projections = allProjections;
-      return this;
+      return this as this;
     }
   }
 
@@ -2406,7 +2413,7 @@ export default class SimpleTable extends Simple {
    * @param options.commonColumn - The common column(s) used for the join operation. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
    * @param options.type - The type of join operation to perform. Possible values are `"inner"`, `"left"` (default), `"right"`, or `"full"`.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the joined data (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the joined data (either the modified current table or a new table).
    * @category Table Operations
    *
    * @example
@@ -2435,12 +2442,12 @@ export default class SimpleTable extends Simple {
       type?: "inner" | "left" | "right" | "full";
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
-    return (await join(this, rightTable, options)) as SimpleTable;
+    return (await join(this, rightTable, options)) as this;
   }
 
   /**
@@ -2464,7 +2471,7 @@ export default class SimpleTable extends Simple {
    * @param options.threshold - The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`.
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the fuzzy-joined data (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the fuzzy-joined data (either the modified current table or a new table).
    * @category Table Operations
    *
    * @example
@@ -2505,7 +2512,7 @@ export default class SimpleTable extends Simple {
       similarityColumn?: string;
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
@@ -2516,7 +2523,7 @@ export default class SimpleTable extends Simple {
       leftColumn,
       rightColumn,
       options,
-    );
+    ) as this;
   }
 
   /**
@@ -3551,7 +3558,7 @@ export default class SimpleTable extends Simple {
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.toMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
    * @param options.noColumnValue - If `true`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the summarized data (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the summarized data (either the modified current table or a new table).
    * @category Analyzing Data
    *
    * @example
@@ -3685,16 +3692,16 @@ export default class SimpleTable extends Simple {
       toMs?: boolean;
       noColumnValue?: boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
     await summarize(this, options);
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections);
+      return this.sdb.newTable(options.outputTable, this.projections) as this;
     } else {
-      return this;
+      return this as this;
     }
   }
 
@@ -3828,7 +3835,7 @@ export default class SimpleTable extends Simple {
    * @param options.categories - The column name or an array of column names that define categories. Correlation calculations will be performed independently for each category.
    * @param options.decimals - The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the correlation results (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the correlation results (either the modified current table or a new table).
    * @category Analyzing Data
    *
    * @example
@@ -3869,16 +3876,16 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
     await correlations(this, options);
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections);
+      return this.sdb.newTable(options.outputTable, this.projections) as this;
     } else {
-      return this;
+      return this as this;
     }
   }
 
@@ -3893,7 +3900,7 @@ export default class SimpleTable extends Simple {
    * @param options.categories - The column name or an array of column names that define categories. Linear regression analysis will be performed independently for each category.
    * @param options.decimals - The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the linear regression results (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the linear regression results (either the modified current table or a new table).
    * @category Analyzing Data
    *
    * @example
@@ -3934,16 +3941,16 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
     await linearRegressions(this, options);
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections);
+      return this.sdb.newTable(options.outputTable, this.projections) as this;
     } else {
-      return this;
+      return this as this;
     }
   }
 
@@ -5579,7 +5586,7 @@ export default class SimpleTable extends Simple {
    * @param options.distance - Required if `method` is `"within"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
    * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate but slowest).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the spatially joined data (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the spatially joined data (either the modified current table or a new table).
    * @category Geospatial
    *
    * @example
@@ -5629,7 +5636,7 @@ export default class SimpleTable extends Simple {
       distanceMethod?: "srs" | "haversine" | "spheroid";
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
@@ -5639,7 +5646,7 @@ export default class SimpleTable extends Simple {
       method,
       rightTable,
       options,
-    )) as SimpleTable;
+    )) as this;
   }
 
   /**
@@ -6081,7 +6088,7 @@ export default class SimpleTable extends Simple {
    * @param options.column - The name of the column storing the geometries to be aggregated. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.categories - The column name or an array of column names that define categories for the aggregation. Aggregation will be performed independently within each category.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance containing the aggregated geometries (either the modified current table or a new table).
+   * @returns A promise that resolves to a table instance containing the aggregated geometries (either the modified current table or a new table).
    * @category Geospatial
    *
    * @example
@@ -6109,7 +6116,7 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       outputTable?: string | boolean;
     } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     const column = typeof options.column === "string"
       ? options.column
       : await findGeoColumn(this);
@@ -6128,9 +6135,9 @@ export default class SimpleTable extends Simple {
       }),
     );
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections);
+      return this.sdb.newTable(options.outputTable, this.projections) as this;
     } else {
-      return this;
+      return this as this;
     }
   }
 
@@ -6721,7 +6728,7 @@ export default class SimpleTable extends Simple {
    * await table.logProjections();
    * ```
    */
-  async logProjections(): Promise<SimpleTable> {
+  async logProjections(): Promise<this> {
     console.log(`\ntable ${this.name} projections:`);
     console.log(this.projections);
     return await this;
@@ -6739,7 +6746,7 @@ export default class SimpleTable extends Simple {
    * await table.logTypes();
    * ```
    */
-  async logTypes(): Promise<SimpleTable> {
+  async logTypes(): Promise<this> {
     console.log(`\ntable ${this.name} types:`);
     console.log(await this.getTypes());
     return await this;
@@ -6770,7 +6777,7 @@ export default class SimpleTable extends Simple {
   async logUniques(
     column: string,
     options: { stringify?: boolean } = {},
-  ): Promise<SimpleTable> {
+  ): Promise<this> {
     const values = await this.getUniques(column);
     console.log(`\nUnique values in ${column}:`);
     if (options.stringify) {
@@ -6801,7 +6808,7 @@ export default class SimpleTable extends Simple {
    * await table.logColumns({ types: true });
    * ```
    */
-  async logColumns(options: { types?: boolean } = {}): Promise<SimpleTable> {
+  async logColumns(options: { types?: boolean } = {}): Promise<this> {
     console.log(`\nTable ${this.name} columns:`);
     if (options.types) {
       console.log(await this.getTypes());
@@ -6824,7 +6831,7 @@ export default class SimpleTable extends Simple {
    * await table.logNbRows();
    * ```
    */
-  async logNbRows(): Promise<SimpleTable> {
+  async logNbRows(): Promise<this> {
     const nbRows = await this.getNbRows();
     console.log(`\nTable ${this.name}: ${formatNumber(nbRows)} rows.`);
     return await this;

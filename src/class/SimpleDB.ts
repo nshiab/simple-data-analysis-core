@@ -54,7 +54,8 @@ import { renameSync } from "node:fs";
  * ```
  */
 
-export default class SimpleDB extends Simple {
+export default class SimpleDB<Table extends SimpleTable = SimpleTable>
+  extends Simple {
   /**
    * An array of paths to the data sources used in the cache.
    *
@@ -84,12 +85,12 @@ export default class SimpleDB extends Simple {
    */
   logDuration: boolean;
   /**
-   * An array of SimpleTable instances associated with this database.
+   * An array of table instances associated with this database.
    *
    * @defaultValue `[]`
    * @category Properties
    */
-  tables: SimpleTable[];
+  tables: Table[];
   /**
    * A flag indicating whether to log verbose cache-related messages.
    *
@@ -166,7 +167,27 @@ export default class SimpleDB extends Simple {
    * console.log(table.customMethod()); // "hello"
    * ```
    */
-  tableClass: typeof SimpleTable = SimpleTable;
+  tableClass: new (
+    name: string,
+    projections: { [key: string]: string },
+    sdb: SimpleDB,
+    options?: {
+      debug?: boolean;
+      nbRowsToLog?: number;
+      nbCharactersToLog?: number;
+      types?: boolean;
+    },
+  ) => Table = SimpleTable as new (
+    name: string,
+    projections: { [key: string]: string },
+    sdb: SimpleDB,
+    options?: {
+      debug?: boolean;
+      nbRowsToLog?: number;
+      nbCharactersToLog?: number;
+      types?: boolean;
+    },
+  ) => Table;
 
   /**
    * Creates a new SimpleDB instance.
@@ -274,7 +295,7 @@ export default class SimpleDB extends Simple {
    * @internal
    * @category Table Management
    */
-  pushTable(table: SimpleTable): void {
+  pushTable(table: Table): void {
     const TableClass = this.tableClass;
     if (!(table instanceof TableClass)) {
       throw new Error(
@@ -293,7 +314,7 @@ export default class SimpleDB extends Simple {
    *
    * @param name - The name of the new table. If not provided, a default name is generated (e.g., "table1").
    * @param projections - An object mapping column names to their geospatial projections.
-   * @returns A new SimpleTable instance.
+   * @returns A new table instance.
    * @category Table Management
    *
    * @example
@@ -311,7 +332,7 @@ export default class SimpleDB extends Simple {
   newTable(
     name?: string,
     projections?: { [key: string]: string },
-  ): SimpleTable {
+  ): Table {
     const proj = projections ?? {};
     const TableClass = this.tableClass;
 
@@ -354,7 +375,7 @@ export default class SimpleDB extends Simple {
    * const employees = await sdb.getTable("employees");
    * ```
    */
-  async getTable(name: string): Promise<SimpleTable> {
+  async getTable(name: string): Promise<Table> {
     const table = this.tables.find((t) => t.name === name);
     if (table) {
       return await table;
@@ -391,7 +412,7 @@ export default class SimpleDB extends Simple {
    * ```
    */
   async removeTables(
-    tables: SimpleTable | string | (SimpleTable | string)[],
+    tables: Table | string | (Table | string)[],
   ): Promise<void> {
     const tablesToBeRemoved = Array.isArray(tables) ? tables : [tables];
 
@@ -443,7 +464,7 @@ export default class SimpleDB extends Simple {
    * ```
    */
   async selectTables(
-    tables: SimpleTable | string | (SimpleTable | string)[],
+    tables: Table | string | (Table | string)[],
   ): Promise<void> {
     const tablesToBeSelected = (Array.isArray(tables) ? tables : [tables]).map((
       t,
@@ -532,7 +553,7 @@ export default class SimpleDB extends Simple {
    * const tables = await sdb.getTables();
    * ```
    */
-  async getTables(): Promise<SimpleTable[]> {
+  async getTables(): Promise<Table[]> {
     return await this.tables;
   }
 
@@ -558,7 +579,7 @@ export default class SimpleDB extends Simple {
    * console.log(existsInstance); // Output: true or false
    * ```
    */
-  async hasTable(table: SimpleTable | string): Promise<boolean> {
+  async hasTable(table: Table | string): Promise<boolean> {
     const tableName = typeof table === "string" ? table : table.name;
     const result = (await this.getTableNames()).includes(tableName);
     return result;
