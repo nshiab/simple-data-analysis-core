@@ -39,8 +39,8 @@
  * @example
  * ```ts
  * // If you want to format the duration between two specific dates, use the `end` option.
- * const start = new Date("2024-01-01T17:00:00");
- * const end = new Date("2024-01-23T23:03:15");
+ * const start = new Date("2024-01-01T17:00:00Z");
+ * const end = new Date("2024-01-23T23:03:15Z");
  * const specificDuration = prettyDuration(start, { end });
  * console.log(specificDuration); // Returns "22 days, 6 h, 3 min, 15 sec, 0 ms"
  * ```
