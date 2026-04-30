@@ -1,4 +1,4 @@
-export default function parseValue(value: unknown) {
+export default function parseValue(value: unknown): string | boolean | number {
   if (Number.isNaN(value) || value === undefined || value === null) {
     return "NULL";
   } else if (value instanceof Date) {

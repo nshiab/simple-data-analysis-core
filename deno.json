@@ -2,7 +2,8 @@
   "name": "@nshiab/simple-data-analysis-core",
   "version": "0.0.9",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./helpers": "./src/helpers/index.ts"
   },
   "tasks": {
     "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task llm",

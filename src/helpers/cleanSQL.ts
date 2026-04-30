@@ -1,4 +1,4 @@
-export default function cleanSQL(query: string) {
+export default function cleanSQL(query: string): string {
   // First pass
   let cleaned = query
     .replace(/ && /g, " AND ")
