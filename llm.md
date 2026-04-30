@@ -66,7 +66,7 @@ Creates a new SimpleTable instance within the database.
 ##### Signature
 
 ```typescript
-newTable(name?: string, projections?: Record<string, string>): SimpleTable;
+newTable(name?: string, projections?: Record<string, string>): Table;
 ```
 
 ##### Parameters
@@ -78,7 +78,7 @@ newTable(name?: string, projections?: Record<string, string>): SimpleTable;
 
 ##### Returns
 
-A new SimpleTable instance.
+A new table instance.
 
 ##### Examples
 
@@ -99,7 +99,7 @@ Retrieves an existing SimpleTable instance from the database.
 ##### Signature
 
 ```typescript
-async getTable(name: string): Promise<SimpleTable>;
+async getTable(name: string): Promise<Table>;
 ```
 
 ##### Parameters
@@ -124,7 +124,7 @@ Removes one or more tables from the database.
 ##### Signature
 
 ```typescript
-async removeTables(tables: SimpleTable | string | (SimpleTable | string)[]): Promise<void>;
+async removeTables(tables: Table | string | (Table | string)[]): Promise<void>;
 ```
 
 ##### Parameters
@@ -162,7 +162,7 @@ Selects one or more tables to keep in the database, removing all others.
 ##### Signature
 
 ```typescript
-async selectTables(tables: SimpleTable | string | (SimpleTable | string)[]): Promise<void>;
+async selectTables(tables: Table | string | (Table | string)[]): Promise<void>;
 ```
 
 ##### Parameters
@@ -245,7 +245,7 @@ Returns an array of all SimpleTable instances in the database.
 ##### Signature
 
 ```typescript
-async getTables(): Promise<SimpleTable[]>;
+async getTables(): Promise<Table[]>;
 ```
 
 ##### Returns
@@ -266,7 +266,7 @@ Checks if a table exists in the database.
 ##### Signature
 
 ```typescript
-async hasTable(table: SimpleTable | string): Promise<boolean>;
+async hasTable(table: Table | string): Promise<boolean>;
 ```
 
 ##### Parameters
@@ -589,7 +589,7 @@ Loads an array of JavaScript objects into the table.
 ##### Signature
 
 ```typescript
-async loadArray(arrayOfObjects: Record<string, unknown>[]): Promise<SimpleTable>;
+async loadArray(arrayOfObjects: Record<string, unknown>[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -621,7 +621,7 @@ formats include CSV, JSON, Parquet, and Excel.
 ##### Signature
 
 ```typescript
-async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<SimpleTable>;
+async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -713,7 +713,7 @@ directory into the table.
 ##### Signature
 
 ```typescript
-async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<SimpleTable>;
+async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -782,7 +782,7 @@ flipped to `[latitude, longitude]` axis order.
 ##### Signature
 
 ```typescript
-async loadGeoData(file: string, options?: { toWGS84?: boolean; from?: string }): Promise<SimpleTable>;
+async loadGeoData(file: string, options?: { toWGS84?: boolean; from?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -831,7 +831,7 @@ log a message (when verbose is enabled), unless the `overwrite` option is set to
 ##### Signature
 
 ```typescript
-async createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): Promise<SimpleTable>;
+async createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -919,7 +919,7 @@ log a message (when verbose is enabled), unless the `overwrite` option is set to
 ##### Signature
 
 ```typescript
-async createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: boolean; efConstruction?: number; efSearch?: number; M?: number }): Promise<SimpleTable>;
+async createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: boolean; efConstruction?: number; efSearch?: number; M?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -996,7 +996,7 @@ option is set to `true`.
 ##### Signature
 
 ```typescript
-async bm25(text: string, columnId: string, columnText: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): Promise<SimpleTable>;
+async bm25(text: string, columnId: string, columnText: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1196,7 +1196,7 @@ be optionally filtered. Note that cloning large tables can be a slow operation.
 ##### Signature
 
 ```typescript
-async cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string; columns?: string | string[] }): Promise<SimpleTable>;
+async cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string; columns?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1214,8 +1214,7 @@ async cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: s
 
 ##### Returns
 
-A promise that resolves to the new SimpleTable instance containing the cloned
-data.
+A promise that resolves to a new table instance containing the cloned data.
 
 ##### Examples
 
@@ -1601,7 +1600,7 @@ skip initial rows, and the results can be output to a new table.
 ##### Signature
 
 ```typescript
-async selectRows(count: number | string, options?: { offset?: number; outputTable?: string | boolean }): Promise<SimpleTable>;
+async selectRows(count: number | string, options?: { offset?: number; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1617,8 +1616,8 @@ async selectRows(count: number | string, options?: { offset?: number; outputTabl
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the selected rows
-(either the modified current table or a new table).
+A promise that resolves to a table instance containing the selected rows (either
+the modified current table or a new table).
 
 ##### Examples
 
@@ -2279,7 +2278,7 @@ rows and the right table has `m` rows, the result will have `n * m` rows.
 ##### Signature
 
 ```typescript
-async crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | boolean }): Promise<SimpleTable>;
+async crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2293,8 +2292,8 @@ async crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | bool
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the cross-joined
-data (either the modified current table or a new table).
+A promise that resolves to a table instance containing the cross-joined data
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -2324,7 +2323,7 @@ consider adding `.tmp` to your `.gitignore`.
 ##### Signature
 
 ```typescript
-async join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): Promise<SimpleTable>;
+async join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2344,8 +2343,8 @@ async join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the joined data
-(either the modified current table or a new table).
+A promise that resolves to a table instance containing the joined data (either
+the modified current table or a new table).
 
 ##### Examples
 
@@ -2386,7 +2385,7 @@ This operation might create temporary files in a `.tmp` folder; consider adding
 ##### Signature
 
 ```typescript
-async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean }): Promise<SimpleTable>;
+async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2415,8 +2414,8 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the fuzzy-joined
-data (either the modified current table or a new table).
+A promise that resolves to a table instance containing the fuzzy-joined data
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -3413,7 +3412,7 @@ operations. This method allows you to aggregate data, calculate statistics
 ##### Signature
 
 ```typescript
-async summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; noColumnValue?: boolean }): Promise<SimpleTable>;
+async summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; noColumnValue?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3445,8 +3444,8 @@ async summarize(options?: { values?: string | string[]; categories?: string | st
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the summarized
-data (either the modified current table or a new table).
+A promise that resolves to a table instance containing the summarized data
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -3658,7 +3657,7 @@ combinations. Note that correlation is symmetrical: the correlation of `x` with
 ##### Signature
 
 ```typescript
-async correlations(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<SimpleTable>;
+async correlations(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3680,8 +3679,8 @@ async correlations(options?: { x?: string; y?: string; categories?: string | str
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the correlation
-results (either the modified current table or a new table).
+A promise that resolves to a table instance containing the correlation results
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -3724,7 +3723,7 @@ regression of `x` over `y` is not the same as `y` over `x`.
 ##### Signature
 
 ```typescript
-async linearRegressions(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<SimpleTable>;
+async linearRegressions(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3747,8 +3746,8 @@ async linearRegressions(options?: { x?: string; y?: string; categories?: string 
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the linear
-regression results (either the modified current table or a new table).
+A promise that resolves to a table instance containing the linear regression
+results (either the modified current table or a new table).
 
 ##### Examples
 
@@ -5398,7 +5397,7 @@ This operation might create temporary files in a `.tmp` folder; consider adding
 ##### Signature
 
 ```typescript
-async joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftTableColumn?: string; rightTableColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): Promise<SimpleTable>;
+async joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftTableColumn?: string; rightTableColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5429,8 +5428,8 @@ async joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within"
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the spatially
-joined data (either the modified current table or a new table).
+A promise that resolves to a table instance containing the spatially joined data
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -5862,7 +5861,7 @@ method.
 ##### Signature
 
 ```typescript
-async aggregateGeo(method: "union" | "intersection", options?: { column?: string; categories?: string | string[]; outputTable?: string | boolean }): Promise<SimpleTable>;
+async aggregateGeo(method: "union" | "intersection", options?: { column?: string; categories?: string | string[]; outputTable?: string | boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5884,8 +5883,8 @@ async aggregateGeo(method: "union" | "intersection", options?: { column?: string
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance containing the aggregated
-geometries (either the modified current table or a new table).
+A promise that resolves to a table instance containing the aggregated geometries
+(either the modified current table or a new table).
 
 ##### Examples
 
@@ -6315,7 +6314,7 @@ Logs the projections of the geospatial data (if any) to the console.
 ##### Signature
 
 ```typescript
-async logProjections(): Promise<SimpleTable>;
+async logProjections(): Promise<this>;
 ```
 
 ##### Returns
@@ -6337,7 +6336,7 @@ Logs the types of all columns in the table to the console.
 ##### Signature
 
 ```typescript
-async logTypes(): Promise<SimpleTable>;
+async logTypes(): Promise<this>;
 ```
 
 ##### Returns
@@ -6361,7 +6360,7 @@ stringify the values to see them all.
 ##### Signature
 
 ```typescript
-async logUniques(column: string, options?: { stringify?: boolean }): Promise<SimpleTable>;
+async logUniques(column: string, options?: { stringify?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6397,7 +6396,7 @@ data types.
 ##### Signature
 
 ```typescript
-async logColumns(options?: { types?: boolean }): Promise<SimpleTable>;
+async logColumns(options?: { types?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6429,7 +6428,7 @@ Logs the total number of rows in the table to the console.
 ##### Signature
 
 ```typescript
-async logNbRows(): Promise<SimpleTable>;
+async logNbRows(): Promise<this>;
 ```
 
 ##### Returns
