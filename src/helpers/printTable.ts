@@ -6,10 +6,6 @@ import wrapString from "./wrapString.ts";
  * multi-line content within cells, making it ideal for displaying data with
  * long text values.
  *
- * This function has been created for the [simple-data-analysis
- * library](https://github.com/nshiab/simple-data-analysis), but can be used
- * independently for any array of objects.
- *
  * @param data - An array of objects representing the rows of the table. Each
  *   object should have string keys.
  * @param options - Optional configuration for table rendering.

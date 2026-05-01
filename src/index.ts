@@ -5,17 +5,17 @@
  *
  * To install the library with Deno, use:
  * ```bash
- * deno add jsr:@nshiab/simple-data-analysis
+ * deno add jsr:@nshiab/simple-data-analysis-core
  * ```
  *
  * To install the library with Node.js, use:
  * ```bash
- * npx jsr add @nshiab/simple-data-analysis
+ * npx jsr add @nshiab/simple-data-analysis-core
  * ```
  *
  * To start, create a SimpleDB instance and then a SimpleTable from this instance:
  * ```ts
- * import { SimpleDB } from "@nshiab/simple-data-analysis";
+ * import { SimpleDB } from "@nshiab/simple-data-analysis-core";
  *
  * const sdb = new SimpleDB();
  * const table = sdb.newTable("myTable"); // This returns a SimpleTable instance
