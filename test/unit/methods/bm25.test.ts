@@ -234,7 +234,7 @@ Deno.test("should successfully run a search with conjunctive option", async () =
   const conjunctiveCount = await conjunctive.getNbRows();
 
   // We expect fewer results with conjunctive for "fennel garlic"
-  console.log({ disjunctiveCount, conjunctiveCount });
+  // console.log({ disjunctiveCount, conjunctiveCount });
   assertEquals(conjunctiveCount < disjunctiveCount, true);
   assertEquals(conjunctiveCount > 0, true);
 

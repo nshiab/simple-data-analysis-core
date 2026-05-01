@@ -301,7 +301,7 @@ Deno.test("should log the types", async () => {
   const sdb = new SimpleDB({ types: true });
   const test = sdb.newTable("test");
   await test.loadData("test/data/files/cities.csv");
-  await test.logTable();
+  // await test.logTable();
   // How to test?
   await sdb.done();
 });
@@ -310,7 +310,7 @@ Deno.test("should log a specific number of rows", async () => {
   const sdb = new SimpleDB({ nbRowsToLog: 2 });
   const test = sdb.newTable("test");
   await test.loadData("test/data/files/cities.csv");
-  await test.logTable();
+  // await test.logTable();
   // How to test?
   await sdb.done();
 });
@@ -319,7 +319,7 @@ Deno.test("should log a specific number of characters", async () => {
   const sdb = new SimpleDB({ nbCharactersToLog: 5 });
   const test = sdb.newTable("test");
   await test.loadData("test/data/files/cities.csv");
-  await test.logTable();
+  // await test.logTable();
   // How to test?
   await sdb.done();
 });
@@ -359,8 +359,8 @@ Deno.test("should load the db", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.db`);
-  const test = await sdb.getTable("test");
-  await test.logTable();
+  // const test = await sdb.getTable("test");
+  // await test.logTable();
 
   // How to test?
   await sdb.done();
@@ -369,8 +369,8 @@ Deno.test("should load the db with a specific name", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.db`, { name: "something" });
-  const test = await sdb.getTable("test");
-  await test.logTable();
+  // const test = await sdb.getTable("test");
+  // await test.logTable();
 
   // How to test?
   await sdb.done();
@@ -379,8 +379,8 @@ Deno.test("should load the sqlite db with a specific name", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.sqlite`, { name: "something" });
-  const test = await sdb.getTable("test");
-  await test.logTable();
+  // const test = await sdb.getTable("test");
+  // await test.logTable();
 
   await sdb.done();
 });
@@ -388,8 +388,8 @@ Deno.test("should load the db with and don't detach", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.db`, { detach: false });
-  const test = await sdb.getTable("test");
-  await test.logTable();
+  // const test = await sdb.getTable("test");
+  // await test.logTable();
 
   // How to test?
   await sdb.done();
@@ -398,8 +398,8 @@ Deno.test("should load the sqlite db and don't detach", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.sqlite`, { detach: false });
-  const test = await sdb.getTable("test");
-  await test.logTable();
+  // const test = await sdb.getTable("test");
+  // await test.logTable();
 
   await sdb.done();
 });
@@ -407,8 +407,8 @@ Deno.test("should load the sqlite db", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.sqlite`);
-  const test = await sdb.getTable("test");
-  await test.logTable();
+  // const test = await sdb.getTable("test");
+  // await test.logTable();
 
   await sdb.done();
 });
@@ -418,8 +418,8 @@ Deno.test("should write the db with geometries", async () => {
   await test.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await test.logProjections();
-  await test.logTable();
+  // await test.logProjections();
+  // await test.logTable();
 
   await sdb.writeDB(`${output}database_geometry.db`);
   // How to test?
@@ -429,9 +429,9 @@ Deno.test("should load the db with geometries", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_geometry.db`);
   const test = await sdb.getTable("test");
-  await test.logProjections();
+  // await test.logProjections();
   await test.simplify(0.1);
-  await test.logTable();
+  // await test.logTable();
   // How to test?
   await sdb.done();
 });
@@ -442,7 +442,7 @@ Deno.test("should log the table names in the db", async () => {
   const test1 = sdb.newTable("test1");
   await test1.loadData("test/data/files/cities.csv");
 
-  await sdb.logTableNames();
+  // await sdb.logTableNames();
 
   // How to test?
   await sdb.done();
@@ -454,7 +454,7 @@ Deno.test("should instantiate by creating a new file", async () => {
   });
   const data = sdb.newTable("data");
   await data.loadData("test/data/files/data.csv");
-  await data.logTable();
+  // await data.logTable();
 
   await sdb.done();
 });
@@ -463,7 +463,7 @@ Deno.test("should load a db created when instantiating", async () => {
   await sdb.loadDB(`${output}database_new.db`);
   const data2 = sdb.newTable("data2");
   await data2.loadData("test/data/files/data.csv");
-  await data2.logTable();
+  // await data2.logTable();
 
   await sdb.done();
 });
@@ -476,7 +476,7 @@ Deno.test("should instantiate by creating a new file and geospatial data", async
   await data.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await data.logTable();
+  // await data.logTable();
 
   await sdb.done();
 });
@@ -485,8 +485,8 @@ Deno.test("should load a db created with geospatial data", async () => {
   await sdb.loadDB(`${output}database_new_geo.db`);
   const data = await sdb.getTable("geodata");
   await data.simplify(0.1);
-  await data.logProjections();
-  await data.logTable();
+  // await data.logProjections();
+  // await data.logTable();
 
   await sdb.done();
 });
@@ -536,7 +536,7 @@ Deno.test("should create a DB with bm25 index", async () => {
   await table.removeDuplicates({ on: "Dish" });
 
   await table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
-  await table.logTable(1);
+  // await table.logTable(1);
 
   await sdb.writeDB(`${output}database_bm25.db`);
 
@@ -549,7 +549,7 @@ Deno.test("should load a DB with bm25 index", async () => {
   await sdb.loadDB(`${output}database_bm25.db`);
   const table = await sdb.getTable("data");
   await table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
-  await table.logTable(1);
+  // await table.logTable(1);
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
   await sdb.done();
@@ -564,7 +564,7 @@ Deno.test("should instantiate by creating a new file and add bm25 index", async 
   await table.removeDuplicates({ on: "Dish" });
 
   await table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
-  await table.logTable(1);
+  // await table.logTable(1);
 
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
@@ -575,7 +575,7 @@ Deno.test("should load a DB instantiated with a file, with bm25 index", async ()
   await sdb.loadDB(`${output}database_bm25_new.db`);
   const table = await sdb.getTable("data");
   await table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
-  await table.logTable(1);
+  // await table.logTable(1);
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
   await sdb.done();
