@@ -31,13 +31,34 @@ check the
 
 ## Installation
 
+The library is available on
+[JSR](https://jsr.io/@nshiab/simple-data-analysis-core) and
+[NPM](https://www.npmjs.com/package/@nshiab/simple-data-analysis-core).
+
 ```bash
-# Deno >= 2.2.x
+# Deno
 deno add jsr:@nshiab/simple-data-analysis-core
 
 # Node.js
-npx jsr add @nshiab/simple-data-analysis-core
+npm i @nshiab/simple-data-analysis-core
 
 # Bun
-bunx jsr add @nshiab/simple-data-analysis-core
+bun add @nshiab/simple-data-analysis-core
+```
+
+## Quick setup
+
+To quickly set up a data project with essential folders, configurations, and
+documentation for AI agents, you can use
+[@nshiab/setup-data-project](https://github.com/nshiab/setup-data-project).
+
+```bash
+# Deno
+deno run -A jsr:@nshiab/setup-data-project
+
+# Node
+npx @nshiab/setup-data-project
+
+# Bun
+bunx @nshiab/setup-data-project
 ```
