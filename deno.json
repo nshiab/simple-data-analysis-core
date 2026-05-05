@@ -1,6 +1,6 @@
 {
   "name": "@nshiab/simple-data-analysis-core",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "exports": {
     ".": "./src/index.ts",
     "./helpers": "./src/helpers/index.ts"
@@ -9,16 +9,20 @@
     "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task llm",
     "llm": "deno doc --json src/index.ts > docs.json && deno run -A src/generateLlmMd.ts && deno fmt llm.md",
     "test-coverage": "deno test -A --env-file --fail-fast --coverage=cov_profile && deno coverage cov_profile",
-    "patch-no-tests": "deno run -A src/incrementVersion.ts patch",
-    "patch": "deno task all-tests && deno run -A src/incrementVersion.ts patch",
-    "minor": "deno task all-tests && deno run -A src/incrementVersion.ts minor",
-    "minor-no-tests": "deno run -A src/incrementVersion.ts minor",
-    "major": "deno task all-tests && deno run -A src/incrementVersion.ts major"
+    "patch-no-tests": "deno run -A jsr:@nshiab/bump-version patch",
+    "patch": "deno task all-tests && deno run -A jsr:@nshiab/bump-version patch",
+    "minor": "deno task all-tests && deno run -A jsr:@nshiab/bump-version minor",
+    "minor-no-tests": "deno run -A jsr:@nshiab/bump-version minor",
+    "major": "deno task all-tests && deno run -A jsr:@nshiab/bump-version major"
   },
+  "exclude": [
+    "npm/"
+  ],
   "publish": {
     "exclude": [
       "test",
-      ".github"
+      ".github",
+      "npm"
     ]
   },
   "nodeModulesDir": "auto",
