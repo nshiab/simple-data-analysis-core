@@ -1,6 +1,6 @@
 {
   "name": "@nshiab/simple-data-analysis-core",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "The core functionalities of the simple-data-analysis library, with only one dependency: DuckDB.",
   "repository": "https://github.com/nshiab/simple-data-analysis-core",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "tasks": {
     "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task llm",
-    "llm": "deno doc --json src/index.ts > docs.json && deno run -A src/generateLlmMd.ts && deno fmt llm.md",
+    "llm": "deno run -A jsr:@nshiab/deno-docs-to-md && deno fmt llm.md",
     "test-coverage": "deno test -A --env-file --fail-fast --coverage=cov_profile && deno coverage cov_profile",
     "patch-no-tests": "deno run -A jsr:@nshiab/bump-version patch",
     "patch": "deno task all-tests && deno run -A jsr:@nshiab/bump-version patch",

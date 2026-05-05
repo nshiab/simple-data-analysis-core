@@ -1,7 +1,7 @@
 /**
  * @module
  *
- * The Simple Data Analysis Library
+ * The Simple Data Analysis (Core) Library
  *
  * To install the library with Deno, use:
  * ```bash
