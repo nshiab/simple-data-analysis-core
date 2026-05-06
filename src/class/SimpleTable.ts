@@ -1743,10 +1743,10 @@ export default class SimpleTable extends Simple {
    * Pads the string values in the specified columns.
    *
    * @param columns - The column name or an array of column names to be padded.
-   * @param options - An optional object with configuration options:
+   * @param options - An object with configuration options:
    * @param options.length - The target length of the padded string.
    * @param options.method - The direction to pad: 'left' or 'right'. Defaults to 'left'.
-   * @param options.character - The character to use for padding. Defaults to a space (' ').
+   * @param options.character - The character to use for padding.
    * @returns A promise that resolves when the padding operation is complete.
    * @category Updating Data
    *
@@ -1765,7 +1765,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Pad multiple columns to 10 characters with spaces on the left
-   * await table.pad(["col1", "col2"], { length: 10, method: "left" });
+   * await table.pad(["col1", "col2"], { length: 10, method: "left", character: " " });
    * ```
    */
   async pad(
