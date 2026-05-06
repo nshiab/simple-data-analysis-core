@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should left-pad strings to target length with default zero", async () => {
@@ -102,30 +102,23 @@ Deno.test("should handle null values by leaving them as null", async () => {
   await sdb.done();
 });
 
-Deno.test("should handle columns with mixed types (strings and non-strings)", async () => {
+Deno.test("should throw error when column is not string type", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.setTypes({
-    id: "string",
-    value: "integer",
-  });
   await table.loadArray([
-    { id: "1", value: 10 },
-    { id: "2", value: 20 },
+    { id: 1 },
+    { id: 2 },
   ]);
 
-  await table.pad("id", 5);
-
-  const data = await table.getData();
-
-  assertEquals(data, [
-    { id: "00001", value: 10 },
-    { id: "00002", value: 20 },
-  ]);
+  await assertRejects(
+    () => table.pad("id", 5),
+    Error,
+    'The column "id" is of type DOUBLE',
+  );
   await sdb.done();
 });
 
-Deno.test("should truncate strings longer than target length", async () => {
+Deno.test("should throw error when string exceeds target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -134,16 +127,11 @@ Deno.test("should truncate strings longer than target length", async () => {
     { name: "Short" },
   ]);
 
-  await table.pad("name", 5);
-
-  const data = await table.getData();
-
-  // LPAD/RPAD truncate strings longer than the target length
-  assertEquals(data, [
-    { name: "Hello" },
-    { name: "World" },
-    { name: "Short" },
-  ]);
+  await assertRejects(
+    () => table.pad("name", 5),
+    Error,
+    'The string "World!!" in column "name" has length 7, which exceeds the target length 5.',
+  );
   await sdb.done();
 });
 
@@ -185,7 +173,7 @@ Deno.test("should handle empty strings", async () => {
   await sdb.done();
 });
 
-Deno.test("should handle padding to length 0", async () => {
+Deno.test("should throw error when string exceeds target length 0", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -193,14 +181,11 @@ Deno.test("should handle padding to length 0", async () => {
     { text: "World" },
   ]);
 
-  await table.pad("text", 0);
-
-  const data = await table.getData();
-
-  assertEquals(data, [
-    { text: "" },
-    { text: "" },
-  ]);
+  await assertRejects(
+    () => table.pad("text", 0),
+    Error,
+    'The string "Hello" in column "text" has length 5, which exceeds the target length 0.',
+  );
   await sdb.done();
 });
 
@@ -263,7 +248,7 @@ Deno.test("should handle multiple rows with null values", async () => {
     { id: null },
     { id: "23" },
     { id: null },
-    { id: "4567" },
+    { id: "45" },
   ]);
 
   await table.pad("id", 4, { side: "start", char: "0" });
@@ -275,7 +260,7 @@ Deno.test("should handle multiple rows with null values", async () => {
     { id: null },
     { id: "0023" },
     { id: null },
-    { id: "4567" },
+    { id: "0045" },
   ]);
   await sdb.done();
 });

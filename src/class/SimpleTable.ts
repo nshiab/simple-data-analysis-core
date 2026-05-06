@@ -2789,9 +2789,9 @@ export default class SimpleTable extends Simple {
   /**
    * Pads the strings in the specified column to a target length.
    *
-   * Only string values are padded. `null` values remain `null`, and non-string
-   * values (other than `null`) are left unchanged. Strings longer than the
-   * target length are truncated to fit.
+   * The column must contain string (VARCHAR) values. An error is thrown if the
+   * column is of a different type. `null` values remain `null`. An error is
+   * thrown if any string value exceeds the target length.
    *
    * @param column - The column name containing strings to be padded.
    * @param length - The target length of the padded strings.
@@ -2799,6 +2799,8 @@ export default class SimpleTable extends Simple {
    * @param options.side - Which side to pad. `'start'` (default) or `'end'`.
    * @param options.char - The character to use for padding. Defaults to `'0'`.
    * @returns A promise that resolves when the padding operation is complete.
+   * @throws {Error} If the column is not of string (VARCHAR) type.
+   * @throws {Error} If any string value in the column exceeds the target length.
    * @category Updating Data
    *
    * @example
@@ -2834,6 +2836,26 @@ export default class SimpleTable extends Simple {
     length: number,
     options: { side?: "start" | "end"; char?: string } = {},
   ): Promise<void> {
+    // Validate column type is string
+    const allTypes = await this.getTypes();
+    if (allTypes[column] !== "VARCHAR") {
+      throw new Error(
+        `The column "${column}" is of type ${
+          allTypes[column]
+        }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
+      );
+    }
+
+    // Validate no string value exceeds the target length
+    const values = await this.getValues(column);
+    for (const val of values) {
+      if (val !== null && typeof val === "string" && val.length > length) {
+        throw new Error(
+          `The string "${val}" in column "${column}" has length ${val.length}, which exceeds the target length ${length}.`,
+        );
+      }
+    }
+
     await queryDB(
       this,
       padQuery(this.name, column, length, options),

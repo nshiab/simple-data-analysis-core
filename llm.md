@@ -2689,9 +2689,9 @@ await table.truncate("name", 10);
 
 Pads the strings in the specified column to a target length.
 
-Only string values are padded. `null` values remain `null`, and non-string
-values (other than `null`) are left unchanged. Strings longer than the target
-length are truncated to fit.
+The column must contain string (VARCHAR) values. An error is thrown if the
+column is of a different type. `null` values remain `null`. An error is thrown
+if any string value exceeds the target length.
 
 ##### Signature
 
@@ -2710,6 +2710,11 @@ async pad(column: string, length: number, options?: { side?: "start" | "end"; ch
 ##### Returns
 
 A promise that resolves when the padding operation is complete.
+
+##### Throws
+
+- **`Error`**: If the column is not of string (VARCHAR) type.
+- **`Error`**: If any string value in the column exceeds the target length.
 
 ##### Examples
 
