@@ -9,7 +9,7 @@ Deno.test("should pad left with space", async () => {
     { key1: "b" },
   ]);
 
-  await table.pad("key1", 3, " ", "left");
+  await table.pad("key1", { length: 3, character: " ", method: "left" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -28,7 +28,7 @@ Deno.test("should pad right with custom character", async () => {
     { key1: "b" },
   ]);
 
-  await table.pad("key1", 3, "_", "right");
+  await table.pad("key1", { length: 3, character: "_", method: "right" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -47,7 +47,7 @@ Deno.test("should pad multiple columns", async () => {
     { key1: "c", key2: "d" },
   ]);
 
-  await table.pad(["key1", "key2"], 3, "0", "left");
+  await table.pad(["key1", "key2"], { length: 3, character: "0", method: "left" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -66,7 +66,7 @@ Deno.test("should pad with a single quote", async () => {
     { key1: "b" },
   ]);
 
-  await table.pad("key1", 3, "'", "left");
+  await table.pad("key1", { length: 3, character: "'", method: "left" });
   const data = await table.getData();
 
   assertEquals(data, [
