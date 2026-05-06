@@ -1770,17 +1770,14 @@ export default class SimpleTable extends Simple {
    */
   async pad(
     columns: string | string[],
-    options?: {
+    options: {
       length: number;
+      character: string;
       method?: "left" | "right";
-      character?: string;
     },
   ): Promise<void> {
-    if (!options || options.length === undefined) {
-      throw new Error("The 'length' option is required for pad().");
-    }
     const method = options.method ?? "left";
-    const character = options.character ?? " ";
+    const character = options.character;
 
     await queryDB(
       this,

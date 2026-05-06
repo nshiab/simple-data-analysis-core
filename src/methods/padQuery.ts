@@ -7,7 +7,7 @@ export default function padQuery(
 
   const method = options.method;
   const length = options.length;
-  const character = options.character;
+  const character = options.character.replace(/'/g, "''");
 
   for (const column of columns) {
     const sqlMethod = method === "left" ? "LPAD" : "RPAD";
