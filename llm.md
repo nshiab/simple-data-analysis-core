@@ -2685,6 +2685,58 @@ await table.truncate("description", 50);
 await table.truncate("name", 10);
 ```
 
+#### `pad`
+
+Pads the strings in the specified column to a target length.
+
+Only string values are padded. `null` values remain `null`, and non-string
+values (other than `null`) are left unchanged. Strings longer than the target
+length are truncated to fit.
+
+##### Signature
+
+```typescript
+async pad(column: string, length: number, options?: { side?: "start" | "end"; char?: string }): Promise<void>;
+```
+
+##### Parameters
+
+- **`column`**: The column name containing strings to be padded.
+- **`length`**: The target length of the padded strings.
+- **`options`**: An optional object with configuration options:
+- **`options.side`**: Which side to pad. `'start'` (default) or `'end'`.
+- **`options.char`**: The character to use for padding. Defaults to `'0'`.
+
+##### Returns
+
+A promise that resolves when the padding operation is complete.
+
+##### Examples
+
+```ts
+// Left-pad 'id' column to 3 characters with zeros (default)
+await table.pad("id", 3);
+// Result: '1' -> '001', '23' -> '023', null -> null
+```
+
+```ts
+// Right-pad 'code' column to 5 characters with spaces
+await table.pad("code", 5, { side: "end", char: " " });
+// Result: '123' -> '123  ', '45' -> '45   ', null -> null
+```
+
+```ts
+// Left-pad 'id' column to 5 characters with dashes
+await table.pad("id", 5, { side: "start", char: "-" });
+// Result: '1' -> '----1', '23' -> '---23'
+```
+
+```ts
+// Padding with a longer fill string (DuckDB repeats/truncates as needed)
+await table.pad("code", 6, { side: "end", char: "ab" });
+// Result: '1' -> '1ababa', '23' -> '23abab'
+```
+
 #### `splitExtract`
 
 Splits strings in a specified column by a separator and extracts a substring at

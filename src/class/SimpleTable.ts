@@ -87,6 +87,7 @@ import getExtension from "../helpers/getExtension.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import capitalizeQuery from "../methods/capitalizeQuery.ts";
 import truncateQuery from "../methods/truncateQuery.ts";
+import padQuery from "../methods/padQuery.ts";
 import getProjectionParquet from "../helpers/getProjectionParquet.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
@@ -2781,6 +2782,65 @@ export default class SimpleTable extends Simple {
         table: this.name,
         method: "truncate()",
         parameters: { column, length },
+      }),
+    );
+  }
+
+  /**
+   * Pads the strings in the specified column to a target length.
+   *
+   * Only string values are padded. `null` values remain `null`, and non-string
+   * values (other than `null`) are left unchanged. Strings longer than the
+   * target length are truncated to fit.
+   *
+   * @param column - The column name containing strings to be padded.
+   * @param length - The target length of the padded strings.
+   * @param options - An optional object with configuration options:
+   * @param options.side - Which side to pad. `'start'` (default) or `'end'`.
+   * @param options.char - The character to use for padding. Defaults to `'0'`.
+   * @returns A promise that resolves when the padding operation is complete.
+   * @category Updating Data
+   *
+   * @example
+   * ```ts
+   * // Left-pad 'id' column to 3 characters with zeros (default)
+   * await table.pad("id", 3);
+   * // Result: '1' -> '001', '23' -> '023', null -> null
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Right-pad 'code' column to 5 characters with spaces
+   * await table.pad("code", 5, { side: "end", char: " " });
+   * // Result: '123' -> '123  ', '45' -> '45   ', null -> null
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Left-pad 'id' column to 5 characters with dashes
+   * await table.pad("id", 5, { side: "start", char: "-" });
+   * // Result: '1' -> '----1', '23' -> '---23'
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Padding with a longer fill string (DuckDB repeats/truncates as needed)
+   * await table.pad("code", 6, { side: "end", char: "ab" });
+   * // Result: '1' -> '1ababa', '23' -> '23abab'
+   * ```
+   */
+  async pad(
+    column: string,
+    length: number,
+    options: { side?: "start" | "end"; char?: string } = {},
+  ): Promise<void> {
+    await queryDB(
+      this,
+      padQuery(this.name, column, length, options),
+      mergeOptions(this, {
+        table: this.name,
+        method: "pad()",
+        parameters: { column, length, options },
       }),
     );
   }
