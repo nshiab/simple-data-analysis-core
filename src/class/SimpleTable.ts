@@ -1743,53 +1743,47 @@ export default class SimpleTable extends Simple {
    * Pads the string values in the specified columns.
    *
    * @param columns - The column name or an array of column names to be padded.
-   * @param options - An object with configuration options:
-   * @param options.length - The target length of the padded string.
-   * @param options.method - The direction to pad: 'left' or 'right'. Defaults to 'left'.
-   * @param options.character - The character to use for padding.
+   * @param length - The target length of the padded string.
+   * @param character - The character to use for padding.
+   * @param method - The direction to pad: 'left' or 'right'. Defaults to 'left'.
    * @returns A promise that resolves when the padding operation is complete.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Pad 'id' column to 5 characters with '0' on the left
-   * await table.pad("id", { length: 5, method: "left", character: "0" });
+   * await table.pad("id", 5, "0", "left");
    * ```
    *
    * @example
    * ```ts
    * // Pad 'name' column to 10 characters with '_' on the right
-   * await table.pad("name", { length: 10, method: "right", character: "_" });
+   * await table.pad("name", 10, "_", "right");
    * ```
    *
    * @example
    * ```ts
    * // Pad multiple columns to 10 characters with spaces on the left
-   * await table.pad(["col1", "col2"], { length: 10, method: "left", character: " " });
+   * await table.pad(["col1", "col2"], 10, " ", "left");
    * ```
    */
   async pad(
     columns: string | string[],
-    options: {
-      length: number;
-      character: string;
-      method?: "left" | "right";
-    },
+    length: number,
+    character: string,
+    method: "left" | "right" = "left",
   ): Promise<void> {
-    const method = options.method ?? "left";
-    const character = options.character;
-
     await queryDB(
       this,
       padQuery(this.name, stringToArray(columns), {
-        length: options.length,
+        length,
         method,
         character,
       }),
       mergeOptions(this, {
         table: this.name,
         method: "pad()",
-        parameters: { columns, options },
+        parameters: { columns, length, character, method },
       }),
     );
   }
