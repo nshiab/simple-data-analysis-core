@@ -2690,8 +2690,8 @@ await table.truncate("name", 10);
 Pads the strings in the specified columns to a target length.
 
 The columns must contain string (VARCHAR) values. An error is thrown if any
-column is of a different type. `null` values remain `null`. An error is thrown
-if any string value exceeds the target length (no silent truncation).
+column is of a different type. `null` values remain `null`. Strings that already
+exceed the target length are truncated to that length.
 
 ##### Signature
 
@@ -2714,7 +2714,6 @@ A promise that resolves when the padding operation is complete.
 ##### Throws
 
 - **`Error`**: If any column is not of string (VARCHAR) type.
-- **`Error`**: If any string value in any column exceeds the target length.
 
 ##### Examples
 
@@ -2734,12 +2733,6 @@ await table.pad("code", 5, { side: "end", char: " " });
 // Left-pad multiple columns to 5 characters with dashes
 await table.pad(["id", "code"], 5, { side: "start", char: "-" });
 // Result: '1' -> '----1', '23' -> '---23'
-```
-
-```ts
-// Padding with a longer fill string (DuckDB repeats/truncates as needed)
-await table.pad("code", 6, { side: "end", char: "ab" });
-// Result: '1' -> '1ababa', '23' -> '23abab'
 ```
 
 #### `splitExtract`

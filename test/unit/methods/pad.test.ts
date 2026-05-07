@@ -118,7 +118,7 @@ Deno.test("should throw error when column is not string type", async () => {
   await sdb.done();
 });
 
-Deno.test("should throw error when string exceeds target length", async () => {
+Deno.test("should truncate strings exceeding target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -127,11 +127,15 @@ Deno.test("should throw error when string exceeds target length", async () => {
     { name: "OK" },
   ]);
 
-  await assertRejects(
-    () => table.pad("name", 3),
-    Error,
-    'Column "name" contains strings with length 7, which exceeds the target length 3.',
-  );
+  await table.pad("name", 3);
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { name: "0Hi" },
+    { name: "Wor" },
+    { name: "0OK" },
+  ]);
   await sdb.done();
 });
 
@@ -173,7 +177,7 @@ Deno.test("should handle empty strings", async () => {
   await sdb.done();
 });
 
-Deno.test("should throw error when string exceeds target length 0", async () => {
+Deno.test("should truncate strings when target length is 0", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -181,11 +185,14 @@ Deno.test("should throw error when string exceeds target length 0", async () => 
     { text: "World" },
   ]);
 
-  await assertRejects(
-    () => table.pad("text", 0),
-    Error,
-    'Column "text" contains strings with length 5, which exceeds the target length 0.',
-  );
+  await table.pad("text", 0);
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { text: "" },
+    { text: "" },
+  ]);
   await sdb.done();
 });
 
@@ -321,7 +328,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
   await sdb.done();
 });
 
-Deno.test("should throw error when one of multiple columns exceeds target length", async () => {
+Deno.test("should truncate long strings in multi-column pad", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -329,11 +336,14 @@ Deno.test("should throw error when one of multiple columns exceeds target length
     { short: "B", long: "OK" },
   ]);
 
-  await assertRejects(
-    () => table.pad(["short", "long"], 5),
-    Error,
-    'Column "long" contains strings with length 16, which exceeds the target length 5.',
-  );
+  await table.pad(["short", "long"], 5, { side: "start", char: "-" });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { short: "----A", long: "ThisI" },
+    { short: "----B", long: "---OK" },
+  ]);
   await sdb.done();
 });
 

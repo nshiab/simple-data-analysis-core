@@ -2790,8 +2790,8 @@ export default class SimpleTable extends Simple {
    * Pads the strings in the specified columns to a target length.
    *
    * The columns must contain string (VARCHAR) values. An error is thrown if any
-   * column is of a different type. `null` values remain `null`. An error is
-   * thrown if any string value exceeds the target length (no silent truncation).
+   * column is of a different type. `null` values remain `null`. Strings that
+   * already exceed the target length are truncated to that length.
    *
    * @param columns - The column name(s) containing strings to be padded.
    * @param length - The target length of the padded strings.
@@ -2800,7 +2800,6 @@ export default class SimpleTable extends Simple {
    * @param options.char - The character to use for padding. Defaults to `'0'`.
    * @returns A promise that resolves when the padding operation is complete.
    * @throws {Error} If any column is not of string (VARCHAR) type.
-   * @throws {Error} If any string value in any column exceeds the target length.
    * @category Updating Data
    *
    * @example
@@ -2823,13 +2822,6 @@ export default class SimpleTable extends Simple {
    * await table.pad(["id", "code"], 5, { side: "start", char: "-" });
    * // Result: '1' -> '----1', '23' -> '---23'
    * ```
-   *
-   * @example
-   * ```ts
-   * // Padding with a longer fill string (DuckDB repeats/truncates as needed)
-   * await table.pad("code", 6, { side: "end", char: "ab" });
-   * // Result: '1' -> '1ababa', '23' -> '23abab'
-   * ```
    */
   async pad(
     columns: string | string[],
@@ -2846,20 +2838,6 @@ export default class SimpleTable extends Simple {
           `The column "${column}" is of type ${
             allTypes[column]
           }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
-        );
-      }
-    }
-
-    // Validate no string value exceeds the target length (using DuckDB for performance)
-    for (const column of columnList) {
-      const result = await this.sdb.customQuery(
-        `SELECT MAX(LENGTH("${column}")) as max_len FROM "${this.name}" WHERE "${column}" IS NOT NULL`,
-        { returnDataFrom: "query" },
-      ) as { max_len: number | null }[];
-      const maxLen = result[0]?.max_len ?? 0;
-      if (maxLen > length) {
-        throw new Error(
-          `Column "${column}" contains strings with length ${maxLen}, which exceeds the target length ${length}.`,
         );
       }
     }
