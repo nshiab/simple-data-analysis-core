@@ -2687,21 +2687,21 @@ await table.truncate("name", 10);
 
 #### `pad`
 
-Pads the strings in the specified column to a target length.
+Pads the strings in the specified columns to a target length.
 
-The column must contain string (VARCHAR) values. An error is thrown if the
+The columns must contain string (VARCHAR) values. An error is thrown if any
 column is of a different type. `null` values remain `null`. An error is thrown
-if any string value exceeds the target length.
+if any string value exceeds the target length (no silent truncation).
 
 ##### Signature
 
 ```typescript
-async pad(column: string, length: number, options?: { side?: "start" | "end"; char?: string }): Promise<void>;
+async pad(columns: string | string[], length: number, options?: { side?: "start" | "end"; char?: string }): Promise<void>;
 ```
 
 ##### Parameters
 
-- **`column`**: The column name containing strings to be padded.
+- **`columns`**: The column name(s) containing strings to be padded.
 - **`length`**: The target length of the padded strings.
 - **`options`**: An optional object with configuration options:
 - **`options.side`**: Which side to pad. `'start'` (default) or `'end'`.
@@ -2713,8 +2713,8 @@ A promise that resolves when the padding operation is complete.
 
 ##### Throws
 
-- **`Error`**: If the column is not of string (VARCHAR) type.
-- **`Error`**: If any string value in the column exceeds the target length.
+- **`Error`**: If any column is not of string (VARCHAR) type.
+- **`Error`**: If any string value in any column exceeds the target length.
 
 ##### Examples
 
@@ -2731,8 +2731,8 @@ await table.pad("code", 5, { side: "end", char: " " });
 ```
 
 ```ts
-// Left-pad 'id' column to 5 characters with dashes
-await table.pad("id", 5, { side: "start", char: "-" });
+// Left-pad multiple columns to 5 characters with dashes
+await table.pad(["id", "code"], 5, { side: "start", char: "-" });
 // Result: '1' -> '----1', '23' -> '---23'
 ```
 

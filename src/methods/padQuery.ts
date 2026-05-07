@@ -1,6 +1,6 @@
 export default function padQuery(
   table: string,
-  column: string,
+  columns: string[],
   length: number,
   options: { side?: "start" | "end"; char?: string },
 ) {
@@ -9,10 +9,13 @@ export default function padQuery(
 
   // Wrap the padding character in single quotes for SQL
   const paddedChar = `'${char}'`;
+  const func = side === "start" ? "LPAD" : "RPAD";
 
-  if (side === "start") {
-    return `UPDATE "${table}" SET "${column}" = LPAD("${column}", ${length}, ${paddedChar});`;
-  } else {
-    return `UPDATE "${table}" SET "${column}" = RPAD("${column}", ${length}, ${paddedChar});`;
+  let query = "";
+  for (const column of columns) {
+    query +=
+      `\nUPDATE "${table}" SET "${column}" = ${func}("${column}", ${length}, ${paddedChar});`;
   }
+
+  return query;
 }

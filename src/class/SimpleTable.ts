@@ -2787,20 +2787,20 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Pads the strings in the specified column to a target length.
+   * Pads the strings in the specified columns to a target length.
    *
-   * The column must contain string (VARCHAR) values. An error is thrown if the
+   * The columns must contain string (VARCHAR) values. An error is thrown if any
    * column is of a different type. `null` values remain `null`. An error is
-   * thrown if any string value exceeds the target length.
+   * thrown if any string value exceeds the target length (no silent truncation).
    *
-   * @param column - The column name containing strings to be padded.
+   * @param columns - The column name(s) containing strings to be padded.
    * @param length - The target length of the padded strings.
    * @param options - An optional object with configuration options:
    * @param options.side - Which side to pad. `'start'` (default) or `'end'`.
    * @param options.char - The character to use for padding. Defaults to `'0'`.
    * @returns A promise that resolves when the padding operation is complete.
-   * @throws {Error} If the column is not of string (VARCHAR) type.
-   * @throws {Error} If any string value in the column exceeds the target length.
+   * @throws {Error} If any column is not of string (VARCHAR) type.
+   * @throws {Error} If any string value in any column exceeds the target length.
    * @category Updating Data
    *
    * @example
@@ -2819,8 +2819,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Left-pad 'id' column to 5 characters with dashes
-   * await table.pad("id", 5, { side: "start", char: "-" });
+   * // Left-pad multiple columns to 5 characters with dashes
+   * await table.pad(["id", "code"], 5, { side: "start", char: "-" });
    * // Result: '1' -> '----1', '23' -> '---23'
    * ```
    *
@@ -2832,37 +2832,45 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async pad(
-    column: string,
+    columns: string | string[],
     length: number,
     options: { side?: "start" | "end"; char?: string } = {},
   ): Promise<void> {
-    // Validate column type is string
+    const columnList = stringToArray(columns);
+
+    // Validate all columns are string type
     const allTypes = await this.getTypes();
-    if (allTypes[column] !== "VARCHAR") {
-      throw new Error(
-        `The column "${column}" is of type ${
-          allTypes[column]
-        }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
-      );
+    for (const column of columnList) {
+      if (allTypes[column] !== "VARCHAR") {
+        throw new Error(
+          `The column "${column}" is of type ${
+            allTypes[column]
+          }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
+        );
+      }
     }
 
-    // Validate no string value exceeds the target length
-    const values = await this.getValues(column);
-    for (const val of values) {
-      if (val !== null && typeof val === "string" && val.length > length) {
+    // Validate no string value exceeds the target length (using DuckDB for performance)
+    for (const column of columnList) {
+      const result = await this.sdb.customQuery(
+        `SELECT MAX(LENGTH("${column}")) as max_len FROM "${this.name}" WHERE "${column}" IS NOT NULL`,
+        { returnDataFrom: "query" },
+      ) as { max_len: number | null }[];
+      const maxLen = result[0]?.max_len ?? 0;
+      if (maxLen > length) {
         throw new Error(
-          `The string "${val}" in column "${column}" has length ${val.length}, which exceeds the target length ${length}.`,
+          `Column "${column}" contains strings with length ${maxLen}, which exceeds the target length ${length}.`,
         );
       }
     }
 
     await queryDB(
       this,
-      padQuery(this.name, column, length, options),
+      padQuery(this.name, columnList, length, options),
       mergeOptions(this, {
         table: this.name,
         method: "pad()",
-        parameters: { column, length, options },
+        parameters: { columns, length, options },
       }),
     );
   }
