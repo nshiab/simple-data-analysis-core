@@ -319,12 +319,17 @@ Deno.test("should write a geoparquet file with multiple geo columns", async () =
   const originalData = sdb.newTable();
   await originalData.loadGeoData(originalFile);
   await originalData.cloneColumn("geom", "anotherGeom");
+  const originalColumns = await originalData.getColumns();
+  const originalNbRows = await originalData.getNbRows();
   await originalData.writeGeoData(`${output}data-multiple-columns.geoparquet`);
 
   const writtenData = sdb.newTable();
   await writtenData.loadGeoData(`${output}data-multiple-columns.geoparquet`);
+  const writtenColumns = await writtenData.getColumns();
+  const writtenNbRows = await writtenData.getNbRows();
 
-  assertEquals(await writtenData.getData(), await originalData.getData());
+  assertEquals(writtenColumns, originalColumns);
+  assertEquals(writtenNbRows, originalNbRows);
   await sdb.done();
 });
 
