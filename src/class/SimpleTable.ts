@@ -330,6 +330,7 @@ export default class SimpleTable extends Simple {
    * @param options.fileName - A boolean indicating whether to include the file name as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
+   * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
    * @param options.header - A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
    * @param options.allText - A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
    * @param options.delim - The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
@@ -376,6 +377,12 @@ export default class SimpleTable extends Simple {
    *   "https://some-website.com/some-data3.parquet"
    * ], { unifyColumns: true });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Load only specific columns from a CSV file
+   * await table.loadData("./employees.csv", { columns: ["name", "salary"] });
+   * ```
    */
   async loadData(
     files: string | string[],
@@ -386,6 +393,8 @@ export default class SimpleTable extends Simple {
       fileName?: boolean;
       unifyColumns?: boolean;
       columnTypes?: { [key: string]: string };
+      // column selection
+      columns?: string[];
       // csv options
       header?: boolean;
       allText?: boolean;
@@ -427,6 +436,7 @@ export default class SimpleTable extends Simple {
    * @param options.fileName - A boolean indicating whether to include the file name as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
+   * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
    * @param options.header - A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
    * @param options.allText - A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
    * @param options.delim - The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
@@ -447,6 +457,12 @@ export default class SimpleTable extends Simple {
    * // Load all supported data files from the "./data/" directory
    * await table.loadDataFromDirectory("./data/");
    * ```
+   *
+   * @example
+   * ```ts
+   * // Load only specific columns from all CSV files in a directory
+   * await table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
+   * ```
    */
   async loadDataFromDirectory(
     directory: string,
@@ -457,6 +473,8 @@ export default class SimpleTable extends Simple {
       fileName?: boolean;
       unifyColumns?: boolean;
       columnTypes?: { [key: string]: string };
+      // column selection
+      columns?: string[];
       // csv options
       header?: boolean;
       allText?: boolean;
