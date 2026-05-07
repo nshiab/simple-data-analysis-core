@@ -6709,9 +6709,9 @@ export default class SimpleTable extends Simple {
       this.connection === undefined ||
       !(await this.sdb.hasTable(this.name))
     ) {
-      console.log(`\ntable ${this.name}: no data`);
+      console.log(`\nTable ${this.name}: no data`);
     } else {
-      console.log(`\ntable ${this.name}:`);
+      console.log(`\nTable ${this.name}:`);
       console.table(await getDescription(this));
     }
   }
@@ -6729,7 +6729,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async logProjections(): Promise<this> {
-    console.log(`\ntable ${this.name} projections:`);
+    console.log(`\nTable ${this.name} projections:`);
     console.log(this.projections);
     return await this;
   }
@@ -6747,7 +6747,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async logTypes(): Promise<this> {
-    console.log(`\ntable ${this.name} types:`);
+    console.log(`\nTable ${this.name} types:`);
     console.log(await this.getTypes());
     return await this;
   }
@@ -6779,7 +6779,7 @@ export default class SimpleTable extends Simple {
     options: { stringify?: boolean } = {},
   ): Promise<this> {
     const values = await this.getUniques(column);
-    console.log(`\nUnique values in ${column}:`);
+    console.log(`\nTable ${this.name} — unique values in ${column}:`);
     if (options.stringify) {
       console.log(JSON.stringify(values, null, 2));
     } else {
