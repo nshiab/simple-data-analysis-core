@@ -290,3 +290,33 @@ Deno.test("should preserve row order after simple fill() with no options", async
   ]);
   await sdb.done();
 });
+
+Deno.test("should preserve row order after fill() with categories and interpolateBy", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  const input = [
+    { id: 1, group: "a", x: 0, y: 0 },
+    { id: 2, group: "b", x: 0, y: 10 },
+    { id: 3, group: "a", x: 1, y: null }, // 1/3 between 0 and 3 -> 2
+    { id: 4, group: "b", x: 2, y: null }, // 2/10 between 0 and 10 -> 18
+    { id: 5, group: "a", x: 3, y: 6 },
+    { id: 6, group: "b", x: 10, y: 50 },
+  ];
+  await table.loadArray(input);
+  await table.fill("y", {
+    categories: "group",
+    interpolateBy: "x",
+  });
+  const data = await table.getData();
+  // Row order must match input order (by id)
+  assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5, 6]);
+  assertEquals(data, [
+    { id: 1, group: "a", x: 0, y: 0 },
+    { id: 2, group: "b", x: 0, y: 10 },
+    { id: 3, group: "a", x: 1, y: 2 },
+    { id: 4, group: "b", x: 2, y: 18 },
+    { id: 5, group: "a", x: 3, y: 6 },
+    { id: 6, group: "b", x: 10, y: 50 },
+  ]);
+  await sdb.done();
+});
