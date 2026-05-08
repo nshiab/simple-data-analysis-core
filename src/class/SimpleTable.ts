@@ -87,6 +87,7 @@ import getExtension from "../helpers/getExtension.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import capitalizeQuery from "../methods/capitalizeQuery.ts";
 import truncateQuery from "../methods/truncateQuery.ts";
+import padQuery from "../methods/padQuery.ts";
 import getProjectionParquet from "../helpers/getProjectionParquet.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
@@ -2781,6 +2782,94 @@ export default class SimpleTable extends Simple {
         table: this.name,
         method: "truncate()",
         parameters: { column, length },
+      }),
+    );
+  }
+
+  /**
+   * Pads the strings in the specified columns to a target length.
+   *
+   * The columns must contain string (VARCHAR) values. An error is thrown if any
+   * column is of a different type. `null` values remain `null`. If any string
+   * already exceeds the target length, an error is thrown (no silent truncation).
+   *
+   * @param columns - The column name(s) containing strings to be padded.
+   * @param length - The target length of the padded strings.
+   * @param options - An optional object with configuration options:
+   * @param options.method - Which side to pad. `'left'` (default) or `'right'`.
+   * @param options.char - The character to use for padding. Defaults to `'0'`.
+   * @returns A promise that resolves when the padding operation is complete.
+   * @throws {Error} If any column is not of string (VARCHAR) type.
+   * @throws {Error} If any string value exceeds the target length.
+   * @category Updating Data
+   *
+   * @example
+   * ```ts
+   * // Left-pad 'id' column to 3 characters with zeros (default)
+   * await table.pad("id", 3);
+   * // Result: '1' -> '001', '23' -> '023', null -> null
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Right-pad 'code' column to 5 characters with spaces
+   * await table.pad("code", 5, { method: "right", char: " " });
+   * // Result: '123' -> '123  ', '45' -> '45   ', null -> null
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Left-pad multiple columns to 5 characters with dashes
+   * await table.pad(["id", "code"], 5, { method: "left", char: "-" });
+   * // Result: '1' -> '----1', '23' -> '---23'
+   * ```
+   */
+  async pad(
+    columns: string | string[],
+    length: number,
+    options: { method?: "left" | "right"; char?: string } = {},
+  ): Promise<void> {
+    const columnList = stringToArray(columns);
+
+    // Validate all columns are string type
+    const allTypes = await this.getTypes();
+    for (const column of columnList) {
+      if (allTypes[column] !== "VARCHAR") {
+        throw new Error(
+          `The column "${column}" is of type ${
+            allTypes[column]
+          }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
+        );
+      }
+    }
+
+    // Pre-validation: check for strings exceeding target length
+    for (const column of columnList) {
+      const overflowResult = await queryDB(
+        this,
+        `SELECT COUNT(*) AS cnt FROM "${this.name}" WHERE LENGTH("${column}") > ${length};`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "pad()",
+          parameters: { columns, length, options },
+          returnDataFrom: "query",
+        }),
+      );
+      const overflowCount = Number(overflowResult![0].cnt);
+      if (overflowCount > 0) {
+        throw new Error(
+          `The column "${column}" has ${overflowCount} string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
+        );
+      }
+    }
+
+    await queryDB(
+      this,
+      padQuery(this.name, columnList, length, options),
+      mergeOptions(this, {
+        table: this.name,
+        method: "pad()",
+        parameters: { columns, length, options },
       }),
     );
   }

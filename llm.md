@@ -2685,6 +2685,57 @@ await table.truncate("description", 50);
 await table.truncate("name", 10);
 ```
 
+#### `pad`
+
+Pads the strings in the specified columns to a target length.
+
+The columns must contain string (VARCHAR) values. An error is thrown if any
+column is of a different type. `null` values remain `null`. If any string
+already exceeds the target length, an error is thrown (no silent truncation).
+
+##### Signature
+
+```typescript
+async pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): Promise<void>;
+```
+
+##### Parameters
+
+- **`columns`**: The column name(s) containing strings to be padded.
+- **`length`**: The target length of the padded strings.
+- **`options`**: An optional object with configuration options:
+- **`options.method`**: Which side to pad. `'left'` (default) or `'right'`.
+- **`options.char`**: The character to use for padding. Defaults to `'0'`.
+
+##### Returns
+
+A promise that resolves when the padding operation is complete.
+
+##### Throws
+
+- **`Error`**: If any column is not of string (VARCHAR) type.
+- **`Error`**: If any string value exceeds the target length.
+
+##### Examples
+
+```ts
+// Left-pad 'id' column to 3 characters with zeros (default)
+await table.pad("id", 3);
+// Result: '1' -> '001', '23' -> '023', null -> null
+```
+
+```ts
+// Right-pad 'code' column to 5 characters with spaces
+await table.pad("code", 5, { method: "right", char: " " });
+// Result: '123' -> '123  ', '45' -> '45   ', null -> null
+```
+
+```ts
+// Left-pad multiple columns to 5 characters with dashes
+await table.pad(["id", "code"], 5, { method: "left", char: "-" });
+// Result: '1' -> '----1', '23' -> '---23'
+```
+
 #### `splitExtract`
 
 Splits strings in a specified column by a separator and extracts a substring at
