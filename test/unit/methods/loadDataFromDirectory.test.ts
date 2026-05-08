@@ -90,3 +90,33 @@ Deno.test("should load data from a directory with a limit option", async () => {
   assertEquals(data.length, 3);
   await sdb.done();
 });
+
+Deno.test("should load only specific columns from directory", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadDataFromDirectory("test/data/directory/", {
+    unifyColumns: true,
+    columns: ["key1"],
+  });
+
+  await table.sort({ key1: "asc" });
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1 },
+    { key1: 2 },
+    { key1: 3 },
+    { key1: 4 },
+    { key1: 5 },
+    { key1: 6 },
+    { key1: 7 },
+    { key1: 8 },
+    { key1: 9 },
+    { key1: 9 },
+    { key1: 10 },
+    { key1: 10 },
+    { key1: 11 },
+    { key1: 11 },
+  ]);
+  await sdb.done();
+});

@@ -621,7 +621,7 @@ formats include CSV, JSON, Parquet, and Excel.
 ##### Signature
 
 ```typescript
-async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
+async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -642,6 +642,12 @@ async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | 
   filled with `NULL` values. Defaults to `false`.
 - **`options.columnTypes`**: An object mapping column names to their expected
   data types. By default, types are inferred.
+- **`options.columns`**: An array of column names to load. When provided, only
+  the specified columns are loaded, reducing memory usage and improving load
+  times. Not supported for Excel files — combining `columns` with Excel files
+  throws an error. If an invalid column name is provided, DuckDB will throw its
+  native error. An empty array behaves the same as omitting the option (loads
+  all columns). Defaults to loading all columns.
 - **`options.header`**: A boolean indicating whether the file has a header row.
   Applicable to CSV files. Defaults to `true`.
 - **`options.allText`**: A boolean indicating whether all columns should be
@@ -705,6 +711,11 @@ await table.loadData([
 ], { unifyColumns: true });
 ```
 
+```ts
+// Load only specific columns from a CSV file
+await table.loadData("./employees.csv", { columns: ["name", "salary"] });
+```
+
 #### `loadDataFromDirectory`
 
 Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
@@ -713,7 +724,7 @@ directory into the table.
 ##### Signature
 
 ```typescript
-async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
+async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -733,6 +744,12 @@ async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "d
   filled with `NULL` values. Defaults to `false`.
 - **`options.columnTypes`**: An object mapping column names to their expected
   data types. By default, types are inferred.
+- **`options.columns`**: An array of column names to load. When provided, only
+  the specified columns are loaded, reducing memory usage and improving load
+  times. Not supported for Excel files — combining `columns` with Excel files
+  throws an error. If an invalid column name is provided, DuckDB will throw its
+  native error. An empty array behaves the same as omitting the option (loads
+  all columns). Defaults to loading all columns.
 - **`options.header`**: A boolean indicating whether the file has a header row.
   Applicable to CSV files. Defaults to `true`.
 - **`options.allText`**: A boolean indicating whether all columns should be
@@ -771,6 +788,11 @@ loaded.
 ```ts
 // Load all supported data files from the "./data/" directory
 await table.loadDataFromDirectory("./data/");
+```
+
+```ts
+// Load only specific columns from all CSV files in a directory
+await table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
 ```
 
 #### `loadGeoData`
