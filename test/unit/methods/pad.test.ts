@@ -31,7 +31,7 @@ Deno.test("should right-pad strings to target length", async () => {
     { code: "6" },
   ]);
 
-  await table.pad("code", 5, { side: "end" });
+  await table.pad("code", 5, { method: "right" });
 
   const data = await table.getData();
 
@@ -51,7 +51,7 @@ Deno.test("should left-pad with custom character", async () => {
     { id: "2" },
   ]);
 
-  await table.pad("id", 4, { side: "start", char: "-" });
+  await table.pad("id", 4, { method: "left", char: "-" });
 
   const data = await table.getData();
 
@@ -70,7 +70,7 @@ Deno.test("should right-pad with custom character", async () => {
     { code: "CD" },
   ]);
 
-  await table.pad("code", 5, { side: "end", char: "*" });
+  await table.pad("code", 5, { method: "right", char: "*" });
 
   const data = await table.getData();
 
@@ -118,7 +118,7 @@ Deno.test("should throw error when column is not string type", async () => {
   await sdb.done();
 });
 
-Deno.test("should truncate strings exceeding target length", async () => {
+Deno.test("should throw error when strings exceed target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -127,15 +127,11 @@ Deno.test("should truncate strings exceeding target length", async () => {
     { name: "OK" },
   ]);
 
-  await table.pad("name", 3);
-
-  const data = await table.getData();
-
-  assertEquals(data, [
-    { name: "0Hi" },
-    { name: "Wor" },
-    { name: "0OK" },
-  ]);
+  await assertRejects(
+    () => table.pad("name", 3),
+    Error,
+    'The column "name" has 1 string(s) exceeding the target length of 3',
+  );
   await sdb.done();
 });
 
@@ -177,12 +173,12 @@ Deno.test("should handle empty strings", async () => {
   await sdb.done();
 });
 
-Deno.test("should truncate strings when target length is 0", async () => {
+Deno.test("should pad to length 0 when all strings are empty", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
-    { text: "Hello" },
-    { text: "World" },
+    { text: "" },
+    { text: "" },
   ]);
 
   await table.pad("text", 0);
@@ -203,7 +199,7 @@ Deno.test("should handle padding with multi-character fill string", async () => 
     { id: "1" },
   ]);
 
-  await table.pad("id", 5, { side: "start", char: "ab" });
+  await table.pad("id", 5, { method: "left", char: "ab" });
 
   const data = await table.getData();
 
@@ -213,7 +209,7 @@ Deno.test("should handle padding with multi-character fill string", async () => 
   await sdb.done();
 });
 
-Deno.test("should pad with default side being start", async () => {
+Deno.test("should pad with default method being left", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -237,7 +233,7 @@ Deno.test("should pad with default char being zero", async () => {
     { value: "123" },
   ]);
 
-  await table.pad("value", 5, { side: "end" });
+  await table.pad("value", 5, { method: "right" });
 
   const data = await table.getData();
 
@@ -258,7 +254,7 @@ Deno.test("should handle multiple rows with null values", async () => {
     { id: "45" },
   ]);
 
-  await table.pad("id", 4, { side: "start", char: "0" });
+  await table.pad("id", 4, { method: "left", char: "0" });
 
   const data = await table.getData();
 
@@ -282,7 +278,7 @@ Deno.test("should pad multiple columns at once", async () => {
     { id: "23", code: "C" },
   ]);
 
-  await table.pad(["id", "code"], 4, { side: "start", char: "-" });
+  await table.pad(["id", "code"], 4, { method: "left", char: "-" });
 
   const data = await table.getData();
 
@@ -301,7 +297,7 @@ Deno.test("should pad multiple columns with right padding", async () => {
     { name: "BC", label: "YZ" },
   ]);
 
-  await table.pad(["name", "label"], 4, { side: "end", char: "*" });
+  await table.pad(["name", "label"], 4, { method: "right", char: "*" });
 
   const data = await table.getData();
 
@@ -328,7 +324,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
   await sdb.done();
 });
 
-Deno.test("should truncate long strings in multi-column pad", async () => {
+Deno.test("should throw error when one column has overflow in multi-column pad", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadArray([
@@ -336,14 +332,11 @@ Deno.test("should truncate long strings in multi-column pad", async () => {
     { short: "B", long: "OK" },
   ]);
 
-  await table.pad(["short", "long"], 5, { side: "start", char: "-" });
-
-  const data = await table.getData();
-
-  assertEquals(data, [
-    { short: "----A", long: "ThisI" },
-    { short: "----B", long: "---OK" },
-  ]);
+  await assertRejects(
+    () => table.pad(["short", "long"], 5, { method: "left", char: "-" }),
+    Error,
+    'The column "long" has 1 string(s) exceeding the target length of 5',
+  );
   await sdb.done();
 });
 
@@ -376,7 +369,7 @@ Deno.test("should safely handle single quote in padding character", async () => 
     { id: "23" },
   ]);
 
-  await table.pad("id", 5, { side: "start", char: "'" });
+  await table.pad("id", 5, { method: "left", char: "'" });
 
   const data = await table.getData();
 

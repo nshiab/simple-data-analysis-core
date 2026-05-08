@@ -2,15 +2,15 @@ export default function padQuery(
   table: string,
   columns: string[],
   length: number,
-  options: { side?: "start" | "end"; char?: string },
+  options: { method?: "left" | "right"; char?: string },
 ) {
-  const side = options.side ?? "start";
+  const method = options.method ?? "left";
   const char = options.char ?? "0";
 
   // Escape single quotes and wrap in single quotes for SQL
   const escapedChar = char.replace(/'/g, "''");
   const paddedChar = `'${escapedChar}'`;
-  const func = side === "start" ? "LPAD" : "RPAD";
+  const func = method === "left" ? "LPAD" : "RPAD";
 
   let query = "";
   for (const column of columns) {
