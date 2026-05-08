@@ -6459,6 +6459,12 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Write geospatial data to a Shapefile (zipped)
+   * await table.writeGeoData("./output.shp.zip");
+   * ```
+   *
+   * @example
+   * ```ts
    * // Write GeoJSON with specific precision and metadata
    * await table.writeGeoData("./output_high_precision.geojson", {
    *   precision: 6,
@@ -6536,6 +6542,59 @@ export default class SimpleTable extends Simple {
           Object.values(types).includes("TIMESTAMP"))
       ) {
         await stringifyDatesInvert(this, types);
+      }
+    } else if (fileExtension === "shp") {
+      if (typeof options.precision === "number") {
+        throw new Error(
+          "The precision option is not supported for writing SHAPEFILE files. Use the .reducePrecision() method.",
+        );
+      }
+      if (typeof options.compression === "boolean") {
+        throw new Error(
+          "The compression option is not supported for writing SHAPEFILE files. The GDAL driver handles the zip container automatically.",
+        );
+      }
+      if (typeof options.rewind === "boolean") {
+        throw new Error(
+          "The rewind option is not supported for writing SHAPEFILE files.",
+        );
+      }
+      if (options.metadata) {
+        throw new Error(
+          "The metadata option is not supported for writing SHAPEFILE files.",
+        );
+      }
+      if (options.formatDates === true) {
+        throw new Error(
+          "The formatDates option is not supported for writing SHAPEFILE files.",
+        );
+      }
+
+      const geoColumn = await findGeoColumn(this);
+      const flip = shouldFlipBeforeExport(this.projections[geoColumn]);
+
+      if (flip) {
+        await this.flipCoordinates(geoColumn);
+        await queryDB(
+          this,
+          writeGeoDataQuery(this.name, file, fileExtension, options),
+          mergeOptions(this, {
+            table: this.name,
+            method: "writeGeoData()",
+            parameters: { file, options },
+          }),
+        );
+        await this.flipCoordinates(geoColumn);
+      } else {
+        await queryDB(
+          this,
+          writeGeoDataQuery(this.name, file, fileExtension, options),
+          mergeOptions(this, {
+            table: this.name,
+            method: "writeGeoData()",
+            parameters: { file, options },
+          }),
+        );
       }
     } else if (fileExtension === "geoparquet") {
       if (typeof options.precision === "number") {

@@ -6189,6 +6189,11 @@ await table.writeGeoData("./output.geoparquet", { compression: true });
 ```
 
 ```ts
+// Write geospatial data to a Shapefile (zipped)
+await table.writeGeoData("./output.shp.zip");
+```
+
+```ts
 // Write GeoJSON with specific precision and metadata
 await table.writeGeoData("./output_high_precision.geojson", {
   precision: 6,

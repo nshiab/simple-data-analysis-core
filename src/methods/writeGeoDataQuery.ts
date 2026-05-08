@@ -13,7 +13,7 @@ export default function writeGeoDataQuery(
     }
     layerOptions.push(`RFC7946=YES`);
 
-    return `COPY "${table}" to '${
+    return `INSTALL spatial; LOAD spatial; COPY "${table}" to '${
       cleanPath(file)
     }' WITH (FORMAT GDAL, DRIVER 'GeoJSON'${
       layerOptions.length > 0
@@ -22,6 +22,10 @@ export default function writeGeoDataQuery(
         })`
         : ""
     })`;
+  } else if (fileExtension === "shp") {
+    return `INSTALL spatial; LOAD spatial; COPY "${table}" TO '${
+      cleanPath(file)
+    }' WITH (FORMAT GDAL, DRIVER 'ESRI Shapefile', LAYER_CREATION_OPTIONS 'ENCODING=UTF-8')`;
   } else {
     throw new Error(`Unknown extension ${fileExtension}`);
   }
