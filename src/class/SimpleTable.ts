@@ -3297,17 +3297,29 @@ export default class SimpleTable extends Simple {
    * // Round 'columnA' and 'columnB' values to 1 decimal place using ceiling method
    * await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Round 'column1' values to 2 decimal places using the shorthand
+   * await table.round("column1", 2);
+   * ```
    */
   async round(
     columns: string | string[],
-    options: {
-      decimals?: number;
-      method?: "round" | "ceiling" | "floor";
-    } = {},
+    options:
+      | number
+      | {
+        decimals?: number;
+        method?: "round" | "ceiling" | "floor";
+      } = {},
   ): Promise<void> {
+    const optionsNormalized = typeof options === "number"
+      ? { decimals: options }
+      : options;
+
     await queryDB(
       this,
-      roundQuery(this.name, stringToArray(columns), options),
+      roundQuery(this.name, stringToArray(columns), optionsNormalized),
       mergeOptions(this, {
         table: this.name,
         method: "round()",
