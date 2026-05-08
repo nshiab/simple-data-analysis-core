@@ -7,8 +7,9 @@ export default function padQuery(
   const side = options.side ?? "start";
   const char = options.char ?? "0";
 
-  // Wrap the padding character in single quotes for SQL
-  const paddedChar = `'${char}'`;
+  // Escape single quotes and wrap in single quotes for SQL
+  const escapedChar = char.replace(/'/g, "''");
+  const paddedChar = `'${escapedChar}'`;
   const func = side === "start" ? "LPAD" : "RPAD";
 
   let query = "";

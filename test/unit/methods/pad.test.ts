@@ -365,3 +365,25 @@ Deno.test("should pad all null column without error", async () => {
   ]);
   await sdb.done();
 });
+
+// SQL injection guard
+
+Deno.test("should safely handle single quote in padding character", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { id: "1" },
+    { id: "23" },
+  ]);
+
+  await table.pad("id", 5, { side: "start", char: "'" });
+
+  const data = await table.getData();
+
+  // Single quote is properly escaped in SQL, LPAD pads to length 5
+  assertEquals(data, [
+    { id: "''''1" },
+    { id: "'''23" },
+  ]);
+  await sdb.done();
+});
