@@ -189,12 +189,13 @@ Deno.test("should interpolate proportionally to a non-equidistant x column withi
     categories: "group",
   });
   const data = await table.getData();
+  // Row order is preserved (not reordered by group)
   assertEquals(data, [
     { group: "a", x: 0, y: 0 },
-    { group: "b", x: 0, y: 10 },
     { group: "a", x: 1, y: 2 },
-    { group: "b", x: 2, y: 18 },
     { group: "a", x: 3, y: 6 },
+    { group: "b", x: 0, y: 10 },
+    { group: "b", x: 2, y: 18 },
     { group: "b", x: 10, y: 50 },
   ]);
   await sdb.done();
@@ -233,5 +234,59 @@ Deno.test("should throw when interpolateBy is set and interpolate is false", asy
     error?.message,
     "interpolate cannot be false when interpolateBy is set.",
   );
+  await sdb.done();
+});
+
+// Row order preservation tests
+
+Deno.test("should preserve row order after fill() with categories and interpolation", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  const input = [
+    { id: 1, group: "a", val: 10 },
+    { id: 2, group: "b", val: 100 },
+    { id: 3, group: "a", val: null },
+    { id: 4, group: "b", val: null },
+    { id: 5, group: "a", val: 20 },
+    { id: 6, group: "b", val: 200 },
+  ];
+  await table.loadArray(input);
+  await table.fill("val", { categories: "group", interpolate: true });
+  const data = await table.getData();
+  // Row order must match input order (by id)
+  assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5, 6]);
+  assertEquals(data, [
+    { id: 1, group: "a", val: 10 },
+    { id: 2, group: "b", val: 100 },
+    { id: 3, group: "a", val: 15 },
+    { id: 4, group: "b", val: 150 },
+    { id: 5, group: "a", val: 20 },
+    { id: 6, group: "b", val: 200 },
+  ]);
+  await sdb.done();
+});
+
+Deno.test("should preserve row order after simple fill() with no options", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  const input = [
+    { id: 1, val: "A" },
+    { id: 2, val: null },
+    { id: 3, val: null },
+    { id: 4, val: "B" },
+    { id: 5, val: null },
+  ];
+  await table.loadArray(input);
+  await table.fill("val");
+  const data = await table.getData();
+  // Row order must match input order (by id)
+  assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5]);
+  assertEquals(data, [
+    { id: 1, val: "A" },
+    { id: 2, val: "A" },
+    { id: 3, val: "A" },
+    { id: 4, val: "B" },
+    { id: 5, val: "B" },
+  ]);
   await sdb.done();
 });
