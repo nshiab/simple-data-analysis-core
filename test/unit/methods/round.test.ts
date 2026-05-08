@@ -100,3 +100,43 @@ Deno.test("should round multiple columns", async () => {
 
   await sdb.done();
 });
+
+Deno.test("should round using the numeric shorthand", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  await table.selectColumns(["key1"]);
+
+  await table.round("key1", 2);
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1.04 },
+    { key1: 3.24 },
+    { key1: 8.1 },
+    { key1: 10 },
+  ]);
+
+  await sdb.done();
+});
+
+Deno.test("should round to 0 decimals using the numeric shorthand", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  await table.selectColumns(["key1"]);
+
+  await table.round("key1", 0);
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1 },
+    { key1: 3 },
+    { key1: 8 },
+    { key1: 10 },
+  ]);
+
+  await sdb.done();
+});

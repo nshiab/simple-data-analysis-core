@@ -3116,7 +3116,7 @@ Rounds numeric values in specified columns.
 ##### Signature
 
 ```typescript
-async round(columns: string | string[], options?: { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<void>;
+async round(columns: string | string[], options?: number | { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<void>;
 ```
 
 ##### Parameters
@@ -3155,6 +3155,11 @@ await table.round("column1", { method: "floor" });
 ```ts
 // Round 'columnA' and 'columnB' values to 1 decimal place using ceiling method
 await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
+```
+
+```ts
+// Round 'column1' values to 2 decimal places using the shorthand
+await table.round("column1", 2);
 ```
 
 #### `updateColumn`
