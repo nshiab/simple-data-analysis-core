@@ -18,8 +18,19 @@ export default async function fuzzyJoin(
     threshold?: number;
     similarityColumn?: string;
     outputTable?: string | boolean;
+    preFilterLenDiffRatio?: number;
+    preFilterPrefixLen?: number;
   } = {},
 ) {
+  if (
+    options.method === "partial_ratio" &&
+    options.preFilterLenDiffRatio !== undefined
+  ) {
+    throw new Error(
+      "preFilterLenDiffRatio is not supported with method 'partial_ratio' because a short string can fully match inside a much longer one.",
+    );
+  }
+
   if (leftColumn === rightColumn) {
     throw new Error(
       `The leftColumn and rightColumn have the same name "${leftColumn}". Rename one of them before doing the fuzzy join.`,
@@ -68,6 +79,8 @@ export default async function fuzzyJoin(
       threshold,
       outputTableName,
       similarityColumn,
+      options.preFilterLenDiffRatio,
+      options.preFilterPrefixLen,
     );
 
   await queryDB(

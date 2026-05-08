@@ -2472,6 +2472,8 @@ export default class SimpleTable extends Simple {
    * @param options.threshold - The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`.
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @param options.preFilterLenDiffRatio - An optional ratio (0–1) to pre-filter comparisons based on the difference in string lengths. Only strings where `ABS(LENGTH(a) - LENGTH(b)) <= ratio * LEAST(LENGTH(a), LENGTH(b))` are compared. Not supported with `method: "partial_ratio"`.
+   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared.
    * @returns A promise that resolves to a table instance containing the fuzzy-joined data (either the modified current table or a new table).
    * @category Table Operations
    *
@@ -2479,6 +2481,22 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
    * await tableA.fuzzyJoin(tableB, "name", "standardName");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Fuzzy join with a length-based pre-filter to improve performance on large tables
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   *   preFilterLenDiffRatio: 0.2, // 20% max length difference
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Fuzzy join with a prefix-based pre-filter
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   *   preFilterPrefixLen: 3, // Must share the same first 3 characters
+   * });
    * ```
    *
    * @example
@@ -2512,6 +2530,8 @@ export default class SimpleTable extends Simple {
       threshold?: number;
       similarityColumn?: string;
       outputTable?: string | boolean;
+      preFilterLenDiffRatio?: number;
+      preFilterPrefixLen?: number;
     } = {},
   ): Promise<this> {
     if (options.outputTable === true) {
@@ -2552,6 +2572,8 @@ export default class SimpleTable extends Simple {
    *   - `"shortestString"`: Keep the shortest string in the cluster.
    *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
    *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
+   * @param options.preFilterLenDiffRatio - An optional ratio (0–1) to pre-filter comparisons based on the difference in string lengths. Only strings where `ABS(LENGTH(a) - LENGTH(b)) <= ratio * LEAST(LENGTH(a), LENGTH(b))` are compared. Not supported with `method: "partial_ratio"`.
+   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared.
    * @returns A promise that resolves when the column has been normalized.
    * @category Updating Data
    *
@@ -2559,6 +2581,22 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
    * await table.fuzzyClean("city", "cityClean");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Normalize with a length-based pre-filter to improve performance
+   * await table.fuzzyClean("city", "cityClean", {
+   *   preFilterLenDiffRatio: 0.1, // 10% max length difference
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Normalize with a prefix-based pre-filter
+   * await table.fuzzyClean("city", "cityClean", {
+   *   preFilterPrefixLen: 5, // Must share the same first 5 characters
+   * });
    * ```
    *
    * @example
@@ -2589,6 +2627,8 @@ export default class SimpleTable extends Simple {
         | "shortestString"
         | "mostCentral"
         | "maxScore";
+      preFilterLenDiffRatio?: number;
+      preFilterPrefixLen?: number;
     } = {},
   ): Promise<void> {
     await fuzzyClean(this, column, newColumn, options);
