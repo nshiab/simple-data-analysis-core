@@ -5120,8 +5120,9 @@ export default class SimpleTable extends Simple {
   ): Promise<void> {
     await queryDB(
       this,
-      `INSTALL spatial; LOAD spatial;
-            ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLat}", "${columnLon}")`,
+      (await this.getColumns()).includes(newColumn)
+        ? `UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLat}", "${columnLon}")`
+        : `INSTALL spatial; LOAD spatial; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLat}", "${columnLon}")`,
       mergeOptions(this, {
         table: this.name,
         method: "points()",
@@ -5650,7 +5651,9 @@ export default class SimpleTable extends Simple {
 
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" =  ST_Buffer("${column}", ${distance});`,
+      (await this.getColumns()).includes(newColumn)
+        ? `UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`
+        : `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
       mergeOptions(this, {
         table: this.name,
         method: "buffer()",
@@ -5767,7 +5770,9 @@ export default class SimpleTable extends Simple {
     }
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
+      (await this.getColumns()).includes(newColumn)
+        ? `UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`
+        : `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
       mergeOptions(this, {
         table: this.name,
         method: "intersection()",
@@ -5941,7 +5946,9 @@ export default class SimpleTable extends Simple {
     }
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
+      (await this.getColumns()).includes(newColumn)
+        ? `UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`
+        : `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
       mergeOptions(this, {
         table: this.name,
         method: "union()",
@@ -6063,7 +6070,9 @@ export default class SimpleTable extends Simple {
       : await findGeoColumn(this);
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" =  ST_Centroid("${column}");`,
+      (await this.getColumns()).includes(newColumn)
+        ? `UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`
+        : `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
       mergeOptions(this, {
         table: this.name,
         method: "centroid()",
