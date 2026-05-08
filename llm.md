@@ -2690,13 +2690,13 @@ await table.truncate("name", 10);
 Pads the strings in the specified columns to a target length.
 
 The columns must contain string (VARCHAR) values. An error is thrown if any
-column is of a different type. `null` values remain `null`. Strings that already
-exceed the target length are truncated to that length.
+column is of a different type. `null` values remain `null`. If any string
+already exceeds the target length, an error is thrown (no silent truncation).
 
 ##### Signature
 
 ```typescript
-async pad(columns: string | string[], length: number, options?: { side?: "start" | "end"; char?: string }): Promise<void>;
+async pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): Promise<void>;
 ```
 
 ##### Parameters
@@ -2704,7 +2704,7 @@ async pad(columns: string | string[], length: number, options?: { side?: "start"
 - **`columns`**: The column name(s) containing strings to be padded.
 - **`length`**: The target length of the padded strings.
 - **`options`**: An optional object with configuration options:
-- **`options.side`**: Which side to pad. `'start'` (default) or `'end'`.
+- **`options.method`**: Which side to pad. `'left'` (default) or `'right'`.
 - **`options.char`**: The character to use for padding. Defaults to `'0'`.
 
 ##### Returns
@@ -2714,6 +2714,7 @@ A promise that resolves when the padding operation is complete.
 ##### Throws
 
 - **`Error`**: If any column is not of string (VARCHAR) type.
+- **`Error`**: If any string value exceeds the target length.
 
 ##### Examples
 
@@ -2725,13 +2726,13 @@ await table.pad("id", 3);
 
 ```ts
 // Right-pad 'code' column to 5 characters with spaces
-await table.pad("code", 5, { side: "end", char: " " });
+await table.pad("code", 5, { method: "right", char: " " });
 // Result: '123' -> '123  ', '45' -> '45   ', null -> null
 ```
 
 ```ts
 // Left-pad multiple columns to 5 characters with dashes
-await table.pad(["id", "code"], 5, { side: "start", char: "-" });
+await table.pad(["id", "code"], 5, { method: "left", char: "-" });
 // Result: '1' -> '----1', '23' -> '---23'
 ```
 
