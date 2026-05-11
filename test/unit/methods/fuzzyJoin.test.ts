@@ -231,6 +231,83 @@ Deno.test("should work with the token_sort_ratio method for reordered words", as
   await sdb.done();
 });
 
+Deno.test("should find matches with significant length differences when using ratio at lower thresholds", async () => {
+  const sdb = new SimpleDB();
+  const dataA = [
+    { id: 1, name: "New York City" },
+    { id: 2, name: "Paris, France" },
+    { id: 3, name: "San Francisco" },
+    { id: 4, name: "Short" },
+  ];
+  const dataB = [
+    { name_B: "New York" },
+    { name_B: "France, Paris" },
+    { name_B: "San Francisco" },
+  ];
+
+  const tA = sdb.newTable("tA");
+  await tA.insertRows(dataA);
+  const tB = sdb.newTable("tB");
+  await tB.insertRows(dataB);
+
+  await tA.fuzzyJoin(tB, "name", "name_B", {
+    method: "ratio",
+    threshold: 60,
+  });
+
+  const res = await tA.getData();
+  const nyMatch = res.find((d) =>
+    d.name === "New York City" && d.name_B === "New York"
+  );
+
+  assert(
+    !!nyMatch,
+    "Ratio should find match 'New York City' / 'New York' (approx 76%) at threshold 60",
+  );
+
+  await sdb.done();
+});
+
+Deno.test("should be lossless for all methods with justNames.csv", async () => {
+  const sdb = new SimpleDB();
+  const methods = [
+    "ratio",
+    "partial_ratio",
+    "token_sort_ratio",
+    "token_set_ratio",
+  ] as const;
+
+  for (const method of methods) {
+    const tA = sdb.newTable(`tA_${method.replace(/_/g, "")}`);
+    await tA.loadData("test/data/files/justNames.csv");
+
+    const tB = sdb.newTable(`tB_${method.replace(/_/g, "")}`);
+    await tB.loadData("test/data/files/justNames.csv");
+    await tB.renameColumns({ "landlordNames": "landlordNames_B" });
+
+    // Every row should match itself at threshold 100
+    await tA.fuzzyJoin(tB, "landlordNames", "landlordNames_B", {
+      method,
+      threshold: 100,
+    });
+
+    const data = await tA.getData();
+    // Verify that every row matched itself
+    for (const row of data) {
+      const matchFound = data.some((d) =>
+        d.landlordNames === row.landlordNames &&
+        d.landlordNames_B === row.landlordNames
+      );
+      assert(
+        matchFound,
+        `Method ${method} failed to match "${row.landlordNames}" with itself`,
+      );
+    }
+  }
+
+  await sdb.done();
+});
+
 Deno.test("should not include a similarity column when similarityColumn is not provided", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");

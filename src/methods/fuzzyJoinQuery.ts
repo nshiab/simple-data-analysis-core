@@ -11,7 +11,6 @@ export default function fuzzyJoinQuery(
   threshold: number,
   outputTable: string,
   similarityColumn: string | undefined,
-  preFilterLenDiffRatio?: number,
   preFilterPrefixLen?: number,
 ) {
   const fn =
@@ -19,9 +18,10 @@ export default function fuzzyJoinQuery(
 
   let onClause = `${fn} >= ${threshold}`;
 
-  if (preFilterLenDiffRatio !== undefined) {
+  if (method === "ratio" || method === "token_sort_ratio") {
+    const preFilterLenDiffRatio = (100 - threshold) / 100;
     onClause +=
-      ` AND ABS(LENGTH("${leftTable}"."${leftColumn}") - LENGTH("${rightTable}"."${rightColumn}")) <= ${preFilterLenDiffRatio} * LEAST(LENGTH("${leftTable}"."${leftColumn}"), LENGTH("${rightTable}"."${rightColumn}"))`;
+      ` AND ABS(LENGTH("${leftTable}"."${leftColumn}") - LENGTH("${rightTable}"."${rightColumn}")) <= ${preFilterLenDiffRatio} * GREATEST(LENGTH("${leftTable}"."${leftColumn}"), LENGTH("${rightTable}"."${rightColumn}"))`;
   }
   if (preFilterPrefixLen !== undefined) {
     onClause +=

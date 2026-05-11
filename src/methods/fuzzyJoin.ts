@@ -79,7 +79,6 @@ export default async function fuzzyJoin(
       threshold,
       outputTableName,
       similarityColumn,
-      options.preFilterLenDiffRatio,
       options.preFilterPrefixLen,
     );
 

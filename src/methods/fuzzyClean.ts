@@ -19,7 +19,6 @@ export default async function fuzzyClean(
       | "shortestString"
       | "mostCentral"
       | "maxScore";
-    preFilterLenDiffRatio?: number;
     preFilterPrefixLen?: number;
   } = {},
 ): Promise<void> {
@@ -27,19 +26,12 @@ export default async function fuzzyClean(
   const threshold = options.threshold ?? 80;
   const keep = options.keep ?? "mostCommon";
 
-  if (
-    method === "partial_ratio" && options.preFilterLenDiffRatio !== undefined
-  ) {
-    throw new Error(
-      "preFilterLenDiffRatio is not supported with method 'partial_ratio' because a short string can fully match inside a much longer one.",
-    );
-  }
-
   let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
 
-  if (options.preFilterLenDiffRatio !== undefined) {
+  if (method === "ratio" || method === "token_sort_ratio") {
+    const preFilterLenDiffRatio = (100 - threshold) / 100;
     onClause +=
-      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${options.preFilterLenDiffRatio} * LEAST(LENGTH(a.value), LENGTH(b.value))`;
+      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${preFilterLenDiffRatio} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
   }
   if (options.preFilterPrefixLen !== undefined) {
     onClause +=

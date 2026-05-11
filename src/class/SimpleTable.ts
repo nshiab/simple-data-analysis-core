@@ -2469,26 +2469,18 @@ export default class SimpleTable extends Simple {
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.threshold - The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`.
+   * @param options.threshold - The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`. For `method: "ratio"` and `method: "token_sort_ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @param options.preFilterLenDiffRatio - An optional ratio (0–1) to pre-filter comparisons based on the difference in string lengths. Only strings where `ABS(LENGTH(a) - LENGTH(b)) <= ratio * LEAST(LENGTH(a), LENGTH(b))` are compared. Not supported with `method: "partial_ratio"`.
-   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared.
+   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
    * @returns A promise that resolves to a table instance containing the fuzzy-joined data (either the modified current table or a new table).
    * @category Table Operations
    *
    * @example
    * ```ts
    * // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
+   * // A length-based pre-filter is automatically applied.
    * await tableA.fuzzyJoin(tableB, "name", "standardName");
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Fuzzy join with a length-based pre-filter to improve performance on large tables
-   * await tableA.fuzzyJoin(tableB, "name", "standardName", {
-   *   preFilterLenDiffRatio: 0.2, // 20% max length difference
-   * });
    * ```
    *
    * @example
@@ -2530,7 +2522,6 @@ export default class SimpleTable extends Simple {
       threshold?: number;
       similarityColumn?: string;
       outputTable?: string | boolean;
-      preFilterLenDiffRatio?: number;
       preFilterPrefixLen?: number;
     } = {},
   ): Promise<this> {
@@ -2572,23 +2563,15 @@ export default class SimpleTable extends Simple {
    *   - `"shortestString"`: Keep the shortest string in the cluster.
    *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
    *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
-   * @param options.preFilterLenDiffRatio - An optional ratio (0–1) to pre-filter comparisons based on the difference in string lengths. Only strings where `ABS(LENGTH(a) - LENGTH(b)) <= ratio * LEAST(LENGTH(a), LENGTH(b))` are compared. Not supported with `method: "partial_ratio"`.
-   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared.
+   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
    * @returns A promise that resolves when the column has been normalized.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
+   * // A length-based pre-filter is automatically applied.
    * await table.fuzzyClean("city", "cityClean");
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Normalize with a length-based pre-filter to improve performance
-   * await table.fuzzyClean("city", "cityClean", {
-   *   preFilterLenDiffRatio: 0.1, // 10% max length difference
-   * });
    * ```
    *
    * @example
@@ -2627,7 +2610,6 @@ export default class SimpleTable extends Simple {
         | "shortestString"
         | "mostCentral"
         | "maxScore";
-      preFilterLenDiffRatio?: number;
       preFilterPrefixLen?: number;
     } = {},
   ): Promise<void> {

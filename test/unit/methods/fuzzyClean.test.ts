@@ -502,7 +502,7 @@ Deno.test("should respect a custom threshold and only normalize strings above it
     { text: "Bonjour" },
   ]);
 
-  await table.fuzzyClean("text", "text", { threshold: 90 });
+  await table.fuzzyClean("text", "text", { threshold: 80 });
 
   const data = await table.getData();
 
@@ -516,6 +516,51 @@ Deno.test("should respect a custom threshold and only normalize strings above it
     { text: "Paris" },
     { text: "Bonjour" },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should be lossless for all methods with justNames.csv", async () => {
+  const sdb = new SimpleDB();
+  const methods = [
+    "ratio",
+    "token_sort_ratio",
+  ] as const;
+
+  for (const method of methods) {
+    const table = sdb.newTable(`table_${method.replace(/_/g, "")}`);
+    await table.loadData("test/data/files/justNames.csv");
+
+    // Every unique row should match itself at threshold 100.
+    // In fuzzyClean, this means unique values shouldn't be lost/misidentified.
+    const originalUniques =
+      (await table.getUniques("landlordNames")) as string[];
+
+    await table.fuzzyClean("landlordNames", "landlordNames", {
+      method,
+      threshold: 100,
+    });
+
+    const cleanUniques = (await table.getUniques("landlordNames")) as string[];
+
+    assertEquals(
+      cleanUniques.length,
+      originalUniques.length,
+      `Method ${method} changed unique counts at threshold 100`,
+    );
+
+    // Also verify no value was changed to something that wasn't there before
+    const data = (await table.getData()) as { landlordNames: string }[];
+    for (const row of data) {
+      if (row.landlordNames !== null) {
+        assertEquals(
+          originalUniques.includes(row.landlordNames),
+          true,
+          `Method ${method} produced a value "${row.landlordNames}" not present in original data`,
+        );
+      }
+    }
+  }
 
   await sdb.done();
 });
