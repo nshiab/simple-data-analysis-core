@@ -86,6 +86,7 @@ import capitalizeQuery from "../methods/capitalizeQuery.ts";
 import truncateQuery from "../methods/truncateQuery.ts";
 import padQuery from "../methods/padQuery.ts";
 import getProjectionParquet from "../helpers/getProjectionParquet.ts";
+import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
 import unnestQuery from "../helpers/unnestQuery.ts";
