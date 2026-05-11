@@ -6431,12 +6431,12 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Writes the table's geospatial data to a file in GeoJSON or GeoParquet format.
+   * Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
    * If the specified path does not exist, it will be created.
    *
    * For GeoJSON files (`.geojson` or `.json`), if the projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the output.
    *
-   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`).
+   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`).
    * @param options - An optional object with configuration options:
    * @param options.precision - For GeoJSON, the maximum number of figures after the decimal separator to write in coordinates. Defaults to `undefined` (full precision).
    * @param options.compression - For GeoParquet, if `true`, the output will be ZSTD compressed. Defaults to `false`.
@@ -6460,8 +6460,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Write geospatial data to a Shapefile (zipped)
-   * await table.writeGeoData("./output.shp.zip");
+   * // Write geospatial data to a Shapefile with all relevant files  in the same folder
+   * await table.writeGeoData("./shapefile-folder/output.shp");
    * ```
    *
    * @example
