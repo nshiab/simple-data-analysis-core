@@ -2469,7 +2469,16 @@ export default class SimpleTable extends Simple {
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.threshold - The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`. For `method: "ratio"` and `method: "token_sort_ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
+   * @param rightTable - The table to join with.
+   * @param leftColumn - The name of the join column in the current table.
+   * @param rightColumn - The name of the join column in the `rightTable`.
+   * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"` and `method: "token_sort_ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
+   * @param options - An optional object with configuration options:
+   * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
+   *   - `"ratio"`: Overall similarity.
+   *   - `"partial_ratio"`: Best partial/substring similarity.
+   *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
+   *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
@@ -2478,15 +2487,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
+   * // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) with a threshold of 80
    * // A length-based pre-filter is automatically applied.
-   * await tableA.fuzzyJoin(tableB, "name", "standardName");
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", 80);
    * ```
    *
    * @example
    * ```ts
-   * // Fuzzy join with a prefix-based pre-filter
-   * await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   * // Fuzzy join with a prefix-based pre-filter and a threshold of 80
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
    *   preFilterPrefixLen: 3, // Must share the same first 3 characters
    * });
    * ```
@@ -2494,17 +2503,16 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Fuzzy join with a custom threshold and method, storing results in a new table
-   * const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   * const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", 90, {
    *   method: "token_sort_ratio",
-   *   threshold: 90,
    *   outputTable: "tableC",
    * });
    * ```
    *
    * @example
    * ```ts
-   * // Fuzzy join with a custom similarity column name
-   * await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   * // Fuzzy join with a custom similarity column name and a threshold of 80
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
    *   similarityColumn: "matchScore",
    * });
    * ```
