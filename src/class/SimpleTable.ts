@@ -2463,19 +2463,10 @@ export default class SimpleTable extends Simple {
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param leftColumn - The name of the column in this (left) table containing the text to compare.
    * @param rightColumn - The name of the column in the right table containing the text to compare.
-   * @param options - An optional object with configuration options:
-   * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
-   *   - `"ratio"`: Overall similarity (Levenshtein-based).
-   *   - `"partial_ratio"`: Best partial/substring similarity.
-   *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
-   *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param rightTable - The table to join with.
-   * @param leftColumn - The name of the join column in the current table.
-   * @param rightColumn - The name of the join column in the `rightTable`.
    * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"` and `method: "token_sort_ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
    * @param options - An optional object with configuration options:
    * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
-   *   - `"ratio"`: Overall similarity.
+   *   - `"ratio"`: Overall similarity (Levenshtein-based).
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
