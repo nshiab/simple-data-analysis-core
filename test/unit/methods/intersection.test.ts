@@ -122,46 +122,6 @@ Deno.test("should compute the intersection of geometries and add a projection", 
   await sdb.done();
 });
 
-Deno.test("should overwrite the intersection column if it already exists", async () => {
-  const sdb = new SimpleDB();
-
-  const prov = sdb.newTable("prov");
-  await prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
-  await prov.renameColumns({ geom: "prov" });
-
-  const poly = sdb.newTable("poly");
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
-  await poly.renameColumns({ geom: "pol" });
-
-  const joined = await prov.crossJoin(poly, { outputTable: "joined" });
-
-  // Creating the column first
-  await joined.addColumn(
-    "intersec",
-    "geometry",
-    "ST_GeomFromText('POINT(0 0)')",
-    { projection: "+proj=latlong +datum=WGS84 +no_defs" },
-  );
-
-  // Computing intersection and overwriting
-  await joined.intersection("pol", "prov", "intersec");
-  await joined.area("intersecArea", { column: "intersec" });
-  await joined.round("intersecArea");
-
-  const data = await joined.getData();
-  const totalArea = data.reduce(
-    (acc, curr) => acc + (curr.intersecArea as number),
-    0,
-  );
-
-  // If it was still points, the area would be 0.
-  assertEquals(totalArea > 0, true);
-
-  await sdb.done();
-});
-
 Deno.test("intersection() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
