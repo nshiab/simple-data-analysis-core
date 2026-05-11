@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import rewind from "../../../src/helpers/rewind.ts";
 
@@ -349,5 +349,21 @@ Deno.test("should write a geoparquet file with multiple geo columns and keep the
     geom: "+proj=latlong +datum=WGS84 +no_defs",
     anotherGeom: "+proj=latlong +datum=WGS84 +no_defs",
   });
+  await sdb.done();
+});
+
+Deno.test("writeGeoData should throw an error when there is no geometry column and suggest using writeData", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadData("test/data/files/data.csv");
+
+  await assertRejects(
+    async () => {
+      await table.writeGeoData("${output}test.geojson");
+    },
+    Error,
+    "Table contains no geometry columns. Use writeData() instead.",
+  );
+
   await sdb.done();
 });

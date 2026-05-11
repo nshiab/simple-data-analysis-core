@@ -6400,6 +6400,11 @@ export default class SimpleTable extends Simple {
       formatDates?: boolean;
     } = {},
   ): Promise<void> {
+    if (!(await hasGeometryColumn(this))) {
+      throw new Error(
+        "Table contains no geometry columns. Use writeData() instead.",
+      );
+    }
     createDirectory(file);
     const fileExtension = getExtension(file);
     if (fileExtension === "geojson" || fileExtension === "json") {
