@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import createDirectory from "./createDirectory.ts";
 import getExtension from "./getExtension.ts";
 import findGeoColumn from "./findGeoColumn.ts";
+import hasGeometryColumn from "./hasGeometryColumn.ts";
 import shouldFlipBeforeExport from "./shouldFlipBeforeExport.ts";
 import queryDB from "./queryDB.ts";
 import writeGeoDataQuery from "../methods/writeGeoDataQuery.ts";
@@ -24,6 +25,11 @@ export default async function writeGeoData(
   } = {},
 ): Promise<void> {
   createDirectory(file);
+  if (!(await hasGeometryColumn(table))) {
+    throw new Error(
+      "Table contains no geometry columns. Use writeData() instead.",
+    );
+  }
   const fileExtension = getExtension(file);
   if (fileExtension === "geojson" || fileExtension === "json") {
     let types;
