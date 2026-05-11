@@ -68,6 +68,7 @@ import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
 import createDirectory from "../helpers/createDirectory.ts";
+import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import rewind from "../helpers/rewind.ts";
 import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logData from "../helpers/logData.ts";
@@ -5086,6 +5087,12 @@ export default class SimpleTable extends Simple {
       [key: string]: string | number | boolean | Date | null;
     }[]
   > {
+    if (await hasGeometryColumn(this)) {
+      throw new Error(
+        "Table contains geometry columns. Use getGeoData() instead.",
+      );
+    }
+
     const columns = options.columns
       ? (typeof options.columns === "string"
         ? [options.columns]
@@ -6462,6 +6469,12 @@ export default class SimpleTable extends Simple {
       formatDates?: boolean;
     } = {},
   ): Promise<void> {
+    if (await hasGeometryColumn(this)) {
+      throw new Error(
+        "Table contains geometry columns. Use writeGeoData() instead.",
+      );
+    }
+
     createDirectory(file);
 
     const extension = getExtension(file);
@@ -6528,6 +6541,11 @@ export default class SimpleTable extends Simple {
       formatDates?: boolean;
     } = {},
   ): Promise<void> {
+    if (!(await hasGeometryColumn(this))) {
+      throw new Error(
+        "Table contains no geometry columns. Use writeData() instead.",
+      );
+    }
     createDirectory(file);
     const fileExtension = getExtension(file);
     if (fileExtension === "geojson" || fileExtension === "json") {
