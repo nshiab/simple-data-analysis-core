@@ -14,7 +14,7 @@ Deno.test("should normalize strings in-place with mostCommon keep strategy", asy
     { city: "Pariss" },
   ]);
 
-  await table.fuzzyClean("city", "city");
+  await table.fuzzyClean("city", "city", 80);
 
   const data = await table.getData();
 
@@ -41,7 +41,7 @@ Deno.test("should keep the longest string in each cluster when keep is 'longestS
     { city: "Pariss" },
   ]);
 
-  await table.fuzzyClean("city", "city", { keep: "longestString" });
+  await table.fuzzyClean("city", "city", 80, { keep: "longestString" });
 
   const data = await table.getData();
 
@@ -65,7 +65,7 @@ Deno.test("should keep the shortest string in each cluster when keep is 'shortes
     { city: "Pariss" },
   ]);
 
-  await table.fuzzyClean("city", "city", { keep: "shortestString" });
+  await table.fuzzyClean("city", "city", 80, { keep: "shortestString" });
 
   const data = await table.getData();
 
@@ -89,9 +89,8 @@ Deno.test("should keep the most central string when keep is 'mostCentral'", asyn
     { name: "Alce" },
   ]);
 
-  await table.fuzzyClean("name", "name", {
+  await table.fuzzyClean("name", "name", 70, {
     keep: "mostCentral",
-    threshold: 70,
   });
 
   const data = await table.getData();
@@ -119,9 +118,8 @@ Deno.test("should keep the string with the highest single pairwise score when ke
     { name: "Alce" },
   ]);
 
-  await table.fuzzyClean("name", "name", {
+  await table.fuzzyClean("name", "name", 70, {
     keep: "maxScore",
-    threshold: 70,
   });
 
   const data = await table.getData();
@@ -145,7 +143,7 @@ Deno.test("should write normalized values to a new column when newColumn is prov
     { city: "Paris" },
   ]);
 
-  await table.fuzzyClean("city", "cityClean");
+  await table.fuzzyClean("city", "cityClean", 80);
 
   const data = await table.getData();
 
@@ -168,7 +166,7 @@ Deno.test("should not change any values when all strings are already unique and 
     { country: "Japan" },
   ]);
 
-  await table.fuzzyClean("country", "country", { threshold: 90 });
+  await table.fuzzyClean("country", "country", 90);
 
   const data = await table.getData();
 
@@ -190,7 +188,7 @@ Deno.test("should ignore NULL values and leave them unchanged", async () => {
     { city: null },
   ]);
 
-  await table.fuzzyClean("city", "city");
+  await table.fuzzyClean("city", "city", 80);
 
   const data = await table.getData();
 
@@ -229,7 +227,7 @@ Deno.test("should normalize multiple clusters across a larger dataset", async ()
     { brand: "Soni" },
   ]);
 
-  await table.fuzzyClean("brand", "brand", { threshold: 80 });
+  await table.fuzzyClean("brand", "brand", 80);
 
   const data = await table.getData();
 
@@ -276,7 +274,7 @@ Deno.test("should break ties by score when keep is 'mostCommon' and counts are e
     { word: "mause" },
   ]);
 
-  await table.fuzzyClean("word", "word", { threshold: 60 });
+  await table.fuzzyClean("word", "word", 60);
 
   const data = await table.getData();
 
@@ -300,9 +298,8 @@ Deno.test("should break ties by score when keep is 'longestString' and lengths a
     { word: "mause" },
   ]);
 
-  await table.fuzzyClean("word", "word", {
+  await table.fuzzyClean("word", "word", 60, {
     keep: "longestString",
-    threshold: 60,
   });
 
   const data = await table.getData();
@@ -327,9 +324,8 @@ Deno.test("should break ties by score when keep is 'shortestString' and lengths 
     { word: "mause" },
   ]);
 
-  await table.fuzzyClean("word", "word", {
+  await table.fuzzyClean("word", "word", 60, {
     keep: "shortestString",
-    threshold: 60,
   });
 
   const data = await table.getData();
@@ -352,7 +348,7 @@ Deno.test("should break ties alphabetically when keep is 'mostCommon' and counts
     { word: "colur" },
   ]);
 
-  await table.fuzzyClean("word", "word", { threshold: 80 });
+  await table.fuzzyClean("word", "word", 80);
 
   const data = await table.getData();
 
@@ -373,9 +369,8 @@ Deno.test("should break ties alphabetically when keep is 'longestString' and len
     { word: "colur" },
   ]);
 
-  await table.fuzzyClean("word", "word", {
+  await table.fuzzyClean("word", "word", 80, {
     keep: "longestString",
-    threshold: 80,
   });
 
   const data = await table.getData();
@@ -397,9 +392,8 @@ Deno.test("should break ties alphabetically when keep is 'shortestString' and le
     { word: "colur" },
   ]);
 
-  await table.fuzzyClean("word", "word", {
+  await table.fuzzyClean("word", "word", 80, {
     keep: "shortestString",
-    threshold: 80,
   });
 
   const data = await table.getData();
@@ -422,9 +416,8 @@ Deno.test("should break ties alphabetically when keep is 'mostCentral' and score
     { word: "colur" },
   ]);
 
-  await table.fuzzyClean("word", "word", {
+  await table.fuzzyClean("word", "word", 80, {
     keep: "mostCentral",
-    threshold: 80,
   });
 
   const data = await table.getData();
@@ -451,7 +444,7 @@ Deno.test("should break ties by sum when keep is 'maxScore' and max scores are e
     { word: "mause" },
   ]);
 
-  await table.fuzzyClean("word", "word", { keep: "maxScore", threshold: 60 });
+  await table.fuzzyClean("word", "word", 60, { keep: "maxScore" });
 
   const data = await table.getData();
 
@@ -474,9 +467,8 @@ Deno.test("should break ties alphabetically when keep is 'maxScore' and max and 
     { word: "colur" },
   ]);
 
-  await table.fuzzyClean("word", "word", {
+  await table.fuzzyClean("word", "word", 80, {
     keep: "maxScore",
-    threshold: 80,
   });
 
   const data = await table.getData();
@@ -502,7 +494,7 @@ Deno.test("should respect a custom threshold and only normalize strings above it
     { text: "Bonjour" },
   ]);
 
-  await table.fuzzyClean("text", "text", { threshold: 80 });
+  await table.fuzzyClean("text", "text", 80);
 
   const data = await table.getData();
 
@@ -536,9 +528,8 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
     const originalUniques =
       (await table.getUniques("landlordNames")) as string[];
 
-    await table.fuzzyClean("landlordNames", "landlordNames", {
+    await table.fuzzyClean("landlordNames", "landlordNames", 100, {
       method,
-      threshold: 100,
     });
 
     const cleanUniques = (await table.getUniques("landlordNames")) as string[];

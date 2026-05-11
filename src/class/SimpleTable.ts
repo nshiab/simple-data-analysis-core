@@ -2513,13 +2513,13 @@ export default class SimpleTable extends Simple {
     rightTable: SimpleTable,
     leftColumn: string,
     rightColumn: string,
+    threshold: number,
     options: {
       method?:
         | "ratio"
         | "partial_ratio"
         | "token_sort_ratio"
         | "token_set_ratio";
-      threshold?: number;
       similarityColumn?: string;
       outputTable?: string | boolean;
       preFilterPrefixLen?: number;
@@ -2534,6 +2534,7 @@ export default class SimpleTable extends Simple {
       rightTable,
       leftColumn,
       rightColumn,
+      threshold,
       options,
     ) as this;
   }
@@ -2550,13 +2551,13 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column containing the strings to normalize.
    * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
+   * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates.
    * @param options - An optional object with configuration options:
    * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
    *   - `"ratio"`: Overall similarity.
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. Defaults to `80`.
    * @param options.keep - The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`.
    *   - `"mostCommon"`: Keep the value that appears most frequently in the original column.
    *   - `"longestString"`: Keep the longest string in the cluster.
@@ -2569,41 +2570,41 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
+   * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
    * // A length-based pre-filter is automatically applied.
-   * await table.fuzzyClean("city", "cityClean");
+   * await table.fuzzyClean("city", "cityClean", 80);
    * ```
    *
    * @example
    * ```ts
-   * // Normalize with a prefix-based pre-filter
-   * await table.fuzzyClean("city", "cityClean", {
+   * // Normalize with a prefix-based pre-filter and a threshold of 80
+   * await table.fuzzyClean("city", "cityClean", 80, {
    *   preFilterPrefixLen: 5, // Must share the same first 5 characters
    * });
    * ```
    *
    * @example
    * ```ts
-   * // Normalize 'companyName' into a new column using token_sort_ratio and a stricter threshold
-   * await table.fuzzyClean("companyName", "companyNameClean", { method: "token_sort_ratio", threshold: 90 });
+   * // Normalize 'companyName' into a new column using token_sort_ratio and a threshold of 90
+   * await table.fuzzyClean("companyName", "companyNameClean", 90, { method: "token_sort_ratio" });
    * ```
    *
    * @example
    * ```ts
-   * // Normalize 'category' in-place, keeping the longest string in each cluster
-   * await table.fuzzyClean("category", "category", { keep: "longestString" });
+   * // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
+   * await table.fuzzyClean("category", "category", 80, { keep: "longestString" });
    * ```
    */
   async fuzzyClean(
     column: string,
     newColumn: string,
+    threshold: number,
     options: {
       method?:
         | "ratio"
         | "partial_ratio"
         | "token_sort_ratio"
         | "token_set_ratio";
-      threshold?: number;
       keep?:
         | "mostCommon"
         | "longestString"
@@ -2613,7 +2614,7 @@ export default class SimpleTable extends Simple {
       preFilterPrefixLen?: number;
     } = {},
   ): Promise<void> {
-    await fuzzyClean(this, column, newColumn, options);
+    await fuzzyClean(this, column, newColumn, threshold, options);
   }
 
   /**

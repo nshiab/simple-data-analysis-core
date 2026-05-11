@@ -8,7 +8,7 @@ Deno.test("should perform a basic left fuzzy join and include all left table row
   const peopleB = sdb.newTable("peopleB");
   await peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", {
+  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
     similarityColumn: "fuzzyScore",
   });
 
@@ -55,7 +55,7 @@ Deno.test("should respect a custom threshold and only match exact strings at thr
   const peopleB = sdb.newTable("peopleB");
   await peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", { threshold: 100 });
+  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 100);
 
   const data = await peopleA.getData();
 
@@ -85,6 +85,7 @@ Deno.test("should store result in a new table when outputTable is a string", asy
     peopleB,
     "name",
     "standardName",
+    80,
     { outputTable: "fuzzyResult" },
   );
 
@@ -129,7 +130,7 @@ Deno.test("should store result in a new auto-named table when outputTable is tru
   const peopleB = sdb.newTable("peopleB");
   await peopleB.loadData("test/data/files/people_b.csv");
 
-  const result = await peopleA.fuzzyJoin(peopleB, "name", "standardName", {
+  const result = await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
     outputTable: true,
   });
 
@@ -163,7 +164,7 @@ Deno.test("should use a custom similarity column name", async () => {
   const peopleB = sdb.newTable("peopleB");
   await peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", {
+  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
     similarityColumn: "matchScore",
   });
 
@@ -212,9 +213,8 @@ Deno.test("should work with the token_sort_ratio method for reordered words", as
     { itemId: "a", text: "hello world" },
   ]);
 
-  await tableA.fuzzyJoin(tableB, "label", "text", {
+  await tableA.fuzzyJoin(tableB, "label", "text", 90, {
     method: "token_sort_ratio",
-    threshold: 90,
     similarityColumn: "fuzzyScore",
   });
 
@@ -250,9 +250,8 @@ Deno.test("should find matches with significant length differences when using ra
   const tB = sdb.newTable("tB");
   await tB.insertRows(dataB);
 
-  await tA.fuzzyJoin(tB, "name", "name_B", {
+  await tA.fuzzyJoin(tB, "name", "name_B", 60, {
     method: "ratio",
-    threshold: 60,
   });
 
   const res = await tA.getData();
@@ -286,9 +285,8 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
     await tB.renameColumns({ "landlordNames": "landlordNames_B" });
 
     // Every row should match itself at threshold 100
-    await tA.fuzzyJoin(tB, "landlordNames", "landlordNames_B", {
+    await tA.fuzzyJoin(tB, "landlordNames", "landlordNames_B", 100, {
       method,
-      threshold: 100,
     });
 
     const data = await tA.getData();
@@ -315,7 +313,7 @@ Deno.test("should not include a similarity column when similarityColumn is not p
   const peopleB = sdb.newTable("peopleB");
   await peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName");
+  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80);
 
   assertEquals(await peopleA.getData(), [
     { id: 1, name: "Alice Smith", personId: "X", standardName: "Alice Smith" },
@@ -339,7 +337,7 @@ Deno.test("should throw an error when tables have conflicting column names", asy
   const tableB = sdb.newTable("tableB");
   await tableB.loadArray([{ id: 2, name: "Alise" }]); // 'id' conflicts
 
-  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name"));
+  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
   await sdb.done();
 });
@@ -351,7 +349,7 @@ Deno.test("should throw an error when leftColumn and rightColumn have the same n
   const tableB = sdb.newTable("tableB");
   await tableB.loadArray([{ name: "Alise", score: 1 }]); // only 'name' is shared, it's also the join key
 
-  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name"));
+  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
   await sdb.done();
 });

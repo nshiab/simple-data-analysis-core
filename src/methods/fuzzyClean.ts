@@ -6,13 +6,13 @@ export default async function fuzzyClean(
   table: SimpleTable,
   column: string,
   newColumn: string,
+  threshold: number,
   options: {
     method?:
       | "ratio"
       | "partial_ratio"
       | "token_sort_ratio"
       | "token_set_ratio";
-    threshold?: number;
     keep?:
       | "mostCommon"
       | "longestString"
@@ -23,7 +23,6 @@ export default async function fuzzyClean(
   } = {},
 ): Promise<void> {
   const method = options.method ?? "ratio";
-  const threshold = options.threshold ?? 80;
   const keep = options.keep ?? "mostCommon";
 
   let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
@@ -63,7 +62,7 @@ export default async function fuzzyClean(
     mergeOptions(table, {
       table: table.name,
       method: "fuzzyClean()",
-      parameters: { column, newColumn, options },
+      parameters: { column, newColumn, threshold, options },
       returnDataFrom: "query",
     }),
   ) as
@@ -87,7 +86,7 @@ export default async function fuzzyClean(
         mergeOptions(table, {
           table: table.name,
           method: "fuzzyClean()",
-          parameters: { column, newColumn, options },
+          parameters: { column, newColumn, threshold, options },
         }),
       );
     }
