@@ -2481,38 +2481,47 @@ export default class SimpleTable extends Simple {
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param leftColumn - The name of the column in this (left) table containing the text to compare.
    * @param rightColumn - The name of the column in the right table containing the text to compare.
+   * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
    * @param options - An optional object with configuration options:
    * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
    *   - `"ratio"`: Overall similarity (Levenshtein-based).
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.threshold - The minimum similarity score (0–100) required for two rows to be joined. Defaults to `80`.
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
    * @returns A promise that resolves to a table instance containing the fuzzy-joined data (either the modified current table or a new table).
    * @category Table Operations
    *
    * @example
    * ```ts
-   * // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
-   * await tableA.fuzzyJoin(tableB, "name", "standardName");
+   * // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) with a threshold of 80
+   * // A length-based pre-filter is automatically applied.
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", 80);
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Fuzzy join with a prefix-based pre-filter and a threshold of 80
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
+   *   preFilterPrefixLen: 3, // Must share the same first 3 characters
+   * });
    * ```
    *
    * @example
    * ```ts
    * // Fuzzy join with a custom threshold and method, storing results in a new table
-   * const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   * const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", 90, {
    *   method: "token_sort_ratio",
-   *   threshold: 90,
    *   outputTable: "tableC",
    * });
    * ```
    *
    * @example
    * ```ts
-   * // Fuzzy join with a custom similarity column name
-   * await tableA.fuzzyJoin(tableB, "name", "standardName", {
+   * // Fuzzy join with a custom similarity column name and a threshold of 80
+   * await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
    *   similarityColumn: "matchScore",
    * });
    * ```
@@ -2521,15 +2530,16 @@ export default class SimpleTable extends Simple {
     rightTable: SimpleTable,
     leftColumn: string,
     rightColumn: string,
+    threshold: number,
     options: {
       method?:
         | "ratio"
         | "partial_ratio"
         | "token_sort_ratio"
         | "token_set_ratio";
-      threshold?: number;
       similarityColumn?: string;
       outputTable?: string | boolean;
+      preFilterPrefixLen?: number;
     } = {},
   ): Promise<this> {
     if (options.outputTable === true) {
@@ -2541,6 +2551,7 @@ export default class SimpleTable extends Simple {
       rightTable,
       leftColumn,
       rightColumn,
+      threshold,
       options,
     ) as this;
   }
@@ -2557,59 +2568,70 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column containing the strings to normalize.
    * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
+   * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
    * @param options - An optional object with configuration options:
    * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
    *   - `"ratio"`: Overall similarity.
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. Defaults to `80`.
    * @param options.keep - The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`.
    *   - `"mostCommon"`: Keep the value that appears most frequently in the original column.
    *   - `"longestString"`: Keep the longest string in the cluster.
    *   - `"shortestString"`: Keep the shortest string in the cluster.
    *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
    *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
+   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
    * @returns A promise that resolves when the column has been normalized.
    * @category Updating Data
    *
    * @example
    * ```ts
-   * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
-   * await table.fuzzyClean("city", "cityClean");
+   * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
+   * // A length-based pre-filter is automatically applied.
+   * await table.fuzzyClean("city", "cityClean", 80);
    * ```
    *
    * @example
    * ```ts
-   * // Normalize 'companyName' into a new column using token_sort_ratio and a stricter threshold
-   * await table.fuzzyClean("companyName", "companyNameClean", { method: "token_sort_ratio", threshold: 90 });
+   * // Normalize with a prefix-based pre-filter and a threshold of 80
+   * await table.fuzzyClean("city", "cityClean", 80, {
+   *   preFilterPrefixLen: 5, // Must share the same first 5 characters
+   * });
    * ```
    *
    * @example
    * ```ts
-   * // Normalize 'category' in-place, keeping the longest string in each cluster
-   * await table.fuzzyClean("category", "category", { keep: "longestString" });
+   * // Normalize 'companyName' into a new column using token_sort_ratio and a threshold of 90
+   * await table.fuzzyClean("companyName", "companyNameClean", 90, { method: "token_sort_ratio" });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
+   * await table.fuzzyClean("category", "category", 80, { keep: "longestString" });
    * ```
    */
   async fuzzyClean(
     column: string,
     newColumn: string,
+    threshold: number,
     options: {
       method?:
         | "ratio"
         | "partial_ratio"
         | "token_sort_ratio"
         | "token_set_ratio";
-      threshold?: number;
       keep?:
         | "mostCommon"
         | "longestString"
         | "shortestString"
         | "mostCentral"
         | "maxScore";
+      preFilterPrefixLen?: number;
     } = {},
   ): Promise<void> {
-    await fuzzyClean(this, column, newColumn, options);
+    await fuzzyClean(this, column, newColumn, threshold, options);
   }
 
   /**

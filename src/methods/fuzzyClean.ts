@@ -6,24 +6,36 @@ export default async function fuzzyClean(
   table: SimpleTable,
   column: string,
   newColumn: string,
+  threshold: number,
   options: {
     method?:
       | "ratio"
       | "partial_ratio"
       | "token_sort_ratio"
       | "token_set_ratio";
-    threshold?: number;
     keep?:
       | "mostCommon"
       | "longestString"
       | "shortestString"
       | "mostCentral"
       | "maxScore";
+    preFilterPrefixLen?: number;
   } = {},
 ): Promise<void> {
   const method = options.method ?? "ratio";
-  const threshold = options.threshold ?? 80;
   const keep = options.keep ?? "mostCommon";
+
+  let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
+
+  if (method === "ratio") {
+    const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
+    onClause +=
+      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${maxDiffMultiplier} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
+  }
+  if (options.preFilterPrefixLen !== undefined) {
+    onClause +=
+      ` AND SUBSTR(a.value, 1, ${options.preFilterPrefixLen}) = SUBSTR(b.value, 1, ${options.preFilterPrefixLen})`;
+  }
 
   // Single round trip: compute fuzzy pairs and embed counts for both sides.
   // Only values that appear in at least one pair above the threshold can be
@@ -45,12 +57,12 @@ export default async function fuzzyClean(
        rapidfuzz_${method}(a.value, b.value) AS score
      FROM uniques a
      JOIN uniques b
-       ON rapidfuzz_${method}(a.value, b.value) >= ${threshold}
+       ON ${onClause}
        AND a.value < b.value`,
     mergeOptions(table, {
       table: table.name,
       method: "fuzzyClean()",
-      parameters: { column, newColumn, options },
+      parameters: { column, newColumn, threshold, options },
       returnDataFrom: "query",
     }),
   ) as
@@ -64,7 +76,22 @@ export default async function fuzzyClean(
     | null;
 
   const pairs = pairsData ?? [];
-  if (pairs.length === 0) return; // Nothing to normalize.
+  if (pairs.length === 0) {
+    if (newColumn !== column) {
+      await queryDB(
+        table,
+        `ALTER TABLE "${table.name}" ADD "${newColumn}" VARCHAR;
+         UPDATE "${table.name}"
+           SET "${newColumn}" = "${column}";`,
+        mergeOptions(table, {
+          table: table.name,
+          method: "fuzzyClean()",
+          parameters: { column, newColumn, threshold, options },
+        }),
+      );
+    }
+    return;
+  }
 
   // Build count map from the pairs — no separate query needed.
   const countMap = new Map<string, number>();

@@ -9,15 +9,16 @@ export default async function fuzzyJoin(
   rightTable: SimpleTable,
   leftColumn: string,
   rightColumn: string,
+  threshold: number,
   options: {
     method?:
       | "ratio"
       | "partial_ratio"
       | "token_sort_ratio"
       | "token_set_ratio";
-    threshold?: number;
     similarityColumn?: string;
     outputTable?: string | boolean;
+    preFilterPrefixLen?: number;
   } = {},
 ) {
   if (leftColumn === rightColumn) {
@@ -52,7 +53,6 @@ export default async function fuzzyJoin(
   }
 
   const method = options.method ?? "ratio";
-  const threshold = options.threshold ?? 80;
   const similarityColumn = options.similarityColumn;
   const outputTableName = typeof options.outputTable === "string"
     ? options.outputTable
@@ -68,6 +68,7 @@ export default async function fuzzyJoin(
       threshold,
       outputTableName,
       similarityColumn,
+      options.preFilterPrefixLen,
     );
 
   await queryDB(
@@ -80,6 +81,7 @@ export default async function fuzzyJoin(
         leftColumn,
         rightColumn,
         rightTable: rightTable.name,
+        threshold,
         options,
       },
     }),

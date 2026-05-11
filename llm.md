@@ -2407,7 +2407,7 @@ This operation might create temporary files in a `.tmp` folder; consider adding
 ##### Signature
 
 ```typescript
-async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean }): Promise<this>;
+async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2425,7 +2425,9 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
   `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates
   and word order.
 - **`options.threshold`**: The minimum similarity score (0–100) required for two
-  rows to be joined. Defaults to `80`.
+  rows to be joined. Defaults to `80`. For `method: "ratio"` and
+  `method: "token_sort_ratio"`, a length-based pre-filter is automatically
+  applied based on the threshold to improve performance without losing accuracy.
 - **`options.similarityColumn`**: If provided, a column with this name is added
   to the result containing the similarity score (0–100). If omitted, the score
   is not included in the output.
@@ -2433,6 +2435,9 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
   Defaults to `false`.
+- **`options.preFilterPrefixLen`**: An optional prefix length. Only strings
+  sharing the same first N characters are compared. Note that prefix filtering
+  is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
 
 ##### Returns
 
@@ -2443,7 +2448,15 @@ A promise that resolves to a table instance containing the fuzzy-joined data
 
 ```ts
 // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
+// A length-based pre-filter is automatically applied.
 await tableA.fuzzyJoin(tableB, "name", "standardName");
+```
+
+```ts
+// Fuzzy join with a prefix-based pre-filter
+await tableA.fuzzyJoin(tableB, "name", "standardName", {
+  preFilterPrefixLen: 3, // Must share the same first 3 characters
+});
 ```
 
 ```ts
@@ -2480,7 +2493,7 @@ extension, which is installed and loaded automatically.
 ##### Signature
 
 ```typescript
-async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore" }): Promise<void>;
+async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<void>;
 ```
 
 ##### Parameters
@@ -2505,6 +2518,9 @@ async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio"
   all other cluster members (the most "central" string). - `"maxScore"`: Keep
   the string that participates in the single highest-scoring pairwise match
   within the cluster.
+- **`options.preFilterPrefixLen`**: An optional prefix length. Only strings
+  sharing the same first N characters are compared. Note that prefix filtering
+  is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
 
 ##### Returns
 
@@ -2514,7 +2530,15 @@ A promise that resolves when the column has been normalized.
 
 ```ts
 // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
+// A length-based pre-filter is automatically applied.
 await table.fuzzyClean("city", "cityClean");
+```
+
+```ts
+// Normalize with a prefix-based pre-filter
+await table.fuzzyClean("city", "cityClean", {
+  preFilterPrefixLen: 5, // Must share the same first 5 characters
+});
 ```
 
 ```ts

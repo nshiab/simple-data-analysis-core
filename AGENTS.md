@@ -32,7 +32,7 @@
   without warnings.
 - **Testing:**
   - Update existing tests in `test/unit/` or create a new `.test.ts` file if
-    none exists.
+    none exists. The `test/unit/` folder should mirror the `test/src/` folder.
   - Run tests using `deno test` (or the specific `deno task` defined in
     `deno.json`).
 - **Documentation Integrity:** Ensure JSDoc remains accurate if you have to
