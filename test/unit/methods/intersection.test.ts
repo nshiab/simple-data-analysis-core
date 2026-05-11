@@ -121,3 +121,21 @@ Deno.test("should compute the intersection of geometries and add a projection", 
 
   await sdb.done();
 });
+
+Deno.test("intersection() should overwrite existing column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, inter: "old" },
+  ]);
+  await table.points("lat", "lon", "geom1");
+  await table.points("lat2", "lon2", "geom2");
+
+  // This should now succeed and overwrite "inter"
+  await table.intersection("geom1", "geom2", "inter");
+
+  const types = await table.getTypes();
+  assertEquals(types.inter, "VARCHAR");
+
+  await sdb.done();
+});

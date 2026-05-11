@@ -398,3 +398,20 @@ Deno.test("should compute the centroids from a specific column", async () => {
 
   await sdb.done();
 });
+
+Deno.test("centroid() should overwrite existing column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, cent: "old" },
+  ]);
+  await table.points("lat", "lon", "geom");
+
+  // This should now succeed and overwrite "cent"
+  await table.centroid("cent", { column: "geom" });
+
+  const types = await table.getTypes();
+  assertEquals(types.cent, "VARCHAR");
+
+  await sdb.done();
+});

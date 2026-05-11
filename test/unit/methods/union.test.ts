@@ -271,3 +271,21 @@ Deno.test("should compute the union of geometries and add a projection", async (
   });
   await sdb.done();
 });
+
+Deno.test("union() should overwrite existing column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, uni: "old" },
+  ]);
+  await table.points("lat", "lon", "geom1");
+  await table.points("lat2", "lon2", "geom2");
+
+  // This should now succeed and overwrite "uni"
+  await table.union("geom1", "geom2", "uni");
+
+  const types = await table.getTypes();
+  assertEquals(types.uni, "VARCHAR");
+
+  await sdb.done();
+});
