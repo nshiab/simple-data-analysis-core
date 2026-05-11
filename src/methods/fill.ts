@@ -25,28 +25,26 @@ export default async function fill(
 
   if (options.interpolate || options.interpolateBy) {
     const cols = stringToArray(columns);
-    let orderCol: string;
-    let excludeList: string;
-    if (options.interpolateBy) {
-      orderCol = options.interpolateBy;
-      excludeList = cols.join(", ");
-    } else {
-      await simpleTable.addRowNumber(tempRowCol);
-      orderCol = tempRowCol;
-      excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
-    }
+
+    // Always add temp row number to preserve original row order in output
+    await simpleTable.addRowNumber(tempRowCol);
+
+    // Use interpolateBy for the window function's ORDER BY (correct interpolation math),
+    // but always order final output by tempRowCol to preserve input row order
+    const windowOrderCol = options.interpolateBy ?? tempRowCol;
+    const excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
     const overClause = categories.length > 0
       ? `(PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")})`
       : `()`;
     const selectList = cols
       .map(
         (col) =>
-          `fill(${col} ORDER BY "${orderCol}") OVER ${overClause} as ${col}`,
+          `fill(${col} ORDER BY "${windowOrderCol}") OVER ${overClause} as ${col}`,
       )
       .join(", ");
     await queryDB(
       simpleTable,
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${orderCol}";`,
+      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${tempRowCol}";`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "fill()",
@@ -76,14 +74,18 @@ export default async function fill(
       }),
     );
   } else {
+    // Simple path: add temp row number and order by it to preserve input row order
+    await simpleTable.addRowNumber(tempRowCol);
+    const cols = stringToArray(columns);
+    const excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
+    const selectList = cols
+      .map(
+        (col) => `COALESCE(${col}, LAG(${col} IGNORE NULLS) OVER()) as ${col}`,
+      )
+      .join(", ");
     await queryDB(
       simpleTable,
-      stringToArray(columns)
-        .map(
-          (col) =>
-            `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${col}), COALESCE(${col}, LAG(${col} IGNORE NULLS) OVER()) as ${col} FROM "${simpleTable.name}";`,
-        )
-        .join("\n"),
+      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${tempRowCol}";`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "fill()",

@@ -621,7 +621,7 @@ formats include CSV, JSON, Parquet, and Excel.
 ##### Signature
 
 ```typescript
-async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
+async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -642,6 +642,12 @@ async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | 
   filled with `NULL` values. Defaults to `false`.
 - **`options.columnTypes`**: An object mapping column names to their expected
   data types. By default, types are inferred.
+- **`options.columns`**: An array of column names to load. When provided, only
+  the specified columns are loaded, reducing memory usage and improving load
+  times. Not supported for Excel files — combining `columns` with Excel files
+  throws an error. If an invalid column name is provided, DuckDB will throw its
+  native error. An empty array behaves the same as omitting the option (loads
+  all columns). Defaults to loading all columns.
 - **`options.header`**: A boolean indicating whether the file has a header row.
   Applicable to CSV files. Defaults to `true`.
 - **`options.allText`**: A boolean indicating whether all columns should be
@@ -705,6 +711,11 @@ await table.loadData([
 ], { unifyColumns: true });
 ```
 
+```ts
+// Load only specific columns from a CSV file
+await table.loadData("./employees.csv", { columns: ["name", "salary"] });
+```
+
 #### `loadDataFromDirectory`
 
 Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
@@ -713,7 +724,7 @@ directory into the table.
 ##### Signature
 
 ```typescript
-async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
+async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -733,6 +744,12 @@ async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "d
   filled with `NULL` values. Defaults to `false`.
 - **`options.columnTypes`**: An object mapping column names to their expected
   data types. By default, types are inferred.
+- **`options.columns`**: An array of column names to load. When provided, only
+  the specified columns are loaded, reducing memory usage and improving load
+  times. Not supported for Excel files — combining `columns` with Excel files
+  throws an error. If an invalid column name is provided, DuckDB will throw its
+  native error. An empty array behaves the same as omitting the option (loads
+  all columns). Defaults to loading all columns.
 - **`options.header`**: A boolean indicating whether the file has a header row.
   Applicable to CSV files. Defaults to `true`.
 - **`options.allText`**: A boolean indicating whether all columns should be
@@ -771,6 +788,11 @@ loaded.
 ```ts
 // Load all supported data files from the "./data/" directory
 await table.loadDataFromDirectory("./data/");
+```
+
+```ts
+// Load only specific columns from all CSV files in a directory
+await table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
 ```
 
 #### `loadGeoData`
@@ -2385,7 +2407,7 @@ This operation might create temporary files in a `.tmp` folder; consider adding
 ##### Signature
 
 ```typescript
-async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean }): Promise<this>;
+async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2403,7 +2425,9 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
   `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates
   and word order.
 - **`options.threshold`**: The minimum similarity score (0–100) required for two
-  rows to be joined. Defaults to `80`.
+  rows to be joined. Defaults to `80`. For `method: "ratio"` and
+  `method: "token_sort_ratio"`, a length-based pre-filter is automatically
+  applied based on the threshold to improve performance without losing accuracy.
 - **`options.similarityColumn`**: If provided, a column with this name is added
   to the result containing the similarity score (0–100). If omitted, the score
   is not included in the output.
@@ -2411,6 +2435,9 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
   Defaults to `false`.
+- **`options.preFilterPrefixLen`**: An optional prefix length. Only strings
+  sharing the same first N characters are compared. Note that prefix filtering
+  is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
 
 ##### Returns
 
@@ -2421,7 +2448,15 @@ A promise that resolves to a table instance containing the fuzzy-joined data
 
 ```ts
 // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
+// A length-based pre-filter is automatically applied.
 await tableA.fuzzyJoin(tableB, "name", "standardName");
+```
+
+```ts
+// Fuzzy join with a prefix-based pre-filter
+await tableA.fuzzyJoin(tableB, "name", "standardName", {
+  preFilterPrefixLen: 3, // Must share the same first 3 characters
+});
 ```
 
 ```ts
@@ -2458,7 +2493,7 @@ extension, which is installed and loaded automatically.
 ##### Signature
 
 ```typescript
-async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore" }): Promise<void>;
+async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<void>;
 ```
 
 ##### Parameters
@@ -2483,6 +2518,9 @@ async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio"
   all other cluster members (the most "central" string). - `"maxScore"`: Keep
   the string that participates in the single highest-scoring pairwise match
   within the cluster.
+- **`options.preFilterPrefixLen`**: An optional prefix length. Only strings
+  sharing the same first N characters are compared. Note that prefix filtering
+  is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
 
 ##### Returns
 
@@ -2492,7 +2530,15 @@ A promise that resolves when the column has been normalized.
 
 ```ts
 // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
+// A length-based pre-filter is automatically applied.
 await table.fuzzyClean("city", "cityClean");
+```
+
+```ts
+// Normalize with a prefix-based pre-filter
+await table.fuzzyClean("city", "cityClean", {
+  preFilterPrefixLen: 5, // Must share the same first 5 characters
+});
 ```
 
 ```ts
@@ -3116,7 +3162,7 @@ Rounds numeric values in specified columns.
 ##### Signature
 
 ```typescript
-async round(columns: string | string[], options?: { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<void>;
+async round(columns: string | string[], options?: number | { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<void>;
 ```
 
 ##### Parameters
@@ -3155,6 +3201,11 @@ await table.round("column1", { method: "floor" });
 ```ts
 // Round 'columnA' and 'columnB' values to 1 decimal place using ceiling method
 await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
+```
+
+```ts
+// Round 'column1' values to 2 decimal places using the shorthand
+await table.round("column1", 2);
 ```
 
 #### `updateColumn`

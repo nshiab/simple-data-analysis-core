@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 const output = "./test/output/";
@@ -212,5 +212,21 @@ Deno.test("should write data as a SQLite db", async () => {
 
   // Just making sure it doesn't throw
   assertEquals(true, true);
+  await sdb.done();
+});
+
+Deno.test("writeData should throw an error when there is a geometry column and suggest using writeGeoData", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadGeoData("test/geodata/files/polygons.geojson");
+
+  await assertRejects(
+    async () => {
+      await table.writeData("${output}test.csv");
+    },
+    Error,
+    "Table contains geometry columns. Use writeGeoData() instead.",
+  );
+
   await sdb.done();
 });

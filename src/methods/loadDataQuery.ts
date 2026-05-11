@@ -11,6 +11,8 @@ export default function loadDataQuery(
     fileName?: boolean;
     unifyColumns?: boolean;
     columnTypes?: { [key: string]: string };
+    // column selection
+    columns?: string[];
     // csv options
     header?: boolean;
     allText?: boolean;
@@ -30,6 +32,17 @@ export default function loadDataQuery(
 ) {
   const fileExtension = getExtension(files[0]);
   const filesAsString = JSON.stringify(files.map((d) => cleanPath(d)));
+
+  // Column selection: throw for Excel, build SELECT list for others
+  const isExcel = options.fileType === "excel" || fileExtension === "xlsx";
+  if (options.columns && options.columns.length > 0 && isExcel) {
+    throw new Error(
+      "The 'columns' option is not supported for Excel files.",
+    );
+  }
+  const selectColumns = options.columns && options.columns.length > 0
+    ? options.columns.map((c) => `"${c}"`).join(", ")
+    : "*";
 
   // General options, except for parquet
   const autoDetect = typeof options.autoDetect === "boolean"
@@ -78,7 +91,7 @@ export default function loadDataQuery(
     const strict = options.strict === false ? `, strict_mode=FALSE` : "";
 
     return `CREATE OR REPLACE TABLE "${table}"
-            AS SELECT * FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit};`;
+            AS SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit};`;
   } else if (options.fileType === "json" || fileExtension === "json") {
     const jsonFormat = options.jsonFormat
       ? `, format='${options.jsonFormat}'`
@@ -87,9 +100,9 @@ export default function loadDataQuery(
       ? `, records=${String(options.records).toUpperCase()}`
       : "";
     return `CREATE OR REPLACE TABLE "${table}"
-            AS SELECT * FROM read_json_auto(${filesAsString}${generalOptions}${jsonFormat}${records})${limit};`;
+            AS SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${jsonFormat}${records})${limit};`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
-    return `CREATE OR REPLACE TABLE "${table}" AS SELECT * FROM read_parquet(${filesAsString}${fileName}${unifyColumns})${limit};`;
+    return `CREATE OR REPLACE TABLE "${table}" AS SELECT ${selectColumns} FROM read_parquet(${filesAsString}${fileName}${unifyColumns})${limit};`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {
     if (files.length > 1) {
       throw new Error(
@@ -104,7 +117,7 @@ export default function loadDataQuery(
       ? `, all_varchar=${String(options.allText).toUpperCase()}`
       : "";
 
-    return `CREATE OR REPLACE TABLE "${table}" AS SELECT * FROM read_xlsx('${
+    return `CREATE OR REPLACE TABLE "${table}" AS SELECT ${selectColumns} FROM read_xlsx('${
       files[0]
     }'${
       options.sheet ? `, sheet='${options.sheet}'` : ""
