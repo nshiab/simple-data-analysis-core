@@ -2574,3 +2574,20 @@ Deno.test("should create a buffer from polygons", async () => {
   });
   await sdb.done();
 });
+
+Deno.test("buffer() should overwrite existing column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, buff: "old" },
+  ]);
+  await table.points("lat", "lon", "geom");
+
+  // This should now succeed and overwrite "buff"
+  await table.buffer("buff", 10, { column: "geom" });
+
+  const types = await table.getTypes();
+  assertEquals(types.buff, "VARCHAR");
+
+  await sdb.done();
+});
