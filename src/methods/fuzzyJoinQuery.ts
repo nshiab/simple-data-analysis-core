@@ -18,10 +18,10 @@ export default function fuzzyJoinQuery(
 
   let onClause = `${fn} >= ${threshold}`;
 
-  if (method === "ratio" || method === "token_sort_ratio") {
-    const preFilterLenDiffRatio = (100 - threshold) / 100;
+  if (method === "ratio") {
+    const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
     onClause +=
-      ` AND ABS(LENGTH("${leftTable}"."${leftColumn}") - LENGTH("${rightTable}"."${rightColumn}")) <= ${preFilterLenDiffRatio} * GREATEST(LENGTH("${leftTable}"."${leftColumn}"), LENGTH("${rightTable}"."${rightColumn}"))`;
+      ` AND ABS(LENGTH("${leftTable}"."${leftColumn}") - LENGTH("${rightTable}"."${rightColumn}")) <= ${maxDiffMultiplier} * GREATEST(LENGTH("${leftTable}"."${leftColumn}"), LENGTH("${rightTable}"."${rightColumn}"))`;
   }
   if (preFilterPrefixLen !== undefined) {
     onClause +=

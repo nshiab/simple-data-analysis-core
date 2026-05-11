@@ -28,10 +28,10 @@ export default async function fuzzyClean(
 
   let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
 
-  if (method === "ratio" || method === "token_sort_ratio") {
-    const preFilterLenDiffRatio = (100 - threshold) / 100;
+  if (method === "ratio") {
+    const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
     onClause +=
-      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${preFilterLenDiffRatio} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
+      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${maxDiffMultiplier} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
   }
   if (options.preFilterPrefixLen !== undefined) {
     onClause +=
