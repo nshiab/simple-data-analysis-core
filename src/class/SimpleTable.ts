@@ -47,6 +47,7 @@ import normalizeQuery from "../methods/normalizeQuery.ts";
 import rollingQuery from "../methods/rollingQuery.ts";
 import distanceQuery from "../methods/distanceQuery.ts";
 import getGeoData from "../methods/getGeoData.ts";
+import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
 import { readdirSync } from "node:fs";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -54,7 +55,6 @@ import loadDataQuery from "../methods/loadDataQuery.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import writeDataQuery from "../methods/writeDataQuery.ts";
-import writeGeoDataQuery from "../methods/writeGeoDataQuery.ts";
 import type SimpleDB from "./SimpleDB.ts";
 import runQuery from "../helpers/runQuery.ts";
 import aggregateGeoQuery from "../methods/aggregateGeoQuery.ts";
@@ -62,18 +62,14 @@ import summarize from "../methods/summarize.ts";
 import correlations from "../methods/correlations.ts";
 import linearRegressions from "../methods/linearRegressions.ts";
 import joinGeo from "../methods/joinGeo.ts";
-import shouldFlipBeforeExport from "../helpers/shouldFlipBeforeExport.ts";
 import getProjection from "../helpers/getProjection.ts";
 import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
 import createDirectory from "../helpers/createDirectory.ts";
-import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
-import rewind from "../helpers/rewind.ts";
 import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logData from "../helpers/logData.ts";
 import fill from "../methods/fill.ts";
-import { readFileSync, writeFileSync } from "node:fs";
 import loadArray from "../methods/loadArray.ts";
 import cleanPath from "../helpers/cleanPath.ts";
 import Simple from "./Simple.ts";
@@ -90,10 +86,9 @@ import capitalizeQuery from "../methods/capitalizeQuery.ts";
 import truncateQuery from "../methods/truncateQuery.ts";
 import padQuery from "../methods/padQuery.ts";
 import getProjectionParquet from "../helpers/getProjectionParquet.ts";
+import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
-import stringifyDates from "../helpers/stringifyDates.ts";
-import stringifyDatesInvert from "../helpers/stringifyDatesInvert.ts";
 import unnestQuery from "../helpers/unnestQuery.ts";
 import nestQuery from "../helpers/nestQuery.ts";
 import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
@@ -536,7 +531,13 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Load geospatial data from a shapefile and reproject to WGS84
+   * // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
+   * await table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load geospatial data from a zipped shapefile and reproject to WGS84
    * await table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
    * ```
    */
@@ -6504,12 +6505,12 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Writes the table's geospatial data to a file in GeoJSON or GeoParquet format.
+   * Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
    * If the specified path does not exist, it will be created.
    *
    * For GeoJSON files (`.geojson` or `.json`), if the projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the output.
    *
-   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`).
+   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`).
    * @param options - An optional object with configuration options:
    * @param options.precision - For GeoJSON, the maximum number of figures after the decimal separator to write in coordinates. Defaults to `undefined` (full precision).
    * @param options.compression - For GeoParquet, if `true`, the output will be ZSTD compressed. Defaults to `false`.
@@ -6533,6 +6534,12 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Write geospatial data to a Shapefile with all relevant files  in the same folder
+   * await table.writeGeoData("./shapefile-folder/output.shp");
+   * ```
+   *
+   * @example
+   * ```ts
    * // Write GeoJSON with specific precision and metadata
    * await table.writeGeoData("./output_high_precision.geojson", {
    *   precision: 6,
@@ -6550,99 +6557,7 @@ export default class SimpleTable extends Simple {
       formatDates?: boolean;
     } = {},
   ): Promise<void> {
-    if (!(await hasGeometryColumn(this))) {
-      throw new Error(
-        "Table contains no geometry columns. Use writeData() instead.",
-      );
-    }
-    createDirectory(file);
-    const fileExtension = getExtension(file);
-    if (fileExtension === "geojson" || fileExtension === "json") {
-      let types;
-      if (options.formatDates === true) {
-        types = await this.getTypes();
-        if (
-          Object.values(types).includes("DATE") ||
-          Object.values(types).includes("TIMESTAMP")
-        ) {
-          await stringifyDates(this, types);
-        }
-      }
-
-      if (typeof options.compression === "boolean") {
-        throw new Error(
-          "The compression option is not supported for writing GeoJSON files.",
-        );
-      }
-      const geoColumn = await findGeoColumn(this);
-      const flip = shouldFlipBeforeExport(this.projections[geoColumn]);
-      if (flip) {
-        await this.flipCoordinates(geoColumn);
-        await queryDB(
-          this,
-          writeGeoDataQuery(this.name, file, fileExtension, options),
-          mergeOptions(this, {
-            table: this.name,
-            method: "writeGeoData()",
-            parameters: { file, options },
-          }),
-        );
-
-        await this.flipCoordinates(geoColumn);
-      } else {
-        await queryDB(
-          this,
-          writeGeoDataQuery(this.name, file, fileExtension, options),
-          mergeOptions(this, {
-            table: this.name,
-            method: "writeGeoData()",
-            parameters: { file, options },
-          }),
-        );
-      }
-      if (options.metadata) {
-        const fileData = JSON.parse(readFileSync(file, "utf-8"));
-        fileData.metadata = options.metadata;
-        writeFileSync(file, JSON.stringify(fileData));
-      }
-      if (options.rewind) {
-        const fileData = JSON.parse(readFileSync(file, "utf-8"));
-        const fileRewinded = rewind(fileData);
-        writeFileSync(file, JSON.stringify(fileRewinded));
-      }
-      if (
-        types && (Object.values(types).includes("DATE") ||
-          Object.values(types).includes("TIMESTAMP"))
-      ) {
-        await stringifyDatesInvert(this, types);
-      }
-    } else if (fileExtension === "geoparquet") {
-      if (typeof options.precision === "number") {
-        throw new Error(
-          "The precision option is not supported for writing PARQUET files. Use the .reducePrecision() method.",
-        );
-      }
-      if (typeof options.rewind === "boolean") {
-        throw new Error(
-          "The rewind option is not supported for writing PARQUET files.",
-        );
-      }
-      await queryDB(
-        this,
-        `COPY "${this.name}" TO '${cleanPath(file)}' WITH (FORMAT PARQUET${
-          options.compression === true ? ", COMPRESSION 'zstd'" : ""
-        }, KV_METADATA {
-             projections: '${JSON.stringify(this.projections)}'
-        });`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "writeGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    } else {
-      throw new Error(`Unknown extension ${fileExtension}`);
-    }
+    await writeGeoData(this, file, options);
   }
 
   /**

@@ -837,7 +837,12 @@ await table.loadGeoData("./some-data.geojson");
 ```
 
 ```ts
-// Load geospatial data from a shapefile and reproject to WGS84
+// Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
+await table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+```
+
+```ts
+// Load geospatial data from a zipped shapefile and reproject to WGS84
 await table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
 ```
 
@@ -2407,7 +2412,7 @@ This operation might create temporary files in a `.tmp` folder; consider adding
 ##### Signature
 
 ```typescript
-async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): Promise<this>;
+async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2417,6 +2422,9 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
   text to compare.
 - **`rightColumn`**: The name of the column in the right table containing the
   text to compare.
+- **`threshold`**: The minimum similarity score (0–100) required for two rows to
+  be joined. For `method: "ratio"`, a length-based pre-filter is automatically
+  applied based on the threshold to improve performance without losing accuracy.
 - **`options`**: An optional object with configuration options:
 - **`options.method`**: The rapidfuzz similarity algorithm to use. Defaults to
   `"ratio"`. - `"ratio"`: Overall similarity (Levenshtein-based). -
@@ -2424,10 +2432,6 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
   Similarity after sorting tokens (words), useful for reordered words. -
   `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates
   and word order.
-- **`options.threshold`**: The minimum similarity score (0–100) required for two
-  rows to be joined. Defaults to `80`. For `method: "ratio"` and
-  `method: "token_sort_ratio"`, a length-based pre-filter is automatically
-  applied based on the threshold to improve performance without losing accuracy.
 - **`options.similarityColumn`**: If provided, a column with this name is added
   to the result containing the similarity score (0–100). If omitted, the score
   is not included in the output.
@@ -2447,30 +2451,29 @@ A promise that resolves to a table instance containing the fuzzy-joined data
 ##### Examples
 
 ```ts
-// Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) (ratio >= 80)
+// Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) with a threshold of 80
 // A length-based pre-filter is automatically applied.
-await tableA.fuzzyJoin(tableB, "name", "standardName");
+await tableA.fuzzyJoin(tableB, "name", "standardName", 80);
 ```
 
 ```ts
-// Fuzzy join with a prefix-based pre-filter
-await tableA.fuzzyJoin(tableB, "name", "standardName", {
+// Fuzzy join with a prefix-based pre-filter and a threshold of 80
+await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
   preFilterPrefixLen: 3, // Must share the same first 3 characters
 });
 ```
 
 ```ts
 // Fuzzy join with a custom threshold and method, storing results in a new table
-const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", {
+const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", 90, {
   method: "token_sort_ratio",
-  threshold: 90,
   outputTable: "tableC",
 });
 ```
 
 ```ts
-// Fuzzy join with a custom similarity column name
-await tableA.fuzzyJoin(tableB, "name", "standardName", {
+// Fuzzy join with a custom similarity column name and a threshold of 80
+await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
   similarityColumn: "matchScore",
 });
 ```
@@ -2493,7 +2496,7 @@ extension, which is installed and loaded automatically.
 ##### Signature
 
 ```typescript
-async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; threshold?: number; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<void>;
+async fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<void>;
 ```
 
 ##### Parameters
@@ -2501,14 +2504,16 @@ async fuzzyClean(column: string, newColumn: string, options?: { method?: "ratio"
 - **`column`**: The name of the column containing the strings to normalize.
 - **`newColumn`**: The name of the column to write the normalized values to. Use
   the same name as `column` to normalize in-place.
+- **`threshold`**: The minimum similarity score (0–100) for two strings to be
+  considered duplicates. For `method: "ratio"`, a length-based pre-filter is
+  automatically applied based on the threshold to improve performance without
+  losing accuracy.
 - **`options`**: An optional object with configuration options:
 - **`options.method`**: The rapidfuzz similarity algorithm to use. Defaults to
   `"ratio"`. - `"ratio"`: Overall similarity. - `"partial_ratio"`: Best
   partial/substring similarity. - `"token_sort_ratio"`: Similarity after sorting
   tokens (words), useful for reordered words. - `"token_set_ratio"`: Similarity
   based on sets of tokens, ignoring duplicates and word order.
-- **`options.threshold`**: The minimum similarity score (0–100) for two strings
-  to be considered duplicates. Defaults to `80`.
 - **`options.keep`**: The strategy for choosing the canonical value within each
   cluster of similar strings. Defaults to `"mostCommon"`. - `"mostCommon"`: Keep
   the value that appears most frequently in the original column. -
@@ -2529,29 +2534,28 @@ A promise that resolves when the column has been normalized.
 ##### Examples
 
 ```ts
-// Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster
+// Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
 // A length-based pre-filter is automatically applied.
-await table.fuzzyClean("city", "cityClean");
+await table.fuzzyClean("city", "cityClean", 80);
 ```
 
 ```ts
-// Normalize with a prefix-based pre-filter
-await table.fuzzyClean("city", "cityClean", {
+// Normalize with a prefix-based pre-filter and a threshold of 80
+await table.fuzzyClean("city", "cityClean", 80, {
   preFilterPrefixLen: 5, // Must share the same first 5 characters
 });
 ```
 
 ```ts
-// Normalize 'companyName' into a new column using token_sort_ratio and a stricter threshold
-await table.fuzzyClean("companyName", "companyNameClean", {
+// Normalize 'companyName' into a new column using token_sort_ratio and a threshold of 90
+await table.fuzzyClean("companyName", "companyNameClean", 90, {
   method: "token_sort_ratio",
-  threshold: 90,
 });
 ```
 
 ```ts
-// Normalize 'category' in-place, keeping the longest string in each cluster
-await table.fuzzyClean("category", "category", { keep: "longestString" });
+// Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
+await table.fuzzyClean("category", "category", 80, { keep: "longestString" });
 ```
 
 #### `replace`
@@ -6192,8 +6196,8 @@ await table.writeData("./output_dates.json", { formatDates: true });
 
 #### `writeGeoData`
 
-Writes the table's geospatial data to a file in GeoJSON or GeoParquet format. If
-the specified path does not exist, it will be created.
+Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or
+Shapefile format. If the specified path does not exist, it will be created.
 
 For GeoJSON files (`.geojson` or `.json`), if the projection is WGS84 or
 EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped
@@ -6209,7 +6213,7 @@ async writeGeoData(file: string, options?: { precision?: number; compression?: b
 ##### Parameters
 
 - **`file`**: The absolute path to the output file (e.g., `"./output.geojson"`,
-  `"./output.geoparquet"`).
+  `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`).
 - **`options`**: An optional object with configuration options:
 - **`options.precision`**: For GeoJSON, the maximum number of figures after the
   decimal separator to write in coordinates. Defaults to `undefined` (full
@@ -6237,6 +6241,11 @@ await table.writeGeoData("./output.geojson");
 ```ts
 // Write geospatial data to a compressed GeoParquet file
 await table.writeGeoData("./output.geoparquet", { compression: true });
+```
+
+```ts
+// Write geospatial data to a Shapefile with all relevant files  in the same folder
+await table.writeGeoData("./shapefile-folder/output.shp");
 ```
 
 ```ts

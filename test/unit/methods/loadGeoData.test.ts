@@ -62,7 +62,24 @@ Deno.test("should load a geojson file from a URL", async () => {
   await sdb.done();
 });
 
-Deno.test("should load a shapefile file", async () => {
+Deno.test("should load a shapefile file (not zipped)", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories/CanadianProvincesAndTerritories.shp",
+  );
+
+  const types = await table.getTypes();
+
+  assertEquals(types, {
+    nameEnglis: "VARCHAR",
+    nameFrench: "VARCHAR",
+    geom: "GEOMETRY",
+  });
+  await sdb.done();
+});
+
+Deno.test("should load a shapefile file (zipped)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadGeoData(

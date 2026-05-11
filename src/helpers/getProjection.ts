@@ -28,6 +28,9 @@ export default async function getProjection(
   }
 
   const proj4 = queryResult[0].proj4;
+  if (proj4 === null) {
+    return "UNKNOWN";
+  }
   if (typeof proj4 !== "string") {
     throw new Error(
       `Expected proj4 to be a string, got ${typeof proj4}`,
