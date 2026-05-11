@@ -2463,7 +2463,7 @@ export default class SimpleTable extends Simple {
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param leftColumn - The name of the column in this (left) table containing the text to compare.
    * @param rightColumn - The name of the column in the right table containing the text to compare.
-   * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"` and `method: "token_sort_ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
+   * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
    * @param options - An optional object with configuration options:
    * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
    *   - `"ratio"`: Overall similarity (Levenshtein-based).
@@ -2550,7 +2550,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column containing the strings to normalize.
    * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
-   * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates.
+   * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
    * @param options - An optional object with configuration options:
    * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
    *   - `"ratio"`: Overall similarity.
