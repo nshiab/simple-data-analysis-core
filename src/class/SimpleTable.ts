@@ -47,6 +47,7 @@ import normalizeQuery from "../methods/normalizeQuery.ts";
 import rollingQuery from "../methods/rollingQuery.ts";
 import distanceQuery from "../methods/distanceQuery.ts";
 import getGeoData from "../methods/getGeoData.ts";
+import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
 import { readdirSync } from "node:fs";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -54,7 +55,6 @@ import loadDataQuery from "../methods/loadDataQuery.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import writeDataQuery from "../methods/writeDataQuery.ts";
-import writeGeoDataQuery from "../methods/writeGeoDataQuery.ts";
 import type SimpleDB from "./SimpleDB.ts";
 import runQuery from "../helpers/runQuery.ts";
 import aggregateGeoQuery from "../methods/aggregateGeoQuery.ts";
@@ -62,17 +62,14 @@ import summarize from "../methods/summarize.ts";
 import correlations from "../methods/correlations.ts";
 import linearRegressions from "../methods/linearRegressions.ts";
 import joinGeo from "../methods/joinGeo.ts";
-import shouldFlipBeforeExport from "../helpers/shouldFlipBeforeExport.ts";
 import getProjection from "../helpers/getProjection.ts";
 import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
 import createDirectory from "../helpers/createDirectory.ts";
-import rewind from "../helpers/rewind.ts";
 import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logData from "../helpers/logData.ts";
 import fill from "../methods/fill.ts";
-import { readFileSync, writeFileSync } from "node:fs";
 import loadArray from "../methods/loadArray.ts";
 import cleanPath from "../helpers/cleanPath.ts";
 import Simple from "./Simple.ts";
@@ -91,8 +88,6 @@ import padQuery from "../methods/padQuery.ts";
 import getProjectionParquet from "../helpers/getProjectionParquet.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
-import stringifyDates from "../helpers/stringifyDates.ts";
-import stringifyDatesInvert from "../helpers/stringifyDatesInvert.ts";
 import unnestQuery from "../helpers/unnestQuery.ts";
 import nestQuery from "../helpers/nestQuery.ts";
 import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
@@ -517,7 +512,13 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Load geospatial data from a shapefile and reproject to WGS84
+   * // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
+   * await table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load geospatial data from a zipped shapefile and reproject to WGS84
    * await table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
    * ```
    */
@@ -6482,147 +6483,7 @@ export default class SimpleTable extends Simple {
       formatDates?: boolean;
     } = {},
   ): Promise<void> {
-    createDirectory(file);
-    const fileExtension = getExtension(file);
-    if (fileExtension === "geojson" || fileExtension === "json") {
-      let types;
-      if (options.formatDates === true) {
-        types = await this.getTypes();
-        if (
-          Object.values(types).includes("DATE") ||
-          Object.values(types).includes("TIMESTAMP")
-        ) {
-          await stringifyDates(this, types);
-        }
-      }
-
-      if (typeof options.compression === "boolean") {
-        throw new Error(
-          "The compression option is not supported for writing GeoJSON files.",
-        );
-      }
-      const geoColumn = await findGeoColumn(this);
-      const flip = shouldFlipBeforeExport(this.projections[geoColumn]);
-      if (flip) {
-        await this.flipCoordinates(geoColumn);
-        await queryDB(
-          this,
-          writeGeoDataQuery(this.name, file, fileExtension, options),
-          mergeOptions(this, {
-            table: this.name,
-            method: "writeGeoData()",
-            parameters: { file, options },
-          }),
-        );
-
-        await this.flipCoordinates(geoColumn);
-      } else {
-        await queryDB(
-          this,
-          writeGeoDataQuery(this.name, file, fileExtension, options),
-          mergeOptions(this, {
-            table: this.name,
-            method: "writeGeoData()",
-            parameters: { file, options },
-          }),
-        );
-      }
-      if (options.metadata) {
-        const fileData = JSON.parse(readFileSync(file, "utf-8"));
-        fileData.metadata = options.metadata;
-        writeFileSync(file, JSON.stringify(fileData));
-      }
-      if (options.rewind) {
-        const fileData = JSON.parse(readFileSync(file, "utf-8"));
-        const fileRewinded = rewind(fileData);
-        writeFileSync(file, JSON.stringify(fileRewinded));
-      }
-      if (
-        types && (Object.values(types).includes("DATE") ||
-          Object.values(types).includes("TIMESTAMP"))
-      ) {
-        await stringifyDatesInvert(this, types);
-      }
-    } else if (fileExtension === "shp") {
-      if (typeof options.precision === "number") {
-        throw new Error(
-          "The precision option is not supported for writing SHAPEFILE files. Use the .reducePrecision() method.",
-        );
-      }
-      if (typeof options.compression === "boolean") {
-        throw new Error(
-          "The compression option is not supported for writing SHAPEFILE files. The GDAL driver handles the zip container automatically.",
-        );
-      }
-      if (typeof options.rewind === "boolean") {
-        throw new Error(
-          "The rewind option is not supported for writing SHAPEFILE files.",
-        );
-      }
-      if (options.metadata) {
-        throw new Error(
-          "The metadata option is not supported for writing SHAPEFILE files.",
-        );
-      }
-      if (options.formatDates === true) {
-        throw new Error(
-          "The formatDates option is not supported for writing SHAPEFILE files.",
-        );
-      }
-
-      const geoColumn = await findGeoColumn(this);
-      const flip = shouldFlipBeforeExport(this.projections[geoColumn]);
-
-      if (flip) {
-        await this.flipCoordinates(geoColumn);
-        await queryDB(
-          this,
-          writeGeoDataQuery(this.name, file, fileExtension, options),
-          mergeOptions(this, {
-            table: this.name,
-            method: "writeGeoData()",
-            parameters: { file, options },
-          }),
-        );
-        await this.flipCoordinates(geoColumn);
-      } else {
-        await queryDB(
-          this,
-          writeGeoDataQuery(this.name, file, fileExtension, options),
-          mergeOptions(this, {
-            table: this.name,
-            method: "writeGeoData()",
-            parameters: { file, options },
-          }),
-        );
-      }
-    } else if (fileExtension === "geoparquet") {
-      if (typeof options.precision === "number") {
-        throw new Error(
-          "The precision option is not supported for writing PARQUET files. Use the .reducePrecision() method.",
-        );
-      }
-      if (typeof options.rewind === "boolean") {
-        throw new Error(
-          "The rewind option is not supported for writing PARQUET files.",
-        );
-      }
-      await queryDB(
-        this,
-        `COPY "${this.name}" TO '${cleanPath(file)}' WITH (FORMAT PARQUET${
-          options.compression === true ? ", COMPRESSION 'zstd'" : ""
-        }, KV_METADATA {
-             projections: '${JSON.stringify(this.projections)}'
-        });`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "writeGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    } else {
-      throw new Error(`Unknown extension ${fileExtension}`);
-    }
+    await writeGeoData(this, file, options);
   }
 
   /**

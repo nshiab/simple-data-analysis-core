@@ -3,13 +3,13 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 const output = "./test/output/";
 
-Deno.test("should write a shapefile (zipped)", async () => {
+Deno.test("should write a shapefile", async () => {
   const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
   await table.loadGeoData(originalFile);
-  const shp = `${output}data.shp`;
+  const shp = `${output}/shapefile/data.shp`;
   await table.writeGeoData(shp);
 
   // To verify, we load it back
@@ -40,7 +40,7 @@ Deno.test("should throw error for incompatible options with shapefiles", async (
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.loadGeoData("test/geodata/files/polygons.geojson");
-  const shp = `${output}errors.shp`;
+  const shp = `${output}/shapefile/errors.shp`;
 
   await assertRejects(() => table.writeGeoData(shp, { precision: 3 }));
   await assertRejects(() => table.writeGeoData(shp, { compression: true }));
