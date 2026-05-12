@@ -95,6 +95,7 @@ import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
 import createFtsIndex from "../methods/createFtsIndex.ts";
 import createVssIndex from "../methods/createVssIndex.ts";
 import bm25 from "../methods/bm25.ts";
+import loadSample from "../methods/loadSample.ts";
 import normalizeString from "../methods/normalizeString.ts";
 
 /**
@@ -1096,6 +1097,41 @@ export default class SimpleTable extends Simple {
         }
       }
     }
+  }
+
+  /**
+   * Fetches sample data from the simple-data-analysis-core GitHub repository.
+   *
+   * @param sample - The name of the sample to load.
+   *
+   * Tabular data:
+   * - "fires": [firesCanada2023.csv](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.csv)
+   * - "recipes": [recipes.parquet](https://github.com/nshiab/simple-data-analysis-core/raw/refs/heads/main/test/data/files/recipes.parquet)
+   * - "temperatures": [dailyTemperatures.csv](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/dailyTemperatures.csv)
+   * - "temperaturesCities": [cities.csv](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/cities.csv)
+   *
+   * Geospatial data:
+   * - "canada": [CanadianProvincesAndTerritories.json](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/CanadianProvincesAndTerritories.json)
+   * - "firesGeo": [firesCanada2023.geojson](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.geojson)
+   *
+   * @category Importing Data
+   *
+   * @example
+   * ```ts
+   * // Load the fires sample data
+   * await table.loadSample("fires");
+   * ```
+   */
+  async loadSample(
+    sample:
+      | "fires"
+      | "recipes"
+      | "temperatures"
+      | "temperaturesCities"
+      | "canada"
+      | "firesGeo",
+  ): Promise<this> {
+    return (await loadSample(this, sample)) as this;
   }
 
   /**
