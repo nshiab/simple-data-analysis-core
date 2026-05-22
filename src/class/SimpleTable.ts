@@ -91,6 +91,7 @@ import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
 import unnestQuery from "../helpers/unnestQuery.ts";
+import repeatRowsQuery from "../helpers/repeatRowsQuery.ts";
 import nestQuery from "../helpers/nestQuery.ts";
 import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
 import createFtsIndex from "../methods/createFtsIndex.ts";
@@ -3293,6 +3294,47 @@ export default class SimpleTable extends Simple {
         table: this.name,
         method: "unnest()",
         parameters: { column, separator },
+      }),
+    );
+  }
+
+  /**
+   * Repeats rows based on the values in a column.
+   *
+   * If a row has a value of 3 in the specified column, it will be repeated 3 times. If the value is 0 or negative, the row will be removed.
+   *
+   * @param column - The name of the column containing the number of times each row should be repeated.
+   * @param options - An optional object with configuration options:
+   * @param options.index - The name of a new column to store the index of the repeated row (starting at 0).
+   * @category Updating Data
+   *
+   * @example
+   * ```ts
+   * // Before: [{ id: 1, count: 2, category: "A" }, { id: 2, count: 3, category: "B" }]
+   * await table.repeatRows("count");
+   * // After:  [{ id: 1, count: 2, category: "A" }, { id: 1, count: 2, category: "A" },
+   * //          { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }]
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With an index column
+   * await table.repeatRows("count", { index: "copyId" });
+   * // After:  [{ id: 1, count: 2, category: "A", copyId: 0 }, { id: 1, count: 2, category: "A", copyId: 1 },
+   * //          { id: 2, count: 3, category: "B", copyId: 0 }, { id: 2, count: 3, category: "B", copyId: 1 }, { id: 2, count: 3, category: "B", copyId: 2 }]
+   * ```
+   */
+  async repeatRows(
+    column: string,
+    options: { index?: string } = {},
+  ): Promise<void> {
+    await queryDB(
+      this,
+      repeatRowsQuery(this.name, column, options),
+      mergeOptions(this, {
+        table: this.name,
+        method: "repeatRows()",
+        parameters: { column, options },
       }),
     );
   }
