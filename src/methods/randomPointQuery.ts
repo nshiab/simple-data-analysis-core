@@ -20,6 +20,7 @@ SET "${newColumn}" = (
         ) AS pt
         FROM range(${nbPointsToTry})
     ) WHERE ST_Within(pt, t."${column}")
+    AND t.rowid = t.rowid
     LIMIT 1
 );`;
 }
