@@ -12,15 +12,24 @@ ${
       : `ALTER TABLE "${table}" ADD COLUMN "${newColumn}" GEOMETRY;`
   }
 UPDATE "${table}" AS t
-SET "${newColumn}" = (
-    SELECT pt FROM (
-        SELECT ST_Point(
-            ST_XMin(t."${column}") + random() * (ST_XMax(t."${column}") - ST_XMin(t."${column}")),
-            ST_YMin(t."${column}") + random() * (ST_YMax(t."${column}") - ST_YMin(t."${column}"))
-        ) AS pt
-        FROM range(${nbPointsToTry})
-    ) WHERE ST_Within(pt, t."${column}")
-    AND t.rowid = t.rowid
-    LIMIT 1
-);`;
+SET "${newColumn}" = sub.pt
+FROM (
+    SELECT 
+        t_inner.rowid AS rid, 
+        p.pt
+    FROM "${table}" AS t_inner
+    CROSS JOIN LATERAL (
+        SELECT pt 
+        FROM (
+            SELECT ST_Point(
+                ST_XMin(t_inner."${column}") + (CASE WHEN (t_inner.rowid + r.id) IS NOT NULL THEN random() END) * (ST_XMax(t_inner."${column}") - ST_XMin(t_inner."${column}")),
+                ST_YMin(t_inner."${column}") + (CASE WHEN (t_inner.rowid + r.id) IS NOT NULL THEN random() END) * (ST_YMax(t_inner."${column}") - ST_YMin(t_inner."${column}"))
+            ) AS pt
+            FROM range(${nbPointsToTry}) AS r(id)
+        )
+        WHERE ST_Within(pt, t_inner."${column}")
+        LIMIT 1
+    ) AS p
+) AS sub
+WHERE t.rowid = sub.rid;`;
 }
