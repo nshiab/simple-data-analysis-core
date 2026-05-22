@@ -46,6 +46,7 @@ import removeQuery from "../methods/removeQuery.ts";
 import normalizeQuery from "../methods/normalizeQuery.ts";
 import rollingQuery from "../methods/rollingQuery.ts";
 import distanceQuery from "../methods/distanceQuery.ts";
+import randomPointQuery from "../methods/randomPointQuery.ts";
 import getGeoData from "../methods/getGeoData.ts";
 import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
@@ -6173,6 +6174,50 @@ export default class SimpleTable extends Simple {
         table: this.name,
         method: "centroid()",
         parameters: { column, newColumn },
+      }),
+    );
+    this.projections[newColumn] = this.projections[column];
+  }
+
+  /**
+   * Generates a random point within the geometries of a specified column.
+   *
+   * @param newColumn - The name of the new column where the random points will be stored.
+   * @param nbPointsToTry - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries within which the random points will be generated. If omitted, the method will automatically attempt to find a geometry column.
+   *
+   * @example
+   * ```ts
+   * // Generate a random point for each geometry in the default column, trying 100 points
+   * await table.randomPoint("randomPoint", 100);
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Generate a random point for each geometry in a specific column named 'areaGeom', trying 50 points
+   * await table.randomPoint("pointInArea", 50, { column: "areaGeom" });
+   * ```
+   */
+  async randomPoint(
+    newColumn: string,
+    nbPointsToTry: number,
+    options: { column?: string } = {},
+  ): Promise<void> {
+    if (typeof nbPointsToTry !== "number" || nbPointsToTry < 1) {
+      throw new Error("nbPointsToTry must be a number greater than 0");
+    }
+    const column = typeof options.column === "string"
+      ? options.column
+      : await findGeoColumn(this);
+
+    await queryDB(
+      this,
+      randomPointQuery(this.name, column, newColumn, nbPointsToTry),
+      mergeOptions(this, {
+        table: this.name,
+        method: "randomPoint()",
+        parameters: { column, newColumn, nbPointsToTry },
       }),
     );
     this.projections[newColumn] = this.projections[column];
