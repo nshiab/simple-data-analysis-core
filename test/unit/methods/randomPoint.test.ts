@@ -1,4 +1,4 @@
-import { assertEquals, assertNotEquals } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should generate a random point in geometries and they should be random", async () => {
@@ -52,6 +52,62 @@ Deno.test("should generate a random point in geometries and they should be rando
       }`,
     );
   }
+
+  await sdb.done();
+});
+
+Deno.test("randomPoint should throw an error if no point is found", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  // With 0 tries, no point should be found.
+  await assertRejects(
+    async () => {
+      await table.randomPoint("randomPoint", 0);
+    },
+    Error,
+    "13 points could not be generated. Consider increasing nbPointsToTry or set options.try to true.",
+  );
+
+  await sdb.done();
+});
+
+Deno.test("randomPoint should not throw an error if no point is found and options.try is true", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  // With 0 tries, no point should be found.
+  await table.randomPoint("randomPoint", 0, { try: true });
+
+  const nbNulls = await table.getNbRows({
+    conditions: '"randomPoint" IS NULL',
+  });
+  assertEquals(nbNulls, 13);
+
+  await sdb.done();
+});
+
+Deno.test("randomPoint should throw an error if nbPointsToTry is less than 0", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  await assertRejects(
+    async () => {
+      // @ts-ignore trying invalid value
+      await table.randomPoint("randomPoint", -1);
+    },
+    Error,
+    "nbPointsToTry must be a number greater than or equal to 0",
+  );
 
   await sdb.done();
 });

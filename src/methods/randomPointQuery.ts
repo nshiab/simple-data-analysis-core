@@ -18,7 +18,7 @@ FROM (
         t_inner.rowid AS rid, 
         p.pt
     FROM "${table}" AS t_inner
-    CROSS JOIN LATERAL (
+    LEFT JOIN LATERAL (
         SELECT pt 
         FROM (
             SELECT ST_Point(
@@ -29,7 +29,7 @@ FROM (
         )
         WHERE ST_Within(pt, t_inner."${column}")
         LIMIT 1
-    ) AS p
+    ) AS p ON TRUE
 ) AS sub
 WHERE t.rowid = sub.rid;`;
 }

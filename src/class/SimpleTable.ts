@@ -4556,6 +4556,8 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the number of rows in the table.
    *
+   * @param options - An optional object with configuration options:
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
    * @returns A promise that resolves to a number representing the total count of rows.
    * @category Getting Data
    *
@@ -4565,9 +4567,16 @@ export default class SimpleTable extends Simple {
    * const nbRows = await table.getNbRows();
    * console.log(nbRows); // e.g., 100
    * ```
+   *
+   * @example
+   * ```ts
+   * // Get the number of rows where 'category' is 'Book'
+   * const nbBooks = await table.getNbRows({ conditions: "category = 'Book'" });
+   * console.log(nbBooks);
+   * ```
    */
-  async getNbRows(): Promise<number> {
-    return await getNbRows(this);
+  async getNbRows(options: { conditions?: string } = {}): Promise<number> {
+    return await getNbRows(this, options);
   }
 
   /**
@@ -6228,6 +6237,7 @@ export default class SimpleTable extends Simple {
    * @param nbPointsToTry - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries within which the random points will be generated. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.try - If `true`, the method will not throw an error if some points cannot be generated. Corresponding rows will have `NULL` in the new column.
    *
    * @example
    * ```ts
@@ -6240,14 +6250,22 @@ export default class SimpleTable extends Simple {
    * // Generate a random point for each geometry in a specific column named 'areaGeom', trying 50 points
    * await table.randomPoint("pointInArea", 50, { column: "areaGeom" });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Generate a random point for each geometry, but don't throw if some points cannot be generated
+   * await table.randomPoint("pointInArea", 1, { try: true });
+   * ```
    */
   async randomPoint(
     newColumn: string,
     nbPointsToTry: number,
-    options: { column?: string } = {},
+    options: { column?: string; try?: boolean } = {},
   ): Promise<void> {
-    if (typeof nbPointsToTry !== "number" || nbPointsToTry < 1) {
-      throw new Error("nbPointsToTry must be a number greater than 0");
+    if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
+      throw new Error(
+        "nbPointsToTry must be a number greater than or equal to 0",
+      );
     }
     const column = typeof options.column === "string"
       ? options.column
@@ -6259,9 +6277,19 @@ export default class SimpleTable extends Simple {
       mergeOptions(this, {
         table: this.name,
         method: "randomPoint()",
-        parameters: { column, newColumn, nbPointsToTry },
+        parameters: { column, newColumn, nbPointsToTry, options },
       }),
     );
+
+    const nbNulls = await this.getNbRows({
+      conditions: `"${newColumn}" IS NULL`,
+    });
+    if (nbNulls > 0 && !options.try) {
+      throw new Error(
+        `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.try to true.`,
+      );
+    }
+
     this.projections[newColumn] = this.projections[column];
   }
 
