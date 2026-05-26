@@ -111,3 +111,36 @@ Deno.test("randomPoint should throw an error if nbPointsToTry is less than 0", a
 
   await sdb.done();
 });
+
+Deno.test("randomPoint should have similar performance with many more tries if it exits early", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  const start10 = Date.now();
+  await table.randomPoint("point10", 10, { column: "geom", try: true });
+  const duration10 = Date.now() - start10;
+
+  const start10k = Date.now();
+  await table.randomPoint("point10k", 10_000, { column: "geom", try: true });
+  const duration10k = Date.now() - start10k;
+
+  const start100k = Date.now();
+  await table.randomPoint("point100k", 100_000, { column: "geom", try: true });
+  const duration100k = Date.now() - start100k;
+
+  console.log({ duration10, duration10k, duration100k });
+
+  // For 13 provinces, finding one point is fast.
+  // DuckDB doesn't always short-circuit range() in LATERAL joins with a WHERE clause,
+  // so the duration might scale more linearly than expected with tries.
+  assertEquals(
+    duration100k < 10000,
+    true,
+    `Performance issue: 100k tries took ${duration100k}ms.`,
+  );
+
+  await sdb.done();
+});
