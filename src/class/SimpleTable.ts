@@ -2364,9 +2364,11 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Adds a new column to the table containing the row number.
+   * Adds a new column to the table containing the row number, starting at 0 (like an index).
    *
    * @param newColumn - The name of the new column that will store the row number.
+   * @param options - An optional object with configuration options:
+   * @param options.categories - A string or an array of strings representing columns to partition the data by. The row number will restart at 0 for each unique combination of values in these columns.
    * @returns A promise that resolves when the row number column has been added.
    * @category Column Operations
    *
@@ -2375,15 +2377,31 @@ export default class SimpleTable extends Simple {
    * // Add a new column named 'rowNumber' with the row number for each row
    * await table.addRowNumber("rowNumber");
    * ```
+   *
+   * @example
+   * ```ts
+   * // Add a new column named 'rowNumber' with the row number for each 'category'
+   * await table.addRowNumber("rowNumber", { categories: "category" });
+   * ```
    */
-  async addRowNumber(newColumn: string): Promise<void> {
+  async addRowNumber(
+    newColumn: string,
+    options: { categories?: string | string[] } = {},
+  ): Promise<void> {
+    const categories = options.categories
+      ? stringToArray(options.categories)
+      : [];
+    const partition = categories.length > 0
+      ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
+      : "";
+
     await queryDB(
       this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT *, ROW_NUMBER() OVER() AS ${newColumn} FROM "${this.name}"`,
+      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT *, (ROW_NUMBER() OVER(${partition} ORDER BY rowid) - 1) AS "${newColumn}" FROM "${this.name}" ORDER BY rowid`,
       mergeOptions(this, {
         table: this.name,
         method: "addRowNumber()",
-        parameters: { newColumn },
+        parameters: { newColumn, options },
       }),
     );
   }
