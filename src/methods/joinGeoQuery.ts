@@ -41,7 +41,7 @@ export default function joinGeoQuery(
       } else if (distanceMethod === "spheroid") {
         // Should be using ST_DWithin_Spheroid but doesn't work?
         query +=
-          ` ON ST_Distance_Spheroid("${leftTable}"."${leftTableColumn}", "${rightTable}"."${rightTableColumn}") < ${distance}`;
+          ` ON ST_Distance_Spheroid("${leftTable}"."${leftTableColumn}"::GEOMETRY, "${rightTable}"."${rightTableColumn}"::GEOMETRY) < ${distance}`;
       } else {
         throw new Error(`Unknown ${distanceMethod}`);
       }

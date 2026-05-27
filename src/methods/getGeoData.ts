@@ -2,7 +2,6 @@ import rewind from "../helpers/rewind.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
-import shouldFlipBeforeExport from "../helpers/shouldFlipBeforeExport.ts";
 // deno-lint-ignore no-explicit-any
 type GeoPermissibleObjects = any;
 
@@ -11,14 +10,9 @@ export default async function getGeoData(
   column: string,
   options: { rewind?: boolean } = {},
 ) {
-  let query = "";
-  if (shouldFlipBeforeExport(SimpleTable.projections[column])) {
-    query =
-      `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(ST_FlipCoordinates(${column})) as geoJsonFragment from "${SimpleTable.name}";`;
-  } else {
-    query =
-      `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(${column}) as geoJsonFragment from "${SimpleTable.name}";`;
-  }
+  const query =
+    `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(${column}) as geoJsonFragment from "${SimpleTable.name}";`;
+
   const queryResult = await queryDB(
     SimpleTable,
     query,

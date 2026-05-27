@@ -14,7 +14,8 @@ export default function parseType(
     | "timestamp"
     | "timestamp with time zone"
     | "boolean"
-    | "geometry",
+    | `geometry('${string}')`
+    | `GEOMETRY('${string}')`,
 ) {
   const typeLowerCase = type.toLowerCase();
   if (typeLowerCase === "integer") {
@@ -38,9 +39,10 @@ export default function parseType(
       "timestamp",
       "timestamp with time zone",
       "boolean",
-      "geometry",
     ].includes(typeLowerCase)
   ) {
+    return type.toUpperCase();
+  } else if (typeLowerCase.includes("geometry")) {
     return type.toUpperCase();
   } else {
     throw new Error(`Unknown type ${type}`);

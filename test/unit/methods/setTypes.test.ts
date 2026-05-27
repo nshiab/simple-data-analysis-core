@@ -16,11 +16,11 @@ Deno.test("should create a new SimpleTable with geometry in types", async () => 
   await table.setTypes({
     name: "string",
     age: "number",
-    city: "geometry",
+    city: "geometry('EPSG:4326')",
   });
   const types = await table.getTypes();
   assertEquals(
-    { name: "VARCHAR", age: "DOUBLE", city: "GEOMETRY" },
+    { name: "VARCHAR", age: "DOUBLE", city: "GEOMETRY('EPSG:4326')" },
     types,
   );
   await sdb.done();

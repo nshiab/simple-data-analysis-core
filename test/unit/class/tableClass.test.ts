@@ -151,11 +151,11 @@ Deno.test("pushTable() respects tableClass", async () => {
   const sdb = new MyDB();
 
   // Should accept MyTable instances
-  const myTable = new MyTable("test", {}, sdb);
+  const myTable = new MyTable("test", sdb);
   sdb.pushTable(myTable);
 
   // Should reject core SimpleTable instances
-  const coreTable = new SimpleTable("core", {}, sdb);
+  const coreTable = new SimpleTable("core", sdb);
   assertThrows(
     () => sdb.pushTable(coreTable),
     Error,
@@ -176,7 +176,7 @@ Deno.test("pushTable() error message includes custom class name", async () => {
   }
 
   const sdb = new MyDB();
-  const coreTable = new SimpleTable("core", {}, sdb);
+  const coreTable = new SimpleTable("core", sdb);
 
   let errorMessage = "";
   try {

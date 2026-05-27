@@ -5,7 +5,7 @@ export default async function findGeoColumn(SimpleTable: SimpleTable) {
 
   const types = await SimpleTable.getTypes();
   const geometries = Object.values(types).filter(
-    (d) => d.toLowerCase() === "geometry",
+    (d) => d.toLowerCase().includes("geometry"),
   );
   if (geometries.length === 0) {
     throw new Error("Table contains no geometry columns.");
@@ -15,7 +15,7 @@ export default async function findGeoColumn(SimpleTable: SimpleTable) {
     );
   } else {
     column = Object.keys(types).find(
-      (d) => types[d].toLowerCase() === "geometry",
+      (d) => types[d].toLowerCase().includes("geometry"),
     );
   }
   if (typeof column !== "string") {

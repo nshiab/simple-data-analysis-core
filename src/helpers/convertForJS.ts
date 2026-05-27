@@ -25,7 +25,7 @@ export default function convertForJS(rows: {
         for (const row of rows) {
           row[key] = row[key] === null ? null : Number(row[key]);
         }
-      } else if (types[key] === "GEOMETRY") {
+      } else if (types[key].toLowerCase().includes("geometry")) {
         for (const row of rows) {
           row[key] = row[key] === null ? null : "<Geometry>";
         }

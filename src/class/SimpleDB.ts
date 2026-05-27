@@ -13,7 +13,7 @@ import getExtension from "../helpers/getExtension.ts";
 import { existsSync, rmSync } from "node:fs";
 import checkVssIndexes from "../helpers/checkVssIndexes.ts";
 import setDbProps from "../helpers/setDbProps.ts";
-import writeProjectionsAndIndexes from "../helpers/writeProjectionsAndIndexes.ts";
+import writeIndexes from "../helpers/writeIndexes.ts";
 import getName from "../helpers/getName.ts";
 import { renameSync } from "node:fs";
 
@@ -169,7 +169,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   tableClass: new (
     name: string,
-    projections: { [key: string]: string },
     sdb: SimpleDB,
     options?: {
       debug?: boolean;
@@ -179,7 +178,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     },
   ) => Table = SimpleTable as new (
     name: string,
-    projections: { [key: string]: string },
     sdb: SimpleDB,
     options?: {
       debug?: boolean;
@@ -313,7 +311,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * Creates a new SimpleTable instance within the database.
    *
    * @param name - The name of the new table. If not provided, a default name is generated (e.g., "table1").
-   * @param projections - An object mapping column names to their geospatial projections.
    * @returns A new table instance.
    * @category Table Management
    *
@@ -331,15 +328,13 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   newTable(
     name?: string,
-    projections?: { [key: string]: string },
   ): Table {
-    const proj = projections ?? {};
     const TableClass = this.tableClass;
 
     // SHOULD MATCH cloneTable
     let table;
     if (typeof name === "string") {
-      table = new TableClass(name, proj, this, {
+      table = new TableClass(name, this, {
         debug: this.debug,
         nbRowsToLog: this.nbRowsToLog,
         nbCharactersToLog: this.nbCharactersToLog,
@@ -347,7 +342,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       });
       table.defaultTableName = false;
     } else {
-      table = new TableClass(`table${this.tableIncrement}`, proj, this, {
+      table = new TableClass(`table${this.tableIncrement}`, this, {
         debug: this.debug,
         nbRowsToLog: this.nbRowsToLog,
         nbCharactersToLog: this.nbCharactersToLog,
@@ -781,7 +776,7 @@ DETACH ${name};`,
       );
     }
 
-    await setDbProps(this, file, extension, allIndexesFile);
+    await setDbProps(this, allIndexesFile);
   }
 
   /**
@@ -790,7 +785,7 @@ DETACH ${name};`,
    *
    * @param file - The absolute path to the output file (e.g., "./my_exported_database.db").
    * @param options - Configuration options for writing the database.
-   * @param options.noMetaData - If `true`, metadata files (projections, indexes) are not created alongside the database file. Defaults to `false`.
+   * @param options.noMetaData - If `true`, metadata files (indexes) are not created alongside the database file. Defaults to `false`.
    * @returns A promise that resolves when the database has been written to the file.
    * @category File Operations
    *
@@ -819,7 +814,7 @@ DETACH ${name};`,
     const extension = getExtension(file);
 
     if (!noMetaData) {
-      writeProjectionsAndIndexes(this, extension, file);
+      writeIndexes(this, extension, file);
     }
 
     const name = getName(file);
@@ -874,7 +869,7 @@ DETACH ${name};`,
     if (this.file !== ":memory:") {
       await this.customQuery("CHECKPOINT;");
       // To make sure the files will have the proper names.
-      writeProjectionsAndIndexes(this, getExtension(this.file), this.file);
+      writeIndexes(this, getExtension(this.file), this.file);
       await this.writeDB(this.file.replace(".db", "_compacted.db"), {
         noMetaData: true,
       });

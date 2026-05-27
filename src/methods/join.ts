@@ -84,15 +84,8 @@ export default async function join(
   );
 
   const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable, leftTable.projections) // missing projections here...
+    ? leftTable.sdb.newTable(options.outputTable)
     : leftTable;
-
-  // So we reassign here
-  const allProjections = {
-    ...leftTable.projections,
-    ...rightTable.projections,
-  };
-  outputTable.projections = allProjections;
 
   const columns = await outputTable.getColumns();
   const extraCommonColumns = columns.filter(

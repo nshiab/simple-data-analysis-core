@@ -10,7 +10,7 @@ Deno.test("should round the coordinates to 3 decimals", async () => {
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
     { returnDataFrom: "query" },
   );
-  assertEquals(data, [{ geomText: "POINT (45.514 -73.623)" }]);
+  assertEquals(data, [{ geomText: "POINT (-73.623 45.514)" }]);
   await sdb.done();
 });
 
@@ -23,6 +23,6 @@ Deno.test("should round the coordinates to 3 decimals from a specific column", a
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
     { returnDataFrom: "query" },
   );
-  assertEquals(data, [{ geomText: "POINT (45.514 -73.623)" }]);
+  assertEquals(data, [{ geomText: "POINT (-73.623 45.514)" }]);
   await sdb.done();
 });

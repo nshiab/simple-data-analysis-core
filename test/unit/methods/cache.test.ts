@@ -162,6 +162,7 @@ Deno.test("should cache computed values for geospatial data", async () => {
   });
 
   await tableGeo.removeColumns("points");
+  await tableGeo.sort();
   const data = await tableGeo.getData();
 
   assertEquals(data, [

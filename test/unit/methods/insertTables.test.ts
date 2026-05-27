@@ -180,17 +180,15 @@ Deno.test("should add rows from tables with geometries", async () => {
   await table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
-  const projections = table1.projections;
 
-  assertEquals({ types, projections }, {
+  assertEquals({ types }, {
     types: {
       nameEnglish: "VARCHAR",
       nameFrench: "VARCHAR",
-      geom: "GEOMETRY",
+      geom: "GEOMETRY('EPSG:4326')",
       lat: "DOUBLE",
       lon: "DOUBLE",
     },
-    projections: { geom: "+proj=latlong +datum=WGS84 +no_defs" },
   });
   await sdb.done();
 });
@@ -243,17 +241,15 @@ Deno.test("should add rows with geometries to a table without geometries", async
   await table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
-  const projections = table1.projections;
 
-  assertEquals({ types, projections }, {
+  assertEquals({ types }, {
     types: {
       id: "BIGINT",
       city: "VARCHAR",
-      geom: "GEOMETRY",
+      geom: "GEOMETRY('EPSG:4326')",
       lat: "DOUBLE",
       lon: "DOUBLE",
     },
-    projections: { geom: "+proj=latlong +datum=WGS84 +no_defs" },
   });
   await sdb.done();
 });
@@ -271,17 +267,15 @@ Deno.test("should add rows without geometries to a table with geometries", async
   await table2.insertTables(table1, { unifyColumns: true });
 
   const types = await table2.getTypes();
-  const projections = table2.projections;
 
-  assertEquals({ types, projections }, {
+  assertEquals({ types }, {
     types: {
       id: "BIGINT",
       city: "VARCHAR",
-      geom: "GEOMETRY",
+      geom: "GEOMETRY('EPSG:4326')",
       lat: "DOUBLE",
       lon: "DOUBLE",
     },
-    projections: { geom: "+proj=latlong +datum=WGS84 +no_defs" },
   });
   await sdb.done();
 });
@@ -299,15 +293,13 @@ Deno.test("should add rows and unify columns when the second table has more colu
   await table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
-  const projections = table1.projections;
 
-  assertEquals({ types, projections }, {
+  assertEquals({ types }, {
     types: {
-      geom: "GEOMETRY",
+      geom: "GEOMETRY('EPSG:4326')",
       lat: "DOUBLE",
       lon: "DOUBLE",
     },
-    projections: { geom: "+proj=latlong +datum=WGS84 +no_defs" },
   });
   await sdb.done();
 });
@@ -329,18 +321,13 @@ Deno.test("should add rows with tables with multiple geometry columns", async ()
   await table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
-  const projections = table1.projections;
 
-  assertEquals({ types, projections }, {
+  assertEquals({ types }, {
     types: {
-      geom: "GEOMETRY",
-      geom2: "GEOMETRY",
+      geom: "GEOMETRY('EPSG:4326')",
+      geom2: "GEOMETRY('EPSG:3347')",
       lat: "DOUBLE",
       lon: "DOUBLE",
-    },
-    projections: {
-      geom2: "EPSG:3347",
-      geom: "+proj=latlong +datum=WGS84 +no_defs",
     },
   });
   await sdb.done();
@@ -374,15 +361,13 @@ Deno.test("should add rows with geometries to an empty table", async () => {
   await table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
-  const projections = table1.projections;
 
-  assertEquals({ types, projections }, {
+  assertEquals({ types }, {
     types: {
-      geom: "GEOMETRY",
+      geom: "GEOMETRY('EPSG:4326')",
       lat: "DOUBLE",
       lon: "DOUBLE",
     },
-    projections: { geom: "+proj=latlong +datum=WGS84 +no_defs" },
   });
   await sdb.done();
 });

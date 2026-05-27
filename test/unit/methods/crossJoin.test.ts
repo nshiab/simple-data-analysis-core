@@ -121,23 +121,3 @@ Deno.test("should return all pairs of rows in a new table with a specific name",
   ]);
   await sdb.done();
 });
-
-Deno.test("should return all pairs of rows and all projections", async () => {
-  const sdb = new SimpleDB();
-  const point = await sdb
-    .newTable()
-    .loadGeoData("test/geodata/files/point.json");
-  const line = await sdb
-    .newTable()
-    .loadGeoData("test/geodata/files/line.json");
-  await line.renameColumns({ geom: "line" });
-
-  await point.crossJoin(line);
-
-  assertEquals(point.projections, {
-    geom: "+proj=latlong +datum=WGS84 +no_defs",
-    line: "+proj=latlong +datum=WGS84 +no_defs",
-  });
-
-  await sdb.done();
-});

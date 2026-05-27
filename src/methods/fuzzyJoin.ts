@@ -87,16 +87,9 @@ export default async function fuzzyJoin(
     }),
   );
 
-  const allProjections = {
-    ...leftTable.projections,
-    ...rightTable.projections,
-  };
-
   const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable, allProjections)
+    ? leftTable.sdb.newTable(options.outputTable)
     : leftTable;
-
-  outputTable.projections = allProjections;
 
   // Remove the duplicate right-column produced when leftColumn === rightColumn
   // (DuckDB suffixes it with _1 in SELECT *)

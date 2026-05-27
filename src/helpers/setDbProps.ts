@@ -3,26 +3,21 @@ import type SimpleDB from "../class/SimpleDB.ts";
 
 export default async function setDbProps(
   simpleDB: SimpleDB,
-  file: string,
-  extension: string,
   allIndexesFile: string,
 ) {
   for (const table of await simpleDB.getTableNames()) {
     simpleDB.newTable(table);
   }
-  const allProjectionsFile = `${
-    file.replace(`.${extension}`, "")
-  }_projections.json`;
-  if (existsSync(allProjectionsFile)) {
-    const projections = JSON.parse(
-      readFileSync(allProjectionsFile, "utf-8"),
-    );
-    for (const table of simpleDB.tables) {
-      if (projections[table.name]) {
-        table.projections = projections[table.name];
-      }
+
+  for (const table of await simpleDB.getTables()) {
+    const types = await table.getTypes();
+    if (
+      Object.values(types).some((type) =>
+        type.toLowerCase().includes("geometry")
+      )
+    ) {
+      await simpleDB.customQuery(`INSTALL SPATIAL; LOAD SPATIAL;`);
     }
-    await simpleDB.customQuery(`INSTALL spatial; LOAD spatial;`);
   }
 
   if (existsSync(allIndexesFile)) {

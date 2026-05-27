@@ -3,7 +3,6 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default async function unifyColumns(
   allTables: SimpleTable[],
   allTypes: { [key: string]: string },
-  allProjections: { [key: string]: string },
 ) {
   const columnsAdded: {
     [key: string]: string[];
@@ -30,13 +29,9 @@ export default async function unifyColumns(
             | "varchar"
             | "timestamp"
             | "timestamp with time zone"
-            | "geometry",
+            | `geometry('${string}')`
+            | `GEOMETRY('${string}')`,
           `null`,
-          {
-            projection: allTypes[column] === "GEOMETRY"
-              ? allProjections[column]
-              : undefined,
-          },
         );
         if (!columnsAdded[table.name]) {
           columnsAdded[table.name] = [];

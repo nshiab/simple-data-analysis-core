@@ -26,21 +26,7 @@ Deno.test("should load a geojson file", async () => {
   assertEquals(types, {
     nameEnglish: "VARCHAR",
     nameFrench: "VARCHAR",
-    geom: "GEOMETRY",
-  });
-  await sdb.done();
-});
-
-Deno.test("should load a geojson file and add a projection", async () => {
-  const sdb = new SimpleDB();
-  const table = await sdb
-    .newTable()
-    .loadGeoData(
-      "test/geodata/files/CanadianProvincesAndTerritories.json",
-    );
-
-  assertEquals(table.projections, {
-    geom: "+proj=latlong +datum=WGS84 +no_defs",
+    geom: "GEOMETRY('EPSG:4326')",
   });
   await sdb.done();
 });
@@ -57,7 +43,7 @@ Deno.test("should load a geojson file from a URL", async () => {
   assertEquals(types, {
     nameEnglish: "VARCHAR",
     nameFrench: "VARCHAR",
-    geom: "GEOMETRY",
+    geom: "GEOMETRY('EPSG:4326')",
   });
   await sdb.done();
 });
@@ -74,7 +60,7 @@ Deno.test("should load a shapefile file (not zipped)", async () => {
   assertEquals(types, {
     nameEnglis: "VARCHAR",
     nameFrench: "VARCHAR",
-    geom: "GEOMETRY",
+    geom: "GEOMETRY('EPSG:4326')",
   });
   await sdb.done();
 });
@@ -91,7 +77,7 @@ Deno.test("should load a shapefile file (zipped)", async () => {
   assertEquals(types, {
     nameEnglis: "VARCHAR",
     nameFrench: "VARCHAR",
-    geom: "GEOMETRY",
+    geom: "GEOMETRY('EPSG:4326')",
   });
   await sdb.done();
 });
@@ -126,11 +112,11 @@ Deno.test("should load a geoparquet file", async () => {
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [-80.5925744, 50.3447571],
-          [-81.4683036, 44.963885],
-          [-75.0907732, 46.9689849],
-          [-75.5601513, 50.1474736],
-          [-80.5925744, 50.3447571],
+          [50.3447571, -80.5925744],
+          [44.963885, -81.4683036],
+          [46.9689849, -75.0907732],
+          [50.1474736, -75.5601513],
+          [50.3447571, -80.5925744],
         ]],
       },
       "properties": { "name": "polygonA" },
@@ -139,13 +125,13 @@ Deno.test("should load a geoparquet file", async () => {
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [-121.9581024, 62.0110577],
-          [-122.3017867, 56.0464801],
-          [-112.2459009, 51.5685044],
-          [-104.838484, 51.4335657],
-          [-96.8420125, 53.4420801],
-          [-98.0491012, 62.4259071],
-          [-121.9581024, 62.0110577],
+          [62.0110577, -121.9581024],
+          [56.0464801, -122.3017867],
+          [51.5685044, -112.2459009],
+          [51.4335657, -104.838484],
+          [53.4420801, -96.8420125],
+          [62.4259071, -98.0491012],
+          [62.0110577, -121.9581024],
         ]],
       },
       "properties": { "name": "polygonB" },
@@ -168,11 +154,11 @@ Deno.test("should load a compressed geoparquet file", async () => {
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [-80.5925744, 50.3447571],
-          [-81.4683036, 44.963885],
-          [-75.0907732, 46.9689849],
-          [-75.5601513, 50.1474736],
-          [-80.5925744, 50.3447571],
+          [50.3447571, -80.5925744],
+          [44.963885, -81.4683036],
+          [46.9689849, -75.0907732],
+          [50.1474736, -75.5601513],
+          [50.3447571, -80.5925744],
         ]],
       },
       "properties": { "name": "polygonA" },
@@ -181,13 +167,13 @@ Deno.test("should load a compressed geoparquet file", async () => {
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [-121.9581024, 62.0110577],
-          [-122.3017867, 56.0464801],
-          [-112.2459009, 51.5685044],
-          [-104.838484, 51.4335657],
-          [-96.8420125, 53.4420801],
-          [-98.0491012, 62.4259071],
-          [-121.9581024, 62.0110577],
+          [62.0110577, -121.9581024],
+          [56.0464801, -122.3017867],
+          [51.5685044, -112.2459009],
+          [51.4335657, -104.838484],
+          [53.4420801, -96.8420125],
+          [62.4259071, -98.0491012],
+          [62.0110577, -121.9581024],
         ]],
       },
       "properties": { "name": "polygonB" },
@@ -206,8 +192,8 @@ Deno.test("should load a geoparquet file with multiple columns", async () => {
 
   assertEquals(await table.getTypes(), {
     name: "VARCHAR",
-    geom: "GEOMETRY",
-    anotherGeom: "GEOMETRY",
+    geom: "GEOMETRY('OGC:CRS84')",
+    anotherGeom: "GEOMETRY('OGC:CRS84')",
   });
   await sdb.done();
 });

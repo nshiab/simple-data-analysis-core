@@ -31,19 +31,22 @@ Deno.test("should clone a column with spaces in its name", async () => {
 
   await sdb.done();
 });
-Deno.test("should clone a column with geometries and keep the projection", async () => {
+Deno.test("should clone a column with geo data", async () => {
   const sdb = new SimpleDB();
-  const table = sdb.newTable("data");
-  await table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  const table = await sdb
+    .newTable()
+    .loadGeoData(
+      "test/geodata/files/CanadianProvincesAndTerritories.json",
+    );
 
-  await table.cloneColumn("geom", "geomClone");
+  await table.cloneColumn("geom", "geom_cloned");
 
-  assertEquals(
-    table.projections["geom"],
-    table.projections["geomClone"],
-  );
+  assertEquals(await table.getTypes(), {
+    geom: "GEOMETRY('EPSG:4326')",
+    geom_cloned: "GEOMETRY('EPSG:4326')",
+    nameEnglish: "VARCHAR",
+    nameFrench: "VARCHAR",
+  });
 
   await sdb.done();
 });
