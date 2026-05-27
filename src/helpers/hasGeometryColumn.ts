@@ -21,5 +21,5 @@ export default async function hasGeometryColumn(
   table: SimpleTable,
 ): Promise<boolean> {
   const types = await table.getTypes();
-  return Object.values(types).some((t) => t.toLowerCase() === "geometry");
+  return Object.values(types).some((t) => t.toLowerCase().includes("geometry"));
 }

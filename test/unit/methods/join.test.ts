@@ -230,25 +230,6 @@ Deno.test("should automatically find a common column, make left join and put the
   await sdb.done();
 });
 
-Deno.test("should keep all projections", async () => {
-  const sdb = new SimpleDB();
-  const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
-  const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
-  await categories.addColumn("lat", "double", `45.50`);
-  await categories.addColumn("lon", "double", `-73.57`);
-  await categories.points("lat", "lon", "points");
-
-  await dishes.join(categories);
-
-  assertEquals(dishes.projections, {
-    points: "+proj=latlong +datum=WGS84 +no_defs",
-  });
-
-  await sdb.done();
-});
-
 Deno.test("should join on multiple columns", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("normals");

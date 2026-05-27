@@ -102,22 +102,6 @@ Deno.test("should clone a column with a category", async () => {
 
   await sdb.done();
 });
-Deno.test("should clone a column with an offset when working with geometries and keep the projection", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("data");
-  await table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
-
-  await table.cloneColumnWithOffset("geom", "geomClone");
-
-  assertEquals(
-    table.projections["geom"],
-    table.projections["geomClone"],
-  );
-
-  await sdb.done();
-});
 Deno.test("should clone a column with a positive offset when working with many rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
@@ -1271,4 +1255,29 @@ Deno.test("should clone a column with a negative offset when working with many r
       [key: string]: string | number | boolean | Date | null;
     }[],
   );
+});
+Deno.test("should clone a column with geo data with an offset", async () => {
+  const sdb = new SimpleDB();
+  const table = await sdb
+    .newTable()
+    .loadGeoData(
+      "test/geodata/files/CanadianProvincesAndTerritories.json",
+    );
+
+  await table.cloneColumnWithOffset("geom", "geom_cloned");
+
+  assertEquals(await table.getTypes(), {
+    geom: "GEOMETRY('EPSG:4326')",
+    geom_cloned: "GEOMETRY('EPSG:4326')",
+    nameEnglish: "VARCHAR",
+    nameFrench: "VARCHAR",
+  });
+
+  // Last row should be null
+  assertEquals(
+    (await table.getBottom(1))[0].geom_cloned,
+    null,
+  );
+
+  await sdb.done();
 });

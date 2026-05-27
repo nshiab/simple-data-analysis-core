@@ -229,13 +229,11 @@ Deno.test("should retrieve a SimpleTable instance with geo data", async () => {
       instance: tableJsonAgain,
       name: tableJsonAgain.name,
       data: await tableJsonAgain.getGeoData(),
-      projection: tableJsonAgain.projections,
     },
     {
       instance: tableJSON,
       name: tableJSON.name,
       data: await tableJSON.getGeoData(),
-      projection: tableJSON.projections,
     },
   );
   await sdb.done();

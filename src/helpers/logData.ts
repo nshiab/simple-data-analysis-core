@@ -44,8 +44,12 @@ export default function logData(
         const columns = Object.keys(types);
         if (columns.length > 0) {
           for (const col of columns) {
-            types[col] = types[col] + "/" +
-              (data[0][col] === null ? null : typeof data[0][col]);
+            if (data[0][col] === "<Geometry>") {
+              continue;
+            } else {
+              types[col] = types[col] + "/" +
+                (data[0][col] === null ? null : typeof data[0][col]);
+            }
           }
           // Add types as the first row
           dataToBeLogged.unshift(types);

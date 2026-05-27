@@ -102,15 +102,6 @@ Deno.test("should clone a table with a specific name with spaces and '", async (
   assertEquals(await table.getData(), await clone.getData());
   await sdb.done();
 });
-Deno.test("should clone a table with data and projections", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("data");
-  await table.loadGeoData("test/geodata/files/bigCircle.json");
-  const clone = await table.cloneTable({ outputTable: "clone 'table" });
-
-  assertEquals(table.projections, clone.projections);
-  await sdb.done();
-});
 Deno.test("should clone a table with string parameter directly", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
@@ -184,23 +175,19 @@ Deno.test("should clone a table with specific columns and conditions", async () 
 
   await sdb.done();
 });
-Deno.test("should clone a table with data and projections, with specific columns", async () => {
+Deno.test("should clone a table with geo data", async () => {
   const sdb = new SimpleDB();
-  const table = sdb.newTable("data");
-  await table.loadGeoData("test/geodata/files/bigCircle.json");
-  await table.cloneColumn("geom", "newGeom");
-  assertEquals(table.projections, {
-    geom: "+proj=latlong +datum=WGS84 +no_defs",
-    newGeom: "+proj=latlong +datum=WGS84 +no_defs",
-  });
+  const table = await sdb
+    .newTable()
+    .loadGeoData(
+      "test/geodata/files/CanadianProvincesAndTerritories.json",
+    );
 
-  const clone = await table.cloneTable({
-    outputTable: "clone 'table",
-    columns: "newGeom",
-  });
+  const cloned = await table.cloneTable();
 
-  assertEquals(clone.projections, {
-    newGeom: "+proj=latlong +datum=WGS84 +no_defs",
-  });
+  assertEquals(await table.getTypes(), await cloned.getTypes());
+  assertEquals(await table.getNbRows(), await cloned.getNbRows());
+  assertEquals(await table.getNbColumns(), await cloned.getNbColumns());
+
   await sdb.done();
 });

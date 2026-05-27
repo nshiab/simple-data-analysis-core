@@ -1059,16 +1059,3 @@ Deno.test("should remove multiple columns", async () => {
   ]);
   await sdb.done();
 });
-Deno.test("should remove a column with geometry and its projection", async () => {
-  const sdb = new SimpleDB();
-  const geo = sdb.newTable("geo");
-  await geo.loadGeoData("test/geodata/files/polygons.geojson");
-
-  await geo.centroid("centroid");
-  await geo.removeColumns("geom");
-
-  assertEquals(geo.projections, {
-    centroid: "+proj=latlong +datum=WGS84 +no_defs",
-  });
-  await sdb.done();
-});

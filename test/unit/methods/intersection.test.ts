@@ -97,31 +97,6 @@ Deno.test("should compute the intersection of geometries", async () => {
   await sdb.done();
 });
 
-Deno.test("should compute the intersection of geometries and add a projection", async () => {
-  const sdb = new SimpleDB();
-
-  const prov = sdb.newTable("prov");
-  await prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
-  await prov.renameColumns({ geom: "prov" });
-
-  const poly = sdb.newTable("poly");
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
-  await poly.renameColumns({ geom: "pol" });
-
-  const joined = await prov.crossJoin(poly, { outputTable: "joined" });
-  await joined.intersection("pol", "prov", "intersec");
-
-  assertEquals(joined.projections, {
-    prov: "+proj=latlong +datum=WGS84 +no_defs",
-    pol: "+proj=latlong +datum=WGS84 +no_defs",
-    intersec: "+proj=latlong +datum=WGS84 +no_defs",
-  });
-
-  await sdb.done();
-});
-
 Deno.test("intersection() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

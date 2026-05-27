@@ -34,20 +34,6 @@ Deno.test("should create points", async () => {
   await sdb.done();
 });
 
-Deno.test("should create points and add a projection", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  await table.loadData("test/geodata/files/coordinates.csv");
-  await table.convert({ lat: "double", lon: "double" });
-  await table.points("lat", "lon", "geom");
-
-  assertEquals(table.projections, {
-    geom: "+proj=latlong +datum=WGS84 +no_defs",
-  });
-
-  await sdb.done();
-});
-
 Deno.test("points() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

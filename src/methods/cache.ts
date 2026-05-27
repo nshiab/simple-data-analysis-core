@@ -168,7 +168,7 @@ async function runAndWrite(
   } else {
     const types = await table.getTypes();
     const geometriesColumns = Object.values(types).filter(
-      (d) => d === "GEOMETRY",
+      (d) => d.toLowerCase().includes("geometry"),
     ).length;
     if (geometriesColumns > 0) {
       const file = `${cachePath}/${id}.geoparquet`;

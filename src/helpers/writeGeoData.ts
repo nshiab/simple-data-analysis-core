@@ -1,9 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import createDirectory from "./createDirectory.ts";
 import getExtension from "./getExtension.ts";
-import findGeoColumn from "./findGeoColumn.ts";
 import hasGeometryColumn from "./hasGeometryColumn.ts";
-import shouldFlipBeforeExport from "./shouldFlipBeforeExport.ts";
 import queryDB from "./queryDB.ts";
 import writeGeoDataQuery from "../methods/writeGeoDataQuery.ts";
 import mergeOptions from "./mergeOptions.ts";
@@ -48,32 +46,17 @@ export default async function writeGeoData(
         "The compression option is not supported for writing GeoJSON files.",
       );
     }
-    const geoColumn = await findGeoColumn(table);
-    const flip = shouldFlipBeforeExport(table.projections[geoColumn]);
-    if (flip) {
-      await table.flipCoordinates(geoColumn);
-      await queryDB(
-        table,
-        writeGeoDataQuery(table.name, file, fileExtension, options),
-        mergeOptions(table, {
-          table: table.name,
-          method: "writeGeoData()",
-          parameters: { file, options },
-        }),
-      );
 
-      await table.flipCoordinates(geoColumn);
-    } else {
-      await queryDB(
-        table,
-        writeGeoDataQuery(table.name, file, fileExtension, options),
-        mergeOptions(table, {
-          table: table.name,
-          method: "writeGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    }
+    await queryDB(
+      table,
+      writeGeoDataQuery(table.name, file, fileExtension, options),
+      mergeOptions(table, {
+        table: table.name,
+        method: "writeGeoData()",
+        parameters: { file, options },
+      }),
+    );
+
     if (options.metadata) {
       const fileData = JSON.parse(readFileSync(file, "utf-8"));
       fileData.metadata = options.metadata;
@@ -103,32 +86,15 @@ export default async function writeGeoData(
       );
     }
 
-    const geoColumn = await findGeoColumn(table);
-    const flip = shouldFlipBeforeExport(table.projections[geoColumn]);
-
-    if (flip) {
-      await table.flipCoordinates(geoColumn);
-      await queryDB(
-        table,
-        writeGeoDataQuery(table.name, file, fileExtension, options),
-        mergeOptions(table, {
-          table: table.name,
-          method: "writeGeoData()",
-          parameters: { file, options },
-        }),
-      );
-      await table.flipCoordinates(geoColumn);
-    } else {
-      await queryDB(
-        table,
-        writeGeoDataQuery(table.name, file, fileExtension, options),
-        mergeOptions(table, {
-          table: table.name,
-          method: "writeGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    }
+    await queryDB(
+      table,
+      writeGeoDataQuery(table.name, file, fileExtension, options),
+      mergeOptions(table, {
+        table: table.name,
+        method: "writeGeoData()",
+        parameters: { file, options },
+      }),
+    );
   } else if (fileExtension === "geoparquet") {
     if (typeof options.precision === "number") {
       throw new Error(
@@ -144,9 +110,7 @@ export default async function writeGeoData(
       table,
       `COPY "${table.name}" TO '${cleanPath(file)}' WITH (FORMAT PARQUET${
         options.compression === true ? ", COMPRESSION 'zstd'" : ""
-      }, KV_METADATA {
-             projections: '${JSON.stringify(table.projections)}'
-        });`,
+      });`,
       mergeOptions(table, {
         table: table.name,
         method: "writeGeoData()",

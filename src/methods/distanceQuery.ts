@@ -46,13 +46,15 @@ export default function distanceQuery(
     }
   } else if (options.method === "spheroid") {
     if (typeof options.decimals === "number") {
-      query += `ROUND(ST_Distance_Spheroid("${column1}", "${column2}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      }, ${options.decimals});`;
+      query +=
+        `ROUND(ST_Distance_Spheroid("${column1}"::GEOMETRY, "${column2}"::GEOMETRY) ${
+          options.unit === "km" ? "/ 1000" : ""
+        }, ${options.decimals});`;
     } else {
-      query += `ST_Distance_Spheroid("${column1}", "${column2}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      };`;
+      query +=
+        `ST_Distance_Spheroid("${column1}"::GEOMETRY, "${column2}"::GEOMETRY) ${
+          options.unit === "km" ? "/ 1000" : ""
+        };`;
     }
   } else {
     throw new Error(

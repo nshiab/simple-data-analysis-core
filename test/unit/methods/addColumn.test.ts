@@ -73,9 +73,7 @@ Deno.test("should return a column with geometry", async () => {
   const geo = sdb.newTable("geo");
   await geo.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await geo.addColumn("centroid", "geometry", `ST_Centroid(geom)`, {
-    projection: geo.projections.geom,
-  });
+  await geo.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid(geom)`);
   await geo.selectColumns(["name", "centroid"]);
   await geo.reducePrecision(6);
   const data = await geo.getGeoData("centroid");
@@ -102,21 +100,6 @@ Deno.test("should return a column with geometry", async () => {
     ],
   });
 
-  await sdb.done();
-});
-Deno.test("should return a column with geometry and a new projection", async () => {
-  const sdb = new SimpleDB();
-  const geo = sdb.newTable("geo");
-  await geo.loadGeoData("test/geodata/files/polygons.geojson");
-
-  await geo.addColumn("centroid", "geometry", `ST_Centroid(geom)`, {
-    projection: geo.projections.geom,
-  });
-
-  assertEquals(geo.projections, {
-    geom: "+proj=latlong +datum=WGS84 +no_defs",
-    centroid: "+proj=latlong +datum=WGS84 +no_defs",
-  });
   await sdb.done();
 });
 Deno.test("should return a column with a space in its name", async () => {

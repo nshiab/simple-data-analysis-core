@@ -97,7 +97,7 @@ export default function summarizeQuery(
           aggregates[summary] !== "count"
         ) {
           return `\nNULL as '${columns ? columns[i] : summary}'`;
-        } else if (types[value] === "GEOMETRY") {
+        } else if (types[value].toLowerCase().includes("geometry")) {
           return `\nNULL AS '${columns ? columns[i] : summary}'`;
         } else if (
           types[value] === "VARCHAR" &&

@@ -63,7 +63,6 @@ import summarize from "../methods/summarize.ts";
 import correlations from "../methods/correlations.ts";
 import linearRegressions from "../methods/linearRegressions.ts";
 import joinGeo from "../methods/joinGeo.ts";
-import getProjection from "../helpers/getProjection.ts";
 import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
@@ -86,7 +85,6 @@ import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import capitalizeQuery from "../methods/capitalizeQuery.ts";
 import truncateQuery from "../methods/truncateQuery.ts";
 import padQuery from "../methods/padQuery.ts";
-import getProjectionParquet from "../helpers/getProjectionParquet.ts";
 import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 import accumulateQuery from "../helpers/accumulateQuery.ts";
@@ -153,14 +151,7 @@ export default class SimpleTable extends Simple {
    */
   name: string;
   /**
-   * The projections of the geospatial data, if any.
-   *
-   * @defaultValue `{}`
-   * @category Properties
-   */
-  projections: { [key: string]: string };
-  /**
-   * The indexes of the table.
+   * The indexes of the table, if any.
    *
    * @defaultValue `[]`
    * @category Properties
@@ -177,7 +168,6 @@ export default class SimpleTable extends Simple {
    * Creates an instance of SimpleTable.
    *
    * @param name - The name of the table.
-   * @param projections - An object mapping column names to their geospatial projections.
    * @param simpleDB - The SimpleDB instance that this table belongs to.
    * @param options - An optional object with configuration options:
    * @param options.debug - A boolean indicating whether to enable debug mode.
@@ -188,7 +178,6 @@ export default class SimpleTable extends Simple {
    */
   constructor(
     name: string,
-    projections: { [key: string]: string },
     simpleDB: SimpleDB,
     options: {
       debug?: boolean;
@@ -199,7 +188,6 @@ export default class SimpleTable extends Simple {
   ) {
     super(options);
     this.name = name;
-    this.projections = projections;
     this.sdb = simpleDB;
     this.runQuery = runQuery;
     this.indexes = [];
@@ -266,15 +254,17 @@ export default class SimpleTable extends Simple {
       | "timestamp"
       | "timestamp with time zone"
       | "boolean"
-      | "geometry";
+      | `geometry('${string}')`
+      | `GEOMETRY('${string}')`;
   }): Promise<void> {
     let spatial = "";
     if (
       Object.values(types)
         .map((d) => d.toLowerCase())
-        .includes("geometry")
+        .some((d) => d.startsWith("geometry"))
     ) {
-      spatial = "INSTALL spatial; LOAD spatial;\n";
+      spatial =
+        "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;\n";
     }
     await queryDB(
       this,
@@ -511,12 +501,10 @@ export default class SimpleTable extends Simple {
 
   /**
    * Loads geospatial data from an external file or URL into the table.
-   * The coordinates of files or URLs ending with `.json` or `.geojson` are automatically flipped to `[latitude, longitude]` axis order.
    *
    * @param file - The URL or absolute path to the external file containing the geospatial data.
    * @param options - An optional object with configuration options:
-   * @param options.toWGS84 - If `true`, the method will attempt to reproject the data to WGS84 with `[latitude, longitude]` axis order. If the file is `.json` or `.geojson`, coordinates are automatically flipped, and this option has no additional effect. Defaults to `false`.
-   * @param options.from - An optional string specifying the original projection of the data, if the method is unable to detect it automatically.
+   * @param options.toWGS84 - If `true`, the method will attempt to reproject the data to WGS84.
    * @returns A promise that resolves to the SimpleTable instance after the geospatial data has been loaded.
    * @category Geospatial
    *
@@ -546,14 +534,14 @@ export default class SimpleTable extends Simple {
    */
   async loadGeoData(
     file: string,
-    options: { toWGS84?: boolean; from?: string } = {},
+    options: { toWGS84?: boolean } = {},
   ): Promise<this> {
     const fileExtension = getExtension(file);
 
     if (fileExtension === "geoparquet" || fileExtension === "parquet") {
       await queryDB(
         this,
-        `INSTALL spatial; LOAD spatial;${
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
           file.toLowerCase().includes("http")
             ? " INSTALL https; LOAD https;"
             : ""
@@ -567,43 +555,27 @@ export default class SimpleTable extends Simple {
           parameters: { file, options },
         }),
       );
-
-      this.projections = await getProjectionParquet(this, file);
-
-      if (options.toWGS84) {
-        console.log(
-          "\nThis file is a parquet. Option toWGS84 has no effect. Use the .reproject() method instead.\n",
-        );
-      }
     } else {
       await queryDB(
         this,
-        `INSTALL spatial; LOAD spatial;${
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
           file.toLowerCase().includes("http")
             ? " INSTALL https; LOAD https;"
             : ""
         }
-              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM ST_Read('${file}');`,
+              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE OGC_FID FROM ST_Read('${file}');`,
         mergeOptions(this, {
           table: this.name,
           method: "loadGeoData()",
           parameters: { file, options },
         }),
       );
-      // column storing geometries is geom by default
-      this.projections["geom"] = await getProjection(this.sdb, file);
+    }
 
-      const extension = getExtension(file);
-      if (extension === "json" || extension === "geojson") {
-        await this.flipCoordinates("geom"); // column storing geometries
-        this.projections["geom"] = "+proj=latlong +datum=WGS84 +no_defs";
-        if (options.toWGS84) {
-          console.log(
-            "This file is a json or geojson. Option toWGS84 has no effect.",
-          );
-        }
-      } else if (options.toWGS84) {
-        await this.reproject("WGS84", { ...options, column: "geom" }); // column storing geometries is geom by default
+    if (options.toWGS84) {
+      const proj = await this.getProjection("geom");
+      if (proj !== "EPSG:4326") {
+        await this.reproject("EPSG:4326");
       }
     }
 
@@ -1028,13 +1000,13 @@ export default class SimpleTable extends Simple {
             | "timestamp"
             | "timestamp with time zone"
             | "boolean"
-            | "geometry";
+            | `geometry('${string}')`
+            | `GEOMETRY('${string}')`;
         },
       );
-      this.projections = structuredClone(array[0].projections);
     }
 
-    // Checking columns, types and projections
+    // Checking columns, types
     if (!options.unifyColumns) {
       const thisColumns = (await this.getColumns()).sort().join(",");
       for (const table of array) {
@@ -1048,21 +1020,15 @@ export default class SimpleTable extends Simple {
     }
     const allTables = [this, ...array];
     const allTypes: { [key: string]: string } = {};
-    const allProjections: { [key: string]: string } = {};
     for (const table of allTables) {
       const types = await table.getTypes();
       for (const key in types) {
         if (!allTypes[key]) {
           allTypes[key] = types[key];
-          allProjections[key] = table.projections[key];
         } else {
           if (allTypes[key] !== types[key]) {
             throw new Error(
               `The column ${key} has different types in the tables.`,
-            );
-          } else if (allProjections[key] !== table.projections[key]) {
-            throw new Error(
-              `The column ${key} has different projections in the tables.`,
             );
           }
         }
@@ -1073,7 +1039,7 @@ export default class SimpleTable extends Simple {
       [key: string]: string[];
     } = {};
     if (options.unifyColumns) {
-      columnsAdded = await unifyColumns(allTables, allTypes, allProjections);
+      columnsAdded = await unifyColumns(allTables, allTypes);
     }
 
     await queryDB(
@@ -1198,30 +1164,15 @@ export default class SimpleTable extends Simple {
       ? stringToArray(nameOrOptions.columns)
       : [];
 
-    // Dealing with projections
-    const clonedProjections = structuredClone(this.projections);
-    let newProjections: {
-      [key: string]: string;
-    } = {};
-    if (columns.length > 0) {
-      for (const col of columns) {
-        if (clonedProjections[col]) {
-          newProjections[col] = clonedProjections[col];
-        }
-      }
-    } else {
-      newProjections = clonedProjections;
-    }
-
     // Delegate to sdb.newTable() so subclasses using tableClass work correctly.
     let clonedTable;
     const options = typeof nameOrOptions === "string"
       ? { outputTable: nameOrOptions }
       : nameOrOptions;
     if (typeof options.outputTable === "string") {
-      clonedTable = this.sdb.newTable(options.outputTable, newProjections);
+      clonedTable = this.sdb.newTable(options.outputTable);
     } else {
-      clonedTable = this.sdb.newTable(undefined, newProjections);
+      clonedTable = this.sdb.newTable(undefined);
     }
 
     await queryDB(
@@ -1265,10 +1216,6 @@ export default class SimpleTable extends Simple {
         parameters: { originalColumn, newColumn },
       }),
     );
-
-    if (typeof this.projections[originalColumn] === "string") {
-      this.projections[newColumn] = this.projections[originalColumn];
-    }
   }
 
   /**
@@ -1351,10 +1298,6 @@ export default class SimpleTable extends Simple {
         parameters: { originalColumn, newColumn },
       }),
     );
-
-    if (typeof this.projections[originalColumn] === "string") {
-      this.projections[newColumn] = this.projections[originalColumn];
-    }
   }
 
   /**
@@ -1656,7 +1599,7 @@ export default class SimpleTable extends Simple {
     );
 
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections) as this;
+      return this.sdb.newTable(options.outputTable) as this;
     } else {
       return this as this;
     }
@@ -1993,16 +1936,6 @@ export default class SimpleTable extends Simple {
         parameters: { names },
       }),
     );
-
-    // Taking care of projections
-    const types = await this.getTypes();
-    for (let i = 0; i < newNames.length; i++) {
-      if (types[newNames[i]] === "GEOMETRY") {
-        const projection = this.projections[oldNames[i]];
-        delete this.projections[oldNames[i]];
-        this.projections[newNames[i]] = projection;
-      }
-    }
   }
 
   /**
@@ -2285,13 +2218,6 @@ export default class SimpleTable extends Simple {
         parameters: { columns },
       }),
     );
-
-    // Taking care of projections
-    for (const col of cols) {
-      if (Object.prototype.hasOwnProperty.call(this.projections, col)) {
-        delete this.projections[col];
-      }
-    }
   }
 
   /**
@@ -2301,7 +2227,6 @@ export default class SimpleTable extends Simple {
    * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
    * @param definition - A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
    * @param options - An optional object with configuration options:
-   * @param options.projection - Required if the new column stores geometries. Specifies the geospatial projection of the new geometry column. You can reuse the projection of an existing geometry column (available in `table.projections`).
    * @returns A promise that resolves when the new column has been added.
    * @category Column Operations
    *
@@ -2314,10 +2239,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Add a new geometry column 'centroid' using the centroid of an existing 'country' geometry column
-   * // The projection of the new 'centroid' column is set to be the same as 'country'.
-   * await table.addColumn("centroid", "geometry", `ST_Centroid("country")`, {
-   *   projection: table.projections.country,
-   * });
+   * await table.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid("country")`);
    * ```
    */
   async addColumn(
@@ -2337,11 +2259,17 @@ export default class SimpleTable extends Simple {
       | "timestamp"
       | "timestamp with time zone"
       | "boolean"
-      | "geometry",
+      | `geometry('${string}')`
+      | `GEOMETRY('${string}')`,
     definition: string,
-    options: { projection?: string } = {},
   ): Promise<void> {
     const newType = parseType(type);
+
+    // let spatial = "";
+    // if (newType.toLowerCase().includes("geometry")) {
+    //   spatial = "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
+    // }
+
     await queryDB(
       this,
       `ALTER TABLE "${this.name}" ADD "${newColumn}" ${newType};
@@ -2352,15 +2280,6 @@ export default class SimpleTable extends Simple {
         parameters: { newColumn, type, definition },
       }),
     );
-    if (newType === "GEOMETRY") {
-      if (typeof options.projection === "string") {
-        this.projections[newColumn] = options.projection;
-      } else {
-        throw new Error(
-          "You are creating a new column storing geometries. You must specify a projection. See examples in documentation.",
-        );
-      }
-    }
   }
 
   /**
@@ -2468,14 +2387,9 @@ export default class SimpleTable extends Simple {
       }),
     );
 
-    const allProjections = {
-      ...this.projections,
-      ...rightTable.projections,
-    };
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, allProjections) as this;
+      return this.sdb.newTable(options.outputTable) as this;
     } else {
-      this.projections = allProjections;
       return this as this;
     }
   }
@@ -3939,7 +3853,7 @@ export default class SimpleTable extends Simple {
     }
     await summarize(this, options);
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections) as this;
+      return this.sdb.newTable(options.outputTable) as this;
     } else {
       return this as this;
     }
@@ -4123,7 +4037,7 @@ export default class SimpleTable extends Simple {
     }
     await correlations(this, options);
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections) as this;
+      return this.sdb.newTable(options.outputTable) as this;
     } else {
       return this as this;
     }
@@ -4188,7 +4102,7 @@ export default class SimpleTable extends Simple {
     }
     await linearRegressions(this, options);
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections) as this;
+      return this.sdb.newTable(options.outputTable) as this;
     } else {
       return this as this;
     }
@@ -5265,7 +5179,7 @@ export default class SimpleTable extends Simple {
   // GEOSPATIAL
 
   /**
-   * Creates point geometries from longitude and latitude columns. The geometries will have `[latitude, longitude]` axis order.
+   * Creates point geometries from latitude and longitude columns.
    *
    * @param columnLat - The name of the column storing the latitude values.
    * @param columnLon - The name of the column storing the longitude values.
@@ -5287,15 +5201,14 @@ export default class SimpleTable extends Simple {
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLat}", "${columnLon}")`
-        : `INSTALL spatial; LOAD spatial; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLat}", "${columnLon}")`,
+        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLon}", "${columnLat}")`
+        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLon}", "${columnLat}")`,
       mergeOptions(this, {
         table: this.name,
         method: "points()",
         parameters: { columnLat, columnLon, newColumn },
       }),
     );
-    this.projections[newColumn] = "+proj=latlong +datum=WGS84 +no_defs";
   }
 
   /**
@@ -5493,7 +5406,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Flips the coordinate order of geometries in a specified column (e.g., from `[lon, lat]` to `[lat, lon]` or vice-versa).
-   * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly. It also messes up with the projections stored in `table.projections`.
+   * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns A promise that resolves when the coordinates have been flipped.
@@ -5569,11 +5482,9 @@ export default class SimpleTable extends Simple {
 
   /**
    * Reprojects the geometries in a specified column to another Spatial Reference System (SRS).
-   * If reprojecting to WGS84 (`"WGS84"` or `"EPSG:4326"`), the resulting geometries will have `[latitude, longitude]` axis order.
    *
    * @param to - The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
    * @param options - An optional object with configuration options:
-   * @param options.from - The original projection of the geometries. If omitted, the method attempts to automatically detect it. Provide this option if auto-detection fails.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns A promise that resolves when the geometries have been reprojected.
    * @category Geospatial
@@ -5586,56 +5497,34 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Reproject geometries from EPSG:4326 to EPSG:3347, specifying the original projection
-   * await table.reproject("EPSG:3347", { from: "EPSG:4326" });
-   * ```
-   *
-   * @example
-   * ```ts
    * // Reproject geometries in a specific column named 'myGeom' to EPSG:3347
-   * await table.reproject("EPSG:3347", { column: "myGeom", from: "EPSG:4326" });
+   * await table.reproject("EPSG:3347", { column: "myGeom" });
    * ```
    */
   async reproject(
     to: string,
-    options: { from?: string; column?: string } = {},
+    options: { column?: string } = {},
   ): Promise<void> {
+    const cleanedTo = to.replace("WGS84", "EPSG:4326");
+
     const column = typeof options.column === "string"
       ? options.column
       : await findGeoColumn(this);
 
-    const from = options.from ?? this.projections[column];
-    if (typeof from !== "string" || from === "") {
-      throw new Error(
-        "Method reproject can't determine the original projection. Use the option 'from' to provide one.",
-      );
-    }
-    if (from === "+proj=latlong +datum=WGS84 +no_defs") {
-      await this.flipCoordinates(column);
-    }
-    if (to.toUpperCase() === "WGS84" || to.toUpperCase() === "EPSG:4326") {
-      to = "+proj=latlong +datum=WGS84 +no_defs";
-    }
     await queryDB(
       this,
-      `UPDATE "${this.name}" SET "${column}" = ST_Transform("${column}", '${from}', '${to}')`,
+      `ALTER TABLE "${this.name}" ADD COLUMN "${column}_reprojected" GEOMETRY('${cleanedTo}'); UPDATE "${this.name}" SET "${column}_reprojected" = ST_Transform("${column}", '${cleanedTo}'); ALTER TABLE "${this.name}" DROP COLUMN "${column}"; ALTER TABLE "${this.name}" RENAME COLUMN "${column}_reprojected" TO "${column}";`,
       mergeOptions(this, {
         table: this.name,
         method: "reproject()",
         parameters: { column, to },
       }),
     );
-    this.projections[column] = to;
-    if (
-      this.projections[column] === "+proj=latlong +datum=WGS84 +no_defs"
-    ) {
-      await this.flipCoordinates(column);
-    }
   }
 
   /**
    * Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param newColumn - The name of the new column where the computed areas will be stored.
    * @param options - An optional object with configuration options:
@@ -5685,7 +5574,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param newColumn - The name of the new column where the computed lengths will be stored.
    * @param options - An optional object with configuration options:
@@ -5735,7 +5624,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param newColumn - The name of the new column where the computed perimeters will be stored.
    * @param options - An optional object with configuration options:
@@ -5815,19 +5704,19 @@ export default class SimpleTable extends Simple {
       ? options.column
       : await findGeoColumn(this);
 
+    const proj = await this.getProjection(column);
+
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`
-        : `INSTALL spatial; LOAD spatial; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
+        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`
+        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY('${proj}'); UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
       mergeOptions(this, {
         table: this.name,
         method: "buffer()",
         parameters: { column, newColumn, distance },
       }),
     );
-
-    this.projections[newColumn] = this.projections[column];
   }
 
   /**
@@ -5927,25 +5816,17 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<void> {
-    if (this.projections[column1] !== this.projections[column2]) {
-      throw new Error(
-        `${column1} and ${column2} don't have the same projection.\n${column1}: ${
-          this.projections[column1]
-        }\n${column2}: ${this.projections[column2]}`,
-      );
-    }
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`
-        : `INSTALL spatial; LOAD spatial; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
+        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`
+        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
       mergeOptions(this, {
         table: this.name,
         method: "intersection()",
         parameters: { column1, column2, newColumn },
       }),
     );
-    this.projections[newColumn] = this.projections[column1];
   }
 
   /**
@@ -5968,13 +5849,6 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<void> {
-    if (this.projections[column1] !== this.projections[column2]) {
-      throw new Error(
-        `${column1} and ${column2} don't have the same projection.\n${column1}: ${
-          this.projections[column1]
-        }\n${column2}: ${this.projections[column2]}`,
-      );
-    }
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
@@ -5986,7 +5860,6 @@ export default class SimpleTable extends Simple {
         parameters: { column1, column2, newColumn },
       }),
     );
-    this.projections[newColumn] = this.projections[column1];
   }
 
   /**
@@ -6103,31 +5976,22 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<void> {
-    if (this.projections[column1] !== this.projections[column2]) {
-      throw new Error(
-        `${column1} and ${column2} don't have the same projection.\n${column1}: ${
-          this.projections[column1]
-        }\n${column2}: ${this.projections[column2]}`,
-      );
-    }
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`
-        : `INSTALL spatial; LOAD spatial; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
+        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`
+        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
       mergeOptions(this, {
         table: this.name,
         method: "union()",
         parameters: { column1, column2, newColumn },
       }),
     );
-
-    this.projections[newColumn] = this.projections[column1];
   }
 
   /**
    * Extracts the latitude and longitude coordinates from point geometries.
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param column - The name of the column storing the point geometries.
    * @param columnLat - The name of the new column where the extracted latitude values will be stored.
@@ -6148,8 +6012,8 @@ export default class SimpleTable extends Simple {
   ): Promise<void> {
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD "${columnLat}" DOUBLE; UPDATE "${this.name}" SET "${columnLat}" = ST_X("${column}");
-             ALTER TABLE "${this.name}" ADD "${columnLon}" DOUBLE; UPDATE "${this.name}" SET "${columnLon}" = ST_Y("${column}");`,
+      `ALTER TABLE "${this.name}" ADD "${columnLat}" DOUBLE; UPDATE "${this.name}" SET "${columnLat}" = ST_Y("${column}");
+             ALTER TABLE "${this.name}" ADD "${columnLon}" DOUBLE; UPDATE "${this.name}" SET "${columnLon}" = ST_X("${column}");`,
       mergeOptions(this, {
         table: this.name,
         method: "latLon()",
@@ -6237,15 +6101,14 @@ export default class SimpleTable extends Simple {
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`
-        : `INSTALL spatial; LOAD spatial; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
+        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`
+        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
       mergeOptions(this, {
         table: this.name,
         method: "centroid()",
         parameters: { column, newColumn },
       }),
     );
-    this.projections[newColumn] = this.projections[column];
   }
 
   /**
@@ -6307,15 +6170,13 @@ export default class SimpleTable extends Simple {
         `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.try to true.`,
       );
     }
-
-    this.projections[newColumn] = this.projections[column];
   }
 
   /**
    * Computes the distance between geometries in two specified columns.
    * By default, the distance is calculated in the Spatial Reference System (SRS) unit of the input geometries.
    * You can optionally specify `"spheroid"` or `"haversine"` methods to get results in meters or kilometers.
-   * If using `"spheroid"` or `"haversine"`, the input geometries must be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+   * If using `"spheroid"` or `"haversine"`, the input geometries must be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries.
@@ -6462,7 +6323,7 @@ export default class SimpleTable extends Simple {
       }),
     );
     if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable, this.projections) as this;
+      return this.sdb.newTable(options.outputTable) as this;
     } else {
       return this as this;
     }
@@ -6503,7 +6364,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the bounding box of geometries in `[minLat, minLon, maxLat, maxLon]` order.
-   * By default, the method will try to find the column with the geometries. The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84), with `[latitude, longitude]` axis order.
+   * By default, the method will try to find the column with the geometries. The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param column - The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns A promise that resolves to an array `[minLat, minLon, maxLat, maxLon]` representing the bounding box.
@@ -6530,10 +6391,10 @@ export default class SimpleTable extends Simple {
     const result = (await queryDB(
       this,
       `SELECT
-                MIN(ST_XMin("${col}")) AS minX,
-                MIN(ST_YMin("${col}")) AS minY,
-                MAX(ST_XMax("${col}")) AS maxX,
-                MAX(ST_YMax("${col}")) AS maxY,
+                MIN(ST_YMin("${col}")) AS minX,
+                MIN(ST_XMin("${col}")) AS minY,
+                MAX(ST_YMax("${col}")) AS maxX,
+                MAX(ST_XMax("${col}")) AS maxY,
             from "${this.name}";`,
       mergeOptions(this, {
         table: this.name,
@@ -6548,7 +6409,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the table's geospatial data as a GeoJSON object.
    * If the table has multiple geometry columns, you must specify which one to use.
-   * If the geometry column's projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the output GeoJSON.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @param options - An optional object with configuration options:
@@ -6676,8 +6536,6 @@ export default class SimpleTable extends Simple {
   /**
    * Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
    * If the specified path does not exist, it will be created.
-   *
-   * For GeoJSON files (`.geojson` or `.json`), if the projection is WGS84 or EPSG:4326 (`[latitude, longitude]` axis order), the coordinates will be flipped to follow the RFC7946 standard (`[longitude, latitude]` axis order) in the output.
    *
    * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`).
    * @param options - An optional object with configuration options:
@@ -6969,6 +6827,26 @@ export default class SimpleTable extends Simple {
   }
 
   /**
+   * Retrieves the projection of a specified geospatial column.
+   *
+   * @param column - The name of the geospatial column for which to retrieve the projection.
+   * @returns A promise that resolves to the projection of the specified column.
+   * @category Geospatial
+   *
+   * @example
+   * ```ts
+   * // Get the projection of the 'geom' column
+   * const projection = await table.getProjection("geom");
+   * ```
+   */
+  async getProjection(column: string): Promise<string> {
+    return (await this.sdb.customQuery(
+      `SELECT ST_CRS("${column}") AS proj FROM "${this.name}" LIMIT 1;`,
+      { returnDataFrom: "query" },
+    ) as { proj: string }[])[0].proj;
+  }
+
+  /**
    * Logs the projections of the geospatial data (if any) to the console.
    *
    * @returns A promise that resolves to the SimpleTable instance after logging the projections.
@@ -6982,7 +6860,20 @@ export default class SimpleTable extends Simple {
    */
   async logProjections(): Promise<this> {
     console.log(`\nTable ${this.name} projections:`);
-    console.log(this.projections);
+    const types = await this.getTypes();
+    const geoColumns = Object.entries(types)
+      .filter(([_, type]) => type.toLowerCase().includes("geometry"))
+      .map(([column]) => column);
+
+    if (geoColumns.length === 0) {
+      console.log("No geometry columns found.");
+    } else {
+      for (const column of geoColumns) {
+        const projection = types[column];
+        console.log(`- Column "${column}": ${projection}`);
+      }
+    }
+
     return await this;
   }
 

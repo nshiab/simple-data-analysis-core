@@ -192,22 +192,6 @@ Deno.test("should compute the centroids", async () => {
   await sdb.done();
 });
 
-Deno.test("should compute the centroids and add a projection", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("geodata");
-  await table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
-  await table.centroid("centroid");
-
-  assertEquals(table.projections, {
-    geom: "+proj=latlong +datum=WGS84 +no_defs",
-    centroid: "+proj=latlong +datum=WGS84 +no_defs",
-  });
-
-  await sdb.done();
-});
-
 Deno.test("should compute the centroids from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
