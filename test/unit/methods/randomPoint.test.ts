@@ -18,6 +18,10 @@ Deno.test("should generate a random point in geometries and they should be rando
   // We generate random points.
   await table.randomPoint("randomPoint", 100);
 
+  // We write to check visually
+  await table.removeColumns("geom");
+  await table.writeGeoData("test/output/randomPoint.geojson");
+
   // We extract lat and lon.
   await table.latLon("randomPoint", "lat", "lon");
 
