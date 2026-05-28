@@ -386,16 +386,39 @@ Deno.test("should compute the centroids from a specific column", async () => {
 Deno.test("centroid() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
-    { lat: 1, lon: 2, cent: "old" },
-  ]);
-  await table.points("lat", "lon", "geom");
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  // Add a column to overwrite
+  await table.addColumn("cent", "string", "'old'");
 
   // This should now succeed and overwrite "cent"
   await table.centroid("cent", { column: "geom" });
 
   const types = await table.getTypes();
-  assertEquals(types.cent, "VARCHAR");
+  assertEquals(types.cent, "GEOMETRY('EPSG:4326')");
+
+  await sdb.done();
+});
+
+Deno.test("centroid() should overwrite the source geometry column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  await table.centroid("geom", { column: "geom" });
+
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
+  const data = await table.getGeoData("geom");
+  assertEquals(data.features.length, 13);
+  assertEquals(
+    (data.features[0] as { geometry: { type: string } }).geometry.type,
+    "Point",
+  );
 
   await sdb.done();
 });

@@ -53,6 +53,9 @@ Deno.test("should generate a random point in geometries and they should be rando
     );
   }
 
+  const types = await table.getTypes();
+  assertEquals(types.randomPoint, "GEOMETRY('EPSG:4326')");
+
   await sdb.done();
 });
 

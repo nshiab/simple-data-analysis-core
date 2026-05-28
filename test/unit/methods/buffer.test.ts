@@ -2506,16 +2506,39 @@ Deno.test("should create a buffer from polygons", async () => {
 Deno.test("buffer() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
-    { lat: 1, lon: 2, buff: "old" },
-  ]);
-  await table.points("lat", "lon", "geom");
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  // Add a column to overwrite
+  await table.addColumn("buff", "string", "'old'");
 
   // This should now succeed and overwrite "buff"
   await table.buffer("buff", 10, { column: "geom" });
 
   const types = await table.getTypes();
-  assertEquals(types.buff, "VARCHAR");
+  assertEquals(types.buff, "GEOMETRY('EPSG:4326')");
+
+  await sdb.done();
+});
+
+Deno.test("buffer() should overwrite the source geometry column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  await table.buffer("geom", 10, { column: "geom" });
+
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
+  const data = await table.getGeoData("geom");
+  assertEquals(data.features.length, 13);
+  assertEquals(
+    (data.features[0] as { geometry: { type: string } }).geometry.type,
+    "Polygon",
+  );
 
   await sdb.done();
 });

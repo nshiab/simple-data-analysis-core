@@ -250,7 +250,31 @@ Deno.test("union() should overwrite existing column", async () => {
   await table.union("geom1", "geom2", "uni");
 
   const types = await table.getTypes();
-  assertEquals(types.uni, "VARCHAR");
+  assertEquals(types.uni, "GEOMETRY('EPSG:4326')");
+
+  await sdb.done();
+});
+
+Deno.test("union() should overwrite one of the source geometry columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },
+  ]);
+  await table.points("lat", "lon", "geom1");
+  await table.points("lat2", "lon2", "geom2");
+
+  await table.union("geom1", "geom2", "geom1");
+
+  const types = await table.getTypes();
+  assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
+
+  const data = await table.getGeoData("geom1");
+  assertEquals(data.features.length, 1);
+  assertEquals(
+    (data.features[0] as { geometry: { type: string } }).geometry.type,
+    "MultiPoint",
+  );
 
   await sdb.done();
 });

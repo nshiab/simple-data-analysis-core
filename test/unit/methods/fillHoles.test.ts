@@ -10,6 +10,9 @@ Deno.test("should remove the small circle from the big circle", async () => {
 
   await table.fillHoles();
 
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
   await table.writeGeoData("test/output/bigCircleWithHoleFilled.json");
 
   assertEquals(

@@ -6,6 +6,10 @@ Deno.test("should round the coordinates to 3 decimals", async () => {
   const table = sdb.newTable("geoData");
   await table.loadGeoData("test/geodata/files/point.json");
   await table.reducePrecision(3);
+
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
   const data = await sdb.customQuery(
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
     { returnDataFrom: "query" },

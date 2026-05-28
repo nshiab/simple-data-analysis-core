@@ -10,6 +10,6 @@ Deno.test("should return the projection of a column", async () => {
     );
 
   const projection = await table.getProjection("geom");
-  assertEquals(projection, "EPSG:4326");
+  assertEquals(projection, "GEOMETRY('EPSG:4326')");
   await sdb.done();
 });

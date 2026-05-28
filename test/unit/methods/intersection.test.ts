@@ -110,7 +110,31 @@ Deno.test("intersection() should overwrite existing column", async () => {
   await table.intersection("geom1", "geom2", "inter");
 
   const types = await table.getTypes();
-  assertEquals(types.inter, "VARCHAR");
+  assertEquals(types.inter, "GEOMETRY('EPSG:4326')");
+
+  await sdb.done();
+});
+
+Deno.test("intersection() should overwrite one of the source geometry columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, lat2: 1, lon2: 2 },
+  ]);
+  await table.points("lat", "lon", "geom1");
+  await table.points("lat2", "lon2", "geom2");
+
+  await table.intersection("geom1", "geom2", "geom1");
+
+  const types = await table.getTypes();
+  assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
+
+  const data = await table.getGeoData("geom1");
+  assertEquals(data.features.length, 1);
+  assertEquals(
+    (data.features[0] as { geometry: { type: string } }).geometry.type,
+    "Point",
+  );
 
   await sdb.done();
 });

@@ -31,6 +31,14 @@ Deno.test("should create points", async () => {
     ],
   });
 
+  const types = await table.getTypes();
+  assertEquals(types, {
+    name: "VARCHAR",
+    lat: "DOUBLE",
+    lon: "DOUBLE",
+    geom: "GEOMETRY('EPSG:4326')",
+  });
+
   await sdb.done();
 });
 
@@ -42,13 +50,14 @@ Deno.test("points() should overwrite existing column", async () => {
     { lat: 3, lon: 4, geom: "old" },
   ]);
 
-  // This should now succeed and overwrite "geom"
   await table.points("lat", "lon", "geom");
 
-  // We expect the type to remain VARCHAR for now because we can't easily change the type in-place in DuckDB for an existing column
-  // But we check that it runs without error.
   const types = await table.getTypes();
-  assertEquals(types.geom, "VARCHAR");
+  assertEquals(types, {
+    lat: "DOUBLE",
+    lon: "DOUBLE",
+    geom: "GEOMETRY('EPSG:4326')",
+  });
 
   await sdb.done();
 });

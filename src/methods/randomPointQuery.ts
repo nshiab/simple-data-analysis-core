@@ -3,10 +3,11 @@ export default function randomPointQuery(
   column: string,
   newColumn: string,
   nbPointsToTry: number,
+  geoType: string,
 ) {
   const addColumn = newColumn === column
     ? ""
-    : `ALTER TABLE "${table}" ADD COLUMN "${newColumn}" GEOMETRY;`;
+    : `ALTER TABLE "${table}" ADD COLUMN "${newColumn}" ${geoType};`;
 
   // Recursive CTE approach: each iteration only carries forward the rows that
   // have NOT yet found a valid interior point, so DuckDB stops per-row as soon
@@ -57,7 +58,7 @@ attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (
     WHERE NOT ST_Within(pt, geom) AND n < ${nbPointsToTry}
 )
 UPDATE "${table}" AS t
-SET "${newColumn}" = v.pt
+SET "${newColumn}" = v.pt::${geoType}
 FROM (
     SELECT b.rid, vp.pt
     FROM (SELECT rowid AS rid FROM "${table}") b

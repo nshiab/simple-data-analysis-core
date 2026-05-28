@@ -7,6 +7,9 @@ Deno.test("should unnest geometries", async () => {
   await table.loadGeoData("test/geodata/files/earthquake.geojson");
   await table.unnestGeo();
 
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
   const data = await table.getGeoData();
 
   assertEquals(data, {

@@ -13,6 +13,10 @@ Deno.test("should convert from one projection to another one", async () => {
   const data = await table.getGeoData();
 
   assertEquals(data, expectedGeo);
+
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
   await sdb.done();
 });
 Deno.test("should convert from one projection to another one from a specific column", async () => {
@@ -27,6 +31,10 @@ Deno.test("should convert from one projection to another one from a specific col
   const data = await table.getGeoData();
 
   assertEquals(data, expectedGeo);
+
+  const types2 = await table.getTypes();
+  assertEquals(types2.geom, "GEOMETRY('EPSG:4326')");
+
   await sdb.done();
 });
 Deno.test("should return the same result when converting to EPSG:4326 and WGS84", async () => {
@@ -41,6 +49,10 @@ Deno.test("should return the same result when converting to EPSG:4326 and WGS84"
   const data = await table.getGeoData();
 
   assertEquals(data, expectedGeo);
+
+  const types3 = await table.getTypes();
+  assertEquals(types3.geom, "GEOMETRY('EPSG:4326')");
+
   await sdb.done();
 });
 Deno.test("should be able to reproject multiples times by keeping track of the projection", async () => {

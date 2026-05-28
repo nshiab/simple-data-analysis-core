@@ -20,6 +20,9 @@ Deno.test("should remove the small circle from the big circle", async () => {
     "bigCircleWithHole",
   );
 
+  const types = await smallCircle.getTypes();
+  assertEquals(types.bigCircleWithHole, "GEOMETRY('EPSG:4326')");
+
   await smallCircle.selectColumns("bigCircleWithHole");
 
   const data = await smallCircle.getGeoData();
@@ -188,6 +191,9 @@ Deno.test("should remove the small circle from the big circle and overwrite the 
     "geomBig",
   );
 
+  const types = await smallCircle.getTypes();
+  assertEquals(types.geomBig, "GEOMETRY('EPSG:4326')");
+
   await smallCircle.selectColumns("geomBig");
 
   const data = await smallCircle.getGeoData();
@@ -334,5 +340,29 @@ Deno.test("should remove the small circle from the big circle and overwrite the 
       "properties": {},
     }],
   });
+  await sdb.done();
+});
+
+Deno.test("removeIntersection() should overwrite one of the source geometry columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },
+  ]);
+  await table.points("lat", "lon", "geom1");
+  await table.points("lat2", "lon2", "geom2");
+
+  await table.removeIntersection("geom1", "geom2", "geom1");
+
+  const types = await table.getTypes();
+  assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
+
+  const data = await table.getGeoData("geom1");
+  assertEquals(data.features.length, 1);
+  assertEquals(
+    (data.features[0] as { geometry: { type: string } }).geometry.type,
+    "Point",
+  );
+
   await sdb.done();
 });

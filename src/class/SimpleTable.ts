@@ -573,8 +573,8 @@ export default class SimpleTable extends Simple {
     }
 
     if (options.toWGS84) {
-      const proj = await this.getProjection("geom");
-      if (proj !== "EPSG:4326") {
+      const geoType = await this.getProjection("geom");
+      if (geoType !== "GEOMETRY('EPSG:4326')") {
         await this.reproject("EPSG:4326");
       }
     }
@@ -2265,14 +2265,14 @@ export default class SimpleTable extends Simple {
   ): Promise<void> {
     const newType = parseType(type);
 
-    // let spatial = "";
-    // if (newType.toLowerCase().includes("geometry")) {
-    //   spatial = "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
-    // }
+    let spatial = "";
+    if (newType.toLowerCase().includes("geometry")) {
+      spatial = "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
+    }
 
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" ${newType};
+      `${spatial} ALTER TABLE "${this.name}" ADD "${newColumn}" ${newType};
         UPDATE "${this.name}" SET "${newColumn}" = ${definition}`,
       mergeOptions(this, {
         table: this.name,
@@ -5201,8 +5201,8 @@ export default class SimpleTable extends Simple {
     await queryDB(
       this,
       (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLon}", "${columnLat}")`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Point2D("${columnLon}", "${columnLat}")`,
+        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Point("${columnLon}", "${columnLat}")::GEOMETRY('EPSG:4326') AS "${newColumn}") FROM "${this.name}"`
+        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY('EPSG:4326'); UPDATE "${this.name}" SET "${newColumn}" = ST_Point("${columnLon}", "${columnLat}");`,
       mergeOptions(this, {
         table: this.name,
         method: "points()",
@@ -5314,9 +5314,11 @@ export default class SimpleTable extends Simple {
    */
   async fixGeo(column?: string): Promise<void> {
     const col = column ?? (await findGeoColumn(this));
+    const geoType = await this.getProjection(col);
+
     await queryDB(
       this,
-      `UPDATE "${this.name}" SET "${col}" = ST_MakeValid("${col}")`,
+      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_MakeValid("${col}")::${geoType} AS "${col}") FROM "${this.name}"`,
       mergeOptions(this, {
         table: this.name,
         method: "fixGeo()",
@@ -5426,10 +5428,11 @@ export default class SimpleTable extends Simple {
    */
   async flipCoordinates(column?: string): Promise<void> {
     const col = column ?? (await findGeoColumn(this));
+    const geoType = await this.getProjection(col);
 
     await queryDB(
       this,
-      `UPDATE "${this.name}" SET "${col}" = ST_FlipCoordinates("${col}")`,
+      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_FlipCoordinates("${col}")::${geoType} AS "${col}") FROM "${this.name}"`,
       mergeOptions(this, {
         table: this.name,
         method: "flipCoordinates()",
@@ -5466,12 +5469,13 @@ export default class SimpleTable extends Simple {
     const column = typeof options.column === "string"
       ? options.column
       : await findGeoColumn(this);
+    const geoType = await this.getProjection(column);
 
     await queryDB(
       this,
-      `UPDATE "${this.name}" SET "${column}" = ST_ReducePrecision("${column}", ${
+      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_ReducePrecision("${column}", ${
         1 / Math.pow(10, decimals)
-      })`,
+      })::${geoType} AS "${column}") FROM "${this.name}"`,
       mergeOptions(this, {
         table: this.name,
         method: "reducePrecision()",
@@ -5506,6 +5510,9 @@ export default class SimpleTable extends Simple {
     options: { column?: string } = {},
   ): Promise<void> {
     const cleanedTo = to.replace("WGS84", "EPSG:4326");
+    const targetGeoType = `GEOMETRY${
+      cleanedTo !== "null" ? `('${cleanedTo}')` : ""
+    }`;
 
     const column = typeof options.column === "string"
       ? options.column
@@ -5513,7 +5520,7 @@ export default class SimpleTable extends Simple {
 
     await queryDB(
       this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${column}_reprojected" GEOMETRY('${cleanedTo}'); UPDATE "${this.name}" SET "${column}_reprojected" = ST_Transform("${column}", '${cleanedTo}'); ALTER TABLE "${this.name}" DROP COLUMN "${column}"; ALTER TABLE "${this.name}" RENAME COLUMN "${column}_reprojected" TO "${column}";`,
+      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Transform("${column}", '${cleanedTo}')::${targetGeoType} AS "${column}") FROM "${this.name}"`,
       mergeOptions(this, {
         table: this.name,
         method: "reproject()",
@@ -5704,19 +5711,30 @@ export default class SimpleTable extends Simple {
       ? options.column
       : await findGeoColumn(this);
 
-    const proj = await this.getProjection(column);
+    const geoType = await this.getProjection(column);
 
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY('${proj}'); UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "buffer()",
-        parameters: { column, newColumn, distance },
-      }),
-    );
+    const columns = await this.getColumns();
+    if (columns.includes(newColumn)) {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Buffer("${column}", ${distance})::${geoType} AS "${newColumn}") FROM "${this.name}"`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "buffer()",
+          parameters: { column, newColumn, distance },
+        }),
+      );
+    } else {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "buffer()",
+          parameters: { column, newColumn, distance },
+        }),
+      );
+    }
   }
 
   /**
@@ -5816,17 +5834,30 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<void> {
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "intersection()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+    const geoType = await this.getProjection(column1);
+
+    const columns = await this.getColumns();
+    if (columns.includes(newColumn)) {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Intersection("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "intersection()",
+          parameters: { column1, column2, newColumn },
+        }),
+      );
+    } else {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "intersection()",
+          parameters: { column1, column2, newColumn },
+        }),
+      );
+    }
   }
 
   /**
@@ -5849,17 +5880,30 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<void> {
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `UPDATE "${this.name}" SET "${newColumn}" = ST_Difference("${column1}", "${column2}")`
-        : `ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Difference("${column1}", "${column2}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeIntersection()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+    const geoType = await this.getProjection(column1);
+
+    const columns = await this.getColumns();
+    if (columns.includes(newColumn)) {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Difference("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "removeIntersection()",
+          parameters: { column1, column2, newColumn },
+        }),
+      );
+    } else {
+      await queryDB(
+        this,
+        `ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Difference("${column1}", "${column2}")`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "removeIntersection()",
+          parameters: { column1, column2, newColumn },
+        }),
+      );
+    }
   }
 
   /**
@@ -5976,17 +6020,30 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<void> {
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "union()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+    const geoType = await this.getProjection(column1);
+
+    const columns = await this.getColumns();
+    if (columns.includes(newColumn)) {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Union("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "union()",
+          parameters: { column1, column2, newColumn },
+        }),
+      );
+    } else {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "union()",
+          parameters: { column1, column2, newColumn },
+        }),
+      );
+    }
   }
 
   /**
@@ -6054,11 +6111,13 @@ export default class SimpleTable extends Simple {
 
     await this.addRowNumber("rowNumberForSimplify");
 
+    const geoType = await this.getProjection(column);
+
     await queryDB(
       this,
       `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE(ST_CoverageSimplify(ARRAY_AGG("${column}"), ${tolerance}${
         options.simplifyBoundary === false ? ", FAlSE" : ""
-      }) AS "${column}") FROM "${this.name}" GROUP BY ALL;`,
+      })::${geoType} AS "${column}") FROM "${this.name}" GROUP BY ALL;`,
       mergeOptions(this, {
         table: this.name,
         method: "simplify()",
@@ -6098,17 +6157,30 @@ export default class SimpleTable extends Simple {
     const column = typeof options.column === "string"
       ? options.column
       : await findGeoColumn(this);
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" GEOMETRY; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "centroid()",
-        parameters: { column, newColumn },
-      }),
-    );
+    const geoType = await this.getProjection(column);
+
+    const columns = await this.getColumns();
+    if (columns.includes(newColumn)) {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Centroid("${column}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "centroid()",
+          parameters: { column, newColumn },
+        }),
+      );
+    } else {
+      await queryDB(
+        this,
+        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
+        mergeOptions(this, {
+          table: this.name,
+          method: "centroid()",
+          parameters: { column, newColumn },
+        }),
+      );
+    }
   }
 
   /**
@@ -6152,13 +6224,15 @@ export default class SimpleTable extends Simple {
       ? options.column
       : await findGeoColumn(this);
 
+    const geoType = await this.getProjection(column);
+
     await queryDB(
       this,
-      randomPointQuery(this.name, column, newColumn, nbPointsToTry),
+      randomPointQuery(this.name, column, newColumn, nbPointsToTry, geoType),
       mergeOptions(this, {
         table: this.name,
         method: "randomPoint()",
-        parameters: { column, newColumn, nbPointsToTry, options },
+        parameters: { column, newColumn, nbPointsToTry, options, geoType },
       }),
     );
 
@@ -6840,10 +6914,13 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async getProjection(column: string): Promise<string> {
-    return (await this.sdb.customQuery(
+    const res = (await this.sdb.customQuery(
       `SELECT ST_CRS("${column}") AS proj FROM "${this.name}" LIMIT 1;`,
       { returnDataFrom: "query" },
-    ) as { proj: string }[])[0].proj;
+    ) as { proj: string | null }[])[0];
+    const proj = res && res.proj !== "null" ? res.proj : null;
+
+    return `GEOMETRY${proj ? `('${proj}')` : ""}`;
   }
 
   /**

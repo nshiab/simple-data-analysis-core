@@ -13,6 +13,9 @@ Deno.test("should do an union of all geometries and overwrite the table", async 
   await table.loadGeoData("test/geodata/files/polygonsGroups.json");
   await table.aggregateGeo("union");
 
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
   const data = await table.getGeoData("geom");
 
   assertEquals(data, {

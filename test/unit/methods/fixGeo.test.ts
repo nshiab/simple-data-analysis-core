@@ -7,6 +7,10 @@ Deno.test("should fix invalid geometries", async () => {
   const table = sdb.newTable("geodata");
   await table.loadGeoData("test/geodata/files/invalid.geojson");
   await table.fixGeo();
+
+  const types = await table.getTypes();
+  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+
   const data = await table.getGeoData();
   assertEquals(data, {
     "type": "FeatureCollection",
