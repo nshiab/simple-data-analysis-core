@@ -27,7 +27,9 @@ export default function convertForJS(rows: {
         }
       } else if (types[key].toLowerCase().includes("geometry")) {
         for (const row of rows) {
-          row[key] = row[key] === null ? null : "<Geometry>";
+          row[key] = row[key] === null
+            ? null
+            : `GEOM(${types[key].replace("GEOMETRY('", "").replace("')", "")})`;
         }
       } else if (types[key].includes("FLOAT[")) {
         for (const row of rows) {
