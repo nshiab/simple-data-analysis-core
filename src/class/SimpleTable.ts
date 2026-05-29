@@ -563,13 +563,17 @@ export default class SimpleTable extends Simple {
             ? " INSTALL https; LOAD https;"
             : ""
         }
-              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE OGC_FID FROM ST_Read('${file}');`,
+              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM ST_Read('${file}');`,
         mergeOptions(this, {
           table: this.name,
           method: "loadGeoData()",
           parameters: { file, options },
         }),
       );
+    }
+
+    if (await this.hasColumn("OGC_FID")) {
+      await this.removeColumns("OGC_FID");
     }
 
     if (options.toWGS84) {
