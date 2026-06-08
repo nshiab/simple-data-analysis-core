@@ -59,6 +59,7 @@ import writeDataQuery from "../methods/writeDataQuery.ts";
 import type SimpleDB from "./SimpleDB.ts";
 import runQuery from "../helpers/runQuery.ts";
 import aggregateGeoQuery from "../methods/aggregateGeoQuery.ts";
+import boundingBoxQuery from "../methods/boundingBoxQuery.ts";
 import summarize from "../methods/summarize.ts";
 import correlations from "../methods/correlations.ts";
 import linearRegressions from "../methods/linearRegressions.ts";
@@ -6347,6 +6348,48 @@ export default class SimpleTable extends Simple {
   }
 
   /**
+   * Computes the bounding box of geometries in a specified column, creating four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
+   *
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries for which the bounding box will be computed. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the bounding box coordinates. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves when the bounding box coordinates have been computed and stored in new columns.
+   * @category Geospatial
+   *
+   * @example
+   * ```ts
+   * // Compute the bounding box for geometries in the default column
+   * await table.boundingBox();
+   * // The table now has minLon, minLat, maxLon, and maxLat columns.
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Compute the bounding box for geometries in 'geom' column and round coordinates to 2 decimal places
+   * await table.boundingBox({ column: "geom", decimals: 2 });
+   * // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
+   * ```
+   */
+  async boundingBox(
+    options: {
+      column?: string;
+      decimals?: number;
+    } = {},
+  ): Promise<void> {
+    const column = options.column ?? (await findGeoColumn(this));
+
+    await queryDB(
+      this,
+      boundingBoxQuery(this.name, column, options),
+      mergeOptions(this, {
+        table: this.name,
+        method: "boundingBox()",
+        parameters: { column, options },
+      }),
+    );
+  }
+
+  /**
    * Aggregates geometries in a specified column based on a chosen aggregation method.
    *
    * @param method - The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
@@ -6441,18 +6484,18 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Returns the bounding box of geometries in `[minLat, minLon, maxLat, maxLon]` order.
+   * Returns the bounding box of geometries in `[minLon, minLat, maxLon, maxLat]` order.
    * By default, the method will try to find the column with the geometries. The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
    * @param column - The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to an array `[minLat, minLon, maxLat, maxLon]` representing the bounding box.
+   * @returns A promise that resolves to an array `[minLon, minLat, maxLon, maxLat]` representing the bounding box.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Get the bounding box of geometries in the default column
    * const bbox = await table.getBoundingBox();
-   * console.log(bbox); // e.g., [45.0, -75.0, 46.0, -73.0]
+   * console.log(bbox); // e.g., [-75.0, 45.0, -73.0, 46.0]
    * ```
    *
    * @example
