@@ -1108,13 +1108,18 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Returns a new table with the same structure and data as this table. The data can be optionally filtered.
+   * Returns a new table with the same structure and data as this table. The data can be optionally filtered, limited to a specific number of rows, and offset.
+   *
+   * If `conditions`, `nbRows`, and `offset` are all used, they are applied in this order: `conditions` (WHERE clause) first, then `offset`, and finally `nbRows` (LIMIT).
+   *
    * Note that cloning large tables can be a slow operation.
    *
    * @param nameOrOptions - Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.outputTable - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
    * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
+   * @param nameOrOptions.nbRows - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
+   * @param nameOrOptions.offset - The number of rows to skip before starting to clone rows.
    * @returns A promise that resolves to a new table instance containing the cloned data.
    * @category Table Management
    *
@@ -1150,11 +1155,24 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Clone tableA to a specific table name with filtered data and specific columns
+   * // Clone only the first 10 rows of tableA
+   * const tableB = await tableA.cloneTable({ nbRows: 10 });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Clone 10 rows after skipping the first 5 rows
+   * const tableB = await tableA.cloneTable({ nbRows: 10, offset: 5 });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
    * const tableB = await tableA.cloneTable({
    *   outputTable: "filtered_data",
    *   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
-   *   columns: ["name", "status", "created_date"]
+   *   columns: ["name", "status", "created_date"],
+   *   nbRows: 100
    * });
    * ```
    */
@@ -1163,6 +1181,8 @@ export default class SimpleTable extends Simple {
       outputTable?: string;
       conditions?: string;
       columns?: string | string[];
+      nbRows?: number;
+      offset?: number;
     } = {},
   ): Promise<this> {
     const columns = typeof nameOrOptions === "object" && nameOrOptions.columns

@@ -93,6 +93,53 @@ Deno.test("should clone a table with a specific name with spaces", async () => {
   assertEquals(await table.getData(), await clone.getData());
   await sdb.done();
 });
+Deno.test("should clone a table with a specific number of rows", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  await table.loadData("test/data/files/employees.csv");
+  const clone = await table.cloneTable({ nbRows: 2 });
+
+  const data = await table.getData();
+  assertEquals(await clone.getData(), data.slice(0, 2));
+  await sdb.done();
+});
+Deno.test("should clone a table with an offset", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  await table.loadData("test/data/files/employees.csv");
+  const clone = await table.cloneTable({ offset: 2 });
+
+  const data = await table.getData();
+  assertEquals(await clone.getData(), data.slice(2));
+  await sdb.done();
+});
+Deno.test("should clone a table with a specific number of rows and an offset", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  await table.loadData("test/data/files/employees.csv");
+  const clone = await table.cloneTable({ nbRows: 2, offset: 2 });
+
+  const data = await table.getData();
+  assertEquals(await clone.getData(), data.slice(2, 4));
+  await sdb.done();
+});
+Deno.test("should clone a table with conditions, nbRows and offset", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  await table.loadData("test/data/files/employees.csv");
+  const clone = await table.cloneTable({
+    conditions: `Job = 'Developer'`,
+    nbRows: 2,
+    offset: 1,
+  });
+
+  const data = await table.getData();
+  assertEquals(
+    await clone.getData(),
+    data.filter((d) => d.Job === "Developer").slice(1, 3),
+  );
+  await sdb.done();
+});
 Deno.test("should clone a table with a specific name with spaces and '", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
