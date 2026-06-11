@@ -138,3 +138,45 @@ Deno.test("intersection() should overwrite one of the source geometry columns", 
 
   await sdb.done();
 });
+
+Deno.test("intersection() should return null if one of the geometries is null", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("testNull");
+
+  await sdb.customQuery(`
+    INSTALL spatial;
+    LOAD spatial;
+    CREATE OR REPLACE TABLE testNull (
+        id INTEGER,
+        geom1 GEOMETRY,
+        geom2 GEOMETRY
+    );
+    INSERT INTO testNull VALUES 
+        (1, ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), ST_GeomFromText('POLYGON((0.5 0.5, 0.5 1.5, 1.5 1.5, 1.5 0.5, 0.5 0.5))')),
+        (2, NULL, ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))')),
+        (3, ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'), NULL),
+        (4, NULL, NULL);
+`);
+
+  await table.intersection("geom1", "geom2", "inter");
+  const data = await table.getGeoData("inter");
+
+  assertEquals(
+    (data.features[0] as { geometry: { type: string } }).geometry?.type,
+    "Polygon",
+  );
+  assertEquals(
+    (data.features[1] as { geometry: null }).geometry,
+    null,
+  );
+  assertEquals(
+    (data.features[2] as { geometry: null }).geometry,
+    null,
+  );
+  assertEquals(
+    (data.features[3] as { geometry: null }).geometry,
+    null,
+  );
+
+  await sdb.done();
+});

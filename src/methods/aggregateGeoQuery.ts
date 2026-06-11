@@ -20,7 +20,8 @@ export default function aggregateGeoQuery(
   }`;
 
   if (method === "union") {
-    query += ` ST_Union_Agg("${column}") AS "${column}"`;
+    query +=
+      ` CASE WHEN ST_IsEmpty(ST_Union_Agg("${column}")) THEN NULL ELSE ST_Union_Agg("${column}") END AS "${column}"`;
   } else if (method === "intersection") {
     query += ` ST_Intersection_Agg("${column}") AS "${column}"`;
   } else {

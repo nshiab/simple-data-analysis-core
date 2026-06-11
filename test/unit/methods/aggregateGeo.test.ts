@@ -360,3 +360,101 @@ Deno.test("should do an intersection of geometries based on categories and retur
   });
   await sdb.done();
 });
+
+Deno.test("aggregateGeo() should handle null geometries", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("testAggregateGeoNull");
+
+  await sdb.customQuery(`
+    INSTALL spatial;
+    LOAD spatial;
+    CREATE OR REPLACE TABLE testAggregateGeoNull (
+        id INTEGER,
+        category TEXT,
+        geom GEOMETRY
+    );
+    INSERT INTO testAggregateGeoNull VALUES 
+        (1, 'A', ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))')),
+        (2, 'A', ST_GeomFromText('POLYGON((0.5 0.5, 0.5 1.5, 1.5 1.5, 1.5 0.5, 0.5 0.5))')),
+        (3, 'B', ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))')),
+        (4, 'B', NULL),
+        (5, 'C', NULL),
+        (6, 'C', NULL);
+`);
+
+  // Union
+  const unionTable = await table.aggregateGeo("union", {
+    categories: "category",
+    outputTable: "unionResult",
+  });
+  const unionData = await unionTable.getGeoData("geom");
+
+  assertEquals(
+    (unionData.features[0] as { properties: { category: string } }).properties
+      .category,
+    "A",
+  );
+  assertEquals(
+    (unionData.features[0] as { geometry: { type: string } }).geometry?.type,
+    "Polygon",
+  );
+
+  assertEquals(
+    (unionData.features[1] as { properties: { category: string } }).properties
+      .category,
+    "B",
+  );
+  assertEquals(
+    (unionData.features[1] as { geometry: { type: string } }).geometry?.type,
+    "Polygon",
+  ); // Null is ignored in Union_Agg if there's at least one non-null
+
+  assertEquals(
+    (unionData.features[2] as { properties: { category: string } }).properties
+      .category,
+    "C",
+  );
+  assertEquals(
+    (unionData.features[2] as { geometry: null }).geometry,
+    null,
+  ); // All nulls result in null (previously was empty collection)
+
+  // Intersection
+  const interTable = await table.aggregateGeo("intersection", {
+    categories: "category",
+    outputTable: "interResult",
+  });
+  const interData = await interTable.getGeoData("geom");
+
+  assertEquals(
+    (interData.features[0] as { properties: { category: string } }).properties
+      .category,
+    "A",
+  );
+  assertEquals(
+    (interData.features[0] as { geometry: { type: string } }).geometry?.type,
+    "Polygon",
+  );
+
+  assertEquals(
+    (interData.features[1] as { properties: { category: string } }).properties
+      .category,
+    "B",
+  );
+  assertEquals(
+    (interData.features[1] as { geometry: { type: string } }).geometry?.type,
+    "Polygon",
+  ); // Null is IGNORED in Intersection_Agg if there's at least one non-null
+
+  assertEquals(
+    (interData.features[2] as { properties: { category: string } }).properties
+      .category,
+    "C",
+  );
+  assertEquals(
+    (interData.features[2] as { geometry: null }).geometry,
+    null,
+  ); // All nulls result in null
+
+  await sdb.done();
+});
