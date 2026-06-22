@@ -56,6 +56,12 @@ Creates a new SimpleDB instance.
   file cache.
 - **`options.progressBar`**: A flag indicating whether to display a progress bar
   for long-running operations.
+- **`options.memoryLimit`**: The maximum amount of memory DuckDB is allowed to
+  use (e.g., `'4GB'`). Defaults to 80% of system RAM.
+- **`options.tempDirectory`**: The path to the directory used for temporary
+  files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`).
+  Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based
+  databases. Automatically removed when calling `done()`.
 
 ### Methods
 
@@ -128,7 +134,7 @@ async removeTables(tables: Table | string | (Table | string)[]): Promise<void>;
 ##### Parameters
 
 - **`tables`**: A single table or an array of tables to remove, specified by
-  name or as SimpleTable instances.
+  name or as SimpleTable instances. Pass `"all"` to remove all tables.
 
 ##### Returns
 
@@ -151,6 +157,11 @@ await sdb.removeTables(["customers", "products"]);
 const employeesTable = sdb.newTable("employees");
 // ... load data ...
 await sdb.removeTables(employeesTable);
+```
+
+```ts
+// Remove all tables
+await sdb.removeTables("all");
 ```
 
 #### `selectTables`
@@ -1172,7 +1183,7 @@ is set to `true`.
 ##### Signature
 
 ```typescript
-async insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): Promise<void>;
+async insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1186,7 +1197,7 @@ async insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unif
 
 ##### Returns
 
-A promise that resolves when the rows have been inserted.
+The table itself, allowing for method chaining.
 
 ##### Examples
 
@@ -2616,13 +2627,13 @@ Replaces specified strings in the selected columns.
 ##### Signature
 
 ```typescript
-async replace(columns: string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): Promise<void>;
+async replace(columns: "all" | string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): Promise<void>;
 ```
 
 ##### Parameters
 
-- **`columns`**: The column name or an array of column names where string
-  replacements will occur.
+- **`columns`**: The column name, an array of column names, or `"all"` to apply
+  the replacement to every column in the table.
 - **`strings`**: An object mapping old strings to new strings (e.g.,
   `{ "oldValue": "newValue" }`).
 - **`options`**: An optional object with configuration options:
@@ -2660,6 +2671,11 @@ await table.replace("column1", { "kilograms": "kg" }, { entireString: true });
 ```ts
 // Replace any sequence of one or more digits with a hyphen in 'column1' using regex
 await table.replace("column1", { "\d+": "-" }, { regex: true });
+```
+
+```ts
+// Replace "%" with "" in all columns
+await table.replace("all", { "%": "" });
 ```
 
 #### `lower`
@@ -2994,13 +3010,13 @@ Replaces `NULL` values in the specified columns with a given value.
 ##### Signature
 
 ```typescript
-async replaceNulls(columns: string | string[], value: number | string | Date | boolean): Promise<void>;
+async replaceNulls(columns: "all" | string | string[], value: number | string | Date | boolean): Promise<void>;
 ```
 
 ##### Parameters
 
-- **`columns`**: The column name or an array of column names in which to replace
-  `NULL` values.
+- **`columns`**: The column name, an array of column names, or `"all"` to apply
+  the replacement to every column in the table.
 - **`value`**: The value to replace `NULL` occurrences with.
 
 ##### Returns
@@ -3022,6 +3038,11 @@ await table.replaceNulls(["columnA", "columnB"], "N/A");
 ```ts
 // Replace NULL values in 'dateColumn' with a specific date
 await table.replaceNulls("dateColumn", new Date("2023-01-01"));
+```
+
+```ts
+// Replace NULL values in all columns with 0
+await table.replaceNulls("all", 0);
 ```
 
 #### `concatenate`
