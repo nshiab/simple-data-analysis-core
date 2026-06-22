@@ -1,5 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should add rows from a table into another table", async () => {
   const sdb = new SimpleDB();
@@ -330,6 +331,19 @@ Deno.test("should add rows with tables with multiple geometry columns", async ()
       lon: "DOUBLE",
     },
   });
+  await sdb.done();
+});
+Deno.test("should return the table", async () => {
+  const sdb = new SimpleDB();
+  const table1 = sdb.newTable("table1");
+  await table1.loadData("test/data/files/data.json");
+
+  const table2 = sdb.newTable("table2");
+  await table2.loadData("test/data/files/data.json");
+
+  const result = await table1.insertTables(table2);
+  assertEquals(result instanceof SimpleTable, true);
+  assertEquals(result.name, "table1");
   await sdb.done();
 });
 Deno.test("should add rows to an empty table", async () => {
