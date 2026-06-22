@@ -958,7 +958,7 @@ export default class SimpleTable extends Simple {
    * @param tablesToInsert - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
    * @param options - An optional object with configuration options:
    * @param options.unifyColumns - A boolean indicating whether to unify the columns of the tables. If `true`, missing columns in a table will be filled with `NULL` values. Defaults to `false`.
-   * @returns A promise that resolves when the rows have been inserted.
+   * @returns The table itself, allowing for method chaining.
    * @category Importing Data
    *
    * @example
@@ -982,7 +982,7 @@ export default class SimpleTable extends Simple {
   async insertTables(
     tablesToInsert: SimpleTable | SimpleTable[],
     options: { unifyColumns?: boolean } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     const array = Array.isArray(tablesToInsert)
       ? tablesToInsert
       : [tablesToInsert];
@@ -1070,6 +1070,8 @@ export default class SimpleTable extends Simple {
         }
       }
     }
+
+    return this;
   }
 
   /**
