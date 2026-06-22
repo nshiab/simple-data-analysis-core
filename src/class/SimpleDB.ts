@@ -411,7 +411,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Removes one or more tables from the database.
    *
-   * @param tables - A single table or an array of tables to remove, specified by name or as SimpleTable instances.
+   * @param tables - A single table or an array of tables to remove, specified by name or as SimpleTable instances. Pass `"all"` to remove all tables.
    * @returns A promise that resolves when the tables have been removed.
    * @category Table Management
    *
@@ -434,11 +434,21 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * // ... load data ...
    * await sdb.removeTables(employeesTable);
    * ```
+   *
+   * @example
+   * ```ts
+   * // Remove all tables
+   * await sdb.removeTables("all");
+   * ```
    */
   async removeTables(
     tables: Table | string | (Table | string)[],
   ): Promise<void> {
-    const tablesToBeRemoved = Array.isArray(tables) ? tables : [tables];
+    const tablesToBeRemoved = tables === "all"
+      ? [...this.tables]
+      : Array.isArray(tables)
+      ? tables
+      : [tables];
 
     await queryDB(
       this,

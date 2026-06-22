@@ -142,6 +142,23 @@ Deno.test("should remove multiple tables as instances or strings", async () => {
   await sdb.done();
 });
 
+Deno.test("should remove all tables with 'all'", async () => {
+  const sdb = new SimpleDB();
+  const table1 = sdb.newTable("table1");
+  await table1.loadData(["test/data/files/data.json"]);
+  const table2 = sdb.newTable("table2");
+  await table2.loadData(["test/data/files/data.json"]);
+  const table3 = sdb.newTable("table3");
+  await table3.loadData(["test/data/files/data.json"]);
+
+  await sdb.removeTables("all");
+
+  const tables = await sdb.getTables();
+
+  assertEquals(tables, []);
+  await sdb.done();
+});
+
 Deno.test("should select one table as an instance", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
