@@ -578,3 +578,15 @@ Deno.test("should load a DB instantiated with a file, with bm25 index", async ()
   assertEquals(true, true);
   await sdb.done();
 });
+Deno.test("should start with memoryLimit option", async () => {
+  const sdb = new SimpleDB({ memoryLimit: "1GB" });
+  await sdb.start();
+  assertEquals(true, true);
+  await sdb.done();
+});
+Deno.test("should start with tempDirectory option", async () => {
+  const sdb = new SimpleDB({ tempDirectory: `${output}tmp` });
+  await sdb.start();
+  assertEquals(true, true);
+  await sdb.done();
+});

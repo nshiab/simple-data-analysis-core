@@ -127,6 +127,20 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   duckDbCache: boolean | null;
   /**
+   * The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
+   *
+   * @defaultValue `undefined`
+   * @category Properties
+   */
+  memoryLimit: string | undefined;
+  /**
+   * The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Temporary directories are automatically removed when calling `done()`.
+   *
+   * @defaultValue `undefined`
+   * @category Properties
+   */
+  tempDirectory: string | undefined;
+  /**
    * The path to the database file. If not provided, an in-memory database is used.
    *
    * @defaultValue `:memory:`
@@ -201,6 +215,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.debug - A flag indicating whether to log debugging information.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
    * @param options.progressBar - A flag indicating whether to display a progress bar for long-running operations.
+   * @param options.memoryLimit - The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
+   * @param options.tempDirectory - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `done()`.
    * @category Constructor
    */
   constructor(
@@ -215,6 +231,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       debug?: boolean;
       duckDbCache?: boolean | null;
       progressBar?: boolean;
+      memoryLimit?: string;
+      tempDirectory?: string;
     } = {},
   ) {
     super(options);
@@ -231,6 +249,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.duckDbCache = options.duckDbCache === undefined
       ? false
       : options.duckDbCache;
+    this.memoryLimit = options.memoryLimit;
+    this.tempDirectory = options.tempDirectory;
     this.runQuery = runQuery;
     if (this.cacheVerbose || this.logDuration) {
       this.durationStart = Date.now();
@@ -280,6 +300,15 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       if (this.progressBar) {
         await this.customQuery(
           `SET enable_progress_bar = TRUE; SET progress_bar_time = 0;`,
+        );
+      }
+
+      if (this.memoryLimit !== undefined) {
+        await this.customQuery(`SET memory_limit = '${this.memoryLimit}';`);
+      }
+      if (this.tempDirectory !== undefined) {
+        await this.customQuery(
+          `SET temp_directory = '${this.tempDirectory}';`,
         );
       }
     }
@@ -879,6 +908,11 @@ DETACH ${name};`,
     if (this.db instanceof DuckDBInstance) {
       this.connection.closeSync();
       this.db.closeSync();
+    }
+    const tmpDir = this.tempDirectory ??
+      (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
+    if (existsSync(tmpDir)) {
+      rmSync(tmpDir, { recursive: true });
     }
     cleanCache(this);
 
