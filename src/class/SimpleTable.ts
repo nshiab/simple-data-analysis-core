@@ -2634,7 +2634,7 @@ export default class SimpleTable extends Simple {
   /**
    * Replaces specified strings in the selected columns.
    *
-   * @param columns - The column name or an array of column names where string replacements will occur.
+   * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param strings - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
    * @param options - An optional object with configuration options:
    * @param options.entireString - A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
@@ -2665,9 +2665,15 @@ export default class SimpleTable extends Simple {
    * // Replace any sequence of one or more digits with a hyphen in 'column1' using regex
    * await table.replace("column1", { "\d+": "-" }, { regex: true });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Replace "%" with "" in all columns
+   * await table.replace("all", { "%": "" });
+   * ```
    */
   async replace(
-    columns: string | string[],
+    columns: "all" | string | string[],
     strings: { [key: string]: string },
     options: {
       entireString?: boolean;
@@ -2681,11 +2687,14 @@ export default class SimpleTable extends Simple {
         "You can't have entireString to true and regex to true at the same time. Pick one.",
       );
     }
+    const columnList = columns === "all"
+      ? await this.getColumns()
+      : stringToArray(columns);
     await queryDB(
       this,
       replaceQuery(
         this.name,
-        stringToArray(columns),
+        columnList,
         Object.keys(strings),
         Object.values(strings),
         options,
@@ -3063,7 +3072,7 @@ export default class SimpleTable extends Simple {
   /**
    * Replaces `NULL` values in the specified columns with a given value.
    *
-   * @param columns - The column name or an array of column names in which to replace `NULL` values.
+   * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param value - The value to replace `NULL` occurrences with.
    * @returns A promise that resolves when the `NULL` values have been replaced.
    * @category Updating Data
@@ -3085,14 +3094,23 @@ export default class SimpleTable extends Simple {
    * // Replace NULL values in 'dateColumn' with a specific date
    * await table.replaceNulls("dateColumn", new Date("2023-01-01"));
    * ```
+   *
+   * @example
+   * ```ts
+   * // Replace NULL values in all columns with 0
+   * await table.replaceNulls("all", 0);
+   * ```
    */
   async replaceNulls(
-    columns: string | string[],
+    columns: "all" | string | string[],
     value: number | string | Date | boolean,
   ): Promise<void> {
+    const columnList = columns === "all"
+      ? await this.getColumns()
+      : stringToArray(columns);
     await queryDB(
       this,
-      replaceNullsQuery(this.name, stringToArray(columns), value),
+      replaceNullsQuery(this.name, columnList, value),
       mergeOptions(this, {
         table: this.name,
         method: "replaceNulls()",

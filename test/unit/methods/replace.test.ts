@@ -3393,3 +3393,23 @@ Deno.test("should use a regular expression", async () => {
   ]);
   await sdb.done();
 });
+
+Deno.test("should replace text in all columns with the 'all' option", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.loadArray([
+    { name: "a-b", code: "x-y" },
+    { name: "c-d", code: "z-w" },
+  ]);
+
+  await table.replace("all", { "-": "_" });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { name: "a_b", code: "x_y" },
+    { name: "c_d", code: "z_w" },
+  ]);
+
+  await sdb.done();
+});
