@@ -322,6 +322,25 @@ Deno.test("should keep only specific rows and accept arrays or single values", a
   ]);
   await sdb.done();
 });
+Deno.test("should keep only specific rows with boolean values", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  await table.insertRows([
+    { name: "Alice", latest: true },
+    { name: "Bob", latest: false },
+    { name: "Charlie", latest: true },
+  ]);
+
+  await table.keep({ latest: true });
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { name: "Alice", latest: true },
+    { name: "Charlie", latest: true },
+  ]);
+  await sdb.done();
+});
+
 Deno.test("should keep only specific rows even with spaces in column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
