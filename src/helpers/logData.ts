@@ -4,7 +4,7 @@ export default function logData(
   types: { [key: string]: string } | null,
   data:
     | {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
     | null,
   nbCharactersToLog?: number,
@@ -16,12 +16,12 @@ export default function logData(
       console.log(data);
     } else {
       const dataToBeLogged: {
-        [key: string]: string | number | boolean | Date | null;
+        [key: string]: unknown;
       }[] = [];
       const keys = Object.keys(data[0]);
       for (let i = 0; i < data.length; i++) {
         const newItem: {
-          [key: string]: string | number | boolean | Date | null;
+          [key: string]: unknown;
         } = {};
         for (const key of keys) {
           if (

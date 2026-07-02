@@ -16,7 +16,7 @@ export default async function queryDB(
   },
 ): Promise<
   | {
-    [key: string]: string | number | boolean | Date | null;
+    [key: string]: unknown;
   }[]
   | null
 > {

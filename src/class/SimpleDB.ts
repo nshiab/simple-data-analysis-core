@@ -637,7 +637,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async getExtensions(): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     return (await queryDB(
@@ -650,7 +650,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         parameters: {},
       }),
     )) as {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[];
   }
 
@@ -688,7 +688,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     } = {},
   ): Promise<
     | {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
     | null
   > {

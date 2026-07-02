@@ -91,10 +91,7 @@ Deno.test("should convert all DuckDB types read from a table", async () => {
     `CREATE OR REPLACE TABLE "allTypes" AS ${allTypesQuery}`,
   );
   const rows = await table.getData();
-  // Cast: lists, structs, maps and intervals are returned as arrays and
-  // objects at runtime, which the declared row type does not admit yet
-  // (issue #78, Phase 3).
-  assertEquals(rows as unknown, [expectedAllTypesRow]);
+  assertEquals(rows, [expectedAllTypesRow]);
   await sdb.done();
 });
 

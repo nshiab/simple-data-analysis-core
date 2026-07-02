@@ -56,7 +56,7 @@ export default class Simple {
     },
   ) => Promise<
     | {
-      [key: string]: number | string | Date | boolean | null;
+      [key: string]: unknown;
     }[]
     | null
   >;

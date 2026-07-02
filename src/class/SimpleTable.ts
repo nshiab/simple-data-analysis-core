@@ -4387,19 +4387,19 @@ export default class SimpleTable extends Simple {
     dataModifier:
       | ((
         rows: {
-          [key: string]: number | string | Date | boolean | null;
+          [key: string]: unknown;
         }[],
       ) => Promise<
         {
-          [key: string]: number | string | Date | boolean | null;
+          [key: string]: unknown;
         }[]
       >)
       | ((
         rows: {
-          [key: string]: number | string | Date | boolean | null;
+          [key: string]: unknown;
         }[],
       ) => {
-        [key: string]: number | string | Date | boolean | null;
+        [key: string]: unknown;
       }[]),
   ): Promise<this> {
     const types = await this.getTypes();
@@ -4665,7 +4665,7 @@ export default class SimpleTable extends Simple {
    */
   async getValues(
     column: string,
-  ): Promise<(string | number | boolean | Date | null)[]> {
+  ): Promise<unknown[]> {
     return await getValues(this, column);
   }
 
@@ -4685,7 +4685,7 @@ export default class SimpleTable extends Simple {
    */
   async getMin(
     column: string,
-  ): Promise<string | number | boolean | Date | null> {
+  ): Promise<unknown> {
     return await getMin(this, column);
   }
 
@@ -4705,7 +4705,7 @@ export default class SimpleTable extends Simple {
    */
   async getMax(
     column: string,
-  ): Promise<string | number | boolean | Date | null> {
+  ): Promise<unknown> {
     return await getMax(this, column);
   }
 
@@ -4727,8 +4727,8 @@ export default class SimpleTable extends Simple {
     column: string,
   ): Promise<
     [
-      string | number | boolean | Date | null,
-      string | number | boolean | Date | null,
+      unknown,
+      unknown,
     ]
   > {
     return [await this.getMin(column), await this.getMax(column)];
@@ -4960,7 +4960,7 @@ export default class SimpleTable extends Simple {
    */
   async getUniques(
     column: string,
-  ): Promise<(string | number | boolean | Date | null)[]> {
+  ): Promise<unknown[]> {
     return await getUniques(this, column);
   }
 
@@ -4992,7 +4992,7 @@ export default class SimpleTable extends Simple {
       conditions?: string;
     } = {},
   ): Promise<{
-    [key: string]: string | number | boolean | Date | null;
+    [key: string]: unknown;
   }> {
     return await getFirstRow(this, options);
   }
@@ -5025,7 +5025,7 @@ export default class SimpleTable extends Simple {
       conditions?: string;
     } = {},
   ): Promise<{
-    [key: string]: string | number | boolean | Date | null;
+    [key: string]: unknown;
   }> {
     return await getLastRow(this, options);
   }
@@ -5061,7 +5061,7 @@ export default class SimpleTable extends Simple {
     } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     return await getTop(this, count, options);
@@ -5108,7 +5108,7 @@ export default class SimpleTable extends Simple {
     } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     return await getBottom(this, count, options);
@@ -5151,7 +5151,7 @@ export default class SimpleTable extends Simple {
     options: { noCheck?: boolean } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     } | undefined
   > {
     const data = await this.getData({ conditions });
@@ -5206,7 +5206,7 @@ export default class SimpleTable extends Simple {
     } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     if (await hasGeometryColumn(this)) {
@@ -5234,7 +5234,7 @@ export default class SimpleTable extends Simple {
         parameters: { options },
       }),
     )) as {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[];
   }
 

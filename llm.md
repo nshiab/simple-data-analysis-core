@@ -328,7 +328,7 @@ Returns a list of installed DuckDB extensions.
 ##### Signature
 
 ```typescript
-async getExtensions(): Promise<Record<string, string | number | boolean | Date | null>[]>;
+async getExtensions(): Promise<Record<string, unknown>[]>;
 ```
 
 ##### Returns
@@ -351,7 +351,7 @@ Executes a custom SQL query directly against the DuckDB instance.
 ##### Signature
 
 ```typescript
-async customQuery(query: string, options?: { returnDataFrom?: "query" | "none"; table?: string }): Promise<Record<string, string | number | boolean | Date | null>[] | null>;
+async customQuery(query: string, options?: { returnDataFrom?: "query" | "none"; table?: string }): Promise<Record<string, unknown>[] | null>;
 ```
 
 ##### Parameters
@@ -4142,7 +4142,7 @@ JavaScript. This method does not work with tables containing geometries.
 ##### Signature
 
 ```typescript
-async updateWithJS(dataModifier: ((rows: Record<string, number | string | Date | boolean | null>[]) => Promise<Record<string, number | string | Date | boolean | null>[]>) | ((rows: Record<string, number | string | Date | boolean | null>[]) => Record<string, number | string | Date | boolean | null>[])): Promise<this>;
+async updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<Record<string, unknown>[]>) | ((rows: Record<string, unknown>[]) => Record<string, unknown>[])): Promise<this>;
 ```
 
 ##### Parameters
@@ -4460,7 +4460,7 @@ Returns all values from a specific column.
 ##### Signature
 
 ```typescript
-async getValues(column: string): Promise<(string | number | boolean | Date | null)[]>;
+async getValues(column: string): Promise<unknown[]>;
 ```
 
 ##### Parameters
@@ -4487,7 +4487,7 @@ Returns the minimum value from a specific column.
 ##### Signature
 
 ```typescript
-async getMin(column: string): Promise<string | number | boolean | Date | null>;
+async getMin(column: string): Promise<unknown>;
 ```
 
 ##### Parameters
@@ -4513,7 +4513,7 @@ Returns the maximum value from a specific column.
 ##### Signature
 
 ```typescript
-async getMax(column: string): Promise<string | number | boolean | Date | null>;
+async getMax(column: string): Promise<unknown>;
 ```
 
 ##### Parameters
@@ -4540,7 +4540,7 @@ array.
 ##### Signature
 
 ```typescript
-async getExtent(column: string): Promise<[string | number | boolean | Date | null, string | number | boolean | Date | null]>;
+async getExtent(column: string): Promise<[unknown, unknown]>;
 ```
 
 ##### Parameters
@@ -4816,7 +4816,7 @@ ascending order.
 ##### Signature
 
 ```typescript
-async getUniques(column: string): Promise<(string | number | boolean | Date | null)[]>;
+async getUniques(column: string): Promise<unknown[]>;
 ```
 
 ##### Parameters
@@ -4844,7 +4844,7 @@ can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getFirstRow(options?: { conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>>;
+async getFirstRow(options?: { conditions?: string }): Promise<Record<string, unknown>>;
 ```
 
 ##### Parameters
@@ -4882,7 +4882,7 @@ can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getLastRow(options?: { conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>>;
+async getLastRow(options?: { conditions?: string }): Promise<Record<string, unknown>>;
 ```
 
 ##### Parameters
@@ -4921,7 +4921,7 @@ You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`,
 ##### Signature
 
 ```typescript
-async getTop(count: number, options?: { conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>[]>;
+async getTop(count: number, options?: { conditions?: string }): Promise<Record<string, unknown>[]>;
 ```
 
 ##### Parameters
@@ -4959,7 +4959,7 @@ conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getBottom(count: number, options?: { originalOrder?: boolean; conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>[]>;
+async getBottom(count: number, options?: { originalOrder?: boolean; conditions?: string }): Promise<Record<string, unknown>[]>;
 ```
 
 ##### Parameters
@@ -5009,7 +5009,7 @@ JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getRow(conditions: string, options?: { noCheck?: boolean }): Promise<Record<string, string | number | boolean | Date | null> | undefined>;
+async getRow(conditions: string, options?: { noCheck?: boolean }): Promise<Record<string, unknown> | undefined>;
 ```
 
 ##### Parameters
@@ -5057,7 +5057,7 @@ SQL conditions. You can also use JavaScript syntax for conditions (e.g., `&&`,
 ##### Signature
 
 ```typescript
-async getData(options?: { columns?: string | string[]; conditions?: string }): Promise<Record<string, string | number | boolean | Date | null>[]>;
+async getData(options?: { columns?: string | string[]; conditions?: string }): Promise<Record<string, unknown>[]>;
 ```
 
 ##### Parameters

@@ -87,7 +87,7 @@ export default async function runQuery(
   },
 ): Promise<
   | {
-    [key: string]: number | string | Date | boolean | null;
+    [key: string]: unknown;
   }[]
   | null
 > {
@@ -101,7 +101,7 @@ export default async function runQuery(
       );
       const nbColumns = columnNames.length;
       const rawRows = reader.getRows();
-      const rows = new Array(rawRows.length);
+      const rows: { [key: string]: unknown }[] = new Array(rawRows.length);
       for (let i = 0; i < rawRows.length; i++) {
         const rawRow = rawRows[i];
         const row: { [key: string]: unknown } = {};
@@ -110,9 +110,7 @@ export default async function runQuery(
         }
         rows[i] = row;
       }
-      return rows as {
-        [key: string]: number | string | Date | boolean | null;
-      }[];
+      return rows;
     } else {
       await connection.run(query);
       return null;
