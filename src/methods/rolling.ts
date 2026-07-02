@@ -1,6 +1,47 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function rollingQuery(
+export default async function rolling(
+  simpleTable: SimpleTable,
+  column: string,
+  newColumn: string,
+  summary: "min" | "max" | "mean" | "median" | "sum",
+  preceding: number,
+  following: number,
+  options: {
+    categories?: string | string[];
+    decimals?: number;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    rollingQuery(
+      simpleTable.name,
+      column,
+      newColumn,
+      summary,
+      preceding,
+      following,
+      options,
+    ),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "rolling()",
+      parameters: {
+        column,
+        newColumn,
+        summary,
+        preceding,
+        following,
+        options,
+      },
+    }),
+  );
+}
+
+function rollingQuery(
   table: string,
   column: string,
   newColumn: string,

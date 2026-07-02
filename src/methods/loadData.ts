@@ -1,7 +1,51 @@
 import cleanPath from "../helpers/cleanPath.ts";
 import getExtension from "../helpers/getExtension.ts";
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function loadDataQuery(
+export default async function loadData(
+  simpleTable: SimpleTable,
+  files: string | string[],
+  options: {
+    fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
+    autoDetect?: boolean;
+    limit?: number;
+    fileName?: boolean;
+    unifyColumns?: boolean;
+    columnTypes?: { [key: string]: string };
+    // column selection
+    columns?: string[];
+    // csv options
+    header?: boolean;
+    allText?: boolean;
+    delim?: string;
+    skip?: number;
+    nullPadding?: boolean;
+    ignoreErrors?: boolean;
+    compression?: "none" | "gzip" | "zstd";
+    encoding?: string;
+    strict?: boolean;
+    // json options
+    jsonFormat?: "unstructured" | "newlineDelimited" | "array";
+    records?: boolean;
+    // excel options
+    sheet?: string;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    loadDataQuery(simpleTable.name, stringToArray(files), options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "loadData()",
+      parameters: { files, options },
+    }),
+  );
+}
+
+export function loadDataQuery(
   table: string,
   files: string[],
   options: {

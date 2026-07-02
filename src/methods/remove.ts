@@ -1,6 +1,28 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
 import parseValue from "../helpers/parseValue.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function removeQuery(
+export default async function remove(
+  simpleTable: SimpleTable,
+  columnsAndValues: {
+    [key: string]:
+      | (number | string | Date | boolean | null)[]
+      | (number | string | Date | boolean | null);
+  },
+) {
+  await queryDB(
+    simpleTable,
+    removeQuery(simpleTable.name, columnsAndValues),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "remove()",
+      parameters: { columnsAndValues },
+    }),
+  );
+}
+
+function removeQuery(
   table: string,
   columnsAndValues: {
     [key: string]:

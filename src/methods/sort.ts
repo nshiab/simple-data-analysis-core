@@ -1,4 +1,26 @@
-export default function sortQuery(
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+
+export default async function sort(
+  simpleTable: SimpleTable,
+  order: { [key: string]: "asc" | "desc" } | null = null,
+  options: {
+    lang?: { [key: string]: string };
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    sortQuery(simpleTable.name, order, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "sort()",
+      parameters: { order, options },
+    }),
+  );
+}
+
+function sortQuery(
   table: string,
   order: { [key: string]: "asc" | "desc" } | null,
   options: {

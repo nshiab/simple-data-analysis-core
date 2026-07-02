@@ -1,6 +1,30 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function rankQuery(
+export default async function ranks(
+  simpleTable: SimpleTable,
+  values: string,
+  newColumn: string,
+  options: {
+    order?: "asc" | "desc";
+    categories?: string | string[];
+    noGaps?: boolean;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    rankQuery(simpleTable.name, values, newColumn, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "ranks()",
+      parameters: { values, newColumn, options },
+    }),
+  );
+}
+
+function rankQuery(
   table: string,
   values: string,
   newColumn: string,

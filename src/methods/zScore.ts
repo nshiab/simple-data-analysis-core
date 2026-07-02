@@ -1,6 +1,29 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function zScoreQuery(
+export default async function zScore(
+  simpleTable: SimpleTable,
+  column: string,
+  newColumn: string,
+  options: {
+    categories?: string | string[];
+    decimals?: number;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    zScoreQuery(simpleTable.name, column, newColumn, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "zScore()",
+      parameters: { column, newColumn, options },
+    }),
+  );
+}
+
+function zScoreQuery(
   table: string,
   column: string,
   newColumn: string,

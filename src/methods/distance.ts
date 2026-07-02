@@ -1,4 +1,30 @@
-export default function distanceQuery(
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+
+export default async function distance(
+  simpleTable: SimpleTable,
+  column1: string,
+  column2: string,
+  newColumn: string,
+  options: {
+    unit?: "m" | "km";
+    method?: "srs" | "haversine" | "spheroid";
+    decimals?: number;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    distanceQuery(simpleTable.name, column1, column2, newColumn, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "distance()",
+      parameters: { column1, column2, newColumn },
+    }),
+  );
+}
+
+function distanceQuery(
   table: string,
   column1: string,
   column2: string,

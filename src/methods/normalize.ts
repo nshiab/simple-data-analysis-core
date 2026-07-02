@@ -1,6 +1,29 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function normalizeQuery(
+export default async function normalize(
+  simpleTable: SimpleTable,
+  column: string,
+  newColumn: string,
+  options: {
+    categories?: string | string[];
+    decimals?: number;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    normalizeQuery(simpleTable.name, column, newColumn, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "normalize()",
+      parameters: { column, options },
+    }),
+  );
+}
+
+function normalizeQuery(
   table: string,
   column: string,
   newColumn: string,

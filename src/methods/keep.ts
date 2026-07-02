@@ -1,6 +1,28 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
 import parseValue from "../helpers/parseValue.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function keepQuery(
+export default async function keep(
+  simpleTable: SimpleTable,
+  columnsAndValues: {
+    [key: string]:
+      | (number | string | Date | boolean | null)[]
+      | (number | string | Date | boolean | null);
+  },
+) {
+  await queryDB(
+    simpleTable,
+    keepQuery(simpleTable.name, columnsAndValues),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "keep()",
+      parameters: { columnsAndValues },
+    }),
+  );
+}
+
+function keepQuery(
   table: string,
   columnsAndValues: {
     [key: string]:

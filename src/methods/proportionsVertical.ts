@@ -1,6 +1,33 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function proportionsVerticalQuery(
+export default async function proportionsVertical(
+  simpleTable: SimpleTable,
+  column: string,
+  newColumn: string,
+  options: {
+    categories?: string | string[];
+    decimals?: number;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    proportionsVerticalQuery(simpleTable.name, column, newColumn, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "proportionsVertical()",
+      parameters: {
+        column,
+        newColumn,
+        options,
+      },
+    }),
+  );
+}
+
+function proportionsVerticalQuery(
   table: string,
   column: string,
   newColumn: string,

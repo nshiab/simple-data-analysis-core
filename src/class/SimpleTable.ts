@@ -5,11 +5,8 @@ import replaceQuery from "../methods/replaceQuery.ts";
 import convertQuery from "../methods/convertQuery.ts";
 import roundQuery from "../methods/roundQuery.ts";
 import insertRowsQuery from "../methods/insertRowsQuery.ts";
-import sortQuery from "../methods/sortQuery.ts";
 import outliersIQRQuery from "../methods/outliersIQRQuery.ts";
-import zScoreQuery from "../methods/zScoreQuery.ts";
 import parseType from "../helpers/parseTypes.ts";
-import concatenateQuery from "../methods/concatenateQuery.ts";
 import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
 import getNbRows from "../methods/getNbRows.ts";
@@ -30,29 +27,17 @@ import getSkew from "../methods/getSkew.ts";
 import getStdDev from "../methods/getStdDev.ts";
 import getVar from "../methods/getVar.ts";
 import getQuantile from "../methods/getQuantile.ts";
-import ranksQuery from "../methods/ranksQuery.ts";
-import quantilesQuery from "../methods/quantilesQuery.ts";
 import binsQuery from "../methods/binsQuery.ts";
-import proportionsHorizontalQuery from "../methods/proportionsHorizontalQuery.ts";
-import proportionsVerticalQuery from "../methods/proportionsVerticalQuery.ts";
 import trimQuery from "../methods/trimQuery.ts";
-import removeDuplicatesQuery from "../methods/removeDuplicatesQuery.ts";
 import replaceNullsQuery from "../methods/replaceNullsQuery.ts";
-import lowerQuery from "../methods/lowerQuery.ts";
-import upperQuery from "../methods/upperQuery.ts";
 import cloneColumnQuery from "../methods/cloneColumn.ts";
-import keepQuery from "../methods/keepQuery.ts";
-import removeQuery from "../methods/removeQuery.ts";
-import normalizeQuery from "../methods/normalizeQuery.ts";
-import rollingQuery from "../methods/rollingQuery.ts";
-import distanceQuery from "../methods/distanceQuery.ts";
 import randomPointQuery from "../methods/randomPointQuery.ts";
 import getGeoData from "../methods/getGeoData.ts";
 import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
 import { readdirSync } from "node:fs";
 import stringToArray from "../helpers/stringToArray.ts";
-import loadDataQuery from "../methods/loadDataQuery.ts";
+import { loadDataQuery } from "../methods/loadData.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import writeDataQuery from "../methods/writeDataQuery.ts";
@@ -83,21 +68,52 @@ import cloneQuery from "../methods/cloneQuery.ts";
 import findGeoColumn from "../helpers/findGeoColumn.ts";
 import getExtension from "../helpers/getExtension.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
-import capitalizeQuery from "../methods/capitalizeQuery.ts";
-import truncateQuery from "../methods/truncateQuery.ts";
 import padQuery from "../methods/padQuery.ts";
 import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
-import accumulateQuery from "../helpers/accumulateQuery.ts";
-import unnestQuery from "../helpers/unnestQuery.ts";
-import repeatRowsQuery from "../helpers/repeatRowsQuery.ts";
-import nestQuery from "../helpers/nestQuery.ts";
 import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
 import createFtsIndex from "../methods/createFtsIndex.ts";
 import createVssIndex from "../methods/createVssIndex.ts";
 import bm25 from "../methods/bm25.ts";
 import loadSample from "../methods/loadSample.ts";
 import normalizeString from "../methods/normalizeString.ts";
+import distance from "../methods/distance.ts";
+import latLon from "../methods/latLon.ts";
+import inside from "../methods/inside.ts";
+import intersect from "../methods/intersect.ts";
+import normalize from "../methods/normalize.ts";
+import zScore from "../methods/zScore.ts";
+import rolling from "../methods/rolling.ts";
+import accumulate from "../methods/accumulate.ts";
+import proportionsVertical from "../methods/proportionsVertical.ts";
+import proportionsHorizontal from "../methods/proportionsHorizontal.ts";
+import quantiles from "../methods/quantiles.ts";
+import ranks from "../methods/ranks.ts";
+import updateColumn from "../methods/updateColumn.ts";
+import nest from "../methods/nest.ts";
+import repeatRows from "../methods/repeatRows.ts";
+import unnest from "../methods/unnest.ts";
+import concatenate from "../methods/concatenate.ts";
+import right from "../methods/right.ts";
+import left from "../methods/left.ts";
+import splitExtract from "../methods/splitExtract.ts";
+import truncate from "../methods/truncate.ts";
+import capitalize from "../methods/capitalize.ts";
+import upper from "../methods/upper.ts";
+import lower from "../methods/lower.ts";
+import removeTable from "../methods/removeTable.ts";
+import wider from "../methods/wider.ts";
+import removeRows from "../methods/removeRows.ts";
+import remove from "../methods/remove.ts";
+import keep from "../methods/keep.ts";
+import filter from "../methods/filter.ts";
+import removeDuplicates from "../methods/removeDuplicates.ts";
+import sample from "../methods/sample.ts";
+import skip from "../methods/skip.ts";
+import selectColumns from "../methods/selectColumns.ts";
+import sort from "../methods/sort.ts";
+import loadData from "../methods/loadData.ts";
+import renameTable from "../methods/renameTable.ts";
 
 /**
  * IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
@@ -208,17 +224,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async renameTable(name: string): Promise<this> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" RENAME TO "${name}";`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "renameTable()",
-        parameters: { name },
-      }),
-    );
-
-    this.name = name;
+    await renameTable(this, name);
     return this;
   }
 
@@ -405,16 +411,7 @@ export default class SimpleTable extends Simple {
       sheet?: string;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      loadDataQuery(this.name, stringToArray(files), options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "loadData()",
-        parameters: { files, options },
-      }),
-    );
-
+    await loadData(this, files, options);
     return this;
   }
 
@@ -1437,15 +1434,7 @@ export default class SimpleTable extends Simple {
       lang?: { [key: string]: string };
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      sortQuery(this.name, order, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "sort()",
-        parameters: { order, options },
-      }),
-    );
+    await sort(this, order, options);
     return this;
   }
 
@@ -1469,21 +1458,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async selectColumns(columns: string | string[]): Promise<this> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT ${
-        stringToArray(
-          columns,
-        )
-          .map((d) => `"${d}"`)
-          .join(", ")
-      } FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "selectColumns()",
-        parameters: { columns },
-      }),
-    );
+    await selectColumns(this, columns);
     return this;
   }
 
@@ -1501,15 +1476,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async skip(nbRowsToSkip: number): Promise<this> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM "${this.name}" OFFSET ${nbRowsToSkip} ROWS;`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "skip()",
-        parameters: { nbRowsToSkip },
-      }),
-    );
+    await skip(this, nbRowsToSkip);
     return this;
   }
 
@@ -1565,19 +1532,7 @@ export default class SimpleTable extends Simple {
       seed?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM "${this.name}" USING SAMPLE RESERVOIR(${
-        typeof quantity === "number" ? `${quantity} ROWS` : quantity
-      })${
-        typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
-      }`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "sample()",
-        parameters: { quantity, options },
-      }),
-    );
+    await sample(this, quantity, options);
     return this;
   }
 
@@ -1674,15 +1629,7 @@ export default class SimpleTable extends Simple {
       on?: string | string[];
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      removeDuplicatesQuery(this.name, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeDuplicates()",
-        parameters: { options },
-      }),
-    );
+    await removeDuplicates(this, options);
     return this;
   }
 
@@ -1813,17 +1760,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async filter(conditions: string): Promise<this> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT *
-        FROM "${this.name}"
-        WHERE ${conditions}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "filter()",
-        parameters: { conditions },
-      }),
-    );
+    await filter(this, conditions);
     return this;
   }
 
@@ -1853,15 +1790,7 @@ export default class SimpleTable extends Simple {
         | (number | string | Date | boolean | null);
     },
   ): Promise<this> {
-    await queryDB(
-      this,
-      keepQuery(this.name, columnsAndValues),
-      mergeOptions(this, {
-        table: this.name,
-        method: "keep()",
-        parameters: { columnsAndValues },
-      }),
-    );
+    await keep(this, columnsAndValues);
     return this;
   }
 
@@ -1891,15 +1820,7 @@ export default class SimpleTable extends Simple {
         | (number | string | Date | boolean | null);
     },
   ): Promise<this> {
-    await queryDB(
-      this,
-      removeQuery(this.name, columnsAndValues),
-      mergeOptions(this, {
-        table: this.name,
-        method: "remove()",
-        parameters: { columnsAndValues },
-      }),
-    );
+    await remove(this, columnsAndValues);
     return this;
   }
 
@@ -1936,15 +1857,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async removeRows(conditions: string): Promise<this> {
-    await queryDB(
-      this,
-      `DELETE FROM "${this.name}" WHERE ${conditions}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeRows()",
-        parameters: { conditions },
-      }),
-    );
+    await removeRows(this, conditions);
     return this;
   }
 
@@ -2098,15 +2011,7 @@ export default class SimpleTable extends Simple {
    * @category Restructuring Data
    */
   async wider(columnsFrom: string, valuesFrom: string): Promise<this> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM (PIVOT "${this.name}" ON "${columnsFrom}" USING sum("${valuesFrom}"));`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "wider()",
-        parameters: { columnsFrom, valuesFrom },
-      }),
-    );
+    await wider(this, columnsFrom, valuesFrom);
     return this;
   }
 
@@ -2222,19 +2127,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async removeTable(): Promise<this> {
-    await queryDB(
-      this,
-      `DROP TABLE "${this.name}";`,
-      mergeOptions(this, {
-        table: null,
-        method: "removeTable()",
-        parameters: {},
-      }),
-    );
-
-    this.sdb.tables = this.sdb.tables.filter(
-      (t) => t.name !== this.name,
-    );
+    await removeTable(this);
     return this;
   }
 
@@ -2757,15 +2650,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async lower(columns: string | string[]): Promise<this> {
-    await queryDB(
-      this,
-      lowerQuery(this.name, stringToArray(columns)),
-      mergeOptions(this, {
-        table: this.name,
-        method: "lower()",
-        parameters: { columns },
-      }),
-    );
+    await lower(this, columns);
     return this;
   }
 
@@ -2789,15 +2674,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async upper(columns: string | string[]): Promise<this> {
-    await queryDB(
-      this,
-      upperQuery(this.name, stringToArray(columns)),
-      mergeOptions(this, {
-        table: this.name,
-        method: "upper()",
-        parameters: { columns },
-      }),
-    );
+    await upper(this, columns);
     return this;
   }
 
@@ -2821,15 +2698,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async capitalize(columns: string | string[]): Promise<this> {
-    await queryDB(
-      this,
-      capitalizeQuery(this.name, stringToArray(columns)),
-      mergeOptions(this, {
-        table: this.name,
-        method: "upper()",
-        parameters: { columns },
-      }),
-    );
+    await capitalize(this, columns);
     return this;
   }
 
@@ -2854,15 +2723,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async truncate(column: string, length: number): Promise<this> {
-    await queryDB(
-      this,
-      truncateQuery(this.name, column, length),
-      mergeOptions(this, {
-        table: this.name,
-        method: "truncate()",
-        parameters: { column, length },
-      }),
-    );
+    await truncate(this, column, length);
     return this;
   }
 
@@ -2986,22 +2847,7 @@ export default class SimpleTable extends Simple {
     index: number,
     newColumn: string,
   ): Promise<this> {
-    await queryDB(
-      this,
-      `${
-        column === newColumn
-          ? ""
-          : `ALTER TABLE "${this.name}" ADD "${newColumn}" VARCHAR;`
-      }
-      UPDATE "${this.name}" SET "${newColumn}" = SPLIT_PART("${column}", '${separator}', ${
-        index + 1
-      })`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "splitExtract()",
-        parameters: { column, separator, index, newColumn },
-      }),
-    );
+    await splitExtract(this, column, separator, index, newColumn);
     return this;
   }
 
@@ -3068,15 +2914,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async left(column: string, numberOfCharacters: number): Promise<this> {
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET "${column}" = LEFT("${column}", ${numberOfCharacters})`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "left()",
-        parameters: { column, numberOfCharacters },
-      }),
-    );
+    await left(this, column, numberOfCharacters);
     return this;
   }
 
@@ -3096,15 +2934,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async right(column: string, numberOfCharacters: number): Promise<this> {
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET "${column}" = RIGHT("${column}", ${numberOfCharacters})`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "right()",
-        parameters: { column, numberOfCharacters },
-      }),
-    );
+    await right(this, column, numberOfCharacters);
     return this;
   }
 
@@ -3188,15 +3018,7 @@ export default class SimpleTable extends Simple {
       separator?: string;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      concatenateQuery(this.name, columns, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "concatenate()",
-        parameters: { columns, newColumn, options },
-      }),
-    );
+    await concatenate(this, columns, newColumn, options);
     return this;
   }
 
@@ -3304,15 +3126,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async unnest(column: string, separator: string): Promise<this> {
-    await queryDB(
-      this,
-      unnestQuery(this.name, column, separator),
-      mergeOptions(this, {
-        table: this.name,
-        method: "unnest()",
-        parameters: { column, separator },
-      }),
-    );
+    await unnest(this, column, separator);
     return this;
   }
 
@@ -3346,15 +3160,7 @@ export default class SimpleTable extends Simple {
     column: string,
     options: { index?: string } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      repeatRowsQuery(this.name, column, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "repeatRows()",
-        parameters: { column, options },
-      }),
-    );
+    await repeatRows(this, column, options);
     return this;
   }
 
@@ -3393,15 +3199,7 @@ export default class SimpleTable extends Simple {
     separator: string,
     categories: string | string[],
   ): Promise<this> {
-    await queryDB(
-      this,
-      nestQuery(this.name, column, separator, categories),
-      mergeOptions(this, {
-        table: this.name,
-        method: "nest()",
-        parameters: { column, separator, categories },
-      }),
-    );
+    await nest(this, column, separator, categories);
     return this;
   }
 
@@ -3497,15 +3295,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async updateColumn(column: string, definition: string): Promise<this> {
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET "${column}" = ${definition}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "updateColumn()",
-        parameters: { column, definition },
-      }),
-    );
+    await updateColumn(this, column, definition);
     return this;
   }
 
@@ -3554,15 +3344,7 @@ export default class SimpleTable extends Simple {
       noGaps?: boolean;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      ranksQuery(this.name, values, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "ranks()",
-        parameters: { values, newColumn, options },
-      }),
-    );
+    await ranks(this, values, newColumn, options);
     return this;
   }
 
@@ -3603,20 +3385,7 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      quantilesQuery(this.name, values, nbQuantiles, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "quantiles()",
-        parameters: {
-          values,
-          nbQuantiles,
-          newColumn,
-          options,
-        },
-      }),
-    );
+    await quantiles(this, values, nbQuantiles, newColumn, options);
     return this;
   }
 
@@ -3727,18 +3496,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      proportionsHorizontalQuery(this.name, columns, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "proportionsHorizontal()",
-        parameters: {
-          columns,
-          options,
-        },
-      }),
-    );
+    await proportionsHorizontal(this, columns, options);
     return this;
   }
 
@@ -3779,19 +3537,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      proportionsVerticalQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "proportionsVertical()",
-        parameters: {
-          column,
-          newColumn,
-          options,
-        },
-      }),
-    );
+    await proportionsVertical(this, column, newColumn, options);
     return this;
   }
 
@@ -3991,15 +3737,7 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      accumulateQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "accumulate()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+    await accumulate(this, column, newColumn, options);
     return this;
   }
 
@@ -4049,29 +3787,14 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
+    await rolling(
       this,
-      rollingQuery(
-        this.name,
-        column,
-        newColumn,
-        summary,
-        preceding,
-        following,
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "rolling()",
-        parameters: {
-          column,
-          newColumn,
-          summary,
-          preceding,
-          following,
-          options,
-        },
-      }),
+      column,
+      newColumn,
+      summary,
+      preceding,
+      following,
+      options,
     );
     return this;
   }
@@ -4289,15 +4012,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      zScoreQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "zScore()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+    await zScore(this, column, newColumn, options);
     return this;
   }
 
@@ -4338,15 +4053,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      normalizeQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "normalize()",
-        parameters: { column, options },
-      }),
-    );
+    await normalize(this, column, newColumn, options);
     return this;
   }
 
@@ -6075,15 +5782,7 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<this> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersects("${column1}", "${column2}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "intersect()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+    await intersect(this, column1, column2, newColumn);
     return this;
   }
 
@@ -6107,15 +5806,7 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<this> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_Covers("${column2}", "${column1}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "inside()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+    await inside(this, column1, column2, newColumn);
     return this;
   }
 
@@ -6187,16 +5878,7 @@ export default class SimpleTable extends Simple {
     columnLat: string,
     columnLon: string,
   ): Promise<this> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${columnLat}" DOUBLE; UPDATE "${this.name}" SET "${columnLat}" = ST_Y("${column}");
-             ALTER TABLE "${this.name}" ADD "${columnLon}" DOUBLE; UPDATE "${this.name}" SET "${columnLon}" = ST_X("${column}");`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "latLon()",
-        parameters: { column, columnLon, columnLat },
-      }),
-    );
+    await latLon(this, column, columnLat, columnLon);
     return this;
   }
 
@@ -6423,15 +6105,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      distanceQuery(this.name, column1, column2, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "distance()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+    await distance(this, column1, column2, newColumn, options);
     return this;
   }
 
