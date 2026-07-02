@@ -13,7 +13,6 @@ export default async function queryDB(
     nbCharactersToLog: number | undefined;
     returnDataFrom: "query" | "none";
     debug: boolean;
-    types?: { [key: string]: string };
   },
 ): Promise<
   | {
@@ -58,17 +57,7 @@ export default async function queryDB(
   if (options.returnDataFrom === "none") {
     await simple.runQuery(query, simple.connection, false, options);
   } else if (options.returnDataFrom === "query") {
-    data = await simple.runQuery(query, simple.connection, true, {
-      ...options,
-      // To convert dates and bigInts to numbers
-      types: options.method !== "getTypes()"
-        ? options.types
-          ? options.types
-          : simple instanceof SimpleTable
-          ? await simple.getTypes()
-          : undefined
-        : undefined,
-    });
+    data = await simple.runQuery(query, simple.connection, true, options);
   } else {
     throw new Error(
       `Unknown ${options.returnDataFrom} options.returnDataFrom`,

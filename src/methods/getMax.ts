@@ -9,15 +9,12 @@ export default async function getMax(
   const queryResult = await queryDB(
     simpleTable,
     `SELECT MAX("${column}") AS "${column}" FROM "${simpleTable.name}"`,
-    {
-      ...mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        returnDataFrom: "query",
-        method: "getMax()",
-        parameters: { column },
-      }),
-      types: await simpleTable.getTypes(),
-    },
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      returnDataFrom: "query",
+      method: "getMax()",
+      parameters: { column },
+    }),
   );
 
   if (!queryResult) {
