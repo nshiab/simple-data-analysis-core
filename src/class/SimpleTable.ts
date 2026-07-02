@@ -1,15 +1,5 @@
 import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
-import renameColumnQuery from "../methods/renameColumnQuery.ts";
-import replaceQuery from "../methods/replaceQuery.ts";
-import convertQuery from "../methods/convertQuery.ts";
-import roundQuery from "../methods/roundQuery.ts";
-import insertRowsQuery from "../methods/insertRowsQuery.ts";
-import sortQuery from "../methods/sortQuery.ts";
-import outliersIQRQuery from "../methods/outliersIQRQuery.ts";
-import zScoreQuery from "../methods/zScoreQuery.ts";
-import parseType from "../helpers/parseTypes.ts";
-import concatenateQuery from "../methods/concatenateQuery.ts";
 import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
 import getNbRows from "../methods/getNbRows.ts";
@@ -30,36 +20,12 @@ import getSkew from "../methods/getSkew.ts";
 import getStdDev from "../methods/getStdDev.ts";
 import getVar from "../methods/getVar.ts";
 import getQuantile from "../methods/getQuantile.ts";
-import ranksQuery from "../methods/ranksQuery.ts";
-import quantilesQuery from "../methods/quantilesQuery.ts";
-import binsQuery from "../methods/binsQuery.ts";
-import proportionsHorizontalQuery from "../methods/proportionsHorizontalQuery.ts";
-import proportionsVerticalQuery from "../methods/proportionsVerticalQuery.ts";
-import trimQuery from "../methods/trimQuery.ts";
-import removeDuplicatesQuery from "../methods/removeDuplicatesQuery.ts";
-import replaceNullsQuery from "../methods/replaceNullsQuery.ts";
-import lowerQuery from "../methods/lowerQuery.ts";
-import upperQuery from "../methods/upperQuery.ts";
-import cloneColumnQuery from "../methods/cloneColumn.ts";
-import keepQuery from "../methods/keepQuery.ts";
-import removeQuery from "../methods/removeQuery.ts";
-import normalizeQuery from "../methods/normalizeQuery.ts";
-import rollingQuery from "../methods/rollingQuery.ts";
-import distanceQuery from "../methods/distanceQuery.ts";
-import randomPointQuery from "../methods/randomPointQuery.ts";
+import cloneColumn from "../methods/cloneColumn.ts";
 import getGeoData from "../methods/getGeoData.ts";
 import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
-import { readdirSync } from "node:fs";
-import stringToArray from "../helpers/stringToArray.ts";
-import loadDataQuery from "../methods/loadDataQuery.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
-import writeDataQuery from "../methods/writeDataQuery.ts";
 import type SimpleDB from "./SimpleDB.ts";
 import runQuery from "../helpers/runQuery.ts";
-import aggregateGeoQuery from "../methods/aggregateGeoQuery.ts";
-import boundingBoxQuery from "../methods/boundingBoxQuery.ts";
 import summarize from "../methods/summarize.ts";
 import correlations from "../methods/correlations.ts";
 import linearRegressions from "../methods/linearRegressions.ts";
@@ -67,37 +33,109 @@ import joinGeo from "../methods/joinGeo.ts";
 import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
-import createDirectory from "../helpers/createDirectory.ts";
-import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logData from "../helpers/logData.ts";
 import fill from "../methods/fill.ts";
 import loadArray from "../methods/loadArray.ts";
-import cleanPath from "../helpers/cleanPath.ts";
 import Simple from "./Simple.ts";
-import selectRowsQuery from "../methods/selectRowsQuery.ts";
-import crossJoinQuery from "../methods/crossJoinQuery.ts";
 import join from "../methods/join.ts";
 import fuzzyJoin from "../methods/fuzzyJoin.ts";
 import fuzzyClean from "../methods/fuzzyClean.ts";
-import cloneQuery from "../methods/cloneQuery.ts";
 import findGeoColumn from "../helpers/findGeoColumn.ts";
-import getExtension from "../helpers/getExtension.ts";
-import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
-import capitalizeQuery from "../methods/capitalizeQuery.ts";
-import truncateQuery from "../methods/truncateQuery.ts";
-import padQuery from "../methods/padQuery.ts";
-import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
-import unifyColumns from "../helpers/unifyColumns.ts";
-import accumulateQuery from "../helpers/accumulateQuery.ts";
-import unnestQuery from "../helpers/unnestQuery.ts";
-import repeatRowsQuery from "../helpers/repeatRowsQuery.ts";
-import nestQuery from "../helpers/nestQuery.ts";
-import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
 import createFtsIndex from "../methods/createFtsIndex.ts";
 import createVssIndex from "../methods/createVssIndex.ts";
 import bm25 from "../methods/bm25.ts";
 import loadSample from "../methods/loadSample.ts";
 import normalizeString from "../methods/normalizeString.ts";
+import distance from "../methods/distance.ts";
+import latLon from "../methods/latLon.ts";
+import inside from "../methods/inside.ts";
+import intersect from "../methods/intersect.ts";
+import normalize from "../methods/normalize.ts";
+import zScore from "../methods/zScore.ts";
+import rolling from "../methods/rolling.ts";
+import accumulate from "../methods/accumulate.ts";
+import proportionsVertical from "../methods/proportionsVertical.ts";
+import proportionsHorizontal from "../methods/proportionsHorizontal.ts";
+import quantiles from "../methods/quantiles.ts";
+import ranks from "../methods/ranks.ts";
+import updateColumn from "../methods/updateColumn.ts";
+import nest from "../methods/nest.ts";
+import repeatRows from "../methods/repeatRows.ts";
+import unnest from "../methods/unnest.ts";
+import concatenate from "../methods/concatenate.ts";
+import right from "../methods/right.ts";
+import left from "../methods/left.ts";
+import splitExtract from "../methods/splitExtract.ts";
+import truncate from "../methods/truncate.ts";
+import capitalize from "../methods/capitalize.ts";
+import upper from "../methods/upper.ts";
+import lower from "../methods/lower.ts";
+import removeTable from "../methods/removeTable.ts";
+import wider from "../methods/wider.ts";
+import removeRows from "../methods/removeRows.ts";
+import remove from "../methods/remove.ts";
+import keep from "../methods/keep.ts";
+import filter from "../methods/filter.ts";
+import removeDuplicates from "../methods/removeDuplicates.ts";
+import sample from "../methods/sample.ts";
+import skip from "../methods/skip.ts";
+import selectColumns from "../methods/selectColumns.ts";
+import sort from "../methods/sort.ts";
+import loadData from "../methods/loadData.ts";
+import renameTable from "../methods/renameTable.ts";
+import writeData from "../methods/writeData.ts";
+import getBoundingBox from "../methods/getBoundingBox.ts";
+import linesToPolygons from "../methods/linesToPolygons.ts";
+import aggregateGeo from "../methods/aggregateGeo.ts";
+import boundingBox from "../methods/boundingBox.ts";
+import unnestGeo from "../methods/unnestGeo.ts";
+import randomPoint from "../methods/randomPoint.ts";
+import centroid from "../methods/centroid.ts";
+import simplify from "../methods/simplify.ts";
+import union from "../methods/union.ts";
+import fillHoles from "../methods/fillHoles.ts";
+import removeIntersection from "../methods/removeIntersection.ts";
+import intersection from "../methods/intersection.ts";
+import buffer from "../methods/buffer.ts";
+import perimeter from "../methods/perimeter.ts";
+import length from "../methods/length.ts";
+import area from "../methods/area.ts";
+import reproject from "../methods/reproject.ts";
+import reducePrecision from "../methods/reducePrecision.ts";
+import flipCoordinates from "../methods/flipCoordinates.ts";
+import typeGeo from "../methods/typeGeo.ts";
+import isClosedGeo from "../methods/isClosedGeo.ts";
+import fixGeo from "../methods/fixGeo.ts";
+import nbVertices from "../methods/nbVertices.ts";
+import isValidGeo from "../methods/isValidGeo.ts";
+import points from "../methods/points.ts";
+import getData from "../methods/getData.ts";
+import stream from "../methods/stream.ts";
+import updateWithJS from "../methods/updateWithJS.ts";
+import getSchema from "../methods/getSchema.ts";
+import outliersIQR from "../methods/outliersIQR.ts";
+import bins from "../methods/bins.ts";
+import round from "../methods/round.ts";
+import concatenateRow from "../methods/concatenateRow.ts";
+import replaceNulls from "../methods/replaceNulls.ts";
+import pad from "../methods/pad.ts";
+import replace from "../methods/replace.ts";
+import crossJoin from "../methods/crossJoin.ts";
+import addRowNumber from "../methods/addRowNumber.ts";
+import addColumn from "../methods/addColumn.ts";
+import removeColumns from "../methods/removeColumns.ts";
+import convert from "../methods/convert.ts";
+import longer from "../methods/longer.ts";
+import renameColumns from "../methods/renameColumns.ts";
+import trim from "../methods/trim.ts";
+import selectRows from "../methods/selectRows.ts";
+import cloneColumnWithOffset from "../methods/cloneColumnWithOffset.ts";
+import cloneTable from "../methods/cloneTable.ts";
+import insertTables from "../methods/insertTables.ts";
+import insertRows from "../methods/insertRows.ts";
+import loadGeoData from "../methods/loadGeoData.ts";
+import loadDataFromDirectory from "../methods/loadDataFromDirectory.ts";
+import setTypes from "../methods/setTypes.ts";
 
 /**
  * IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
@@ -198,7 +236,7 @@ export default class SimpleTable extends Simple {
    * Renames the current table.
    *
    * @param name - The new name for the table.
-   * @returns A promise that resolves when the table has been renamed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -207,18 +245,9 @@ export default class SimpleTable extends Simple {
    * await table.renameTable("new_employees");
    * ```
    */
-  async renameTable(name: string): Promise<void> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" RENAME TO "${name}";`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "renameTable()",
-        parameters: { name },
-      }),
-    );
-
-    this.name = name;
+  async renameTable(name: string): Promise<this> {
+    await renameTable(this, name);
+    return this;
   }
 
   /**
@@ -226,7 +255,7 @@ export default class SimpleTable extends Simple {
    * To convert the types of an existing table, use the `.convert()` method instead.
    *
    * @param types - An object specifying the column names and their target data types (JavaScript or SQL types).
-   * @returns A promise that resolves when the types have been set.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -257,31 +286,9 @@ export default class SimpleTable extends Simple {
       | "boolean"
       | `geometry('${string}')`
       | `GEOMETRY('${string}')`;
-  }): Promise<void> {
-    let spatial = "";
-    if (
-      Object.values(types)
-        .map((d) => d.toLowerCase())
-        .some((d) => d.startsWith("geometry"))
-    ) {
-      spatial =
-        "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;\n";
-    }
-    await queryDB(
-      this,
-      `${spatial}CREATE OR REPLACE TABLE "${this.name}" (${
-        Object.keys(
-          types,
-        )
-          .map((d) => `"${d}" ${parseType(types[d])}`)
-          .join(", ")
-      });`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "setTypes()",
-        parameters: { types },
-      }),
-    );
+  }): Promise<this> {
+    await setTypes(this, types);
+    return this;
   }
 
   /**
@@ -403,16 +410,7 @@ export default class SimpleTable extends Simple {
       sheet?: string;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      loadDataQuery(this.name, stringToArray(files), options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "loadData()",
-        parameters: { files, options },
-      }),
-    );
-
+    await loadData(this, files, options);
     return this;
   }
 
@@ -483,20 +481,7 @@ export default class SimpleTable extends Simple {
       sheet?: string;
     } = {},
   ): Promise<this> {
-    const files = readdirSync(directory).map(
-      (file) =>
-        `${directory.slice(-1) === "/" ? directory : directory + "/"}${file}`,
-    );
-    await queryDB(
-      this,
-      loadDataQuery(this.name, files, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "loadDataFromDirectory",
-        parameters: { directory, options },
-      }),
-    );
-
+    await loadDataFromDirectory(this, directory, options);
     return this;
   }
 
@@ -537,53 +522,7 @@ export default class SimpleTable extends Simple {
     file: string,
     options: { toWGS84?: boolean } = {},
   ): Promise<this> {
-    const fileExtension = getExtension(file);
-
-    if (fileExtension === "geoparquet" || fileExtension === "parquet") {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
-          file.toLowerCase().includes("http")
-            ? " INSTALL https; LOAD https;"
-            : ""
-        }
-              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM read_parquet('${
-          cleanPath(file)
-        }');`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "loadGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
-          file.toLowerCase().includes("http")
-            ? " INSTALL https; LOAD https;"
-            : ""
-        }
-              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM ST_Read('${file}');`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "loadGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    }
-
-    if (await this.hasColumn("OGC_FID")) {
-      await this.removeColumns("OGC_FID");
-    }
-
-    if (options.toWGS84) {
-      const geoType = await this.getProjection("geom");
-      if (geoType !== "GEOMETRY('EPSG:4326')") {
-        await this.reproject("EPSG:4326");
-      }
-    }
-
+    await loadGeoData(this, file, options);
     return this;
   }
 
@@ -923,7 +862,7 @@ export default class SimpleTable extends Simple {
    * Inserts rows, provided as an array of JavaScript objects, into the table.
    *
    * @param rows - An array of objects, where each object represents a row to be inserted and its properties correspond to column names.
-   * @returns A promise that resolves when the rows have been inserted.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Importing Data
    *
    * @example
@@ -936,20 +875,9 @@ export default class SimpleTable extends Simple {
    * await table.insertRows(newRows);
    * ```
    */
-  async insertRows(rows: { [key: string]: unknown }[]): Promise<void> {
-    if (await this.sdb.hasTable(this.name)) {
-      await queryDB(
-        this,
-        insertRowsQuery(this.name, rows),
-        mergeOptions(this, {
-          table: this.name,
-          method: "insertRows()",
-          parameters: { rows },
-        }),
-      );
-    } else {
-      await this.loadArray(rows);
-    }
+  async insertRows(rows: { [key: string]: unknown }[]): Promise<this> {
+    await insertRows(this, rows);
+    return this;
   }
 
   /**
@@ -983,94 +911,7 @@ export default class SimpleTable extends Simple {
     tablesToInsert: SimpleTable | SimpleTable[],
     options: { unifyColumns?: boolean } = {},
   ): Promise<this> {
-    const array = Array.isArray(tablesToInsert)
-      ? tablesToInsert
-      : [tablesToInsert];
-
-    if (!await this.sdb.hasTable(this.name)) {
-      await this.setTypes(
-        (await array[0].getTypes()) as {
-          [key: string]:
-            | "integer"
-            | "float"
-            | "number"
-            | "string"
-            | "date"
-            | "time"
-            | "datetime"
-            | "datetimeTz"
-            | "bigint"
-            | "double"
-            | "varchar"
-            | "timestamp"
-            | "timestamp with time zone"
-            | "boolean"
-            | `geometry('${string}')`
-            | `GEOMETRY('${string}')`;
-        },
-      );
-    }
-
-    // Checking columns, types
-    if (!options.unifyColumns) {
-      const thisColumns = (await this.getColumns()).sort().join(",");
-      for (const table of array) {
-        const tableColumns = (await table.getColumns()).sort().join(",");
-        if (thisColumns !== tableColumns) {
-          throw new Error(
-            `Tables ${this.name} and ${table.name} don't have the same columns: ${thisColumns} vs ${tableColumns}`,
-          );
-        }
-      }
-    }
-    const allTables = [this, ...array];
-    const allTypes: { [key: string]: string } = {};
-    for (const table of allTables) {
-      const types = await table.getTypes();
-      for (const key in types) {
-        if (!allTypes[key]) {
-          allTypes[key] = types[key];
-        } else {
-          if (allTypes[key] !== types[key]) {
-            throw new Error(
-              `The column ${key} has different types in the tables.`,
-            );
-          }
-        }
-      }
-    }
-
-    let columnsAdded: {
-      [key: string]: string[];
-    } = {};
-    if (options.unifyColumns) {
-      columnsAdded = await unifyColumns(allTables, allTypes);
-    }
-
-    await queryDB(
-      this,
-      array
-        .map(
-          (tableToInsert) =>
-            `INSERT INTO "${this.name}" BY NAME SELECT * FROM "${tableToInsert.name}";`,
-        )
-        .join("\n"),
-      mergeOptions(this, {
-        table: this.name,
-        method: "insertTables()",
-        parameters: { tablesToInsert },
-      }),
-    );
-
-    if (options.unifyColumns) {
-      for (const table of array) {
-        const cols = columnsAdded[table.name];
-        if (cols) {
-          await table.removeColumns(cols);
-        }
-      }
-    }
-
+    await insertTables(this, tablesToInsert, options);
     return this;
   }
 
@@ -1187,34 +1028,7 @@ export default class SimpleTable extends Simple {
       offset?: number;
     } = {},
   ): Promise<this> {
-    const columns = typeof nameOrOptions === "object" && nameOrOptions.columns
-      ? stringToArray(nameOrOptions.columns)
-      : [];
-
-    // Delegate to sdb.newTable() so subclasses using tableClass work correctly.
-    let clonedTable;
-    const options = typeof nameOrOptions === "string"
-      ? { outputTable: nameOrOptions }
-      : nameOrOptions;
-    if (typeof options.outputTable === "string") {
-      clonedTable = this.sdb.newTable(options.outputTable);
-    } else {
-      clonedTable = this.sdb.newTable(undefined);
-    }
-
-    await queryDB(
-      this,
-      cloneQuery(this.name, clonedTable.name, columns, options),
-      mergeOptions(this, {
-        table: clonedTable.name,
-        method: "cloneTable()",
-        parameters: { options },
-      }),
-    );
-
-    clonedTable.connection = clonedTable.sdb.connection;
-
-    return clonedTable as this;
+    return await cloneTable(this, nameOrOptions) as this;
   }
 
   /**
@@ -1222,7 +1036,7 @@ export default class SimpleTable extends Simple {
    *
    * @param originalColumn - The name of the original column to clone.
    * @param newColumn - The name of the new column to be created.
-   * @returns A promise that resolves when the column has been cloned.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -1231,18 +1045,9 @@ export default class SimpleTable extends Simple {
    * await table.cloneColumn("firstName", "contactName");
    * ```
    */
-  async cloneColumn(originalColumn: string, newColumn: string): Promise<void> {
-    const types = await this.getTypes();
-
-    await queryDB(
-      this,
-      cloneColumnQuery(this.name, originalColumn, newColumn, types),
-      mergeOptions(this, {
-        table: this.name,
-        method: "cloneColumn()",
-        parameters: { originalColumn, newColumn },
-      }),
-    );
+  async cloneColumn(originalColumn: string, newColumn: string): Promise<this> {
+    await cloneColumn(this, originalColumn, newColumn);
+    return this;
   }
 
   /**
@@ -1256,7 +1061,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.offset - The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
    * @param options.categories - A string or an array of strings representing columns to partition the data by. The offset will be applied independently within each category.
-   * @returns A promise that resolves when the column has been cloned with offset values.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -1296,35 +1101,9 @@ export default class SimpleTable extends Simple {
       offset?: number;
       categories?: string | string[];
     } = {},
-  ): Promise<void> {
-    const offset = options.offset ?? 1;
-    const categories = options.categories
-      ? stringToArray(options.categories)
-      : [];
-    const partition = categories.length > 0
-      ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
-      : "";
-
-    const tempRowCol = `rowNumberForCloneColumnWithOffset`;
-    await this.addRowNumber(tempRowCol);
-
-    // Apply the offset using the row number for ordering
-    // When categories are specified, also sort the final result by categories
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE("${tempRowCol}"), LEAD("${originalColumn}", ${offset}) OVER(${partition} ORDER BY "${tempRowCol}") AS "${newColumn}" FROM "${this.name}"${
-        categories.length > 0
-          ? ` ORDER BY ${
-            categories.map((d) => `"${d}"`).join(", ")
-          }, "${tempRowCol}"`
-          : ` ORDER BY "${tempRowCol}"`
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "cloneColumnWithOffset()",
-        parameters: { originalColumn, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await cloneColumnWithOffset(this, originalColumn, newColumn, options);
+    return this;
   }
 
   /**
@@ -1335,7 +1114,7 @@ export default class SimpleTable extends Simple {
    * @param options.categories - A string or an array of strings representing columns to partition the data by. The fill will be applied independently within each category.
    * @param options.interpolate - If `true`, replaces `NULL` values with linearly interpolated values using DuckDB's `fill()` window function. When `interpolateBy` is not set, row positions are used as the X-axis, treating rows as equidistant. For `NULL` values at the ends, linear extrapolation is used. Both the column values and the X-axis values must support arithmetic. If `false` or omitted, the previous non-`NULL` value is used instead. Automatically assumed `true` when `interpolateBy` is set.
    * @param options.interpolateBy - A column name to use as the X-axis for interpolation instead of equidistant row positions. When provided, `interpolate` is automatically assumed `true`. Use this when rows are not evenly spaced (e.g., timestamps or non-uniform numeric indices) so that interpolated values are proportional to the actual distance between X-axis values.
-   * @returns A promise that resolves when the `NULL` values have been filled.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -1387,8 +1166,9 @@ export default class SimpleTable extends Simple {
       interpolate?: boolean;
       interpolateBy?: string;
     } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await fill(this, columns, options);
+    return this;
   }
 
   /**
@@ -1398,7 +1178,7 @@ export default class SimpleTable extends Simple {
    * @param order - An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
    * @param options - An optional object with configuration options:
    * @param options.lang - An object mapping column names to language codes for collation (e.g., `{ column1: "fr" }`). See DuckDB Collations documentation for more details: https://duckdb.org/docs/sql/expressions/collations.
-   * @returns A promise that resolves when the table has been sorted.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Restructuring Data
    *
    * @example
@@ -1430,23 +1210,16 @@ export default class SimpleTable extends Simple {
     options: {
       lang?: { [key: string]: string };
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      sortQuery(this.name, order, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "sort()",
-        parameters: { order, options },
-      }),
-    );
+  ): Promise<this> {
+    await sort(this, order, options);
+    return this;
   }
 
   /**
    * Selects specific columns in the table, removing all others.
    *
    * @param columns - The name or an array of names of the columns to be selected.
-   * @returns A promise that resolves when the columns have been selected.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1461,29 +1234,16 @@ export default class SimpleTable extends Simple {
    * await table.selectColumns("productName");
    * ```
    */
-  async selectColumns(columns: string | string[]): Promise<void> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT ${
-        stringToArray(
-          columns,
-        )
-          .map((d) => `"${d}"`)
-          .join(", ")
-      } FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "selectColumns()",
-        parameters: { columns },
-      }),
-    );
+  async selectColumns(columns: string | string[]): Promise<this> {
+    await selectColumns(this, columns);
+    return this;
   }
 
   /**
    * Skips the first `n` rows of the table, effectively removing them.
    *
    * @param nbRowsToSkip - The number of rows to skip from the beginning of the table.
-   * @returns A promise that resolves when the rows have been skipped.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1492,16 +1252,9 @@ export default class SimpleTable extends Simple {
    * await table.skip(10);
    * ```
    */
-  async skip(nbRowsToSkip: number): Promise<void> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM "${this.name}" OFFSET ${nbRowsToSkip} ROWS;`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "skip()",
-        parameters: { nbRowsToSkip },
-      }),
-    );
+  async skip(nbRowsToSkip: number): Promise<this> {
+    await skip(this, nbRowsToSkip);
+    return this;
   }
 
   /**
@@ -1529,7 +1282,7 @@ export default class SimpleTable extends Simple {
    * @param quantity - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
    * @param options - An optional object with configuration options:
    * @param options.seed - A number specifying the seed for repeatable sampling. Using the same seed will always yield the same random rows. Defaults to a random seed.
-   * @returns A promise that resolves when the sampling is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1555,20 +1308,9 @@ export default class SimpleTable extends Simple {
     options: {
       seed?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM "${this.name}" USING SAMPLE RESERVOIR(${
-        typeof quantity === "number" ? `${quantity} ROWS` : quantity
-      })${
-        typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
-      }`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "sample()",
-        parameters: { quantity, options },
-      }),
-    );
+  ): Promise<this> {
+    await sample(this, quantity, options);
+    return this;
   }
 
   /**
@@ -1609,27 +1351,7 @@ export default class SimpleTable extends Simple {
     count: number | string,
     options: { offset?: number; outputTable?: string | boolean } = {},
   ): Promise<this> {
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await queryDB(
-      this,
-      selectRowsQuery(this.name, count, options),
-      mergeOptions(this, {
-        table: typeof options.outputTable === "string"
-          ? options.outputTable
-          : this.name,
-        method: "selectRows",
-        parameters: { count, options },
-      }),
-    );
-
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+    return await selectRows(this, count, options) as this;
   }
 
   /**
@@ -1638,7 +1360,7 @@ export default class SimpleTable extends Simple {
    *
    * @param options - An optional object with configuration options:
    * @param options.on - A column name or an array of column names to consider when identifying duplicates. If specified, duplicates are determined based only on the values in these columns. If omitted, all columns are considered.
-   * @returns A promise that resolves when the duplicate rows have been removed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1663,16 +1385,9 @@ export default class SimpleTable extends Simple {
     options: {
       on?: string | string[];
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      removeDuplicatesQuery(this.name, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeDuplicates()",
-        parameters: { options },
-      }),
-    );
+  ): Promise<this> {
+    await removeDuplicates(this, options);
+    return this;
   }
 
   /**
@@ -1683,7 +1398,7 @@ export default class SimpleTable extends Simple {
    * @param options.columns - A string or an array of strings specifying the columns to consider for missing values. If omitted, all columns are considered.
    * @param options.missingValues - An array of values to be treated as missing values instead of the default ones. Defaults to `["undefined", "NaN", "null", "NULL", ""]`.
    * @param options.invert - A boolean indicating whether to invert the condition. If `true`, only rows containing missing values will be kept. Defaults to `false`.
-   * @returns A promise that resolves when the rows with missing values have been removed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1716,8 +1431,9 @@ export default class SimpleTable extends Simple {
       missingValues?: (string | number)[];
       invert?: boolean;
     } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await removeMissing(this, options);
+    return this;
   }
 
   /**
@@ -1727,7 +1443,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.character - The string to trim. Defaults to whitespace characters.
    * @param options.method - The trimming method to apply: `"leftTrim"` (removes from the beginning), `"rightTrim"` (removes from the end), or `"trim"` (removes from both sides). Defaults to `"trim"`.
-   * @returns A promise that resolves when the trimming operation is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -1754,17 +1470,9 @@ export default class SimpleTable extends Simple {
       character?: string;
       method?: "leftTrim" | "rightTrim" | "trim";
     } = {},
-  ): Promise<void> {
-    options.method = options.method ?? "trim";
-    await queryDB(
-      this,
-      trimQuery(this.name, stringToArray(columns), options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "trim()",
-        parameters: { columns, options },
-      }),
-    );
+  ): Promise<this> {
+    await trim(this, columns, options);
+    return this;
   }
 
   /**
@@ -1772,7 +1480,7 @@ export default class SimpleTable extends Simple {
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
    *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
-   * @returns A promise that resolves when the rows have been filtered.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1799,25 +1507,16 @@ export default class SimpleTable extends Simple {
    * await table.filter(`lastPurchaseDate >= '2023-01-01'`);
    * ```
    */
-  async filter(conditions: string): Promise<void> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT *
-        FROM "${this.name}"
-        WHERE ${conditions}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "filter()",
-        parameters: { conditions },
-      }),
-    );
+  async filter(conditions: string): Promise<this> {
+    await filter(this, conditions);
+    return this;
   }
 
   /**
    * Keeps rows in this table that have specific values in specified columns, removing all other rows.
    *
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns.
-   * @returns A promise that resolves when the rows have been filtered.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1838,23 +1537,16 @@ export default class SimpleTable extends Simple {
         | (number | string | Date | boolean | null)[]
         | (number | string | Date | boolean | null);
     },
-  ): Promise<void> {
-    await queryDB(
-      this,
-      keepQuery(this.name, columnsAndValues),
-      mergeOptions(this, {
-        table: this.name,
-        method: "keep()",
-        parameters: { columnsAndValues },
-      }),
-    );
+  ): Promise<this> {
+    await keep(this, columnsAndValues);
+    return this;
   }
 
   /**
    * Removes rows from this table that have specific values in specified columns.
    *
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns.
-   * @returns A promise that resolves when the rows have been removed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1875,16 +1567,9 @@ export default class SimpleTable extends Simple {
         | (number | string | Date | boolean | null)[]
         | (number | string | Date | boolean | null);
     },
-  ): Promise<void> {
-    await queryDB(
-      this,
-      removeQuery(this.name, columnsAndValues),
-      mergeOptions(this, {
-        table: this.name,
-        method: "remove()",
-        parameters: { columnsAndValues },
-      }),
-    );
+  ): Promise<this> {
+    await remove(this, columnsAndValues);
+    return this;
   }
 
   /**
@@ -1892,7 +1577,7 @@ export default class SimpleTable extends Simple {
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
    *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"fruit = 'apple'"`).
-   * @returns A promise that resolves when the rows have been removed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
@@ -1919,23 +1604,16 @@ export default class SimpleTable extends Simple {
    * await table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
    * ```
    */
-  async removeRows(conditions: string): Promise<void> {
-    await queryDB(
-      this,
-      `DELETE FROM "${this.name}" WHERE ${conditions}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeRows()",
-        parameters: { conditions },
-      }),
-    );
+  async removeRows(conditions: string): Promise<this> {
+    await removeRows(this, conditions);
+    return this;
   }
 
   /**
    * Renames one or more columns in the table.
    *
    * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
-   * @returns A promise that resolves when the columns have been renamed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -1950,25 +1628,15 @@ export default class SimpleTable extends Simple {
    * await table.renameColumns({ "product_id": "productId" });
    * ```
    */
-  async renameColumns(names: { [key: string]: string }): Promise<void> {
-    const oldNames = Object.keys(names);
-    const newNames = Object.values(names);
-
-    await queryDB(
-      this,
-      renameColumnQuery(this.name, oldNames, newNames),
-      mergeOptions(this, {
-        table: this.name,
-        method: "renameColumns()",
-        parameters: { names },
-      }),
-    );
+  async renameColumns(names: { [key: string]: string }): Promise<this> {
+    await renameColumns(this, names);
+    return this;
   }
 
   /**
    * Cleans column names by removing non-alphanumeric characters and formatting them to camel case.
    *
-   * @returns A promise that resolves when the column names have been cleaned.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -1978,13 +1646,14 @@ export default class SimpleTable extends Simple {
    * await table.cleanColumnNames();
    * ```
    */
-  async cleanColumnNames(): Promise<void> {
+  async cleanColumnNames(): Promise<this> {
     const columns = await this.getColumns();
     const obj: { [key: string]: string } = {};
     for (const col of columns) {
       obj[col] = camelCase(col);
     }
     await this.renameColumns(obj);
+    return this;
   }
 
   /**
@@ -2019,28 +1688,16 @@ export default class SimpleTable extends Simple {
    * @param columns - An array of strings representing the names of the columns to be stacked (unpivoted).
    * @param columnsTo - The name of the new column that will contain the original column names (e.g., "Year").
    * @param valuesTo - The name of the new column that will contain the values from the stacked columns (e.g., "Employees").
-   * @returns A promise that resolves when the table has been restructured.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Restructuring Data
    */
   async longer(
     columns: string[],
     columnsTo: string,
     valuesTo: string,
-  ): Promise<void> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM (
-            FROM "${this.name}" UNPIVOT INCLUDE NULLS (
-            "${valuesTo}"
-            for "${columnsTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
-            )
-        )`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "longer()",
-        parameters: { columns, columnsTo, valuesTo },
-      }),
-    );
+  ): Promise<this> {
+    await longer(this, columns, columnsTo, valuesTo);
+    return this;
   }
 
   /**
@@ -2074,19 +1731,12 @@ export default class SimpleTable extends Simple {
    *
    * @param columnsFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
-   * @returns A promise that resolves when the table has been restructured.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Restructuring Data
    */
-  async wider(columnsFrom: string, valuesFrom: string): Promise<void> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM (PIVOT "${this.name}" ON "${columnsFrom}" USING sum("${valuesFrom}"));`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "wider()",
-        parameters: { columnsFrom, valuesFrom },
-      }),
-    );
+  async wider(columnsFrom: string, valuesFrom: string): Promise<this> {
+    await wider(this, columnsFrom, valuesFrom);
+    return this;
   }
 
   /**
@@ -2102,7 +1752,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.try - If `true`, values that cannot be converted will be replaced by `NULL` instead of throwing an error. Defaults to `false`.
    * @param options.datetimeFormat - A string specifying the format for date and time conversions. Uses `strftime` and `strptime` functions from DuckDB. For format specifiers, see [DuckDB's documentation](https://duckdb.org/docs/sql/functions/dateformat).
-   * @returns A promise that resolves when the column types have been converted.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2157,40 +1807,15 @@ export default class SimpleTable extends Simple {
       try?: boolean;
       datetimeFormat?: string;
     } = {},
-  ): Promise<void> {
-    const allTypes = await this.getTypes();
-    const allColumns = Object.keys(allTypes);
-
-    for (const col in types) {
-      if (!allColumns.includes(col)) {
-        throw new Error(
-          `The column ${col} does not exist in the table.`,
-        );
-      }
-    }
-
-    await queryDB(
-      this,
-      convertQuery(
-        this.name,
-        Object.keys(types),
-        Object.values(types),
-        allColumns,
-        allTypes,
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "convert()",
-        parameters: { types, options },
-      }),
-    );
+  ): Promise<this> {
+    await convert(this, types, options);
+    return this;
   }
 
   /**
    * Removes the table from the database. After this operation, invoking methods on this SimpleTable instance will result in an error.
    *
-   * @returns A promise that resolves when the table has been removed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -2199,27 +1824,16 @@ export default class SimpleTable extends Simple {
    * await table.removeTable();
    * ```
    */
-  async removeTable(): Promise<void> {
-    await queryDB(
-      this,
-      `DROP TABLE "${this.name}";`,
-      mergeOptions(this, {
-        table: null,
-        method: "removeTable()",
-        parameters: {},
-      }),
-    );
-
-    this.sdb.tables = this.sdb.tables.filter(
-      (t) => t.name !== this.name,
-    );
+  async removeTable(): Promise<this> {
+    await removeTable(this);
+    return this;
   }
 
   /**
    * Removes one or more columns from this table.
    *
    * @param columns - The name or an array of names of the columns to be removed.
-   * @returns A promise that resolves when the columns have been removed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -2234,17 +1848,9 @@ export default class SimpleTable extends Simple {
    * await table.removeColumns("tempColumn");
    * ```
    */
-  async removeColumns(columns: string | string[]): Promise<void> {
-    const cols = stringToArray(columns);
-    await queryDB(
-      this,
-      cols.map((d) => `ALTER TABLE "${this.name}" DROP "${d}";`).join("\n"),
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeColumns()",
-        parameters: { columns },
-      }),
-    );
+  async removeColumns(columns: string | string[]): Promise<this> {
+    await removeColumns(this, columns);
+    return this;
   }
 
   /**
@@ -2254,7 +1860,7 @@ export default class SimpleTable extends Simple {
    * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
    * @param definition - A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
    * @param options - An optional object with configuration options:
-   * @returns A promise that resolves when the new column has been added.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -2289,24 +1895,9 @@ export default class SimpleTable extends Simple {
       | `geometry('${string}')`
       | `GEOMETRY('${string}')`,
     definition: string,
-  ): Promise<void> {
-    const newType = parseType(type);
-
-    let spatial = "";
-    if (newType.toLowerCase().includes("geometry")) {
-      spatial = "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
-    }
-
-    await queryDB(
-      this,
-      `${spatial} ALTER TABLE "${this.name}" ADD "${newColumn}" ${newType};
-        UPDATE "${this.name}" SET "${newColumn}" = ${definition}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "addColumn()",
-        parameters: { newColumn, type, definition },
-      }),
-    );
+  ): Promise<this> {
+    await addColumn(this, newColumn, type, definition);
+    return this;
   }
 
   /**
@@ -2315,7 +1906,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column that will store the row number.
    * @param options - An optional object with configuration options:
    * @param options.categories - A string or an array of strings representing columns to partition the data by. The row number will restart at 0 for each unique combination of values in these columns.
-   * @returns A promise that resolves when the row number column has been added.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Column Operations
    *
    * @example
@@ -2333,23 +1924,9 @@ export default class SimpleTable extends Simple {
   async addRowNumber(
     newColumn: string,
     options: { categories?: string | string[] } = {},
-  ): Promise<void> {
-    const categories = options.categories
-      ? stringToArray(options.categories)
-      : [];
-    const partition = categories.length > 0
-      ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
-      : "";
-
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT *, (ROW_NUMBER() OVER(${partition} ORDER BY rowid) - 1) AS "${newColumn}" FROM "${this.name}" ORDER BY rowid`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "addRowNumber()",
-        parameters: { newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await addRowNumber(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -2386,39 +1963,7 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): Promise<this> {
-    const identicalColumns = getIdenticalColumns(
-      await this.getColumns(),
-      await rightTable.getColumns(),
-    );
-    if (identicalColumns.length > 0) {
-      throw new Error(
-        `The tables have columns with identical names. Rename or remove ${
-          identicalColumns.map((d) => `"${d}"`).join(", ")
-        } in one of the two tables before doing the cross join.`,
-      );
-    }
-
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await queryDB(
-      this,
-      crossJoinQuery(this.name, rightTable.name, options),
-      mergeOptions(this, {
-        table: typeof options.outputTable === "string"
-          ? options.outputTable
-          : this.name,
-        method: "crossJoin()",
-        parameters: { rightTable, options },
-      }),
-    );
-
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+    return await crossJoin(this, rightTable, options) as this;
   }
 
   /**
@@ -2581,7 +2126,7 @@ export default class SimpleTable extends Simple {
    *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
    *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
    * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
-   * @returns A promise that resolves when the column has been normalized.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2629,8 +2174,9 @@ export default class SimpleTable extends Simple {
         | "maxScore";
       preFilterPrefixLen?: number;
     } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await fuzzyClean(this, column, newColumn, threshold, options);
+    return this;
   }
 
   /**
@@ -2641,7 +2187,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.entireString - A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
    * @param options.regex - A boolean indicating whether the `oldString` should be treated as a regular expression for global replacement. Cannot be used with `entireString: true`. Defaults to `false`.
-   * @returns A promise that resolves when the string replacements are complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2681,39 +2227,16 @@ export default class SimpleTable extends Simple {
       entireString?: boolean;
       regex?: boolean;
     } = {},
-  ): Promise<void> {
-    options.entireString = options.entireString ?? false;
-    options.regex = options.regex ?? false;
-    if (options.entireString === true && options.regex === true) {
-      throw new Error(
-        "You can't have entireString to true and regex to true at the same time. Pick one.",
-      );
-    }
-    const columnList = columns === "all"
-      ? await this.getColumns()
-      : stringToArray(columns);
-    await queryDB(
-      this,
-      replaceQuery(
-        this.name,
-        columnList,
-        Object.keys(strings),
-        Object.values(strings),
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "replace()",
-        parameters: { columns, strings, options },
-      }),
-    );
+  ): Promise<this> {
+    await replace(this, columns, strings, options);
+    return this;
   }
 
   /**
    * Converts string values in the specified columns to lowercase.
    *
    * @param columns - The column name or an array of column names to be converted to lowercase.
-   * @returns A promise that resolves when the strings have been converted to lowercase.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2728,23 +2251,16 @@ export default class SimpleTable extends Simple {
    * await table.lower(["column1", "column2"]);
    * ```
    */
-  async lower(columns: string | string[]): Promise<void> {
-    await queryDB(
-      this,
-      lowerQuery(this.name, stringToArray(columns)),
-      mergeOptions(this, {
-        table: this.name,
-        method: "lower()",
-        parameters: { columns },
-      }),
-    );
+  async lower(columns: string | string[]): Promise<this> {
+    await lower(this, columns);
+    return this;
   }
 
   /**
    * Converts string values in the specified columns to uppercase.
    *
    * @param columns - The column name or an array of column names to be converted to uppercase.
-   * @returns A promise that resolves when the strings have been converted to uppercase.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2759,23 +2275,16 @@ export default class SimpleTable extends Simple {
    * await table.upper(["column1", "column2"]);
    * ```
    */
-  async upper(columns: string | string[]): Promise<void> {
-    await queryDB(
-      this,
-      upperQuery(this.name, stringToArray(columns)),
-      mergeOptions(this, {
-        table: this.name,
-        method: "upper()",
-        parameters: { columns },
-      }),
-    );
+  async upper(columns: string | string[]): Promise<this> {
+    await upper(this, columns);
+    return this;
   }
 
   /**
    * Capitalizes the first letter of each string in the specified columns and converts the rest of the string to lowercase.
    *
    * @param columns - The column name or an array of column names to be capitalized.
-   * @returns A promise that resolves when the strings have been capitalized.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2790,16 +2299,9 @@ export default class SimpleTable extends Simple {
    * await table.capitalize(["column1", "column2"]);
    * ```
    */
-  async capitalize(columns: string | string[]): Promise<void> {
-    await queryDB(
-      this,
-      capitalizeQuery(this.name, stringToArray(columns)),
-      mergeOptions(this, {
-        table: this.name,
-        method: "upper()",
-        parameters: { columns },
-      }),
-    );
+  async capitalize(columns: string | string[]): Promise<this> {
+    await capitalize(this, columns);
+    return this;
   }
 
   /**
@@ -2807,7 +2309,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The column name containing strings to be truncated.
    * @param length - The maximum number of characters to keep.
-   * @returns A promise that resolves when the strings have been truncated.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2822,16 +2324,9 @@ export default class SimpleTable extends Simple {
    * await table.truncate("name", 10);
    * ```
    */
-  async truncate(column: string, length: number): Promise<void> {
-    await queryDB(
-      this,
-      truncateQuery(this.name, column, length),
-      mergeOptions(this, {
-        table: this.name,
-        method: "truncate()",
-        parameters: { column, length },
-      }),
-    );
+  async truncate(column: string, length: number): Promise<this> {
+    await truncate(this, column, length);
+    return this;
   }
 
   /**
@@ -2846,7 +2341,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.method - Which side to pad. `'left'` (default) or `'right'`.
    * @param options.char - The character to use for padding. Defaults to `'0'`.
-   * @returns A promise that resolves when the padding operation is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @throws {Error} If any column is not of string (VARCHAR) type.
    * @throws {Error} If any string value exceeds the target length.
    * @category Updating Data
@@ -2876,50 +2371,9 @@ export default class SimpleTable extends Simple {
     columns: string | string[],
     length: number,
     options: { method?: "left" | "right"; char?: string } = {},
-  ): Promise<void> {
-    const columnList = stringToArray(columns);
-
-    // Validate all columns are string type
-    const allTypes = await this.getTypes();
-    for (const column of columnList) {
-      if (allTypes[column] !== "VARCHAR") {
-        throw new Error(
-          `The column "${column}" is of type ${
-            allTypes[column]
-          }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
-        );
-      }
-    }
-
-    // Pre-validation: check for strings exceeding target length
-    for (const column of columnList) {
-      const overflowResult = await queryDB(
-        this,
-        `SELECT COUNT(*) AS cnt FROM "${this.name}" WHERE LENGTH("${column}") > ${length};`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "pad()",
-          parameters: { columns, length, options },
-          returnDataFrom: "query",
-        }),
-      );
-      const overflowCount = Number(overflowResult![0].cnt);
-      if (overflowCount > 0) {
-        throw new Error(
-          `The column "${column}" has ${overflowCount} string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
-        );
-      }
-    }
-
-    await queryDB(
-      this,
-      padQuery(this.name, columnList, length, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "pad()",
-        parameters: { columns, length, options },
-      }),
-    );
+  ): Promise<this> {
+    await pad(this, columns, length, options);
+    return this;
   }
 
   /**
@@ -2930,7 +2384,7 @@ export default class SimpleTable extends Simple {
    * @param separator - The substring to use as a delimiter for splitting the strings.
    * @param index - The zero-based index of the substring to extract after splitting. For example, `0` for the first part, `1` for the second, etc.
    * @param newColumn - The name of the column where the extracted substrings will be stored. To overwrite the original column, use the same name as `column`.
-   * @returns A promise that resolves when the strings have been split and extracted.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2952,23 +2406,9 @@ export default class SimpleTable extends Simple {
     separator: string,
     index: number,
     newColumn: string,
-  ): Promise<void> {
-    await queryDB(
-      this,
-      `${
-        column === newColumn
-          ? ""
-          : `ALTER TABLE "${this.name}" ADD "${newColumn}" VARCHAR;`
-      }
-      UPDATE "${this.name}" SET "${newColumn}" = SPLIT_PART("${column}", '${separator}', ${
-        index + 1
-      })`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "splitExtract()",
-        parameters: { column, separator, index, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await splitExtract(this, column, separator, index, newColumn);
+    return this;
   }
 
   /**
@@ -2983,7 +2423,7 @@ export default class SimpleTable extends Simple {
    * @param newColumns - An array of column names for the extracted parts.
    * @param options - Optional configuration.
    * @param options.noCheck - If true, skips all validation checks (both max and min parts). Default is false.
-   * @returns A promise that resolves when the strings have been split and spread into new columns.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3013,8 +2453,9 @@ export default class SimpleTable extends Simple {
     options: {
       noCheck?: boolean;
     } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await splitSpread(this, column, separator, newColumns, options);
+    return this;
   }
 
   /**
@@ -3022,7 +2463,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column containing the strings to be modified.
    * @param numberOfCharacters - The number of characters to extract from the left side of each string.
-   * @returns A promise that resolves when the strings have been updated.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3032,16 +2473,9 @@ export default class SimpleTable extends Simple {
    * await table.left("productCode", 2);
    * ```
    */
-  async left(column: string, numberOfCharacters: number): Promise<void> {
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET "${column}" = LEFT("${column}", ${numberOfCharacters})`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "left()",
-        parameters: { column, numberOfCharacters },
-      }),
-    );
+  async left(column: string, numberOfCharacters: number): Promise<this> {
+    await left(this, column, numberOfCharacters);
+    return this;
   }
 
   /**
@@ -3049,7 +2483,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column containing the strings to be modified.
    * @param numberOfCharacters - The number of characters to extract from the right side of each string.
-   * @returns A promise that resolves when the strings have been updated.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3059,16 +2493,9 @@ export default class SimpleTable extends Simple {
    * await table.right("productCode", 2);
    * ```
    */
-  async right(column: string, numberOfCharacters: number): Promise<void> {
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET "${column}" = RIGHT("${column}", ${numberOfCharacters})`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "right()",
-        parameters: { column, numberOfCharacters },
-      }),
-    );
+  async right(column: string, numberOfCharacters: number): Promise<this> {
+    await right(this, column, numberOfCharacters);
+    return this;
   }
 
   /**
@@ -3076,7 +2503,7 @@ export default class SimpleTable extends Simple {
    *
    * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param value - The value to replace `NULL` occurrences with.
-   * @returns A promise that resolves when the `NULL` values have been replaced.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3106,19 +2533,9 @@ export default class SimpleTable extends Simple {
   async replaceNulls(
     columns: "all" | string | string[],
     value: number | string | Date | boolean,
-  ): Promise<void> {
-    const columnList = columns === "all"
-      ? await this.getColumns()
-      : stringToArray(columns);
-    await queryDB(
-      this,
-      replaceNullsQuery(this.name, columnList, value),
-      mergeOptions(this, {
-        table: this.name,
-        method: "replaceNulls()",
-        parameters: { columns, value },
-      }),
-    );
+  ): Promise<this> {
+    await replaceNulls(this, columns, value);
+    return this;
   }
 
   /**
@@ -3128,7 +2545,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column to store the concatenated values.
    * @param options - An optional object with configuration options:
    * @param options.separator - The string used to separate concatenated values. Defaults to an empty string (`""`).
-   * @returns A promise that resolves when the concatenation is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3149,16 +2566,9 @@ export default class SimpleTable extends Simple {
     options: {
       separator?: string;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      concatenateQuery(this.name, columns, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "concatenate()",
-        parameters: { columns, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await concatenate(this, columns, newColumn, options);
+    return this;
   }
 
   /**
@@ -3174,7 +2584,7 @@ export default class SimpleTable extends Simple {
    *
    * @param columns - An array of column names whose values will be concatenated with labels.
    * @param newColumn - The name of the new column to create with the concatenated values.
-   * @returns A promise that resolves when the concatenation is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3212,27 +2622,9 @@ export default class SimpleTable extends Simple {
   async concatenateRow(
     columns: string[],
     newColumn: string,
-  ): Promise<void> {
-    const allTypes = await this.getTypes();
-    for (const col of columns) {
-      if (allTypes[col] !== "VARCHAR") {
-        throw new Error(
-          `The column ${col} is of type ${
-            allTypes[col]
-          }. The concatenateRow() method only works with string columns. Please convert the column to string first with the .convert() method.`,
-        );
-      }
-    }
-
-    await queryDB(
-      this,
-      concatenateRowQuery(this.name, columns, newColumn),
-      mergeOptions(this, {
-        table: this.name,
-        method: "concatenateRow()",
-        parameters: { columns, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await concatenateRow(this, columns, newColumn);
+    return this;
   }
 
   /**
@@ -3242,7 +2634,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column containing string values to be split and unnested.
    * @param separator - The delimiter string used to split the column values.
-   * @returns A promise that resolves when the unnesting is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3263,16 +2655,9 @@ export default class SimpleTable extends Simple {
    * await table.unnest("neighborhoods", " / ");
    * ```
    */
-  async unnest(column: string, separator: string): Promise<void> {
-    await queryDB(
-      this,
-      unnestQuery(this.name, column, separator),
-      mergeOptions(this, {
-        table: this.name,
-        method: "unnest()",
-        parameters: { column, separator },
-      }),
-    );
+  async unnest(column: string, separator: string): Promise<this> {
+    await unnest(this, column, separator);
+    return this;
   }
 
   /**
@@ -3304,16 +2689,9 @@ export default class SimpleTable extends Simple {
   async repeatRows(
     column: string,
     options: { index?: string } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      repeatRowsQuery(this.name, column, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "repeatRows()",
-        parameters: { column, options },
-      }),
-    );
+  ): Promise<this> {
+    await repeatRows(this, column, options);
+    return this;
   }
 
   /**
@@ -3324,7 +2702,7 @@ export default class SimpleTable extends Simple {
    * @param column - The name of the column whose values will be aggregated and concatenated.
    * @param separator - The delimiter string used to join the column values.
    * @param categories - The column name or an array of column names to group by.
-   * @returns A promise that resolves when the nesting is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3350,16 +2728,9 @@ export default class SimpleTable extends Simple {
     column: string,
     separator: string,
     categories: string | string[],
-  ): Promise<void> {
-    await queryDB(
-      this,
-      nestQuery(this.name, column, separator, categories),
-      mergeOptions(this, {
-        table: this.name,
-        method: "nest()",
-        parameters: { column, separator, categories },
-      }),
-    );
+  ): Promise<this> {
+    await nest(this, column, separator, categories);
+    return this;
   }
 
   /**
@@ -3369,7 +2740,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.decimals - The number of decimal places to round to. Defaults to `0` (rounds to the nearest integer).
    * @param options.method - The rounding method to use: `"round"` (rounds to the nearest integer, with halves rounding up), `"ceiling"` (rounds up to the nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults to `"round"`.
-   * @returns A promise that resolves when the numeric values have been rounded.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3410,20 +2781,9 @@ export default class SimpleTable extends Simple {
         decimals?: number;
         method?: "round" | "ceiling" | "floor";
       } = {},
-  ): Promise<void> {
-    const optionsNormalized = typeof options === "number"
-      ? { decimals: options }
-      : options;
-
-    await queryDB(
-      this,
-      roundQuery(this.name, stringToArray(columns), optionsNormalized),
-      mergeOptions(this, {
-        table: this.name,
-        method: "round()",
-        parameters: { columns, options },
-      }),
-    );
+  ): Promise<this> {
+    await round(this, columns, options);
+    return this;
   }
 
   /**
@@ -3431,7 +2791,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column to be updated.
    * @param definition - The SQL expression used to set the new values in the column (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
-   * @returns A promise that resolves when the column has been updated.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -3452,16 +2812,9 @@ export default class SimpleTable extends Simple {
    * await table.updateColumn("status", `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`);
    * ```
    */
-  async updateColumn(column: string, definition: string): Promise<void> {
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET "${column}" = ${definition}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "updateColumn()",
-        parameters: { column, definition },
-      }),
-    );
+  async updateColumn(column: string, definition: string): Promise<this> {
+    await updateColumn(this, column, definition);
+    return this;
   }
 
   /**
@@ -3473,7 +2826,7 @@ export default class SimpleTable extends Simple {
    * @param options.order - The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
    * @param options.categories - The column name or an array of column names that define categories for ranking. Ranks will be assigned independently within each category.
    * @param options.noGaps - A boolean indicating whether to assign ranks without gaps (dense ranking). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
-   * @returns A promise that resolves when the ranks have been assigned.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -3508,16 +2861,9 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       noGaps?: boolean;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      ranksQuery(this.name, values, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "ranks()",
-        parameters: { values, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await ranks(this, values, newColumn, options);
+    return this;
   }
 
   /**
@@ -3528,7 +2874,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the assigned quantiles will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for computing quantiles. Quantiles will be assigned independently within each category.
-   * @returns A promise that resolves when the quantiles have been assigned.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -3556,21 +2902,9 @@ export default class SimpleTable extends Simple {
     options: {
       categories?: string | string[];
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      quantilesQuery(this.name, values, nbQuantiles, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "quantiles()",
-        parameters: {
-          values,
-          nbQuantiles,
-          newColumn,
-          options,
-        },
-      }),
-    );
+  ): Promise<this> {
+    await quantiles(this, values, nbQuantiles, newColumn, options);
+    return this;
   }
 
   /**
@@ -3581,7 +2915,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the bins will be stored.
    * @param options - An optional object with configuration options:
    * @param options.startValue - The starting value for binning. Defaults to the minimum value in the specified column.
-   * @returns A promise that resolves when the bins have been assigned.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -3605,21 +2939,9 @@ export default class SimpleTable extends Simple {
     options: {
       startValue?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      await binsQuery(this, values, interval, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "bins()",
-        parameters: {
-          values,
-          interval,
-          newColumn,
-          options,
-        },
-      }),
-    );
+  ): Promise<this> {
+    await bins(this, values, interval, newColumn, options);
+    return this;
   }
 
   /**
@@ -3669,7 +2991,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.suffix - A string suffix to append to the names of the new columns storing the computed proportions. Defaults to `"Perc"`.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the horizontal proportions have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    */
   async proportionsHorizontal(
@@ -3678,19 +3000,9 @@ export default class SimpleTable extends Simple {
       suffix?: string;
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      proportionsHorizontalQuery(this.name, columns, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "proportionsHorizontal()",
-        parameters: {
-          columns,
-          options,
-        },
-      }),
-    );
+  ): Promise<this> {
+    await proportionsHorizontal(this, columns, options);
+    return this;
   }
 
   /**
@@ -3701,7 +3013,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for computing proportions. Proportions will be calculated independently within each category.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the vertical proportions have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -3729,20 +3041,9 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      proportionsVerticalQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "proportionsVertical()",
-        parameters: {
-          column,
-          newColumn,
-          options,
-        },
-      }),
-    );
+  ): Promise<this> {
+    await proportionsVertical(this, column, newColumn, options);
+    return this;
   }
 
   /**
@@ -3911,7 +3212,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for the accumulation. Accumulation will be performed independently within each category.
-   * @returns A promise that resolves when the cumulative sum has been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -3940,16 +3241,9 @@ export default class SimpleTable extends Simple {
     options: {
       categories?: string | string[];
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      accumulateQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "accumulate()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await accumulate(this, column, newColumn, options);
+    return this;
   }
 
   /**
@@ -3965,7 +3259,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for the aggregation. Rolling aggregations will be computed independently within each category.
    * @param options.decimals - The number of decimal places to round the aggregated values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the rolling aggregation is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -3997,31 +3291,17 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
+  ): Promise<this> {
+    await rolling(
       this,
-      rollingQuery(
-        this.name,
-        column,
-        newColumn,
-        summary,
-        preceding,
-        following,
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "rolling()",
-        parameters: {
-          column,
-          newColumn,
-          summary,
-          preceding,
-          following,
-          options,
-        },
-      }),
+      column,
+      newColumn,
+      summary,
+      preceding,
+      following,
+      options,
     );
+    return this;
   }
 
   /**
@@ -4160,7 +3440,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories. Outlier detection will be performed independently within each category.
-   * @returns A promise that resolves when the outliers have been identified.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -4181,22 +3461,9 @@ export default class SimpleTable extends Simple {
     options: {
       categories?: string | string[];
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      outliersIQRQuery(
-        this.name,
-        column,
-        newColumn,
-        (await this.getNbRows()) % 2 === 0 ? "even" : "odd",
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "outliersIQR()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await outliersIQR(this, column, newColumn, options);
+    return this;
   }
 
   /**
@@ -4207,7 +3474,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories. Z-scores will be calculated independently within each category.
    * @param options.decimals - The number of decimal places to round the Z-score values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the Z-scores have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -4235,16 +3502,9 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      zScoreQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "zScore()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await zScore(this, column, newColumn, options);
+    return this;
   }
 
   /**
@@ -4255,7 +3515,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for the normalization. Normalization will be performed independently within each category.
    * @param options.decimals - The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the values have been normalized.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
@@ -4283,16 +3543,9 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      normalizeQuery(this.name, column, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "normalize()",
-        parameters: { column, options },
-      }),
-    );
+  ): Promise<this> {
+    await normalize(this, column, newColumn, options);
+    return this;
   }
 
   /**
@@ -4301,7 +3554,9 @@ export default class SimpleTable extends Simple {
    * This method does not work with tables containing geometries.
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
-   * @returns A promise that resolves when the data has been updated.
+   * @param options - An optional object with configuration options:
+   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. The modifier function is called once per batch.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -4332,34 +3587,24 @@ export default class SimpleTable extends Simple {
     dataModifier:
       | ((
         rows: {
-          [key: string]: number | string | Date | boolean | null;
+          [key: string]: unknown;
         }[],
       ) => Promise<
         {
-          [key: string]: number | string | Date | boolean | null;
+          [key: string]: unknown;
         }[]
       >)
       | ((
         rows: {
-          [key: string]: number | string | Date | boolean | null;
+          [key: string]: unknown;
         }[],
       ) => {
-        [key: string]: number | string | Date | boolean | null;
+        [key: string]: unknown;
       }[]),
-  ): Promise<void> {
-    const types = await this.getTypes();
-    if (Object.values(types).includes("GEOMETRY")) {
-      throw new Error(
-        "updateWithJS doesn't work with tables containing geometries.",
-      );
-    }
-
-    const oldData = await this.getData();
-    if (!oldData) {
-      throw new Error("No data from getData.");
-    }
-    const newData = await dataModifier(oldData);
-    await this.loadArray(newData);
+    options: { batchSize?: number } = {},
+  ): Promise<this> {
+    await updateWithJS(this, dataModifier, options);
+    return this;
   }
 
   /**
@@ -4380,19 +3625,7 @@ export default class SimpleTable extends Simple {
       [key: string]: string | null;
     }[]
   > {
-    return (await queryDB(
-      this,
-      `DESCRIBE "${this.name}"`,
-      mergeOptions(this, {
-        returnDataFrom: "query",
-        nbRowsToLog: Infinity,
-        table: this.name,
-        method: "getSchema()",
-        parameters: {},
-      }),
-    )) as {
-      [key: string]: string | null;
-    }[];
+    return await getSchema(this);
   }
 
   /**
@@ -4466,8 +3699,7 @@ export default class SimpleTable extends Simple {
    * @param options Configuration options
    * @param options.stripPunctuation Strip punctuation and underscores (default: true)
    *
-   * @returns A promise that resolves when the operation is complete
-   *
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @example
    * ```ts
    * // Normalize text column and store in new column
@@ -4490,8 +3722,9 @@ export default class SimpleTable extends Simple {
     column: string,
     newColumn: string,
     options: { stripPunctuation?: boolean } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await normalizeString(this, column, newColumn, options);
+    return this;
   }
 
   /**
@@ -4609,7 +3842,7 @@ export default class SimpleTable extends Simple {
    */
   async getValues(
     column: string,
-  ): Promise<(string | number | boolean | Date | null)[]> {
+  ): Promise<unknown[]> {
     return await getValues(this, column);
   }
 
@@ -4629,7 +3862,7 @@ export default class SimpleTable extends Simple {
    */
   async getMin(
     column: string,
-  ): Promise<string | number | boolean | Date | null> {
+  ): Promise<unknown> {
     return await getMin(this, column);
   }
 
@@ -4649,7 +3882,7 @@ export default class SimpleTable extends Simple {
    */
   async getMax(
     column: string,
-  ): Promise<string | number | boolean | Date | null> {
+  ): Promise<unknown> {
     return await getMax(this, column);
   }
 
@@ -4671,8 +3904,8 @@ export default class SimpleTable extends Simple {
     column: string,
   ): Promise<
     [
-      string | number | boolean | Date | null,
-      string | number | boolean | Date | null,
+      unknown,
+      unknown,
     ]
   > {
     return [await this.getMin(column), await this.getMax(column)];
@@ -4904,7 +4137,7 @@ export default class SimpleTable extends Simple {
    */
   async getUniques(
     column: string,
-  ): Promise<(string | number | boolean | Date | null)[]> {
+  ): Promise<unknown[]> {
     return await getUniques(this, column);
   }
 
@@ -4936,7 +4169,7 @@ export default class SimpleTable extends Simple {
       conditions?: string;
     } = {},
   ): Promise<{
-    [key: string]: string | number | boolean | Date | null;
+    [key: string]: unknown;
   }> {
     return await getFirstRow(this, options);
   }
@@ -4969,7 +4202,7 @@ export default class SimpleTable extends Simple {
       conditions?: string;
     } = {},
   ): Promise<{
-    [key: string]: string | number | boolean | Date | null;
+    [key: string]: unknown;
   }> {
     return await getLastRow(this, options);
   }
@@ -5005,7 +4238,7 @@ export default class SimpleTable extends Simple {
     } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     return await getTop(this, count, options);
@@ -5052,7 +4285,7 @@ export default class SimpleTable extends Simple {
     } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     return await getBottom(this, count, options);
@@ -5095,7 +4328,7 @@ export default class SimpleTable extends Simple {
     options: { noCheck?: boolean } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     } | undefined
   > {
     const data = await this.getData({ conditions });
@@ -5150,36 +4383,50 @@ export default class SimpleTable extends Simple {
     } = {},
   ): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
-    if (await hasGeometryColumn(this)) {
-      throw new Error(
-        "Table contains geometry columns. Use getGeoData() instead.",
-      );
-    }
+    return await getData(this, options);
+  }
 
-    const columns = options.columns
-      ? (typeof options.columns === "string"
-        ? [options.columns]
-        : options.columns)
-      : undefined;
-    return (await queryDB(
-      this,
-      `SELECT ${
-        columns ? columns.map((d) => `"${d}"`).join(", ") : "*"
-      } from "${this.name}"${
-        options.conditions ? ` WHERE ${options.conditions}` : ""
-      }`,
-      mergeOptions(this, {
-        returnDataFrom: "query",
-        table: this.name,
-        method: "getData()",
-        parameters: { options },
-      }),
-    )) as {
-      [key: string]: string | number | boolean | Date | null;
-    }[];
+  /**
+   * Streams the table rows one by one as an async iterator, without
+   * materializing the whole table in memory. Values are converted to
+   * JavaScript types the same way as `getData()`.
+   *
+   * The underlying DuckDB result is streamed chunk by chunk, so tables
+   * larger than the available memory can be iterated. Avoid running other
+   * queries on the same database while iterating.
+   *
+   * @param options - An optional object with configuration options:
+   * @param options.columns - The column name or an array of column names to include. If omitted, all columns are streamed.
+   * @param options.conditions - A SQL `WHERE` clause condition to filter the rows.
+   * @returns An async generator yielding one row object at a time.
+   * @category Getting Data
+   *
+   * @example
+   * ```ts
+   * // Stream all rows
+   * for await (const row of table.stream()) {
+   *   console.log(row);
+   * }
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Stream specific columns and rows
+   * for await (const row of table.stream({ columns: "temperature", conditions: `temperature > 20` })) {
+   *   console.log(row);
+   * }
+   * ```
+   */
+  stream(
+    options: {
+      columns?: string | string[];
+      conditions?: string;
+    } = {},
+  ): AsyncGenerator<{ [key: string]: unknown }, void, undefined> {
+    return stream(this, options);
   }
 
   /**
@@ -5229,7 +4476,7 @@ export default class SimpleTable extends Simple {
    * @param columnLat - The name of the column storing the latitude values.
    * @param columnLon - The name of the column storing the longitude values.
    * @param newColumn - The name of the new column where the point geometries will be stored.
-   * @returns A promise that resolves when the point geometries have been created.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5242,18 +4489,9 @@ export default class SimpleTable extends Simple {
     columnLat: string,
     columnLon: string,
     newColumn: string,
-  ): Promise<void> {
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Point("${columnLon}", "${columnLat}")::GEOMETRY('EPSG:4326') AS "${newColumn}") FROM "${this.name}"`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY('EPSG:4326'); UPDATE "${this.name}" SET "${newColumn}" = ST_Point("${columnLon}", "${columnLat}");`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "points()",
-        parameters: { columnLat, columnLon, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await points(this, columnLat, columnLon, newColumn);
+    return this;
   }
 
   /**
@@ -5262,7 +4500,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for valid, `FALSE` for invalid) will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries to be checked. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the validity check is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5281,20 +4519,9 @@ export default class SimpleTable extends Simple {
   async isValidGeo(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_IsValid("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "isValidGeo()",
-        parameters: { column, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await isValidGeo(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -5303,7 +4530,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the vertex counts will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the vertex counts have been added.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5322,27 +4549,16 @@ export default class SimpleTable extends Simple {
   async nbVertices(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" BIGINT; UPDATE "${this.name}" SET "${newColumn}" = ST_NPoints("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "nbVertices()",
-        parameters: { column, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await nbVertices(this, newColumn, options);
+    return this;
   }
 
   /**
    * Attempts to make invalid geometries valid without removing any vertices.
    *
    * @param column - The name of the column storing the geometries to be fixed. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the geometries have been processed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5357,19 +4573,9 @@ export default class SimpleTable extends Simple {
    * await table.fixGeo("myGeom");
    * ```
    */
-  async fixGeo(column?: string): Promise<void> {
-    const col = column ?? (await findGeoColumn(this));
-    const geoType = await this.getProjection(col);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_MakeValid("${col}")::${geoType} AS "${col}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "fixGeo()",
-        parameters: { column },
-      }),
-    );
+  async fixGeo(column?: string): Promise<this> {
+    await fixGeo(this, column);
+    return this;
   }
 
   /**
@@ -5378,7 +4584,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for closed, `FALSE` for open) will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the closed geometry check is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5396,20 +4602,9 @@ export default class SimpleTable extends Simple {
   async isClosedGeo(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_IsClosed("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "isClosedGeo()",
-        parameters: { column, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await isClosedGeo(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -5418,7 +4613,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the geometry types will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the geometry types have been added.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5436,19 +4631,9 @@ export default class SimpleTable extends Simple {
   async typeGeo(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" VARCHAR; UPDATE "${this.name}" SET "${newColumn}" = ST_GeometryType("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "typeGeo()",
-        parameters: { column, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await typeGeo(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -5456,7 +4641,7 @@ export default class SimpleTable extends Simple {
    * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the coordinates have been flipped.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5471,19 +4656,9 @@ export default class SimpleTable extends Simple {
    * await table.flipCoordinates("myGeom");
    * ```
    */
-  async flipCoordinates(column?: string): Promise<void> {
-    const col = column ?? (await findGeoColumn(this));
-    const geoType = await this.getProjection(col);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_FlipCoordinates("${col}")::${geoType} AS "${col}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "flipCoordinates()",
-        parameters: { column },
-      }),
-    );
+  async flipCoordinates(column?: string): Promise<this> {
+    await flipCoordinates(this, column);
+    return this;
   }
 
   /**
@@ -5492,7 +4667,7 @@ export default class SimpleTable extends Simple {
    * @param decimals - The number of decimal places to keep in the coordinates of the geometries.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the precision of the geometries has been reduced.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5510,23 +4685,9 @@ export default class SimpleTable extends Simple {
   async reducePrecision(
     decimals: number,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-    const geoType = await this.getProjection(column);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_ReducePrecision("${column}", ${
-        1 / Math.pow(10, decimals)
-      })::${geoType} AS "${column}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "reducePrecision()",
-        parameters: { column, decimals },
-      }),
-    );
+  ): Promise<this> {
+    await reducePrecision(this, decimals, options);
+    return this;
   }
 
   /**
@@ -5535,7 +4696,7 @@ export default class SimpleTable extends Simple {
    * @param to - The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the geometries have been reprojected.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5553,25 +4714,9 @@ export default class SimpleTable extends Simple {
   async reproject(
     to: string,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const cleanedTo = to.replace("WGS84", "EPSG:4326");
-    const targetGeoType = `GEOMETRY${
-      cleanedTo !== "null" ? `('${cleanedTo}')` : ""
-    }`;
-
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Transform("${column}", '${cleanedTo}')::${targetGeoType} AS "${column}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "reproject()",
-        parameters: { column, to },
-      }),
-    );
+  ): Promise<this> {
+    await reproject(this, to, options);
+    return this;
   }
 
   /**
@@ -5582,7 +4727,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed area: `"m2"` (square meters) or `"km2"` (square kilometers). Defaults to `"m2"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the areas have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5606,22 +4751,9 @@ export default class SimpleTable extends Simple {
   async area(
     newColumn: string,
     options: { unit?: "m2" | "km2"; column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" DOUBLE; UPDATE "${this.name}" SET "${newColumn}" =  ST_Area_Spheroid("${column}") ${
-        options.unit === "km2" ? "/ 1000000" : ""
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "area()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await area(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -5632,7 +4764,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed length: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the lengths have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5656,22 +4788,9 @@ export default class SimpleTable extends Simple {
   async length(
     newColumn: string,
     options: { unit?: "m" | "km"; column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" DOUBLE; UPDATE "${this.name}" SET "${newColumn}" =  ST_Length_Spheroid("${column}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "length()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await length(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -5682,7 +4801,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed perimeter: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the perimeters have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5706,22 +4825,9 @@ export default class SimpleTable extends Simple {
   async perimeter(
     newColumn: string,
     options: { unit?: "m" | "km"; column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" DOUBLE; UPDATE "${this.name}" SET "${newColumn}" =  ST_Perimeter_Spheroid("${column}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "perimeter()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+  ): Promise<this> {
+    await perimeter(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -5732,7 +4838,7 @@ export default class SimpleTable extends Simple {
    * @param distance - The distance for the buffer. This value is in the units of the geometry's SRS.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the buffers have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5751,35 +4857,9 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     distance: number,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    const geoType = await this.getProjection(column);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Buffer("${column}", ${distance})::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "buffer()",
-          parameters: { column, newColumn, distance },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "buffer()",
-          parameters: { column, newColumn, distance },
-        }),
-      );
-    }
+  ): Promise<this> {
+    await buffer(this, newColumn, distance, options);
+    return this;
   }
 
   /**
@@ -5865,7 +4945,7 @@ export default class SimpleTable extends Simple {
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the computed intersection geometries will be stored.
-   * @returns A promise that resolves when the intersection geometries have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5878,31 +4958,9 @@ export default class SimpleTable extends Simple {
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<void> {
-    const geoType = await this.getProjection(column1);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Intersection("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "intersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "intersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    }
+  ): Promise<this> {
+    await intersection(this, column1, column2, newColumn);
+    return this;
   }
 
   /**
@@ -5911,7 +4969,7 @@ export default class SimpleTable extends Simple {
    * @param column1 - The name of the column storing the reference geometries. These geometries will have the intersection removed.
    * @param column2 - The name of the column storing the geometries used to compute the intersection. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the resulting geometries (without the intersection) will be stored.
-   * @returns A promise that resolves when the geometries have been processed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5924,38 +4982,16 @@ export default class SimpleTable extends Simple {
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<void> {
-    const geoType = await this.getProjection(column1);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Difference("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "removeIntersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Difference("${column1}", "${column2}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "removeIntersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    }
+  ): Promise<this> {
+    await removeIntersection(this, column1, column2, newColumn);
+    return this;
   }
 
   /**
    * Fills holes in polygon geometries.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the holes have been filled.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -5970,17 +5006,9 @@ export default class SimpleTable extends Simple {
    * await table.fillHoles("polygonGeom");
    * ```
    */
-  async fillHoles(column?: string): Promise<void> {
-    const col = column ?? (await findGeoColumn(this));
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET geom = ST_MakePolygon(ST_ExteriorRing("${col}"));`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "fillHoles()",
-        parameters: { column },
-      }),
-    );
+  async fillHoles(column?: string): Promise<this> {
+    await fillHoles(this, column);
+    return this;
   }
 
   /**
@@ -5989,7 +5017,7 @@ export default class SimpleTable extends Simple {
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for intersection, `FALSE` otherwise) will be stored.
-   * @returns A promise that resolves when the intersection check is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6002,16 +5030,9 @@ export default class SimpleTable extends Simple {
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<void> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersects("${column1}", "${column2}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "intersect()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await intersect(this, column1, column2, newColumn);
+    return this;
   }
 
   /**
@@ -6020,7 +5041,7 @@ export default class SimpleTable extends Simple {
    * @param column1 - The name of the column storing the geometries to be tested for containment.
    * @param column2 - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for inside, `FALSE` otherwise) will be stored.
-   * @returns A promise that resolves when the containment check is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6033,16 +5054,9 @@ export default class SimpleTable extends Simple {
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<void> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_Covers("${column2}", "${column1}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "inside()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await inside(this, column1, column2, newColumn);
+    return this;
   }
 
   /**
@@ -6051,7 +5065,7 @@ export default class SimpleTable extends Simple {
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the computed union geometries will be stored.
-   * @returns A promise that resolves when the union geometries have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6064,31 +5078,9 @@ export default class SimpleTable extends Simple {
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<void> {
-    const geoType = await this.getProjection(column1);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Union("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "union()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "union()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    }
+  ): Promise<this> {
+    await union(this, column1, column2, newColumn);
+    return this;
   }
 
   /**
@@ -6098,7 +5090,7 @@ export default class SimpleTable extends Simple {
    * @param column - The name of the column storing the point geometries.
    * @param columnLat - The name of the new column where the extracted latitude values will be stored.
    * @param columnLon - The name of the new column where the extracted longitude values will be stored.
-   * @returns A promise that resolves when the latitude and longitude have been extracted.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6111,17 +5103,9 @@ export default class SimpleTable extends Simple {
     column: string,
     columnLat: string,
     columnLon: string,
-  ): Promise<void> {
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${columnLat}" DOUBLE; UPDATE "${this.name}" SET "${columnLat}" = ST_Y("${column}");
-             ALTER TABLE "${this.name}" ADD "${columnLon}" DOUBLE; UPDATE "${this.name}" SET "${columnLon}" = ST_X("${column}");`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "latLon()",
-        parameters: { column, columnLon, columnLat },
-      }),
-    );
+  ): Promise<this> {
+    await latLon(this, column, columnLat, columnLon);
+    return this;
   }
 
   /**
@@ -6131,7 +5115,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.simplifyBoundary - If `true` (default), the boundary of the geometries will also be simplified. If `false`, only the interior of the geometries will be simplified, preserving the original boundary.
-   * @returns A promise that resolves when the geometries have been simplified.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6149,28 +5133,9 @@ export default class SimpleTable extends Simple {
   async simplify(
     tolerance: number,
     options: { column?: string; simplifyBoundary?: boolean } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await this.addRowNumber("rowNumberForSimplify");
-
-    const geoType = await this.getProjection(column);
-
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE(ST_CoverageSimplify(ARRAY_AGG("${column}"), ${tolerance}${
-        options.simplifyBoundary === false ? ", FAlSE" : ""
-      })::${geoType} AS "${column}") FROM "${this.name}" GROUP BY ALL;`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "simplify()",
-        parameters: { column, tolerance },
-      }),
-    );
-
-    await this.removeColumns("rowNumberForSimplify");
+  ): Promise<this> {
+    await simplify(this, tolerance, options);
+    return this;
   }
 
   /**
@@ -6180,7 +5145,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the computed centroid geometries will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the centroids have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6198,34 +5163,9 @@ export default class SimpleTable extends Simple {
   async centroid(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<void> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-    const geoType = await this.getProjection(column);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Centroid("${column}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "centroid()",
-          parameters: { column, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "centroid()",
-          parameters: { column, newColumn },
-        }),
-      );
-    }
+  ): Promise<this> {
+    await centroid(this, newColumn, options);
+    return this;
   }
 
   /**
@@ -6259,36 +5199,9 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     nbPointsToTry: number,
     options: { column?: string; try?: boolean } = {},
-  ): Promise<void> {
-    if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
-      throw new Error(
-        "nbPointsToTry must be a number greater than or equal to 0",
-      );
-    }
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    const geoType = await this.getProjection(column);
-
-    await queryDB(
-      this,
-      randomPointQuery(this.name, column, newColumn, nbPointsToTry, geoType),
-      mergeOptions(this, {
-        table: this.name,
-        method: "randomPoint()",
-        parameters: { column, newColumn, nbPointsToTry, options, geoType },
-      }),
-    );
-
-    const nbNulls = await this.getNbRows({
-      conditions: `"${newColumn}" IS NULL`,
-    });
-    if (nbNulls > 0 && !options.try) {
-      throw new Error(
-        `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.try to true.`,
-      );
-    }
+  ): Promise<this> {
+    await randomPoint(this, newColumn, nbPointsToTry, options);
+    return this;
   }
 
   /**
@@ -6304,7 +5217,7 @@ export default class SimpleTable extends Simple {
    * @param options.method - The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326), or `"spheroid"` (meters, requires EPSG:4326, most accurate but slowest).
    * @param options.unit - If `method` is `"spheroid"` or `"haversine"`, you can choose between `"m"` (meters, default) or `"km"` (kilometers).
    * @param options.decimals - The number of decimal places to round the distance values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the distances have been computed.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6343,23 +5256,16 @@ export default class SimpleTable extends Simple {
       method?: "srs" | "haversine" | "spheroid";
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    await queryDB(
-      this,
-      distanceQuery(this.name, column1, column2, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "distance()",
-        parameters: { column1, column2, newColumn },
-      }),
-    );
+  ): Promise<this> {
+    await distance(this, column1, column2, newColumn, options);
+    return this;
   }
 
   /**
    * Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
    *
    * @param column - The name of the column storing the geometries to be unnested. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the geometries have been unnested.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6374,17 +5280,9 @@ export default class SimpleTable extends Simple {
    * await table.unnestGeo("multiGeom");
    * ```
    */
-  async unnestGeo(column?: string): Promise<void> {
-    const col = column ?? (await findGeoColumn(this));
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE("${col}"), UNNEST(ST_Dump("${col}"), recursive := TRUE) FROM "${this.name}"; ALTER TABLE "${this.name}" DROP COLUMN path;`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "unnestGeo()",
-        parameters: { column },
-      }),
-    );
+  async unnestGeo(column?: string): Promise<this> {
+    await unnestGeo(this, column);
+    return this;
   }
 
   /**
@@ -6393,7 +5291,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries for which the bounding box will be computed. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.decimals - The number of decimal places to round the bounding box coordinates. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves when the bounding box coordinates have been computed and stored in new columns.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6415,18 +5313,9 @@ export default class SimpleTable extends Simple {
       column?: string;
       decimals?: number;
     } = {},
-  ): Promise<void> {
-    const column = options.column ?? (await findGeoColumn(this));
-
-    await queryDB(
-      this,
-      boundingBoxQuery(this.name, column, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "boundingBox()",
-        parameters: { column, options },
-      }),
-    );
+  ): Promise<this> {
+    await boundingBox(this, options);
+    return this;
   }
 
   /**
@@ -6466,35 +5355,14 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await queryDB(
-      this,
-      aggregateGeoQuery(this.name, column, method, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "aggregateGeo()",
-        parameters: { column, method, options },
-      }),
-    );
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+    return await aggregateGeo(this, method, options) as this;
   }
 
   /**
    * Transforms closed linestring geometries into polygon geometries.
    *
    * @param column - The name of the column storing the linestring geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves when the transformation is complete.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -6509,18 +5377,9 @@ export default class SimpleTable extends Simple {
    * await table.linesToPolygons("routeLines");
    * ```
    */
-  async linesToPolygons(column?: string): Promise<void> {
-    const col = column ?? (await findGeoColumn(this));
-
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE("${col}"), ST_MakePolygon("${col}") as "${col}" FROM "${this.name}";`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "linesToPolygons()",
-        parameters: { column },
-      }),
-    );
+  async linesToPolygons(column?: string): Promise<this> {
+    await linesToPolygons(this, column);
+    return this;
   }
 
   /**
@@ -6548,23 +5407,7 @@ export default class SimpleTable extends Simple {
   async getBoundingBox(
     column?: string,
   ): Promise<[number, number, number, number]> {
-    const col = column ?? (await findGeoColumn(this));
-    const result = (await queryDB(
-      this,
-      `SELECT
-                MIN(ST_YMin("${col}")) AS minX,
-                MIN(ST_XMin("${col}")) AS minY,
-                MAX(ST_YMax("${col}")) AS maxX,
-                MAX(ST_XMax("${col}")) AS maxY,
-            from "${this.name}";`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "getBoundingBox()",
-        parameters: { column },
-        returnDataFrom: "query",
-      }),
-    )) as { minX: number; minY: number; maxX: number; maxY: number }[];
-    return [result[0].minY, result[0].minX, result[0].maxY, result[0].maxX];
+    return await getBoundingBox(this, column);
   }
 
   /**
@@ -6621,7 +5464,7 @@ export default class SimpleTable extends Simple {
    * @param options.compression - A boolean indicating whether to compress the output file. If `true`, CSV and JSON files will be compressed with GZIP, while Parquet files will use ZSTD. Defaults to `false`.
    * @param options.dataAsArrays - For JSON files only. If `true`, JSON files are written as a single object with arrays for each column (e.g., `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This can reduce file size for web projects. You can use the `arraysToData` function from the [journalism library](https://jsr.io/@nshiab/journalism/doc/~/arraysToData) to convert it back.
    * @param options.formatDates - For CSV and JSON files only. If `true`, date and timestamp columns will be formatted as ISO 8601 strings (e.g., `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.
-   * @returns A promise that resolves when the data has been written to the file.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category File Operations
    *
    * @example
@@ -6668,30 +5511,9 @@ export default class SimpleTable extends Simple {
       dataAsArrays?: boolean;
       formatDates?: boolean;
     } = {},
-  ): Promise<void> {
-    if (await hasGeometryColumn(this)) {
-      throw new Error(
-        "Table contains geometry columns. Use writeGeoData() instead.",
-      );
-    }
-
-    createDirectory(file);
-
-    const extension = getExtension(file);
-
-    if (options.dataAsArrays) {
-      await writeDataAsArrays(this, file);
-    } else {
-      await queryDB(
-        this,
-        writeDataQuery(this.name, file, extension, options),
-        mergeOptions(this, {
-          table: this.name,
-          method: "writeData()",
-          parameters: { file, options },
-        }),
-      );
-    }
+  ): Promise<this> {
+    await writeData(this, file, options);
+    return this;
   }
 
   /**
@@ -6705,7 +5527,7 @@ export default class SimpleTable extends Simple {
    * @param options.rewind - For GeoJSON, if `true`, rewinds the coordinates of polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
    * @param options.metadata - For GeoJSON, an object to be added as top-level metadata to the GeoJSON output.
    * @param options.formatDates - For GeoJSON, if `true`, formats date and timestamp columns to ISO 8601 strings. Defaults to `false`.
-   * @returns A promise that resolves when the geospatial data has been written to the file.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category File Operations
    *
    * @example
@@ -6744,8 +5566,9 @@ export default class SimpleTable extends Simple {
       metadata?: unknown;
       formatDates?: boolean;
     } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await writeGeoData(this, file, options);
+    return this;
   }
 
   /**
@@ -6755,7 +5578,7 @@ export default class SimpleTable extends Simple {
    * @param run - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
    * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `run` function will be executed again to refresh the cache. By default, there is no TTL, meaning the cache is only invalidated if the `run` function's content changes.
-   * @returns A promise that resolves when the computations are complete or the data is loaded from cache.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Caching
    *
    * @example
@@ -6818,8 +5641,9 @@ export default class SimpleTable extends Simple {
   async cache(
     run: () => Promise<void>,
     options: { ttl?: number } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     await cache(this, run, { ...options, verbose: this.sdb.cacheVerbose });
+    return this;
   }
 
   /**
@@ -6831,7 +5655,7 @@ export default class SimpleTable extends Simple {
    * @param options.nbRowsToLog - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
    * @param options.types - If `true`, logs the column types along with the data. Defaults to `false`.
    * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
-   * @returns A promise that resolves when the table data has been logged.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Logging
    *
    * @example
@@ -6870,7 +5694,7 @@ export default class SimpleTable extends Simple {
       types?: boolean;
       conditions?: string;
     } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     if (
       this.connection === undefined
     ) {
@@ -6933,6 +5757,7 @@ export default class SimpleTable extends Simple {
         })`}`,
       );
     }
+    return this;
   }
 
   /**
@@ -6966,7 +5791,7 @@ export default class SimpleTable extends Simple {
    * Logs descriptive information about the columns in the table to the console. This includes details such as data types, number of null values, and number of distinct values for each column.
    * It internally calls the `getDescription` method to retrieve the descriptive statistics.
    *
-   * @returns A promise that resolves when the column description has been logged to the console.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Logging
    *
    * @example
@@ -6975,7 +5800,7 @@ export default class SimpleTable extends Simple {
    * await table.logDescription();
    * ```
    */
-  async logDescription(): Promise<void> {
+  async logDescription(): Promise<this> {
     if (
       this.connection === undefined ||
       !(await this.sdb.hasTable(this.name))
@@ -6985,6 +5810,7 @@ export default class SimpleTable extends Simple {
       console.log(`\nTable ${this.name}:`);
       console.table(await getDescription(this));
     }
+    return this;
   }
 
   /**
@@ -7150,7 +5976,7 @@ export default class SimpleTable extends Simple {
    * @param count - The number of rows to log from the bottom of the table. Defaults to the table's `nbRowsToLog` option if not specified.
    * @param options - An optional object with logging preferences.
    * @param options.originalOrder - If true, the rows are displayed in their original order (top to bottom). Defaults to false.
-   * @returns A promise that resolves when the rows have been logged to the console.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Logging
    *
    * @example
@@ -7174,7 +6000,7 @@ export default class SimpleTable extends Simple {
   async logBottom(
     count?: number,
     options: { originalOrder?: boolean } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     const rows = count ?? this.nbRowsToLog;
     console.log(`\nTable ${this.name} (${rows} bottom rows):`);
     const data = await this.getBottom(rows, options);
@@ -7183,13 +6009,14 @@ export default class SimpleTable extends Simple {
       data,
       this.nbCharactersToLog,
     );
+    return this;
   }
 
   /**
    * Logs the extent (minimum and maximum values) of a numeric column to the console.
    *
    * @param column - The name of the numeric column for which to log the extent.
-   * @returns A promise that resolves when the column extent has been logged to the console.
+   * @returns A promise that resolves to the table, so methods can be chained.
    * @category Logging
    *
    * @example
@@ -7198,9 +6025,10 @@ export default class SimpleTable extends Simple {
    * await table.logExtent("price");
    * ```
    */
-  async logExtent(column: string): Promise<void> {
+  async logExtent(column: string): Promise<this> {
     const extent = await this.getExtent(column);
     console.log(`\nTable ${this.name} (${column} extent):`);
     console.log(extent);
+    return this;
   }
 }

@@ -1,0 +1,11 @@
+version,runtime,file,iteration,importing,cleaning,modifying,writing,gettingData,updatingWithJS,summarizing,totalDuration
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,0.0,0.327,0.107,0.006,0.026,0.474,0.866,0.006,1.812
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,1.0,0.326,0.107,0.005,0.025,0.446,0.917,0.006,1.832
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,2.0,0.329,0.106,0.006,0.024,0.445,0.912,0.006,1.828
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,3.0,0.332,0.097,0.006,0.027,0.44,0.926,0.007,1.835
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,4.0,0.33,0.105,0.006,0.026,0.452,0.909,0.007,1.835
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,5.0,0.332,0.107,0.005,0.024,0.445,0.949,0.006,1.868
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,6.0,0.327,0.105,0.006,0.025,0.449,0.871,0.007,1.79
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,7.0,0.329,0.106,0.006,0.027,0.5,0.902,0.006,1.876
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,8.0,0.337,0.107,0.006,0.027,0.459,0.866,0.007,1.809
+simple-data-analysis-core@1.0.1,deno@2.8.3,ahccd-sample.csv,9.0,0.332,0.118,0.006,0.025,0.459,0.871,0.007,1.818

@@ -29,3 +29,4 @@
 
 export { default as SimpleDB } from "./class/SimpleDB.ts";
 export { default as SimpleTable } from "./class/SimpleTable.ts";
+export { default as SDAError } from "./class/SDAError.ts";

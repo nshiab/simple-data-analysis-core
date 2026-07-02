@@ -1,6 +1,6 @@
 export default function extractTypes(
   types: {
-    [key: string]: string | number | boolean | Date | null;
+    [key: string]: unknown;
   }[] | null,
 ) {
   const typesObj: { [key: string]: string } = {};

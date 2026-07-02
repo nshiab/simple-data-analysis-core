@@ -537,7 +537,6 @@ Deno.test("should respect the data types when returning data with custom query",
     {
       returnDataFrom: "query",
       table: table.name,
-      types: await table.getTypes(),
     },
   );
 

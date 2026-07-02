@@ -9,15 +9,12 @@ export default async function getMin(
   const queryResult = await queryDB(
     simpleTable,
     `SELECT MIN("${column}") AS "${column}" FROM "${simpleTable.name}"`,
-    {
-      ...mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        returnDataFrom: "query",
-        method: "getMin()",
-        parameters: { column },
-      }),
-      types: await simpleTable.getTypes(),
-    },
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      returnDataFrom: "query",
+      method: "getMin()",
+      parameters: { column },
+    }),
   );
 
   if (!queryResult) {

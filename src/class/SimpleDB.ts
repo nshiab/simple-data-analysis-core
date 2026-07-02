@@ -2,20 +2,19 @@ import { DuckDBInstance } from "@duckdb/node-api";
 import runQuery from "../helpers/runQuery.ts";
 import SimpleTable from "./SimpleTable.ts";
 import cleanCache from "../helpers/cleanCache.ts";
-import createDirectory from "../helpers/createDirectory.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
 import Simple from "./Simple.ts";
 import queryDB from "../helpers/queryDB.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import getTableNames from "../methods/getTableNames.ts";
-import cleanPath from "../helpers/cleanPath.ts";
 import getExtension from "../helpers/getExtension.ts";
 import { existsSync, rmSync } from "node:fs";
-import checkVssIndexes from "../helpers/checkVssIndexes.ts";
-import setDbProps from "../helpers/setDbProps.ts";
 import writeIndexes from "../helpers/writeIndexes.ts";
-import getName from "../helpers/getName.ts";
 import { renameSync } from "node:fs";
+import removeTables from "../methods/removeTables.ts";
+import selectTables from "../methods/selectTables.ts";
+import loadDB from "../methods/loadDB.ts";
+import writeDB from "../methods/writeDB.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -412,7 +411,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * Removes one or more tables from the database.
    *
    * @param tables - A single table or an array of tables to remove, specified by name or as SimpleTable instances. Pass `"all"` to remove all tables.
-   * @returns A promise that resolves when the tables have been removed.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -443,38 +442,16 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async removeTables(
     tables: Table | string | (Table | string)[],
-  ): Promise<void> {
-    const tablesToBeRemoved = tables === "all"
-      ? [...this.tables]
-      : Array.isArray(tables)
-      ? tables
-      : [tables];
-
-    await queryDB(
-      this,
-      tablesToBeRemoved.map((d) =>
-        `DROP TABLE "${d instanceof SimpleTable ? d.name : d}";`
-      ).join("\n"),
-      mergeOptions(this, {
-        table: null,
-        method: "removeTable()",
-        parameters: {},
-      }),
-    );
-
-    const tablesNamesToBeRemoved = tablesToBeRemoved.map((t) =>
-      t instanceof SimpleTable ? t.name : t
-    );
-    this.tables = this.tables.filter((t) =>
-      !tablesNamesToBeRemoved.includes(t.name)
-    );
+  ): Promise<this> {
+    await removeTables(this, tables);
+    return this;
   }
 
   /**
    * Selects one or more tables to keep in the database, removing all others.
    *
    * @param tables - A single table or an array of tables to select, specified by name or as SimpleTable instances.
-   * @returns A promise that resolves when the tables have been selected.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -499,39 +476,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async selectTables(
     tables: Table | string | (Table | string)[],
-  ): Promise<void> {
-    const tablesToBeSelected = (Array.isArray(tables) ? tables : [tables]).map((
-      t,
-    ) => t instanceof SimpleTable ? t.name : t);
-
-    for (const table of tablesToBeSelected) {
-      if (!(await this.hasTable(table))) {
-        throw new Error(`Table ${table} not found.`);
-      }
-    }
-
-    const tablesToBeRemoved = this.tables.filter((t) =>
-      !tablesToBeSelected.includes(t.name)
-    );
-
-    await queryDB(
-      this,
-      tablesToBeRemoved.map((d) =>
-        `DROP TABLE "${d instanceof SimpleTable ? d.name : d}";`
-      ).join("\n"),
-      mergeOptions(this, {
-        table: null,
-        method: "removeTable()",
-        parameters: {},
-      }),
-    );
-
-    const tablesNamesToBeRemoved = tablesToBeRemoved.map((t) =>
-      t instanceof SimpleTable ? t.name : t
-    );
-    this.tables = this.tables.filter((t) =>
-      !tablesNamesToBeRemoved.includes(t.name)
-    );
+  ): Promise<this> {
+    await selectTables(this, tables);
+    return this;
   }
 
   /**
@@ -554,7 +501,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Logs the names of all tables in the database to the console, sorted alphabetically.
    *
-   * @returns A promise that resolves when the table names have been logged.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -564,7 +511,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * // Example output: SimpleDB - Tables:  ["employees","customers"]
    * ```
    */
-  async logTableNames(): Promise<void> {
+  async logTableNames(): Promise<this> {
     const tables = await this.getTableNames();
     if (tables.length > 0) {
       console.log(
@@ -573,6 +520,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     } else {
       console.log(`\nSimpleDB - No tables found.`);
     }
+    return this;
   }
 
   /**
@@ -634,7 +582,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async getExtensions(): Promise<
     {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
   > {
     return (await queryDB(
@@ -647,20 +595,17 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         parameters: {},
       }),
     )) as {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[];
   }
 
   /**
    * Executes a custom SQL query directly against the DuckDB instance.
    *
-   * If you want to force the returned data to match the types of the columns, you can use the `types` option.
-   *
    * @param query - The SQL query string to execute.
    * @param options - Configuration options for the query.
    * @param options.returnDataFrom - Specifies whether to return data from the query. Can be `"query"` to return data or `"none"` (default) to not return data.
    * @param options.table - The name of the table associated with the query, primarily used for debugging and logging.
-   * @param options.types - An optional object specifying data types for the query parameters.
    * @returns A promise that resolves to the query result as an array of objects if `returnDataFrom` is `"query"`, otherwise `null`.
    * @category DuckDB
    *
@@ -685,11 +630,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     options: {
       returnDataFrom?: "query" | "none";
       table?: string;
-      types?: { [key: string]: string };
     } = {},
   ): Promise<
     | {
-      [key: string]: string | number | boolean | Date | null;
+      [key: string]: unknown;
     }[]
     | null
   > {
@@ -701,7 +645,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         table: options.table ?? null,
         method: "customQuery()",
         parameters: { query, options },
-        types: options.types,
       }),
     );
   }
@@ -714,7 +657,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options - Configuration options for loading the database.
    * @param options.name - The name to assign to the loaded database within the DuckDB instance. Defaults to the file name without extension.
    * @param options.detach - If `true` (default), the database is detached after loading its contents into memory. If `false`, the database remains attached.
-   * @returns A promise that resolves when the database has been loaded.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
    * @example
@@ -738,84 +681,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   async loadDB(file: string, options: {
     name?: string;
     detach?: boolean;
-  } = {}): Promise<void> {
-    const name = options.name ?? "my_database";
-    const detach = options.detach ?? true;
-
-    if (!existsSync(file)) {
-      throw new Error(`The file ${file} does not exist.`);
-    }
-    const extension = getExtension(file);
-
-    const allIndexesFile = `${file.replace(`.${extension}`, "")}_indexes.json`;
-    const vssIndex = checkVssIndexes(allIndexesFile);
-    if (vssIndex) {
-      await this.customQuery(`INSTALL vss; LOAD vss;`);
-    }
-
-    if (extension === "db") {
-      if (detach) {
-        await queryDB(
-          this,
-          `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      } else {
-        await queryDB(
-          this,
-          `ATTACH '${cleanPath(file)}' AS ${name};
-          USE ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      }
-    } else if (extension === "sqlite") {
-      if (detach) {
-        await queryDB(
-          this,
-          `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      } else {
-        await queryDB(
-          this,
-          `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-        USE ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      }
-    } else {
-      throw new Error(
-        `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
-      );
-    }
-
-    await setDbProps(this, allIndexesFile);
+  } = {}): Promise<this> {
+    await loadDB(this, file, options);
+    return this;
   }
 
   /**
@@ -825,7 +693,7 @@ DETACH ${name};`,
    * @param file - The absolute path to the output file (e.g., "./my_exported_database.db").
    * @param options - Configuration options for writing the database.
    * @param options.noMetaData - If `true`, metadata files (indexes) are not created alongside the database file. Defaults to `false`.
-   * @returns A promise that resolves when the database has been written to the file.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
    * @example
@@ -843,52 +711,9 @@ DETACH ${name};`,
   async writeDB(
     file: string,
     options: { noMetaData?: boolean } = {},
-  ): Promise<void> {
-    const noMetaData = options.noMetaData ?? false;
-
-    if (existsSync(file)) {
-      rmSync(file);
-    }
-    createDirectory(file);
-    const extension = getExtension(file);
-
-    if (!noMetaData) {
-      writeIndexes(this, extension, file);
-    }
-
-    const name = getName(file);
-    if (extension === "db") {
-      await queryDB(
-        this,
-        `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${getName(this.file)} TO ${name};
-DETACH ${name};`,
-        mergeOptions(this, {
-          returnDataFrom: "none",
-          table: null,
-          method: "writeDB()",
-          parameters: {},
-        }),
-      );
-    } else if (extension === "sqlite") {
-      await queryDB(
-        this,
-        `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${getName(this.file)} TO ${name};
-DETACH ${name};`,
-        mergeOptions(this, {
-          returnDataFrom: "none",
-          table: null,
-          method: "writeDB()",
-          parameters: {},
-        }),
-      );
-    } else {
-      throw new Error(
-        `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
-      );
-    }
+  ): Promise<this> {
+    await writeDB(this, file, options);
+    return this;
   }
 
   /**

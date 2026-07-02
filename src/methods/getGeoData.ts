@@ -59,7 +59,7 @@ export default async function getGeoData(
           coordinates: unknown[];
         };
         properties: {
-          [key: string]: string | number | boolean | Date | null;
+          [key: string]: unknown;
         };
       }[];
     }

@@ -2,7 +2,6 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
-import joinQuery from "./joinQuery.ts";
 
 export default async function join(
   leftTable: SimpleTable,
@@ -96,4 +95,35 @@ export default async function join(
   }
 
   return outputTable;
+}
+
+function joinQuery(
+  leftTable: string,
+  rightTable: string,
+  commonColumn: string[],
+  join: "inner" | "left" | "right" | "full",
+  outputTable: string,
+) {
+  let query = `CREATE OR REPLACE TABLE "${outputTable}" AS SELECT *`;
+
+  if (join === "inner") {
+    query += ` FROM "${leftTable}" JOIN "${rightTable}"`;
+  } else if (join === "left") {
+    query += ` FROM "${leftTable}" LEFT JOIN "${rightTable}"`;
+  } else if (join === "right") {
+    query += ` FROM "${leftTable}" RIGHT JOIN "${rightTable}"`;
+  } else if (join === "full") {
+    query += ` FROM "${leftTable}" FULL JOIN "${rightTable}"`;
+  } else {
+    throw new Error(`Unknown ${join} join.`);
+  }
+
+  query += ` ON (${
+    commonColumn.map((d) => `"${leftTable}"."${d}" = "${rightTable}"."${d}"`)
+      .join(
+        " AND ",
+      )
+  });\n`;
+
+  return query;
 }
