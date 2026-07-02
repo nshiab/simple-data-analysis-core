@@ -1,6 +1,34 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function outliersIQRQuery(
+export default async function outliersIQR(
+  simpleTable: SimpleTable,
+  column: string,
+  newColumn: string,
+  options: {
+    categories?: string | string[];
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    outliersIQRQuery(
+      simpleTable.name,
+      column,
+      newColumn,
+      (await simpleTable.getNbRows()) % 2 === 0 ? "even" : "odd",
+      options,
+    ),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "outliersIQR()",
+      parameters: { column, newColumn, options },
+    }),
+  );
+}
+
+function outliersIQRQuery(
   table: string,
   column: string,
   newColumn: string,

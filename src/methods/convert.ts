@@ -1,6 +1,62 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
 import parseType from "../helpers/parseTypes.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function convertQuery(
+export default async function convert(
+  simpleTable: SimpleTable,
+  types: {
+    [key: string]:
+      | "integer"
+      | "float"
+      | "number"
+      | "string"
+      | "date"
+      | "time"
+      | "datetime"
+      | "datetimeTz"
+      | "bigint"
+      | "double"
+      | "varchar"
+      | "timestamp"
+      | "timestamp with time zone"
+      | "boolean";
+  },
+  options: {
+    try?: boolean;
+    datetimeFormat?: string;
+  } = {},
+) {
+  const allTypes = await simpleTable.getTypes();
+  const allColumns = Object.keys(allTypes);
+
+  for (const col in types) {
+    if (!allColumns.includes(col)) {
+      throw new Error(
+        `The column ${col} does not exist in the table.`,
+      );
+    }
+  }
+
+  await queryDB(
+    simpleTable,
+    convertQuery(
+      simpleTable.name,
+      Object.keys(types),
+      Object.values(types),
+      allColumns,
+      allTypes,
+      options,
+    ),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "convert()",
+      parameters: { types, options },
+    }),
+  );
+}
+
+function convertQuery(
   table: string,
   columns: string[],
   columnsTypes: (

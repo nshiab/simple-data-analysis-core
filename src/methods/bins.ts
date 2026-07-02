@@ -1,6 +1,33 @@
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function binsQuery(
+export default async function bins(
+  simpleTable: SimpleTable,
+  values: string,
+  interval: number,
+  newColumn: string,
+  options: {
+    startValue?: number;
+  } = {},
+) {
+  await queryDB(
+    simpleTable,
+    await binsQuery(simpleTable, values, interval, newColumn, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "bins()",
+      parameters: {
+        values,
+        interval,
+        newColumn,
+        options,
+      },
+    }),
+  );
+}
+
+async function binsQuery(
   SimpleTable: SimpleTable,
   values: string,
   interval: number,

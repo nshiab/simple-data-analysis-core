@@ -1,4 +1,29 @@
-export default function trimQuery(
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import stringToArray from "../helpers/stringToArray.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+
+export default async function trim(
+  simpleTable: SimpleTable,
+  columns: string | string[],
+  options: {
+    character?: string;
+    method?: "leftTrim" | "rightTrim" | "trim";
+  } = {},
+) {
+  options.method = options.method ?? "trim";
+  await queryDB(
+    simpleTable,
+    trimQuery(simpleTable.name, stringToArray(columns), options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "trim()",
+      parameters: { columns, options },
+    }),
+  );
+}
+
+function trimQuery(
   table: string,
   columns: string[],
   options: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" },

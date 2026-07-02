@@ -1,7 +1,48 @@
-import { existsSync, rmSync } from "node:fs";
 import cleanPath from "../helpers/cleanPath.ts";
+import createDirectory from "../helpers/createDirectory.ts";
+import getExtension from "../helpers/getExtension.ts";
+import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
+import { existsSync, rmSync } from "node:fs";
 
-export default function writeDataQuery(
+export default async function writeData(
+  simpleTable: SimpleTable,
+  file: string,
+  options: {
+    compression?: boolean;
+    dataAsArrays?: boolean;
+    formatDates?: boolean;
+  } = {},
+) {
+  if (await hasGeometryColumn(simpleTable)) {
+    throw new Error(
+      "Table contains geometry columns. Use writeGeoData() instead.",
+    );
+  }
+
+  createDirectory(file);
+
+  const extension = getExtension(file);
+
+  if (options.dataAsArrays) {
+    await writeDataAsArrays(simpleTable, file);
+  } else {
+    await queryDB(
+      simpleTable,
+      writeDataQuery(simpleTable.name, file, extension, options),
+      mergeOptions(simpleTable, {
+        table: simpleTable.name,
+        method: "writeData()",
+        parameters: { file, options },
+      }),
+    );
+  }
+}
+
+function writeDataQuery(
   table: string,
   file: string,
   fileExtension: string,

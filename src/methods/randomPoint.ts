@@ -1,4 +1,52 @@
-export default function randomPointQuery(
+import findGeoColumn from "../helpers/findGeoColumn.ts";
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+
+export default async function randomPoint(
+  simpleTable: SimpleTable,
+  newColumn: string,
+  nbPointsToTry: number,
+  options: { column?: string; try?: boolean } = {},
+) {
+  if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
+    throw new Error(
+      "nbPointsToTry must be a number greater than or equal to 0",
+    );
+  }
+  const column = typeof options.column === "string"
+    ? options.column
+    : await findGeoColumn(simpleTable);
+
+  const geoType = await simpleTable.getProjection(column);
+
+  await queryDB(
+    simpleTable,
+    randomPointQuery(
+      simpleTable.name,
+      column,
+      newColumn,
+      nbPointsToTry,
+      geoType,
+    ),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "randomPoint()",
+      parameters: { column, newColumn, nbPointsToTry, options, geoType },
+    }),
+  );
+
+  const nbNulls = await simpleTable.getNbRows({
+    conditions: `"${newColumn}" IS NULL`,
+  });
+  if (nbNulls > 0 && !options.try) {
+    throw new Error(
+      `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.try to true.`,
+    );
+  }
+}
+
+function randomPointQuery(
   table: string,
   column: string,
   newColumn: string,

@@ -1,4 +1,29 @@
-export default function boundingBoxQuery(
+import findGeoColumn from "../helpers/findGeoColumn.ts";
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+
+export default async function boundingBox(
+  simpleTable: SimpleTable,
+  options: {
+    column?: string;
+    decimals?: number;
+  } = {},
+) {
+  const column = options.column ?? (await findGeoColumn(simpleTable));
+
+  await queryDB(
+    simpleTable,
+    boundingBoxQuery(simpleTable.name, column, options),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "boundingBox()",
+      parameters: { column, options },
+    }),
+  );
+}
+
+function boundingBoxQuery(
   table: string,
   column: string,
   options: {

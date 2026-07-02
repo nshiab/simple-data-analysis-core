@@ -1,12 +1,5 @@
 import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
-import renameColumnQuery from "../methods/renameColumnQuery.ts";
-import replaceQuery from "../methods/replaceQuery.ts";
-import convertQuery from "../methods/convertQuery.ts";
-import roundQuery from "../methods/roundQuery.ts";
-import insertRowsQuery from "../methods/insertRowsQuery.ts";
-import outliersIQRQuery from "../methods/outliersIQRQuery.ts";
-import parseType from "../helpers/parseTypes.ts";
 import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
 import getNbRows from "../methods/getNbRows.ts";
@@ -27,24 +20,14 @@ import getSkew from "../methods/getSkew.ts";
 import getStdDev from "../methods/getStdDev.ts";
 import getVar from "../methods/getVar.ts";
 import getQuantile from "../methods/getQuantile.ts";
-import binsQuery from "../methods/binsQuery.ts";
-import trimQuery from "../methods/trimQuery.ts";
-import replaceNullsQuery from "../methods/replaceNullsQuery.ts";
 import cloneColumnQuery from "../methods/cloneColumn.ts";
-import randomPointQuery from "../methods/randomPointQuery.ts";
 import getGeoData from "../methods/getGeoData.ts";
 import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
-import { readdirSync } from "node:fs";
-import stringToArray from "../helpers/stringToArray.ts";
-import { loadDataQuery } from "../methods/loadData.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
-import writeDataQuery from "../methods/writeDataQuery.ts";
 import type SimpleDB from "./SimpleDB.ts";
 import runQuery from "../helpers/runQuery.ts";
-import aggregateGeoQuery from "../methods/aggregateGeoQuery.ts";
-import boundingBoxQuery from "../methods/boundingBoxQuery.ts";
 import summarize from "../methods/summarize.ts";
 import correlations from "../methods/correlations.ts";
 import linearRegressions from "../methods/linearRegressions.ts";
@@ -52,26 +35,14 @@ import joinGeo from "../methods/joinGeo.ts";
 import cache from "../methods/cache.ts";
 import camelCase from "../helpers/camelCase.ts";
 import formatNumber from "../helpers/formatNumber.ts";
-import createDirectory from "../helpers/createDirectory.ts";
-import writeDataAsArrays from "../helpers/writeDataAsArrays.ts";
 import logData from "../helpers/logData.ts";
 import fill from "../methods/fill.ts";
 import loadArray from "../methods/loadArray.ts";
-import cleanPath from "../helpers/cleanPath.ts";
 import Simple from "./Simple.ts";
-import selectRowsQuery from "../methods/selectRowsQuery.ts";
-import crossJoinQuery from "../methods/crossJoinQuery.ts";
 import join from "../methods/join.ts";
 import fuzzyJoin from "../methods/fuzzyJoin.ts";
 import fuzzyClean from "../methods/fuzzyClean.ts";
-import cloneQuery from "../methods/cloneQuery.ts";
 import findGeoColumn from "../helpers/findGeoColumn.ts";
-import getExtension from "../helpers/getExtension.ts";
-import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
-import padQuery from "../methods/padQuery.ts";
-import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
-import unifyColumns from "../helpers/unifyColumns.ts";
-import concatenateRowQuery from "../helpers/concatenateRowQuery.ts";
 import createFtsIndex from "../methods/createFtsIndex.ts";
 import createVssIndex from "../methods/createVssIndex.ts";
 import bm25 from "../methods/bm25.ts";
@@ -114,6 +85,57 @@ import selectColumns from "../methods/selectColumns.ts";
 import sort from "../methods/sort.ts";
 import loadData from "../methods/loadData.ts";
 import renameTable from "../methods/renameTable.ts";
+import writeData from "../methods/writeData.ts";
+import getBoundingBox from "../methods/getBoundingBox.ts";
+import linesToPolygons from "../methods/linesToPolygons.ts";
+import aggregateGeo from "../methods/aggregateGeo.ts";
+import boundingBox from "../methods/boundingBox.ts";
+import unnestGeo from "../methods/unnestGeo.ts";
+import randomPoint from "../methods/randomPoint.ts";
+import centroid from "../methods/centroid.ts";
+import simplify from "../methods/simplify.ts";
+import union from "../methods/union.ts";
+import fillHoles from "../methods/fillHoles.ts";
+import removeIntersection from "../methods/removeIntersection.ts";
+import intersection from "../methods/intersection.ts";
+import buffer from "../methods/buffer.ts";
+import perimeter from "../methods/perimeter.ts";
+import length from "../methods/length.ts";
+import area from "../methods/area.ts";
+import reproject from "../methods/reproject.ts";
+import reducePrecision from "../methods/reducePrecision.ts";
+import flipCoordinates from "../methods/flipCoordinates.ts";
+import typeGeo from "../methods/typeGeo.ts";
+import isClosedGeo from "../methods/isClosedGeo.ts";
+import fixGeo from "../methods/fixGeo.ts";
+import nbVertices from "../methods/nbVertices.ts";
+import isValidGeo from "../methods/isValidGeo.ts";
+import points from "../methods/points.ts";
+import getData from "../methods/getData.ts";
+import getSchema from "../methods/getSchema.ts";
+import outliersIQR from "../methods/outliersIQR.ts";
+import bins from "../methods/bins.ts";
+import round from "../methods/round.ts";
+import concatenateRow from "../methods/concatenateRow.ts";
+import replaceNulls from "../methods/replaceNulls.ts";
+import pad from "../methods/pad.ts";
+import replace from "../methods/replace.ts";
+import crossJoin from "../methods/crossJoin.ts";
+import addRowNumber from "../methods/addRowNumber.ts";
+import addColumn from "../methods/addColumn.ts";
+import removeColumns from "../methods/removeColumns.ts";
+import convert from "../methods/convert.ts";
+import longer from "../methods/longer.ts";
+import renameColumns from "../methods/renameColumns.ts";
+import trim from "../methods/trim.ts";
+import selectRows from "../methods/selectRows.ts";
+import cloneColumnWithOffset from "../methods/cloneColumnWithOffset.ts";
+import cloneTable from "../methods/cloneTable.ts";
+import insertTables from "../methods/insertTables.ts";
+import insertRows from "../methods/insertRows.ts";
+import loadGeoData from "../methods/loadGeoData.ts";
+import loadDataFromDirectory from "../methods/loadDataFromDirectory.ts";
+import setTypes from "../methods/setTypes.ts";
 
 /**
  * IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
@@ -265,30 +287,7 @@ export default class SimpleTable extends Simple {
       | `geometry('${string}')`
       | `GEOMETRY('${string}')`;
   }): Promise<this> {
-    let spatial = "";
-    if (
-      Object.values(types)
-        .map((d) => d.toLowerCase())
-        .some((d) => d.startsWith("geometry"))
-    ) {
-      spatial =
-        "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;\n";
-    }
-    await queryDB(
-      this,
-      `${spatial}CREATE OR REPLACE TABLE "${this.name}" (${
-        Object.keys(
-          types,
-        )
-          .map((d) => `"${d}" ${parseType(types[d])}`)
-          .join(", ")
-      });`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "setTypes()",
-        parameters: { types },
-      }),
-    );
+    await setTypes(this, types);
     return this;
   }
 
@@ -482,20 +481,7 @@ export default class SimpleTable extends Simple {
       sheet?: string;
     } = {},
   ): Promise<this> {
-    const files = readdirSync(directory).map(
-      (file) =>
-        `${directory.slice(-1) === "/" ? directory : directory + "/"}${file}`,
-    );
-    await queryDB(
-      this,
-      loadDataQuery(this.name, files, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "loadDataFromDirectory",
-        parameters: { directory, options },
-      }),
-    );
-
+    await loadDataFromDirectory(this, directory, options);
     return this;
   }
 
@@ -536,53 +522,7 @@ export default class SimpleTable extends Simple {
     file: string,
     options: { toWGS84?: boolean } = {},
   ): Promise<this> {
-    const fileExtension = getExtension(file);
-
-    if (fileExtension === "geoparquet" || fileExtension === "parquet") {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
-          file.toLowerCase().includes("http")
-            ? " INSTALL https; LOAD https;"
-            : ""
-        }
-              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM read_parquet('${
-          cleanPath(file)
-        }');`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "loadGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
-          file.toLowerCase().includes("http")
-            ? " INSTALL https; LOAD https;"
-            : ""
-        }
-              CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM ST_Read('${file}');`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "loadGeoData()",
-          parameters: { file, options },
-        }),
-      );
-    }
-
-    if (await this.hasColumn("OGC_FID")) {
-      await this.removeColumns("OGC_FID");
-    }
-
-    if (options.toWGS84) {
-      const geoType = await this.getProjection("geom");
-      if (geoType !== "GEOMETRY('EPSG:4326')") {
-        await this.reproject("EPSG:4326");
-      }
-    }
-
+    await loadGeoData(this, file, options);
     return this;
   }
 
@@ -936,19 +876,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async insertRows(rows: { [key: string]: unknown }[]): Promise<this> {
-    if (await this.sdb.hasTable(this.name)) {
-      await queryDB(
-        this,
-        insertRowsQuery(this.name, rows),
-        mergeOptions(this, {
-          table: this.name,
-          method: "insertRows()",
-          parameters: { rows },
-        }),
-      );
-    } else {
-      await this.loadArray(rows);
-    }
+    await insertRows(this, rows);
     return this;
   }
 
@@ -983,94 +911,7 @@ export default class SimpleTable extends Simple {
     tablesToInsert: SimpleTable | SimpleTable[],
     options: { unifyColumns?: boolean } = {},
   ): Promise<this> {
-    const array = Array.isArray(tablesToInsert)
-      ? tablesToInsert
-      : [tablesToInsert];
-
-    if (!await this.sdb.hasTable(this.name)) {
-      await this.setTypes(
-        (await array[0].getTypes()) as {
-          [key: string]:
-            | "integer"
-            | "float"
-            | "number"
-            | "string"
-            | "date"
-            | "time"
-            | "datetime"
-            | "datetimeTz"
-            | "bigint"
-            | "double"
-            | "varchar"
-            | "timestamp"
-            | "timestamp with time zone"
-            | "boolean"
-            | `geometry('${string}')`
-            | `GEOMETRY('${string}')`;
-        },
-      );
-    }
-
-    // Checking columns, types
-    if (!options.unifyColumns) {
-      const thisColumns = (await this.getColumns()).sort().join(",");
-      for (const table of array) {
-        const tableColumns = (await table.getColumns()).sort().join(",");
-        if (thisColumns !== tableColumns) {
-          throw new Error(
-            `Tables ${this.name} and ${table.name} don't have the same columns: ${thisColumns} vs ${tableColumns}`,
-          );
-        }
-      }
-    }
-    const allTables = [this, ...array];
-    const allTypes: { [key: string]: string } = {};
-    for (const table of allTables) {
-      const types = await table.getTypes();
-      for (const key in types) {
-        if (!allTypes[key]) {
-          allTypes[key] = types[key];
-        } else {
-          if (allTypes[key] !== types[key]) {
-            throw new Error(
-              `The column ${key} has different types in the tables.`,
-            );
-          }
-        }
-      }
-    }
-
-    let columnsAdded: {
-      [key: string]: string[];
-    } = {};
-    if (options.unifyColumns) {
-      columnsAdded = await unifyColumns(allTables, allTypes);
-    }
-
-    await queryDB(
-      this,
-      array
-        .map(
-          (tableToInsert) =>
-            `INSERT INTO "${this.name}" BY NAME SELECT * FROM "${tableToInsert.name}";`,
-        )
-        .join("\n"),
-      mergeOptions(this, {
-        table: this.name,
-        method: "insertTables()",
-        parameters: { tablesToInsert },
-      }),
-    );
-
-    if (options.unifyColumns) {
-      for (const table of array) {
-        const cols = columnsAdded[table.name];
-        if (cols) {
-          await table.removeColumns(cols);
-        }
-      }
-    }
-
+    await insertTables(this, tablesToInsert, options);
     return this;
   }
 
@@ -1187,34 +1028,7 @@ export default class SimpleTable extends Simple {
       offset?: number;
     } = {},
   ): Promise<this> {
-    const columns = typeof nameOrOptions === "object" && nameOrOptions.columns
-      ? stringToArray(nameOrOptions.columns)
-      : [];
-
-    // Delegate to sdb.newTable() so subclasses using tableClass work correctly.
-    let clonedTable;
-    const options = typeof nameOrOptions === "string"
-      ? { outputTable: nameOrOptions }
-      : nameOrOptions;
-    if (typeof options.outputTable === "string") {
-      clonedTable = this.sdb.newTable(options.outputTable);
-    } else {
-      clonedTable = this.sdb.newTable(undefined);
-    }
-
-    await queryDB(
-      this,
-      cloneQuery(this.name, clonedTable.name, columns, options),
-      mergeOptions(this, {
-        table: clonedTable.name,
-        method: "cloneTable()",
-        parameters: { options },
-      }),
-    );
-
-    clonedTable.connection = clonedTable.sdb.connection;
-
-    return clonedTable as this;
+    return await cloneTable(this, nameOrOptions) as this;
   }
 
   /**
@@ -1298,34 +1112,7 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
     } = {},
   ): Promise<this> {
-    const offset = options.offset ?? 1;
-    const categories = options.categories
-      ? stringToArray(options.categories)
-      : [];
-    const partition = categories.length > 0
-      ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
-      : "";
-
-    const tempRowCol = `rowNumberForCloneColumnWithOffset`;
-    await this.addRowNumber(tempRowCol);
-
-    // Apply the offset using the row number for ordering
-    // When categories are specified, also sort the final result by categories
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE("${tempRowCol}"), LEAD("${originalColumn}", ${offset}) OVER(${partition} ORDER BY "${tempRowCol}") AS "${newColumn}" FROM "${this.name}"${
-        categories.length > 0
-          ? ` ORDER BY ${
-            categories.map((d) => `"${d}"`).join(", ")
-          }, "${tempRowCol}"`
-          : ` ORDER BY "${tempRowCol}"`
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "cloneColumnWithOffset()",
-        parameters: { originalColumn, newColumn },
-      }),
-    );
+    await cloneColumnWithOffset(this, originalColumn, newColumn, options);
     return this;
   }
 
@@ -1574,27 +1361,7 @@ export default class SimpleTable extends Simple {
     count: number | string,
     options: { offset?: number; outputTable?: string | boolean } = {},
   ): Promise<this> {
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await queryDB(
-      this,
-      selectRowsQuery(this.name, count, options),
-      mergeOptions(this, {
-        table: typeof options.outputTable === "string"
-          ? options.outputTable
-          : this.name,
-        method: "selectRows",
-        parameters: { count, options },
-      }),
-    );
-
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+    return await selectRows(this, count, options) as this;
   }
 
   /**
@@ -1714,16 +1481,7 @@ export default class SimpleTable extends Simple {
       method?: "leftTrim" | "rightTrim" | "trim";
     } = {},
   ): Promise<this> {
-    options.method = options.method ?? "trim";
-    await queryDB(
-      this,
-      trimQuery(this.name, stringToArray(columns), options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "trim()",
-        parameters: { columns, options },
-      }),
-    );
+    await trim(this, columns, options);
     return this;
   }
 
@@ -1881,18 +1639,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async renameColumns(names: { [key: string]: string }): Promise<this> {
-    const oldNames = Object.keys(names);
-    const newNames = Object.values(names);
-
-    await queryDB(
-      this,
-      renameColumnQuery(this.name, oldNames, newNames),
-      mergeOptions(this, {
-        table: this.name,
-        method: "renameColumns()",
-        parameters: { names },
-      }),
-    );
+    await renameColumns(this, names);
     return this;
   }
 
@@ -1959,20 +1706,7 @@ export default class SimpleTable extends Simple {
     columnsTo: string,
     valuesTo: string,
   ): Promise<this> {
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * FROM (
-            FROM "${this.name}" UNPIVOT INCLUDE NULLS (
-            "${valuesTo}"
-            for "${columnsTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
-            )
-        )`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "longer()",
-        parameters: { columns, columnsTo, valuesTo },
-      }),
-    );
+    await longer(this, columns, columnsTo, valuesTo);
     return this;
   }
 
@@ -2084,33 +1818,7 @@ export default class SimpleTable extends Simple {
       datetimeFormat?: string;
     } = {},
   ): Promise<this> {
-    const allTypes = await this.getTypes();
-    const allColumns = Object.keys(allTypes);
-
-    for (const col in types) {
-      if (!allColumns.includes(col)) {
-        throw new Error(
-          `The column ${col} does not exist in the table.`,
-        );
-      }
-    }
-
-    await queryDB(
-      this,
-      convertQuery(
-        this.name,
-        Object.keys(types),
-        Object.values(types),
-        allColumns,
-        allTypes,
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "convert()",
-        parameters: { types, options },
-      }),
-    );
+    await convert(this, types, options);
     return this;
   }
 
@@ -2151,16 +1859,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async removeColumns(columns: string | string[]): Promise<this> {
-    const cols = stringToArray(columns);
-    await queryDB(
-      this,
-      cols.map((d) => `ALTER TABLE "${this.name}" DROP "${d}";`).join("\n"),
-      mergeOptions(this, {
-        table: this.name,
-        method: "removeColumns()",
-        parameters: { columns },
-      }),
-    );
+    await removeColumns(this, columns);
     return this;
   }
 
@@ -2207,23 +1906,7 @@ export default class SimpleTable extends Simple {
       | `GEOMETRY('${string}')`,
     definition: string,
   ): Promise<this> {
-    const newType = parseType(type);
-
-    let spatial = "";
-    if (newType.toLowerCase().includes("geometry")) {
-      spatial = "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
-    }
-
-    await queryDB(
-      this,
-      `${spatial} ALTER TABLE "${this.name}" ADD "${newColumn}" ${newType};
-        UPDATE "${this.name}" SET "${newColumn}" = ${definition}`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "addColumn()",
-        parameters: { newColumn, type, definition },
-      }),
-    );
+    await addColumn(this, newColumn, type, definition);
     return this;
   }
 
@@ -2252,22 +1935,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { categories?: string | string[] } = {},
   ): Promise<this> {
-    const categories = options.categories
-      ? stringToArray(options.categories)
-      : [];
-    const partition = categories.length > 0
-      ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
-      : "";
-
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT *, (ROW_NUMBER() OVER(${partition} ORDER BY rowid) - 1) AS "${newColumn}" FROM "${this.name}" ORDER BY rowid`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "addRowNumber()",
-        parameters: { newColumn, options },
-      }),
-    );
+    await addRowNumber(this, newColumn, options);
     return this;
   }
 
@@ -2305,39 +1973,7 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): Promise<this> {
-    const identicalColumns = getIdenticalColumns(
-      await this.getColumns(),
-      await rightTable.getColumns(),
-    );
-    if (identicalColumns.length > 0) {
-      throw new Error(
-        `The tables have columns with identical names. Rename or remove ${
-          identicalColumns.map((d) => `"${d}"`).join(", ")
-        } in one of the two tables before doing the cross join.`,
-      );
-    }
-
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await queryDB(
-      this,
-      crossJoinQuery(this.name, rightTable.name, options),
-      mergeOptions(this, {
-        table: typeof options.outputTable === "string"
-          ? options.outputTable
-          : this.name,
-        method: "crossJoin()",
-        parameters: { rightTable, options },
-      }),
-    );
-
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+    return await crossJoin(this, rightTable, options) as this;
   }
 
   /**
@@ -2602,31 +2238,7 @@ export default class SimpleTable extends Simple {
       regex?: boolean;
     } = {},
   ): Promise<this> {
-    options.entireString = options.entireString ?? false;
-    options.regex = options.regex ?? false;
-    if (options.entireString === true && options.regex === true) {
-      throw new Error(
-        "You can't have entireString to true and regex to true at the same time. Pick one.",
-      );
-    }
-    const columnList = columns === "all"
-      ? await this.getColumns()
-      : stringToArray(columns);
-    await queryDB(
-      this,
-      replaceQuery(
-        this.name,
-        columnList,
-        Object.keys(strings),
-        Object.values(strings),
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "replace()",
-        parameters: { columns, strings, options },
-      }),
-    );
+    await replace(this, columns, strings, options);
     return this;
   }
 
@@ -2770,49 +2382,7 @@ export default class SimpleTable extends Simple {
     length: number,
     options: { method?: "left" | "right"; char?: string } = {},
   ): Promise<this> {
-    const columnList = stringToArray(columns);
-
-    // Validate all columns are string type
-    const allTypes = await this.getTypes();
-    for (const column of columnList) {
-      if (allTypes[column] !== "VARCHAR") {
-        throw new Error(
-          `The column "${column}" is of type ${
-            allTypes[column]
-          }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
-        );
-      }
-    }
-
-    // Pre-validation: check for strings exceeding target length
-    for (const column of columnList) {
-      const overflowResult = await queryDB(
-        this,
-        `SELECT COUNT(*) AS cnt FROM "${this.name}" WHERE LENGTH("${column}") > ${length};`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "pad()",
-          parameters: { columns, length, options },
-          returnDataFrom: "query",
-        }),
-      );
-      const overflowCount = Number(overflowResult![0].cnt);
-      if (overflowCount > 0) {
-        throw new Error(
-          `The column "${column}" has ${overflowCount} string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
-        );
-      }
-    }
-
-    await queryDB(
-      this,
-      padQuery(this.name, columnList, length, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "pad()",
-        parameters: { columns, length, options },
-      }),
-    );
+    await pad(this, columns, length, options);
     return this;
   }
 
@@ -2974,18 +2544,7 @@ export default class SimpleTable extends Simple {
     columns: "all" | string | string[],
     value: number | string | Date | boolean,
   ): Promise<this> {
-    const columnList = columns === "all"
-      ? await this.getColumns()
-      : stringToArray(columns);
-    await queryDB(
-      this,
-      replaceNullsQuery(this.name, columnList, value),
-      mergeOptions(this, {
-        table: this.name,
-        method: "replaceNulls()",
-        parameters: { columns, value },
-      }),
-    );
+    await replaceNulls(this, columns, value);
     return this;
   }
 
@@ -3074,26 +2633,7 @@ export default class SimpleTable extends Simple {
     columns: string[],
     newColumn: string,
   ): Promise<this> {
-    const allTypes = await this.getTypes();
-    for (const col of columns) {
-      if (allTypes[col] !== "VARCHAR") {
-        throw new Error(
-          `The column ${col} is of type ${
-            allTypes[col]
-          }. The concatenateRow() method only works with string columns. Please convert the column to string first with the .convert() method.`,
-        );
-      }
-    }
-
-    await queryDB(
-      this,
-      concatenateRowQuery(this.name, columns, newColumn),
-      mergeOptions(this, {
-        table: this.name,
-        method: "concatenateRow()",
-        parameters: { columns, newColumn },
-      }),
-    );
+    await concatenateRow(this, columns, newColumn);
     return this;
   }
 
@@ -3252,19 +2792,7 @@ export default class SimpleTable extends Simple {
         method?: "round" | "ceiling" | "floor";
       } = {},
   ): Promise<this> {
-    const optionsNormalized = typeof options === "number"
-      ? { decimals: options }
-      : options;
-
-    await queryDB(
-      this,
-      roundQuery(this.name, stringToArray(columns), optionsNormalized),
-      mergeOptions(this, {
-        table: this.name,
-        method: "round()",
-        parameters: { columns, options },
-      }),
-    );
+    await round(this, columns, options);
     return this;
   }
 
@@ -3422,20 +2950,7 @@ export default class SimpleTable extends Simple {
       startValue?: number;
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      await binsQuery(this, values, interval, newColumn, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "bins()",
-        parameters: {
-          values,
-          interval,
-          newColumn,
-          options,
-        },
-      }),
-    );
+    await bins(this, values, interval, newColumn, options);
     return this;
   }
 
@@ -3957,21 +3472,7 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
     } = {},
   ): Promise<this> {
-    await queryDB(
-      this,
-      outliersIQRQuery(
-        this.name,
-        column,
-        newColumn,
-        (await this.getNbRows()) % 2 === 0 ? "even" : "odd",
-        options,
-      ),
-      mergeOptions(this, {
-        table: this.name,
-        method: "outliersIQR()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+    await outliersIQR(this, column, newColumn, options);
     return this;
   }
 
@@ -4143,19 +3644,7 @@ export default class SimpleTable extends Simple {
       [key: string]: string | null;
     }[]
   > {
-    return (await queryDB(
-      this,
-      `DESCRIBE "${this.name}"`,
-      mergeOptions(this, {
-        returnDataFrom: "query",
-        nbRowsToLog: Infinity,
-        table: this.name,
-        method: "getSchema()",
-        parameters: {},
-      }),
-    )) as {
-      [key: string]: string | null;
-    }[];
+    return await getSchema(this);
   }
 
   /**
@@ -4916,33 +4405,7 @@ export default class SimpleTable extends Simple {
       [key: string]: unknown;
     }[]
   > {
-    if (await hasGeometryColumn(this)) {
-      throw new Error(
-        "Table contains geometry columns. Use getGeoData() instead.",
-      );
-    }
-
-    const columns = options.columns
-      ? (typeof options.columns === "string"
-        ? [options.columns]
-        : options.columns)
-      : undefined;
-    return (await queryDB(
-      this,
-      `SELECT ${
-        columns ? columns.map((d) => `"${d}"`).join(", ") : "*"
-      } from "${this.name}"${
-        options.conditions ? ` WHERE ${options.conditions}` : ""
-      }`,
-      mergeOptions(this, {
-        returnDataFrom: "query",
-        table: this.name,
-        method: "getData()",
-        parameters: { options },
-      }),
-    )) as {
-      [key: string]: unknown;
-    }[];
+    return await getData(this, options);
   }
 
   /**
@@ -5006,17 +4469,7 @@ export default class SimpleTable extends Simple {
     columnLon: string,
     newColumn: string,
   ): Promise<this> {
-    await queryDB(
-      this,
-      (await this.getColumns()).includes(newColumn)
-        ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Point("${columnLon}", "${columnLat}")::GEOMETRY('EPSG:4326') AS "${newColumn}") FROM "${this.name}"`
-        : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" GEOMETRY('EPSG:4326'); UPDATE "${this.name}" SET "${newColumn}" = ST_Point("${columnLon}", "${columnLat}");`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "points()",
-        parameters: { columnLat, columnLon, newColumn },
-      }),
-    );
+    await points(this, columnLat, columnLon, newColumn);
     return this;
   }
 
@@ -5046,19 +4499,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_IsValid("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "isValidGeo()",
-        parameters: { column, newColumn },
-      }),
-    );
+    await isValidGeo(this, newColumn, options);
     return this;
   }
 
@@ -5088,19 +4529,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" BIGINT; UPDATE "${this.name}" SET "${newColumn}" = ST_NPoints("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "nbVertices()",
-        parameters: { column, newColumn },
-      }),
-    );
+    await nbVertices(this, newColumn, options);
     return this;
   }
 
@@ -5124,18 +4553,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async fixGeo(column?: string): Promise<this> {
-    const col = column ?? (await findGeoColumn(this));
-    const geoType = await this.getProjection(col);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_MakeValid("${col}")::${geoType} AS "${col}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "fixGeo()",
-        parameters: { column },
-      }),
-    );
+    await fixGeo(this, column);
     return this;
   }
 
@@ -5164,19 +4582,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" BOOLEAN; UPDATE "${this.name}" SET "${newColumn}" = ST_IsClosed("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "isClosedGeo()",
-        parameters: { column, newColumn },
-      }),
-    );
+    await isClosedGeo(this, newColumn, options);
     return this;
   }
 
@@ -5205,18 +4611,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD COLUMN "${newColumn}" VARCHAR; UPDATE "${this.name}" SET "${newColumn}" = ST_GeometryType("${column}")`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "typeGeo()",
-        parameters: { column, newColumn },
-      }),
-    );
+    await typeGeo(this, newColumn, options);
     return this;
   }
 
@@ -5241,18 +4636,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async flipCoordinates(column?: string): Promise<this> {
-    const col = column ?? (await findGeoColumn(this));
-    const geoType = await this.getProjection(col);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_FlipCoordinates("${col}")::${geoType} AS "${col}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "flipCoordinates()",
-        parameters: { column },
-      }),
-    );
+    await flipCoordinates(this, column);
     return this;
   }
 
@@ -5281,22 +4665,7 @@ export default class SimpleTable extends Simple {
     decimals: number,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-    const geoType = await this.getProjection(column);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_ReducePrecision("${column}", ${
-        1 / Math.pow(10, decimals)
-      })::${geoType} AS "${column}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "reducePrecision()",
-        parameters: { column, decimals },
-      }),
-    );
+    await reducePrecision(this, decimals, options);
     return this;
   }
 
@@ -5325,24 +4694,7 @@ export default class SimpleTable extends Simple {
     to: string,
     options: { column?: string } = {},
   ): Promise<this> {
-    const cleanedTo = to.replace("WGS84", "EPSG:4326");
-    const targetGeoType = `GEOMETRY${
-      cleanedTo !== "null" ? `('${cleanedTo}')` : ""
-    }`;
-
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Transform("${column}", '${cleanedTo}')::${targetGeoType} AS "${column}") FROM "${this.name}"`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "reproject()",
-        parameters: { column, to },
-      }),
-    );
+    await reproject(this, to, options);
     return this;
   }
 
@@ -5379,21 +4731,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { unit?: "m2" | "km2"; column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" DOUBLE; UPDATE "${this.name}" SET "${newColumn}" =  ST_Area_Spheroid("${column}") ${
-        options.unit === "km2" ? "/ 1000000" : ""
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "area()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+    await area(this, newColumn, options);
     return this;
   }
 
@@ -5430,21 +4768,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { unit?: "m" | "km"; column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" DOUBLE; UPDATE "${this.name}" SET "${newColumn}" =  ST_Length_Spheroid("${column}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "length()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+    await length(this, newColumn, options);
     return this;
   }
 
@@ -5481,21 +4805,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { unit?: "m" | "km"; column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await queryDB(
-      this,
-      `ALTER TABLE "${this.name}" ADD "${newColumn}" DOUBLE; UPDATE "${this.name}" SET "${newColumn}" =  ST_Perimeter_Spheroid("${column}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      };`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "perimeter()",
-        parameters: { column, newColumn, options },
-      }),
-    );
+    await perimeter(this, newColumn, options);
     return this;
   }
 
@@ -5527,34 +4837,7 @@ export default class SimpleTable extends Simple {
     distance: number,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    const geoType = await this.getProjection(column);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Buffer("${column}", ${distance})::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "buffer()",
-          parameters: { column, newColumn, distance },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Buffer("${column}", ${distance})`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "buffer()",
-          parameters: { column, newColumn, distance },
-        }),
-      );
-    }
+    await buffer(this, newColumn, distance, options);
     return this;
   }
 
@@ -5655,30 +4938,7 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<this> {
-    const geoType = await this.getProjection(column1);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Intersection("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "intersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Intersection("${column1}", "${column2}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "intersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    }
+    await intersection(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5702,30 +4962,7 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<this> {
-    const geoType = await this.getProjection(column1);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Difference("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "removeIntersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Difference("${column1}", "${column2}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "removeIntersection()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    }
+    await removeIntersection(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5749,16 +4986,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async fillHoles(column?: string): Promise<this> {
-    const col = column ?? (await findGeoColumn(this));
-    await queryDB(
-      this,
-      `UPDATE "${this.name}" SET geom = ST_MakePolygon(ST_ExteriorRing("${col}"));`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "fillHoles()",
-        parameters: { column },
-      }),
-    );
+    await fillHoles(this, column);
     return this;
   }
 
@@ -5830,30 +5058,7 @@ export default class SimpleTable extends Simple {
     column2: string,
     newColumn: string,
   ): Promise<this> {
-    const geoType = await this.getProjection(column1);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Union("${column1}", "${column2}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "union()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Union("${column1}", "${column2}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "union()",
-          parameters: { column1, column2, newColumn },
-        }),
-      );
-    }
+    await union(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5908,27 +5113,7 @@ export default class SimpleTable extends Simple {
     tolerance: number,
     options: { column?: string; simplifyBoundary?: boolean } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    await this.addRowNumber("rowNumberForSimplify");
-
-    const geoType = await this.getProjection(column);
-
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE(ST_CoverageSimplify(ARRAY_AGG("${column}"), ${tolerance}${
-        options.simplifyBoundary === false ? ", FAlSE" : ""
-      })::${geoType} AS "${column}") FROM "${this.name}" GROUP BY ALL;`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "simplify()",
-        parameters: { column, tolerance },
-      }),
-    );
-
-    await this.removeColumns("rowNumberForSimplify");
+    await simplify(this, tolerance, options);
     return this;
   }
 
@@ -5958,33 +5143,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: { column?: string } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-    const geoType = await this.getProjection(column);
-
-    const columns = await this.getColumns();
-    if (columns.includes(newColumn)) {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${this.name}" AS SELECT * REPLACE (ST_Centroid("${column}")::${geoType} AS "${newColumn}") FROM "${this.name}"`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "centroid()",
-          parameters: { column, newColumn },
-        }),
-      );
-    } else {
-      await queryDB(
-        this,
-        `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${this.name}" ADD "${newColumn}" ${geoType}; UPDATE "${this.name}" SET "${newColumn}" = ST_Centroid("${column}")`,
-        mergeOptions(this, {
-          table: this.name,
-          method: "centroid()",
-          parameters: { column, newColumn },
-        }),
-      );
-    }
+    await centroid(this, newColumn, options);
     return this;
   }
 
@@ -6020,35 +5179,7 @@ export default class SimpleTable extends Simple {
     nbPointsToTry: number,
     options: { column?: string; try?: boolean } = {},
   ): Promise<this> {
-    if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
-      throw new Error(
-        "nbPointsToTry must be a number greater than or equal to 0",
-      );
-    }
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    const geoType = await this.getProjection(column);
-
-    await queryDB(
-      this,
-      randomPointQuery(this.name, column, newColumn, nbPointsToTry, geoType),
-      mergeOptions(this, {
-        table: this.name,
-        method: "randomPoint()",
-        parameters: { column, newColumn, nbPointsToTry, options, geoType },
-      }),
-    );
-
-    const nbNulls = await this.getNbRows({
-      conditions: `"${newColumn}" IS NULL`,
-    });
-    if (nbNulls > 0 && !options.try) {
-      throw new Error(
-        `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.try to true.`,
-      );
-    }
+    await randomPoint(this, newColumn, nbPointsToTry, options);
     return this;
   }
 
@@ -6129,16 +5260,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async unnestGeo(column?: string): Promise<this> {
-    const col = column ?? (await findGeoColumn(this));
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE("${col}"), UNNEST(ST_Dump("${col}"), recursive := TRUE) FROM "${this.name}"; ALTER TABLE "${this.name}" DROP COLUMN path;`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "unnestGeo()",
-        parameters: { column },
-      }),
-    );
+    await unnestGeo(this, column);
     return this;
   }
 
@@ -6171,17 +5293,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): Promise<this> {
-    const column = options.column ?? (await findGeoColumn(this));
-
-    await queryDB(
-      this,
-      boundingBoxQuery(this.name, column, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "boundingBox()",
-        parameters: { column, options },
-      }),
-    );
+    await boundingBox(this, options);
     return this;
   }
 
@@ -6222,28 +5334,7 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): Promise<this> {
-    const column = typeof options.column === "string"
-      ? options.column
-      : await findGeoColumn(this);
-
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await queryDB(
-      this,
-      aggregateGeoQuery(this.name, column, method, options),
-      mergeOptions(this, {
-        table: this.name,
-        method: "aggregateGeo()",
-        parameters: { column, method, options },
-      }),
-    );
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+    return await aggregateGeo(this, method, options) as this;
   }
 
   /**
@@ -6266,17 +5357,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async linesToPolygons(column?: string): Promise<this> {
-    const col = column ?? (await findGeoColumn(this));
-
-    await queryDB(
-      this,
-      `CREATE OR REPLACE TABLE "${this.name}" AS SELECT * EXCLUDE("${col}"), ST_MakePolygon("${col}") as "${col}" FROM "${this.name}";`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "linesToPolygons()",
-        parameters: { column },
-      }),
-    );
+    await linesToPolygons(this, column);
     return this;
   }
 
@@ -6305,23 +5386,7 @@ export default class SimpleTable extends Simple {
   async getBoundingBox(
     column?: string,
   ): Promise<[number, number, number, number]> {
-    const col = column ?? (await findGeoColumn(this));
-    const result = (await queryDB(
-      this,
-      `SELECT
-                MIN(ST_YMin("${col}")) AS minX,
-                MIN(ST_XMin("${col}")) AS minY,
-                MAX(ST_YMax("${col}")) AS maxX,
-                MAX(ST_XMax("${col}")) AS maxY,
-            from "${this.name}";`,
-      mergeOptions(this, {
-        table: this.name,
-        method: "getBoundingBox()",
-        parameters: { column },
-        returnDataFrom: "query",
-      }),
-    )) as { minX: number; minY: number; maxX: number; maxY: number }[];
-    return [result[0].minY, result[0].minX, result[0].maxY, result[0].maxX];
+    return await getBoundingBox(this, column);
   }
 
   /**
@@ -6426,29 +5491,7 @@ export default class SimpleTable extends Simple {
       formatDates?: boolean;
     } = {},
   ): Promise<this> {
-    if (await hasGeometryColumn(this)) {
-      throw new Error(
-        "Table contains geometry columns. Use writeGeoData() instead.",
-      );
-    }
-
-    createDirectory(file);
-
-    const extension = getExtension(file);
-
-    if (options.dataAsArrays) {
-      await writeDataAsArrays(this, file);
-    } else {
-      await queryDB(
-        this,
-        writeDataQuery(this.name, file, extension, options),
-        mergeOptions(this, {
-          table: this.name,
-          method: "writeData()",
-          parameters: { file, options },
-        }),
-      );
-    }
+    await writeData(this, file, options);
     return this;
   }
 
