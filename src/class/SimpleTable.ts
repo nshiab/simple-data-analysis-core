@@ -110,6 +110,8 @@ import nbVertices from "../methods/nbVertices.ts";
 import isValidGeo from "../methods/isValidGeo.ts";
 import points from "../methods/points.ts";
 import getData from "../methods/getData.ts";
+import stream from "../methods/stream.ts";
+import updateWithJS from "../methods/updateWithJS.ts";
 import getSchema from "../methods/getSchema.ts";
 import outliersIQR from "../methods/outliersIQR.ts";
 import bins from "../methods/bins.ts";
@@ -3552,6 +3554,8 @@ export default class SimpleTable extends Simple {
    * This method does not work with tables containing geometries.
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
+   * @param options - An optional object with configuration options:
+   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. The modifier function is called once per batch.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Updating Data
    *
@@ -3597,20 +3601,9 @@ export default class SimpleTable extends Simple {
       ) => {
         [key: string]: unknown;
       }[]),
+    options: { batchSize?: number } = {},
   ): Promise<this> {
-    const types = await this.getTypes();
-    if (Object.values(types).includes("GEOMETRY")) {
-      throw new Error(
-        "updateWithJS doesn't work with tables containing geometries.",
-      );
-    }
-
-    const oldData = await this.getData();
-    if (!oldData) {
-      throw new Error("No data from getData.");
-    }
-    const newData = await dataModifier(oldData);
-    await this.loadArray(newData);
+    await updateWithJS(this, dataModifier, options);
     return this;
   }
 
@@ -4394,6 +4387,46 @@ export default class SimpleTable extends Simple {
     }[]
   > {
     return await getData(this, options);
+  }
+
+  /**
+   * Streams the table rows one by one as an async iterator, without
+   * materializing the whole table in memory. Values are converted to
+   * JavaScript types the same way as `getData()`.
+   *
+   * The underlying DuckDB result is streamed chunk by chunk, so tables
+   * larger than the available memory can be iterated. Avoid running other
+   * queries on the same database while iterating.
+   *
+   * @param options - An optional object with configuration options:
+   * @param options.columns - The column name or an array of column names to include. If omitted, all columns are streamed.
+   * @param options.conditions - A SQL `WHERE` clause condition to filter the rows.
+   * @returns An async generator yielding one row object at a time.
+   * @category Getting Data
+   *
+   * @example
+   * ```ts
+   * // Stream all rows
+   * for await (const row of table.stream()) {
+   *   console.log(row);
+   * }
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Stream specific columns and rows
+   * for await (const row of table.stream({ columns: "temperature", conditions: `temperature > 20` })) {
+   *   console.log(row);
+   * }
+   * ```
+   */
+  stream(
+    options: {
+      columns?: string | string[];
+      conditions?: string;
+    } = {},
+  ): AsyncGenerator<{ [key: string]: unknown }, void, undefined> {
+    return stream(this, options);
   }
 
   /**

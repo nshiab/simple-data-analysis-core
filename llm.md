@@ -4142,7 +4142,7 @@ JavaScript. This method does not work with tables containing geometries.
 ##### Signature
 
 ```typescript
-async updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<Record<string, unknown>[]>) | ((rows: Record<string, unknown>[]) => Record<string, unknown>[])): Promise<this>;
+async updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<Record<string, unknown>[]>) | ((rows: Record<string, unknown>[]) => Record<string, unknown>[]), options?: { batchSize?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -4150,6 +4150,10 @@ async updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<R
 - **`dataModifier`**: A synchronous or asynchronous function that takes the
   existing rows (as an array of objects) and returns the modified rows (as an
   array of objects).
+- **`options`**: An optional object with configuration options:
+- **`options.batchSize`**: If provided, rows are processed in batches of this
+  size instead of all at once, so large tables don't have to be materialized
+  entirely in memory. The modifier function is called once per batch.
 
 ##### Returns
 
@@ -5094,6 +5098,54 @@ const booksData = await table.getData({
   conditions: `category === 'Book'`,
 });
 console.log(booksData);
+```
+
+#### `stream`
+
+Streams the table rows one by one as an async iterator, without materializing
+the whole table in memory. Values are converted to JavaScript types the same way
+as `getData()`.
+
+The underlying DuckDB result is streamed chunk by chunk, so tables larger than
+the available memory can be iterated. Avoid running other queries on the same
+database while iterating.
+
+##### Signature
+
+```typescript
+stream(options?: { columns?: string | string[]; conditions?: string }): AsyncGenerator<Record<string, unknown>, void, undefined>;
+```
+
+##### Parameters
+
+- **`options`**: An optional object with configuration options:
+- **`options.columns`**: The column name or an array of column names to include.
+  If omitted, all columns are streamed.
+- **`options.conditions`**: A SQL `WHERE` clause condition to filter the rows.
+
+##### Returns
+
+An async generator yielding one row object at a time.
+
+##### Examples
+
+```ts
+// Stream all rows
+for await (const row of table.stream()) {
+  console.log(row);
+}
+```
+
+```ts
+// Stream specific columns and rows
+for await (
+  const row of table.stream({
+    columns: "temperature",
+    conditions: `temperature > 20`,
+  })
+) {
+  console.log(row);
+}
 ```
 
 #### `getDataAsCSV`

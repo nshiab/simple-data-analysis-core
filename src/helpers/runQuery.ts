@@ -35,7 +35,7 @@ function makeIntegerConverter(columnName: string) {
   };
 }
 
-function makeConverter(
+export function makeConverter(
   type: DuckDBType,
   columnName: string,
 ): (value: DuckDBValue) => unknown {
