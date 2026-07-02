@@ -26,6 +26,26 @@ await table.loadData("path/to/your/data.csv");
 await sdb.done(); // Ensure to call done when you're finished.
 ```
 
+## class SDAError
+
+An error thrown when a SQL query fails. It carries the SDA method that triggered
+the query, the parameters passed to it, the SQL query itself, and the original
+error as `cause`.
+
+### Examples
+
+```ts
+try {
+  await table.selectColumns("aColumnThatDoesNotExist");
+} catch (error) {
+  if (error instanceof SDAError) {
+    console.log(error.method); // "selectColumns()"
+    console.log(error.query); // The SQL query that failed
+    console.log(error.cause); // The original DuckDB error
+  }
+}
+```
+
 ## class SimpleDB
 
 Manages a DuckDB database instance, providing a simplified interface for
@@ -128,7 +148,7 @@ Removes one or more tables from the database.
 ##### Signature
 
 ```typescript
-async removeTables(tables: Table | string | (Table | string)[]): Promise<void>;
+async removeTables(tables: Table | string | (Table | string)[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -138,7 +158,7 @@ async removeTables(tables: Table | string | (Table | string)[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the tables have been removed.
+A promise that resolves to the database, so methods can be chained.
 
 ##### Examples
 
@@ -171,7 +191,7 @@ Selects one or more tables to keep in the database, removing all others.
 ##### Signature
 
 ```typescript
-async selectTables(tables: Table | string | (Table | string)[]): Promise<void>;
+async selectTables(tables: Table | string | (Table | string)[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -181,7 +201,7 @@ async selectTables(tables: Table | string | (Table | string)[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the tables have been selected.
+A promise that resolves to the database, so methods can be chained.
 
 ##### Examples
 
@@ -232,12 +252,12 @@ alphabetically.
 ##### Signature
 
 ```typescript
-async logTableNames(): Promise<void>;
+async logTableNames(): Promise<this>;
 ```
 
 ##### Returns
 
-A promise that resolves when the table names have been logged.
+A promise that resolves to the database, so methods can be chained.
 
 ##### Examples
 
@@ -374,7 +394,7 @@ Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite).
 ##### Signature
 
 ```typescript
-async loadDB(file: string, options?: { name?: string; detach?: boolean }): Promise<void>;
+async loadDB(file: string, options?: { name?: string; detach?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -388,7 +408,7 @@ async loadDB(file: string, options?: { name?: string; detach?: boolean }): Promi
 
 ##### Returns
 
-A promise that resolves when the database has been loaded.
+A promise that resolves to the database, so methods can be chained.
 
 ##### Examples
 
@@ -415,7 +435,7 @@ file types are `.db` (DuckDB) and `.sqlite` (SQLite).
 ##### Signature
 
 ```typescript
-async writeDB(file: string, options?: { noMetaData?: boolean }): Promise<void>;
+async writeDB(file: string, options?: { noMetaData?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -428,7 +448,7 @@ async writeDB(file: string, options?: { noMetaData?: boolean }): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the database has been written to the file.
+A promise that resolves to the database, so methods can be chained.
 
 ##### Examples
 
@@ -534,7 +554,7 @@ Renames the current table.
 ##### Signature
 
 ```typescript
-async renameTable(name: string): Promise<void>;
+async renameTable(name: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -543,7 +563,7 @@ async renameTable(name: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the table has been renamed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -561,7 +581,7 @@ will be replaced. To convert the types of an existing table, use the
 ##### Signature
 
 ```typescript
-async setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): Promise<void>;
+async setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): Promise<this>;
 ```
 
 ##### Parameters
@@ -571,7 +591,7 @@ async setTypes(types: Record<string, "integer" | "float" | "number" | "string" |
 
 ##### Returns
 
-A promise that resolves when the types have been set.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1146,7 +1166,7 @@ Inserts rows, provided as an array of JavaScript objects, into the table.
 ##### Signature
 
 ```typescript
-async insertRows(rows: Record<string, unknown>[]): Promise<void>;
+async insertRows(rows: Record<string, unknown>[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -1156,7 +1176,7 @@ async insertRows(rows: Record<string, unknown>[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the rows have been inserted.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1337,7 +1357,7 @@ values.
 ##### Signature
 
 ```typescript
-async cloneColumn(originalColumn: string, newColumn: string): Promise<void>;
+async cloneColumn(originalColumn: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -1347,7 +1367,7 @@ async cloneColumn(originalColumn: string, newColumn: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the column has been cloned.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1369,7 +1389,7 @@ by date/time for time-series analysis) before calling this method.
 ##### Signature
 
 ```typescript
-async cloneColumnWithOffset(originalColumn: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): Promise<void>;
+async cloneColumnWithOffset(originalColumn: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1386,7 +1406,7 @@ async cloneColumnWithOffset(originalColumn: string, newColumn: string, options?:
 
 ##### Returns
 
-A promise that resolves when the column has been cloned with offset values.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1433,7 +1453,7 @@ When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
 ##### Signature
 
 ```typescript
-async fill(columns: string | string[], options?: { categories?: string | string[]; interpolate?: boolean; interpolateBy?: string }): Promise<void>;
+async fill(columns: string | string[], options?: { categories?: string | string[]; interpolate?: boolean; interpolateBy?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1459,7 +1479,7 @@ async fill(columns: string | string[], options?: { categories?: string | string[
 
 ##### Returns
 
-A promise that resolves when the `NULL` values have been filled.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1507,7 +1527,7 @@ order.
 ##### Signature
 
 ```typescript
-async sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Record<string, string> }): Promise<void>;
+async sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Record<string, string> }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1522,7 +1542,7 @@ async sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Rec
 
 ##### Returns
 
-A promise that resolves when the table has been sorted.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1553,7 +1573,7 @@ Selects specific columns in the table, removing all others.
 ##### Signature
 
 ```typescript
-async selectColumns(columns: string | string[]): Promise<void>;
+async selectColumns(columns: string | string[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -1562,7 +1582,7 @@ async selectColumns(columns: string | string[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the columns have been selected.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1583,7 +1603,7 @@ Skips the first `n` rows of the table, effectively removing them.
 ##### Signature
 
 ```typescript
-async skip(nbRowsToSkip: number): Promise<void>;
+async skip(nbRowsToSkip: number): Promise<this>;
 ```
 
 ##### Parameters
@@ -1593,7 +1613,7 @@ async skip(nbRowsToSkip: number): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the rows have been skipped.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1636,7 +1656,7 @@ specify a seed to ensure repeatable sampling.
 ##### Signature
 
 ```typescript
-async sample(quantity: number | string, options?: { seed?: number }): Promise<void>;
+async sample(quantity: number | string, options?: { seed?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1650,7 +1670,7 @@ async sample(quantity: number | string, options?: { seed?: number }): Promise<vo
 
 ##### Returns
 
-A promise that resolves when the sampling is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1728,7 +1748,7 @@ resulting data order might differ from the original.
 ##### Signature
 
 ```typescript
-async removeDuplicates(options?: { on?: string | string[] }): Promise<void>;
+async removeDuplicates(options?: { on?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1740,7 +1760,7 @@ async removeDuplicates(options?: { on?: string | string[] }): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the duplicate rows have been removed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1768,7 +1788,7 @@ include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`,
 ##### Signature
 
 ```typescript
-async removeMissing(options?: { columns?: string | string[]; missingValues?: (string | number)[]; invert?: boolean }): Promise<void>;
+async removeMissing(options?: { columns?: string | string[]; missingValues?: (string | number)[]; invert?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1784,7 +1804,7 @@ async removeMissing(options?: { columns?: string | string[]; missingValues?: (st
 
 ##### Returns
 
-A promise that resolves when the rows with missing values have been removed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1816,7 +1836,7 @@ values in the given columns.
 ##### Signature
 
 ```typescript
-async trim(columns: string | string[], options?: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" }): Promise<void>;
+async trim(columns: string | string[], options?: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" }): Promise<this>;
 ```
 
 ##### Parameters
@@ -1831,7 +1851,7 @@ async trim(columns: string | string[], options?: { character?: string; method?: 
 
 ##### Returns
 
-A promise that resolves when the trimming operation is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1859,7 +1879,7 @@ JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async filter(conditions: string): Promise<void>;
+async filter(conditions: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -1869,7 +1889,7 @@ async filter(conditions: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the rows have been filtered.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1901,7 +1921,7 @@ removing all other rows.
 ##### Signature
 
 ```typescript
-async keep(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<void>;
+async keep(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<this>;
 ```
 
 ##### Parameters
@@ -1911,7 +1931,7 @@ async keep(columnsAndValues: Record<string, (number | string | Date | boolean | 
 
 ##### Returns
 
-A promise that resolves when the rows have been filtered.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1932,7 +1952,7 @@ Removes rows from this table that have specific values in specified columns.
 ##### Signature
 
 ```typescript
-async remove(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<void>;
+async remove(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<this>;
 ```
 
 ##### Parameters
@@ -1942,7 +1962,7 @@ async remove(columnsAndValues: Record<string, (number | string | Date | boolean 
 
 ##### Returns
 
-A promise that resolves when the rows have been removed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -1965,7 +1985,7 @@ JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async removeRows(conditions: string): Promise<void>;
+async removeRows(conditions: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -1975,7 +1995,7 @@ async removeRows(conditions: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the rows have been removed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2008,7 +2028,7 @@ Renames one or more columns in the table.
 ##### Signature
 
 ```typescript
-async renameColumns(names: Record<string, string>): Promise<void>;
+async renameColumns(names: Record<string, string>): Promise<this>;
 ```
 
 ##### Parameters
@@ -2018,7 +2038,7 @@ async renameColumns(names: Record<string, string>): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the columns have been renamed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2040,12 +2060,12 @@ to camel case.
 ##### Signature
 
 ```typescript
-async cleanColumnNames(): Promise<void>;
+async cleanColumnNames(): Promise<this>;
 ```
 
 ##### Returns
 
-A promise that resolves when the column names have been cleaned.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2073,7 +2093,7 @@ and their corresponding employee counts into a new column named `Employees`.
 ##### Signature
 
 ```typescript
-async longer(columns: string[], columnsTo: string, valuesTo: string): Promise<void>;
+async longer(columns: string[], columnsTo: string, valuesTo: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -2087,7 +2107,7 @@ async longer(columns: string[], columnsTo: string, valuesTo: string): Promise<vo
 
 ##### Returns
 
-A promise that resolves when the table has been restructured.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2129,7 +2149,7 @@ employee counts as values.
 ##### Signature
 
 ```typescript
-async wider(columnsFrom: string, valuesFrom: string): Promise<void>;
+async wider(columnsFrom: string, valuesFrom: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -2141,7 +2161,7 @@ async wider(columnsFrom: string, valuesFrom: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the table has been restructured.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2176,7 +2196,7 @@ will be automatically removed before conversion.
 ##### Signature
 
 ```typescript
-async convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { try?: boolean; datetimeFormat?: string }): Promise<void>;
+async convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { try?: boolean; datetimeFormat?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2193,7 +2213,7 @@ async convert(types: Record<string, "integer" | "float" | "number" | "string" | 
 
 ##### Returns
 
-A promise that resolves when the column types have been converted.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2232,12 +2252,12 @@ this SimpleTable instance will result in an error.
 ##### Signature
 
 ```typescript
-async removeTable(): Promise<void>;
+async removeTable(): Promise<this>;
 ```
 
 ##### Returns
 
-A promise that resolves when the table has been removed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2253,7 +2273,7 @@ Removes one or more columns from this table.
 ##### Signature
 
 ```typescript
-async removeColumns(columns: string | string[]): Promise<void>;
+async removeColumns(columns: string | string[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -2262,7 +2282,7 @@ async removeColumns(columns: string | string[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the columns have been removed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2284,7 +2304,7 @@ types) and a SQL definition.
 ##### Signature
 
 ```typescript
-async addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): Promise<void>;
+async addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -2299,7 +2319,7 @@ async addColumn(newColumn: string, type: "integer" | "float" | "number" | "strin
 
 ##### Returns
 
-A promise that resolves when the new column has been added.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2325,7 +2345,7 @@ index).
 ##### Signature
 
 ```typescript
-async addRowNumber(newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
+async addRowNumber(newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2338,7 +2358,7 @@ async addRowNumber(newColumn: string, options?: { categories?: string | string[]
 
 ##### Returns
 
-A promise that resolves when the row number column has been added.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2553,7 +2573,7 @@ extension, which is installed and loaded automatically.
 ##### Signature
 
 ```typescript
-async fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<void>;
+async fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2586,7 +2606,7 @@ async fuzzyClean(column: string, newColumn: string, threshold: number, options?:
 
 ##### Returns
 
-A promise that resolves when the column has been normalized.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2622,7 +2642,7 @@ Replaces specified strings in the selected columns.
 ##### Signature
 
 ```typescript
-async replace(columns: "all" | string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): Promise<void>;
+async replace(columns: "all" | string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2641,7 +2661,7 @@ async replace(columns: "all" | string | string[], strings: Record<string, string
 
 ##### Returns
 
-A promise that resolves when the string replacements are complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2680,7 +2700,7 @@ Converts string values in the specified columns to lowercase.
 ##### Signature
 
 ```typescript
-async lower(columns: string | string[]): Promise<void>;
+async lower(columns: string | string[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -2690,7 +2710,7 @@ async lower(columns: string | string[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the strings have been converted to lowercase.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2711,7 +2731,7 @@ Converts string values in the specified columns to uppercase.
 ##### Signature
 
 ```typescript
-async upper(columns: string | string[]): Promise<void>;
+async upper(columns: string | string[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -2721,7 +2741,7 @@ async upper(columns: string | string[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the strings have been converted to uppercase.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2743,7 +2763,7 @@ converts the rest of the string to lowercase.
 ##### Signature
 
 ```typescript
-async capitalize(columns: string | string[]): Promise<void>;
+async capitalize(columns: string | string[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -2752,7 +2772,7 @@ async capitalize(columns: string | string[]): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the strings have been capitalized.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2773,7 +2793,7 @@ Truncates string values in a specified column to a maximum number of characters.
 ##### Signature
 
 ```typescript
-async truncate(column: string, length: number): Promise<void>;
+async truncate(column: string, length: number): Promise<this>;
 ```
 
 ##### Parameters
@@ -2783,7 +2803,7 @@ async truncate(column: string, length: number): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the strings have been truncated.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2808,7 +2828,7 @@ already exceeds the target length, an error is thrown (no silent truncation).
 ##### Signature
 
 ```typescript
-async pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): Promise<void>;
+async pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2821,7 +2841,7 @@ async pad(columns: string | string[], length: number, options?: { method?: "left
 
 ##### Returns
 
-A promise that resolves when the padding operation is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Throws
 
@@ -2857,7 +2877,7 @@ out of bounds, an empty string will be returned for that row.
 ##### Signature
 
 ```typescript
-async splitExtract(column: string, separator: string, index: number, newColumn: string): Promise<void>;
+async splitExtract(column: string, separator: string, index: number, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -2872,7 +2892,7 @@ async splitExtract(column: string, separator: string, index: number, newColumn: 
 
 ##### Returns
 
-A promise that resolves when the strings have been split and extracted.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2903,7 +2923,7 @@ unless `noCheck` is set to true.
 ##### Signature
 
 ```typescript
-async splitSpread(column: string, separator: string, newColumns: string[], options?: { noCheck?: boolean }): Promise<void>;
+async splitSpread(column: string, separator: string, newColumns: string[], options?: { noCheck?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -2918,8 +2938,7 @@ async splitSpread(column: string, separator: string, newColumns: string[], optio
 
 ##### Returns
 
-A promise that resolves when the strings have been split and spread into new
-columns.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2948,7 +2967,7 @@ string values in the specified column.
 ##### Signature
 
 ```typescript
-async left(column: string, numberOfCharacters: number): Promise<void>;
+async left(column: string, numberOfCharacters: number): Promise<this>;
 ```
 
 ##### Parameters
@@ -2959,7 +2978,7 @@ async left(column: string, numberOfCharacters: number): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the strings have been updated.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -2977,7 +2996,7 @@ values in the specified column.
 ##### Signature
 
 ```typescript
-async right(column: string, numberOfCharacters: number): Promise<void>;
+async right(column: string, numberOfCharacters: number): Promise<this>;
 ```
 
 ##### Parameters
@@ -2988,7 +3007,7 @@ async right(column: string, numberOfCharacters: number): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the strings have been updated.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3005,7 +3024,7 @@ Replaces `NULL` values in the specified columns with a given value.
 ##### Signature
 
 ```typescript
-async replaceNulls(columns: "all" | string | string[], value: number | string | Date | boolean): Promise<void>;
+async replaceNulls(columns: "all" | string | string[], value: number | string | Date | boolean): Promise<this>;
 ```
 
 ##### Parameters
@@ -3016,7 +3035,7 @@ async replaceNulls(columns: "all" | string | string[], value: number | string | 
 
 ##### Returns
 
-A promise that resolves when the `NULL` values have been replaced.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3047,7 +3066,7 @@ Concatenates values from specified columns into a new column.
 ##### Signature
 
 ```typescript
-async concatenate(columns: string[], newColumn: string, options?: { separator?: string }): Promise<void>;
+async concatenate(columns: string[], newColumn: string, options?: { separator?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3060,7 +3079,7 @@ async concatenate(columns: string[], newColumn: string, options?: { separator?: 
 
 ##### Returns
 
-A promise that resolves when the concatenation is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3092,7 +3111,7 @@ concatenated result.
 ##### Signature
 
 ```typescript
-async concatenateRow(columns: string[], newColumn: string): Promise<void>;
+async concatenateRow(columns: string[], newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -3104,7 +3123,7 @@ async concatenateRow(columns: string[], newColumn: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the concatenation is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3150,7 +3169,7 @@ duplicated across the newly created rows.
 ##### Signature
 
 ```typescript
-async unnest(column: string, separator: string): Promise<void>;
+async unnest(column: string, separator: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -3161,7 +3180,7 @@ async unnest(column: string, separator: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the unnesting is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3191,7 +3210,7 @@ If the value is 0 or negative, the row will be removed.
 ##### Signature
 
 ```typescript
-async repeatRows(column: string, options?: { index?: string }): Promise<void>;
+async repeatRows(column: string, options?: { index?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3230,7 +3249,7 @@ target column values with a separator.
 ##### Signature
 
 ```typescript
-async nest(column: string, separator: string, categories: string | string[]): Promise<void>;
+async nest(column: string, separator: string, categories: string | string[]): Promise<this>;
 ```
 
 ##### Parameters
@@ -3242,7 +3261,7 @@ async nest(column: string, separator: string, categories: string | string[]): Pr
 
 ##### Returns
 
-A promise that resolves when the nesting is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3270,7 +3289,7 @@ Rounds numeric values in specified columns.
 ##### Signature
 
 ```typescript
-async round(columns: string | string[], options?: number | { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<void>;
+async round(columns: string | string[], options?: number | { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3287,7 +3306,7 @@ async round(columns: string | string[], options?: number | { decimals?: number; 
 
 ##### Returns
 
-A promise that resolves when the numeric values have been rounded.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3323,7 +3342,7 @@ Updates values in a specified column using a SQL expression.
 ##### Signature
 
 ```typescript
-async updateColumn(column: string, definition: string): Promise<void>;
+async updateColumn(column: string, definition: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -3334,7 +3353,7 @@ async updateColumn(column: string, definition: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the column has been updated.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3363,7 +3382,7 @@ Assigns ranks to rows in a new column based on the values of a specified column.
 ##### Signature
 
 ```typescript
-async ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; noGaps?: boolean }): Promise<void>;
+async ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; noGaps?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3382,7 +3401,7 @@ async ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc
 
 ##### Returns
 
-A promise that resolves when the ranks have been assigned.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3416,7 +3435,7 @@ Assigns quantiles to rows in a new column based on specified column values.
 ##### Signature
 
 ```typescript
-async quantiles(values: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
+async quantiles(values: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3434,7 +3453,7 @@ async quantiles(values: string, nbQuantiles: number, newColumn: string, options?
 
 ##### Returns
 
-A promise that resolves when the quantiles have been assigned.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3460,7 +3479,7 @@ Assigns bins for specified column values based on an interval size.
 ##### Signature
 
 ```typescript
-async bins(values: string, interval: number, newColumn: string, options?: { startValue?: number }): Promise<void>;
+async bins(values: string, interval: number, newColumn: string, options?: { startValue?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3474,7 +3493,7 @@ async bins(values: string, interval: number, newColumn: string, options?: { star
 
 ##### Returns
 
-A promise that resolves when the bins have been assigned.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3509,7 +3528,7 @@ each row, adding new columns for these proportions.
 ##### Signature
 
 ```typescript
-async proportionsHorizontal(columns: string[], options?: { suffix?: string; decimals?: number }): Promise<void>;
+async proportionsHorizontal(columns: string[], options?: { suffix?: string; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3524,7 +3543,7 @@ async proportionsHorizontal(columns: string[], options?: { suffix?: string; deci
 
 ##### Returns
 
-A promise that resolves when the horizontal proportions have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3570,7 +3589,7 @@ all values in that column (or within specified categories).
 ##### Signature
 
 ```typescript
-async proportionsVertical(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
+async proportionsVertical(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3589,7 +3608,7 @@ async proportionsVertical(column: string, newColumn: string, options?: { categor
 
 ##### Returns
 
-A promise that resolves when the vertical proportions have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3760,7 +3779,7 @@ properly, ensure your data is sorted first.
 ##### Signature
 
 ```typescript
-async accumulate(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
+async accumulate(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3775,7 +3794,7 @@ async accumulate(column: string, newColumn: string, options?: { categories?: str
 
 ##### Returns
 
-A promise that resolves when the cumulative sum has been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3810,7 +3829,7 @@ data is sorted by the relevant column(s) first.
 ##### Signature
 
 ```typescript
-async rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
+async rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -3833,7 +3852,7 @@ async rolling(column: string, newColumn: string, summary: "min" | "max" | "mean"
 
 ##### Returns
 
-A promise that resolves when the rolling aggregation is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -3997,7 +4016,7 @@ method.
 ##### Signature
 
 ```typescript
-async outliersIQR(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<void>;
+async outliersIQR(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
 ```
 
 ##### Parameters
@@ -4012,7 +4031,7 @@ async outliersIQR(column: string, newColumn: string, options?: { categories?: st
 
 ##### Returns
 
-A promise that resolves when the outliers have been identified.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -4033,7 +4052,7 @@ Computes the Z-score for values in a specified column.
 ##### Signature
 
 ```typescript
-async zScore(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
+async zScore(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -4050,7 +4069,7 @@ async zScore(column: string, newColumn: string, options?: { categories?: string 
 
 ##### Returns
 
-A promise that resolves when the Z-scores have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -4076,7 +4095,7 @@ Normalizes the values in a column using min-max normalization.
 ##### Signature
 
 ```typescript
-async normalize(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<void>;
+async normalize(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -4093,7 +4112,7 @@ async normalize(column: string, newColumn: string, options?: { categories?: stri
 
 ##### Returns
 
-A promise that resolves when the values have been normalized.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -4123,7 +4142,7 @@ JavaScript. This method does not work with tables containing geometries.
 ##### Signature
 
 ```typescript
-async updateWithJS(dataModifier: ((rows: Record<string, number | string | Date | boolean | null>[]) => Promise<Record<string, number | string | Date | boolean | null>[]>) | ((rows: Record<string, number | string | Date | boolean | null>[]) => Record<string, number | string | Date | boolean | null>[])): Promise<void>;
+async updateWithJS(dataModifier: ((rows: Record<string, number | string | Date | boolean | null>[]) => Promise<Record<string, number | string | Date | boolean | null>[]>) | ((rows: Record<string, number | string | Date | boolean | null>[]) => Record<string, number | string | Date | boolean | null>[])): Promise<this>;
 ```
 
 ##### Parameters
@@ -4134,7 +4153,7 @@ async updateWithJS(dataModifier: ((rows: Record<string, number | string | Date |
 
 ##### Returns
 
-A promise that resolves when the data has been updated.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -4270,7 +4289,7 @@ for all common cases including accented Latin characters.
 ##### Signature
 
 ```typescript
-async normalizeString(column: string, newColumn: string, options?: { stripPunctuation?: boolean }): Promise<void>;
+async normalizeString(column: string, newColumn: string, options?: { stripPunctuation?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -4283,7 +4302,7 @@ async normalizeString(column: string, newColumn: string, options?: { stripPunctu
 
 ##### Returns
 
-A promise that resolves when the operation is complete
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5134,7 +5153,7 @@ Creates point geometries from latitude and longitude columns.
 ##### Signature
 
 ```typescript
-async points(columnLat: string, columnLon: string, newColumn: string): Promise<void>;
+async points(columnLat: string, columnLon: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5146,7 +5165,7 @@ async points(columnLat: string, columnLon: string, newColumn: string): Promise<v
 
 ##### Returns
 
-A promise that resolves when the point geometries have been created.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5162,7 +5181,7 @@ Adds a column with boolean values indicating the validity of geometries.
 ##### Signature
 
 ```typescript
-async isValidGeo(newColumn: string, options?: { column?: string }): Promise<void>;
+async isValidGeo(newColumn: string, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5176,7 +5195,7 @@ async isValidGeo(newColumn: string, options?: { column?: string }): Promise<void
 
 ##### Returns
 
-A promise that resolves when the validity check is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5198,7 +5217,7 @@ Adds a column with the number of vertices (points) in each geometry.
 ##### Signature
 
 ```typescript
-async nbVertices(newColumn: string, options?: { column?: string }): Promise<void>;
+async nbVertices(newColumn: string, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5211,7 +5230,7 @@ async nbVertices(newColumn: string, options?: { column?: string }): Promise<void
 
 ##### Returns
 
-A promise that resolves when the vertex counts have been added.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5233,7 +5252,7 @@ Attempts to make invalid geometries valid without removing any vertices.
 ##### Signature
 
 ```typescript
-async fixGeo(column?: string): Promise<void>;
+async fixGeo(column?: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5243,7 +5262,7 @@ async fixGeo(column?: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the geometries have been processed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5265,7 +5284,7 @@ Adds a column with boolean values indicating whether geometries are closed
 ##### Signature
 
 ```typescript
-async isClosedGeo(newColumn: string, options?: { column?: string }): Promise<void>;
+async isClosedGeo(newColumn: string, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5278,7 +5297,7 @@ async isClosedGeo(newColumn: string, options?: { column?: string }): Promise<voi
 
 ##### Returns
 
-A promise that resolves when the closed geometry check is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5300,7 +5319,7 @@ Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`,
 ##### Signature
 
 ```typescript
-async typeGeo(newColumn: string, options?: { column?: string }): Promise<void>;
+async typeGeo(newColumn: string, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5313,7 +5332,7 @@ async typeGeo(newColumn: string, options?: { column?: string }): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the geometry types have been added.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5337,7 +5356,7 @@ accuracy of geospatial operations if not used correctly.
 ##### Signature
 
 ```typescript
-async flipCoordinates(column?: string): Promise<void>;
+async flipCoordinates(column?: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5347,7 +5366,7 @@ async flipCoordinates(column?: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the coordinates have been flipped.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5369,7 +5388,7 @@ decimal places.
 ##### Signature
 
 ```typescript
-async reducePrecision(decimals: number, options?: { column?: string }): Promise<void>;
+async reducePrecision(decimals: number, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5382,7 +5401,7 @@ async reducePrecision(decimals: number, options?: { column?: string }): Promise<
 
 ##### Returns
 
-A promise that resolves when the precision of the geometries has been reduced.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5404,7 +5423,7 @@ System (SRS).
 ##### Signature
 
 ```typescript
-async reproject(to: string, options?: { column?: string }): Promise<void>;
+async reproject(to: string, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5416,7 +5435,7 @@ async reproject(to: string, options?: { column?: string }): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the geometries have been reprojected.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5439,7 +5458,7 @@ coordinate system (WGS84).
 ##### Signature
 
 ```typescript
-async area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): Promise<void>;
+async area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5454,7 +5473,7 @@ async area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }
 
 ##### Returns
 
-A promise that resolves when the areas have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5482,7 +5501,7 @@ coordinate system (WGS84).
 ##### Signature
 
 ```typescript
-async length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<void>;
+async length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5497,7 +5516,7 @@ async length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }
 
 ##### Returns
 
-A promise that resolves when the lengths have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5525,7 +5544,7 @@ coordinate system (WGS84).
 ##### Signature
 
 ```typescript
-async perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<void>;
+async perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5540,7 +5559,7 @@ async perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: strin
 
 ##### Returns
 
-A promise that resolves when the perimeters have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5568,7 +5587,7 @@ Reference System (SRS) unit of the input geometries.
 ##### Signature
 
 ```typescript
-async buffer(newColumn: string, distance: number, options?: { column?: string }): Promise<void>;
+async buffer(newColumn: string, distance: number, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5583,7 +5602,7 @@ async buffer(newColumn: string, distance: number, options?: { column?: string })
 
 ##### Returns
 
-A promise that resolves when the buffers have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5687,7 +5706,7 @@ where they overlap.
 ##### Signature
 
 ```typescript
-async intersection(column1: string, column2: string, newColumn: string): Promise<void>;
+async intersection(column1: string, column2: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5700,7 +5719,7 @@ async intersection(column1: string, column2: string, newColumn: string): Promise
 
 ##### Returns
 
-A promise that resolves when the intersection geometries have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5717,7 +5736,7 @@ computing the geometric difference.
 ##### Signature
 
 ```typescript
-async removeIntersection(column1: string, column2: string, newColumn: string): Promise<void>;
+async removeIntersection(column1: string, column2: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5731,7 +5750,7 @@ async removeIntersection(column1: string, column2: string, newColumn: string): P
 
 ##### Returns
 
-A promise that resolves when the geometries have been processed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5747,7 +5766,7 @@ Fills holes in polygon geometries.
 ##### Signature
 
 ```typescript
-async fillHoles(column?: string): Promise<void>;
+async fillHoles(column?: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5757,7 +5776,7 @@ async fillHoles(column?: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the holes have been filled.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5779,7 +5798,7 @@ otherwise.
 ##### Signature
 
 ```typescript
-async intersect(column1: string, column2: string, newColumn: string): Promise<void>;
+async intersect(column1: string, column2: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5792,7 +5811,7 @@ async intersect(column1: string, column2: string, newColumn: string): Promise<vo
 
 ##### Returns
 
-A promise that resolves when the intersection check is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5809,7 +5828,7 @@ Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in
 ##### Signature
 
 ```typescript
-async inside(column1: string, column2: string, newColumn: string): Promise<void>;
+async inside(column1: string, column2: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5823,7 +5842,7 @@ async inside(column1: string, column2: string, newColumn: string): Promise<void>
 
 ##### Returns
 
-A promise that resolves when the containment check is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5840,7 +5859,7 @@ the merged area of both.
 ##### Signature
 
 ```typescript
-async union(column1: string, column2: string, newColumn: string): Promise<void>;
+async union(column1: string, column2: string, newColumn: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5853,7 +5872,7 @@ async union(column1: string, column2: string, newColumn: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the union geometries have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5870,7 +5889,7 @@ geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
 ##### Signature
 
 ```typescript
-async latLon(column: string, columnLat: string, columnLon: string): Promise<void>;
+async latLon(column: string, columnLat: string, columnLon: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -5883,7 +5902,7 @@ async latLon(column: string, columnLat: string, columnLon: string): Promise<void
 
 ##### Returns
 
-A promise that resolves when the latitude and longitude have been extracted.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5900,7 +5919,7 @@ tolerance results in more significant simplification.
 ##### Signature
 
 ```typescript
-async simplify(tolerance: number, options?: { column?: string; simplifyBoundary?: boolean }): Promise<void>;
+async simplify(tolerance: number, options?: { column?: string; simplifyBoundary?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5916,7 +5935,7 @@ async simplify(tolerance: number, options?: { column?: string; simplifyBoundary?
 
 ##### Returns
 
-A promise that resolves when the geometries have been simplified.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5938,7 +5957,7 @@ the input geometries.
 ##### Signature
 
 ```typescript
-async centroid(newColumn: string, options?: { column?: string }): Promise<void>;
+async centroid(newColumn: string, options?: { column?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -5951,7 +5970,7 @@ async centroid(newColumn: string, options?: { column?: string }): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the centroids have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -5972,7 +5991,7 @@ Generates a random point within the geometries of a specified column.
 ##### Signature
 
 ```typescript
-async randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; try?: boolean }): Promise<void>;
+async randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; try?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6018,7 +6037,7 @@ methods to get results in meters or kilometers. If using `"spheroid"` or
 ##### Signature
 
 ```typescript
-async distance(column1: string, column2: string, newColumn: string, options?: { unit?: "m" | "km"; method?: "srs" | "haversine" | "spheroid"; decimals?: number }): Promise<void>;
+async distance(column1: string, column2: string, newColumn: string, options?: { unit?: "m" | "km"; method?: "srs" | "haversine" | "spheroid"; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6038,7 +6057,7 @@ async distance(column1: string, column2: string, newColumn: string, options?: { 
 
 ##### Returns
 
-A promise that resolves when the distances have been computed.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6080,7 +6099,7 @@ MultiPolygon) into individual single-part geometries (e.g., Polygon).
 ##### Signature
 
 ```typescript
-async unnestGeo(column?: string): Promise<void>;
+async unnestGeo(column?: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -6090,7 +6109,7 @@ async unnestGeo(column?: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the geometries have been unnested.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6112,7 +6131,7 @@ columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
 ##### Signature
 
 ```typescript
-async boundingBox(options?: { column?: string; decimals?: number }): Promise<void>;
+async boundingBox(options?: { column?: string; decimals?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6126,8 +6145,7 @@ async boundingBox(options?: { column?: string; decimals?: number }): Promise<voi
 
 ##### Returns
 
-A promise that resolves when the bounding box coordinates have been computed and
-stored in new columns.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6203,7 +6221,7 @@ Transforms closed linestring geometries into polygon geometries.
 ##### Signature
 
 ```typescript
-async linesToPolygons(column?: string): Promise<void>;
+async linesToPolygons(column?: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -6213,7 +6231,7 @@ async linesToPolygons(column?: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the transformation is complete.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6315,7 +6333,7 @@ DuckDB, SQLite). If the specified path does not exist, it will be created.
 ##### Signature
 
 ```typescript
-async writeData(file: string, options?: { compression?: boolean; dataAsArrays?: boolean; formatDates?: boolean }): Promise<void>;
+async writeData(file: string, options?: { compression?: boolean; dataAsArrays?: boolean; formatDates?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6339,7 +6357,7 @@ async writeData(file: string, options?: { compression?: boolean; dataAsArrays?: 
 
 ##### Returns
 
-A promise that resolves when the data has been written to the file.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6382,7 +6400,7 @@ Shapefile format. If the specified path does not exist, it will be created.
 ##### Signature
 
 ```typescript
-async writeGeoData(file: string, options?: { precision?: number; compression?: boolean; rewind?: boolean; metadata?: unknown; formatDates?: boolean }): Promise<void>;
+async writeGeoData(file: string, options?: { precision?: number; compression?: boolean; rewind?: boolean; metadata?: unknown; formatDates?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6404,7 +6422,7 @@ async writeGeoData(file: string, options?: { precision?: number; compression?: b
 
 ##### Returns
 
-A promise that resolves when the geospatial data has been written to the file.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6439,7 +6457,7 @@ Caches the results of computations in `./.sda-cache`. You should add
 ##### Signature
 
 ```typescript
-async cache(run: () => Promise<void>, options?: { ttl?: number }): Promise<void>;
+async cache(run: () => Promise<void>, options?: { ttl?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6454,8 +6472,7 @@ async cache(run: () => Promise<void>, options?: { ttl?: number }): Promise<void>
 
 ##### Returns
 
-A promise that resolves when the computations are complete or the data is loaded
-from cache.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6523,7 +6540,7 @@ data based on conditions. You can also use JavaScript syntax for conditions
 ##### Signature
 
 ```typescript
-async logTable(options?: "all" | number | { nbRowsToLog?: number | "all"; types?: boolean; conditions?: string }): Promise<void>;
+async logTable(options?: "all" | number | { nbRowsToLog?: number | "all"; types?: boolean; conditions?: string }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6539,7 +6556,7 @@ async logTable(options?: "all" | number | { nbRowsToLog?: number | "all"; types?
 
 ##### Returns
 
-A promise that resolves when the table data has been logged.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6578,13 +6595,12 @@ to retrieve the descriptive statistics.
 ##### Signature
 
 ```typescript
-async logDescription(): Promise<void>;
+async logDescription(): Promise<this>;
 ```
 
 ##### Returns
 
-A promise that resolves when the column description has been logged to the
-console.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6763,7 +6779,7 @@ option.
 ##### Signature
 
 ```typescript
-async logBottom(count?: number, options?: { originalOrder?: boolean }): Promise<void>;
+async logBottom(count?: number, options?: { originalOrder?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -6776,7 +6792,7 @@ async logBottom(count?: number, options?: { originalOrder?: boolean }): Promise<
 
 ##### Returns
 
-A promise that resolves when the rows have been logged to the console.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 
@@ -6802,7 +6818,7 @@ Logs the extent (minimum and maximum values) of a numeric column to the console.
 ##### Signature
 
 ```typescript
-async logExtent(column: string): Promise<void>;
+async logExtent(column: string): Promise<this>;
 ```
 
 ##### Parameters
@@ -6811,7 +6827,7 @@ async logExtent(column: string): Promise<void>;
 
 ##### Returns
 
-A promise that resolves when the column extent has been logged to the console.
+A promise that resolves to the table, so methods can be chained.
 
 ##### Examples
 

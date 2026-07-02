@@ -412,7 +412,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * Removes one or more tables from the database.
    *
    * @param tables - A single table or an array of tables to remove, specified by name or as SimpleTable instances. Pass `"all"` to remove all tables.
-   * @returns A promise that resolves when the tables have been removed.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -443,7 +443,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async removeTables(
     tables: Table | string | (Table | string)[],
-  ): Promise<void> {
+  ): Promise<this> {
     const tablesToBeRemoved = tables === "all"
       ? [...this.tables]
       : Array.isArray(tables)
@@ -468,13 +468,14 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.tables = this.tables.filter((t) =>
       !tablesNamesToBeRemoved.includes(t.name)
     );
+    return this;
   }
 
   /**
    * Selects one or more tables to keep in the database, removing all others.
    *
    * @param tables - A single table or an array of tables to select, specified by name or as SimpleTable instances.
-   * @returns A promise that resolves when the tables have been selected.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -499,7 +500,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async selectTables(
     tables: Table | string | (Table | string)[],
-  ): Promise<void> {
+  ): Promise<this> {
     const tablesToBeSelected = (Array.isArray(tables) ? tables : [tables]).map((
       t,
     ) => t instanceof SimpleTable ? t.name : t);
@@ -532,6 +533,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.tables = this.tables.filter((t) =>
       !tablesNamesToBeRemoved.includes(t.name)
     );
+    return this;
   }
 
   /**
@@ -554,7 +556,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Logs the names of all tables in the database to the console, sorted alphabetically.
    *
-   * @returns A promise that resolves when the table names have been logged.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    *
    * @example
@@ -564,7 +566,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * // Example output: SimpleDB - Tables:  ["employees","customers"]
    * ```
    */
-  async logTableNames(): Promise<void> {
+  async logTableNames(): Promise<this> {
     const tables = await this.getTableNames();
     if (tables.length > 0) {
       console.log(
@@ -573,6 +575,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     } else {
       console.log(`\nSimpleDB - No tables found.`);
     }
+    return this;
   }
 
   /**
@@ -709,7 +712,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options - Configuration options for loading the database.
    * @param options.name - The name to assign to the loaded database within the DuckDB instance. Defaults to the file name without extension.
    * @param options.detach - If `true` (default), the database is detached after loading its contents into memory. If `false`, the database remains attached.
-   * @returns A promise that resolves when the database has been loaded.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
    * @example
@@ -733,7 +736,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   async loadDB(file: string, options: {
     name?: string;
     detach?: boolean;
-  } = {}): Promise<void> {
+  } = {}): Promise<this> {
     const name = options.name ?? "my_database";
     const detach = options.detach ?? true;
 
@@ -811,6 +814,7 @@ DETACH ${name};`,
     }
 
     await setDbProps(this, allIndexesFile);
+    return this;
   }
 
   /**
@@ -820,7 +824,7 @@ DETACH ${name};`,
    * @param file - The absolute path to the output file (e.g., "./my_exported_database.db").
    * @param options - Configuration options for writing the database.
    * @param options.noMetaData - If `true`, metadata files (indexes) are not created alongside the database file. Defaults to `false`.
-   * @returns A promise that resolves when the database has been written to the file.
+   * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
    * @example
@@ -838,7 +842,7 @@ DETACH ${name};`,
   async writeDB(
     file: string,
     options: { noMetaData?: boolean } = {},
-  ): Promise<void> {
+  ): Promise<this> {
     const noMetaData = options.noMetaData ?? false;
 
     if (existsSync(file)) {
@@ -884,6 +888,7 @@ DETACH ${name};`,
         `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
       );
     }
+    return this;
   }
 
   /**
