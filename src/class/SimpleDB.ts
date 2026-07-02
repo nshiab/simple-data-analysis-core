@@ -16,6 +16,10 @@ import setDbProps from "../helpers/setDbProps.ts";
 import writeIndexes from "../helpers/writeIndexes.ts";
 import getName from "../helpers/getName.ts";
 import { renameSync } from "node:fs";
+import removeTables from "../methods/removeTables.ts";
+import selectTables from "../methods/selectTables.ts";
+import loadDB from "../methods/loadDB.ts";
+import writeDB from "../methods/writeDB.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -444,30 +448,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   async removeTables(
     tables: Table | string | (Table | string)[],
   ): Promise<this> {
-    const tablesToBeRemoved = tables === "all"
-      ? [...this.tables]
-      : Array.isArray(tables)
-      ? tables
-      : [tables];
-
-    await queryDB(
-      this,
-      tablesToBeRemoved.map((d) =>
-        `DROP TABLE "${d instanceof SimpleTable ? d.name : d}";`
-      ).join("\n"),
-      mergeOptions(this, {
-        table: null,
-        method: "removeTable()",
-        parameters: {},
-      }),
-    );
-
-    const tablesNamesToBeRemoved = tablesToBeRemoved.map((t) =>
-      t instanceof SimpleTable ? t.name : t
-    );
-    this.tables = this.tables.filter((t) =>
-      !tablesNamesToBeRemoved.includes(t.name)
-    );
+    await removeTables(this, tables);
     return this;
   }
 
@@ -501,38 +482,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   async selectTables(
     tables: Table | string | (Table | string)[],
   ): Promise<this> {
-    const tablesToBeSelected = (Array.isArray(tables) ? tables : [tables]).map((
-      t,
-    ) => t instanceof SimpleTable ? t.name : t);
-
-    for (const table of tablesToBeSelected) {
-      if (!(await this.hasTable(table))) {
-        throw new Error(`Table ${table} not found.`);
-      }
-    }
-
-    const tablesToBeRemoved = this.tables.filter((t) =>
-      !tablesToBeSelected.includes(t.name)
-    );
-
-    await queryDB(
-      this,
-      tablesToBeRemoved.map((d) =>
-        `DROP TABLE "${d instanceof SimpleTable ? d.name : d}";`
-      ).join("\n"),
-      mergeOptions(this, {
-        table: null,
-        method: "removeTable()",
-        parameters: {},
-      }),
-    );
-
-    const tablesNamesToBeRemoved = tablesToBeRemoved.map((t) =>
-      t instanceof SimpleTable ? t.name : t
-    );
-    this.tables = this.tables.filter((t) =>
-      !tablesNamesToBeRemoved.includes(t.name)
-    );
+    await selectTables(this, tables);
     return this;
   }
 
@@ -737,83 +687,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     name?: string;
     detach?: boolean;
   } = {}): Promise<this> {
-    const name = options.name ?? "my_database";
-    const detach = options.detach ?? true;
-
-    if (!existsSync(file)) {
-      throw new Error(`The file ${file} does not exist.`);
-    }
-    const extension = getExtension(file);
-
-    const allIndexesFile = `${file.replace(`.${extension}`, "")}_indexes.json`;
-    const vssIndex = checkVssIndexes(allIndexesFile);
-    if (vssIndex) {
-      await this.customQuery(`INSTALL vss; LOAD vss;`);
-    }
-
-    if (extension === "db") {
-      if (detach) {
-        await queryDB(
-          this,
-          `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      } else {
-        await queryDB(
-          this,
-          `ATTACH '${cleanPath(file)}' AS ${name};
-          USE ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      }
-    } else if (extension === "sqlite") {
-      if (detach) {
-        await queryDB(
-          this,
-          `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      } else {
-        await queryDB(
-          this,
-          `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-        USE ${name};`,
-          mergeOptions(this, {
-            returnDataFrom: "none",
-            table: null,
-            method: "loadDB()",
-            parameters: {},
-          }),
-        );
-      }
-    } else {
-      throw new Error(
-        `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
-      );
-    }
-
-    await setDbProps(this, allIndexesFile);
+    await loadDB(this, file, options);
     return this;
   }
 
@@ -843,51 +717,7 @@ DETACH ${name};`,
     file: string,
     options: { noMetaData?: boolean } = {},
   ): Promise<this> {
-    const noMetaData = options.noMetaData ?? false;
-
-    if (existsSync(file)) {
-      rmSync(file);
-    }
-    createDirectory(file);
-    const extension = getExtension(file);
-
-    if (!noMetaData) {
-      writeIndexes(this, extension, file);
-    }
-
-    const name = getName(file);
-    if (extension === "db") {
-      await queryDB(
-        this,
-        `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${getName(this.file)} TO ${name};
-DETACH ${name};`,
-        mergeOptions(this, {
-          returnDataFrom: "none",
-          table: null,
-          method: "writeDB()",
-          parameters: {},
-        }),
-      );
-    } else if (extension === "sqlite") {
-      await queryDB(
-        this,
-        `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${getName(this.file)} TO ${name};
-DETACH ${name};`,
-        mergeOptions(this, {
-          returnDataFrom: "none",
-          table: null,
-          method: "writeDB()",
-          parameters: {},
-        }),
-      );
-    } else {
-      throw new Error(
-        `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
-      );
-    }
+    await writeDB(this, file, options);
     return this;
   }
 

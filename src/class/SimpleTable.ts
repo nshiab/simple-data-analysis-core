@@ -20,12 +20,10 @@ import getSkew from "../methods/getSkew.ts";
 import getStdDev from "../methods/getStdDev.ts";
 import getVar from "../methods/getVar.ts";
 import getQuantile from "../methods/getQuantile.ts";
-import cloneColumnQuery from "../methods/cloneColumn.ts";
+import cloneColumn from "../methods/cloneColumn.ts";
 import getGeoData from "../methods/getGeoData.ts";
 import writeGeoData from "../helpers/writeGeoData.ts";
 import splitSpread from "../methods/splitSpread.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import type SimpleDB from "./SimpleDB.ts";
 import runQuery from "../helpers/runQuery.ts";
 import summarize from "../methods/summarize.ts";
@@ -1046,17 +1044,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async cloneColumn(originalColumn: string, newColumn: string): Promise<this> {
-    const types = await this.getTypes();
-
-    await queryDB(
-      this,
-      cloneColumnQuery(this.name, originalColumn, newColumn, types),
-      mergeOptions(this, {
-        table: this.name,
-        method: "cloneColumn()",
-        parameters: { originalColumn, newColumn },
-      }),
-    );
+    await cloneColumn(this, originalColumn, newColumn);
     return this;
   }
 

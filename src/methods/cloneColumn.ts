@@ -1,4 +1,26 @@
-export default function cloneColumnQuery(
+import mergeOptions from "../helpers/mergeOptions.ts";
+import queryDB from "../helpers/queryDB.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+
+export default async function cloneColumn(
+  simpleTable: SimpleTable,
+  originalColumn: string,
+  newColumn: string,
+) {
+  const types = await simpleTable.getTypes();
+
+  await queryDB(
+    simpleTable,
+    cloneColumnQuery(simpleTable.name, originalColumn, newColumn, types),
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "cloneColumn()",
+      parameters: { originalColumn, newColumn },
+    }),
+  );
+}
+
+function cloneColumnQuery(
   table: string,
   originalColumn: string,
   newColumn: string,
