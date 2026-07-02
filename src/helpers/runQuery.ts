@@ -7,6 +7,7 @@ import {
   type DuckDBValue,
   JsonDuckDBValueConverter,
 } from "@duckdb/node-api";
+import SDAError from "../class/SDAError.ts";
 
 const msPerDay = 24 * 60 * 60 * 1000;
 const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER);
@@ -117,12 +118,14 @@ export default async function runQuery(
       return null;
     }
   } catch (error) {
-    console.warn(error);
-    if (options.debug === false) {
-      console.log("SDA: method causing error =>", options.method);
-      console.log("parameters:", options.parameters);
-      console.log("query:", query);
+    if (options.debug) {
+      console.warn(error);
     }
-    throw error;
+    throw new SDAError({
+      method: options.method,
+      parameters: options.parameters,
+      query,
+      cause: error,
+    });
   }
 }
