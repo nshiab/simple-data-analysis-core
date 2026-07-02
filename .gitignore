@@ -1,6 +1,7 @@
 node_modules
 dist/
 test/output/
+benchmarks/output/
 .DS_Store
 .tmp
 .sda-cache
