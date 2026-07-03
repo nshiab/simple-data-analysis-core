@@ -229,3 +229,20 @@ Deno.test("should load an array of objects even if the all values in a column ar
 
   await sdb.done();
 });
+
+Deno.test("should throw a clear error for an empty array", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("emptyArray");
+
+  let error: unknown;
+  try {
+    await table.loadArray([]);
+  } catch (e) {
+    error = e;
+  }
+  assertEquals(
+    (error as Error).message,
+    "The array is empty. loadArray needs at least one object to infer the column types.",
+  );
+  await sdb.done();
+});

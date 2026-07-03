@@ -53,11 +53,11 @@ export default class Simple {
       debug: boolean;
       method: string | null;
       parameters: { [key: string]: unknown } | null;
-      types?: { [key: string]: string };
+      table?: string | null;
     },
   ) => Promise<
     | {
-      [key: string]: number | string | Date | boolean | null;
+      [key: string]: unknown;
     }[]
     | null
   >;

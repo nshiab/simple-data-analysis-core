@@ -18,6 +18,12 @@ export default async function loadArray(
     simpleTable.connection = simpleTable.sdb.connection;
   }
 
+  if (arrayOfObjects.length === 0) {
+    throw new Error(
+      "The array is empty. loadArray needs at least one object to infer the column types.",
+    );
+  }
+
   const keys = Object.keys(arrayOfObjects[0]);
   const firstNonNullValue = keys.map((key) =>
     arrayOfObjects.find((obj) => obj[key] !== null && obj[key] !== undefined)
