@@ -13,10 +13,12 @@ const msPerDay = 24 * 60 * 60 * 1000;
 const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER);
 const minSafeInteger = BigInt(Number.MIN_SAFE_INTEGER);
 
-// Columns already warned about for precision loss, so each column warns only once.
+// Columns already warned about for precision loss (keyed by table and
+// column), so each column warns only once.
 const warnedUnsafeIntegerColumns = new Set<string>();
 
-function makeIntegerConverter(columnName: string) {
+function makeIntegerConverter(columnName: string, tableName: string | null) {
+  const warnKey = `${tableName ?? ""}\0${columnName}`;
   return (value: DuckDBValue) => {
     if (value === null) {
       return null;
@@ -24,11 +26,13 @@ function makeIntegerConverter(columnName: string) {
     const bigintValue = value as bigint;
     if (
       (bigintValue > maxSafeInteger || bigintValue < minSafeInteger) &&
-      !warnedUnsafeIntegerColumns.has(columnName)
+      !warnedUnsafeIntegerColumns.has(warnKey)
     ) {
-      warnedUnsafeIntegerColumns.add(columnName);
+      warnedUnsafeIntegerColumns.add(warnKey);
       console.warn(
-        `SDA: Column "${columnName}" has at least one value exceeding Number.MAX_SAFE_INTEGER. Converted numbers may lose precision.`,
+        `SDA: Column "${columnName}"${
+          tableName === null ? "" : ` of table "${tableName}"`
+        } has at least one value exceeding Number.MAX_SAFE_INTEGER. Converted numbers may lose precision.`,
       );
     }
     return Number(bigintValue);
@@ -38,6 +42,7 @@ function makeIntegerConverter(columnName: string) {
 export function makeConverter(
   type: DuckDBType,
   columnName: string,
+  tableName: string | null = null,
 ): (value: DuckDBValue) => unknown {
   const typeString = type.toString();
   if (typeString.toLowerCase().includes("geometry")) {
@@ -69,7 +74,7 @@ export function makeConverter(
       };
     case DuckDBTypeId.BIGINT:
     case DuckDBTypeId.HUGEINT:
-      return makeIntegerConverter(columnName);
+      return makeIntegerConverter(columnName, tableName);
     default:
       return (value) =>
         JsonDuckDBValueConverter(value, type, JsonDuckDBValueConverter);
@@ -84,6 +89,7 @@ export default async function runQuery(
     debug: boolean;
     method: string | null;
     parameters: { [key: string]: unknown } | null;
+    table?: string | null;
   },
 ): Promise<
   | {
@@ -97,7 +103,7 @@ export default async function runQuery(
       const columnNames = reader.deduplicatedColumnNames();
       const columnTypes = reader.columnTypes();
       const converters = columnTypes.map((type, i) =>
-        makeConverter(type, columnNames[i])
+        makeConverter(type, columnNames[i], options.table ?? null)
       );
       const nbColumns = columnNames.length;
       const rawRows = reader.getRows();

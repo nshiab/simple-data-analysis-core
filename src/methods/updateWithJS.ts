@@ -34,6 +34,15 @@ export default async function updateWithJS(
       throw new Error("No data from getData.");
     }
     const newData = await dataModifier(oldData);
+    if (newData.length === 0) {
+      if (oldData.length === 0) {
+        // Empty table in, empty data out: nothing to update.
+        return;
+      }
+      throw new Error(
+        "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.",
+      );
+    }
     await simpleTable.loadArray(newData);
     return;
   }
@@ -42,11 +51,19 @@ export default async function updateWithJS(
   if (!Number.isInteger(batchSize) || batchSize < 1) {
     throw new Error("batchSize must be a positive integer.");
   }
+  if (Object.keys(types).includes("__sda_rowid")) {
+    throw new Error(
+      'The table has a column named "__sda_rowid", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.',
+    );
+  }
 
   const nbRows = await simpleTable.getNbRows();
   if (nbRows === 0) {
     // Same behavior as the non-batched path on an empty table.
     const newData = await dataModifier([]);
+    if (newData.length === 0) {
+      return;
+    }
     await simpleTable.loadArray(newData);
     return;
   }
@@ -57,41 +74,59 @@ export default async function updateWithJS(
   const suffix = Math.random().toString(36).slice(2, 10);
   const scratch = simpleTable.sdb.newTable(`updateWithJS_scratch_${suffix}`);
   const accumulator = `updateWithJS_accumulator_${suffix}`;
-  let first = true;
-  let lastRowid: number | null = null;
 
-  while (true) {
-    const batch = (await simpleTable.sdb.customQuery(
-      `SELECT *, rowid AS __sda_rowid FROM "${simpleTable.name}"${
-        lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
-      } ORDER BY rowid LIMIT ${batchSize}`,
-      { returnDataFrom: "query" },
-    )) as { [key: string]: unknown }[];
-    if (batch.length === 0) {
-      break;
-    }
-    lastRowid = batch[batch.length - 1].__sda_rowid as number;
-    for (const row of batch) {
-      delete row.__sda_rowid;
+  try {
+    let first = true;
+    let lastRowid: number | null = null;
+
+    while (true) {
+      const batch = (await simpleTable.sdb.customQuery(
+        `SELECT *, rowid AS __sda_rowid FROM "${simpleTable.name}"${
+          lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
+        } ORDER BY rowid LIMIT ${batchSize}`,
+        { returnDataFrom: "query" },
+      )) as { [key: string]: unknown }[];
+      if (batch.length === 0) {
+        break;
+      }
+      lastRowid = batch[batch.length - 1].__sda_rowid as number;
+      for (const row of batch) {
+        delete row.__sda_rowid;
+      }
+
+      const modified = await dataModifier(batch);
+      if (modified.length === 0) {
+        continue;
+      }
+      await scratch.loadArray(modified);
+      if (first) {
+        await simpleTable.sdb.customQuery(
+          `CREATE OR REPLACE TABLE "${accumulator}" AS SELECT * FROM "${scratch.name}"`,
+        );
+        first = false;
+      } else {
+        await simpleTable.sdb.customQuery(
+          `INSERT INTO "${accumulator}" BY NAME SELECT * FROM "${scratch.name}"`,
+        );
+      }
     }
 
-    const modified = await dataModifier(batch);
-    await scratch.loadArray(modified);
     if (first) {
-      await simpleTable.sdb.customQuery(
-        `CREATE OR REPLACE TABLE "${accumulator}" AS SELECT * FROM "${scratch.name}"`,
-      );
-      first = false;
-    } else {
-      await simpleTable.sdb.customQuery(
-        `INSERT INTO "${accumulator}" BY NAME SELECT * FROM "${scratch.name}"`,
+      throw new Error(
+        "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.",
       );
     }
-  }
 
-  await simpleTable.sdb.customQuery(
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${accumulator}";
-DROP TABLE "${accumulator}";`,
-  );
-  await simpleTable.sdb.removeTables(scratch);
+    await simpleTable.sdb.customQuery(
+      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${accumulator}"`,
+    );
+  } finally {
+    await simpleTable.sdb.customQuery(
+      `DROP TABLE IF EXISTS "${accumulator}";
+DROP TABLE IF EXISTS "${scratch.name}";`,
+    );
+    simpleTable.sdb.tables = simpleTable.sdb.tables.filter((t) =>
+      t !== scratch
+    );
+  }
 }

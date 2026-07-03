@@ -233,3 +233,44 @@ Deno.test("should warn once per column for unsafe BIGINT values", async () => {
     console.warn = originalWarn;
   }
 });
+
+Deno.test("should keep duplicate column names in results by suffixing them", async () => {
+  const sdb = new SimpleDB();
+  // The old JSON-based read path silently kept only one of the duplicated
+  // columns. The typed read path deduplicates the names instead.
+  const data = await sdb.customQuery(
+    `SELECT 1 AS a, 2 AS a, 3 AS b`,
+    { returnDataFrom: "query" },
+  );
+  assertEquals(data, [{ a: 1, "a:1": 2, b: 3 }]);
+  await sdb.done();
+});
+
+Deno.test("should warn about unsafe BIGINT values separately for each table", async () => {
+  const originalWarn = console.warn;
+  const warnings: string[] = [];
+  console.warn = (...args: unknown[]) => {
+    warnings.push(args.map(String).join(" "));
+  };
+  try {
+    const sdb = new SimpleDB();
+    for (const tableName of ["unsafePerTableA", "unsafePerTableB"]) {
+      const table = sdb.newTable(tableName);
+      await sdb.customQuery(
+        `CREATE OR REPLACE TABLE "${tableName}" AS SELECT 9007199254740993::BIGINT AS sharedColumnName`,
+      );
+      await table.getData();
+    }
+    assertEquals(
+      warnings.filter((w) => w.includes('"unsafePerTableA"')).length,
+      1,
+    );
+    assertEquals(
+      warnings.filter((w) => w.includes('"unsafePerTableB"')).length,
+      1,
+    );
+    await sdb.done();
+  } finally {
+    console.warn = originalWarn;
+  }
+});

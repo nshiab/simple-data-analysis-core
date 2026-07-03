@@ -41,7 +41,7 @@ export default async function* stream(
     const columnNames = result.deduplicatedColumnNames();
     const columnTypes = result.columnTypes();
     const converters = columnTypes.map((type, i) =>
-      makeConverter(type, columnNames[i])
+      makeConverter(type, columnNames[i], simpleTable.name)
     );
     const nbColumns = columnNames.length;
 

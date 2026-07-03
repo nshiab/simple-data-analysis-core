@@ -53,6 +53,7 @@ export default class Simple {
       debug: boolean;
       method: string | null;
       parameters: { [key: string]: unknown } | null;
+      table?: string | null;
     },
   ) => Promise<
     | {
