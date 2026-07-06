@@ -73,7 +73,8 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
   // With 0 tries, no point should be found.
   await assertRejects(
     async () => {
-      await table.randomPoint("randomPoint", 0);
+      // randomPoint() queues the operation; run() executes it.
+      await table.randomPoint("randomPoint", 0).run();
     },
     Error,
     "13 points could not be generated. Consider increasing nbPointsToTry or set options.try to true.",

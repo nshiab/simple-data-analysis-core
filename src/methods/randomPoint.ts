@@ -1,19 +1,40 @@
 import findGeoColumn from "../helpers/findGeoColumn.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function randomPoint(
+export default function randomPoint(
   simpleTable: SimpleTable,
   newColumn: string,
   nbPointsToTry: number,
   options: { column?: string; try?: boolean } = {},
 ) {
+  // This validation doesn't need the database, so it stays at call time.
   if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
     throw new Error(
       "nbPointsToTry must be a number greater than or equal to 0",
     );
   }
+
+  // The generated points are checked against the data afterwards, so
+  // randomPoint can't be expressed as a single SELECT over its input: it
+  // executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "randomPoint()",
+    parameters: { newColumn, nbPointsToTry, options },
+    execute: () =>
+      executeRandomPoint(simpleTable, newColumn, nbPointsToTry, options),
+  });
+}
+
+async function executeRandomPoint(
+  simpleTable: SimpleTable,
+  newColumn: string,
+  nbPointsToTry: number,
+  options: { column?: string; try?: boolean },
+): Promise<void> {
   const column = typeof options.column === "string"
     ? options.column
     : await findGeoColumn(simpleTable);

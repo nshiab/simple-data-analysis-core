@@ -3841,36 +3841,38 @@ export default class SimpleTable extends Simple {
    * Produces identical output to `journalism-format`'s `normalizeString()` function
    * for all common cases including accented Latin characters.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column The column containing the text to normalize
    * @param newColumn The column to store the normalized results
    * @param options Configuration options
    * @param options.stripPunctuation Strip punctuation and underscores (default: true)
    *
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @example
    * ```ts
    * // Normalize text column and store in new column
-   * await table.normalizeString("recipeName", "recipeNameNormalized");
+   * table.normalizeString("recipeName", "recipeNameNormalized");
    * // "Épicerie Parisienne!" → "epicerie parisienne"
    * ```
    *
    * @example
    * ```ts
    * // Keep punctuation for emails and URLs
-   * await table.normalizeString("email", "emailNormalized", { stripPunctuation: false });
+   * table.normalizeString("email", "emailNormalized", { stripPunctuation: false });
    * // "User@Example.com" → "user@example.com"
-   * await table.normalizeString("url", "urlNormalized", { stripPunctuation: false });
+   * table.normalizeString("url", "urlNormalized", { stripPunctuation: false });
    * // "https://Example.com/path" → "https://example.com/path"
    * ```
    *
    * @category Text Processing
    */
-  async normalizeString(
+  normalizeString(
     column: string,
     newColumn: string,
     options: { stripPunctuation?: boolean } = {},
-  ): Promise<this> {
-    await normalizeString(this, column, newColumn, options);
+  ): this {
+    normalizeString(this, column, newColumn, options);
     return this;
   }
 
@@ -5363,6 +5365,8 @@ export default class SimpleTable extends Simple {
   /**
    * Generates a random point within the geometries of a specified column.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the random points will be stored.
    * @param nbPointsToTry - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
    * @param options - An optional object with configuration options:
@@ -5372,27 +5376,27 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Generate a random point for each geometry in the default column, trying 100 points
-   * await table.randomPoint("randomPoint", 100);
+   * table.randomPoint("randomPoint", 100);
    * ```
    *
    * @example
    * ```ts
    * // Generate a random point for each geometry in a specific column named 'areaGeom', trying 50 points
-   * await table.randomPoint("pointInArea", 50, { column: "areaGeom" });
+   * table.randomPoint("pointInArea", 50, { column: "areaGeom" });
    * ```
    *
    * @example
    * ```ts
    * // Generate a random point for each geometry, but don't throw if some points cannot be generated
-   * await table.randomPoint("pointInArea", 1, { try: true });
+   * table.randomPoint("pointInArea", 1, { try: true });
    * ```
    */
-  async randomPoint(
+  randomPoint(
     newColumn: string,
     nbPointsToTry: number,
     options: { column?: string; try?: boolean } = {},
-  ): Promise<this> {
-    await randomPoint(this, newColumn, nbPointsToTry, options);
+  ): this {
+    randomPoint(this, newColumn, nbPointsToTry, options);
     return this;
   }
 

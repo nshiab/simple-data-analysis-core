@@ -4477,10 +4477,13 @@ Normalizes string values in a column by:
 Produces identical output to `journalism-format`'s `normalizeString()` function
 for all common cases including accented Latin characters.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async normalizeString(column: string, newColumn: string, options?: { stripPunctuation?: boolean }): Promise<this>;
+normalizeString(column: string, newColumn: string, options?: { stripPunctuation?: boolean }): this;
 ```
 
 ##### Parameters
@@ -4493,25 +4496,21 @@ async normalizeString(column: string, newColumn: string, options?: { stripPunctu
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Normalize text column and store in new column
-await table.normalizeString("recipeName", "recipeNameNormalized");
+table.normalizeString("recipeName", "recipeNameNormalized");
 // "Épicerie Parisienne!" → "epicerie parisienne"
 ```
 
 ```ts
 // Keep punctuation for emails and URLs
-await table.normalizeString("email", "emailNormalized", {
-  stripPunctuation: false,
-});
+table.normalizeString("email", "emailNormalized", { stripPunctuation: false });
 // "User@Example.com" → "user@example.com"
-await table.normalizeString("url", "urlNormalized", {
-  stripPunctuation: false,
-});
+table.normalizeString("url", "urlNormalized", { stripPunctuation: false });
 // "https://Example.com/path" → "https://example.com/path"
 ```
 
@@ -6296,10 +6295,13 @@ table.centroid("areaCentroid", { column: "areaGeom" });
 
 Generates a random point within the geometries of a specified column.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; try?: boolean }): Promise<this>;
+randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; try?: boolean }): this;
 ```
 
 ##### Parameters
@@ -6320,17 +6322,17 @@ async randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?:
 
 ```ts
 // Generate a random point for each geometry in the default column, trying 100 points
-await table.randomPoint("randomPoint", 100);
+table.randomPoint("randomPoint", 100);
 ```
 
 ```ts
 // Generate a random point for each geometry in a specific column named 'areaGeom', trying 50 points
-await table.randomPoint("pointInArea", 50, { column: "areaGeom" });
+table.randomPoint("pointInArea", 50, { column: "areaGeom" });
 ```
 
 ```ts
 // Generate a random point for each geometry, but don't throw if some points cannot be generated
-await table.randomPoint("pointInArea", 1, { try: true });
+table.randomPoint("pointInArea", 1, { try: true });
 ```
 
 #### `distance`

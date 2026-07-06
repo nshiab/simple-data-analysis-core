@@ -1,13 +1,12 @@
 import type SimpleTable from "../class/SimpleTable.ts";
-import queryDB from "../helpers/queryDB.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
+import queueOp from "../helpers/queueOp.ts";
 
-export default async function normalizeString(
+export default function normalizeString(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
   options: { stripPunctuation?: boolean } = {},
-): Promise<void> {
+): void {
   const { stripPunctuation = true } = options;
 
   const accentRemoved = `strip_accents("${column}")`;
@@ -21,23 +20,17 @@ export default async function normalizeString(
   const normalizedClause =
     `trim(regexp_replace(${punctuationRemoved}, '\\s+', ' ', 'g'))`;
 
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS 
-    SELECT *,
-      CASE 
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "normalizeString()",
+    parameters: { column, newColumn, stripPunctuation },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT *,
+      CASE
         WHEN "${column}" IS NULL THEN NULL
         ELSE ${normalizedClause}
       END AS "${newColumn}"
-    FROM "${simpleTable.name}"`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "normalizeString()",
-      parameters: {
-        column,
-        newColumn,
-        stripPunctuation,
-      },
-    }),
-  );
+    FROM ${input}`,
+  });
 }
