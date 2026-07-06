@@ -5381,6 +5381,8 @@ export default class SimpleTable extends Simple {
    * You can optionally specify `"spheroid"` or `"haversine"` methods to get results in meters or kilometers.
    * If using `"spheroid"` or `"haversine"`, the input geometries must be in the EPSG:4326 coordinate system (WGS84).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries.
    * @param newColumn - The name of the new column where the computed distances will be stored.
@@ -5388,37 +5390,37 @@ export default class SimpleTable extends Simple {
    * @param options.method - The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326), or `"spheroid"` (meters, requires EPSG:4326, most accurate but slowest).
    * @param options.unit - If `method` is `"spheroid"` or `"haversine"`, you can choose between `"m"` (meters, default) or `"km"` (kilometers).
    * @param options.decimals - The number of decimal places to round the distance values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute distance between 'geomA' and 'geomB' in SRS units, store in 'distance_srs'
-   * await table.distance("geomA", "geomB", "distance_srs");
+   * table.distance("geomA", "geomB", "distance_srs");
    * ```
    *
    * @example
    * ```ts
    * // Compute Haversine distance in meters between 'point1' and 'point2', store in 'distance_m'
    * // Input geometries must be in EPSG:4326.
-   * await table.distance("point1", "point2", "distance_m", { method: "haversine" });
+   * table.distance("point1", "point2", "distance_m", { method: "haversine" });
    * ```
    *
    * @example
    * ```ts
    * // Compute Haversine distance in kilometers, rounded to 2 decimal places
    * // Input geometries must be in EPSG:4326.
-   * await table.distance("point1", "point2", "distance_km", { method: "haversine", unit: "km", decimals: 2 });
+   * table.distance("point1", "point2", "distance_km", { method: "haversine", unit: "km", decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Compute Spheroid distance in kilometers
    * // Input geometries must be in EPSG:4326.
-   * await table.distance("area1", "area2", "distance_spheroid_km", { method: "spheroid", unit: "km" });
+   * table.distance("area1", "area2", "distance_spheroid_km", { method: "spheroid", unit: "km" });
    * ```
    */
-  async distance(
+  distance(
     column1: string,
     column2: string,
     newColumn: string,
@@ -5427,8 +5429,8 @@ export default class SimpleTable extends Simple {
       method?: "srs" | "haversine" | "spheroid";
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await distance(this, column1, column2, newColumn, options);
+  ): this {
+    distance(this, column1, column2, newColumn, options);
     return this;
   }
 
@@ -5496,41 +5498,43 @@ export default class SimpleTable extends Simple {
   /**
    * Aggregates geometries in a specified column based on a chosen aggregation method.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param method - The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries to be aggregated. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.categories - The column name or an array of column names that define categories for the aggregation. Aggregation will be performed independently within each category.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the aggregated geometries (either the modified current table or a new table).
+   * @returns A table instance containing the aggregated geometries (either the current table or a new table), so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Aggregate all geometries in the default column into a single union geometry
-   * await table.aggregateGeo("union");
+   * table.aggregateGeo("union");
    * ```
    *
    * @example
    * ```ts
    * // Aggregate geometries by 'country' and compute their union
-   * await table.aggregateGeo("union", { categories: "country" });
+   * table.aggregateGeo("union", { categories: "country" });
    * ```
    *
    * @example
    * ```ts
    * // Aggregate geometries in 'regions' column into their intersection, storing results in a new table
-   * const intersectionTable = await table.aggregateGeo("intersection", { column: "regions", outputTable: true });
+   * const intersectionTable = table.aggregateGeo("intersection", { column: "regions", outputTable: true });
    * ```
    */
-  async aggregateGeo(
+  aggregateGeo(
     method: "union" | "intersection",
     options: {
       column?: string;
       categories?: string | string[];
       outputTable?: string | boolean;
     } = {},
-  ): Promise<this> {
-    return await aggregateGeo(this, method, options) as this;
+  ): this {
+    return aggregateGeo(this, method, options) as this;
   }
 
   /**

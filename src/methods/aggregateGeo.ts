@@ -1,10 +1,12 @@
 import findGeoColumn from "../helpers/findGeoColumn.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function aggregateGeo(
+export default function aggregateGeo(
   simpleTable: SimpleTable,
   method: "union" | "intersection",
   options: {
@@ -12,45 +14,68 @@ export default async function aggregateGeo(
     categories?: string | string[];
     outputTable?: string | boolean;
   } = {},
-) {
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable);
-
+): SimpleTable {
   if (options.outputTable === true) {
     options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
     simpleTable.sdb.tableIncrement += 1;
   }
-  await queryDB(
-    simpleTable,
-    aggregateGeoQuery(simpleTable.name, column, method, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "aggregateGeo()",
-      parameters: { column, method, options },
-    }),
-  );
+
   if (typeof options.outputTable === "string") {
-    return simpleTable.sdb.newTable(options.outputTable);
-  } else {
-    return simpleTable;
+    // The output table instance is created at call time so it can be
+    // returned synchronously and chained on right away.
+    const outputTable = simpleTable.sdb.newTable(options.outputTable);
+    queueOp(outputTable, {
+      kind: "barrier",
+      method: "aggregateGeo()",
+      parameters: { method, options },
+      execute: async () => {
+        const column = typeof options.column === "string"
+          ? options.column
+          : await findGeoColumn(simpleTable);
+        await queryDB(
+          simpleTable,
+          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+            aggregateGeoSelect(`"${simpleTable.name}"`, column, method, options)
+          }`,
+          mergeOptions(simpleTable, {
+            table: outputTable.name,
+            method: "aggregateGeo()",
+            parameters: { column, method, options },
+          }),
+        );
+      },
+    });
+    return outputTable;
   }
+
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "aggregateGeo()",
+    parameters: { method, options },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const column = typeof options.column === "string"
+        ? options.column
+        : findGeoColumnFromSchema(types);
+      return aggregateGeoSelect(input, column, method, options);
+    },
+  });
+  return simpleTable;
 }
 
-function aggregateGeoQuery(
-  table: string,
+function aggregateGeoSelect(
+  input: string,
   column: string,
   method: "union" | "intersection",
   options: {
     categories?: string | string[];
-    outputTable?: string | boolean;
   } = {},
 ) {
   const categoriesOptions = options.categories ?? [];
   const categories = stringToArray(categoriesOptions);
 
-  let query = `CREATE OR REPLACE TABLE "${options.outputTable ?? table}" AS
-    SELECT${
+  let query = `SELECT${
     categories.length > 0
       ? ` ${categories.map((d) => `"${d}"`).join(", ")},`
       : ""
@@ -65,7 +90,7 @@ function aggregateGeoQuery(
     throw new Error(`Unkown method ${method}`);
   }
 
-  query += `\nFROM "${table}"`;
+  query += `\nFROM ${input}`;
 
   if (categories.length > 0) {
     query += `\nGROUP BY ${categories.map((d) => `"${d}"`).join(", ")}`;

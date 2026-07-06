@@ -6310,10 +6310,13 @@ methods to get results in meters or kilometers. If using `"spheroid"` or
 `"haversine"`, the input geometries must be in the EPSG:4326 coordinate system
 (WGS84).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async distance(column1: string, column2: string, newColumn: string, options?: { unit?: "m" | "km"; method?: "srs" | "haversine" | "spheroid"; decimals?: number }): Promise<this>;
+distance(column1: string, column2: string, newColumn: string, options?: { unit?: "m" | "km"; method?: "srs" | "haversine" | "spheroid"; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -6333,25 +6336,25 @@ async distance(column1: string, column2: string, newColumn: string, options?: { 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute distance between 'geomA' and 'geomB' in SRS units, store in 'distance_srs'
-await table.distance("geomA", "geomB", "distance_srs");
+table.distance("geomA", "geomB", "distance_srs");
 ```
 
 ```ts
 // Compute Haversine distance in meters between 'point1' and 'point2', store in 'distance_m'
 // Input geometries must be in EPSG:4326.
-await table.distance("point1", "point2", "distance_m", { method: "haversine" });
+table.distance("point1", "point2", "distance_m", { method: "haversine" });
 ```
 
 ```ts
 // Compute Haversine distance in kilometers, rounded to 2 decimal places
 // Input geometries must be in EPSG:4326.
-await table.distance("point1", "point2", "distance_km", {
+table.distance("point1", "point2", "distance_km", {
   method: "haversine",
   unit: "km",
   decimals: 2,
@@ -6361,7 +6364,7 @@ await table.distance("point1", "point2", "distance_km", {
 ```ts
 // Compute Spheroid distance in kilometers
 // Input geometries must be in EPSG:4326.
-await table.distance("area1", "area2", "distance_spheroid_km", {
+table.distance("area1", "area2", "distance_spheroid_km", {
   method: "spheroid",
   unit: "km",
 });
@@ -6448,10 +6451,13 @@ table.boundingBox({ column: "geom", decimals: 2 });
 Aggregates geometries in a specified column based on a chosen aggregation
 method.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async aggregateGeo(method: "union" | "intersection", options?: { column?: string; categories?: string | string[]; outputTable?: string | boolean }): Promise<this>;
+aggregateGeo(method: "union" | "intersection", options?: { column?: string; categories?: string | string[]; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -6473,24 +6479,24 @@ async aggregateGeo(method: "union" | "intersection", options?: { column?: string
 
 ##### Returns
 
-A promise that resolves to a table instance containing the aggregated geometries
-(either the modified current table or a new table).
+A table instance containing the aggregated geometries (either the current table
+or a new table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Aggregate all geometries in the default column into a single union geometry
-await table.aggregateGeo("union");
+table.aggregateGeo("union");
 ```
 
 ```ts
 // Aggregate geometries by 'country' and compute their union
-await table.aggregateGeo("union", { categories: "country" });
+table.aggregateGeo("union", { categories: "country" });
 ```
 
 ```ts
 // Aggregate geometries in 'regions' column into their intersection, storing results in a new table
-const intersectionTable = await table.aggregateGeo("intersection", {
+const intersectionTable = table.aggregateGeo("intersection", {
   column: "regions",
   outputTable: true,
 });
