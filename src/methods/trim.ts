@@ -1,9 +1,7 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function trim(
+export default function trim(
   simpleTable: SimpleTable,
   columns: string | string[],
   options: {
@@ -11,49 +9,32 @@ export default async function trim(
     method?: "leftTrim" | "rightTrim" | "trim";
   } = {},
 ) {
-  options.method = options.method ?? "trim";
-  await queryDB(
-    simpleTable,
-    trimQuery(simpleTable.name, stringToArray(columns), options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "trim()",
-      parameters: { columns, options },
-    }),
-  );
-}
-
-function trimQuery(
-  table: string,
-  columns: string[],
-  options: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" },
-) {
-  let query = ``;
-
+  const cols = stringToArray(columns);
   const method = options.method ?? "trim";
-
+  const fn = method === "leftTrim"
+    ? "LTRIM"
+    : method === "rightTrim"
+    ? "RTRIM"
+    : method === "trim"
+    ? "TRIM"
+    : null;
+  if (fn === null) {
+    throw new Error(`Unknown method ${options.method}`);
+  }
   const specialCharacter = typeof options.character === "string"
     ? `, '${options.character}'`
     : "";
 
-  if (method === "trim") {
-    for (const column of columns) {
-      query +=
-        `\nUPDATE "${table}" SET "${column}" = TRIM("${column}"${specialCharacter});`;
-    }
-  } else if (method === "leftTrim") {
-    for (const column of columns) {
-      query +=
-        `\nUPDATE "${table}" SET "${column}" = LTRIM("${column}"${specialCharacter});`;
-    }
-  } else if (method === "rightTrim") {
-    for (const column of columns) {
-      query +=
-        `\nUPDATE "${table}" SET "${column}" = RTRIM("${column}"${specialCharacter});`;
-    }
-  } else {
-    throw new Error(`Unknown method ${options.method}`);
-  }
-
-  return query;
+  simpleTable.pendingOps.push({
+    kind: "fusable",
+    method: "trim()",
+    parameters: { columns, options },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT * REPLACE (${
+        cols
+          .map((c) => `${fn}("${c}"${specialCharacter}) AS "${c}"`)
+          .join(", ")
+      }) FROM ${input}`,
+  });
 }

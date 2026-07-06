@@ -1,6 +1,7 @@
 import SimpleTable from "../class/SimpleTable.ts";
 import SimpleDB from "../class/SimpleDB.ts";
 import cleanSQL from "./cleanSQL.ts";
+import flushAllTables from "./flushAllTables.ts";
 
 export default async function queryDB(
   simple: SimpleTable | SimpleDB,
@@ -13,6 +14,7 @@ export default async function queryDB(
     nbCharactersToLog: number | undefined;
     returnDataFrom: "query" | "none";
     debug: boolean;
+    noClean?: boolean;
   },
 ): Promise<
   | {
@@ -34,7 +36,13 @@ export default async function queryDB(
     throw new Error("simple.connection is undefined");
   }
 
-  query = cleanSQL(query);
+  // Observing executes: any query touching the database first flushes the
+  // operations queued by sync builder methods, preserving program order.
+  await flushAllTables(simple instanceof SimpleTable ? simple.sdb : simple);
+
+  if (options.noClean !== true) {
+    query = cleanSQL(query);
+  }
 
   if (options.debug) {
     // We beautify it a little bit

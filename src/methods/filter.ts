@@ -1,20 +1,17 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function filter(
+export default function filter(
   simpleTable: SimpleTable,
   conditions: string,
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT *
-        FROM "${simpleTable.name}"
+  simpleTable.pendingOps.push({
+    kind: "fusable",
+    method: "filter()",
+    parameters: { conditions },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT *
+        FROM ${input}
         WHERE ${conditions}`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "filter()",
-      parameters: { conditions },
-    }),
-  );
+  });
 }

@@ -1,10 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
-
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 
-export default async function removeMissing(
+export default function removeMissing(
   simpleTable: SimpleTable,
   options: {
     columns?: string | string[];
@@ -12,53 +10,47 @@ export default async function removeMissing(
     invert?: boolean;
   } = {},
 ) {
-  options.missingValues = options.missingValues ?? [
-    "undefined",
-    "NaN",
-    "null",
-    "NULL",
-    "",
-  ];
-
-  const types = await simpleTable.getTypes();
-  const allColumns = Object.keys(types);
-
-  options.columns = stringToArray(options.columns ?? []);
-
-  await queryDB(
-    simpleTable,
-    removeMissingQuery(
-      simpleTable.name,
-      allColumns,
-      types,
-      options.columns.length === 0 ? allColumns : options.columns,
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "removeMissing()",
-      parameters: { options },
-    }),
-  );
+  simpleTable.pendingOps.push({
+    kind: "fusable",
+    method: "removeMissing()",
+    parameters: { options },
+    needsSchema: true,
+    buildSelect: (input, types) => {
+      const missingValues = options.missingValues ?? [
+        "undefined",
+        "NaN",
+        "null",
+        "NULL",
+        "",
+      ];
+      const allColumns = Object.keys(types);
+      const columns = stringToArray(options.columns ?? []);
+      return removeMissingSelect(
+        input,
+        allColumns,
+        types,
+        columns.length === 0 ? allColumns : columns,
+        { missingValues, invert: options.invert },
+      );
+    },
+  });
 }
 
-function removeMissingQuery(
-  table: string,
+function removeMissingSelect(
+  input: string,
   allColumns: string[],
-  types: {
-    [key: string]: string;
-  },
+  types: TableSchema,
   columns: string[],
   options: {
     missingValues?: (string | number)[];
     invert?: boolean;
   } = {},
 ) {
-  let query = `CREATE OR REPLACE TABLE "${table}" AS SELECT ${
+  let query = `SELECT ${
     allColumns
       .map((d) => `"${d}"`)
       .join(", ")
-  } FROM "${table}"
+  } FROM ${input}
         WHERE`;
 
   if (options.invert) {

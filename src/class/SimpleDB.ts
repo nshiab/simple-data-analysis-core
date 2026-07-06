@@ -119,6 +119,15 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   progressBar: boolean;
   /**
+   * A flag indicating that the pending chains of the tables are currently
+   * being executed, so the queries run by the flush itself don't trigger a
+   * new flush. This is for internal use only.
+   *
+   * @defaultValue `false`
+   * @internal
+   */
+  flushing: boolean;
+  /**
    * A flag indicating whether to use DuckDB's external file cache.
    *
    * @defaultValue `false`
@@ -250,6 +259,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       : options.duckDbCache;
     this.memoryLimit = options.memoryLimit;
     this.tempDirectory = options.tempDirectory;
+    this.flushing = false;
     this.runQuery = runQuery;
     if (this.cacheVerbose || this.logDuration) {
       this.durationStart = Date.now();
@@ -265,53 +275,65 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async start(): Promise<SimpleDB> {
     if (this.db === undefined || this.connection === undefined) {
-      if (this.file !== ":memory:") {
-        if (getExtension(this.file) !== "db") {
-          throw new Error(
-            `The file extension must be .db. The current file is ${this.file}.`,
-          );
-        }
-        if (existsSync(this.file) && this.overwrite === false) {
-          throw new Error(
-            `The file ${this.file} already exists. Set the overwrite option to true to overwrite it. Otherwise, use the loadDB() method to load an existing database with more options.`,
-          );
-        } else if (existsSync(this.file) && this.overwrite === true) {
-          rmSync(this.file);
-        }
-      }
-
-      this.db = await DuckDBInstance.create(this.file);
-      this.connection = await this.db.connect();
-
-      // By default, DuckDB does not compress in-memory databases, so we enable it here.
-      if (this.file === ":memory:") {
-        await this.customQuery(
-          "ATTACH OR REPLACE ':memory:' AS memory (COMPRESS);",
-        );
-      }
-
-      if (this.duckDbCache === true) {
-        await this.customQuery("SET enable_external_file_cache=true;");
-      } else if (this.duckDbCache === false) {
-        await this.customQuery("SET enable_external_file_cache=false;");
-      }
-
-      if (this.progressBar) {
-        await this.customQuery(
-          `SET enable_progress_bar = TRUE; SET progress_bar_time = 0;`,
-        );
-      }
-
-      if (this.memoryLimit !== undefined) {
-        await this.customQuery(`SET memory_limit = '${this.memoryLimit}';`);
-      }
-      if (this.tempDirectory !== undefined) {
-        await this.customQuery(
-          `SET temp_directory = '${this.tempDirectory}';`,
-        );
+      // The setup queries below must run before any queued operation, so
+      // they must not trigger a flush.
+      const wasFlushing = this.flushing;
+      this.flushing = true;
+      try {
+        await this.#setup();
+      } finally {
+        this.flushing = wasFlushing;
       }
     }
     return this;
+  }
+
+  async #setup(): Promise<void> {
+    if (this.file !== ":memory:") {
+      if (getExtension(this.file) !== "db") {
+        throw new Error(
+          `The file extension must be .db. The current file is ${this.file}.`,
+        );
+      }
+      if (existsSync(this.file) && this.overwrite === false) {
+        throw new Error(
+          `The file ${this.file} already exists. Set the overwrite option to true to overwrite it. Otherwise, use the loadDB() method to load an existing database with more options.`,
+        );
+      } else if (existsSync(this.file) && this.overwrite === true) {
+        rmSync(this.file);
+      }
+    }
+
+    this.db = await DuckDBInstance.create(this.file);
+    this.connection = await this.db.connect();
+
+    // By default, DuckDB does not compress in-memory databases, so we enable it here.
+    if (this.file === ":memory:") {
+      await this.customQuery(
+        "ATTACH OR REPLACE ':memory:' AS memory (COMPRESS);",
+      );
+    }
+
+    if (this.duckDbCache === true) {
+      await this.customQuery("SET enable_external_file_cache=true;");
+    } else if (this.duckDbCache === false) {
+      await this.customQuery("SET enable_external_file_cache=false;");
+    }
+
+    if (this.progressBar) {
+      await this.customQuery(
+        `SET enable_progress_bar = TRUE; SET progress_bar_time = 0;`,
+      );
+    }
+
+    if (this.memoryLimit !== undefined) {
+      await this.customQuery(`SET memory_limit = '${this.memoryLimit}';`);
+    }
+    if (this.tempDirectory !== undefined) {
+      await this.customQuery(
+        `SET temp_directory = '${this.tempDirectory}';`,
+      );
+    }
   }
 
   /**
@@ -730,6 +752,19 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```
    */
   async done(): Promise<SimpleDB> {
+    // The forgotten-run() safety net: queued methods that were never
+    // observed are dropped, not executed. Warning must come before any
+    // query below, since running a query would execute them.
+    for (const table of this.tables) {
+      if (table.pendingOps.length > 0) {
+        console.warn(
+          `The table "${table.name}" has queued methods that were never executed: ${
+            table.pendingOps.map((op) => op.method).join(", ")
+          }. To execute them, await an observer method (like getData(), logTable(), or writeData()) or call run().`,
+        );
+        table.pendingOps.length = 0;
+      }
+    }
     if (this.file !== ":memory:") {
       await this.customQuery("CHECKPOINT;");
       // To make sure the files will have the proper names.

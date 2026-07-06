@@ -9,19 +9,32 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import parseType from "../helpers/parseTypes.ts";
 import parseDuckDBType from "../helpers/parseDuckDBType.ts";
 
-export default async function loadArray(
+export default function loadArray(
+  simpleTable: SimpleTable,
+  arrayOfObjects: { [key: string]: unknown }[],
+) {
+  // This validation doesn't need the database, so it stays at call time.
+  if (arrayOfObjects.length === 0) {
+    throw new Error(
+      "The array is empty. loadArray needs at least one object to infer the column types.",
+    );
+  }
+
+  simpleTable.pendingOps.push({
+    kind: "barrier",
+    method: "loadArray()",
+    parameters: { arrayOfObjects },
+    execute: () => executeLoadArray(simpleTable, arrayOfObjects),
+  });
+}
+
+async function executeLoadArray(
   simpleTable: SimpleTable,
   arrayOfObjects: { [key: string]: unknown }[],
 ) {
   if (simpleTable.connection === undefined) {
     await simpleTable.sdb.start();
     simpleTable.connection = simpleTable.sdb.connection;
-  }
-
-  if (arrayOfObjects.length === 0) {
-    throw new Error(
-      "The array is empty. loadArray needs at least one object to infer the column types.",
-    );
   }
 
   const keys = Object.keys(arrayOfObjects[0]);

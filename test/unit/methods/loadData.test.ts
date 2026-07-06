@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
@@ -764,7 +764,7 @@ Deno.test("invalid column name should throw a DuckDB error", async () => {
     () =>
       table.loadData(["test/data/files/data.csv"], {
         columns: ["nonexistent_column"],
-      }),
+      }).run(),
   );
 
   await sdb.done();
@@ -774,7 +774,7 @@ Deno.test("combining columns with Excel files should throw an error", async () =
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await assertRejects(
+  assertThrows(
     () =>
       table.loadData(["test/data/files/populations-one-sheet.xlsx"], {
         columns: ["Country"],
@@ -790,7 +790,7 @@ Deno.test("combining columns with Excel files (by fileType) should throw an erro
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await assertRejects(
+  assertThrows(
     () =>
       table.loadData(["test/data/files/populations-one-sheet.xlsx"], {
         fileType: "excel",

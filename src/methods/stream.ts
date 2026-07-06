@@ -1,6 +1,7 @@
 import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import { makeConverter } from "../helpers/runQuery.ts";
 import SDAError from "../class/SDAError.ts";
+import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default async function* stream(
@@ -15,6 +16,10 @@ export default async function* stream(
     simpleTable.db = simpleTable.sdb.db;
     simpleTable.connection = simpleTable.sdb.connection;
   }
+
+  // stream() reads directly from the connection instead of going through
+  // queryDB, so it must flush the pending chains itself before yielding.
+  await flushAllTables(simpleTable.sdb);
 
   if (await hasGeometryColumn(simpleTable)) {
     throw new Error(

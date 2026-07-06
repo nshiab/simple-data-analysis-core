@@ -9,7 +9,8 @@ Deno.test("should throw an SDAError carrying method, parameters, query and cause
 
   let error: unknown;
   try {
-    await table.selectColumns("aColumnThatDoesNotExist");
+    // selectColumns() queues the operation; run() executes it.
+    await table.selectColumns("aColumnThatDoesNotExist").run();
   } catch (e) {
     error = e;
   }

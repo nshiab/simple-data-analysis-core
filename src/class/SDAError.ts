@@ -6,7 +6,7 @@
  * @example
  * ```ts
  * try {
- *   await table.selectColumns("aColumnThatDoesNotExist");
+ *   await table.selectColumns("aColumnThatDoesNotExist").run();
  * } catch (error) {
  *   if (error instanceof SDAError) {
  *     console.log(error.method); // "selectColumns()"

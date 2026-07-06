@@ -36,7 +36,7 @@ error as `cause`.
 
 ```ts
 try {
-  await table.selectColumns("aColumnThatDoesNotExist");
+  await table.selectColumns("aColumnThatDoesNotExist").run();
 } catch (error) {
   if (error instanceof SDAError) {
     console.log(error.method); // "selectColumns()"
@@ -547,6 +547,34 @@ Creates an instance of SimpleTable.
 
 ### Methods
 
+#### `run`
+
+Executes all queued methods. Sync builder methods (like `filter()` or
+`convert()`) only queue their operation; execution happens when an async
+observer method (like `getData()`, `logTable()`, or `writeData()`) is awaited.
+Use `run()` when a chain ends in pure mutations with nothing to observe and you
+want the work done now.
+
+##### Signature
+
+```typescript
+async run(): Promise<this>;
+```
+
+##### Returns
+
+A promise that resolves to the table once the queued methods have been executed.
+
+##### Examples
+
+```ts
+// Nothing is observed after convert(), so run() executes the chain.
+await table
+  .loadData("data.csv")
+  .convert({ price: "number" })
+  .run();
+```
+
 #### `renameTable`
 
 Renames the current table.
@@ -606,12 +634,14 @@ await table.setTypes({
 
 #### `loadArray`
 
-Loads an array of JavaScript objects into the table.
+Loads an array of JavaScript objects into the table. This method queues the
+load; it runs when an async observer method (like `getData()` or `logTable()`)
+is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async loadArray(arrayOfObjects: Record<string, unknown>[]): Promise<this>;
+loadArray(arrayOfObjects: Record<string, unknown>[]): this;
 ```
 
 ##### Parameters
@@ -621,8 +651,7 @@ async loadArray(arrayOfObjects: Record<string, unknown>[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the data has been
-loaded.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -632,18 +661,20 @@ const data = [
   { letter: "a", number: 1 },
   { letter: "b", number: 2 },
 ];
-await table.loadArray(data);
+table.loadArray(data);
 ```
 
 #### `loadData`
 
 Loads data from one or more local or remote files into the table. Supported file
-formats include CSV, JSON, Parquet, and Excel.
+formats include CSV, JSON, Parquet, and Excel. This method queues the load; it
+runs when an async observer method (like `getData()` or `logTable()`) is
+awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
+loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -700,14 +731,13 @@ async loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | 
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the data has been
-loaded.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Load data from a single local CSV file
-await table.loadData("./some-data.csv");
+table.loadData("./some-data.csv");
 ```
 
 ```ts
@@ -1568,12 +1598,14 @@ await table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
 
 #### `selectColumns`
 
-Selects specific columns in the table, removing all others.
+Selects specific columns in the table, removing all others. This method queues
+the operation; it runs when an async observer method (like `getData()` or
+`logTable()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async selectColumns(columns: string | string[]): Promise<this>;
+selectColumns(columns: string | string[]): this;
 ```
 
 ##### Parameters
@@ -1582,18 +1614,18 @@ async selectColumns(columns: string | string[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Select only the 'firstName' and 'lastName' columns, removing all other columns.
-await table.selectColumns(["firstName", "lastName"]);
+table.selectColumns(["firstName", "lastName"]);
 ```
 
 ```ts
 // Select only the 'productName' column.
-await table.selectColumns("productName");
+table.selectColumns("productName");
 ```
 
 #### `skip`
@@ -1783,12 +1815,14 @@ await table.removeDuplicates({ on: ["firstName", "lastName"] });
 
 Removes rows with missing values from this table. By default, missing values
 include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`,
-`"NaN"`, `"undefined"`, and empty strings `""`.
+`"NaN"`, `"undefined"`, and empty strings `""`. This method queues the
+operation; it runs when an async observer method (like `getData()` or
+`logTable()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async removeMissing(options?: { columns?: string | string[]; missingValues?: (string | number)[]; invert?: boolean }): Promise<this>;
+removeMissing(options?: { columns?: string | string[]; missingValues?: (string | number)[]; invert?: boolean }): this;
 ```
 
 ##### Parameters
@@ -1804,39 +1838,41 @@ async removeMissing(options?: { columns?: string | string[]; missingValues?: (st
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Remove rows with missing values in any column
-await table.removeMissing();
+table.removeMissing();
 ```
 
 ```ts
 // Remove rows with missing values only in 'firstName' or 'lastName' columns
-await table.removeMissing({ columns: ["firstName", "lastName"] });
+table.removeMissing({ columns: ["firstName", "lastName"] });
 ```
 
 ```ts
 // Keep only rows with missing values in any column
-await table.removeMissing({ invert: true });
+table.removeMissing({ invert: true });
 ```
 
 ```ts
 // Remove rows where 'age' is missing or is equal to -1
-await table.removeMissing({ columns: "age", missingValues: [-1] });
+table.removeMissing({ columns: "age", missingValues: [-1] });
 ```
 
 #### `trim`
 
 Trims specified characters from the beginning, end, or both sides of string
-values in the given columns.
+values in the given columns. This method queues the operation; it runs when an
+async observer method (like `getData()` or `logTable()`) is awaited, or when
+`run()` is called.
 
 ##### Signature
 
 ```typescript
-async trim(columns: string | string[], options?: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" }): Promise<this>;
+trim(columns: string | string[], options?: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" }): this;
 ```
 
 ##### Parameters
@@ -1851,35 +1887,37 @@ async trim(columns: string | string[], options?: { character?: string; method?: 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Trim whitespace from 'column1'
-await table.trim("column1");
+table.trim("column1");
 ```
 
 ```ts
 // Trim leading and trailing asterisks from 'productCode'
-await table.trim("productCode", { character: "*" });
+table.trim("productCode", { character: "*" });
 ```
 
 ```ts
 // Right-trim whitespace from 'description' and 'notes' columns
-await table.trim(["description", "notes"], { method: "rightTrim" });
+table.trim(["description", "notes"], { method: "rightTrim" });
 ```
 
 #### `filter`
 
 Filters rows from this table based on SQL conditions. Note that it's often
 faster to use the `removeRows` method for simple removals. You can also use
-JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`). This method
+queues the operation; it runs when an async observer method (like `getData()` or
+`logTable()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async filter(conditions: string): Promise<this>;
+filter(conditions: string): this;
 ```
 
 ##### Parameters
@@ -1889,28 +1927,28 @@ async filter(conditions: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Keep only rows where the 'fruit' column is not 'apple'
-await table.filter(`fruit != 'apple'`);
+table.filter(`fruit != 'apple'`);
 ```
 
 ```ts
 // Keep rows where 'price' is greater than 100 AND 'quantity' is greater than 0
-await table.filter(`price > 100 && quantity > 0`); // Using JS syntax
+table.filter(`price > 100 && quantity > 0`); // Using JS syntax
 ```
 
 ```ts
 // Keep rows where 'category' is 'Electronics' OR 'Appliances'
-await table.filter(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
+table.filter(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
 ```
 
 ```ts
 // Keep rows where 'lastPurchaseDate' is on or after '2023-01-01'
-await table.filter(`lastPurchaseDate >= '2023-01-01'`);
+table.filter(`lastPurchaseDate >= '2023-01-01'`);
 ```
 
 #### `keep`
@@ -2193,10 +2231,14 @@ UTC).
 When converting strings to numbers, commas (often used as thousand separators)
 will be automatically removed before conversion.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called. If a column
+doesn't exist, the error is thrown at that point too.
+
 ##### Signature
 
 ```typescript
-async convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { try?: boolean; datetimeFormat?: string }): Promise<this>;
+convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { try?: boolean; datetimeFormat?: string }): this;
 ```
 
 ##### Parameters
@@ -2213,7 +2255,7 @@ async convert(types: Record<string, "integer" | "float" | "number" | "string" | 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -2268,12 +2310,14 @@ await table.removeTable();
 
 #### `removeColumns`
 
-Removes one or more columns from this table.
+Removes one or more columns from this table. This method queues the operation;
+it runs when an async observer method (like `getData()` or `logTable()`) is
+awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async removeColumns(columns: string | string[]): Promise<this>;
+removeColumns(columns: string | string[]): this;
 ```
 
 ##### Parameters
@@ -2282,29 +2326,31 @@ async removeColumns(columns: string | string[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Remove 'column1' and 'column2' from the table
-await table.removeColumns(["column1", "column2"]);
+table.removeColumns(["column1", "column2"]);
 ```
 
 ```ts
 // Remove a single column named 'tempColumn'
-await table.removeColumns("tempColumn");
+table.removeColumns("tempColumn");
 ```
 
 #### `addColumn`
 
 Adds a new column to the table based on a specified data type (JavaScript or SQL
-types) and a SQL definition.
+types) and a SQL definition. This method queues the operation; it runs when an
+async observer method (like `getData()` or `logTable()`) is awaited, or when
+`run()` is called.
 
 ##### Signature
 
 ```typescript
-async addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): Promise<this>;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): this;
 ```
 
 ##### Parameters
@@ -2315,26 +2361,21 @@ async addColumn(newColumn: string, type: "integer" | "float" | "number" | "strin
 - **`definition`**: A SQL expression defining how the values for the new column
   should be computed (e.g., `"column1 + column2"`,
   `"ST_Centroid(geom_column)"`).
-- **`options`**: An optional object with configuration options:
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Add a new column 'total' as a float, calculated from 'column1' and 'column2'
-await table.addColumn("total", "float", "column1 + column2");
+table.addColumn("total", "float", "column1 + column2");
 ```
 
 ```ts
 // Add a new geometry column 'centroid' using the centroid of an existing 'country' geometry column
-await table.addColumn(
-  "centroid",
-  "geometry('EPSG:4326')",
-  `ST_Centroid("country")`,
-);
+table.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid("country")`);
 ```
 
 #### `addRowNumber`
@@ -2695,12 +2736,14 @@ await table.replace("all", { "%": "" });
 
 #### `lower`
 
-Converts string values in the specified columns to lowercase.
+Converts string values in the specified columns to lowercase. This method queues
+the operation; it runs when an async observer method (like `getData()` or
+`logTable()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async lower(columns: string | string[]): Promise<this>;
+lower(columns: string | string[]): this;
 ```
 
 ##### Parameters
@@ -2710,28 +2753,30 @@ async lower(columns: string | string[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Convert strings in 'column1' to lowercase
-await table.lower("column1");
+table.lower("column1");
 ```
 
 ```ts
 // Convert strings in 'column1' and 'column2' to lowercase
-await table.lower(["column1", "column2"]);
+table.lower(["column1", "column2"]);
 ```
 
 #### `upper`
 
-Converts string values in the specified columns to uppercase.
+Converts string values in the specified columns to uppercase. This method queues
+the operation; it runs when an async observer method (like `getData()` or
+`logTable()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async upper(columns: string | string[]): Promise<this>;
+upper(columns: string | string[]): this;
 ```
 
 ##### Parameters
@@ -2741,29 +2786,31 @@ async upper(columns: string | string[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Convert strings in 'column1' to uppercase
-await table.upper("column1");
+table.upper("column1");
 ```
 
 ```ts
 // Convert strings in 'column1' and 'column2' to uppercase
-await table.upper(["column1", "column2"]);
+table.upper(["column1", "column2"]);
 ```
 
 #### `capitalize`
 
 Capitalizes the first letter of each string in the specified columns and
-converts the rest of the string to lowercase.
+converts the rest of the string to lowercase. This method queues the operation;
+it runs when an async observer method (like `getData()` or `logTable()`) is
+awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-async capitalize(columns: string | string[]): Promise<this>;
+capitalize(columns: string | string[]): this;
 ```
 
 ##### Parameters
@@ -2772,18 +2819,18 @@ async capitalize(columns: string | string[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Capitalize strings in 'column1' (e.g., "hello world" becomes "Hello world")
-await table.capitalize("column1");
+table.capitalize("column1");
 ```
 
 ```ts
 // Capitalize strings in 'column1' and 'column2'
-await table.capitalize(["column1", "column2"]);
+table.capitalize(["column1", "column2"]);
 ```
 
 #### `truncate`

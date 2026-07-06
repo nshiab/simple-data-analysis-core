@@ -5,7 +5,7 @@ import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function loadData(
+export default function loadData(
   simpleTable: SimpleTable,
   files: string | string[],
   options: {
@@ -34,15 +34,26 @@ export default async function loadData(
     sheet?: string;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    loadDataQuery(simpleTable.name, stringToArray(files), options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "loadData()",
-      parameters: { files, options },
-    }),
-  );
+  // Building the query doesn't need the database, so invalid arguments
+  // (like the columns option with an Excel file) throw at call time.
+  const query = loadDataQuery(simpleTable.name, stringToArray(files), options);
+
+  simpleTable.pendingOps.push({
+    kind: "barrier",
+    method: "loadData()",
+    parameters: { files, options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        query,
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "loadData()",
+          parameters: { files, options },
+        }),
+      );
+    },
+  });
 }
 
 export function loadDataQuery(
