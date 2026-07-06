@@ -1,25 +1,37 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import parseValue from "../helpers/parseValue.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import { executeLoadArray } from "./loadArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function insertRows(
+export default function insertRows(
   simpleTable: SimpleTable,
   rows: { [key: string]: unknown }[],
 ) {
-  if (await simpleTable.sdb.hasTable(simpleTable.name)) {
-    await queryDB(
-      simpleTable,
-      insertRowsQuery(simpleTable.name, rows),
-      mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        method: "insertRows()",
-        parameters: { rows },
-      }),
-    );
-  } else {
-    await simpleTable.loadArray(rows);
-  }
+  // Whether the rows are inserted or loaded depends on the table existing,
+  // so insertRows can't be expressed as a single SELECT over its input: it
+  // executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "insertRows()",
+    parameters: { rows },
+    execute: async () => {
+      if (await simpleTable.sdb.hasTable(simpleTable.name)) {
+        await queryDB(
+          simpleTable,
+          insertRowsQuery(simpleTable.name, rows),
+          mergeOptions(simpleTable, {
+            table: simpleTable.name,
+            method: "insertRows()",
+            parameters: { rows },
+          }),
+        );
+      } else {
+        await executeLoadArray(simpleTable, rows);
+      }
+    },
+  });
 }
 
 function insertRowsQuery(

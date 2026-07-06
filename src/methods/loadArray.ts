@@ -29,7 +29,12 @@ export default function loadArray(
   });
 }
 
-async function executeLoadArray(
+/**
+ * Loads the array immediately, without queueing. For use inside a barrier's
+ * execute, which runs during a flush: the sync loadArray builder called
+ * there would queue an operation for the next flush instead of running now.
+ */
+export async function executeLoadArray(
   simpleTable: SimpleTable,
   arrayOfObjects: { [key: string]: unknown }[],
 ) {

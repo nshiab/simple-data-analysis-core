@@ -1,9 +1,10 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function cloneTable(
+export default function cloneTable(
   simpleTable: SimpleTable,
   nameOrOptions: string | {
     outputTable?: string;
@@ -12,13 +13,15 @@ export default async function cloneTable(
     nbRows?: number;
     offset?: number;
   } = {},
-) {
+): SimpleTable {
   const columns = typeof nameOrOptions === "object" && nameOrOptions.columns
     ? stringToArray(nameOrOptions.columns)
     : [];
 
-  // Delegate to sdb.newTable() so subclasses using tableClass work correctly.
-  let clonedTable;
+  // The cloned table instance is created at call time so it can be returned
+  // synchronously and chained on right away. Delegating to sdb.newTable()
+  // makes subclasses using tableClass work correctly.
+  let clonedTable: SimpleTable;
   const options = typeof nameOrOptions === "string"
     ? { outputTable: nameOrOptions }
     : nameOrOptions;
@@ -28,17 +31,23 @@ export default async function cloneTable(
     clonedTable = simpleTable.sdb.newTable(undefined);
   }
 
-  await queryDB(
-    simpleTable,
-    cloneQuery(simpleTable.name, clonedTable.name, columns, options),
-    mergeOptions(simpleTable, {
-      table: clonedTable.name,
-      method: "cloneTable()",
-      parameters: { options },
-    }),
-  );
-
-  clonedTable.connection = clonedTable.sdb.connection;
+  queueOp(clonedTable, {
+    kind: "barrier",
+    method: "cloneTable()",
+    parameters: { options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        cloneQuery(simpleTable.name, clonedTable.name, columns, options),
+        mergeOptions(simpleTable, {
+          table: clonedTable.name,
+          method: "cloneTable()",
+          parameters: { options },
+        }),
+      );
+      clonedTable.connection = clonedTable.sdb.connection;
+    },
+  });
 
   return clonedTable;
 }

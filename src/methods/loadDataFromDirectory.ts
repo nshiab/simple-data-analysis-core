@@ -1,10 +1,11 @@
 import { readdirSync } from "node:fs";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import { loadDataQuery } from "./loadData.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function loadDataFromDirectory(
+export default function loadDataFromDirectory(
   simpleTable: SimpleTable,
   directory: string,
   options: {
@@ -33,17 +34,28 @@ export default async function loadDataFromDirectory(
     sheet?: string;
   } = {},
 ) {
+  // Reading the directory and building the query don't need the database, so
+  // invalid directories or arguments throw at call time.
   const files = readdirSync(directory).map(
     (file) =>
       `${directory.slice(-1) === "/" ? directory : directory + "/"}${file}`,
   );
-  await queryDB(
-    simpleTable,
-    loadDataQuery(simpleTable.name, files, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "loadDataFromDirectory",
-      parameters: { directory, options },
-    }),
-  );
+  const query = loadDataQuery(simpleTable.name, files, options);
+
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "loadDataFromDirectory()",
+    parameters: { directory, options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        query,
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "loadDataFromDirectory",
+          parameters: { directory, options },
+        }),
+      );
+    },
+  });
 }

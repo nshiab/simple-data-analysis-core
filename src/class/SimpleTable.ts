@@ -290,21 +290,23 @@ export default class SimpleTable extends Simple {
    * Sets the data types for columns in a new table. If the table already exists, it will be replaced.
    * To convert the types of an existing table, use the `.convert()` method instead.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param types - An object specifying the column names and their target data types (JavaScript or SQL types).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Table Management
    *
    * @example
    * ```ts
    * // Set types for a new table
-   * await table.setTypes({
+   * table.setTypes({
    *   name: "string",
    *   salary: "integer",
    *   raise: "float",
    * });
    * ```
    */
-  async setTypes(types: {
+  setTypes(types: {
     [key: string]:
       | "integer"
       | "float"
@@ -322,8 +324,8 @@ export default class SimpleTable extends Simple {
       | "boolean"
       | `geometry('${string}')`
       | `GEOMETRY('${string}')`;
-  }): Promise<this> {
-    await setTypes(this, types);
+  }): this {
+    setTypes(this, types);
     return this;
   }
 
@@ -454,6 +456,8 @@ export default class SimpleTable extends Simple {
   /**
    * Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local directory into the table.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param directory - The absolute path to the directory containing the data files.
    * @param options - An optional object with configuration options:
    * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
@@ -475,22 +479,22 @@ export default class SimpleTable extends Simple {
    * @param options.jsonFormat - The format of JSON files ("unstructured", "newlineDelimited", "array"). By default, the format is inferred.
    * @param options.records - A boolean indicating whether each line in a newline-delimited JSON file represents a record. Applicable to JSON files. By default, it's inferred.
    * @param options.sheet - A string indicating a specific sheet to import from an Excel file. By default, the first sheet is imported.
-   * @returns A promise that resolves to the SimpleTable instance after the data has been loaded.
+   * @returns The table, so methods can be chained.
    * @category Importing Data
    *
    * @example
    * ```ts
    * // Load all supported data files from the "./data/" directory
-   * await table.loadDataFromDirectory("./data/");
+   * table.loadDataFromDirectory("./data/");
    * ```
    *
    * @example
    * ```ts
    * // Load only specific columns from all CSV files in a directory
-   * await table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
+   * table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
    * ```
    */
-  async loadDataFromDirectory(
+  loadDataFromDirectory(
     directory: string,
     options: {
       fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
@@ -517,49 +521,51 @@ export default class SimpleTable extends Simple {
       // excel options
       sheet?: string;
     } = {},
-  ): Promise<this> {
-    await loadDataFromDirectory(this, directory, options);
+  ): this {
+    loadDataFromDirectory(this, directory, options);
     return this;
   }
 
   /**
    * Loads geospatial data from an external file or URL into the table.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param file - The URL or absolute path to the external file containing the geospatial data.
    * @param options - An optional object with configuration options:
    * @param options.toWGS84 - If `true`, the method will attempt to reproject the data to WGS84.
-   * @returns A promise that resolves to the SimpleTable instance after the geospatial data has been loaded.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Load geospatial data from a URL
-   * await table.loadGeoData("https://some-website.com/some-data.geojson");
+   * table.loadGeoData("https://some-website.com/some-data.geojson");
    * ```
    *
    * @example
    * ```ts
    * // Load geospatial data from a local file
-   * await table.loadGeoData("./some-data.geojson");
+   * table.loadGeoData("./some-data.geojson");
    * ```
    *
    * @example
    * ```ts
    * // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
-   * await table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+   * table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
    * ```
    *
    * @example
    * ```ts
    * // Load geospatial data from a zipped shapefile and reproject to WGS84
-   * await table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
+   * table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
    * ```
    */
-  async loadGeoData(
+  loadGeoData(
     file: string,
     options: { toWGS84?: boolean } = {},
-  ): Promise<this> {
-    await loadGeoData(this, file, options);
+  ): this {
+    loadGeoData(this, file, options);
     return this;
   }
 
@@ -898,8 +904,10 @@ export default class SimpleTable extends Simple {
   /**
    * Inserts rows, provided as an array of JavaScript objects, into the table.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param rows - An array of objects, where each object represents a row to be inserted and its properties correspond to column names.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Importing Data
    *
    * @example
@@ -909,11 +917,11 @@ export default class SimpleTable extends Simple {
    *   { letter: "c", number: 3 },
    *   { letter: "d", number: 4 }
    * ];
-   * await table.insertRows(newRows);
+   * table.insertRows(newRows);
    * ```
    */
-  async insertRows(rows: { [key: string]: unknown }[]): Promise<this> {
-    await insertRows(this, rows);
+  insertRows(rows: { [key: string]: unknown }[]): this {
+    insertRows(this, rows);
     return this;
   }
 
@@ -955,6 +963,8 @@ export default class SimpleTable extends Simple {
   /**
    * Fetches sample data from the simple-data-analysis-core GitHub repository.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param sample - The name of the sample to load.
    *
    * Tabular data:
@@ -972,10 +982,10 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Load the fires sample data
-   * await table.loadSample("fires");
+   * table.loadSample("fires");
    * ```
    */
-  async loadSample(
+  loadSample(
     sample:
       | "fires"
       | "recipes"
@@ -983,8 +993,8 @@ export default class SimpleTable extends Simple {
       | "temperaturesCities"
       | "canada"
       | "firesGeo",
-  ): Promise<this> {
-    return (await loadSample(this, sample)) as this;
+  ): this {
+    return loadSample(this, sample) as this;
   }
 
   /**
@@ -994,61 +1004,63 @@ export default class SimpleTable extends Simple {
    *
    * Note that cloning large tables can be a slow operation.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param nameOrOptions - Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.outputTable - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
    * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
    * @param nameOrOptions.nbRows - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
    * @param nameOrOptions.offset - The number of rows to skip before starting to clone rows.
-   * @returns A promise that resolves to a new table instance containing the cloned data.
+   * @returns A new table instance containing the cloned data, so methods can be chained.
    * @category Table Management
    *
    * @example
    * ```ts
    * // Clone tableA to a new table with a default generated name (e.g., "table1")
-   * const tableB = await tableA.cloneTable();
+   * const tableB = tableA.cloneTable();
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA to a new table named "my_cloned_table" using string parameter
-   * const tableB = await tableA.cloneTable("my_cloned_table");
+   * const tableB = tableA.cloneTable("my_cloned_table");
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA to a new table named "my_cloned_table" using options object
-   * const tableB = await tableA.cloneTable({ outputTable: "my_cloned_table" });
+   * const tableB = tableA.cloneTable({ outputTable: "my_cloned_table" });
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA, including only rows where 'column1' is greater than 10
-   * const tableB = await tableA.cloneTable({ conditions: `column1 > 10` });
+   * const tableB = tableA.cloneTable({ conditions: `column1 > 10` });
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA with only specific columns
-   * const tableB = await tableA.cloneTable({ columns: ["name", "age", "city"] });
+   * const tableB = tableA.cloneTable({ columns: ["name", "age", "city"] });
    * ```
    *
    * @example
    * ```ts
    * // Clone only the first 10 rows of tableA
-   * const tableB = await tableA.cloneTable({ nbRows: 10 });
+   * const tableB = tableA.cloneTable({ nbRows: 10 });
    * ```
    *
    * @example
    * ```ts
    * // Clone 10 rows after skipping the first 5 rows
-   * const tableB = await tableA.cloneTable({ nbRows: 10, offset: 5 });
+   * const tableB = tableA.cloneTable({ nbRows: 10, offset: 5 });
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
-   * const tableB = await tableA.cloneTable({
+   * const tableB = tableA.cloneTable({
    *   outputTable: "filtered_data",
    *   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
    *   columns: ["name", "status", "created_date"],
@@ -1056,7 +1068,7 @@ export default class SimpleTable extends Simple {
    * });
    * ```
    */
-  async cloneTable(
+  cloneTable(
     nameOrOptions: string | {
       outputTable?: string;
       conditions?: string;
@@ -1064,8 +1076,8 @@ export default class SimpleTable extends Simple {
       nbRows?: number;
       offset?: number;
     } = {},
-  ): Promise<this> {
-    return await cloneTable(this, nameOrOptions) as this;
+  ): this {
+    return cloneTable(this, nameOrOptions) as this;
   }
 
   /**

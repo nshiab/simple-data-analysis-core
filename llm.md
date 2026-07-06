@@ -606,10 +606,13 @@ Sets the data types for columns in a new table. If the table already exists, it
 will be replaced. To convert the types of an existing table, use the
 `.convert()` method instead.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): Promise<this>;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): this;
 ```
 
 ##### Parameters
@@ -619,13 +622,13 @@ async setTypes(types: Record<string, "integer" | "float" | "number" | "string" |
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Set types for a new table
-await table.setTypes({
+table.setTypes({
   name: "string",
   salary: "integer",
   raise: "float",
@@ -773,10 +776,13 @@ await table.loadData("./employees.csv", { columns: ["name", "salary"] });
 Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
 directory into the table.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): Promise<this>;
+loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -832,29 +838,31 @@ async loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "d
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the data has been
-loaded.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Load all supported data files from the "./data/" directory
-await table.loadDataFromDirectory("./data/");
+table.loadDataFromDirectory("./data/");
 ```
 
 ```ts
 // Load only specific columns from all CSV files in a directory
-await table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
+table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
 ```
 
 #### `loadGeoData`
 
 Loads geospatial data from an external file or URL into the table.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async loadGeoData(file: string, options?: { toWGS84?: boolean }): Promise<this>;
+loadGeoData(file: string, options?: { toWGS84?: boolean }): this;
 ```
 
 ##### Parameters
@@ -867,29 +875,28 @@ async loadGeoData(file: string, options?: { toWGS84?: boolean }): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance after the geospatial data
-has been loaded.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Load geospatial data from a URL
-await table.loadGeoData("https://some-website.com/some-data.geojson");
+table.loadGeoData("https://some-website.com/some-data.geojson");
 ```
 
 ```ts
 // Load geospatial data from a local file
-await table.loadGeoData("./some-data.geojson");
+table.loadGeoData("./some-data.geojson");
 ```
 
 ```ts
 // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
-await table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
 ```
 
 ```ts
 // Load geospatial data from a zipped shapefile and reproject to WGS84
-await table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
+table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
 ```
 
 #### `createFtsIndex`
@@ -1193,10 +1200,13 @@ await table.bm25("italian sauce", "Dish", "Recipe", 5, {
 
 Inserts rows, provided as an array of JavaScript objects, into the table.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async insertRows(rows: Record<string, unknown>[]): Promise<this>;
+insertRows(rows: Record<string, unknown>[]): this;
 ```
 
 ##### Parameters
@@ -1206,7 +1216,7 @@ async insertRows(rows: Record<string, unknown>[]): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -1216,7 +1226,7 @@ const newRows = [
   { letter: "c", number: 3 },
   { letter: "d", number: 4 },
 ];
-await table.insertRows(newRows);
+table.insertRows(newRows);
 ```
 
 #### `insertTables`
@@ -1267,10 +1277,13 @@ tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
 
 Fetches sample data from the simple-data-analysis-core GitHub repository.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async loadSample(sample: "fires" | "recipes" | "temperatures" | "temperaturesCities" | "canada" | "firesGeo"): Promise<this>;
+loadSample(sample: "fires" | "recipes" | "temperatures" | "temperaturesCities" | "canada" | "firesGeo"): this;
 ```
 
 ##### Parameters
@@ -1292,7 +1305,7 @@ async loadSample(sample: "fires" | "recipes" | "temperatures" | "temperaturesCit
 
 ```ts
 // Load the fires sample data
-await table.loadSample("fires");
+table.loadSample("fires");
 ```
 
 #### `cloneTable`
@@ -1306,10 +1319,13 @@ order: `conditions` (WHERE clause) first, then `offset`, and finally `nbRows`
 
 Note that cloning large tables can be a slow operation.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string; columns?: string | string[]; nbRows?: number; offset?: number }): Promise<this>;
+cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string; columns?: string | string[]; nbRows?: number; offset?: number }): this;
 ```
 
 ##### Parameters
@@ -1332,48 +1348,48 @@ async cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: s
 
 ##### Returns
 
-A promise that resolves to a new table instance containing the cloned data.
+A new table instance containing the cloned data, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Clone tableA to a new table with a default generated name (e.g., "table1")
-const tableB = await tableA.cloneTable();
+const tableB = tableA.cloneTable();
 ```
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using string parameter
-const tableB = await tableA.cloneTable("my_cloned_table");
+const tableB = tableA.cloneTable("my_cloned_table");
 ```
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using options object
-const tableB = await tableA.cloneTable({ outputTable: "my_cloned_table" });
+const tableB = tableA.cloneTable({ outputTable: "my_cloned_table" });
 ```
 
 ```ts
 // Clone tableA, including only rows where 'column1' is greater than 10
-const tableB = await tableA.cloneTable({ conditions: `column1 > 10` });
+const tableB = tableA.cloneTable({ conditions: `column1 > 10` });
 ```
 
 ```ts
 // Clone tableA with only specific columns
-const tableB = await tableA.cloneTable({ columns: ["name", "age", "city"] });
+const tableB = tableA.cloneTable({ columns: ["name", "age", "city"] });
 ```
 
 ```ts
 // Clone only the first 10 rows of tableA
-const tableB = await tableA.cloneTable({ nbRows: 10 });
+const tableB = tableA.cloneTable({ nbRows: 10 });
 ```
 
 ```ts
 // Clone 10 rows after skipping the first 5 rows
-const tableB = await tableA.cloneTable({ nbRows: 10, offset: 5 });
+const tableB = tableA.cloneTable({ nbRows: 10, offset: 5 });
 ```
 
 ```ts
 // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
-const tableB = await tableA.cloneTable({
+const tableB = tableA.cloneTable({
   outputTable: "filtered_data",
   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
   columns: ["name", "status", "created_date"],

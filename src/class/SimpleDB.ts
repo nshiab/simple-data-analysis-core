@@ -15,6 +15,7 @@ import removeTables from "../methods/removeTables.ts";
 import selectTables from "../methods/selectTables.ts";
 import loadDB from "../methods/loadDB.ts";
 import writeDB from "../methods/writeDB.ts";
+import flushAllTables from "../helpers/flushAllTables.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -771,18 +772,24 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```
    */
   async done(): Promise<SimpleDB> {
-    // The forgotten-run() safety net: queued methods that were never
-    // observed are dropped, not executed. Warning must come before any
-    // query below, since running a query would execute them.
-    for (const table of this.tables) {
-      if (table.pendingOps.length > 0) {
-        console.warn(
-          `The table "${table.name}" has queued methods that were never executed: ${
-            table.pendingOps.map((op) => op.method).join(", ")
-          }. To execute them, await an observer method (like getData(), logTable(), or writeData()) or call run().`,
-        );
-        table.pendingOps.length = 0;
+    if (this.file === ":memory:") {
+      // The forgotten-run() safety net: queued methods that were never
+      // observed are dropped, not executed. Warning must come before any
+      // query below, since running a query would execute them.
+      for (const table of this.tables) {
+        if (table.pendingOps.length > 0) {
+          console.warn(
+            `The table "${table.name}" has queued methods that were never executed: ${
+              table.pendingOps.map((op) => op.method).join(", ")
+            }. To execute them, await an observer method (like getData(), logTable(), or writeData()) or call run().`,
+          );
+          table.pendingOps.length = 0;
+        }
       }
+    } else {
+      // For a file-based database, done() persists the data, so it executes
+      // the queued methods like any other observer.
+      await flushAllTables(this);
     }
     if (this.file !== ":memory:") {
       await this.customQuery("CHECKPOINT;");

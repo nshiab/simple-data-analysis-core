@@ -31,26 +31,26 @@ async function executeInsertTables(
   options: { unifyColumns?: boolean },
 ): Promise<void> {
   if (!await simpleTable.sdb.hasTable(simpleTable.name)) {
-    await simpleTable.setTypes(
-      (await array[0].getTypes()) as {
-        [key: string]:
-          | "integer"
-          | "float"
-          | "number"
-          | "string"
-          | "date"
-          | "time"
-          | "datetime"
-          | "datetimeTz"
-          | "bigint"
-          | "double"
-          | "varchar"
-          | "timestamp"
-          | "timestamp with time zone"
-          | "boolean"
-          | `geometry('${string}')`
-          | `GEOMETRY('${string}')`;
-      },
+    // The table is created directly (not with the sync setTypes builder,
+    // which would queue for the next flush).
+    const firstTableTypes = await array[0].getTypes();
+    const spatial = Object.values(firstTableTypes)
+        .map((d) => d.toLowerCase())
+        .some((d) => d.startsWith("geometry"))
+      ? "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;\n"
+      : "";
+    await queryDB(
+      simpleTable,
+      `${spatial}CREATE OR REPLACE TABLE "${simpleTable.name}" (${
+        Object.keys(firstTableTypes)
+          .map((d) => `"${d}" ${firstTableTypes[d]}`)
+          .join(", ")
+      });`,
+      mergeOptions(simpleTable, {
+        table: simpleTable.name,
+        method: "insertTables()",
+        parameters: { types: firstTableTypes },
+      }),
     );
   }
 
