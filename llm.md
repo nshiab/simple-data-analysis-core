@@ -908,10 +908,13 @@ If an FTS index already exists on the table, this method will skip creation and
 log a message (when verbose is enabled), unless the `overwrite` option is set to
 `true`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): Promise<this>;
+createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): this;
 ```
 
 ##### Parameters
@@ -951,7 +954,7 @@ async createFtsIndex(columnId: string, columnText: string, options?: { stemmer?:
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance for method chaining.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -960,19 +963,19 @@ A promise that resolves to the SimpleTable instance for method chaining.
 await table.loadData("recipes.parquet");
 
 // Create FTS index for later searches
-await table.createFtsIndex("Dish", "Recipe");
+table.createFtsIndex("Dish", "Recipe");
 ```
 
 ```ts
 // Create an index with a specific language stemmer
-await table.createFtsIndex("Dish", "Recipe", {
+table.createFtsIndex("Dish", "Recipe", {
   stemmer: "french",
 });
 ```
 
 ```ts
 // Recreate an existing index with different settings
-await table.createFtsIndex("Dish", "Recipe", {
+table.createFtsIndex("Dish", "Recipe", {
   stemmer: "english",
   overwrite: true,
 });
@@ -980,7 +983,7 @@ await table.createFtsIndex("Dish", "Recipe", {
 
 ```ts
 // Create index with verbose logging
-await table.createFtsIndex("Dish", "Recipe", {
+table.createFtsIndex("Dish", "Recipe", {
   verbose: true,
 });
 // Logs: "Creating FTS index on 'Recipe' column..."
@@ -996,10 +999,13 @@ If a VSS index already exists on the table, this method will skip creation and
 log a message (when verbose is enabled), unless the `overwrite` option is set to
 `true`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: boolean; efConstruction?: number; efSearch?: number; M?: number }): Promise<this>;
+createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: boolean; efConstruction?: number; efSearch?: number; M?: number }): this;
 ```
 
 ##### Parameters
@@ -1023,7 +1029,7 @@ async createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: 
 
 ##### Returns
 
-A promise that resolves to the SimpleTable instance for method chaining.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -1032,19 +1038,19 @@ A promise that resolves to the SimpleTable instance for method chaining.
 await table.loadData("data.csv");
 
 // Create VSS index for fast similarity searches
-await table.createVssIndex("embedding_column");
+table.createVssIndex("embedding_column");
 ```
 
 ```ts
 // Recreate an existing index
-await table.createVssIndex("embedding_column", {
+table.createVssIndex("embedding_column", {
   overwrite: true,
 });
 ```
 
 ```ts
 // Create index with verbose logging
-await table.createVssIndex("embedding_column", {
+table.createVssIndex("embedding_column", {
   verbose: true,
 });
 // Logs: "Creating VSS index on 'embedding_column' column..."
@@ -1053,7 +1059,7 @@ await table.createVssIndex("embedding_column", {
 
 ```ts
 // Create index with custom HNSW parameters for higher accuracy
-await table.createVssIndex("embedding_column", {
+table.createVssIndex("embedding_column", {
   efConstruction: 256,
   efSearch: 128,
   M: 32,

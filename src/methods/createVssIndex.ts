@@ -1,7 +1,8 @@
 import camelCase from "../helpers/camelCase.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function createVssIndex(
+export default function createVssIndex(
   simpleTable: SimpleTable,
   column: string,
   options: {
@@ -12,6 +13,26 @@ export default async function createVssIndex(
     M?: number;
   } = {},
 ) {
+  // Index creation is multi-statement by nature: it executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "createVssIndex()",
+    parameters: { column, options },
+    execute: () => executeCreateVssIndex(simpleTable, column, options),
+  });
+}
+
+async function executeCreateVssIndex(
+  simpleTable: SimpleTable,
+  column: string,
+  options: {
+    overwrite?: boolean;
+    verbose?: boolean;
+    efConstruction?: number;
+    efSearch?: number;
+    M?: number;
+  },
+): Promise<void> {
   const indexName = `vss_cosine_index_${camelCase(simpleTable.name)}`;
   const indexExists = simpleTable.indexes.includes(indexName);
 
@@ -65,6 +86,4 @@ export default async function createVssIndex(
   } else {
     options.verbose && console.log("VSS index already exists.");
   }
-
-  return simpleTable;
 }

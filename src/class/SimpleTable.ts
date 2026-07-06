@@ -574,6 +574,8 @@ export default class SimpleTable extends Simple {
    *
    * If an FTS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columnId - The name of the column containing unique identifiers for each row.
    * @param columnText - The name of the column containing the text to index.
    * @param options - An optional object with configuration options:
@@ -581,7 +583,7 @@ export default class SimpleTable extends Simple {
    * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
    * @param options.overwrite - If `true`, recreates the index even if it already exists. Defaults to `false`.
    * @param options.verbose - If `true`, logs additional debugging information, including index creation status. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance for method chaining.
+   * @returns The table, so methods can be chained.
    * @category Text Search
    *
    * @example
@@ -590,7 +592,7 @@ export default class SimpleTable extends Simple {
    * await table.loadData("recipes.parquet");
    *
    * // Create FTS index for later searches
-   * await table.createFtsIndex("Dish", "Recipe");
+   * table.createFtsIndex("Dish", "Recipe");
    * ```
    *
    * @param columnId - The column containing the document identifiers.
@@ -607,7 +609,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Create an index with a specific language stemmer
-   * await table.createFtsIndex("Dish", "Recipe", {
+   * table.createFtsIndex("Dish", "Recipe", {
    *   stemmer: "french",
    * });
    * ```
@@ -615,7 +617,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Recreate an existing index with different settings
-   * await table.createFtsIndex("Dish", "Recipe", {
+   * table.createFtsIndex("Dish", "Recipe", {
    *   stemmer: "english",
    *   overwrite: true,
    * });
@@ -624,14 +626,14 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Create index with verbose logging
-   * await table.createFtsIndex("Dish", "Recipe", {
+   * table.createFtsIndex("Dish", "Recipe", {
    *   verbose: true,
    * });
    * // Logs: "Creating FTS index on 'Recipe' column..."
    * // Logs: "FTS index created successfully."
    * ```
    */
-  async createFtsIndex(
+  createFtsIndex(
     columnId: string,
     columnText: string,
     options: {
@@ -671,14 +673,17 @@ export default class SimpleTable extends Simple {
       overwrite?: boolean;
       verbose?: boolean;
     } = {},
-  ): Promise<this> {
-    return await createFtsIndex(this, columnId, columnText, options) as this;
+  ): this {
+    createFtsIndex(this, columnId, columnText, options);
+    return this;
   }
 
   /**
    * Creates a vector similarity search (VSS) index on a specified column using DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
    *
    * If a VSS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing vector embeddings (must be FLOAT array type).
    * @param options - An optional object with configuration options:
@@ -687,7 +692,7 @@ export default class SimpleTable extends Simple {
    * @param options.efConstruction - The number of candidate vertices to consider during index construction. Higher values result in more accurate indexes but increase build time. Defaults to 128.
    * @param options.efSearch - The number of candidate vertices to consider during search. Higher values result in more accurate searches but increase search time. Defaults to 64.
    * @param options.M - The maximum number of neighbors to keep for each vertex in the graph. Higher values result in more accurate indexes but increase build time and memory usage. Defaults to 16.
-   * @returns A promise that resolves to the SimpleTable instance for method chaining.
+   * @returns The table, so methods can be chained.
    * @category Vector Search
    *
    * @example
@@ -696,13 +701,13 @@ export default class SimpleTable extends Simple {
    * await table.loadData("data.csv");
    *
    * // Create VSS index for fast similarity searches
-   * await table.createVssIndex("embedding_column");
+   * table.createVssIndex("embedding_column");
    * ```
    *
    * @example
    * ```ts
    * // Recreate an existing index
-   * await table.createVssIndex("embedding_column", {
+   * table.createVssIndex("embedding_column", {
    *   overwrite: true,
    * });
    * ```
@@ -710,7 +715,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Create index with verbose logging
-   * await table.createVssIndex("embedding_column", {
+   * table.createVssIndex("embedding_column", {
    *   verbose: true,
    * });
    * // Logs: "Creating VSS index on 'embedding_column' column..."
@@ -720,14 +725,14 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Create index with custom HNSW parameters for higher accuracy
-   * await table.createVssIndex("embedding_column", {
+   * table.createVssIndex("embedding_column", {
    *   efConstruction: 256,
    *   efSearch: 128,
    *   M: 32,
    * });
    * ```
    */
-  async createVssIndex(
+  createVssIndex(
     column: string,
     options: {
       overwrite?: boolean;
@@ -736,8 +741,9 @@ export default class SimpleTable extends Simple {
       efSearch?: number;
       M?: number;
     } = {},
-  ): Promise<this> {
-    return (await createVssIndex(this, column, options)) as this;
+  ): this {
+    createVssIndex(this, column, options);
+    return this;
   }
 
   /**

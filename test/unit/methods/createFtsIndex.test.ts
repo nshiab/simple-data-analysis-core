@@ -8,7 +8,7 @@ Deno.test("should successfully create an FTS index", async () => {
   await table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index
-  const result = await table.createFtsIndex("Dish", "Recipe");
+  const result = await table.createFtsIndex("Dish", "Recipe").run();
 
   // Should return the table for chaining
   assertEquals(result, table);
@@ -39,7 +39,7 @@ Deno.test("should successfully create an FTS index with a specific stemmer", asy
   // Create FTS index with French stemmer
   await table.createFtsIndex("Dish", "Recipe", {
     stemmer: "french",
-  });
+  }).run();
 
   // Index should be in the indexes array
   assertExists(
@@ -63,7 +63,7 @@ Deno.test("should not recreate index if already exists", async () => {
   // Create FTS index
   await table.createFtsIndex("Dish", "Recipe", {
     verbose: true,
-  });
+  }).run();
 
   const indexCountBefore =
     table.indexes.filter((idx) => idx.includes("fts_index")).length;
@@ -71,7 +71,7 @@ Deno.test("should not recreate index if already exists", async () => {
   // Try to create the same index again
   await table.createFtsIndex("Dish", "Recipe", {
     verbose: true,
-  });
+  }).run();
 
   const indexCountAfter =
     table.indexes.filter((idx) => idx.includes("fts_index")).length;
@@ -90,7 +90,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
   // Create initial FTS index
   await table.createFtsIndex("Dish", "Recipe", {
     stemmer: "porter",
-  });
+  }).run();
 
   // Index should exist
   const indexCountBefore =
@@ -101,7 +101,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
   await table.createFtsIndex("Dish", "Recipe", {
     stemmer: "english",
     overwrite: true,
-  });
+  }).run();
 
   // Index should still exist (only one)
   const indexCountAfter =
@@ -123,7 +123,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
   // Create index with overwrite=true even though no index exists
   await table.createFtsIndex("Dish", "Recipe", {
     overwrite: true,
-  });
+  }).run();
 
   // Index should be created
   assertExists(
@@ -151,7 +151,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   // Create initial index
   await table.createFtsIndex("Dish", "Recipe", {
     verbose: true,
-  });
+  }).run();
 
   const indexCountBefore =
     table.indexes.filter((idx) => idx.includes("fts_index")).length;
@@ -160,7 +160,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   await table.createFtsIndex("Dish", "Recipe", {
     overwrite: true,
     verbose: true,
-  });
+  }).run();
 
   const indexCountAfter =
     table.indexes.filter((idx) => idx.includes("fts_index")).length;
@@ -187,7 +187,7 @@ Deno.test("should successfully create an FTS index with custom parameters", asyn
     lower: false,
     stripAccents: false,
     verbose: true,
-  });
+  }).run();
 
   // Index should be in the indexes array
   assertExists(

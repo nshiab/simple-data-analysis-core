@@ -1,7 +1,8 @@
 import camelCase from "../helpers/camelCase.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function createFtsIndex(
+export default function createFtsIndex(
   simpleTable: SimpleTable,
   columnId: string,
   columnText: string,
@@ -43,6 +44,30 @@ export default async function createFtsIndex(
     verbose?: boolean;
   } = {},
 ) {
+  // Index creation is multi-statement by nature: it executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "createFtsIndex()",
+    parameters: { columnId, columnText, options },
+    execute: () =>
+      executeCreateFtsIndex(simpleTable, columnId, columnText, options),
+  });
+}
+
+async function executeCreateFtsIndex(
+  simpleTable: SimpleTable,
+  columnId: string,
+  columnText: string,
+  options: {
+    stemmer?: string;
+    stopwords?: string;
+    ignore?: string;
+    stripAccents?: boolean;
+    lower?: boolean;
+    overwrite?: boolean;
+    verbose?: boolean;
+  },
+): Promise<void> {
   const indexName = `fts_index_${camelCase(simpleTable.name)}`;
   const indexExists = simpleTable.indexes.includes(indexName);
 
@@ -89,6 +114,4 @@ export default async function createFtsIndex(
   } else {
     options.verbose && console.log("FTS index already exists.");
   }
-
-  return simpleTable;
 }

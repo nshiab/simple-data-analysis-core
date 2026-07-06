@@ -13,7 +13,7 @@ Deno.test("should successfully create a VSS index", async () => {
   ]);
 
   // Create VSS index
-  const result = await table.createVssIndex("embedding");
+  const result = await table.createVssIndex("embedding").run();
 
   // Should return the table for chaining
   assertEquals(result, table);
@@ -36,7 +36,7 @@ Deno.test("should not recreate index if already exists", async () => {
   // Create VSS index
   await table.createVssIndex("embedding", {
     verbose: true,
-  });
+  }).run();
 
   const indexCountBefore =
     table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
@@ -44,7 +44,7 @@ Deno.test("should not recreate index if already exists", async () => {
   // Try to create the same index again
   await table.createVssIndex("embedding", {
     verbose: true,
-  });
+  }).run();
 
   const indexCountAfter =
     table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
@@ -64,7 +64,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
   ]);
 
   // Create initial VSS index
-  await table.createVssIndex("embedding");
+  await table.createVssIndex("embedding").run();
 
   // Index should exist
   const indexCountBefore =
@@ -74,7 +74,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
   // Recreate index with overwrite=true
   await table.createVssIndex("embedding", {
     overwrite: true,
-  });
+  }).run();
 
   // Index should still exist (only one)
   const indexCountAfter =
@@ -94,7 +94,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
   // Create index with overwrite=true even though no index exists
   await table.createVssIndex("embedding", {
     overwrite: true,
-  });
+  }).run();
 
   // Index should be created
   assertExists(
@@ -114,7 +114,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   // Create initial index
   await table.createVssIndex("embedding", {
     verbose: true,
-  });
+  }).run();
 
   const indexCountBefore =
     table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
@@ -123,7 +123,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   await table.createVssIndex("embedding", {
     overwrite: true,
     verbose: true,
-  });
+  }).run();
 
   const indexCountAfter =
     table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
@@ -148,7 +148,7 @@ Deno.test("should create index with custom HNSW parameters", async () => {
     efConstruction: 256,
     efSearch: 128,
     M: 32,
-  });
+  }).run();
 
   // Should return the table for chaining
   assertEquals(result, table);
