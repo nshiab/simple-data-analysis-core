@@ -1,8 +1,9 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function bins(
+export default function bins(
   simpleTable: SimpleTable,
   values: string,
   interval: number,
@@ -11,20 +12,30 @@ export default async function bins(
     startValue?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    await binsQuery(simpleTable, values, interval, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "bins()",
-      parameters: {
-        values,
-        interval,
-        newColumn,
-        options,
-      },
-    }),
-  );
+  // The intervals depend on the minimum and maximum values of the data, so
+  // bins can't be expressed as a single SELECT over its input: it executes
+  // as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "bins()",
+    parameters: { values, interval, newColumn, options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        await binsQuery(simpleTable, values, interval, newColumn, options),
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "bins()",
+          parameters: {
+            values,
+            interval,
+            newColumn,
+            options,
+          },
+        }),
+      );
+    },
+  });
 }
 
 async function binsQuery(

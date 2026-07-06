@@ -1,9 +1,10 @@
 import stringToArray from "../helpers/stringToArray.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function accumulate(
+export default function accumulate(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
@@ -11,15 +12,25 @@ export default async function accumulate(
     categories?: string | string[];
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    accumulateQuery(simpleTable.name, column, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "accumulate()",
-      parameters: { column, newColumn, options },
-    }),
-  );
+  // The accumulation order is based on the physical row order of the
+  // materialized table, not on the output of a fused step: it executes as a
+  // barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "accumulate()",
+    parameters: { column, newColumn, options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        accumulateQuery(simpleTable.name, column, newColumn, options),
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "accumulate()",
+          parameters: { column, newColumn, options },
+        }),
+      );
+    },
+  });
 }
 
 function accumulateQuery(

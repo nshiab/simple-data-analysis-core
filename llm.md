@@ -3495,10 +3495,13 @@ table.updateColumn(
 
 Assigns ranks to rows in a new column based on the values of a specified column.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; noGaps?: boolean }): Promise<this>;
+ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; noGaps?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3517,41 +3520,41 @@ async ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute ranks in a new 'rank' column based on 'score' values (ascending)
-await table.ranks("score", "rank");
+table.ranks("score", "rank");
 ```
 
 ```ts
 // Compute ranks in a new 'descRank' column based on 'score' values (descending)
-await table.ranks("score", "descRank", { order: "desc" });
+table.ranks("score", "descRank", { order: "desc" });
 ```
 
 ```ts
 // Compute ranks within 'department' categories, based on 'salary' values, without gaps
-await table.ranks("salary", "salaryRank", {
-  categories: "department",
-  noGaps: true,
-});
+table.ranks("salary", "salaryRank", { categories: "department", noGaps: true });
 ```
 
 ```ts
 // Compute ranks within multiple categories ('department' and 'city')
-await table.ranks("sales", "salesRank", { categories: ["department", "city"] });
+table.ranks("sales", "salesRank", { categories: ["department", "city"] });
 ```
 
 #### `quantiles`
 
 Assigns quantiles to rows in a new column based on specified column values.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async quantiles(values: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
+quantiles(values: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -3569,33 +3572,36 @@ async quantiles(values: string, nbQuantiles: number, newColumn: string, options?
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Assigns a quantile from 1 to 10 for each row in a new 'quantiles' column, based on 'column1' values.
-await table.quantiles("column1", 10, "quantiles");
+table.quantiles("column1", 10, "quantiles");
 ```
 
 ```ts
 // Assigns quantiles within 'column2' categories, based on 'column1' values.
-await table.quantiles("column1", 10, "quantiles", { categories: "column2" });
+table.quantiles("column1", 10, "quantiles", { categories: "column2" });
 ```
 
 ```ts
 // Assigns quartiles (4 quantiles) to 'sales' data, storing results in 'salesQuartile'
-await table.quantiles("sales", 4, "salesQuartile");
+table.quantiles("sales", 4, "salesQuartile");
 ```
 
 #### `bins`
 
 Assigns bins for specified column values based on an interval size.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async bins(values: string, interval: number, newColumn: string, options?: { startValue?: number }): Promise<this>;
+bins(values: string, interval: number, newColumn: string, options?: { startValue?: number }): this;
 ```
 
 ##### Parameters
@@ -3609,20 +3615,20 @@ async bins(values: string, interval: number, newColumn: string, options?: { star
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Assigns a bin for each row in a new 'bins' column based on 'column1' values, with an interval of 10.
 // If the minimum value in 'column1' is 5, the bins will follow this pattern: "[5-14]", "[15-24]", etc.
-await table.bins("column1", 10, "bins");
+table.bins("column1", 10, "bins");
 ```
 
 ```ts
 // Assigns bins starting at a specific value (0) with an interval of 10.
 // The bins will follow this pattern: "[0-9]", "[10-19]", "[20-29]", etc.
-await table.bins("column1", 10, "bins", { startValue: 0 });
+table.bins("column1", 10, "bins", { startValue: 0 });
 ```
 
 #### `proportionsHorizontal`
@@ -3644,7 +3650,7 @@ each row, adding new columns for these proportions.
 ##### Signature
 
 ```typescript
-async proportionsHorizontal(columns: string[], options?: { suffix?: string; decimals?: number }): Promise<this>;
+proportionsHorizontal(columns: string[], options?: { suffix?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -3659,15 +3665,13 @@ async proportionsHorizontal(columns: string[], options?: { suffix?: string; deci
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute horizontal proportions for 'Men', 'Women', and 'NonBinary' columns, rounded to 2 decimal places
-await table.proportionsHorizontal(["Men", "Women", "NonBinary"], {
-  decimals: 2,
-});
+table.proportionsHorizontal(["Men", "Women", "NonBinary"], { decimals: 2 });
 ```
 
 The table will then look like this:
@@ -3683,7 +3687,7 @@ customize this suffix using the `suffix` option.
 
 ```ts
 // Compute horizontal proportions with a custom suffix "Prop"
-await table.proportionsHorizontal(["Men", "Women", "NonBinary"], {
+table.proportionsHorizontal(["Men", "Women", "NonBinary"], {
   suffix: "Prop",
   decimals: 2,
 });
@@ -3697,15 +3701,21 @@ The table will then look like this:
 | 2022 | 354 | 278   | 56        | 0.51    | 0.4       | 0.08          |
 | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 #### `proportionsVertical`
 
 Computes proportions vertically over a column's values, relative to the sum of
 all values in that column (or within specified categories).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async proportionsVertical(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
+proportionsVertical(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -3724,18 +3734,18 @@ async proportionsVertical(column: string, newColumn: string, options?: { categor
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Add a new column 'perc' with each 'column1' value divided by the sum of all 'column1' values
-await table.proportionsVertical("column1", "perc");
+table.proportionsVertical("column1", "perc");
 ```
 
 ```ts
 // Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-await table.proportionsVertical("column1", "perc", {
+table.proportionsVertical("column1", "perc", {
   categories: "column2",
   decimals: 2,
 });
@@ -3743,7 +3753,7 @@ await table.proportionsVertical("column1", "perc", {
 
 ```ts
 // Compute proportions for 'sales' within 'region' and 'product_type' categories
-await table.proportionsVertical("sales", "sales_proportion", {
+table.proportionsVertical("sales", "sales_proportion", {
   categories: ["region", "product_type"],
 });
 ```
@@ -3892,10 +3902,13 @@ await table.summarize({ values: "value_column", noColumnValue: true });
 Computes the cumulative sum of values in a column. For this method to work
 properly, ensure your data is sorted first.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async accumulate(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
+accumulate(column: string, newColumn: string, options?: { categories?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -3910,27 +3923,25 @@ async accumulate(column: string, newColumn: string, options?: { categories?: str
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the cumulative sum of 'sales' in a new 'cumulativeSales' column
 // Ensure the table is sorted by a relevant column (e.g., date) before calling this method.
-await table.accumulate("sales", "cumulativeSales");
+table.accumulate("sales", "cumulativeSales");
 ```
 
 ```ts
 // Compute the cumulative sum of 'orders' within 'customer_id' categories
 // Ensure the table is sorted by 'customer_id' and then by a relevant order column (e.g., order_date).
-await table.accumulate("orders", "cumulativeOrders", {
-  categories: "customer_id",
-});
+table.accumulate("orders", "cumulativeOrders", { categories: "customer_id" });
 ```
 
 ```ts
 // Compute the cumulative sum of 'revenue' within 'region' and 'product_category' categories
-await table.accumulate("revenue", "cumulativeRevenue", {
+table.accumulate("revenue", "cumulativeRevenue", {
   categories: ["region", "product_category"],
 });
 ```
@@ -3942,10 +3953,13 @@ column. For rows without enough preceding or following rows to form a complete
 window, `NULL` will be returned. For this method to work properly, ensure your
 data is sorted by the relevant column(s) first.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
+rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { categories?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -3968,28 +3982,26 @@ async rolling(column: string, newColumn: string, summary: "min" | "max" | "mean"
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute a 7-day rolling average of 'sales' with 3 preceding and 3 following rows
 // (total window size of 7: 3 preceding + current + 3 following)
-await table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
+table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
 ```
 
 ```ts
 // Compute a rolling sum of 'transactions' within 'customer_id' categories
-await table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, {
+table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, {
   categories: "customer_id",
 });
 ```
 
 ```ts
 // Compute a rolling maximum of 'temperature' rounded to 1 decimal place
-await table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, {
-  decimals: 1,
-});
+table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, { decimals: 1 });
 ```
 
 #### `correlations`
@@ -4129,10 +4141,13 @@ await table.linearRegressions({ decimals: 3 });
 Identifies outliers in a specified column using the Interquartile Range (IQR)
 method.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async outliersIQR(column: string, newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
+outliersIQR(column: string, newColumn: string, options?: { categories?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -4147,28 +4162,31 @@ async outliersIQR(column: string, newColumn: string, options?: { categories?: st
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Look for outliers in the 'age' column and store results in a new 'isOutlier' column
-await table.outliersIQR("age", "isOutlier");
+table.outliersIQR("age", "isOutlier");
 ```
 
 ```ts
 // Look for outliers in 'salary' within 'gender' categories
-await table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
+table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
 ```
 
 #### `zScore`
 
 Computes the Z-score for values in a specified column.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async zScore(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
+zScore(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4185,33 +4203,36 @@ async zScore(column: string, newColumn: string, options?: { categories?: string 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Calculate the Z-score for 'age' values and store results in a new 'ageZScore' column
-await table.zScore("age", "ageZScore");
+table.zScore("age", "ageZScore");
 ```
 
 ```ts
 // Calculate Z-scores for 'salary' within 'department' categories
-await table.zScore("salary", "salaryZScore", { categories: "department" });
+table.zScore("salary", "salaryZScore", { categories: "department" });
 ```
 
 ```ts
 // Calculate Z-scores for 'score', rounded to 2 decimal places
-await table.zScore("score", "scoreZScore", { decimals: 2 });
+table.zScore("score", "scoreZScore", { decimals: 2 });
 ```
 
 #### `normalize`
 
 Normalizes the values in a column using min-max normalization.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async normalize(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): Promise<this>;
+normalize(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4228,23 +4249,23 @@ async normalize(column: string, newColumn: string, options?: { categories?: stri
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Normalize the values in 'column1' and store them in a new 'normalizedColumn1' column
-await table.normalize("column1", "normalizedColumn1");
+table.normalize("column1", "normalizedColumn1");
 ```
 
 ```ts
 // Normalize 'value' within 'group' categories
-await table.normalize("value", "normalizedValue", { categories: "group" });
+table.normalize("value", "normalizedValue", { categories: "group" });
 ```
 
 ```ts
 // Normalize 'data' values, rounded to 2 decimal places
-await table.normalize("data", "normalizedData", { decimals: 2 });
+table.normalize("data", "normalizedData", { decimals: 2 });
 ```
 
 #### `updateWithJS`

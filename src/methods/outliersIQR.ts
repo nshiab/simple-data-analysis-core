@@ -1,9 +1,10 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function outliersIQR(
+export default function outliersIQR(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
@@ -11,21 +12,31 @@ export default async function outliersIQR(
     categories?: string | string[];
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    outliersIQRQuery(
-      simpleTable.name,
-      column,
-      newColumn,
-      (await simpleTable.getNbRows()) % 2 === 0 ? "even" : "odd",
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "outliersIQR()",
-      parameters: { column, newColumn, options },
-    }),
-  );
+  // The quantile function depends on the parity of the number of rows, so
+  // outliersIQR can't be expressed as a single SELECT over its input: it
+  // executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "outliersIQR()",
+    parameters: { column, newColumn, options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        outliersIQRQuery(
+          simpleTable.name,
+          column,
+          newColumn,
+          (await simpleTable.getNbRows()) % 2 === 0 ? "even" : "odd",
+          options,
+        ),
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "outliersIQR()",
+          parameters: { column, newColumn, options },
+        }),
+      );
+    },
+  });
 }
 
 function outliersIQRQuery(

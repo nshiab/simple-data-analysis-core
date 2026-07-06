@@ -1,9 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function ranks(
+export default function ranks(
   simpleTable: SimpleTable,
   values: string,
   newColumn: string,
@@ -13,41 +12,26 @@ export default async function ranks(
     noGaps?: boolean;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    rankQuery(simpleTable.name, values, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "ranks()",
-      parameters: { values, newColumn, options },
-    }),
-  );
-}
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "ranks()",
+    parameters: { values, newColumn, options },
+    needsSchema: false,
+    buildSelect: (input) => {
+      const categories = options.categories
+        ? stringToArray(options.categories)
+        : [];
 
-function rankQuery(
-  table: string,
-  values: string,
-  newColumn: string,
-  options: {
-    order?: "asc" | "desc";
-    categories?: string | string[];
-    noGaps?: boolean;
-  } = {},
-) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+      const partition = categories.length === 0
+        ? ""
+        : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
 
-  const partition = categories.length === 0
-    ? ""
-    : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
-
-  const query = `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ${
-    options.noGaps ? "dense_rank()" : "rank()"
-  } OVER (${partition}ORDER BY "${values}" ${
-    typeof options.order === "string" ? options.order.toUpperCase() : ""
-  }) AS "${newColumn}"
-    FROM "${table}"`;
-
-  return query;
+      return `SELECT *, ${
+        options.noGaps ? "dense_rank()" : "rank()"
+      } OVER (${partition}ORDER BY "${values}" ${
+        typeof options.order === "string" ? options.order.toUpperCase() : ""
+      }) AS "${newColumn}"
+    FROM ${input}`;
+    },
+  });
 }

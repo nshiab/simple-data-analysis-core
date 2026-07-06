@@ -2906,40 +2906,42 @@ export default class SimpleTable extends Simple {
   /**
    * Assigns ranks to rows in a new column based on the values of a specified column.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param values - The column containing the values to be used for ranking.
    * @param newColumn - The name of the new column where the ranks will be stored.
    * @param options - An optional object with configuration options:
    * @param options.order - The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
    * @param options.categories - The column name or an array of column names that define categories for ranking. Ranks will be assigned independently within each category.
    * @param options.noGaps - A boolean indicating whether to assign ranks without gaps (dense ranking). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Compute ranks in a new 'rank' column based on 'score' values (ascending)
-   * await table.ranks("score", "rank");
+   * table.ranks("score", "rank");
    * ```
    *
    * @example
    * ```ts
    * // Compute ranks in a new 'descRank' column based on 'score' values (descending)
-   * await table.ranks("score", "descRank", { order: "desc" });
+   * table.ranks("score", "descRank", { order: "desc" });
    * ```
    *
    * @example
    * ```ts
    * // Compute ranks within 'department' categories, based on 'salary' values, without gaps
-   * await table.ranks("salary", "salaryRank", { categories: "department", noGaps: true });
+   * table.ranks("salary", "salaryRank", { categories: "department", noGaps: true });
    * ```
    *
    * @example
    * ```ts
    * // Compute ranks within multiple categories ('department' and 'city')
-   * await table.ranks("sales", "salesRank", { categories: ["department", "city"] });
+   * table.ranks("sales", "salesRank", { categories: ["department", "city"] });
    * ```
    */
-  async ranks(
+  ranks(
     values: string,
     newColumn: string,
     options: {
@@ -2947,86 +2949,90 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       noGaps?: boolean;
     } = {},
-  ): Promise<this> {
-    await ranks(this, values, newColumn, options);
+  ): this {
+    ranks(this, values, newColumn, options);
     return this;
   }
 
   /**
    * Assigns quantiles to rows in a new column based on specified column values.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param values - The column containing values from which quantiles will be assigned.
    * @param nbQuantiles - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
    * @param newColumn - The name of the new column where the assigned quantiles will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for computing quantiles. Quantiles will be assigned independently within each category.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Assigns a quantile from 1 to 10 for each row in a new 'quantiles' column, based on 'column1' values.
-   * await table.quantiles("column1", 10, "quantiles");
+   * table.quantiles("column1", 10, "quantiles");
    * ```
    *
    * @example
    * ```ts
    * // Assigns quantiles within 'column2' categories, based on 'column1' values.
-   * await table.quantiles("column1", 10, "quantiles", { categories: "column2" });
+   * table.quantiles("column1", 10, "quantiles", { categories: "column2" });
    * ```
    *
    * @example
    * ```ts
    * // Assigns quartiles (4 quantiles) to 'sales' data, storing results in 'salesQuartile'
-   * await table.quantiles("sales", 4, "salesQuartile");
+   * table.quantiles("sales", 4, "salesQuartile");
    * ```
    */
-  async quantiles(
+  quantiles(
     values: string,
     nbQuantiles: number,
     newColumn: string,
     options: {
       categories?: string | string[];
     } = {},
-  ): Promise<this> {
-    await quantiles(this, values, nbQuantiles, newColumn, options);
+  ): this {
+    quantiles(this, values, nbQuantiles, newColumn, options);
     return this;
   }
 
   /**
    * Assigns bins for specified column values based on an interval size.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param values - The column containing values from which bins will be computed.
    * @param interval - The interval size for binning the values.
    * @param newColumn - The name of the new column where the bins will be stored.
    * @param options - An optional object with configuration options:
    * @param options.startValue - The starting value for binning. Defaults to the minimum value in the specified column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Assigns a bin for each row in a new 'bins' column based on 'column1' values, with an interval of 10.
    * // If the minimum value in 'column1' is 5, the bins will follow this pattern: "[5-14]", "[15-24]", etc.
-   * await table.bins("column1", 10, "bins");
+   * table.bins("column1", 10, "bins");
    * ```
    *
    * @example
    * ```ts
    * // Assigns bins starting at a specific value (0) with an interval of 10.
    * // The bins will follow this pattern: "[0-9]", "[10-19]", "[20-29]", etc.
-   * await table.bins("column1", 10, "bins", { startValue: 0 });
+   * table.bins("column1", 10, "bins", { startValue: 0 });
    * ```
    */
-  async bins(
+  bins(
     values: string,
     interval: number,
     newColumn: string,
     options: {
       startValue?: number;
     } = {},
-  ): Promise<this> {
-    await bins(this, values, interval, newColumn, options);
+  ): this {
+    bins(this, values, interval, newColumn, options);
     return this;
   }
 
@@ -3046,7 +3052,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute horizontal proportions for 'Men', 'Women', and 'NonBinary' columns, rounded to 2 decimal places
-   * await table.proportionsHorizontal(["Men", "Women", "NonBinary"], { decimals: 2 });
+   * table.proportionsHorizontal(["Men", "Women", "NonBinary"], { decimals: 2 });
    * ```
    *
    * The table will then look like this:
@@ -3062,7 +3068,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute horizontal proportions with a custom suffix "Prop"
-   * await table.proportionsHorizontal(["Men", "Women", "NonBinary"], { suffix: "Prop", decimals: 2 });
+   * table.proportionsHorizontal(["Men", "Women", "NonBinary"], { suffix: "Prop", decimals: 2 });
    * ```
    *
    * The table will then look like this:
@@ -3073,62 +3079,66 @@ export default class SimpleTable extends Simple {
    * | 2022 | 354 | 278   | 56        | 0.51    | 0.4       | 0.08          |
    * | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - An array of column names for which proportions will be computed on each row.
    * @param options - An optional object with configuration options:
    * @param options.suffix - A string suffix to append to the names of the new columns storing the computed proportions. Defaults to `"Perc"`.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
-  async proportionsHorizontal(
+  proportionsHorizontal(
     columns: string[],
     options: {
       suffix?: string;
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await proportionsHorizontal(this, columns, options);
+  ): this {
+    proportionsHorizontal(this, columns, options);
     return this;
   }
 
   /**
    * Computes proportions vertically over a column's values, relative to the sum of all values in that column (or within specified categories).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The column containing values for which proportions will be computed. The proportions are calculated based on the sum of values in the specified column.
    * @param newColumn - The name of the new column where the proportions will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for computing proportions. Proportions will be calculated independently within each category.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Add a new column 'perc' with each 'column1' value divided by the sum of all 'column1' values
-   * await table.proportionsVertical("column1", "perc");
+   * table.proportionsVertical("column1", "perc");
    * ```
    *
    * @example
    * ```ts
    * // Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-   * await table.proportionsVertical("column1", "perc", { categories: "column2", decimals: 2 });
+   * table.proportionsVertical("column1", "perc", { categories: "column2", decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Compute proportions for 'sales' within 'region' and 'product_type' categories
-   * await table.proportionsVertical("sales", "sales_proportion", { categories: ["region", "product_type"] });
+   * table.proportionsVertical("sales", "sales_proportion", { categories: ["region", "product_type"] });
    * ```
    */
-  async proportionsVertical(
+  proportionsVertical(
     column: string,
     newColumn: string,
     options: {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await proportionsVertical(this, column, newColumn, options);
+  ): this {
+    proportionsVertical(this, column, newColumn, options);
     return this;
   }
 
@@ -3294,41 +3304,43 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the cumulative sum of values in a column. For this method to work properly, ensure your data is sorted first.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the values to be accumulated.
    * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for the accumulation. Accumulation will be performed independently within each category.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Compute the cumulative sum of 'sales' in a new 'cumulativeSales' column
    * // Ensure the table is sorted by a relevant column (e.g., date) before calling this method.
-   * await table.accumulate("sales", "cumulativeSales");
+   * table.accumulate("sales", "cumulativeSales");
    * ```
    *
    * @example
    * ```ts
    * // Compute the cumulative sum of 'orders' within 'customer_id' categories
    * // Ensure the table is sorted by 'customer_id' and then by a relevant order column (e.g., order_date).
-   * await table.accumulate("orders", "cumulativeOrders", { categories: "customer_id" });
+   * table.accumulate("orders", "cumulativeOrders", { categories: "customer_id" });
    * ```
    *
    * @example
    * ```ts
    * // Compute the cumulative sum of 'revenue' within 'region' and 'product_category' categories
-   * await table.accumulate("revenue", "cumulativeRevenue", { categories: ["region", "product_category"] });
+   * table.accumulate("revenue", "cumulativeRevenue", { categories: ["region", "product_category"] });
    * ```
    */
-  async accumulate(
+  accumulate(
     column: string,
     newColumn: string,
     options: {
       categories?: string | string[];
     } = {},
-  ): Promise<this> {
-    await accumulate(this, column, newColumn, options);
+  ): this {
+    accumulate(this, column, newColumn, options);
     return this;
   }
 
@@ -3336,6 +3348,8 @@ export default class SimpleTable extends Simple {
    * Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
    * For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
    * For this method to work properly, ensure your data is sorted by the relevant column(s) first.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the values to be aggregated.
    * @param newColumn - The name of the new column in which the computed rolling values will be stored.
@@ -3345,29 +3359,29 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for the aggregation. Rolling aggregations will be computed independently within each category.
    * @param options.decimals - The number of decimal places to round the aggregated values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Compute a 7-day rolling average of 'sales' with 3 preceding and 3 following rows
    * // (total window size of 7: 3 preceding + current + 3 following)
-   * await table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
+   * table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
    * ```
    *
    * @example
    * ```ts
    * // Compute a rolling sum of 'transactions' within 'customer_id' categories
-   * await table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, { categories: "customer_id" });
+   * table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, { categories: "customer_id" });
    * ```
    *
    * @example
    * ```ts
    * // Compute a rolling maximum of 'temperature' rounded to 1 decimal place
-   * await table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, { decimals: 1 });
+   * table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, { decimals: 1 });
    * ```
    */
-  async rolling(
+  rolling(
     column: string,
     newColumn: string,
     summary: "min" | "max" | "mean" | "median" | "sum",
@@ -3377,8 +3391,8 @@ export default class SimpleTable extends Simple {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await rolling(
+  ): this {
+    rolling(
       this,
       column,
       newColumn,
@@ -3522,115 +3536,121 @@ export default class SimpleTable extends Simple {
   /**
    * Identifies outliers in a specified column using the Interquartile Range (IQR) method.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column in which outliers will be identified.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories. Outlier detection will be performed independently within each category.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Look for outliers in the 'age' column and store results in a new 'isOutlier' column
-   * await table.outliersIQR("age", "isOutlier");
+   * table.outliersIQR("age", "isOutlier");
    * ```
    *
    * @example
    * ```ts
    * // Look for outliers in 'salary' within 'gender' categories
-   * await table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
+   * table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
    * ```
    */
-  async outliersIQR(
+  outliersIQR(
     column: string,
     newColumn: string,
     options: {
       categories?: string | string[];
     } = {},
-  ): Promise<this> {
-    await outliersIQR(this, column, newColumn, options);
+  ): this {
+    outliersIQR(this, column, newColumn, options);
     return this;
   }
 
   /**
    * Computes the Z-score for values in a specified column.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column for which Z-scores will be calculated.
    * @param newColumn - The name of the new column where the computed Z-scores will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories. Z-scores will be calculated independently within each category.
    * @param options.decimals - The number of decimal places to round the Z-score values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Calculate the Z-score for 'age' values and store results in a new 'ageZScore' column
-   * await table.zScore("age", "ageZScore");
+   * table.zScore("age", "ageZScore");
    * ```
    *
    * @example
    * ```ts
    * // Calculate Z-scores for 'salary' within 'department' categories
-   * await table.zScore("salary", "salaryZScore", { categories: "department" });
+   * table.zScore("salary", "salaryZScore", { categories: "department" });
    * ```
    *
    * @example
    * ```ts
    * // Calculate Z-scores for 'score', rounded to 2 decimal places
-   * await table.zScore("score", "scoreZScore", { decimals: 2 });
+   * table.zScore("score", "scoreZScore", { decimals: 2 });
    * ```
    */
-  async zScore(
+  zScore(
     column: string,
     newColumn: string,
     options: {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await zScore(this, column, newColumn, options);
+  ): this {
+    zScore(this, column, newColumn, options);
     return this;
   }
 
   /**
    * Normalizes the values in a column using min-max normalization.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column in which values will be normalized.
    * @param newColumn - The name of the new column where normalized values will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for the normalization. Normalization will be performed independently within each category.
    * @param options.decimals - The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Normalize the values in 'column1' and store them in a new 'normalizedColumn1' column
-   * await table.normalize("column1", "normalizedColumn1");
+   * table.normalize("column1", "normalizedColumn1");
    * ```
    *
    * @example
    * ```ts
    * // Normalize 'value' within 'group' categories
-   * await table.normalize("value", "normalizedValue", { categories: "group" });
+   * table.normalize("value", "normalizedValue", { categories: "group" });
    * ```
    *
    * @example
    * ```ts
    * // Normalize 'data' values, rounded to 2 decimal places
-   * await table.normalize("data", "normalizedData", { decimals: 2 });
+   * table.normalize("data", "normalizedData", { decimals: 2 });
    * ```
    */
-  async normalize(
+  normalize(
     column: string,
     newColumn: string,
     options: {
       categories?: string | string[];
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await normalize(this, column, newColumn, options);
+  ): this {
+    normalize(this, column, newColumn, options);
     return this;
   }
 

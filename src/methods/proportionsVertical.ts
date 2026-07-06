@@ -1,9 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function proportionsVertical(
+export default function proportionsVertical(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
@@ -12,46 +11,23 @@ export default async function proportionsVertical(
     decimals?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    proportionsVerticalQuery(simpleTable.name, column, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "proportionsVertical()",
-      parameters: {
-        column,
-        newColumn,
-        options,
-      },
-    }),
-  );
-}
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "proportionsVertical()",
+    parameters: { column, newColumn, options },
+    needsSchema: false,
+    buildSelect: (input) => {
+      const categories = options.categories
+        ? stringToArray(options.categories)
+        : [];
 
-function proportionsVerticalQuery(
-  table: string,
-  column: string,
-  newColumn: string,
-  options: {
-    categories?: string | string[];
-    decimals?: number;
-  } = {},
-) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+      const partition = categories.length === 0
+        ? ""
+        : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")}`;
 
-  const partition = categories.length === 0
-    ? ""
-    : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")}`;
-
-  let query = "";
-  if (typeof options.decimals === "number") {
-    query =
-      `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ROUND("${column}" / sum("${column}") OVER(${partition}), ${options.decimals}) AS "${newColumn}" FROM "${table}"`;
-  } else {
-    query =
-      `CREATE OR REPLACE TABLE "${table}" AS SELECT *, "${column}" / sum("${column}") OVER(${partition}) AS "${newColumn}" FROM "${table}"`;
-  }
-
-  return query;
+      return typeof options.decimals === "number"
+        ? `SELECT *, ROUND("${column}" / sum("${column}") OVER(${partition}), ${options.decimals}) AS "${newColumn}" FROM ${input}`
+        : `SELECT *, "${column}" / sum("${column}") OVER(${partition}) AS "${newColumn}" FROM ${input}`;
+    },
+  });
 }

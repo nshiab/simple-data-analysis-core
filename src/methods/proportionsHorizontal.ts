@@ -1,8 +1,7 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function proportionsHorizontal(
+export default function proportionsHorizontal(
   simpleTable: SimpleTable,
   columns: string[],
   options: {
@@ -10,43 +9,29 @@ export default async function proportionsHorizontal(
     decimals?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    proportionsHorizontalQuery(simpleTable.name, columns, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "proportionsHorizontal()",
-      parameters: {
-        columns,
-        options,
-      },
-    }),
-  );
-}
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "proportionsHorizontal()",
+    parameters: { columns, options },
+    needsSchema: false,
+    buildSelect: (input) => {
+      let query = `SELECT *,`;
 
-function proportionsHorizontalQuery(
-  table: string,
-  columns: string[],
-  options: {
-    suffix?: string;
-    decimals?: number;
-  } = {},
-) {
-  let query = `CREATE OR REPLACE TABLE "${table}" AS SELECT *,`;
+      for (const col of columns) {
+        const tempQuery = `"${col}" / (${
+          columns.map((d) => `"${d}"`).join(" + ")
+        })`;
+        if (typeof options.decimals === "number") {
+          query += ` ROUND(${tempQuery}, ${options.decimals})`;
+        } else {
+          query += ` ${tempQuery}`;
+        }
+        query += ` AS "${col}${options.suffix ?? "Perc"}",`;
+      }
 
-  for (const col of columns) {
-    const tempQuery = `"${col}" / (${
-      columns.map((d) => `"${d}"`).join(" + ")
-    })`;
-    if (typeof options.decimals === "number") {
-      query += ` ROUND(${tempQuery}, ${options.decimals})`;
-    } else {
-      query += ` ${tempQuery}`;
-    }
-    query += ` AS "${col}${options.suffix ?? "Perc"}",`;
-  }
+      query += `FROM ${input}`;
 
-  query += `FROM "${table}"`;
-
-  return query;
+      return query;
+    },
+  });
 }

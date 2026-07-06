@@ -1,9 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function rolling(
+export default function rolling(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
@@ -15,34 +14,26 @@ export default async function rolling(
     decimals?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    rollingQuery(
-      simpleTable.name,
-      column,
-      newColumn,
-      summary,
-      preceding,
-      following,
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "rolling()",
-      parameters: {
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "rolling()",
+    parameters: { column, newColumn, summary, preceding, following, options },
+    needsSchema: false,
+    buildSelect: (input) =>
+      rollingSelect(
+        input,
         column,
         newColumn,
         summary,
         preceding,
         following,
         options,
-      },
-    }),
-  );
+      ),
+  });
 }
 
-function rollingQuery(
-  table: string,
+function rollingSelect(
+  input: string,
   column: string,
   newColumn: string,
   summary: "count" | "min" | "max" | "mean" | "median" | "sum",
@@ -69,24 +60,23 @@ function rollingQuery(
     ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
     : "";
 
-  const tempQuery = `${aggregates[summary]}("${column}") OVER (${partition}
+  const window = `OVER (${partition}
                 ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING)`;
 
-  const query = `CREATE OR REPLACE TABLE "${table}" AS SELECT *,
-    ${
+  const tempQuery = `${aggregates[summary]}("${column}") ${window}`;
+
+  // Windows touching the edges of the frame (or of their category) have
+  // fewer values than requested, so their result is NULL.
+  return `SELECT *,
+    CASE
+        WHEN COUNT("${column}") ${window} != ${
+    preceding + following + 1
+  } THEN NULL
+        ELSE ${
     typeof options.decimals === "number"
       ? `ROUND(${tempQuery}, ${options.decimals})`
       : tempQuery
-  } AS "${newColumn}",
-        COUNT("${column}") OVER (${partition}
-            ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING) as tempCountForRolling
-        FROM "${table}";
-        UPDATE "${table}" SET "${newColumn}" = CASE
-            WHEN "tempCountForRolling" != ${preceding + following + 1} THEN NULL
-            ELSE "${newColumn}"
-        END;
-        ALTER TABLE "${table}" DROP COLUMN "tempCountForRolling";
-        `;
-
-  return query;
+  }
+    END AS "${newColumn}"
+        FROM ${input}`;
 }
