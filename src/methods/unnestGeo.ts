@@ -1,20 +1,21 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function unnestGeo(
+export default function unnestGeo(
   simpleTable: SimpleTable,
   column?: string,
 ) {
-  const col = column ?? (await findGeoColumn(simpleTable));
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE("${col}"), UNNEST(ST_Dump("${col}"), recursive := TRUE) FROM "${simpleTable.name}"; ALTER TABLE "${simpleTable.name}" DROP COLUMN path;`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "unnestGeo()",
-      parameters: { column },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "unnestGeo()",
+    parameters: { column },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const col = column ?? findGeoColumnFromSchema(types);
+      // The recursive UNNEST adds a path column, removed by the outer SELECT.
+      return `SELECT * EXCLUDE(path) FROM (SELECT * EXCLUDE("${col}"), UNNEST(ST_Dump("${col}"), recursive := TRUE) FROM ${input})`;
+    },
+  });
 }

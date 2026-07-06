@@ -1,24 +1,23 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function isValidGeo(
+export default function isValidGeo(
   simpleTable: SimpleTable,
   newColumn: string,
   options: { column?: string } = {},
 ) {
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable);
-
-  await queryDB(
-    simpleTable,
-    `ALTER TABLE "${simpleTable.name}" ADD COLUMN "${newColumn}" BOOLEAN; UPDATE "${simpleTable.name}" SET "${newColumn}" = ST_IsValid("${column}")`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "isValidGeo()",
-      parameters: { column, newColumn },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "isValidGeo()",
+    parameters: { newColumn, options },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const column = typeof options.column === "string"
+        ? options.column
+        : findGeoColumnFromSchema(types);
+      return `SELECT *, CAST(ST_IsValid("${column}") AS BOOLEAN) AS "${newColumn}" FROM ${input}`;
+    },
+  });
 }

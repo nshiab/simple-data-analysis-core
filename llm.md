@@ -5385,10 +5385,13 @@ await table.points("lat", "lon", "geom");
 
 Adds a column with boolean values indicating the validity of geometries.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async isValidGeo(newColumn: string, options?: { column?: string }): Promise<this>;
+isValidGeo(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5402,29 +5405,32 @@ async isValidGeo(newColumn: string, options?: { column?: string }): Promise<this
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Check if geometries are valid and store results in a new 'isValid' column
 // The method will automatically detect the geometry column.
-await table.isValidGeo("isValid");
+table.isValidGeo("isValid");
 ```
 
 ```ts
 // Check validity of geometries in a specific column named 'myGeom'
-await table.isValidGeo("isValidMyGeom", { column: "myGeom" });
+table.isValidGeo("isValidMyGeom", { column: "myGeom" });
 ```
 
 #### `nbVertices`
 
 Adds a column with the number of vertices (points) in each geometry.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async nbVertices(newColumn: string, options?: { column?: string }): Promise<this>;
+nbVertices(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5437,19 +5443,19 @@ async nbVertices(newColumn: string, options?: { column?: string }): Promise<this
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Add a new column 'vertexCount' with the number of vertices for each geometry
 // The method will automatically detect the geometry column.
-await table.nbVertices("vertexCount");
+table.nbVertices("vertexCount");
 ```
 
 ```ts
 // Add vertex counts for geometries in a specific column named 'myGeom'
-await table.nbVertices("myGeomVertices", { column: "myGeom" });
+table.nbVertices("myGeomVertices", { column: "myGeom" });
 ```
 
 #### `fixGeo`
@@ -5491,10 +5497,13 @@ table.fixGeo("myGeom");
 Adds a column with boolean values indicating whether geometries are closed
 (e.g., polygons) or open (e.g., linestrings).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async isClosedGeo(newColumn: string, options?: { column?: string }): Promise<this>;
+isClosedGeo(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5507,18 +5516,18 @@ async isClosedGeo(newColumn: string, options?: { column?: string }): Promise<thi
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Check if geometries are closed and store results in a new 'isClosed' column
-await table.isClosedGeo("isClosed");
+table.isClosedGeo("isClosed");
 ```
 
 ```ts
 // Check closed status of geometries in a specific column named 'boundaryGeom'
-await table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
+table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
 ```
 
 #### `typeGeo`
@@ -5526,10 +5535,13 @@ await table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
 Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`,
 `"POLYGON"`) for each geometry.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async typeGeo(newColumn: string, options?: { column?: string }): Promise<this>;
+typeGeo(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5542,18 +5554,18 @@ async typeGeo(newColumn: string, options?: { column?: string }): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Add a new column 'geometryType' with the type of each geometry
-await table.typeGeo("geometryType");
+table.typeGeo("geometryType");
 ```
 
 ```ts
 // Get the geometry type for geometries in a specific column named 'featureGeom'
-await table.typeGeo("featureType", { column: "featureGeom" });
+table.typeGeo("featureType", { column: "featureGeom" });
 ```
 
 #### `flipCoordinates`
@@ -6032,10 +6044,13 @@ table.fillHoles("polygonGeom");
 Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE`
 otherwise.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async intersect(column1: string, column2: string, newColumn: string): Promise<this>;
+intersect(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -6048,13 +6063,13 @@ async intersect(column1: string, column2: string, newColumn: string): Promise<th
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Check if geometries in 'geomA' and 'geomB' intersect, storing results in 'doIntersect'
-await table.intersect("geomA", "geomB", "doIntersect");
+table.intersect("geomA", "geomB", "doIntersect");
 ```
 
 #### `inside`
@@ -6062,10 +6077,13 @@ await table.intersect("geomA", "geomB", "doIntersect");
 Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in
 `column2`, and `FALSE` otherwise.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async inside(column1: string, column2: string, newColumn: string): Promise<this>;
+inside(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -6079,13 +6097,13 @@ async inside(column1: string, column2: string, newColumn: string): Promise<this>
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Check if geometries in 'pointGeom' are inside 'polygonGeom', storing results in 'isInsidePolygon'
-await table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
+table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
 ```
 
 #### `union`
@@ -6345,10 +6363,13 @@ await table.distance("area1", "area2", "distance_spheroid_km", {
 Unnests geometries recursively, transforming multi-part geometries (e.g.,
 MultiPolygon) into individual single-part geometries (e.g., Polygon).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async unnestGeo(column?: string): Promise<this>;
+unnestGeo(column?: string): this;
 ```
 
 ##### Parameters
@@ -6358,18 +6379,18 @@ async unnestGeo(column?: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Unnest geometries in the default column
-await table.unnestGeo();
+table.unnestGeo();
 ```
 
 ```ts
 // Unnest geometries in a specific column named 'multiGeom'
-await table.unnestGeo("multiGeom");
+table.unnestGeo("multiGeom");
 ```
 
 #### `boundingBox`

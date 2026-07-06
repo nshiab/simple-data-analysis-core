@@ -4623,60 +4623,64 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with boolean values indicating the validity of geometries.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for valid, `FALSE` for invalid) will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries to be checked. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Check if geometries are valid and store results in a new 'isValid' column
    * // The method will automatically detect the geometry column.
-   * await table.isValidGeo("isValid");
+   * table.isValidGeo("isValid");
    * ```
    *
    * @example
    * ```ts
    * // Check validity of geometries in a specific column named 'myGeom'
-   * await table.isValidGeo("isValidMyGeom", { column: "myGeom" });
+   * table.isValidGeo("isValidMyGeom", { column: "myGeom" });
    * ```
    */
-  async isValidGeo(
+  isValidGeo(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await isValidGeo(this, newColumn, options);
+  ): this {
+    isValidGeo(this, newColumn, options);
     return this;
   }
 
   /**
    * Adds a column with the number of vertices (points) in each geometry.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the vertex counts will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Add a new column 'vertexCount' with the number of vertices for each geometry
    * // The method will automatically detect the geometry column.
-   * await table.nbVertices("vertexCount");
+   * table.nbVertices("vertexCount");
    * ```
    *
    * @example
    * ```ts
    * // Add vertex counts for geometries in a specific column named 'myGeom'
-   * await table.nbVertices("myGeomVertices", { column: "myGeom" });
+   * table.nbVertices("myGeomVertices", { column: "myGeom" });
    * ```
    */
-  async nbVertices(
+  nbVertices(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await nbVertices(this, newColumn, options);
+  ): this {
+    nbVertices(this, newColumn, options);
     return this;
   }
 
@@ -4709,58 +4713,62 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with boolean values indicating whether geometries are closed (e.g., polygons) or open (e.g., linestrings).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for closed, `FALSE` for open) will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Check if geometries are closed and store results in a new 'isClosed' column
-   * await table.isClosedGeo("isClosed");
+   * table.isClosedGeo("isClosed");
    * ```
    *
    * @example
    * ```ts
    * // Check closed status of geometries in a specific column named 'boundaryGeom'
-   * await table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
+   * table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
    * ```
    */
-  async isClosedGeo(
+  isClosedGeo(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await isClosedGeo(this, newColumn, options);
+  ): this {
+    isClosedGeo(this, newColumn, options);
     return this;
   }
 
   /**
    * Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`, `"POLYGON"`) for each geometry.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the geometry types will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Add a new column 'geometryType' with the type of each geometry
-   * await table.typeGeo("geometryType");
+   * table.typeGeo("geometryType");
    * ```
    *
    * @example
    * ```ts
    * // Get the geometry type for geometries in a specific column named 'featureGeom'
-   * await table.typeGeo("featureType", { column: "featureGeom" });
+   * table.typeGeo("featureType", { column: "featureGeom" });
    * ```
    */
-  async typeGeo(
+  typeGeo(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await typeGeo(this, newColumn, options);
+  ): this {
+    typeGeo(this, newColumn, options);
     return this;
   }
 
@@ -5159,48 +5167,52 @@ export default class SimpleTable extends Simple {
   /**
    * Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE` otherwise.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for intersection, `FALSE` otherwise) will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Check if geometries in 'geomA' and 'geomB' intersect, storing results in 'doIntersect'
-   * await table.intersect("geomA", "geomB", "doIntersect");
+   * table.intersect("geomA", "geomB", "doIntersect");
    * ```
    */
-  async intersect(
+  intersect(
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<this> {
-    await intersect(this, column1, column2, newColumn);
+  ): this {
+    intersect(this, column1, column2, newColumn);
     return this;
   }
 
   /**
    * Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in `column2`, and `FALSE` otherwise.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column1 - The name of the column storing the geometries to be tested for containment.
    * @param column2 - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for inside, `FALSE` otherwise) will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Check if geometries in 'pointGeom' are inside 'polygonGeom', storing results in 'isInsidePolygon'
-   * await table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
+   * table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
    * ```
    */
-  async inside(
+  inside(
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<this> {
-    await inside(this, column1, column2, newColumn);
+  ): this {
+    inside(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5417,24 +5429,26 @@ export default class SimpleTable extends Simple {
   /**
    * Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the geometries to be unnested. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Unnest geometries in the default column
-   * await table.unnestGeo();
+   * table.unnestGeo();
    * ```
    *
    * @example
    * ```ts
    * // Unnest geometries in a specific column named 'multiGeom'
-   * await table.unnestGeo("multiGeom");
+   * table.unnestGeo("multiGeom");
    * ```
    */
-  async unnestGeo(column?: string): Promise<this> {
-    await unnestGeo(this, column);
+  unnestGeo(column?: string): this {
+    unnestGeo(this, column);
     return this;
   }
 
