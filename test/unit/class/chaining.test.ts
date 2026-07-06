@@ -34,7 +34,8 @@ Deno.test("should chain async mutation methods with then", async () => {
       { name: "a", value: 1 },
     ])
     .renameColumns({ value: "amount" })
-    .then((t) => t.sort({ name: "asc" }))
+    .sort({ name: "asc" })
+    .renameTable("chainedAsyncRenamed")
     .then((t) => t.getData());
 
   assertEquals(data, [

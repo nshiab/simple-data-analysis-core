@@ -1697,10 +1697,13 @@ console.log(hasAgeColumn); // Output: true or false
 Selects random rows from the table, removing all others. You can optionally
 specify a seed to ensure repeatable sampling.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async sample(quantity: number | string, options?: { seed?: number }): Promise<this>;
+sample(quantity: number | string, options?: { seed?: number }): this;
 ```
 
 ##### Parameters
@@ -1714,23 +1717,23 @@ async sample(quantity: number | string, options?: { seed?: number }): Promise<th
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Select 100 random rows from the table
-await table.sample(100);
+table.sample(100);
 ```
 
 ```ts
 // Select 10% of the rows randomly
-await table.sample("10%");
+table.sample("10%");
 ```
 
 ```ts
 // Select random rows with a specific seed for repeatable results
-await table.sample("10%", { seed: 123 });
+table.sample("10%", { seed: 123 });
 ```
 
 #### `selectRows`
@@ -1738,10 +1741,13 @@ await table.sample("10%", { seed: 123 });
 Selects a specified number of rows from this table. An offset can be applied to
 skip initial rows, and the results can be output to a new table.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async selectRows(count: number | string, options?: { offset?: number; outputTable?: string | boolean }): Promise<this>;
+selectRows(count: number | string, options?: { offset?: number; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -1757,29 +1763,29 @@ async selectRows(count: number | string, options?: { offset?: number; outputTabl
 
 ##### Returns
 
-A promise that resolves to a table instance containing the selected rows (either
-the modified current table or a new table).
+A table instance containing the selected rows (either the current table or a new
+table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Select the first 100 rows of the current table
-await table.selectRows(100);
+table.selectRows(100);
 ```
 
 ```ts
 // Select 100 rows after skipping the first 50 rows
-await table.selectRows(100, { offset: 50 });
+table.selectRows(100, { offset: 50 });
 ```
 
 ```ts
 // Select 50 rows and store them in a new table with a generated name
-const newTable = await table.selectRows(50, { outputTable: true });
+const newTable = table.selectRows(50, { outputTable: true });
 ```
 
 ```ts
 // Select 75 rows and store them in a new table named "top_customers"
-const topCustomersTable = await table.selectRows(75, {
+const topCustomersTable = table.selectRows(75, {
   outputTable: "top_customers",
 });
 ```
@@ -2085,10 +2091,13 @@ table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // 
 
 Renames one or more columns in the table.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async renameColumns(names: Record<string, string>): Promise<this>;
+renameColumns(names: Record<string, string>): this;
 ```
 
 ##### Parameters
@@ -2098,18 +2107,18 @@ async renameColumns(names: Record<string, string>): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Rename "How old?" to "age" and "Man or woman?" to "sex"
-await table.renameColumns({ "How old?": "age", "Man or woman?": "sex" });
+table.renameColumns({ "How old?": "age", "Man or woman?": "sex" });
 ```
 
 ```ts
 // Rename a single column
-await table.renameColumns({ "product_id": "productId" });
+table.renameColumns({ "product_id": "productId" });
 ```
 
 #### `cleanColumnNames`
@@ -2117,22 +2126,25 @@ await table.renameColumns({ "product_id": "productId" });
 Cleans column names by removing non-alphanumeric characters and formatting them
 to camel case.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async cleanColumnNames(): Promise<this>;
+cleanColumnNames(): this;
 ```
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Clean all column names in the table
 // e.g., "First Name" becomes "firstName", "Product ID" becomes "productId"
-await table.cleanColumnNames();
+table.cleanColumnNames();
 ```
 
 #### `longer`
@@ -2153,7 +2165,7 @@ and their corresponding employee counts into a new column named `Employees`.
 ##### Signature
 
 ```typescript
-async longer(columns: string[], columnsTo: string, valuesTo: string): Promise<this>;
+longer(columns: string[], columnsTo: string, valuesTo: string): this;
 ```
 
 ##### Parameters
@@ -2167,13 +2179,13 @@ async longer(columns: string[], columnsTo: string, valuesTo: string): Promise<th
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Restructure the table by stacking year columns into 'year' and 'employees'
-await table.longer(["2021", "2022", "2023"], "year", "employees");
+table.longer(["2021", "2022", "2023"], "year", "employees");
 ```
 
 The table will then look like this:
@@ -2186,6 +2198,9 @@ The table will then look like this:
 | Sales      | 2021 | 52        |
 | Sales      | 2022 | 75        |
 | Sales      | 2023 | 98        |
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
 
 #### `wider`
 
@@ -2209,7 +2224,7 @@ employee counts as values.
 ##### Signature
 
 ```typescript
-async wider(columnsFrom: string, valuesFrom: string): Promise<this>;
+wider(columnsFrom: string, valuesFrom: string): this;
 ```
 
 ##### Parameters
@@ -2221,13 +2236,13 @@ async wider(columnsFrom: string, valuesFrom: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Restructure the table by pivoting 'Year' into new columns with 'Employees' as values
-await table.wider("Year", "Employees");
+table.wider("Year", "Employees");
 ```
 
 The table will then look like this:
@@ -2236,6 +2251,9 @@ The table will then look like this:
 | :--------- | :--- | :--- | :--- |
 | Accounting | 10   | 9    | 15   |
 | Sales      | 52   | 75   | 98   |
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
 
 #### `convert`
 

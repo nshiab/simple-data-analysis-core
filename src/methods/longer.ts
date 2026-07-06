@@ -1,25 +1,23 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function longer(
+export default function longer(
   simpleTable: SimpleTable,
   columns: string[],
   columnsTo: string,
   valuesTo: string,
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM (
-            FROM "${simpleTable.name}" UNPIVOT INCLUDE NULLS (
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "longer()",
+    parameters: { columns, columnsTo, valuesTo },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT * FROM (
+            FROM ${input} UNPIVOT INCLUDE NULLS (
             "${valuesTo}"
             for "${columnsTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
             )
         )`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "longer()",
-      parameters: { columns, columnsTo, valuesTo },
-    }),
-  );
+  });
 }

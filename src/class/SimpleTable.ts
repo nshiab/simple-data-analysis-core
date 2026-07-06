@@ -137,6 +137,7 @@ import loadGeoData from "../methods/loadGeoData.ts";
 import loadDataFromDirectory from "../methods/loadDataFromDirectory.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type { PendingOp } from "../helpers/pendingOps.ts";
 
 /**
@@ -1323,79 +1324,83 @@ export default class SimpleTable extends Simple {
   /**
    * Selects random rows from the table, removing all others. You can optionally specify a seed to ensure repeatable sampling.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param quantity - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
    * @param options - An optional object with configuration options:
    * @param options.seed - A number specifying the seed for repeatable sampling. Using the same seed will always yield the same random rows. Defaults to a random seed.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Select 100 random rows from the table
-   * await table.sample(100);
+   * table.sample(100);
    * ```
    *
    * @example
    * ```ts
    * // Select 10% of the rows randomly
-   * await table.sample("10%");
+   * table.sample("10%");
    * ```
    *
    * @example
    * ```ts
    * // Select random rows with a specific seed for repeatable results
-   * await table.sample("10%", { seed: 123 });
+   * table.sample("10%", { seed: 123 });
    * ```
    */
-  async sample(
+  sample(
     quantity: number | string,
     options: {
       seed?: number;
     } = {},
-  ): Promise<this> {
-    await sample(this, quantity, options);
+  ): this {
+    sample(this, quantity, options);
     return this;
   }
 
   /**
    * Selects a specified number of rows from this table. An offset can be applied to skip initial rows, and the results can be output to a new table.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param count - The number of rows to select.
    * @param options - An optional object with configuration options:
    * @param options.offset - The number of rows to skip from the beginning of the table before selecting. Defaults to `0`.
    * @param options.outputTable - If `true`, the selected rows will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be modified. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the selected rows (either the modified current table or a new table).
+   * @returns A table instance containing the selected rows (either the current table or a new table), so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Select the first 100 rows of the current table
-   * await table.selectRows(100);
+   * table.selectRows(100);
    * ```
    *
    * @example
    * ```ts
    * // Select 100 rows after skipping the first 50 rows
-   * await table.selectRows(100, { offset: 50 });
+   * table.selectRows(100, { offset: 50 });
    * ```
    *
    * @example
    * ```ts
    * // Select 50 rows and store them in a new table with a generated name
-   * const newTable = await table.selectRows(50, { outputTable: true });
+   * const newTable = table.selectRows(50, { outputTable: true });
    * ```
    *
    * @example
    * ```ts
    * // Select 75 rows and store them in a new table named "top_customers"
-   * const topCustomersTable = await table.selectRows(75, { outputTable: "top_customers" });
+   * const topCustomersTable = table.selectRows(75, { outputTable: "top_customers" });
    * ```
    */
-  async selectRows(
+  selectRows(
     count: number | string,
     options: { offset?: number; outputTable?: string | boolean } = {},
-  ): Promise<this> {
-    return await selectRows(this, count, options) as this;
+  ): this {
+    return selectRows(this, count, options) as this;
   }
 
   /**
@@ -1666,47 +1671,58 @@ export default class SimpleTable extends Simple {
   /**
    * Renames one or more columns in the table.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Column Operations
    *
    * @example
    * ```ts
    * // Rename "How old?" to "age" and "Man or woman?" to "sex"
-   * await table.renameColumns({ "How old?": "age", "Man or woman?": "sex" });
+   * table.renameColumns({ "How old?": "age", "Man or woman?": "sex" });
    * ```
    *
    * @example
    * ```ts
    * // Rename a single column
-   * await table.renameColumns({ "product_id": "productId" });
+   * table.renameColumns({ "product_id": "productId" });
    * ```
    */
-  async renameColumns(names: { [key: string]: string }): Promise<this> {
-    await renameColumns(this, names);
+  renameColumns(names: { [key: string]: string }): this {
+    renameColumns(this, names);
     return this;
   }
 
   /**
    * Cleans column names by removing non-alphanumeric characters and formatting them to camel case.
    *
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
+   * @returns The table, so methods can be chained.
    * @category Column Operations
    *
    * @example
    * ```ts
    * // Clean all column names in the table
    * // e.g., "First Name" becomes "firstName", "Product ID" becomes "productId"
-   * await table.cleanColumnNames();
+   * table.cleanColumnNames();
    * ```
    */
-  async cleanColumnNames(): Promise<this> {
-    const columns = await this.getColumns();
-    const obj: { [key: string]: string } = {};
-    for (const col of columns) {
-      obj[col] = camelCase(col);
-    }
-    await this.renameColumns(obj);
+  cleanColumnNames(): this {
+    queueOp(this, {
+      kind: "fusable",
+      method: "cleanColumnNames()",
+      parameters: {},
+      // The schema provides the column names to clean.
+      needsSchema: true,
+      buildSelect: (input, schema) =>
+        `SELECT * RENAME (${
+          Object.keys(schema)
+            .map((col) => `"${col}" AS "${camelCase(col)}"`)
+            .join(", ")
+        }) FROM ${input}`,
+    });
     return this;
   }
 
@@ -1725,7 +1741,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Restructure the table by stacking year columns into 'year' and 'employees'
-   * await table.longer(["2021", "2022", "2023"], "year", "employees");
+   * table.longer(["2021", "2022", "2023"], "year", "employees");
    * ```
    *
    * The table will then look like this:
@@ -1739,18 +1755,20 @@ export default class SimpleTable extends Simple {
    * | Sales      | 2022 | 75        |
    * | Sales      | 2023 | 98        |
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - An array of strings representing the names of the columns to be stacked (unpivoted).
    * @param columnsTo - The name of the new column that will contain the original column names (e.g., "Year").
    * @param valuesTo - The name of the new column that will contain the values from the stacked columns (e.g., "Employees").
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
-  async longer(
+  longer(
     columns: string[],
     columnsTo: string,
     valuesTo: string,
-  ): Promise<this> {
-    await longer(this, columns, columnsTo, valuesTo);
+  ): this {
+    longer(this, columns, columnsTo, valuesTo);
     return this;
   }
 
@@ -1773,7 +1791,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Restructure the table by pivoting 'Year' into new columns with 'Employees' as values
-   * await table.wider("Year", "Employees");
+   * table.wider("Year", "Employees");
    * ```
    *
    * The table will then look like this:
@@ -1783,13 +1801,15 @@ export default class SimpleTable extends Simple {
    * | Accounting | 10   | 9    | 15   |
    * | Sales      | 52   | 75   | 98   |
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columnsFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
-  async wider(columnsFrom: string, valuesFrom: string): Promise<this> {
-    await wider(this, columnsFrom, valuesFrom);
+  wider(columnsFrom: string, valuesFrom: string): this {
+    wider(this, columnsFrom, valuesFrom);
     return this;
   }
 

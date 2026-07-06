@@ -1,25 +1,23 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function sample(
+export default function sample(
   simpleTable: SimpleTable,
   quantity: number | string,
   options: {
     seed?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${simpleTable.name}" USING SAMPLE RESERVOIR(${
-      typeof quantity === "number" ? `${quantity} ROWS` : quantity
-    })${
-      typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
-    }`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "sample()",
-      parameters: { quantity, options },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "sample()",
+    parameters: { quantity, options },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT * FROM ${input} USING SAMPLE RESERVOIR(${
+        typeof quantity === "number" ? `${quantity} ROWS` : quantity
+      })${
+        typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
+      }`,
+  });
 }
