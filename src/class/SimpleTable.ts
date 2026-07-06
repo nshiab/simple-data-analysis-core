@@ -4599,24 +4599,26 @@ export default class SimpleTable extends Simple {
   /**
    * Creates point geometries from latitude and longitude columns.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columnLat - The name of the column storing the latitude values.
    * @param columnLon - The name of the column storing the longitude values.
    * @param newColumn - The name of the new column where the point geometries will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Create point geometries in a new 'geom' column using 'lat' and 'lon' columns
-   * await table.points("lat", "lon", "geom");
+   * table.points("lat", "lon", "geom");
    * ```
    */
-  async points(
+  points(
     columnLat: string,
     columnLon: string,
     newColumn: string,
-  ): Promise<this> {
-    await points(this, columnLat, columnLon, newColumn);
+  ): this {
+    points(this, columnLat, columnLon, newColumn);
     return this;
   }
 
@@ -4904,36 +4906,38 @@ export default class SimpleTable extends Simple {
    * Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
    * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the computed lengths will be stored.
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed length: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the length of line geometries in meters and store in 'length_m'
-   * await table.length("length_m");
+   * table.length("length_m");
    * ```
    *
    * @example
    * ```ts
    * // Compute the length of line geometries in kilometers and store in 'length_km'
-   * await table.length("length_km", { unit: "km" });
+   * table.length("length_km", { unit: "km" });
    * ```
    *
    * @example
    * ```ts
    * // Compute the length of geometries in a specific column named 'routeGeom'
-   * await table.length("routeLength", { column: "routeGeom" });
+   * table.length("routeLength", { column: "routeGeom" });
    * ```
    */
-  async length(
+  length(
     newColumn: string,
     options: { unit?: "m" | "km"; column?: string } = {},
-  ): Promise<this> {
-    await length(this, newColumn, options);
+  ): this {
+    length(this, newColumn, options);
     return this;
   }
 
@@ -4941,36 +4945,38 @@ export default class SimpleTable extends Simple {
    * Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
    * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the computed perimeters will be stored.
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed perimeter: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the perimeter of polygon geometries in meters and store in 'perimeter_m'
-   * await table.perimeter("perimeter_m");
+   * table.perimeter("perimeter_m");
    * ```
    *
    * @example
    * ```ts
    * // Compute the perimeter of polygon geometries in kilometers and store in 'perimeter_km'
-   * await table.perimeter("perimeter_km", { unit: "km" });
+   * table.perimeter("perimeter_km", { unit: "km" });
    * ```
    *
    * @example
    * ```ts
    * // Compute the perimeter of geometries in a specific column named 'landParcelGeom'
-   * await table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
+   * table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
    * ```
    */
-  async perimeter(
+  perimeter(
     newColumn: string,
     options: { unit?: "m" | "km"; column?: string } = {},
-  ): Promise<this> {
-    await perimeter(this, newColumn, options);
+  ): this {
+    perimeter(this, newColumn, options);
     return this;
   }
 
@@ -5455,33 +5461,35 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the bounding box of geometries in a specified column, creating four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries for which the bounding box will be computed. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.decimals - The number of decimal places to round the bounding box coordinates. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the bounding box for geometries in the default column
-   * await table.boundingBox();
+   * table.boundingBox();
    * // The table now has minLon, minLat, maxLon, and maxLat columns.
    * ```
    *
    * @example
    * ```ts
    * // Compute the bounding box for geometries in 'geom' column and round coordinates to 2 decimal places
-   * await table.boundingBox({ column: "geom", decimals: 2 });
+   * table.boundingBox({ column: "geom", decimals: 2 });
    * // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
    * ```
    */
-  async boundingBox(
+  boundingBox(
     options: {
       column?: string;
       decimals?: number;
     } = {},
-  ): Promise<this> {
-    await boundingBox(this, options);
+  ): this {
+    boundingBox(this, options);
     return this;
   }
 

@@ -1,22 +1,24 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function points(
+export default function points(
   simpleTable: SimpleTable,
   columnLat: string,
   columnLon: string,
   newColumn: string,
 ) {
-  await queryDB(
-    simpleTable,
-    (await simpleTable.getColumns()).includes(newColumn)
-      ? `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * REPLACE (ST_Point("${columnLon}", "${columnLat}")::GEOMETRY('EPSG:4326') AS "${newColumn}") FROM "${simpleTable.name}"`
-      : `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; ALTER TABLE "${simpleTable.name}" ADD COLUMN "${newColumn}" GEOMETRY('EPSG:4326'); UPDATE "${simpleTable.name}" SET "${newColumn}" = ST_Point("${columnLon}", "${columnLat}");`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "points()",
-      parameters: { columnLat, columnLon, newColumn },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "points()",
+    parameters: { columnLat, columnLon, newColumn },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const expression =
+        `ST_Point("${columnLon}", "${columnLat}")::GEOMETRY('EPSG:4326')`;
+      return Object.keys(types).includes(newColumn)
+        ? `SELECT * REPLACE (${expression} AS "${newColumn}") FROM ${input}`
+        : `SELECT *, ${expression} AS "${newColumn}" FROM ${input}`;
+    },
+  });
 }

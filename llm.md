@@ -5357,10 +5357,13 @@ console.log(booksDataCSV);
 
 Creates point geometries from latitude and longitude columns.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async points(columnLat: string, columnLon: string, newColumn: string): Promise<this>;
+points(columnLat: string, columnLon: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -5372,13 +5375,13 @@ async points(columnLat: string, columnLon: string, newColumn: string): Promise<t
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Create point geometries in a new 'geom' column using 'lat' and 'lon' columns
-await table.points("lat", "lon", "geom");
+table.points("lat", "lon", "geom");
 ```
 
 #### `isValidGeo`
@@ -5732,10 +5735,13 @@ Computes the length of line geometries in meters (`"m"`) or optionally
 kilometers (`"km"`). The input geometry is assumed to be in the EPSG:4326
 coordinate system (WGS84).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<this>;
+length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): this;
 ```
 
 ##### Parameters
@@ -5750,23 +5756,23 @@ async length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the length of line geometries in meters and store in 'length_m'
-await table.length("length_m");
+table.length("length_m");
 ```
 
 ```ts
 // Compute the length of line geometries in kilometers and store in 'length_km'
-await table.length("length_km", { unit: "km" });
+table.length("length_km", { unit: "km" });
 ```
 
 ```ts
 // Compute the length of geometries in a specific column named 'routeGeom'
-await table.length("routeLength", { column: "routeGeom" });
+table.length("routeLength", { column: "routeGeom" });
 ```
 
 #### `perimeter`
@@ -5775,10 +5781,13 @@ Computes the perimeter of polygon geometries in meters (`"m"`) or optionally
 kilometers (`"km"`). The input geometry is assumed to be in the EPSG:4326
 coordinate system (WGS84).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): Promise<this>;
+perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): this;
 ```
 
 ##### Parameters
@@ -5793,23 +5802,23 @@ async perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: strin
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the perimeter of polygon geometries in meters and store in 'perimeter_m'
-await table.perimeter("perimeter_m");
+table.perimeter("perimeter_m");
 ```
 
 ```ts
 // Compute the perimeter of polygon geometries in kilometers and store in 'perimeter_km'
-await table.perimeter("perimeter_km", { unit: "km" });
+table.perimeter("perimeter_km", { unit: "km" });
 ```
 
 ```ts
 // Compute the perimeter of geometries in a specific column named 'landParcelGeom'
-await table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
+table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
 ```
 
 #### `buffer`
@@ -6398,10 +6407,13 @@ table.unnestGeo("multiGeom");
 Computes the bounding box of geometries in a specified column, creating four new
 columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async boundingBox(options?: { column?: string; decimals?: number }): Promise<this>;
+boundingBox(options?: { column?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -6415,19 +6427,19 @@ async boundingBox(options?: { column?: string; decimals?: number }): Promise<thi
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the bounding box for geometries in the default column
-await table.boundingBox();
+table.boundingBox();
 // The table now has minLon, minLat, maxLon, and maxLat columns.
 ```
 
 ```ts
 // Compute the bounding box for geometries in 'geom' column and round coordinates to 2 decimal places
-await table.boundingBox({ column: "geom", decimals: 2 });
+table.boundingBox({ column: "geom", decimals: 2 });
 // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
 ```
 
