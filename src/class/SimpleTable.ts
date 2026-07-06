@@ -751,6 +751,8 @@ export default class SimpleTable extends Simple {
    *
    * This method creates a full-text search index on the specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search). If the index already exists, it will be reused unless the `overwriteIndex` option is set to `true`.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param text - The search query text to match against the text column.
    * @param columnId - The name of the column containing unique identifiers for each row.
    * @param columnText - The name of the column containing the text to search.
@@ -769,7 +771,7 @@ export default class SimpleTable extends Simple {
    * @param options.conjunctive - If `true`, all terms in the query string must be present in order for a document to be retrieved. Defaults to `false`.
    * @param options.minScore - A threshold to filter out results with a BM25 score below this value.
    * @param options.scoreColumn - If provided, the BM25 score will be included in the output table under this column name.
-   * @returns A promise that resolves to a SimpleTable instance containing the search results, ordered by relevance (best matches first).
+   * @returns A table instance containing the search results, ordered by relevance (best matches first), so methods can be chained.
    * @category Text Search
    *
    * @example
@@ -778,7 +780,7 @@ export default class SimpleTable extends Simple {
    * await table.loadData("recipes.parquet");
    *
    * // Search for "italian food" in the Recipe column, return top 5 results
-   * await table.bm25("italian food", "Dish", "Recipe", 5);
+   * table.bm25("italian food", "Dish", "Recipe", 5);
    *
    * // Check the results
    * const dishes = await table.getValues("Dish");
@@ -788,7 +790,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Search with a specific language stemmer
-   * await table.bm25("french food", "Dish", "Recipe", 5, {
+   * table.bm25("french food", "Dish", "Recipe", 5, {
    *   stemmer: "french",
    * });
    * ```
@@ -796,7 +798,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Recreate the index with different settings and perform search
-   * await table.bm25("italian food", "Dish", "Recipe", 5, {
+   * table.bm25("italian food", "Dish", "Recipe", 5, {
    *   stemmer: "english",
    *   overwriteIndex: true,
    * });
@@ -805,7 +807,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Save results to a new table without modifying the original
-   * const italianDishes = await table.bm25("italian food", "Dish", "Recipe", 5, {
+   * const italianDishes = table.bm25("italian food", "Dish", "Recipe", 5, {
    *   outputTable: "italian_results",
    * });
    *
@@ -822,19 +824,19 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Multiple searches reuse the same index for better performance
    * // The first search creates the index
-   * const italian = await table.bm25("italian food", "Dish", "Recipe", 5, {
+   * const italian = table.bm25("italian food", "Dish", "Recipe", 5, {
    *   outputTable: "italian",
    * });
    *
    * // The second search reuses the existing index, so it's faster
-   * const french = await table.bm25("french food", "Dish", "Recipe", 5, {
+   * const french = table.bm25("french food", "Dish", "Recipe", 5, {
    *   outputTable: "french",
    * });
    * ```
    * * @example
    * ```ts
    * // Filter results by a minimum BM25 score and include the score in the output
-   * await table.bm25("spicy noodles", "Dish", "Recipe", 10, {
+   * table.bm25("spicy noodles", "Dish", "Recipe", 10, {
    *   minScore: 5.5,
    *   scoreColumn: "bm25_score"
    * });
@@ -843,12 +845,12 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Use the conjunctive option to require all terms
-   * await table.bm25("italian sauce", "Dish", "Recipe", 5, {
+   * table.bm25("italian sauce", "Dish", "Recipe", 5, {
    *   conjunctive: true,
    * });
    * ```
    */
-  async bm25(
+  bm25(
     text: string,
     columnId: string,
     columnText: string,
@@ -896,8 +898,8 @@ export default class SimpleTable extends Simple {
       minScore?: number;
       scoreColumn?: string;
     } = {},
-  ): Promise<this> {
-    return await bm25(
+  ): this {
+    return bm25(
       this,
       text,
       columnId,
@@ -3193,6 +3195,8 @@ export default class SimpleTable extends Simple {
    * Creates a summary table based on specified values, categories, and summary operations.
    * This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param options - An object with configuration options for summarization:
    * @param options.values - The column name or an array of column names whose values will be summarized. If omitted, all columns will be summarized.
    * @param options.categories - The column name or an array of column names that define categories for the summarization. Results will be grouped by these categories.
@@ -3201,91 +3205,91 @@ export default class SimpleTable extends Simple {
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.toMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
    * @param options.noColumnValue - If `true`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the summarized data (either the modified current table or a new table).
+   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Summarize all columns with all available summary operations, overwriting the current table
    * const columns = await table.getColumns();
-   * await table.summarize({ values: columns });
+   * table.summarize({ values: columns });
    * ```
    *
    * @example
    * ```ts
    * // Summarize all columns and store the results in a new table with a generated name
    * const columns = await table.getColumns();
-   * const summaryTable = await table.summarize({ values: columns, outputTable: true });
+   * const summaryTable = table.summarize({ values: columns, outputTable: true });
    * ```
    *
    * @example
    * ```ts
    * // Summarize all columns and store the results in a new table named 'mySummary'
    * const columns = await table.getColumns();
-   * const mySummaryTable = await table.summarize({ values: columns, outputTable: "mySummary" });
+   * const mySummaryTable = table.summarize({ values: columns, outputTable: "mySummary" });
    * ```
    *
    * @example
    * ```ts
    * // Summarize a single column ('sales') with all available summary operations
-   * await table.summarize({ values: "sales" });
+   * table.summarize({ values: "sales" });
    * ```
    *
    * @example
    * ```ts
    * // Summarize multiple columns ('sales' and 'profit') with all available summary operations
-   * await table.summarize({ values: ["sales", "profit"] });
+   * table.summarize({ values: ["sales", "profit"] });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'sales' by 'region' (single category)
-   * await table.summarize({ values: "sales", categories: "region" });
+   * table.summarize({ values: "sales", categories: "region" });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'sales' by 'region' and 'product_type' (multiple categories)
-   * await table.summarize({ values: "sales", categories: ["region", "product_type"] });
+   * table.summarize({ values: "sales", categories: ["region", "product_type"] });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'sales' by 'region' with a specific summary operation (mean)
-   * await table.summarize({ values: "sales", categories: "region", summaries: "mean" });
+   * table.summarize({ values: "sales", categories: "region", summaries: "mean" });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'sales' by 'region' with specific summary operations (mean and sum)
-   * await table.summarize({ values: "sales", categories: "region", summaries: ["mean", "sum"] });
+   * table.summarize({ values: "sales", categories: "region", summaries: ["mean", "sum"] });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'sales' by 'region' with custom named summary operations
-   * await table.summarize({ values: "sales", categories: "region", summaries: { averageSales: "mean", totalSales: "sum" } });
+   * table.summarize({ values: "sales", categories: "region", summaries: { averageSales: "mean", totalSales: "sum" } });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'price' and 'cost', rounding aggregated values to 2 decimal places
-   * await table.summarize({ values: ["price", "cost"], decimals: 2 });
+   * table.summarize({ values: ["price", "cost"], decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'timestamp_column' by converting to milliseconds first
-   * await table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
+   * table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
    * ```
    *
    * @example
    * ```ts
    * // Summarize a single column 'value_column' without the default 'value' column in the output
-   * await table.summarize({ values: "value_column", noColumnValue: true });
+   * table.summarize({ values: "value_column", noColumnValue: true });
    * ```
    */
-  async summarize(
+  summarize(
     options: {
       values?: string | string[];
       categories?: string | string[];
@@ -3335,17 +3339,8 @@ export default class SimpleTable extends Simple {
       toMs?: boolean;
       noColumnValue?: boolean;
     } = {},
-  ): Promise<this> {
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await summarize(this, options);
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+  ): this {
+    return summarize(this, options) as this;
   }
 
   /**
@@ -3455,46 +3450,48 @@ export default class SimpleTable extends Simple {
    * Calculates correlations between columns. If no `x` and `y` columns are specified, the method computes the correlations for all numeric column combinations.
    * Note that correlation is symmetrical: the correlation of `x` with `y` is the same as `y` with `x`.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
    * @param options.y - The name of the column for the y-values. If omitted, correlations will be computed for all numeric columns.
    * @param options.categories - The column name or an array of column names that define categories. Correlation calculations will be performed independently for each category.
    * @param options.decimals - The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the correlation results (either the modified current table or a new table).
+   * @returns A table instance containing the correlation results (either the current table or a new table), so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Compute correlations between all numeric columns, overwriting the current table
-   * await table.correlations();
+   * table.correlations();
    * ```
    *
    * @example
    * ```ts
    * // Compute correlations between 'column1' and all other numeric columns
-   * await table.correlations({ x: "column1" });
+   * table.correlations({ x: "column1" });
    * ```
    *
    * @example
    * ```ts
    * // Compute the correlation between 'column1' and 'column2'
-   * await table.correlations({ x: "column1", y: "column2" });
+   * table.correlations({ x: "column1", y: "column2" });
    * ```
    *
    * @example
    * ```ts
    * // Compute correlations within 'categoryColumn' and store results in a new table
-   * const correlationTable = await table.correlations({ categories: "categoryColumn", outputTable: true });
+   * const correlationTable = table.correlations({ categories: "categoryColumn", outputTable: true });
    * ```
    *
    * @example
    * ```ts
    * // Compute correlations, rounded to 2 decimal places
-   * await table.correlations({ decimals: 2 });
+   * table.correlations({ decimals: 2 });
    * ```
    */
-  async correlations(
+  correlations(
     options: {
       x?: string;
       y?: string;
@@ -3502,17 +3499,8 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
     } = {},
-  ): Promise<this> {
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await correlations(this, options);
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+  ): this {
+    return correlations(this, options) as this;
   }
 
   /**
@@ -3520,46 +3508,48 @@ export default class SimpleTable extends Simple {
    * If no `x` and `y` columns are specified, the method computes linear regression analysis for all numeric column permutations.
    * Note that linear regression analysis is asymmetrical: the linear regression of `x` over `y` is not the same as `y` over `x`.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
    * @param options.y - The name of the column for the dependent variable (y-values). If omitted, linear regressions will be computed for all numeric columns as y.
    * @param options.categories - The column name or an array of column names that define categories. Linear regression analysis will be performed independently for each category.
    * @param options.decimals - The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the linear regression results (either the modified current table or a new table).
+   * @returns A table instance containing the linear regression results (either the current table or a new table), so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Compute all linear regressions between all numeric columns, overwriting the current table
-   * await table.linearRegressions();
+   * table.linearRegressions();
    * ```
    *
    * @example
    * ```ts
    * // Compute linear regressions with 'column1' as the independent variable and all other numeric columns as dependent variables
-   * await table.linearRegressions({ x: "column1" });
+   * table.linearRegressions({ x: "column1" });
    * ```
    *
    * @example
    * ```ts
    * // Compute the linear regression of 'sales' (y) over 'advertising' (x)
-   * await table.linearRegressions({ x: "advertising", y: "sales" });
+   * table.linearRegressions({ x: "advertising", y: "sales" });
    * ```
    *
    * @example
    * ```ts
    * // Compute linear regressions within 'region' categories and store results in a new table
-   * const regressionTable = await table.linearRegressions({ categories: "region", outputTable: true });
+   * const regressionTable = table.linearRegressions({ categories: "region", outputTable: true });
    * ```
    *
    * @example
    * ```ts
    * // Compute linear regressions, rounded to 3 decimal places
-   * await table.linearRegressions({ decimals: 3 });
+   * table.linearRegressions({ decimals: 3 });
    * ```
    */
-  async linearRegressions(
+  linearRegressions(
     options: {
       x?: string;
       y?: string;
@@ -3567,17 +3557,8 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
     } = {},
-  ): Promise<this> {
-    if (options.outputTable === true) {
-      options.outputTable = `table${this.sdb.tableIncrement}`;
-      this.sdb.tableIncrement += 1;
-    }
-    await linearRegressions(this, options);
-    if (typeof options.outputTable === "string") {
-      return this.sdb.newTable(options.outputTable) as this;
-    } else {
-      return this as this;
-    }
+  ): this {
+    return linearRegressions(this, options) as this;
   }
 
   /**

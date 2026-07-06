@@ -1,11 +1,90 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import { convertSelect } from "./convert.ts";
 
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function summarize(
+export default function summarize(
+  simpleTable: SimpleTable,
+  options: {
+    outputTable?: string | boolean;
+    values?: string | string[];
+    categories?: string | string[];
+    summaries?:
+      | (
+        | "count"
+        | "countUnique"
+        | "countNull"
+        | "min"
+        | "max"
+        | "mean"
+        | "median"
+        | "sum"
+        | "skew"
+        | "stdDev"
+        | "var"
+      )
+      | (
+        | "count"
+        | "countUnique"
+        | "countNull"
+        | "min"
+        | "max"
+        | "mean"
+        | "median"
+        | "sum"
+        | "skew"
+        | "stdDev"
+        | "var"
+      )[]
+      | {
+        [key: string]:
+          | "count"
+          | "countUnique"
+          | "countNull"
+          | "min"
+          | "max"
+          | "mean"
+          | "median"
+          | "sum"
+          | "skew"
+          | "stdDev"
+          | "var";
+      };
+    decimals?: number;
+    toMs?: boolean;
+    noColumnValue?: boolean;
+  } = {},
+): SimpleTable {
+  if (options.outputTable === true) {
+    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
+    simpleTable.sdb.tableIncrement += 1;
+  }
+
+  // The summary needs the schema, optional unit conversions and a temporary
+  // row number, so it can't be expressed as a single SELECT over its input:
+  // it executes as a barrier. The output table instance is created at call
+  // time so it can be returned synchronously and chained on right away.
+  const outputTable = typeof options.outputTable === "string"
+    ? simpleTable.sdb.newTable(options.outputTable)
+    : simpleTable;
+
+  queueOp(outputTable, {
+    kind: "barrier",
+    method: "summarize()",
+    parameters: { options },
+    execute: () => executeSummarize(simpleTable, outputTable, options),
+  });
+
+  return outputTable;
+}
+
+async function executeSummarize(
   SimpleTable: SimpleTable,
+  output: SimpleTable,
   options: {
     outputTable?: string | boolean;
     values?: string | string[];
@@ -56,13 +135,21 @@ export default async function summarize(
     noColumnValue?: boolean;
   } = {},
 ) {
-  const outputTable = typeof options.outputTable === "string"
-    ? options.outputTable
-    : SimpleTable.name;
+  const outputTable = output.name;
 
   options.values = options.values ? stringToArray(options.values) : [];
   if (options.values.length === 0) {
-    await SimpleTable.addRowNumber("rowNumberToSummarizeQuerySDA");
+    // The temporary row number is created directly (not with the sync
+    // addRowNumber builder, which would queue for the next flush).
+    await queryDB(
+      SimpleTable,
+      `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS SELECT *, (ROW_NUMBER() OVER(ORDER BY rowid) - 1) AS "rowNumberToSummarizeQuerySDA" FROM "${SimpleTable.name}" ORDER BY rowid`,
+      mergeOptions(SimpleTable, {
+        table: SimpleTable.name,
+        method: "summarize()",
+        parameters: { options },
+      }),
+    );
     options.values = ["rowNumberToSummarizeQuerySDA"];
   }
   options.categories = options.categories
@@ -90,6 +177,7 @@ export default async function summarize(
 
   const types = await SimpleTable.getTypes();
   if (options.toMs) {
+    const originalTypes = { ...types };
     const toMsObj: {
       [key: string]: "bigint";
     } = {};
@@ -99,7 +187,28 @@ export default async function summarize(
         types[key] = "bigint";
       }
     }
-    await SimpleTable.convert(toMsObj);
+    if (Object.keys(toMsObj).length > 0) {
+      // The conversion runs directly (not with the sync convert builder,
+      // which would queue for the next flush).
+      await queryDB(
+        SimpleTable,
+        `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS ${
+          convertSelect(
+            `"${SimpleTable.name}"`,
+            Object.keys(toMsObj),
+            Object.values(toMsObj),
+            Object.keys(originalTypes),
+            originalTypes,
+            {},
+          )
+        }`,
+        mergeOptions(SimpleTable, {
+          table: SimpleTable.name,
+          method: "summarize()",
+          parameters: { options },
+        }),
+      );
+    }
   }
 
   options.values = options.values.filter(
@@ -129,9 +238,13 @@ export default async function summarize(
 
   if (options.values.includes("rowNumberToSummarizeQuerySDA")) {
     if (await SimpleTable.hasColumn("rowNumberToSummarizeQuerySDA")) {
-      await SimpleTable.removeColumns("rowNumberToSummarizeQuerySDA");
+      await removeColumnsNow(
+        SimpleTable,
+        ["rowNumberToSummarizeQuerySDA"],
+        "summarize()",
+      );
     }
-    SimpleTable.sdb.customQuery(
+    await SimpleTable.sdb.customQuery(
       `ALTER TABLE "${outputTable}" DROP COLUMN value;`,
     );
   }

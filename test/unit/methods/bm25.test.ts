@@ -133,10 +133,11 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
   await table.removeDuplicates({ on: "Dish" });
 
   // First search creates the index
+  // bm25() queues the operation; run() executes it.
   await table.bm25("italian food", "Dish", "Recipe", 5, {
     stemmer: "porter",
     outputTable: "italian",
-  });
+  }).run();
 
   const indexCountBefore =
     table.indexes.filter((idx) => idx.includes("fts_index")).length;
@@ -148,7 +149,7 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
     overwriteIndex: true,
     outputTable: "french",
     verbose: true,
-  });
+  }).run();
 
   const indexCountAfter =
     table.indexes.filter((idx) => idx.includes("fts_index")).length;

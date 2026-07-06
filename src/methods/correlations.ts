@@ -2,11 +2,13 @@ import getCombinations from "../helpers/getCombinations.ts";
 import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 
-export default async function correlations(
-  SimpleTable: SimpleTable,
+export default function correlations(
+  simpleTable: SimpleTable,
   options: {
     x?: string;
     y?: string;
@@ -14,18 +16,72 @@ export default async function correlations(
     decimals?: number;
     outputTable?: string | boolean;
   } = {},
-) {
-  const outputTable = typeof options.outputTable === "string"
-    ? options.outputTable
-    : SimpleTable.name;
+): SimpleTable {
+  if (options.outputTable === true) {
+    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
+    simpleTable.sdb.tableIncrement += 1;
+  }
 
+  if (typeof options.outputTable === "string") {
+    // The output table instance is created at call time so it can be
+    // returned synchronously and chained on right away.
+    const outputTable = simpleTable.sdb.newTable(options.outputTable);
+    queueOp(outputTable, {
+      kind: "barrier",
+      method: "correlations()",
+      parameters: { options },
+      execute: async () => {
+        const combinations = getCorrelationsCombinations(
+          await simpleTable.getTypes(),
+          options,
+        );
+        await queryDB(
+          simpleTable,
+          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+            correlationsSelect(
+              `"${simpleTable.name}"`,
+              combinations,
+              options,
+            )
+          }`,
+          mergeOptions(simpleTable, {
+            table: outputTable.name,
+            method: "correlations()",
+            parameters: {
+              options,
+              "combinations (computed)": combinations,
+            },
+          }),
+        );
+      },
+    });
+    return outputTable;
+  }
+
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "correlations()",
+    parameters: { options },
+    needsSchema: true,
+    buildSelect: (input, types) =>
+      correlationsSelect(
+        input,
+        getCorrelationsCombinations(types, options),
+        options,
+      ),
+  });
+  return simpleTable;
+}
+
+function getCorrelationsCombinations(
+  types: TableSchema,
+  options: { x?: string; y?: string },
+): [string, string][] {
   let combinations: [string, string][] = [];
   if (!options.x && !options.y) {
-    const types = await SimpleTable.getTypes();
     const columns = keepNumericalColumns(types);
     combinations = getCombinations(columns, 2);
   } else if (options.x && !options.y) {
-    const types = await SimpleTable.getTypes();
     const columns = keepNumericalColumns(types);
     combinations = [];
     for (const col of columns) {
@@ -38,29 +94,11 @@ export default async function correlations(
   } else {
     throw new Error("No combinations of x and y");
   }
-
-  await queryDB(
-    SimpleTable,
-    correlationsQuery(
-      SimpleTable.name,
-      outputTable,
-      combinations,
-      options,
-    ),
-    mergeOptions(SimpleTable, {
-      table: outputTable,
-      method: "correlations()",
-      parameters: {
-        options,
-        "combinations (computed)": combinations,
-      },
-    }),
-  );
+  return combinations;
 }
 
-function correlationsQuery(
-  table: string,
-  outputTable: string,
+function correlationsSelect(
+  input: string,
   combinations: [string, string][],
   options: {
     categories?: string | string[];
@@ -75,7 +113,7 @@ function correlationsQuery(
     ? ""
     : ` GROUP BY ${categories.map((d) => `"${d}"`).join(",")}`;
 
-  let query = `CREATE OR REPLACE TABLE "${outputTable}" AS`;
+  let query = ``;
 
   let firstValue = true;
   for (const comb of combinations) {
@@ -93,7 +131,7 @@ function correlationsQuery(
         : ""
     }'${comb[0]}' AS x, '${
       comb[1]
-    }' AS y, ${tempQuery}  as "corr" FROM "${table}"${groupBy}`;
+    }' AS y, ${tempQuery}  as "corr" FROM ${input}${groupBy}`;
   }
 
   return query;

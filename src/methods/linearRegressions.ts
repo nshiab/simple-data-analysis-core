@@ -2,11 +2,13 @@ import getCombinations from "../helpers/getCombinations.ts";
 import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 
-export default async function linearRegressions(
-  SimpleTable: SimpleTable,
+export default function linearRegressions(
+  simpleTable: SimpleTable,
   options: {
     x?: string;
     y?: string;
@@ -14,14 +16,69 @@ export default async function linearRegressions(
     decimals?: number;
     outputTable?: string | boolean;
   } = {},
-) {
-  const outputTable = typeof options.outputTable === "string"
-    ? options.outputTable
-    : SimpleTable.name;
+): SimpleTable {
+  if (options.outputTable === true) {
+    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
+    simpleTable.sdb.tableIncrement += 1;
+  }
 
+  if (typeof options.outputTable === "string") {
+    // The output table instance is created at call time so it can be
+    // returned synchronously and chained on right away.
+    const outputTable = simpleTable.sdb.newTable(options.outputTable);
+    queueOp(outputTable, {
+      kind: "barrier",
+      method: "linearRegressions()",
+      parameters: { options },
+      execute: async () => {
+        const permutations = getLinearRegressionsPermutations(
+          await simpleTable.getTypes(),
+          options,
+        );
+        await queryDB(
+          simpleTable,
+          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+            linearRegressionsSelect(
+              `"${simpleTable.name}"`,
+              permutations,
+              options,
+            )
+          }`,
+          mergeOptions(simpleTable, {
+            table: outputTable.name,
+            method: "linearRegressions()",
+            parameters: {
+              options,
+              "permutations (computed)": permutations,
+            },
+          }),
+        );
+      },
+    });
+    return outputTable;
+  }
+
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "linearRegressions()",
+    parameters: { options },
+    needsSchema: true,
+    buildSelect: (input, types) =>
+      linearRegressionsSelect(
+        input,
+        getLinearRegressionsPermutations(types, options),
+        options,
+      ),
+  });
+  return simpleTable;
+}
+
+function getLinearRegressionsPermutations(
+  types: TableSchema,
+  options: { x?: string; y?: string },
+): [string, string][] {
   const permutations: [string, string][] = [];
   if (!options.x && !options.y) {
-    const types = await SimpleTable.getTypes();
     const columns = keepNumericalColumns(types);
     const combinations = getCombinations(columns, 2);
     for (const c of combinations) {
@@ -29,7 +86,6 @@ export default async function linearRegressions(
       permutations.push([c[1], c[0]]);
     }
   } else if (options.x && !options.y) {
-    const types = await SimpleTable.getTypes();
     const columns = keepNumericalColumns(types);
     for (const col of columns) {
       if (col !== options.x) {
@@ -41,37 +97,17 @@ export default async function linearRegressions(
   } else {
     throw new Error("No combinations of x and y");
   }
-
-  await queryDB(
-    SimpleTable,
-    linearRegressionQuery(
-      SimpleTable.name,
-      outputTable,
-      permutations,
-      options,
-    ),
-    mergeOptions(SimpleTable, {
-      table: outputTable,
-      method: "linearRegressions()",
-      parameters: {
-        options,
-        "permutations (computed)": permutations,
-      },
-    }),
-  );
+  return permutations;
 }
 
-function linearRegressionQuery(
-  table: string,
-  outputTable: string,
+function linearRegressionsSelect(
+  input: string,
   permutations: [string, string][],
   options: {
     categories?: string | string[];
     decimals?: number;
   },
 ) {
-  let query = `CREATE OR REPLACE TABLE "${outputTable}" AS`;
-
   const categories = options.categories
     ? stringToArray(options.categories)
     : [];
@@ -79,6 +115,8 @@ function linearRegressionQuery(
   const groupBy = categories.length === 0
     ? ""
     : ` GROUP BY ${categories.map((d) => `"${d}"`).join(",")}`;
+
+  let query = ``;
 
   let firstValue = true;
   for (const perm of permutations) {
@@ -114,7 +152,7 @@ function linearRegressionQuery(
     }'${perm[0]}' AS "x", '${
       perm[1]
     }' AS "y", ${tempSlop} AS "slope", ${tempIntercept} AS "yIntercept", ${tempR2} as "r2"
-        FROM "${table}"${groupBy}`;
+        FROM ${input}${groupBy}`;
   }
 
   return query;

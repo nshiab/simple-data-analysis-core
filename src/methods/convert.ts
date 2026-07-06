@@ -55,7 +55,7 @@ export default function convert(
   });
 }
 
-function convertSelect(
+export function convertSelect(
   input: string,
   columns: string[],
   columnsTypes: (

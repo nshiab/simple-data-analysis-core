@@ -1079,10 +1079,13 @@ DuckDB's
 If the index already exists, it will be reused unless the `overwriteIndex`
 option is set to `true`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async bm25(text: string, columnId: string, columnText: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): Promise<this>;
+bm25(text: string, columnId: string, columnText: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): this;
 ```
 
 ##### Parameters
@@ -1125,8 +1128,8 @@ async bm25(text: string, columnId: string, columnText: string, nbResults: number
 
 ##### Returns
 
-A promise that resolves to a SimpleTable instance containing the search results,
-ordered by relevance (best matches first).
+A table instance containing the search results, ordered by relevance (best
+matches first), so methods can be chained.
 
 ##### Examples
 
@@ -1135,7 +1138,7 @@ ordered by relevance (best matches first).
 await table.loadData("recipes.parquet");
 
 // Search for "italian food" in the Recipe column, return top 5 results
-await table.bm25("italian food", "Dish", "Recipe", 5);
+table.bm25("italian food", "Dish", "Recipe", 5);
 
 // Check the results
 const dishes = await table.getValues("Dish");
@@ -1144,14 +1147,14 @@ const dishes = await table.getValues("Dish");
 
 ```ts
 // Search with a specific language stemmer
-await table.bm25("french food", "Dish", "Recipe", 5, {
+table.bm25("french food", "Dish", "Recipe", 5, {
   stemmer: "french",
 });
 ```
 
 ```ts
 // Recreate the index with different settings and perform search
-await table.bm25("italian food", "Dish", "Recipe", 5, {
+table.bm25("italian food", "Dish", "Recipe", 5, {
   stemmer: "english",
   overwriteIndex: true,
 });
@@ -1159,7 +1162,7 @@ await table.bm25("italian food", "Dish", "Recipe", 5, {
 
 ```ts
 // Save results to a new table without modifying the original
-const italianDishes = await table.bm25("italian food", "Dish", "Recipe", 5, {
+const italianDishes = table.bm25("italian food", "Dish", "Recipe", 5, {
   outputTable: "italian_results",
 });
 
@@ -1175,12 +1178,12 @@ console.log(italianOnly.length); // 5 (top results)
 ```ts
 // Multiple searches reuse the same index for better performance
 // The first search creates the index
-const italian = await table.bm25("italian food", "Dish", "Recipe", 5, {
+const italian = table.bm25("italian food", "Dish", "Recipe", 5, {
   outputTable: "italian",
 });
 
 // The second search reuses the existing index, so it's faster
-const french = await table.bm25("french food", "Dish", "Recipe", 5, {
+const french = table.bm25("french food", "Dish", "Recipe", 5, {
   outputTable: "french",
 });
 ```
@@ -1189,7 +1192,7 @@ const french = await table.bm25("french food", "Dish", "Recipe", 5, {
 
 ```ts
 // Filter results by a minimum BM25 score and include the score in the output
-await table.bm25("spicy noodles", "Dish", "Recipe", 10, {
+table.bm25("spicy noodles", "Dish", "Recipe", 10, {
   minScore: 5.5,
   scoreColumn: "bm25_score",
 });
@@ -1197,7 +1200,7 @@ await table.bm25("spicy noodles", "Dish", "Recipe", 10, {
 
 ```ts
 // Use the conjunctive option to require all terms
-await table.bm25("italian sauce", "Dish", "Recipe", 5, {
+table.bm25("italian sauce", "Dish", "Recipe", 5, {
   conjunctive: true,
 });
 ```
@@ -3820,10 +3823,13 @@ Creates a summary table based on specified values, categories, and summary
 operations. This method allows you to aggregate data, calculate statistics
 (e.g., count, mean, sum), and group results by categorical columns.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; noColumnValue?: boolean }): Promise<this>;
+summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; noColumnValue?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3855,30 +3861,27 @@ async summarize(options?: { values?: string | string[]; categories?: string | st
 
 ##### Returns
 
-A promise that resolves to a table instance containing the summarized data
-(either the modified current table or a new table).
+A table instance containing the summarized data (either the current table or a
+new table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Summarize all columns with all available summary operations, overwriting the current table
 const columns = await table.getColumns();
-await table.summarize({ values: columns });
+table.summarize({ values: columns });
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table with a generated name
 const columns = await table.getColumns();
-const summaryTable = await table.summarize({
-  values: columns,
-  outputTable: true,
-});
+const summaryTable = table.summarize({ values: columns, outputTable: true });
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table named 'mySummary'
 const columns = await table.getColumns();
-const mySummaryTable = await table.summarize({
+const mySummaryTable = table.summarize({
   values: columns,
   outputTable: "mySummary",
 });
@@ -3886,39 +3889,32 @@ const mySummaryTable = await table.summarize({
 
 ```ts
 // Summarize a single column ('sales') with all available summary operations
-await table.summarize({ values: "sales" });
+table.summarize({ values: "sales" });
 ```
 
 ```ts
 // Summarize multiple columns ('sales' and 'profit') with all available summary operations
-await table.summarize({ values: ["sales", "profit"] });
+table.summarize({ values: ["sales", "profit"] });
 ```
 
 ```ts
 // Summarize 'sales' by 'region' (single category)
-await table.summarize({ values: "sales", categories: "region" });
+table.summarize({ values: "sales", categories: "region" });
 ```
 
 ```ts
 // Summarize 'sales' by 'region' and 'product_type' (multiple categories)
-await table.summarize({
-  values: "sales",
-  categories: ["region", "product_type"],
-});
+table.summarize({ values: "sales", categories: ["region", "product_type"] });
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with a specific summary operation (mean)
-await table.summarize({
-  values: "sales",
-  categories: "region",
-  summaries: "mean",
-});
+table.summarize({ values: "sales", categories: "region", summaries: "mean" });
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with specific summary operations (mean and sum)
-await table.summarize({
+table.summarize({
   values: "sales",
   categories: "region",
   summaries: ["mean", "sum"],
@@ -3927,7 +3923,7 @@ await table.summarize({
 
 ```ts
 // Summarize 'sales' by 'region' with custom named summary operations
-await table.summarize({
+table.summarize({
   values: "sales",
   categories: "region",
   summaries: { averageSales: "mean", totalSales: "sum" },
@@ -3936,21 +3932,17 @@ await table.summarize({
 
 ```ts
 // Summarize 'price' and 'cost', rounding aggregated values to 2 decimal places
-await table.summarize({ values: ["price", "cost"], decimals: 2 });
+table.summarize({ values: ["price", "cost"], decimals: 2 });
 ```
 
 ```ts
 // Summarize 'timestamp_column' by converting to milliseconds first
-await table.summarize({
-  values: "timestamp_column",
-  toMs: true,
-  summaries: "mean",
-});
+table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
 ```
 
 ```ts
 // Summarize a single column 'value_column' without the default 'value' column in the output
-await table.summarize({ values: "value_column", noColumnValue: true });
+table.summarize({ values: "value_column", noColumnValue: true });
 ```
 
 #### `accumulate`
@@ -4067,10 +4059,13 @@ specified, the method computes the correlations for all numeric column
 combinations. Note that correlation is symmetrical: the correlation of `x` with
 `y` is the same as `y` with `x`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async correlations(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<this>;
+correlations(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -4092,29 +4087,29 @@ async correlations(options?: { x?: string; y?: string; categories?: string | str
 
 ##### Returns
 
-A promise that resolves to a table instance containing the correlation results
-(either the modified current table or a new table).
+A table instance containing the correlation results (either the current table or
+a new table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute correlations between all numeric columns, overwriting the current table
-await table.correlations();
+table.correlations();
 ```
 
 ```ts
 // Compute correlations between 'column1' and all other numeric columns
-await table.correlations({ x: "column1" });
+table.correlations({ x: "column1" });
 ```
 
 ```ts
 // Compute the correlation between 'column1' and 'column2'
-await table.correlations({ x: "column1", y: "column2" });
+table.correlations({ x: "column1", y: "column2" });
 ```
 
 ```ts
 // Compute correlations within 'categoryColumn' and store results in a new table
-const correlationTable = await table.correlations({
+const correlationTable = table.correlations({
   categories: "categoryColumn",
   outputTable: true,
 });
@@ -4122,7 +4117,7 @@ const correlationTable = await table.correlations({
 
 ```ts
 // Compute correlations, rounded to 2 decimal places
-await table.correlations({ decimals: 2 });
+table.correlations({ decimals: 2 });
 ```
 
 #### `linearRegressions`
@@ -4133,10 +4128,13 @@ the method computes linear regression analysis for all numeric column
 permutations. Note that linear regression analysis is asymmetrical: the linear
 regression of `x` over `y` is not the same as `y` over `x`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async linearRegressions(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): Promise<this>;
+linearRegressions(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -4159,29 +4157,29 @@ async linearRegressions(options?: { x?: string; y?: string; categories?: string 
 
 ##### Returns
 
-A promise that resolves to a table instance containing the linear regression
-results (either the modified current table or a new table).
+A table instance containing the linear regression results (either the current
+table or a new table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute all linear regressions between all numeric columns, overwriting the current table
-await table.linearRegressions();
+table.linearRegressions();
 ```
 
 ```ts
 // Compute linear regressions with 'column1' as the independent variable and all other numeric columns as dependent variables
-await table.linearRegressions({ x: "column1" });
+table.linearRegressions({ x: "column1" });
 ```
 
 ```ts
 // Compute the linear regression of 'sales' (y) over 'advertising' (x)
-await table.linearRegressions({ x: "advertising", y: "sales" });
+table.linearRegressions({ x: "advertising", y: "sales" });
 ```
 
 ```ts
 // Compute linear regressions within 'region' categories and store results in a new table
-const regressionTable = await table.linearRegressions({
+const regressionTable = table.linearRegressions({
   categories: "region",
   outputTable: true,
 });
@@ -4189,7 +4187,7 @@ const regressionTable = await table.linearRegressions({
 
 ```ts
 // Compute linear regressions, rounded to 3 decimal places
-await table.linearRegressions({ decimals: 3 });
+table.linearRegressions({ decimals: 3 });
 ```
 
 #### `outliersIQR`

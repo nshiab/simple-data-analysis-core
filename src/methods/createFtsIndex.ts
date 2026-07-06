@@ -54,7 +54,11 @@ export default function createFtsIndex(
   });
 }
 
-async function executeCreateFtsIndex(
+/**
+ * Creates the index immediately, without queueing. For use inside a
+ * barrier's execute, which runs during a flush.
+ */
+export async function executeCreateFtsIndex(
   simpleTable: SimpleTable,
   columnId: string,
   columnText: string,
