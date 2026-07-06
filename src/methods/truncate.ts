@@ -1,27 +1,17 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function truncate(
+export default function truncate(
   simpleTable: SimpleTable,
   column: string,
   length: number,
 ) {
-  await queryDB(
-    simpleTable,
-    truncateQuery(simpleTable.name, column, length),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "truncate()",
-      parameters: { column, length },
-    }),
-  );
-}
-
-function truncateQuery(
-  table: string,
-  column: string,
-  length: number,
-) {
-  return `UPDATE "${table}" SET "${column}" = LEFT("${column}", ${length});`;
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "truncate()",
+    parameters: { column, length },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT * REPLACE (LEFT("${column}", ${length}) AS "${column}") FROM ${input}`,
+  });
 }

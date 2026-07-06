@@ -325,6 +325,44 @@ Deno.test("should surface join validation errors at the observation point", asyn
   await sdb.done();
 });
 
+Deno.test("should fuse row filters, string updates and sort into one statement", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("bigChain");
+  const queries = spyOnQueries(table);
+
+  const result = await table
+    .loadArray([
+      { name: " zebra ", value: 4 },
+      { name: "apple", value: 1 },
+      { name: "apple", value: 1 },
+      { name: "banana", value: 2 },
+      { name: "cherry", value: null },
+    ])
+    .removeDuplicates()
+    .removeRows(`value > 3`)
+    .trim("name")
+    .replace("name", { e: "3" })
+    .keep({ name: ["appl3", "banana", "ch3rry"] })
+    .replaceNulls("value", 0)
+    .concatenate(["name", "value"], "label", { separator: "-" })
+    .sort({ name: "desc" })
+    .getData();
+
+  assertEquals(result, [
+    { name: "ch3rry", value: 0, label: "ch3rry-0.0" },
+    { name: "banana", value: 2, label: "banana-2.0" },
+    { name: "appl3", value: 1, label: "appl3-1.0" },
+  ]);
+
+  const createStatements = queries.filter((q) =>
+    q.includes(`CREATE OR REPLACE TABLE "bigChain"`)
+  );
+  assertEquals(createStatements.length, 1);
+  assert(createStatements[0].includes("s8"));
+
+  await sdb.done();
+});
+
 Deno.test("should execute step by step with debug: true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("debugMode");

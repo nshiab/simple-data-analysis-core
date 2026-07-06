@@ -6,6 +6,7 @@ import queryDB from "./queryDB.ts";
 
 import mergeOptions from "./mergeOptions.ts";
 import rewind from "./rewind.ts";
+import flushAllTables from "./flushAllTables.ts";
 import stringifyDates from "./stringifyDates.ts";
 import stringifyDatesInvert from "./stringifyDatesInvert.ts";
 import cleanPath from "./cleanPath.ts";
@@ -72,6 +73,10 @@ export default async function writeGeoData(
         Object.values(types).includes("TIMESTAMP"))
     ) {
       await stringifyDatesInvert(table, types);
+      // stringifyDatesInvert queues sync builder operations restoring the
+      // date columns. writeGeoData is an observer, so it must leave no
+      // queued work behind.
+      await flushAllTables(table.sdb);
     }
   } else if (fileExtension === "shp") {
     if (

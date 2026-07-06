@@ -1211,43 +1211,45 @@ export default class SimpleTable extends Simple {
    * Sorts the rows of the table based on specified column(s) and order(s).
    * If no columns are specified, all columns are sorted from left to right in ascending order.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. Methods queued after a sort are fused with it into a single query and may not preserve its row order, so call sort last in a chain of transformations.
+   *
    * @param order - An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
    * @param options - An optional object with configuration options:
    * @param options.lang - An object mapping column names to language codes for collation (e.g., `{ column1: "fr" }`). See DuckDB Collations documentation for more details: https://duckdb.org/docs/sql/expressions/collations.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Restructuring Data
    *
    * @example
    * ```ts
    * // Sort all columns from left to right in ascending order
-   * await table.sort();
+   * table.sort();
    * ```
    *
    * @example
    * ```ts
    * // Sort 'column1' in ascending order
-   * await table.sort({ column1: "asc" });
+   * table.sort({ column1: "asc" });
    * ```
    *
    * @example
    * ```ts
    * // Sort 'column1' ascendingly, then 'column2' descendingly
-   * await table.sort({ column1: "asc", column2: "desc" });
+   * table.sort({ column1: "asc", column2: "desc" });
    * ```
    *
    * @example
    * ```ts
    * // Sort 'column1' considering French accents
-   * await table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
+   * table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
    * ```
    */
-  async sort(
+  sort(
     order: { [key: string]: "asc" | "desc" } | null = null,
     options: {
       lang?: { [key: string]: string };
     } = {},
-  ): Promise<this> {
-    await sort(this, order, options);
+  ): this {
+    sort(this, order, options);
     return this;
   }
 
@@ -1278,18 +1280,20 @@ export default class SimpleTable extends Simple {
   /**
    * Skips the first `n` rows of the table, effectively removing them.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param nbRowsToSkip - The number of rows to skip from the beginning of the table.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Skip the first 10 rows of the table
-   * await table.skip(10);
+   * table.skip(10);
    * ```
    */
-  async skip(nbRowsToSkip: number): Promise<this> {
-    await skip(this, nbRowsToSkip);
+  skip(nbRowsToSkip: number): this {
+    skip(this, nbRowsToSkip);
     return this;
   }
 
@@ -1394,35 +1398,37 @@ export default class SimpleTable extends Simple {
    * Removes duplicate rows from this table, keeping only unique rows.
    * Note that the resulting data order might differ from the original.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param options - An optional object with configuration options:
    * @param options.on - A column name or an array of column names to consider when identifying duplicates. If specified, duplicates are determined based only on the values in these columns. If omitted, all columns are considered.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Remove duplicate rows based on all columns
-   * await table.removeDuplicates();
+   * table.removeDuplicates();
    * ```
    *
    * @example
    * ```ts
    * // Remove duplicate rows based only on the 'email' column
-   * await table.removeDuplicates({ on: "email" });
+   * table.removeDuplicates({ on: "email" });
    * ```
    *
    * @example
    * ```ts
    * // Remove duplicate rows based on 'firstName' and 'lastName' columns
-   * await table.removeDuplicates({ on: ["firstName", "lastName"] });
+   * table.removeDuplicates({ on: ["firstName", "lastName"] });
    * ```
    */
-  async removeDuplicates(
+  removeDuplicates(
     options: {
       on?: string | string[];
     } = {},
-  ): Promise<this> {
-    await removeDuplicates(this, options);
+  ): this {
+    removeDuplicates(this, options);
     return this;
   }
 
@@ -1553,60 +1559,64 @@ export default class SimpleTable extends Simple {
   /**
    * Keeps rows in this table that have specific values in specified columns, removing all other rows.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-   * await table.keep({ job: ["accountant", "developer"], city: "Montreal" });
+   * table.keep({ job: ["accountant", "developer"], city: "Montreal" });
    * ```
    *
    * @example
    * ```ts
    * // Keep only rows where 'status' is 'active'
-   * await table.keep({ status: "active" });
+   * table.keep({ status: "active" });
    * ```
    */
-  async keep(
+  keep(
     columnsAndValues: {
       [key: string]:
         | (number | string | Date | boolean | null)[]
         | (number | string | Date | boolean | null);
     },
-  ): Promise<this> {
-    await keep(this, columnsAndValues);
+  ): this {
+    keep(this, columnsAndValues);
     return this;
   }
 
   /**
    * Removes rows from this table that have specific values in specified columns.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Remove rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-   * await table.remove({ job: ["accountant", "developer"], city: "Montreal" });
+   * table.remove({ job: ["accountant", "developer"], city: "Montreal" });
    * ```
    *
    * @example
    * ```ts
    * // Remove rows where 'status' is 'inactive'
-   * await table.remove({ status: "inactive" });
+   * table.remove({ status: "inactive" });
    * ```
    */
-  async remove(
+  remove(
     columnsAndValues: {
       [key: string]:
         | (number | string | Date | boolean | null)[]
         | (number | string | Date | boolean | null);
     },
-  ): Promise<this> {
-    await remove(this, columnsAndValues);
+  ): this {
+    remove(this, columnsAndValues);
     return this;
   }
 
@@ -1614,36 +1624,38 @@ export default class SimpleTable extends Simple {
    * Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"fruit = 'apple'"`).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
    * // Remove rows where the 'fruit' column is 'apple'
-   * await table.removeRows(`fruit = 'apple'`);
+   * table.removeRows(`fruit = 'apple'`);
    * ```
    *
    * @example
    * ```ts
    * // Remove rows where 'quantity' is less than 5
-   * await table.removeRows(`quantity < 5`);
+   * table.removeRows(`quantity < 5`);
    * ```
    *
    * @example
    * ```ts
    * // Remove rows where 'price' is less than 100 AND 'quantity' is 0
-   * await table.removeRows(`price < 100 && quantity === 0`); // Using JS syntax
+   * table.removeRows(`price < 100 && quantity === 0`); // Using JS syntax
    * ```
    *
    * @example
    * ```ts
    * // Remove rows where 'category' is 'Electronics' OR 'Appliances'
-   * await table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
+   * table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
    * ```
    */
-  async removeRows(conditions: string): Promise<this> {
-    await removeRows(this, conditions);
+  removeRows(conditions: string): this {
+    removeRows(this, conditions);
     return this;
   }
 
@@ -2226,53 +2238,55 @@ export default class SimpleTable extends Simple {
   /**
    * Replaces specified strings in the selected columns.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param strings - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
    * @param options - An optional object with configuration options:
    * @param options.entireString - A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
    * @param options.regex - A boolean indicating whether the `oldString` should be treated as a regular expression for global replacement. Cannot be used with `entireString: true`. Defaults to `false`.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Replace all occurrences of "kilograms" with "kg" in 'column1'
-   * await table.replace("column1", { "kilograms": "kg" });
+   * table.replace("column1", { "kilograms": "kg" });
    * ```
    *
    * @example
    * ```ts
    * // Replace "kilograms" with "kg" and "liters" with "l" in 'column1' and 'column2'
-   * await table.replace(["column1", "column2"], { "kilograms": "kg", "liters": "l" });
+   * table.replace(["column1", "column2"], { "kilograms": "kg", "liters": "l" });
    * ```
    *
    * @example
    * ```ts
    * // Replace only if the entire string in 'column1' is "kilograms"
-   * await table.replace("column1", { "kilograms": "kg" }, { entireString: true });
+   * table.replace("column1", { "kilograms": "kg" }, { entireString: true });
    * ```
    *
    * @example
    * ```ts
    * // Replace any sequence of one or more digits with a hyphen in 'column1' using regex
-   * await table.replace("column1", { "\d+": "-" }, { regex: true });
+   * table.replace("column1", { "\d+": "-" }, { regex: true });
    * ```
    *
    * @example
    * ```ts
    * // Replace "%" with "" in all columns
-   * await table.replace("all", { "%": "" });
+   * table.replace("all", { "%": "" });
    * ```
    */
-  async replace(
+  replace(
     columns: "all" | string | string[],
     strings: { [key: string]: string },
     options: {
       entireString?: boolean;
       regex?: boolean;
     } = {},
-  ): Promise<this> {
-    await replace(this, columns, strings, options);
+  ): this {
+    replace(this, columns, strings, options);
     return this;
   }
 
@@ -2351,25 +2365,27 @@ export default class SimpleTable extends Simple {
   /**
    * Truncates string values in a specified column to a maximum number of characters.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The column name containing strings to be truncated.
    * @param length - The maximum number of characters to keep.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Truncate strings in 'description' column to 50 characters
-   * await table.truncate("description", 50);
+   * table.truncate("description", 50);
    * ```
    *
    * @example
    * ```ts
    * // Truncate strings in 'name' column to 10 characters
-   * await table.truncate("name", 10);
+   * table.truncate("name", 10);
    * ```
    */
-  async truncate(column: string, length: number): Promise<this> {
-    await truncate(this, column, length);
+  truncate(column: string, length: number): this {
+    truncate(this, column, length);
     return this;
   }
 
@@ -2505,113 +2521,121 @@ export default class SimpleTable extends Simple {
   /**
    * Extracts a specific number of characters from the beginning (left side) of string values in the specified column.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing the strings to be modified.
    * @param numberOfCharacters - The number of characters to extract from the left side of each string.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Replace strings in 'productCode' with their first two characters
    * // e.g., "ABC-123" becomes "AB"
-   * await table.left("productCode", 2);
+   * table.left("productCode", 2);
    * ```
    */
-  async left(column: string, numberOfCharacters: number): Promise<this> {
-    await left(this, column, numberOfCharacters);
+  left(column: string, numberOfCharacters: number): this {
+    left(this, column, numberOfCharacters);
     return this;
   }
 
   /**
    * Extracts a specific number of characters from the end (right side) of string values in the specified column.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing the strings to be modified.
    * @param numberOfCharacters - The number of characters to extract from the right side of each string.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Replace strings in 'productCode' with their last two characters
    * // e.g., "ABC-123" becomes "23"
-   * await table.right("productCode", 2);
+   * table.right("productCode", 2);
    * ```
    */
-  async right(column: string, numberOfCharacters: number): Promise<this> {
-    await right(this, column, numberOfCharacters);
+  right(column: string, numberOfCharacters: number): this {
+    right(this, column, numberOfCharacters);
     return this;
   }
 
   /**
    * Replaces `NULL` values in the specified columns with a given value.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param value - The value to replace `NULL` occurrences with.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Replace NULL values in 'column1' with 0
-   * await table.replaceNulls("column1", 0);
+   * table.replaceNulls("column1", 0);
    * ```
    *
    * @example
    * ```ts
    * // Replace NULL values in 'columnA' and 'columnB' with the string "N/A"
-   * await table.replaceNulls(["columnA", "columnB"], "N/A");
+   * table.replaceNulls(["columnA", "columnB"], "N/A");
    * ```
    *
    * @example
    * ```ts
    * // Replace NULL values in 'dateColumn' with a specific date
-   * await table.replaceNulls("dateColumn", new Date("2023-01-01"));
+   * table.replaceNulls("dateColumn", new Date("2023-01-01"));
    * ```
    *
    * @example
    * ```ts
    * // Replace NULL values in all columns with 0
-   * await table.replaceNulls("all", 0);
+   * table.replaceNulls("all", 0);
    * ```
    */
-  async replaceNulls(
+  replaceNulls(
     columns: "all" | string | string[],
     value: number | string | Date | boolean,
-  ): Promise<this> {
-    await replaceNulls(this, columns, value);
+  ): this {
+    replaceNulls(this, columns, value);
     return this;
   }
 
   /**
    * Concatenates values from specified columns into a new column.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - An array of column names whose values will be concatenated.
    * @param newColumn - The name of the new column to store the concatenated values.
    * @param options - An optional object with configuration options:
    * @param options.separator - The string used to separate concatenated values. Defaults to an empty string (`""`).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Concatenate 'firstName' and 'lastName' into a new 'fullName' column
-   * await table.concatenate(["firstName", "lastName"], "fullName");
+   * table.concatenate(["firstName", "lastName"], "fullName");
    * ```
    *
    * @example
    * ```ts
    * // Concatenate 'city' and 'country' into 'location', separated by a comma and space
-   * await table.concatenate(["city", "country"], "location", { separator: ", " });
+   * table.concatenate(["city", "country"], "location", { separator: ", " });
    * ```
    */
-  async concatenate(
+  concatenate(
     columns: string[],
     newColumn: string,
     options: {
       separator?: string;
     } = {},
-  ): Promise<this> {
-    await concatenate(this, columns, newColumn, options);
+  ): this {
+    concatenate(this, columns, newColumn, options);
     return this;
   }
 

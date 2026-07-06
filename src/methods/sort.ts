@@ -1,37 +1,34 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function sort(
+export default function sort(
   simpleTable: SimpleTable,
   order: { [key: string]: "asc" | "desc" } | null = null,
   options: {
     lang?: { [key: string]: string };
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    sortQuery(simpleTable.name, order, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "sort()",
-      parameters: { order, options },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "sort()",
+    parameters: { order, options },
+    needsSchema: false,
+    buildSelect: (input) => sortSelect(input, order, options),
+  });
 }
 
-function sortQuery(
-  table: string,
+function sortSelect(
+  input: string,
   order: { [key: string]: "asc" | "desc" } | null,
   options: {
     lang?: { [key: string]: string };
   } = {},
 ) {
-  let query = `CREATE OR REPLACE TABLE "${table}" AS SELECT * FROM "${table}"
+  let query = `SELECT * FROM ${input}
     ORDER BY`;
 
   if (order === null) {
-    query += " ALL; ";
+    query += " ALL,";
   } else {
     for (const column of Object.keys(order)) {
       if (options.lang && options.lang[column]) {

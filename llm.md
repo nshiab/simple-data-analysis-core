@@ -1556,10 +1556,15 @@ Sorts the rows of the table based on specified column(s) and order(s). If no
 columns are specified, all columns are sorted from left to right in ascending
 order.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called. Methods
+queued after a sort are fused with it into a single query and may not preserve
+its row order, so call sort last in a chain of transformations.
+
 ##### Signature
 
 ```typescript
-async sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Record<string, string> }): Promise<this>;
+sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Record<string, string> }): this;
 ```
 
 ##### Parameters
@@ -1574,28 +1579,28 @@ async sort(order?: Record<string, "asc" | "desc"> | null, options?: { lang?: Rec
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Sort all columns from left to right in ascending order
-await table.sort();
+table.sort();
 ```
 
 ```ts
 // Sort 'column1' in ascending order
-await table.sort({ column1: "asc" });
+table.sort({ column1: "asc" });
 ```
 
 ```ts
 // Sort 'column1' ascendingly, then 'column2' descendingly
-await table.sort({ column1: "asc", column2: "desc" });
+table.sort({ column1: "asc", column2: "desc" });
 ```
 
 ```ts
 // Sort 'column1' considering French accents
-await table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
+table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
 ```
 
 #### `selectColumns`
@@ -1634,10 +1639,13 @@ table.selectColumns("productName");
 
 Skips the first `n` rows of the table, effectively removing them.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async skip(nbRowsToSkip: number): Promise<this>;
+skip(nbRowsToSkip: number): this;
 ```
 
 ##### Parameters
@@ -1647,13 +1655,13 @@ async skip(nbRowsToSkip: number): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Skip the first 10 rows of the table
-await table.skip(10);
+table.skip(10);
 ```
 
 #### `hasColumn`
@@ -1779,10 +1787,13 @@ const topCustomersTable = await table.selectRows(75, {
 Removes duplicate rows from this table, keeping only unique rows. Note that the
 resulting data order might differ from the original.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async removeDuplicates(options?: { on?: string | string[] }): Promise<this>;
+removeDuplicates(options?: { on?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -1794,23 +1805,23 @@ async removeDuplicates(options?: { on?: string | string[] }): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Remove duplicate rows based on all columns
-await table.removeDuplicates();
+table.removeDuplicates();
 ```
 
 ```ts
 // Remove duplicate rows based only on the 'email' column
-await table.removeDuplicates({ on: "email" });
+table.removeDuplicates({ on: "email" });
 ```
 
 ```ts
 // Remove duplicate rows based on 'firstName' and 'lastName' columns
-await table.removeDuplicates({ on: ["firstName", "lastName"] });
+table.removeDuplicates({ on: ["firstName", "lastName"] });
 ```
 
 #### `removeMissing`
@@ -1958,10 +1969,13 @@ table.filter(`lastPurchaseDate >= '2023-01-01'`);
 Keeps rows in this table that have specific values in specified columns,
 removing all other rows.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async keep(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<this>;
+keep(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
 ```
 
 ##### Parameters
@@ -1971,28 +1985,31 @@ async keep(columnsAndValues: Record<string, (number | string | Date | boolean | 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-await table.keep({ job: ["accountant", "developer"], city: "Montreal" });
+table.keep({ job: ["accountant", "developer"], city: "Montreal" });
 ```
 
 ```ts
 // Keep only rows where 'status' is 'active'
-await table.keep({ status: "active" });
+table.keep({ status: "active" });
 ```
 
 #### `remove`
 
 Removes rows from this table that have specific values in specified columns.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async remove(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): Promise<this>;
+remove(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
 ```
 
 ##### Parameters
@@ -2002,18 +2019,18 @@ async remove(columnsAndValues: Record<string, (number | string | Date | boolean 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Remove rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-await table.remove({ job: ["accountant", "developer"], city: "Montreal" });
+table.remove({ job: ["accountant", "developer"], city: "Montreal" });
 ```
 
 ```ts
 // Remove rows where 'status' is 'inactive'
-await table.remove({ status: "inactive" });
+table.remove({ status: "inactive" });
 ```
 
 #### `removeRows`
@@ -2022,10 +2039,13 @@ Removes rows from this table based on SQL conditions. This method is similar to
 `filter()`, but removes rows instead of keeping them. You can also use
 JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async removeRows(conditions: string): Promise<this>;
+removeRows(conditions: string): this;
 ```
 
 ##### Parameters
@@ -2035,30 +2055,28 @@ async removeRows(conditions: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Remove rows where the 'fruit' column is 'apple'
-await table.removeRows(`fruit = 'apple'`);
+table.removeRows(`fruit = 'apple'`);
 ```
 
 ```ts
 // Remove rows where 'quantity' is less than 5
-await table.removeRows(`quantity < 5`);
+table.removeRows(`quantity < 5`);
 ```
 
 ```ts
 // Remove rows where 'price' is less than 100 AND 'quantity' is 0
-await table.removeRows(`price < 100 && quantity === 0`); // Using JS syntax
+table.removeRows(`price < 100 && quantity === 0`); // Using JS syntax
 ```
 
 ```ts
 // Remove rows where 'category' is 'Electronics' OR 'Appliances'
-await table.removeRows(
-  `category === 'Electronics' || category === 'Appliances'`,
-); // Using JS syntax
+table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
 ```
 
 #### `renameColumns`
@@ -2693,10 +2711,13 @@ await table.fuzzyClean("category", "category", 80, { keep: "longestString" });
 
 Replaces specified strings in the selected columns.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async replace(columns: "all" | string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): Promise<this>;
+replace(columns: "all" | string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): this;
 ```
 
 ##### Parameters
@@ -2715,36 +2736,33 @@ async replace(columns: "all" | string | string[], strings: Record<string, string
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Replace all occurrences of "kilograms" with "kg" in 'column1'
-await table.replace("column1", { "kilograms": "kg" });
+table.replace("column1", { "kilograms": "kg" });
 ```
 
 ```ts
 // Replace "kilograms" with "kg" and "liters" with "l" in 'column1' and 'column2'
-await table.replace(["column1", "column2"], {
-  "kilograms": "kg",
-  "liters": "l",
-});
+table.replace(["column1", "column2"], { "kilograms": "kg", "liters": "l" });
 ```
 
 ```ts
 // Replace only if the entire string in 'column1' is "kilograms"
-await table.replace("column1", { "kilograms": "kg" }, { entireString: true });
+table.replace("column1", { "kilograms": "kg" }, { entireString: true });
 ```
 
 ```ts
 // Replace any sequence of one or more digits with a hyphen in 'column1' using regex
-await table.replace("column1", { "\d+": "-" }, { regex: true });
+table.replace("column1", { "\d+": "-" }, { regex: true });
 ```
 
 ```ts
 // Replace "%" with "" in all columns
-await table.replace("all", { "%": "" });
+table.replace("all", { "%": "" });
 ```
 
 #### `lower`
@@ -2850,10 +2868,13 @@ table.capitalize(["column1", "column2"]);
 
 Truncates string values in a specified column to a maximum number of characters.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async truncate(column: string, length: number): Promise<this>;
+truncate(column: string, length: number): this;
 ```
 
 ##### Parameters
@@ -2863,18 +2884,18 @@ async truncate(column: string, length: number): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Truncate strings in 'description' column to 50 characters
-await table.truncate("description", 50);
+table.truncate("description", 50);
 ```
 
 ```ts
 // Truncate strings in 'name' column to 10 characters
-await table.truncate("name", 10);
+table.truncate("name", 10);
 ```
 
 #### `pad`
@@ -3024,10 +3045,13 @@ await table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
 Extracts a specific number of characters from the beginning (left side) of
 string values in the specified column.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async left(column: string, numberOfCharacters: number): Promise<this>;
+left(column: string, numberOfCharacters: number): this;
 ```
 
 ##### Parameters
@@ -3038,14 +3062,14 @@ async left(column: string, numberOfCharacters: number): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Replace strings in 'productCode' with their first two characters
 // e.g., "ABC-123" becomes "AB"
-await table.left("productCode", 2);
+table.left("productCode", 2);
 ```
 
 #### `right`
@@ -3053,10 +3077,13 @@ await table.left("productCode", 2);
 Extracts a specific number of characters from the end (right side) of string
 values in the specified column.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async right(column: string, numberOfCharacters: number): Promise<this>;
+right(column: string, numberOfCharacters: number): this;
 ```
 
 ##### Parameters
@@ -3067,24 +3094,27 @@ async right(column: string, numberOfCharacters: number): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Replace strings in 'productCode' with their last two characters
 // e.g., "ABC-123" becomes "23"
-await table.right("productCode", 2);
+table.right("productCode", 2);
 ```
 
 #### `replaceNulls`
 
 Replaces `NULL` values in the specified columns with a given value.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async replaceNulls(columns: "all" | string | string[], value: number | string | Date | boolean): Promise<this>;
+replaceNulls(columns: "all" | string | string[], value: number | string | Date | boolean): this;
 ```
 
 ##### Parameters
@@ -3095,38 +3125,41 @@ async replaceNulls(columns: "all" | string | string[], value: number | string | 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Replace NULL values in 'column1' with 0
-await table.replaceNulls("column1", 0);
+table.replaceNulls("column1", 0);
 ```
 
 ```ts
 // Replace NULL values in 'columnA' and 'columnB' with the string "N/A"
-await table.replaceNulls(["columnA", "columnB"], "N/A");
+table.replaceNulls(["columnA", "columnB"], "N/A");
 ```
 
 ```ts
 // Replace NULL values in 'dateColumn' with a specific date
-await table.replaceNulls("dateColumn", new Date("2023-01-01"));
+table.replaceNulls("dateColumn", new Date("2023-01-01"));
 ```
 
 ```ts
 // Replace NULL values in all columns with 0
-await table.replaceNulls("all", 0);
+table.replaceNulls("all", 0);
 ```
 
 #### `concatenate`
 
 Concatenates values from specified columns into a new column.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async concatenate(columns: string[], newColumn: string, options?: { separator?: string }): Promise<this>;
+concatenate(columns: string[], newColumn: string, options?: { separator?: string }): this;
 ```
 
 ##### Parameters
@@ -3139,18 +3172,18 @@ async concatenate(columns: string[], newColumn: string, options?: { separator?: 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Concatenate 'firstName' and 'lastName' into a new 'fullName' column
-await table.concatenate(["firstName", "lastName"], "fullName");
+table.concatenate(["firstName", "lastName"], "fullName");
 ```
 
 ```ts
 // Concatenate 'city' and 'country' into 'location', separated by a comma and space
-await table.concatenate(["city", "country"], "location", { separator: ", " });
+table.concatenate(["city", "country"], "location", { separator: ", " });
 ```
 
 #### `concatenateRow`

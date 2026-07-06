@@ -1,9 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
 import parseValue from "../helpers/parseValue.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function remove(
+export default function remove(
   simpleTable: SimpleTable,
   columnsAndValues: {
     [key: string]:
@@ -11,27 +10,24 @@ export default async function remove(
       | (number | string | Date | boolean | null);
   },
 ) {
-  await queryDB(
-    simpleTable,
-    removeQuery(simpleTable.name, columnsAndValues),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "remove()",
-      parameters: { columnsAndValues },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "remove()",
+    parameters: { columnsAndValues },
+    needsSchema: false,
+    buildSelect: (input) => removeSelect(input, columnsAndValues),
+  });
 }
 
-function removeQuery(
-  table: string,
+function removeSelect(
+  input: string,
   columnsAndValues: {
     [key: string]:
       | (number | string | Date | boolean | null)[]
       | (number | string | Date | boolean | null);
   },
 ) {
-  let query =
-    `CREATE OR REPLACE TABLE "${table}" AS SELECT * FROM "${table}" WHERE\n`;
+  let query = `SELECT * FROM ${input} WHERE\n`;
   const columns = Object.keys(columnsAndValues);
 
   const conditions = [];

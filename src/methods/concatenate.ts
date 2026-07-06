@@ -1,8 +1,7 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function concatenate(
+export default function concatenate(
   simpleTable: SimpleTable,
   columns: string[],
   newColumn: string,
@@ -10,34 +9,20 @@ export default async function concatenate(
     separator?: string;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    concatenateQuery(simpleTable.name, columns, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "concatenate()",
-      parameters: { columns, newColumn, options },
-    }),
-  );
-}
-
-function concatenateQuery(
-  table: string,
-  columns: string[],
-  newColumn: string,
-  options: { separator?: string },
-) {
-  let query = `ALTER TABLE "${table}" ADD "${newColumn}" VARCHAR;
-    UPDATE "${table}" SET "${newColumn}" = `;
-  if (typeof options.separator === "string") {
-    query += `CONCAT_WS('${options.separator}', ${
-      columns
-        .map((d) => `"${d}"`)
-        .join(", ")
-    })`;
-  } else {
-    query += `CONCAT(${columns.map((d) => `"${d}"`).join(", ")})`;
-  }
-
-  return query;
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "concatenate()",
+    parameters: { columns, newColumn, options },
+    needsSchema: false,
+    buildSelect: (input) => {
+      const expression = typeof options.separator === "string"
+        ? `CONCAT_WS('${options.separator}', ${
+          columns
+            .map((d) => `"${d}"`)
+            .join(", ")
+        })`
+        : `CONCAT(${columns.map((d) => `"${d}"`).join(", ")})`;
+      return `SELECT *, CAST(${expression} AS VARCHAR) AS "${newColumn}" FROM ${input}`;
+    },
+  });
 }

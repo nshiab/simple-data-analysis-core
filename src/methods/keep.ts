@@ -1,9 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
 import parseValue from "../helpers/parseValue.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function keep(
+export default function keep(
   simpleTable: SimpleTable,
   columnsAndValues: {
     [key: string]:
@@ -11,27 +10,24 @@ export default async function keep(
       | (number | string | Date | boolean | null);
   },
 ) {
-  await queryDB(
-    simpleTable,
-    keepQuery(simpleTable.name, columnsAndValues),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "keep()",
-      parameters: { columnsAndValues },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "keep()",
+    parameters: { columnsAndValues },
+    needsSchema: false,
+    buildSelect: (input) => keepSelect(input, columnsAndValues),
+  });
 }
 
-function keepQuery(
-  table: string,
+function keepSelect(
+  input: string,
   columnsAndValues: {
     [key: string]:
       | (number | string | Date | boolean | null)[]
       | (number | string | Date | boolean | null);
   },
 ) {
-  let query =
-    `CREATE OR REPLACE TABLE "${table}" AS SELECT * FROM "${table}" WHERE\n`;
+  let query = `SELECT * FROM ${input} WHERE\n`;
   const columns = Object.keys(columnsAndValues);
 
   const conditions = [];

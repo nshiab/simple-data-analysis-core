@@ -1,18 +1,18 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function removeRows(
+export default function removeRows(
   simpleTable: SimpleTable,
   conditions: string,
 ) {
-  await queryDB(
-    simpleTable,
-    `DELETE FROM "${simpleTable.name}" WHERE ${conditions}`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "removeRows()",
-      parameters: { conditions },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "removeRows()",
+    parameters: { conditions },
+    needsSchema: false,
+    // DELETE removes rows where the conditions are TRUE and keeps rows where
+    // they are FALSE or NULL, so the SELECT equivalent is IS NOT TRUE.
+    buildSelect: (input) =>
+      `SELECT * FROM ${input} WHERE (${conditions}) IS NOT TRUE`,
+  });
 }

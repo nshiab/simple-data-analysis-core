@@ -1,9 +1,8 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function replace(
+export default function replace(
   simpleTable: SimpleTable,
   columns: "all" | string | string[],
   strings: { [key: string]: string },
@@ -14,63 +13,66 @@ export default async function replace(
 ) {
   options.entireString = options.entireString ?? false;
   options.regex = options.regex ?? false;
+  // This validation doesn't need the database, so it stays at call time.
   if (options.entireString === true && options.regex === true) {
     throw new Error(
       "You can't have entireString to true and regex to true at the same time. Pick one.",
     );
   }
-  const columnList = columns === "all"
-    ? await simpleTable.getColumns()
-    : stringToArray(columns);
-  await queryDB(
-    simpleTable,
-    replaceQuery(
-      simpleTable.name,
-      columnList,
-      Object.keys(strings),
-      Object.values(strings),
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "replace()",
-      parameters: { columns, strings, options },
-    }),
-  );
+
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "replace()",
+    parameters: { columns, strings, options },
+    // The schema is only needed to resolve "all" to the column list.
+    needsSchema: columns === "all",
+    buildSelect: (input, schema) => {
+      const columnList = columns === "all"
+        ? Object.keys(schema)
+        : stringToArray(columns);
+      return replaceSelect(
+        input,
+        columnList,
+        Object.keys(strings),
+        Object.values(strings),
+        options,
+      );
+    },
+  });
 }
 
-function replaceQuery(
-  table: string,
+function replaceSelect(
+  input: string,
   columns: string[],
   oldTexts: string[],
   newTexts: string[],
   options: { entireString?: boolean; regex?: boolean } = {},
 ) {
-  let query = "";
-
   oldTexts = oldTexts.map((d) => d.replace(/'/g, "''"));
   newTexts = newTexts.map((d) => d.replace(/'/g, "''"));
 
-  for (const column of columns) {
+  // The sequential UPDATEs become nested expressions: each replacement
+  // applies to the result of the previous one.
+  const replacements = columns.map((column) => {
+    let expression = `"${column}"`;
     for (let i = 0; i < oldTexts.length; i++) {
       if (options.entireString) {
-        query += `UPDATE "${table}" SET "${column}" = 
-                CASE
-                    WHEN "${column}" = '${oldTexts[i]}' THEN '${newTexts[i]}'
-                    ELSE "${column}"
-                END;\n`;
+        expression = `CASE
+                    WHEN ${expression} = '${oldTexts[i]}' THEN '${newTexts[i]}'
+                    ELSE ${expression}
+                END`;
       } else if (options.regex) {
-        query +=
-          `UPDATE "${table}" SET "${column}" = REGEXP_REPLACE("${column}", '${
-            oldTexts[i]
-          }', '${newTexts[i]}', 'g');\n`;
+        expression = `REGEXP_REPLACE(${expression}, '${oldTexts[i]}', '${
+          newTexts[i]
+        }', 'g')`;
       } else {
-        query += `UPDATE "${table}" SET "${column}" = REPLACE("${column}", '${
-          oldTexts[i]
-        }', '${newTexts[i]}');\n`;
+        expression = `REPLACE(${expression}, '${oldTexts[i]}', '${
+          newTexts[i]
+        }')`;
       }
     }
-  }
+    return `${expression} AS "${column}"`;
+  });
 
-  return query;
+  return `SELECT * REPLACE (${replacements.join(", ")}) FROM ${input}`;
 }
