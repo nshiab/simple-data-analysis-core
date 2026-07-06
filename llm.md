@@ -5560,10 +5560,13 @@ Flips the coordinate order of geometries in a specified column (e.g., from
 used with caution as it directly manipulates coordinate order and can affect the
 accuracy of geospatial operations if not used correctly.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async flipCoordinates(column?: string): Promise<this>;
+flipCoordinates(column?: string): this;
 ```
 
 ##### Parameters
@@ -5573,18 +5576,18 @@ async flipCoordinates(column?: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Flip coordinates in the default geometry column
-await table.flipCoordinates();
+table.flipCoordinates();
 ```
 
 ```ts
 // Flip coordinates in a specific column named 'myGeom'
-await table.flipCoordinates("myGeom");
+table.flipCoordinates("myGeom");
 ```
 
 #### `reducePrecision`
@@ -5592,10 +5595,13 @@ await table.flipCoordinates("myGeom");
 Reduces the precision of geometries in a specified column to a given number of
 decimal places.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async reducePrecision(decimals: number, options?: { column?: string }): Promise<this>;
+reducePrecision(decimals: number, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5608,18 +5614,18 @@ async reducePrecision(decimals: number, options?: { column?: string }): Promise<
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Reduce the precision of geometries in the default column to 3 decimal places
-await table.reducePrecision(3);
+table.reducePrecision(3);
 ```
 
 ```ts
 // Reduce the precision of geometries in a specific column named 'myGeom' to 2 decimal places
-await table.reducePrecision(2, { column: "myGeom" });
+table.reducePrecision(2, { column: "myGeom" });
 ```
 
 #### `reproject`
@@ -5627,10 +5633,13 @@ await table.reducePrecision(2, { column: "myGeom" });
 Reprojects the geometries in a specified column to another Spatial Reference
 System (SRS).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async reproject(to: string, options?: { column?: string }): Promise<this>;
+reproject(to: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5642,18 +5651,18 @@ async reproject(to: string, options?: { column?: string }): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Reproject geometries in the default column to EPSG:3347 (NAD83/Statistics Canada Lambert)
-await table.reproject("EPSG:3347");
+table.reproject("EPSG:3347");
 ```
 
 ```ts
 // Reproject geometries in a specific column named 'myGeom' to EPSG:3347
-await table.reproject("EPSG:3347", { column: "myGeom" });
+table.reproject("EPSG:3347", { column: "myGeom" });
 ```
 
 #### `area`
@@ -6141,10 +6150,13 @@ await table.latLon("geom", "lat", "lon");
 Simplifies geometries while preserving their overall coverage. A higher
 tolerance results in more significant simplification.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async simplify(tolerance: number, options?: { column?: string; simplifyBoundary?: boolean }): Promise<this>;
+simplify(tolerance: number, options?: { column?: string; simplifyBoundary?: boolean }): this;
 ```
 
 ##### Parameters
@@ -6160,18 +6172,18 @@ async simplify(tolerance: number, options?: { column?: string; simplifyBoundary?
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Simplify geometries in the default column with a tolerance of 0.1
-await table.simplify(0.1);
+table.simplify(0.1);
 ```
 
 ```ts
 // Simplify geometries in 'myGeom' column, preserving the boundary
-await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
+table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
 ```
 
 #### `centroid`

@@ -1,27 +1,27 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function reducePrecision(
+export default function reducePrecision(
   simpleTable: SimpleTable,
   decimals: number,
   options: { column?: string } = {},
 ) {
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable);
-  const geoType = await simpleTable.getProjection(column);
-
-  await queryDB(
-    simpleTable,
-    `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * REPLACE (ST_ReducePrecision("${column}", ${
-      1 / Math.pow(10, decimals)
-    })::${geoType} AS "${column}") FROM "${simpleTable.name}"`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "reducePrecision()",
-      parameters: { column, decimals },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "reducePrecision()",
+    parameters: { decimals, options },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const column = typeof options.column === "string"
+        ? options.column
+        : findGeoColumnFromSchema(types);
+      // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
+      // so the cast keeps it on the new geometries.
+      return `SELECT * REPLACE (ST_ReducePrecision("${column}", ${
+        1 / Math.pow(10, decimals)
+      })::${types[column]} AS "${column}") FROM ${input}`;
+    },
+  });
 }

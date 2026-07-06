@@ -1,9 +1,8 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function reproject(
+export default function reproject(
   simpleTable: SimpleTable,
   to: string,
   options: { column?: string } = {},
@@ -13,17 +12,17 @@ export default async function reproject(
     cleanedTo !== "null" ? `('${cleanedTo}')` : ""
   }`;
 
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable);
-
-  await queryDB(
-    simpleTable,
-    `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * REPLACE (ST_Transform("${column}", '${cleanedTo}')::${targetGeoType} AS "${column}") FROM "${simpleTable.name}"`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "reproject()",
-      parameters: { column, to },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "reproject()",
+    parameters: { to, options },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const column = typeof options.column === "string"
+        ? options.column
+        : findGeoColumnFromSchema(types);
+      return `SELECT * REPLACE (ST_Transform("${column}", '${cleanedTo}')::${targetGeoType} AS "${column}") FROM ${input}`;
+    },
+  });
 }

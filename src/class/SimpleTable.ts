@@ -4766,82 +4766,88 @@ export default class SimpleTable extends Simple {
    * Flips the coordinate order of geometries in a specified column (e.g., from `[lon, lat]` to `[lat, lon]` or vice-versa).
    * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Flip coordinates in the default geometry column
-   * await table.flipCoordinates();
+   * table.flipCoordinates();
    * ```
    *
    * @example
    * ```ts
    * // Flip coordinates in a specific column named 'myGeom'
-   * await table.flipCoordinates("myGeom");
+   * table.flipCoordinates("myGeom");
    * ```
    */
-  async flipCoordinates(column?: string): Promise<this> {
-    await flipCoordinates(this, column);
+  flipCoordinates(column?: string): this {
+    flipCoordinates(this, column);
     return this;
   }
 
   /**
    * Reduces the precision of geometries in a specified column to a given number of decimal places.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param decimals - The number of decimal places to keep in the coordinates of the geometries.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Reduce the precision of geometries in the default column to 3 decimal places
-   * await table.reducePrecision(3);
+   * table.reducePrecision(3);
    * ```
    *
    * @example
    * ```ts
    * // Reduce the precision of geometries in a specific column named 'myGeom' to 2 decimal places
-   * await table.reducePrecision(2, { column: "myGeom" });
+   * table.reducePrecision(2, { column: "myGeom" });
    * ```
    */
-  async reducePrecision(
+  reducePrecision(
     decimals: number,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await reducePrecision(this, decimals, options);
+  ): this {
+    reducePrecision(this, decimals, options);
     return this;
   }
 
   /**
    * Reprojects the geometries in a specified column to another Spatial Reference System (SRS).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param to - The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Reproject geometries in the default column to EPSG:3347 (NAD83/Statistics Canada Lambert)
-   * await table.reproject("EPSG:3347");
+   * table.reproject("EPSG:3347");
    * ```
    *
    * @example
    * ```ts
    * // Reproject geometries in a specific column named 'myGeom' to EPSG:3347
-   * await table.reproject("EPSG:3347", { column: "myGeom" });
+   * table.reproject("EPSG:3347", { column: "myGeom" });
    * ```
    */
-  async reproject(
+  reproject(
     to: string,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await reproject(this, to, options);
+  ): this {
+    reproject(this, to, options);
     return this;
   }
 
@@ -5248,30 +5254,32 @@ export default class SimpleTable extends Simple {
   /**
    * Simplifies geometries while preserving their overall coverage. A higher tolerance results in more significant simplification.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param tolerance - A numeric value representing the simplification tolerance. A higher value leads to greater simplification.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.simplifyBoundary - If `true` (default), the boundary of the geometries will also be simplified. If `false`, only the interior of the geometries will be simplified, preserving the original boundary.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Simplify geometries in the default column with a tolerance of 0.1
-   * await table.simplify(0.1);
+   * table.simplify(0.1);
    * ```
    *
    * @example
    * ```ts
    * // Simplify geometries in 'myGeom' column, preserving the boundary
-   * await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
+   * table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
    * ```
    */
-  async simplify(
+  simplify(
     tolerance: number,
     options: { column?: string; simplifyBoundary?: boolean } = {},
-  ): Promise<this> {
-    await simplify(this, tolerance, options);
+  ): this {
+    simplify(this, tolerance, options);
     return this;
   }
 
