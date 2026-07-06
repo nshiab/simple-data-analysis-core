@@ -137,6 +137,14 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   opSequence: number;
   /**
+   * A flag indicating that the spatial extension has been loaded on this
+   * connection, so it's only loaded once. This is for internal use only.
+   *
+   * @defaultValue `false`
+   * @internal
+   */
+  spatialLoaded: boolean;
+  /**
    * A flag indicating whether to use DuckDB's external file cache.
    *
    * @defaultValue `false`
@@ -270,6 +278,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.tempDirectory = options.tempDirectory;
     this.flushing = false;
     this.opSequence = 0;
+    this.spatialLoaded = false;
     this.runQuery = runQuery;
     if (this.cacheVerbose || this.logDuration) {
       this.durationStart = Date.now();

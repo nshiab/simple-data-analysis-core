@@ -363,6 +363,35 @@ Deno.test("should fuse row filters, string updates and sort into one statement",
   await sdb.done();
 });
 
+Deno.test("should fuse geospatial operations with regular ones, loading spatial once", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geoFused");
+  const queries = spyOnQueries(table);
+
+  await table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+
+  const result = await table
+    .centroid("centroid")
+    .area("area", { unit: "km2", column: "geom" })
+    .filter(`nameEnglish LIKE 'Q%'`)
+    .selectColumns(["nameEnglish", "area"])
+    .round("area")
+    .getData();
+
+  assertEquals(result, [{ nameEnglish: "Quebec", area: 1508203 }]);
+
+  // One fused statement for the whole chain after the load.
+  const createStatements = queries.filter((q) =>
+    q.includes(`CREATE OR REPLACE TABLE "geoFused" AS WITH`)
+  );
+  assertEquals(createStatements.length, 1);
+  assert(createStatements[0].includes("s5"));
+
+  await sdb.done();
+});
+
 Deno.test("should execute step by step with debug: true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("debugMode");

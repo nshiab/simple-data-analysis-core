@@ -2,6 +2,7 @@ import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { FusableOp, PendingOp, TableSchema } from "./pendingOps.ts";
 import cleanSQL from "./cleanSQL.ts";
+import ensureSpatial from "./ensureSpatial.ts";
 import extractTypes from "./extractTypes.ts";
 import mergeOptions from "./mergeOptions.ts";
 import queryDB from "./queryDB.ts";
@@ -83,6 +84,10 @@ async function runFused(
     return;
   }
 
+  if (segment.some((op) => op.needsSpatial)) {
+    await ensureSpatial(table);
+  }
+
   // Each fragment is cleaned individually: cleanSQL's WHERE handling must not
   // cross fragment boundaries once they are composed into one statement.
   const ctes: { alias: string; select: string }[] = [];
@@ -137,6 +142,9 @@ async function runStepwise(
   table: SimpleTable,
   op: FusableOp,
 ): Promise<void> {
+  if (op.needsSpatial) {
+    await ensureSpatial(table);
+  }
   const schema = op.needsSchema ? await describeChain(table, []) : {};
   await queryDB(
     table,

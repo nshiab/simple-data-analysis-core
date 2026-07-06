@@ -4849,36 +4849,38 @@ export default class SimpleTable extends Simple {
    * Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
    * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the computed areas will be stored.
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed area: `"m2"` (square meters) or `"km2"` (square kilometers). Defaults to `"m2"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the area of geometries in square meters and store in 'area_m2'
-   * await table.area("area_m2");
+   * table.area("area_m2");
    * ```
    *
    * @example
    * ```ts
    * // Compute the area of geometries in square kilometers and store in 'area_km2'
-   * await table.area("area_km2", { unit: "km2" });
+   * table.area("area_km2", { unit: "km2" });
    * ```
    *
    * @example
    * ```ts
    * // Compute the area of geometries in a specific column named 'myGeom'
-   * await table.area("myGeomArea", { column: "myGeom" });
+   * table.area("myGeomArea", { column: "myGeom" });
    * ```
    */
-  async area(
+  area(
     newColumn: string,
     options: { unit?: "m2" | "km2"; column?: string } = {},
-  ): Promise<this> {
-    await area(this, newColumn, options);
+  ): this {
+    area(this, newColumn, options);
     return this;
   }
 
@@ -4960,31 +4962,33 @@ export default class SimpleTable extends Simple {
    * Computes a buffer (a polygon representing a specified distance around a geometry) for geometries in a specified column.
    * The distance is in the Spatial Reference System (SRS) unit of the input geometries.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the buffered geometries will be stored.
    * @param distance - The distance for the buffer. This value is in the units of the geometry's SRS.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Create a buffer of 1 unit around geometries in the default column, storing results in 'bufferedGeom'
-   * await table.buffer("bufferedGeom", 1);
+   * table.buffer("bufferedGeom", 1);
    * ```
    *
    * @example
    * ```ts
    * // Create a buffer of 10 units around geometries in a specific column named 'pointsGeom'
-   * await table.buffer("pointsBuffer", 10, { column: "pointsGeom" });
+   * table.buffer("pointsBuffer", 10, { column: "pointsGeom" });
    * ```
    */
-  async buffer(
+  buffer(
     newColumn: string,
     distance: number,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await buffer(this, newColumn, distance, options);
+  ): this {
+    buffer(this, newColumn, distance, options);
     return this;
   }
 
@@ -5069,48 +5073,52 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the intersection of two sets of geometries, creating new geometries where they overlap.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the computed intersection geometries will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the intersection of geometries in 'geomA' and 'geomB' columns, storing results in 'intersectGeom'
-   * await table.intersection("geomA", "geomB", "intersectGeom");
+   * table.intersection("geomA", "geomB", "intersectGeom");
    * ```
    */
-  async intersection(
+  intersection(
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<this> {
-    await intersection(this, column1, column2, newColumn);
+  ): this {
+    intersection(this, column1, column2, newColumn);
     return this;
   }
 
   /**
    * Removes the intersection of two geometries from the first geometry, effectively computing the geometric difference.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column1 - The name of the column storing the reference geometries. These geometries will have the intersection removed.
    * @param column2 - The name of the column storing the geometries used to compute the intersection. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the resulting geometries (without the intersection) will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Remove the intersection of 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
-   * await table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
+   * table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
    * ```
    */
-  async removeIntersection(
+  removeIntersection(
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<this> {
-    await removeIntersection(this, column1, column2, newColumn);
+  ): this {
+    removeIntersection(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5189,24 +5197,26 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the union of two geometries, creating a new geometry that represents the merged area of both.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the computed union geometries will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the union of geometries in 'geomA' and 'geomB', storing results in 'unionGeom'
-   * await table.union("geomA", "geomB", "unionGeom");
+   * table.union("geomA", "geomB", "unionGeom");
    * ```
    */
-  async union(
+  union(
     column1: string,
     column2: string,
     newColumn: string,
-  ): Promise<this> {
-    await union(this, column1, column2, newColumn);
+  ): this {
+    union(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5269,29 +5279,31 @@ export default class SimpleTable extends Simple {
    * Computes the centroid of geometries.
    * The values are returned in the SRS unit of the input geometries.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column where the computed centroid geometries will be stored.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Compute the centroid of geometries in the default column, storing results in 'centerPoint'
-   * await table.centroid("centerPoint");
+   * table.centroid("centerPoint");
    * ```
    *
    * @example
    * ```ts
    * // Compute the centroid of geometries in a specific column named 'areaGeom'
-   * await table.centroid("areaCentroid", { column: "areaGeom" });
+   * table.centroid("areaCentroid", { column: "areaGeom" });
    * ```
    */
-  async centroid(
+  centroid(
     newColumn: string,
     options: { column?: string } = {},
-  ): Promise<this> {
-    await centroid(this, newColumn, options);
+  ): this {
+    centroid(this, newColumn, options);
     return this;
   }
 

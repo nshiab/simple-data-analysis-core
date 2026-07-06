@@ -5662,10 +5662,13 @@ Computes the area of geometries in square meters (`"m2"`) or optionally square
 kilometers (`"km2"`). The input geometry is assumed to be in the EPSG:4326
 coordinate system (WGS84).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): Promise<this>;
+area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): this;
 ```
 
 ##### Parameters
@@ -5680,23 +5683,23 @@ async area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the area of geometries in square meters and store in 'area_m2'
-await table.area("area_m2");
+table.area("area_m2");
 ```
 
 ```ts
 // Compute the area of geometries in square kilometers and store in 'area_km2'
-await table.area("area_km2", { unit: "km2" });
+table.area("area_km2", { unit: "km2" });
 ```
 
 ```ts
 // Compute the area of geometries in a specific column named 'myGeom'
-await table.area("myGeomArea", { column: "myGeom" });
+table.area("myGeomArea", { column: "myGeom" });
 ```
 
 #### `length`
@@ -5791,10 +5794,13 @@ Computes a buffer (a polygon representing a specified distance around a
 geometry) for geometries in a specified column. The distance is in the Spatial
 Reference System (SRS) unit of the input geometries.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async buffer(newColumn: string, distance: number, options?: { column?: string }): Promise<this>;
+buffer(newColumn: string, distance: number, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5809,18 +5815,18 @@ async buffer(newColumn: string, distance: number, options?: { column?: string })
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Create a buffer of 1 unit around geometries in the default column, storing results in 'bufferedGeom'
-await table.buffer("bufferedGeom", 1);
+table.buffer("bufferedGeom", 1);
 ```
 
 ```ts
 // Create a buffer of 10 units around geometries in a specific column named 'pointsGeom'
-await table.buffer("pointsBuffer", 10, { column: "pointsGeom" });
+table.buffer("pointsBuffer", 10, { column: "pointsGeom" });
 ```
 
 #### `joinGeo`
@@ -5913,10 +5919,13 @@ const tableC = await tableA.joinGeo(tableB, "intersect", {
 Computes the intersection of two sets of geometries, creating new geometries
 where they overlap.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async intersection(column1: string, column2: string, newColumn: string): Promise<this>;
+intersection(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -5929,13 +5938,13 @@ async intersection(column1: string, column2: string, newColumn: string): Promise
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the intersection of geometries in 'geomA' and 'geomB' columns, storing results in 'intersectGeom'
-await table.intersection("geomA", "geomB", "intersectGeom");
+table.intersection("geomA", "geomB", "intersectGeom");
 ```
 
 #### `removeIntersection`
@@ -5943,10 +5952,13 @@ await table.intersection("geomA", "geomB", "intersectGeom");
 Removes the intersection of two geometries from the first geometry, effectively
 computing the geometric difference.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async removeIntersection(column1: string, column2: string, newColumn: string): Promise<this>;
+removeIntersection(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -5960,13 +5972,13 @@ async removeIntersection(column1: string, column2: string, newColumn: string): P
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Remove the intersection of 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
-await table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
+table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
 ```
 
 #### `fillHoles`
@@ -6066,10 +6078,13 @@ await table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
 Computes the union of two geometries, creating a new geometry that represents
 the merged area of both.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async union(column1: string, column2: string, newColumn: string): Promise<this>;
+union(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -6082,13 +6097,13 @@ async union(column1: string, column2: string, newColumn: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the union of geometries in 'geomA' and 'geomB', storing results in 'unionGeom'
-await table.union("geomA", "geomB", "unionGeom");
+table.union("geomA", "geomB", "unionGeom");
 ```
 
 #### `latLon`
@@ -6164,10 +6179,13 @@ await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
 Computes the centroid of geometries. The values are returned in the SRS unit of
 the input geometries.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async centroid(newColumn: string, options?: { column?: string }): Promise<this>;
+centroid(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -6180,18 +6198,18 @@ async centroid(newColumn: string, options?: { column?: string }): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Compute the centroid of geometries in the default column, storing results in 'centerPoint'
-await table.centroid("centerPoint");
+table.centroid("centerPoint");
 ```
 
 ```ts
 // Compute the centroid of geometries in a specific column named 'areaGeom'
-await table.centroid("areaCentroid", { column: "areaGeom" });
+table.centroid("areaCentroid", { column: "areaGeom" });
 ```
 
 #### `randomPoint`

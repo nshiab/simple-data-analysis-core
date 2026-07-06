@@ -27,6 +27,11 @@ export type FusableOp = {
    */
   needsSchema: boolean;
   /**
+   * Whether the SELECT uses spatial functions. The flush compiler loads the
+   * spatial extension once per connection before executing such operations.
+   */
+  needsSpatial?: boolean;
+  /**
    * Returns a single SELECT statement over `input`, which is either the
    * quoted table name or the alias of the previous CTE in the fused chain.
    */
