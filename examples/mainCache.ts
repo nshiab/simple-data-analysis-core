@@ -19,11 +19,12 @@ const fires = sdb.newTable("fires");
 // If you update the parameters or code passed to the cache
 // method, everything starts over.
 await fires.cache(
-  async () => {
-    await fires.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
-    );
-    await fires.points("lat", "lon", "geom");
+  () => {
+    fires
+      .loadData(
+        "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
+      )
+      .points("lat", "lon", "geom");
   },
   { ttl: 60 },
 );
@@ -35,8 +36,8 @@ const provinces = sdb.newTable("provinces");
 // the hidden folder .sda-cache. Again, if you update
 // the code passed to the cache method, everything
 // starts over.
-await provinces.cache(async () => {
-  await provinces.loadGeoData(
+await provinces.cache(() => {
+  provinces.loadGeoData(
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 });
@@ -51,22 +52,23 @@ const firesInsideProvinces = sdb.newTable("firesInsideProvinces");
 // or lower. Otherwise, we won't work with
 // up-to-date data.
 await firesInsideProvinces.cache(
-  async () => {
-    await fires.joinGeo(provinces, "inside", {
-      outputTable: "firesInsideProvinces",
-    });
-    await firesInsideProvinces.removeMissing();
-    await firesInsideProvinces.summarize({
-      values: "hectares",
-      categories: "nameEnglish",
-      summaries: ["count", "sum"],
-      decimals: 0,
-    });
-    await firesInsideProvinces.renameColumns({
-      count: "nbFires",
-      sum: "burntArea",
-    });
-    await firesInsideProvinces.sort({ burntArea: "desc" });
+  () => {
+    fires
+      .joinGeo(provinces, "inside", {
+        outputTable: "firesInsideProvinces",
+      })
+      .removeMissing()
+      .summarize({
+        values: "hectares",
+        categories: "nameEnglish",
+        summaries: ["count", "sum"],
+        decimals: 0,
+      })
+      .renameColumns({
+        count: "nbFires",
+        sum: "burntArea",
+      })
+      .sort({ burntArea: "desc" });
   },
   { ttl: 60 },
 );

@@ -29,6 +29,42 @@ check the
 > [Code Like a Journalist](https://www.code-like-a-journalist.com/), a free and
 > open-source data analysis and data visualization course in TypeScript.
 
+## How it works
+
+Since v2, the library follows one rule: **sync methods build; async methods
+observe — and observing executes.**
+
+Methods that transform tables (loads, filters, conversions, joins, geospatial
+operations, etc.) are synchronous: they queue their work and return the table,
+so they can be chained. Methods that produce a result (`getData()`,
+`logTable()`, `writeData()`, etc.) are asynchronous: awaiting one executes
+everything queued so far, fusing consecutive steps into a single DuckDB query
+when possible. On large tables, fused transformations typically run around 3x
+faster than step-by-step execution.
+
+```ts
+import { SimpleDB } from "@nshiab/simple-data-analysis-core";
+
+const sdb = new SimpleDB();
+const table = sdb.newTable();
+
+// One await, at the observation point. Everything
+// before it is fused into a single query.
+const data = await table
+  .loadData("temperatures.csv")
+  .selectColumns(["city", "time", "tas"])
+  .removeMissing({ columns: "tas" })
+  .convert({ tas: "double", time: "date" })
+  .addColumn("decade", "integer", "FLOOR(YEAR(time) / 10)*10")
+  .getData();
+
+await sdb.done();
+```
+
+If a chain ends with transformations and nothing observes it, call `run()` to
+execute it. If you are migrating from v1, see the
+[migration guide](https://github.com/nshiab/simple-data-analysis-core/blob/main/MIGRATION.md).
+
 ## Installation
 
 The library is available on

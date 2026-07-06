@@ -5836,7 +5836,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async cache(
-    run: () => Promise<void>,
+    run: () => void | Promise<void>,
     options: { ttl?: number } = {},
   ): Promise<this> {
     await cache(this, run, { ...options, verbose: this.sdb.cacheVerbose });

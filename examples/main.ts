@@ -6,7 +6,9 @@ const sdb = new SimpleDB();
 // We create a new table.
 const provinces = sdb.newTable("provinces");
 // We fetch the provinces' boundaries. It's a geoJSON.
-await provinces.loadGeoData(
+// Like all transformation methods, this queues the work: it will
+// run when an observer method (like logTable below) is awaited.
+provinces.loadGeoData(
   "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
 );
 
@@ -15,13 +17,13 @@ await provinces.loadGeoData(
 
 // We create a new table.
 const fires = sdb.newTable("fires");
-// We fetch the wildfires data. It's a CSV.
-await fires.loadData(
-  "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
-);
-// We create point geometries from the lat and lon columns
-// and we store the points in the new column geom.
-await fires.points("lat", "lon", "geom");
+// We fetch the wildfires data (a CSV), then create point geometries
+// from the lat and lon columns in the new column geom.
+fires
+  .loadData(
+    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
+  )
+  .points("lat", "lon", "geom");
 
 // We match fires with provinces
 // and we output the results into a new table.
@@ -29,34 +31,33 @@ await fires.points("lat", "lon", "geom");
 // for columns storing geometries in the tables,
 // do a left join, and put the results
 // in the left table.
-const firesInsideProvinces = await fires.joinGeo(provinces, "inside", {
-  outputTable: "firesInsideProvinces",
-});
+const firesInsideProvinces = fires
+  .joinGeo(provinces, "inside", {
+    outputTable: "firesInsideProvinces",
+  })
+  // We remove fires that could not be matched.
+  .removeMissing()
+  // We summarize to count the number of fires
+  // and sum up the area burnt in each province.
+  .summarize({
+    values: "hectares",
+    categories: "nameEnglish",
+    summaries: ["count", "sum"],
+    decimals: 0,
+  })
+  // We rename columns.
+  .renameColumns({
+    count: "nbFires",
+    sum: "burntArea",
+  })
+  // We want the province with
+  // the greatest burnt area first.
+  .sort({ burntArea: "desc" });
 
-// We remove fires that could not be matched
-await firesInsideProvinces.removeMissing();
-
-// We summarize to count the number of fires
-// and sum up the area burnt in each province.
-await firesInsideProvinces.summarize({
-  values: "hectares",
-  categories: "nameEnglish",
-  summaries: ["count", "sum"],
-  decimals: 0,
-});
-
-// We rename columns.
-await firesInsideProvinces.renameColumns({
-  count: "nbFires",
-  sum: "burntArea",
-});
-// We want the province with
-// the greatest burnt area first.
-await firesInsideProvinces.sort({ burntArea: "desc" });
-
-// We log the results. By default, the method
-// logs the first 10 rows, but we can specify
-// the number of rows to log.
+// We log the results. Awaiting this observer method executes
+// everything queued above, fusing consecutive steps into as few
+// queries as possible. By default, the method logs the first
+// 10 rows, but we can specify the number of rows to log.
 await firesInsideProvinces.logTable(12);
 
 // We close everything.

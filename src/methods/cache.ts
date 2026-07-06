@@ -15,7 +15,7 @@ type cacheSources = {
 
 export default async function cache(
   table: SimpleTable,
-  run: () => Promise<void>,
+  run: () => void | Promise<void>,
   options: { ttl?: number; verbose?: boolean } = {},
 ) {
   options.verbose &&
@@ -143,7 +143,7 @@ export default async function cache(
 
 async function runAndWrite(
   table: SimpleTable,
-  run: () => Promise<void>,
+  run: () => void | Promise<void>,
   cacheSources: cacheSources,
   cacheSourcesPath: string,
   cachePath: string,
