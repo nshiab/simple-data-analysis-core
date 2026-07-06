@@ -207,7 +207,8 @@ Deno.test("should throw error when trying to concatenate non-VARCHAR columns", a
 
   await assertRejects(
     async () => {
-      await table.concatenateRow(["name", "age", "salary"], "profile");
+      // concatenateRow() queues the operation; run() executes it.
+      await table.concatenateRow(["name", "age", "salary"], "profile").run();
     },
     Error,
     "The column age is of type DOUBLE. The concatenateRow() method only works with string columns. Please convert the column to string first with the .convert() method.",

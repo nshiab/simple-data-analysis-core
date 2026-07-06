@@ -1162,65 +1162,67 @@ export default class SimpleTable extends Simple {
   /**
    * Fills `NULL` values in specified columns. By default, each `NULL` is replaced with the last non-`NULL` value from the preceding row. When `interpolate` is `true`, `NULL` values are replaced using linear interpolation (or extrapolation at the ends). Pass `interpolateBy` with a real numeric or date column name to use it as the X-axis, so that interpolated values are proportional to the actual distances between X-axis values rather than treating every row as equidistant. When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - The column(s) for which to fill `NULL` values.
    * @param options - An optional object with configuration options:
    * @param options.categories - A string or an array of strings representing columns to partition the data by. The fill will be applied independently within each category.
    * @param options.interpolate - If `true`, replaces `NULL` values with linearly interpolated values using DuckDB's `fill()` window function. When `interpolateBy` is not set, row positions are used as the X-axis, treating rows as equidistant. For `NULL` values at the ends, linear extrapolation is used. Both the column values and the X-axis values must support arithmetic. If `false` or omitted, the previous non-`NULL` value is used instead. Automatically assumed `true` when `interpolateBy` is set.
    * @param options.interpolateBy - A column name to use as the X-axis for interpolation instead of equidistant row positions. When provided, `interpolate` is automatically assumed `true`. Use this when rows are not evenly spaced (e.g., timestamps or non-uniform numeric indices) so that interpolated values are proportional to the actual distance between X-axis values.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Fill NULL values in 'column1' with the previous non-NULL value
-   * await table.fill("column1");
+   * table.fill("column1");
    * ```
    *
    * @example
    * ```ts
    * // Fill NULL values in multiple columns
-   * await table.fill(["columnA", "columnB"]);
+   * table.fill(["columnA", "columnB"]);
    * ```
    *
    * @example
    * ```ts
    * // Fill NULL values in 'value' independently within each 'group'
-   * await table.fill("value", { categories: "group" });
+   * table.fill("value", { categories: "group" });
    * ```
    *
    * @example
    * ```ts
    * // Fill NULL values in 'value' using linear interpolation
-   * await table.fill("value", { interpolate: true });
+   * table.fill("value", { interpolate: true });
    * ```
    *
    * @example
    * ```ts
    * // Fill NULL values in 'value' using linear interpolation, independently within each 'group'
-   * await table.fill("value", { categories: "group", interpolate: true });
+   * table.fill("value", { categories: "group", interpolate: true });
    * ```
    *
    * @example
    * ```ts
    * // Fill NULL values in 'value' using linear interpolation proportional to 'x' distances
-   * await table.fill("value", { interpolate: true, interpolateBy: "x" });
+   * table.fill("value", { interpolate: true, interpolateBy: "x" });
    * ```
    *
    * @example
    * ```ts
    * // interpolateBy implies interpolate: true, so this is equivalent to the previous example
-   * await table.fill("value", { interpolateBy: "x" });
+   * table.fill("value", { interpolateBy: "x" });
    * ```
    */
-  async fill(
+  fill(
     columns: string | string[],
     options: {
       categories?: string | string[];
       interpolate?: boolean;
       interpolateBy?: string;
     } = {},
-  ): Promise<this> {
-    await fill(this, columns, options);
+  ): this {
+    fill(this, columns, options);
     return this;
   }
 
@@ -2694,15 +2696,17 @@ export default class SimpleTable extends Simple {
    *
    * If a column value is `NULL`, it will be replaced by `'Unknown'` in the concatenated result.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - An array of column names whose values will be concatenated with labels.
    * @param newColumn - The name of the new column to create with the concatenated values.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Concatenate multiple string columns into a labeled text field
-   * await table.concatenateRow(
+   * table.concatenateRow(
    *   ["summary", "findings", "context", "date", "quote"],
    *   "fullText"
    * );
@@ -2728,14 +2732,14 @@ export default class SimpleTable extends Simple {
    * // Convert numeric columns to strings first, then concatenate
    * // NULL values will appear as 'Unknown'
    * await table.convert({ age: "string", salary: "string" });
-   * await table.concatenateRow(["name", "age", "salary"], "profile");
+   * table.concatenateRow(["name", "age", "salary"], "profile");
    * ```
    */
-  async concatenateRow(
+  concatenateRow(
     columns: string[],
     newColumn: string,
-  ): Promise<this> {
-    await concatenateRow(this, columns, newColumn);
+  ): this {
+    concatenateRow(this, columns, newColumn);
     return this;
   }
 
@@ -2779,15 +2783,18 @@ export default class SimpleTable extends Simple {
    *
    * If a row has a value of 3 in the specified column, it will be repeated 3 times. If the value is 0 or negative, the row will be removed.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing the number of times each row should be repeated.
    * @param options - An optional object with configuration options:
    * @param options.index - The name of a new column to store the index of the repeated row (starting at 0).
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Before: [{ id: 1, count: 2, category: "A" }, { id: 2, count: 3, category: "B" }]
-   * await table.repeatRows("count");
+   * table.repeatRows("count");
    * // After:  [{ id: 1, count: 2, category: "A" }, { id: 1, count: 2, category: "A" },
    * //          { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }]
    * ```
@@ -2795,16 +2802,16 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // With an index column
-   * await table.repeatRows("count", { index: "copyId" });
+   * table.repeatRows("count", { index: "copyId" });
    * // After:  [{ id: 1, count: 2, category: "A", copyId: 0 }, { id: 1, count: 2, category: "A", copyId: 1 },
    * //          { id: 2, count: 3, category: "B", copyId: 0 }, { id: 2, count: 3, category: "B", copyId: 1 }, { id: 2, count: 3, category: "B", copyId: 2 }]
    * ```
    */
-  async repeatRows(
+  repeatRows(
     column: string,
     options: { index?: string } = {},
-  ): Promise<this> {
-    await repeatRows(this, column, options);
+  ): this {
+    repeatRows(this, column, options);
     return this;
   }
 
@@ -2813,10 +2820,12 @@ export default class SimpleTable extends Simple {
    *
    * This is the inverse operation of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column whose values will be aggregated and concatenated.
    * @param separator - The delimiter string used to join the column values.
    * @param categories - The column name or an array of column names to group by.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2826,7 +2835,7 @@ export default class SimpleTable extends Simple {
    * //         { city: "Montreal", neighborhoods: "Chinatown" },
    * //         { city: "Montreal", neighborhoods: "Griffintown" }]
    * // After:  [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-   * await table.nest("neighborhoods", " / ", "city");
+   * table.nest("neighborhoods", " / ", "city");
    * ```
    *
    * @example
@@ -2835,15 +2844,15 @@ export default class SimpleTable extends Simple {
    * // Before: [{ country: "Canada", city: "Montreal", tags: "red" },
    * //         { country: "Canada", city: "Montreal", tags: "blue" }]
    * // After:  [{ country: "Canada", city: "Montreal", tags: "red,blue" }]
-   * await table.nest("tags", ",", ["country", "city"]);
+   * table.nest("tags", ",", ["country", "city"]);
    * ```
    */
-  async nest(
+  nest(
     column: string,
     separator: string,
     categories: string | string[],
-  ): Promise<this> {
-    await nest(this, column, separator, categories);
+  ): this {
+    nest(this, column, separator, categories);
     return this;
   }
 

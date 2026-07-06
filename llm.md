@@ -1500,10 +1500,13 @@ use it as the X-axis, so that interpolated values are proportional to the actual
 distances between X-axis values rather than treating every row as equidistant.
 When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async fill(columns: string | string[], options?: { categories?: string | string[]; interpolate?: boolean; interpolateBy?: string }): Promise<this>;
+fill(columns: string | string[], options?: { categories?: string | string[]; interpolate?: boolean; interpolateBy?: string }): this;
 ```
 
 ##### Parameters
@@ -1529,43 +1532,43 @@ async fill(columns: string | string[], options?: { categories?: string | string[
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Fill NULL values in 'column1' with the previous non-NULL value
-await table.fill("column1");
+table.fill("column1");
 ```
 
 ```ts
 // Fill NULL values in multiple columns
-await table.fill(["columnA", "columnB"]);
+table.fill(["columnA", "columnB"]);
 ```
 
 ```ts
 // Fill NULL values in 'value' independently within each 'group'
-await table.fill("value", { categories: "group" });
+table.fill("value", { categories: "group" });
 ```
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation
-await table.fill("value", { interpolate: true });
+table.fill("value", { interpolate: true });
 ```
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation, independently within each 'group'
-await table.fill("value", { categories: "group", interpolate: true });
+table.fill("value", { categories: "group", interpolate: true });
 ```
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation proportional to 'x' distances
-await table.fill("value", { interpolate: true, interpolateBy: "x" });
+table.fill("value", { interpolate: true, interpolateBy: "x" });
 ```
 
 ```ts
 // interpolateBy implies interpolate: true, so this is equivalent to the previous example
-await table.fill("value", { interpolateBy: "x" });
+table.fill("value", { interpolateBy: "x" });
 ```
 
 #### `sort`
@@ -3249,10 +3252,13 @@ All values must be string, otherwise an error will be thrown. Use the
 If a column value is `NULL`, it will be replaced by `'Unknown'` in the
 concatenated result.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async concatenateRow(columns: string[], newColumn: string): Promise<this>;
+concatenateRow(columns: string[], newColumn: string): this;
 ```
 
 ##### Parameters
@@ -3264,13 +3270,13 @@ async concatenateRow(columns: string[], newColumn: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Concatenate multiple string columns into a labeled text field
-await table.concatenateRow(
+table.concatenateRow(
   ["summary", "findings", "context", "date", "quote"],
   "fullText",
 );
@@ -3295,7 +3301,7 @@ await table.concatenateRow(
 // Convert numeric columns to strings first, then concatenate
 // NULL values will appear as 'Unknown'
 await table.convert({ age: "string", salary: "string" });
-await table.concatenateRow(["name", "age", "salary"], "profile");
+table.concatenateRow(["name", "age", "salary"], "profile");
 ```
 
 #### `unnest`
@@ -3351,10 +3357,13 @@ Repeats rows based on the values in a column.
 If a row has a value of 3 in the specified column, it will be repeated 3 times.
 If the value is 0 or negative, the row will be removed.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async repeatRows(column: string, options?: { index?: string }): Promise<this>;
+repeatRows(column: string, options?: { index?: string }): this;
 ```
 
 ##### Parameters
@@ -3365,18 +3374,22 @@ async repeatRows(column: string, options?: { index?: string }): Promise<this>;
 - **`options.index`**: The name of a new column to store the index of the
   repeated row (starting at 0).
 
+##### Returns
+
+The table, so methods can be chained.
+
 ##### Examples
 
 ```ts
 // Before: [{ id: 1, count: 2, category: "A" }, { id: 2, count: 3, category: "B" }]
-await table.repeatRows("count");
+table.repeatRows("count");
 // After:  [{ id: 1, count: 2, category: "A" }, { id: 1, count: 2, category: "A" },
 //          { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }]
 ```
 
 ```ts
 // With an index column
-await table.repeatRows("count", { index: "copyId" });
+table.repeatRows("count", { index: "copyId" });
 // After:  [{ id: 1, count: 2, category: "A", copyId: 0 }, { id: 1, count: 2, category: "A", copyId: 1 },
 //          { id: 2, count: 3, category: "B", copyId: 0 }, { id: 2, count: 3, category: "B", copyId: 1 }, { id: 2, count: 3, category: "B", copyId: 2 }]
 ```
@@ -3390,10 +3403,13 @@ This is the inverse operation of `unnest()`. Multiple rows are combined into
 fewer rows by grouping on specified category columns and concatenating the
 target column values with a separator.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async nest(column: string, separator: string, categories: string | string[]): Promise<this>;
+nest(column: string, separator: string, categories: string | string[]): this;
 ```
 
 ##### Parameters
@@ -3405,7 +3421,7 @@ async nest(column: string, separator: string, categories: string | string[]): Pr
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -3415,7 +3431,7 @@ A promise that resolves to the table, so methods can be chained.
 //         { city: "Montreal", neighborhoods: "Chinatown" },
 //         { city: "Montreal", neighborhoods: "Griffintown" }]
 // After:  [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-await table.nest("neighborhoods", " / ", "city");
+table.nest("neighborhoods", " / ", "city");
 ```
 
 ```ts
@@ -3423,7 +3439,7 @@ await table.nest("neighborhoods", " / ", "city");
 // Before: [{ country: "Canada", city: "Montreal", tags: "red" },
 //         { country: "Canada", city: "Montreal", tags: "blue" }]
 // After:  [{ country: "Canada", city: "Montreal", tags: "red,blue" }]
-await table.nest("tags", ",", ["country", "city"]);
+table.nest("tags", ",", ["country", "city"]);
 ```
 
 #### `round`
