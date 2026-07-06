@@ -1,4 +1,5 @@
 import parseType from "../helpers/parseTypes.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 
@@ -26,7 +27,7 @@ export default function convert(
     datetimeFormat?: string;
   } = {},
 ) {
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "convert()",
     parameters: { types, options },

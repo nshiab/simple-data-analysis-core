@@ -1,4 +1,5 @@
 import cleanPath from "../helpers/cleanPath.ts";
+import queueOp from "../helpers/queueOp.ts";
 import getExtension from "../helpers/getExtension.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -38,7 +39,7 @@ export default function loadData(
   // (like the columns option with an Excel file) throw at call time.
   const query = loadDataQuery(simpleTable.name, stringToArray(files), options);
 
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "barrier",
     method: "loadData()",
     parameters: { files, options },

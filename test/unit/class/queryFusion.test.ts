@@ -211,6 +211,120 @@ Deno.test("should flush a table's queued methods when another table observes", a
   await sdb.done();
 });
 
+Deno.test("should replay interleaved operations across tables in program order", async () => {
+  const sdb = new SimpleDB();
+  const tableA = sdb.newTable("orderA");
+  const tableB = sdb.newTable("orderB");
+
+  const queries: string[] = [];
+  for (const simple of [sdb, tableA, tableB]) {
+    const original = simple.runQuery;
+    simple.runQuery = (query, connection, returnDataFromQuery, options) => {
+      queries.push(query);
+      return original(query, connection, returnDataFromQuery, options);
+    };
+  }
+
+  tableA.loadArray(data);
+  tableB.loadArray([{ n: 1 }]);
+  tableA.filter(`value > 1`);
+  tableB.addColumn("m", "number", `n * 10`);
+  tableA.selectColumns("name");
+
+  const resultA = await tableA.getData();
+  const resultB = await tableB.getData();
+
+  assertEquals(resultA, [{ name: "b" }, { name: "c" }]);
+  assertEquals(resultB, [{ n: 1, m: 10 }]);
+
+  // The operation on tableB queued between the two operations on tableA
+  // must execute between them, exactly in the order the user queued them.
+  const creates = queries.filter((q) => q.includes("CREATE OR REPLACE TABLE"));
+  const iFilter = creates.findIndex((q) =>
+    q.includes(`"orderA"`) && q.includes("WHERE")
+  );
+  const iAddColumn = creates.findIndex((q) =>
+    q.includes(`"orderB"`) && q.includes(`"m"`)
+  );
+  const iSelect = creates.findIndex((q) =>
+    q.includes(`"orderA"`) && q.includes(`SELECT "name"`)
+  );
+  assert(iFilter !== -1 && iAddColumn !== -1 && iSelect !== -1);
+  assert(iFilter < iAddColumn);
+  assert(iAddColumn < iSelect);
+
+  await sdb.done();
+});
+
+Deno.test("should join with the other table's state at the join's position in program order", async () => {
+  const sdb = new SimpleDB();
+  const left = sdb.newTable("joinLeft");
+  const right = sdb.newTable("joinRight");
+
+  left.loadArray([
+    { id: 1, city: "Montreal" },
+    { id: 2, city: "Toronto" },
+  ]);
+  right.loadArray([
+    { id: 1, pop: 100 },
+    { id: 2, pop: 200 },
+  ]);
+  right.filter(`pop > 150`);
+  const output = left.join(right, {
+    type: "inner",
+    outputTable: "joinOutput",
+  });
+  // Queued after the join: must NOT affect what the join sees.
+  right.filter(`pop > 1000`);
+
+  const result = await output.getData();
+  assertEquals(result, [{ id: 2, city: "Toronto", pop: 200 }]);
+  assertEquals(await right.getData(), []);
+
+  await sdb.done();
+});
+
+Deno.test("should chain sync builders off a sync join", async () => {
+  const sdb = new SimpleDB();
+  const left = sdb.newTable("chainJoinLeft");
+  const right = sdb.newTable("chainJoinRight");
+
+  const result = await left
+    .loadArray([
+      { id: 1, city: "Montreal" },
+      { id: 2, city: "Toronto" },
+    ])
+    .join(
+      right.loadArray([
+        { id: 1, pop: 100 },
+        { id: 2, pop: 200 },
+      ]),
+      { outputTable: "chainJoinOutput" },
+    )
+    .filter(`pop > 150`)
+    .selectColumns(["city", "pop"])
+    .getData();
+
+  assertEquals(result, [{ city: "Toronto", pop: 200 }]);
+
+  await sdb.done();
+});
+
+Deno.test("should surface join validation errors at the observation point", async () => {
+  const sdb = new SimpleDB();
+  const left = sdb.newTable("joinErrLeft");
+  const right = sdb.newTable("joinErrRight");
+
+  left.loadArray([{ id: 1, name: "a" }]);
+  right.loadArray([{ key: 1, value: 2 }]);
+  left.join(right);
+
+  const error = await assertRejects(() => left.getData());
+  assert(error instanceof Error && error.message.includes("No common column"));
+
+  await sdb.done();
+});
+
 Deno.test("should execute step by step with debug: true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("debugMode");

@@ -1,9 +1,11 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
 
-export default async function insertTables(
+export default function insertTables(
   simpleTable: SimpleTable,
   tablesToInsert: SimpleTable | SimpleTable[],
   options: { unifyColumns?: boolean } = {},
@@ -12,6 +14,22 @@ export default async function insertTables(
     ? tablesToInsert
     : [tablesToInsert];
 
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "insertTables()",
+    parameters: {
+      tablesToInsert: array.map((t) => t.name),
+      options,
+    },
+    execute: () => executeInsertTables(simpleTable, array, options),
+  });
+}
+
+async function executeInsertTables(
+  simpleTable: SimpleTable,
+  array: SimpleTable[],
+  options: { unifyColumns?: boolean },
+): Promise<void> {
   if (!await simpleTable.sdb.hasTable(simpleTable.name)) {
     await simpleTable.setTypes(
       (await array[0].getTypes()) as {
@@ -83,7 +101,7 @@ export default async function insertTables(
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "insertTables()",
-      parameters: { tablesToInsert },
+      parameters: { tablesToInsert: array.map((t) => t.name) },
     }),
   );
 
@@ -91,7 +109,7 @@ export default async function insertTables(
     for (const table of array) {
       const cols = columnsAdded[table.name];
       if (cols) {
-        await table.removeColumns(cols);
+        await removeColumnsNow(table, cols, "insertTables()");
       }
     }
   }

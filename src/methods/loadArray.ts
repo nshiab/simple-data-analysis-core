@@ -5,6 +5,7 @@ import {
   DuckDBTimestampValue,
   type DuckDBValue,
 } from "@duckdb/node-api";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import parseType from "../helpers/parseTypes.ts";
 import parseDuckDBType from "../helpers/parseDuckDBType.ts";
@@ -20,7 +21,7 @@ export default function loadArray(
     );
   }
 
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "barrier",
     method: "loadArray()",
     parameters: { arrayOfObjects },

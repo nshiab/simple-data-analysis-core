@@ -1,4 +1,5 @@
 import stringToArray from "../helpers/stringToArray.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function lower(
@@ -6,7 +7,7 @@ export default function lower(
   columns: string | string[],
 ) {
   const cols = stringToArray(columns);
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "lower()",
     parameters: { columns },

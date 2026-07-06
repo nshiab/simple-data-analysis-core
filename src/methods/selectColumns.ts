@@ -1,11 +1,12 @@
 import stringToArray from "../helpers/stringToArray.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function selectColumns(
   simpleTable: SimpleTable,
   columns: string | string[],
 ) {
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "selectColumns()",
     parameters: { columns },

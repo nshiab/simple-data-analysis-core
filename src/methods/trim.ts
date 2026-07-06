@@ -1,4 +1,5 @@
 import stringToArray from "../helpers/stringToArray.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function trim(
@@ -25,7 +26,7 @@ export default function trim(
     ? `, '${options.character}'`
     : "";
 
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "trim()",
     parameters: { columns, options },

@@ -1,4 +1,5 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
+import queueOp from "../helpers/queueOp.ts";
 import parseType from "../helpers/parseTypes.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -29,7 +30,7 @@ export default function addColumn(
 
   if (newType.toLowerCase().includes("geometry")) {
     // Loading the spatial extension makes this multi-statement by nature.
-    simpleTable.pendingOps.push({
+    queueOp(simpleTable, {
       kind: "barrier",
       method: "addColumn()",
       parameters: { newColumn, type, definition },
@@ -50,7 +51,7 @@ export default function addColumn(
     return;
   }
 
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "addColumn()",
     parameters: { newColumn, type, definition },

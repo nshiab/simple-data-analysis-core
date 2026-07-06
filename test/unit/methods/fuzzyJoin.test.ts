@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should perform a basic left fuzzy join and include all left table rows", async () => {
@@ -337,7 +337,9 @@ Deno.test("should throw an error when tables have conflicting column names", asy
   const tableB = sdb.newTable("tableB");
   await tableB.loadArray([{ id: 2, name: "Alise" }]); // 'id' conflicts
 
-  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
+  // The leftColumn and rightColumn validation doesn't need the database, so
+  // it throws at call time.
+  assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
   await sdb.done();
 });
@@ -349,7 +351,7 @@ Deno.test("should throw an error when leftColumn and rightColumn have the same n
   const tableB = sdb.newTable("tableB");
   await tableB.loadArray([{ name: "Alise", score: 1 }]); // only 'name' is shared, it's also the join key
 
-  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
+  assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
   await sdb.done();
 });

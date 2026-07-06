@@ -4,8 +4,9 @@ import findGeoColumn from "../helpers/findGeoColumn.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 
-export default async function joinGeo(
+export default function joinGeo(
   leftTable: SimpleTable,
   method: "intersect" | "inside" | "within",
   rightTable: SimpleTable,
@@ -17,7 +18,37 @@ export default async function joinGeo(
     distanceMethod?: "srs" | "haversine" | "spheroid";
     outputTable?: string | boolean;
   } = {},
-) {
+): SimpleTable {
+  // The output table instance is created at call time so it can be returned
+  // synchronously and chained on right away.
+  const outputTable = typeof options.outputTable === "string"
+    ? leftTable.sdb.newTable(options.outputTable)
+    : leftTable;
+
+  queueOp(outputTable, {
+    kind: "barrier",
+    method: "joinGeo()",
+    parameters: { method, rightTable: rightTable.name, options },
+    execute: () =>
+      executeJoinGeo(leftTable, method, rightTable, outputTable, options),
+  });
+
+  return outputTable;
+}
+
+async function executeJoinGeo(
+  leftTable: SimpleTable,
+  method: "intersect" | "inside" | "within",
+  rightTable: SimpleTable,
+  outputTable: SimpleTable,
+  options: {
+    leftTableColumn?: string;
+    rightTableColumn?: string;
+    type?: "inner" | "left" | "right" | "full";
+    distance?: number;
+    distanceMethod?: "srs" | "haversine" | "spheroid";
+  },
+): Promise<void> {
   const leftTableColumn = options.leftTableColumn ??
     (await findGeoColumn(leftTable));
   const rightTableColumn = options.rightTableColumn ??
@@ -47,25 +78,27 @@ export default async function joinGeo(
   let leftTableColumnForQuery = leftTableColumn;
   let rightTableColumnForQuery = rightTableColumn;
 
-  // We change the column names for geometries
+  // We change the column names for geometries. renameColumnsNow runs
+  // immediately, so it's safe inside this barrier.
   if (leftTableColumn === rightTableColumn) {
     leftTableColumnForQuery = `${leftTableColumn}${capitalize(leftTable.name)}`;
-    const leftObj: { [key: string]: string } = {};
-    leftObj[leftTableColumn] = leftTableColumnForQuery;
-    await leftTable.renameColumns(leftObj);
+    await renameColumnNow(
+      leftTable,
+      leftTableColumn,
+      leftTableColumnForQuery,
+    );
 
     rightTableColumnForQuery = `${rightTableColumn}${
       capitalize(rightTable.name)
     }`;
-    const rightObj: { [key: string]: string } = {};
-    rightObj[rightTableColumn] = rightTableColumnForQuery;
-    await rightTable.renameColumns(rightObj);
+    await renameColumnNow(
+      rightTable,
+      rightTableColumn,
+      rightTableColumnForQuery,
+    );
   }
 
   const type = options.type ?? "left";
-  const outputTable = typeof options.outputTable === "string"
-    ? options.outputTable
-    : leftTable.name;
 
   await queryDB(
     leftTable,
@@ -76,12 +109,12 @@ export default async function joinGeo(
       rightTable.name,
       rightTableColumnForQuery,
       type,
-      outputTable,
+      outputTable.name,
       options.distance,
       options.distanceMethod,
     ),
     mergeOptions(leftTable, {
-      table: outputTable,
+      table: outputTable.name,
       method: "joinGeo()",
       parameters: {
         leftTable: leftTable.name,
@@ -94,20 +127,33 @@ export default async function joinGeo(
 
   // We bring back the column names for geometries
   if (leftTableColumn === rightTableColumn) {
-    const leftObj: { [key: string]: string } = {};
-    leftObj[leftTableColumnForQuery] = leftTableColumn;
-    await leftTable.renameColumns(leftObj);
-
-    const rightObj: { [key: string]: string } = {};
-    rightObj[rightTableColumnForQuery] = rightTableColumn;
-    await rightTable.renameColumns(rightObj);
+    await renameColumnNow(
+      leftTable,
+      leftTableColumnForQuery,
+      leftTableColumn,
+    );
+    await renameColumnNow(
+      rightTable,
+      rightTableColumnForQuery,
+      rightTableColumn,
+    );
   }
+}
 
-  if (typeof options.outputTable === "string") {
-    return leftTable.sdb.newTable(options.outputTable);
-  } else {
-    return leftTable;
-  }
+async function renameColumnNow(
+  table: SimpleTable,
+  oldName: string,
+  newName: string,
+): Promise<void> {
+  await queryDB(
+    table,
+    `ALTER TABLE "${table.name}" RENAME COLUMN "${oldName}" TO "${newName}";`,
+    mergeOptions(table, {
+      table: table.name,
+      method: "joinGeo()",
+      parameters: { oldName, newName },
+    }),
+  );
 }
 
 function joinGeoQuery(

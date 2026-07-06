@@ -57,7 +57,8 @@ Deno.test("should throw an error if the tables have different columns", async ()
   await table2.loadData("test/data/files/data.json");
   await table2.selectColumns(["key2"]);
 
-  await assertRejects(async () => await table1.insertTables(table2));
+  // insertTables() queues the operation; run() executes it.
+  await assertRejects(() => table1.insertTables(table2).run());
 
   await sdb.done();
 });
@@ -206,7 +207,7 @@ Deno.test("should throw an error if geometry projections are not the same", asyn
   await table2.reproject("EPSG:3347");
   await table2.selectColumns("geom");
 
-  await assertRejects(async () => await table1.insertTables(table2));
+  await assertRejects(() => table1.insertTables(table2).run());
 
   await sdb.done();
 });
@@ -222,8 +223,8 @@ Deno.test("should throw an error if geometry projections are not the same, even 
   await table2.reproject("EPSG:3347");
   await table2.latLon("geom", "lat", "lon");
 
-  await assertRejects(async () =>
-    await table1.insertTables(table2, { unifyColumns: true })
+  await assertRejects(() =>
+    table1.insertTables(table2, { unifyColumns: true }).run()
   );
 
   await sdb.done();

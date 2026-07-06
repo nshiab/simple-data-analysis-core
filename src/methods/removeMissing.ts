@@ -1,4 +1,5 @@
 import stringToArray from "../helpers/stringToArray.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 
@@ -10,7 +11,7 @@ export default function removeMissing(
     invert?: boolean;
   } = {},
 ) {
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "removeMissing()",
     parameters: { options },

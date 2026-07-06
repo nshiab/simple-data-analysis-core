@@ -128,6 +128,15 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   flushing: boolean;
   /**
+   * A counter stamping queued operations with their position in program
+   * order across all tables, so flushes replay them in the order they were
+   * queued. This is for internal use only.
+   *
+   * @defaultValue `0`
+   * @internal
+   */
+  opSequence: number;
+  /**
    * A flag indicating whether to use DuckDB's external file cache.
    *
    * @defaultValue `false`
@@ -260,6 +269,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.memoryLimit = options.memoryLimit;
     this.tempDirectory = options.tempDirectory;
     this.flushing = false;
+    this.opSequence = 0;
     this.runQuery = runQuery;
     if (this.cacheVerbose || this.logDuration) {
       this.durationStart = Date.now();

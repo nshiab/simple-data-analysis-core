@@ -1,10 +1,11 @@
 import type SimpleTable from "../class/SimpleTable.ts";
+import queueOp from "../helpers/queueOp.ts";
 
 export default function filter(
   simpleTable: SimpleTable,
   conditions: string,
 ) {
-  simpleTable.pendingOps.push({
+  queueOp(simpleTable, {
     kind: "fusable",
     method: "filter()",
     parameters: { conditions },

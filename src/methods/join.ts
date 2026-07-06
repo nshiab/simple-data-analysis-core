@@ -2,8 +2,10 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 
-export default async function join(
+export default function join(
   leftTable: SimpleTable,
   rightTable: SimpleTable,
   options: {
@@ -11,7 +13,32 @@ export default async function join(
     type?: "inner" | "left" | "right" | "full";
     outputTable?: string | boolean;
   } = {},
-) {
+): SimpleTable {
+  // The output table instance is created at call time so it can be returned
+  // synchronously and chained on right away.
+  const outputTable = typeof options.outputTable === "string"
+    ? leftTable.sdb.newTable(options.outputTable)
+    : leftTable;
+
+  queueOp(outputTable, {
+    kind: "barrier",
+    method: "join()",
+    parameters: { rightTable: rightTable.name, options },
+    execute: () => executeJoin(leftTable, rightTable, outputTable, options),
+  });
+
+  return outputTable;
+}
+
+async function executeJoin(
+  leftTable: SimpleTable,
+  rightTable: SimpleTable,
+  outputTable: SimpleTable,
+  options: {
+    commonColumn?: string | string[];
+    type?: "inner" | "left" | "right" | "full";
+  },
+): Promise<void> {
   const leftTableColumns = await leftTable.getColumns();
   const rightTableColumns = await rightTable.getColumns();
   const identicalColumns = getIdenticalColumns(
@@ -66,35 +93,25 @@ export default async function join(
       rightTable.name,
       commonColumn,
       options.type ?? "left",
-      typeof options.outputTable === "string"
-        ? options.outputTable
-        : leftTable.name,
+      outputTable.name,
     ),
     mergeOptions(leftTable, {
-      table: typeof options.outputTable === "string"
-        ? options.outputTable
-        : leftTable.name,
+      table: outputTable.name,
       method: "join()",
       parameters: {
-        rightTable,
+        rightTable: rightTable.name,
         options,
       },
     }),
   );
-
-  const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable)
-    : leftTable;
 
   const columns = await outputTable.getColumns();
   const extraCommonColumns = columns.filter(
     (d) => commonColumn.map((c) => `${c}_1`).includes(d),
   );
   if (extraCommonColumns.length > 0) {
-    await outputTable.removeColumns(extraCommonColumns);
+    await removeColumnsNow(outputTable, extraCommonColumns, "join()");
   }
-
-  return outputTable;
 }
 
 function joinQuery(

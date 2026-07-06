@@ -917,37 +917,37 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`.
+   * Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param tablesToInsert - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
    * @param options - An optional object with configuration options:
    * @param options.unifyColumns - A boolean indicating whether to unify the columns of the tables. If `true`, missing columns in a table will be filled with `NULL` values. Defaults to `false`.
-   * @returns The table itself, allowing for method chaining.
+   * @returns The table, so methods can be chained.
    * @category Importing Data
    *
    * @example
    * ```ts
    * // Insert all rows from 'tableB' into 'tableA'.
-   * await tableA.insertTables("tableB");
+   * tableA.insertTables("tableB");
    * ```
    *
    * @example
    * ```ts
    * // Insert all rows from 'tableB' and 'tableC' into 'tableA'.
-   * await tableA.insertTables(["tableB", "tableC"]);
+   * tableA.insertTables(["tableB", "tableC"]);
    * ```
    *
    * @example
    * ```ts
    * // Insert rows from multiple tables, unifying columns. Missing columns will be filled with NULL.
-   * await tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
+   * tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
    * ```
    */
-  async insertTables(
+  insertTables(
     tablesToInsert: SimpleTable | SimpleTable[],
     options: { unifyColumns?: boolean } = {},
-  ): Promise<this> {
-    await insertTables(this, tablesToInsert, options);
+  ): this {
+    insertTables(this, tablesToInsert, options);
     return this;
   }
 
@@ -1972,84 +1972,87 @@ export default class SimpleTable extends Simple {
    * Performs a cross join operation with another table. A cross join returns the Cartesian product of the rows from both tables, meaning all possible pairs of rows will be in the resulting table.
    * This means that if the left table has `n` rows and the right table has `m` rows, the result will have `n * m` rows.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param rightTable - The SimpleTable instance to cross join with.
    * @param options - An optional object with configuration options:
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the cross-joined data (either the modified current table or a new table).
+   * @returns A table instance containing the cross-joined data (either the current table or a new table), so methods can be chained.
    * @category Table Operations
    *
    * @example
    * ```ts
    * // Perform a cross join with 'tableB', overwriting the current table (tableA)
-   * await tableA.crossJoin(tableB);
+   * tableA.crossJoin(tableB);
    * ```
    *
    * @example
    * ```ts
    * // Perform a cross join with 'tableB' and store the results in a new table with a generated name
-   * const tableC = await tableA.crossJoin(tableB, { outputTable: true });
+   * const tableC = tableA.crossJoin(tableB, { outputTable: true });
    * ```
    *
    * @example
    * ```ts
    * // Perform a cross join with 'tableB' and store the results in a new table named 'tableC'
-   * const tableC = await tableA.crossJoin(tableB, { outputTable: "tableC" });
+   * const tableC = tableA.crossJoin(tableB, { outputTable: "tableC" });
    * ```
    */
-  async crossJoin(
+  crossJoin(
     rightTable: SimpleTable,
     options: {
       outputTable?: string | boolean;
     } = {},
-  ): Promise<this> {
-    return await crossJoin(this, rightTable, options) as this;
+  ): this {
+    return crossJoin(this, rightTable, options) as this;
   }
 
   /**
    * Merges the data of this table (considered the left table) with another table (the right table) based on a common column or multiple columns.
    * Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param options - An optional object with configuration options:
    * @param options.commonColumn - The common column(s) used for the join operation. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
    * @param options.type - The type of join operation to perform. Possible values are `"inner"`, `"left"` (default), `"right"`, or `"full"`.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the joined data (either the modified current table or a new table).
+   * @returns A table instance containing the joined data (either the current table or a new table), so methods can be chained.
    * @category Table Operations
    *
    * @example
    * ```ts
    * // Perform a left join with 'tableB' on a common column (auto-detected), overwriting tableA
-   * await tableA.join(tableB);
+   * tableA.join(tableB);
    * ```
    *
    * @example
    * ```ts
    * // Perform an inner join with 'tableB' on the 'id' column, storing results in a new table named 'tableC'
-   * const tableC = await tableA.join(tableB, { commonColumn: 'id', type: 'inner', outputTable: "tableC" });
+   * const tableC = tableA.join(tableB, { commonColumn: 'id', type: 'inner', outputTable: "tableC" });
    * ```
    *
    * @example
    * ```ts
    * // Perform a join on multiple columns ('name' and 'category')
-   * await tableA.join(tableB, { commonColumn: ['name', 'category'] });
+   * tableA.join(tableB, { commonColumn: ['name', 'category'] });
    * ```
    */
 
-  async join(
+  join(
     rightTable: SimpleTable,
     options: {
       commonColumn?: string | string[];
       type?: "inner" | "left" | "right" | "full";
       outputTable?: string | boolean;
     } = {},
-  ): Promise<this> {
+  ): this {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
-    return (await join(this, rightTable, options)) as this;
+    return join(this, rightTable, options) as this;
   }
 
   /**
@@ -2060,6 +2063,8 @@ export default class SimpleTable extends Simple {
    * If a similarity score column is added to the results, the rows will be ordered alphabetically by the left column, and then by descending similarity score within each group of identical left column values. Otherwise, the rows will be order alphabetically by the left column and then by the right column.
    *
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param leftColumn - The name of the column in this (left) table containing the text to compare.
@@ -2074,7 +2079,7 @@ export default class SimpleTable extends Simple {
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
-   * @returns A promise that resolves to a table instance containing the fuzzy-joined data (either the modified current table or a new table).
+   * @returns A table instance containing the fuzzy-joined data (either the current table or a new table), so methods can be chained.
    * @category Table Operations
    *
    * @example
@@ -2109,7 +2114,7 @@ export default class SimpleTable extends Simple {
    * });
    * ```
    */
-  async fuzzyJoin(
+  fuzzyJoin(
     rightTable: SimpleTable,
     leftColumn: string,
     rightColumn: string,
@@ -2124,12 +2129,12 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
       preFilterPrefixLen?: number;
     } = {},
-  ): Promise<this> {
+  ): this {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
-    return await fuzzyJoin(
+    return fuzzyJoin(
       this,
       rightTable,
       leftColumn,
@@ -4905,6 +4910,7 @@ export default class SimpleTable extends Simple {
    * Merges the data of this table (considered the left table) with another table (the right table) based on a spatial relationship.
    * Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"within"` (geometries of the left table are within a specified distance of geometries in the right table).
@@ -4915,7 +4921,7 @@ export default class SimpleTable extends Simple {
    * @param options.distance - Required if `method` is `"within"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
    * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate but slowest).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A promise that resolves to a table instance containing the spatially joined data (either the modified current table or a new table).
+   * @returns A table instance containing the spatially joined data (either the current table or a new table), so methods can be chained.
    * @category Geospatial
    *
    * @example
@@ -4954,7 +4960,7 @@ export default class SimpleTable extends Simple {
    * });
    * ```
    */
-  async joinGeo(
+  joinGeo(
     rightTable: SimpleTable,
     method: "intersect" | "inside" | "within",
     options: {
@@ -4965,17 +4971,17 @@ export default class SimpleTable extends Simple {
       distanceMethod?: "srs" | "haversine" | "spheroid";
       outputTable?: string | boolean;
     } = {},
-  ): Promise<this> {
+  ): this {
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
-    return (await joinGeo(
+    return joinGeo(
       this,
       method,
       rightTable,
       options,
-    )) as this;
+    ) as this;
   }
 
   /**

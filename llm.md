@@ -1223,12 +1223,14 @@ await table.insertRows(newRows);
 
 Inserts all rows from one or more other tables into this table. If tables do not
 have the same columns, an error will be thrown unless the `unifyColumns` option
-is set to `true`.
+is set to `true`. This method queues the operation; it runs when an async
+observer method (like `getData()` or `logTable()`) is awaited, or when `run()`
+is called.
 
 ##### Signature
 
 ```typescript
-async insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): Promise<this>;
+insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): this;
 ```
 
 ##### Parameters
@@ -1242,23 +1244,23 @@ async insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unif
 
 ##### Returns
 
-The table itself, allowing for method chaining.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Insert all rows from 'tableB' into 'tableA'.
-await tableA.insertTables("tableB");
+tableA.insertTables("tableB");
 ```
 
 ```ts
 // Insert all rows from 'tableB' and 'tableC' into 'tableA'.
-await tableA.insertTables(["tableB", "tableC"]);
+tableA.insertTables(["tableB", "tableC"]);
 ```
 
 ```ts
 // Insert rows from multiple tables, unifying columns. Missing columns will be filled with NULL.
-await tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
+tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
 ```
 
 #### `loadSample`
@@ -2420,10 +2422,13 @@ Cartesian product of the rows from both tables, meaning all possible pairs of
 rows will be in the resulting table. This means that if the left table has `n`
 rows and the right table has `m` rows, the result will have `n * m` rows.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | boolean }): Promise<this>;
+crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -2437,24 +2442,24 @@ async crossJoin(rightTable: SimpleTable, options?: { outputTable?: string | bool
 
 ##### Returns
 
-A promise that resolves to a table instance containing the cross-joined data
-(either the modified current table or a new table).
+A table instance containing the cross-joined data (either the current table or a
+new table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Perform a cross join with 'tableB', overwriting the current table (tableA)
-await tableA.crossJoin(tableB);
+tableA.crossJoin(tableB);
 ```
 
 ```ts
 // Perform a cross join with 'tableB' and store the results in a new table with a generated name
-const tableC = await tableA.crossJoin(tableB, { outputTable: true });
+const tableC = tableA.crossJoin(tableB, { outputTable: true });
 ```
 
 ```ts
 // Perform a cross join with 'tableB' and store the results in a new table named 'tableC'
-const tableC = await tableA.crossJoin(tableB, { outputTable: "tableC" });
+const tableC = tableA.crossJoin(tableB, { outputTable: "tableC" });
 ```
 
 #### `join`
@@ -2463,12 +2468,15 @@ Merges the data of this table (considered the left table) with another table
 (the right table) based on a common column or multiple columns. Note that the
 order of rows in the returned data is not guaranteed to be the same as in the
 original tables. This operation might create temporary files in a `.tmp` folder;
-consider adding `.tmp` to your `.gitignore`.
+consider adding `.tmp` to your `.gitignore`. This method queues the operation;
+it runs when an async observer method (like `getData()` or `logTable()`) is
+awaited, or when `run()` is called. The join uses the other table's state as of
+this call: operations queued on it afterwards run after the join.
 
 ##### Signature
 
 ```typescript
-async join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): Promise<this>;
+join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -2488,19 +2496,19 @@ async join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]
 
 ##### Returns
 
-A promise that resolves to a table instance containing the joined data (either
-the modified current table or a new table).
+A table instance containing the joined data (either the current table or a new
+table), so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Perform a left join with 'tableB' on a common column (auto-detected), overwriting tableA
-await tableA.join(tableB);
+tableA.join(tableB);
 ```
 
 ```ts
 // Perform an inner join with 'tableB' on the 'id' column, storing results in a new table named 'tableC'
-const tableC = await tableA.join(tableB, {
+const tableC = tableA.join(tableB, {
   commonColumn: "id",
   type: "inner",
   outputTable: "tableC",
@@ -2509,7 +2517,7 @@ const tableC = await tableA.join(tableB, {
 
 ```ts
 // Perform a join on multiple columns ('name' and 'category')
-await tableA.join(tableB, { commonColumn: ["name", "category"] });
+tableA.join(tableB, { commonColumn: ["name", "category"] });
 ```
 
 #### `fuzzyJoin`
@@ -2527,10 +2535,15 @@ order alphabetically by the left column and then by the right column.
 This operation might create temporary files in a `.tmp` folder; consider adding
 `.tmp` to your `.gitignore`.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called. The join
+uses the other table's state as of this call: operations queued on it afterwards
+run after the join.
+
 ##### Signature
 
 ```typescript
-async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): Promise<this>;
+fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): this;
 ```
 
 ##### Parameters
@@ -2563,8 +2576,8 @@ async fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string
 
 ##### Returns
 
-A promise that resolves to a table instance containing the fuzzy-joined data
-(either the modified current table or a new table).
+A table instance containing the fuzzy-joined data (either the current table or a
+new table), so methods can be chained.
 
 ##### Examples
 
@@ -5721,12 +5734,15 @@ Merges the data of this table (considered the left table) with another table
 (the right table) based on a spatial relationship. Note that the order of rows
 in the returned data is not guaranteed to be the same as in the original tables.
 This operation might create temporary files in a `.tmp` folder; consider adding
-`.tmp` to your `.gitignore`.
+`.tmp` to your `.gitignore`. This method queues the operation; it runs when an
+async observer method (like `getData()` or `logTable()`) is awaited, or when
+`run()` is called. The join uses the other table's state as of this call:
+operations queued on it afterwards run after the join.
 
 ##### Signature
 
 ```typescript
-async joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftTableColumn?: string; rightTableColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): Promise<this>;
+joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftTableColumn?: string; rightTableColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -5757,8 +5773,8 @@ async joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within"
 
 ##### Returns
 
-A promise that resolves to a table instance containing the spatially joined data
-(either the modified current table or a new table).
+A table instance containing the spatially joined data (either the current table
+or a new table), so methods can be chained.
 
 ##### Examples
 

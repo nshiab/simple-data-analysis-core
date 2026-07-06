@@ -2,8 +2,10 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 
-export default async function fuzzyJoin(
+export default function fuzzyJoin(
   leftTable: SimpleTable,
   rightTable: SimpleTable,
   leftColumn: string,
@@ -19,13 +21,62 @@ export default async function fuzzyJoin(
     outputTable?: string | boolean;
     preFilterPrefixLen?: number;
   } = {},
-) {
+): SimpleTable {
+  // This validation doesn't need the database, so it stays at call time.
   if (leftColumn === rightColumn) {
     throw new Error(
       `The leftColumn and rightColumn have the same name "${leftColumn}". Rename one of them before doing the fuzzy join.`,
     );
   }
 
+  // The output table instance is created at call time so it can be returned
+  // synchronously and chained on right away.
+  const outputTable = typeof options.outputTable === "string"
+    ? leftTable.sdb.newTable(options.outputTable)
+    : leftTable;
+
+  queueOp(outputTable, {
+    kind: "barrier",
+    method: "fuzzyJoin()",
+    parameters: {
+      leftColumn,
+      rightColumn,
+      rightTable: rightTable.name,
+      threshold,
+      options,
+    },
+    execute: () =>
+      executeFuzzyJoin(
+        leftTable,
+        rightTable,
+        outputTable,
+        leftColumn,
+        rightColumn,
+        threshold,
+        options,
+      ),
+  });
+
+  return outputTable;
+}
+
+async function executeFuzzyJoin(
+  leftTable: SimpleTable,
+  rightTable: SimpleTable,
+  outputTable: SimpleTable,
+  leftColumn: string,
+  rightColumn: string,
+  threshold: number,
+  options: {
+    method?:
+      | "ratio"
+      | "partial_ratio"
+      | "token_sort_ratio"
+      | "token_set_ratio";
+    similarityColumn?: string;
+    preFilterPrefixLen?: number;
+  },
+): Promise<void> {
   const leftCols = await leftTable.getColumns();
   const rightCols = await rightTable.getColumns();
   const identicalColumns = getIdenticalColumns(leftCols, rightCols);
@@ -53,9 +104,6 @@ export default async function fuzzyJoin(
 
   const method = options.method ?? "ratio";
   const similarityColumn = options.similarityColumn;
-  const outputTableName = typeof options.outputTable === "string"
-    ? options.outputTable
-    : leftTable.name;
 
   const sql = `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;\n` +
     fuzzyJoinQuery(
@@ -65,7 +113,7 @@ export default async function fuzzyJoin(
       rightColumn,
       method,
       threshold,
-      outputTableName,
+      outputTable.name,
       similarityColumn,
       options.preFilterPrefixLen,
     );
@@ -74,7 +122,7 @@ export default async function fuzzyJoin(
     leftTable,
     sql,
     mergeOptions(leftTable, {
-      table: outputTableName,
+      table: outputTable.name,
       method: "fuzzyJoin()",
       parameters: {
         leftColumn,
@@ -86,19 +134,13 @@ export default async function fuzzyJoin(
     }),
   );
 
-  const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable)
-    : leftTable;
-
   // Remove the duplicate right-column produced when leftColumn === rightColumn
   // (DuckDB suffixes it with _1 in SELECT *)
   const outputCols = await outputTable.getColumns();
   const duplicateCol = `${rightColumn}_1`;
   if (outputCols.includes(duplicateCol)) {
-    await outputTable.removeColumns([duplicateCol]);
+    await removeColumnsNow(outputTable, [duplicateCol], "fuzzyJoin()");
   }
-
-  return outputTable;
 }
 
 function fuzzyJoinQuery(
