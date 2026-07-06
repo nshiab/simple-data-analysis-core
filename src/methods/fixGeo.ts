@@ -1,22 +1,24 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function fixGeo(
+export default function fixGeo(
   simpleTable: SimpleTable,
   column?: string,
 ) {
-  const col = column ?? (await findGeoColumn(simpleTable));
-  const geoType = await simpleTable.getProjection(col);
-
-  await queryDB(
-    simpleTable,
-    `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * REPLACE (ST_MakeValid("${col}")::${geoType} AS "${col}") FROM "${simpleTable.name}"`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "fixGeo()",
-      parameters: { column },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "fixGeo()",
+    parameters: { column },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const col = column ?? findGeoColumnFromSchema(types);
+      // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
+      // so the cast keeps it on the new geometries.
+      return `SELECT * REPLACE (ST_MakeValid("${col}")::${
+        types[col]
+      } AS "${col}") FROM ${input}`;
+    },
+  });
 }

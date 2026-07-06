@@ -4683,24 +4683,26 @@ export default class SimpleTable extends Simple {
   /**
    * Attempts to make invalid geometries valid without removing any vertices.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the geometries to be fixed. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Fix invalid geometries in the default geometry column
-   * await table.fixGeo();
+   * table.fixGeo();
    * ```
    *
    * @example
    * ```ts
    * // Fix invalid geometries in a specific column named 'myGeom'
-   * await table.fixGeo("myGeom");
+   * table.fixGeo("myGeom");
    * ```
    */
-  async fixGeo(column?: string): Promise<this> {
-    await fixGeo(this, column);
+  fixGeo(column?: string): this {
+    fixGeo(this, column);
     return this;
   }
 
@@ -5131,24 +5133,26 @@ export default class SimpleTable extends Simple {
   /**
    * Fills holes in polygon geometries.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Fill holes in geometries in the default geometry column
-   * await table.fillHoles();
+   * table.fillHoles();
    * ```
    *
    * @example
    * ```ts
    * // Fill holes in geometries in a specific column named 'polygonGeom'
-   * await table.fillHoles("polygonGeom");
+   * table.fillHoles("polygonGeom");
    * ```
    */
-  async fillHoles(column?: string): Promise<this> {
-    await fillHoles(this, column);
+  fillHoles(column?: string): this {
+    fillHoles(this, column);
     return this;
   }
 
@@ -5230,24 +5234,26 @@ export default class SimpleTable extends Simple {
    * Extracts the latitude and longitude coordinates from point geometries.
    * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the point geometries.
    * @param columnLat - The name of the new column where the extracted latitude values will be stored.
    * @param columnLon - The name of the new column where the extracted longitude values will be stored.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Extract latitude and longitude from 'geom' column into new 'lat' and 'lon' columns
-   * await table.latLon("geom", "lat", "lon");
+   * table.latLon("geom", "lat", "lon");
    * ```
    */
-  async latLon(
+  latLon(
     column: string,
     columnLat: string,
     columnLon: string,
-  ): Promise<this> {
-    await latLon(this, column, columnLat, columnLon);
+  ): this {
+    latLon(this, column, columnLat, columnLon);
     return this;
   }
 
@@ -5508,24 +5514,26 @@ export default class SimpleTable extends Simple {
   /**
    * Transforms closed linestring geometries into polygon geometries.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column storing the linestring geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
    * // Transform closed linestrings in the default geometry column into polygons
-   * await table.linesToPolygons();
+   * table.linesToPolygons();
    * ```
    *
    * @example
    * ```ts
    * // Transform closed linestrings in a specific column named 'routeLines' into polygons
-   * await table.linesToPolygons("routeLines");
+   * table.linesToPolygons("routeLines");
    * ```
    */
-  async linesToPolygons(column?: string): Promise<this> {
-    await linesToPolygons(this, column);
+  linesToPolygons(column?: string): this {
+    linesToPolygons(this, column);
     return this;
   }
 

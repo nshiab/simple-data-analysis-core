@@ -1,20 +1,24 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function fillHoles(
+export default function fillHoles(
   simpleTable: SimpleTable,
   column?: string,
 ) {
-  const col = column ?? (await findGeoColumn(simpleTable));
-  await queryDB(
-    simpleTable,
-    `UPDATE "${simpleTable.name}" SET geom = ST_MakePolygon(ST_ExteriorRing("${col}"));`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "fillHoles()",
-      parameters: { column },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "fillHoles()",
+    parameters: { column },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      const col = column ?? findGeoColumnFromSchema(types);
+      // Like the previous UPDATE-based implementation, the result is always
+      // stored in the "geom" column, and the assignment cast keeps its type.
+      return `SELECT * REPLACE (ST_MakePolygon(ST_ExteriorRing("${col}"))${
+        types["geom"] ? `::${types["geom"]}` : ""
+      } AS "geom") FROM ${input}`;
+    },
+  });
 }

@@ -5456,10 +5456,13 @@ await table.nbVertices("myGeomVertices", { column: "myGeom" });
 
 Attempts to make invalid geometries valid without removing any vertices.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async fixGeo(column?: string): Promise<this>;
+fixGeo(column?: string): this;
 ```
 
 ##### Parameters
@@ -5469,18 +5472,18 @@ async fixGeo(column?: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Fix invalid geometries in the default geometry column
-await table.fixGeo();
+table.fixGeo();
 ```
 
 ```ts
 // Fix invalid geometries in a specific column named 'myGeom'
-await table.fixGeo("myGeom");
+table.fixGeo("myGeom");
 ```
 
 #### `isClosedGeo`
@@ -5994,10 +5997,13 @@ table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
 
 Fills holes in polygon geometries.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async fillHoles(column?: string): Promise<this>;
+fillHoles(column?: string): this;
 ```
 
 ##### Parameters
@@ -6007,18 +6013,18 @@ async fillHoles(column?: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Fill holes in geometries in the default geometry column
-await table.fillHoles();
+table.fillHoles();
 ```
 
 ```ts
 // Fill holes in geometries in a specific column named 'polygonGeom'
-await table.fillHoles("polygonGeom");
+table.fillHoles("polygonGeom");
 ```
 
 #### `intersect`
@@ -6120,10 +6126,13 @@ table.union("geomA", "geomB", "unionGeom");
 Extracts the latitude and longitude coordinates from point geometries. The input
 geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async latLon(column: string, columnLat: string, columnLon: string): Promise<this>;
+latLon(column: string, columnLat: string, columnLon: string): this;
 ```
 
 ##### Parameters
@@ -6136,13 +6145,13 @@ async latLon(column: string, columnLat: string, columnLon: string): Promise<this
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Extract latitude and longitude from 'geom' column into new 'lat' and 'lon' columns
-await table.latLon("geom", "lat", "lon");
+table.latLon("geom", "lat", "lon");
 ```
 
 #### `simplify`
@@ -6458,10 +6467,13 @@ const intersectionTable = await table.aggregateGeo("intersection", {
 
 Transforms closed linestring geometries into polygon geometries.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async linesToPolygons(column?: string): Promise<this>;
+linesToPolygons(column?: string): this;
 ```
 
 ##### Parameters
@@ -6471,18 +6483,18 @@ async linesToPolygons(column?: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Transform closed linestrings in the default geometry column into polygons
-await table.linesToPolygons();
+table.linesToPolygons();
 ```
 
 ```ts
 // Transform closed linestrings in a specific column named 'routeLines' into polygons
-await table.linesToPolygons("routeLines");
+table.linesToPolygons("routeLines");
 ```
 
 #### `getBoundingBox`
