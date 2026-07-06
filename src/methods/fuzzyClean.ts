@@ -1,8 +1,41 @@
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 
-export default async function fuzzyClean(
+export default function fuzzyClean(
+  table: SimpleTable,
+  column: string,
+  newColumn: string,
+  threshold: number,
+  options: {
+    method?:
+      | "ratio"
+      | "partial_ratio"
+      | "token_sort_ratio"
+      | "token_set_ratio";
+    keep?:
+      | "mostCommon"
+      | "longestString"
+      | "shortestString"
+      | "mostCentral"
+      | "maxScore";
+    preFilterPrefixLen?: number;
+  } = {},
+): void {
+  // The clustering runs in JS over the fuzzy pairs read from the table, so
+  // fuzzyClean can't be expressed as a single SELECT over its input: it
+  // executes as a barrier.
+  queueOp(table, {
+    kind: "barrier",
+    method: "fuzzyClean()",
+    parameters: { column, newColumn, threshold, options },
+    execute: () =>
+      executeFuzzyClean(table, column, newColumn, threshold, options),
+  });
+}
+
+async function executeFuzzyClean(
   table: SimpleTable,
   column: string,
   newColumn: string,

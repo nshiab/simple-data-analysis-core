@@ -2214,6 +2214,8 @@ export default class SimpleTable extends Simple {
    * Similarity is computed using the [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension,
    * which is installed and loaded automatically.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing the strings to normalize.
    * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
    * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
@@ -2230,20 +2232,20 @@ export default class SimpleTable extends Simple {
    *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
    *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
    * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
    * // A length-based pre-filter is automatically applied.
-   * await table.fuzzyClean("city", "cityClean", 80);
+   * table.fuzzyClean("city", "cityClean", 80);
    * ```
    *
    * @example
    * ```ts
    * // Normalize with a prefix-based pre-filter and a threshold of 80
-   * await table.fuzzyClean("city", "cityClean", 80, {
+   * table.fuzzyClean("city", "cityClean", 80, {
    *   preFilterPrefixLen: 5, // Must share the same first 5 characters
    * });
    * ```
@@ -2251,16 +2253,16 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Normalize 'companyName' into a new column using token_sort_ratio and a threshold of 90
-   * await table.fuzzyClean("companyName", "companyNameClean", 90, { method: "token_sort_ratio" });
+   * table.fuzzyClean("companyName", "companyNameClean", 90, { method: "token_sort_ratio" });
    * ```
    *
    * @example
    * ```ts
    * // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
-   * await table.fuzzyClean("category", "category", 80, { keep: "longestString" });
+   * table.fuzzyClean("category", "category", 80, { keep: "longestString" });
    * ```
    */
-  async fuzzyClean(
+  fuzzyClean(
     column: string,
     newColumn: string,
     threshold: number,
@@ -2278,8 +2280,8 @@ export default class SimpleTable extends Simple {
         | "maxScore";
       preFilterPrefixLen?: number;
     } = {},
-  ): Promise<this> {
-    await fuzzyClean(this, column, newColumn, threshold, options);
+  ): this {
+    fuzzyClean(this, column, newColumn, threshold, options);
     return this;
   }
 
@@ -3686,6 +3688,8 @@ export default class SimpleTable extends Simple {
    * Updates data in the table using a JavaScript function. The function receives the existing rows as an array of objects and must return the modified rows as an array of objects.
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
    * This method does not work with tables containing geometries.
+   *
+   * Unlike other transformation methods, this one is async and runs immediately (after executing any queued methods): your dataModifier function runs when you await the call, not at a later observation point.
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
    * @param options - An optional object with configuration options:

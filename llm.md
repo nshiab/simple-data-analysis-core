@@ -2693,10 +2693,13 @@ Similarity is computed using the
 [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community
 extension, which is installed and loaded automatically.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): Promise<this>;
+fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): this;
 ```
 
 ##### Parameters
@@ -2729,33 +2732,33 @@ async fuzzyClean(column: string, newColumn: string, threshold: number, options?:
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
 // A length-based pre-filter is automatically applied.
-await table.fuzzyClean("city", "cityClean", 80);
+table.fuzzyClean("city", "cityClean", 80);
 ```
 
 ```ts
 // Normalize with a prefix-based pre-filter and a threshold of 80
-await table.fuzzyClean("city", "cityClean", 80, {
+table.fuzzyClean("city", "cityClean", 80, {
   preFilterPrefixLen: 5, // Must share the same first 5 characters
 });
 ```
 
 ```ts
 // Normalize 'companyName' into a new column using token_sort_ratio and a threshold of 90
-await table.fuzzyClean("companyName", "companyNameClean", 90, {
+table.fuzzyClean("companyName", "companyNameClean", 90, {
   method: "token_sort_ratio",
 });
 ```
 
 ```ts
 // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
-await table.fuzzyClean("category", "category", 80, { keep: "longestString" });
+table.fuzzyClean("category", "category", 80, { keep: "longestString" });
 ```
 
 #### `replace`
@@ -4329,6 +4332,10 @@ existing rows as an array of objects and must return the modified rows as an
 array of objects. This method offers high flexibility for data manipulation but
 can be slow for large tables as it involves transferring data between DuckDB and
 JavaScript. This method does not work with tables containing geometries.
+
+Unlike other transformation methods, this one is async and runs immediately
+(after executing any queued methods): your dataModifier function runs when you
+await the call, not at a later observation point.
 
 ##### Signature
 
