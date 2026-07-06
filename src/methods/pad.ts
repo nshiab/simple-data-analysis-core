@@ -1,13 +1,30 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function pad(
+export default function pad(
   simpleTable: SimpleTable,
   columns: string | string[],
   length: number,
   options: { method?: "left" | "right"; char?: string } = {},
+) {
+  // The overflow pre-validation queries the data, so pad can't be expressed
+  // as a single SELECT over its input: it executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "pad()",
+    parameters: { columns, length, options },
+    execute: () => executePad(simpleTable, columns, length, options),
+  });
+}
+
+async function executePad(
+  simpleTable: SimpleTable,
+  columns: string | string[],
+  length: number,
+  options: { method?: "left" | "right"; char?: string },
 ) {
   const columnList = stringToArray(columns);
 

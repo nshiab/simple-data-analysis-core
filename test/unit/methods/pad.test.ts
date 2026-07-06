@@ -111,7 +111,7 @@ Deno.test("should throw error when column is not string type", async () => {
   ]);
 
   await assertRejects(
-    () => table.pad("id", 5),
+    () => table.pad("id", 5).run(),
     Error,
     'The column "id" is of type DOUBLE',
   );
@@ -128,7 +128,7 @@ Deno.test("should throw error when strings exceed target length", async () => {
   ]);
 
   await assertRejects(
-    () => table.pad("name", 3),
+    () => table.pad("name", 3).run(),
     Error,
     'The column "name" has 1 string(s) exceeding the target length of 3',
   );
@@ -317,7 +317,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
   ]);
 
   await assertRejects(
-    () => table.pad(["name", "age"], 5),
+    () => table.pad(["name", "age"], 5).run(),
     Error,
     'The column "age" is of type DOUBLE',
   );
@@ -333,7 +333,7 @@ Deno.test("should throw error when one column has overflow in multi-column pad",
   ]);
 
   await assertRejects(
-    () => table.pad(["short", "long"], 5, { method: "left", char: "-" }),
+    () => table.pad(["short", "long"], 5, { method: "left", char: "-" }).run(),
     Error,
     'The column "long" has 1 string(s) exceeding the target length of 5',
   );

@@ -65,7 +65,8 @@ Deno.test("should handle rows with fewer parts than expected", async () => {
     warnMessage = msg;
   };
 
-  await table.splitSpread("data", ",", ["part1", "part2", "part3"]);
+  // splitSpread() queues the operation; run() executes it.
+  await table.splitSpread("data", ",", ["part1", "part2", "part3"]).run();
 
   // Restore console.warn
   console.warn = originalWarn;
@@ -97,7 +98,8 @@ Deno.test("should throw error when rows have more parts than expected", async ()
   let errorThrown = false;
   let errorMessage = "";
   try {
-    await table.splitSpread("data", ",", ["first", "second"]);
+    // splitSpread() queues the operation; run() executes it.
+    await table.splitSpread("data", ",", ["first", "second"]).run();
   } catch (error) {
     errorThrown = true;
     errorMessage = (error as Error).message;

@@ -1070,19 +1070,21 @@ export default class SimpleTable extends Simple {
   /**
    * Clones an existing column in this table, creating a new column with identical values.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param originalColumn - The name of the original column to clone.
    * @param newColumn - The name of the new column to be created.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Column Operations
    *
    * @example
    * ```ts
    * // Clone 'firstName' column as 'contactName'
-   * await table.cloneColumn("firstName", "contactName");
+   * table.cloneColumn("firstName", "contactName");
    * ```
    */
-  async cloneColumn(originalColumn: string, newColumn: string): Promise<this> {
-    await cloneColumn(this, originalColumn, newColumn);
+  cloneColumn(originalColumn: string, newColumn: string): this {
+    cloneColumn(this, originalColumn, newColumn);
     return this;
   }
 
@@ -1092,30 +1094,32 @@ export default class SimpleTable extends Simple {
    *
    * **Important:** The offset is applied based on the current row order in the table. For meaningful results, ensure your data is sorted appropriately (e.g., by date/time for time-series analysis) before calling this method.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param originalColumn - The name of the original column.
    * @param newColumn - The name of the new column to be created with offset values.
    * @param options - An optional object with configuration options:
    * @param options.offset - The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
    * @param options.categories - A string or an array of strings representing columns to partition the data by. The offset will be applied independently within each category.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Column Operations
    *
    * @example
    * ```ts
    * // Clone 'value' as 'previous_value', offsetting by 1 row (value of row N-1 goes to row N)
-   * await table.cloneColumnWithOffset("value", "previous_value");
+   * table.cloneColumnWithOffset("value", "previous_value");
    * ```
    *
    * @example
    * ```ts
    * // Clone 'sales' as 'sales_2_days_ago', offsetting by 2 rows
-   * await table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 });
+   * table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Clone 'temperature' as 'prev_temp_by_city', offsetting by 1 row within each 'city' category
-   * await table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
+   * table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
    *   offset: 1,
    *   categories: "city",
    * });
@@ -1124,21 +1128,21 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Clone 'stock_price' as 'prev_price_by_stock_and_exchange', offsetting by 1 row within each 'stock_symbol' and 'exchange' category
-   * await table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
+   * table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
    *   offset: 1,
    *   categories: ["stock_symbol", "exchange"],
    * });
    * ```
    */
-  async cloneColumnWithOffset(
+  cloneColumnWithOffset(
     originalColumn: string,
     newColumn: string,
     options: {
       offset?: number;
       categories?: string | string[];
     } = {},
-  ): Promise<this> {
-    await cloneColumnWithOffset(this, originalColumn, newColumn, options);
+  ): this {
+    cloneColumnWithOffset(this, originalColumn, newColumn, options);
     return this;
   }
 
@@ -1954,29 +1958,31 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a new column to the table containing the row number, starting at 0 (like an index).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param newColumn - The name of the new column that will store the row number.
    * @param options - An optional object with configuration options:
    * @param options.categories - A string or an array of strings representing columns to partition the data by. The row number will restart at 0 for each unique combination of values in these columns.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Column Operations
    *
    * @example
    * ```ts
    * // Add a new column named 'rowNumber' with the row number for each row
-   * await table.addRowNumber("rowNumber");
+   * table.addRowNumber("rowNumber");
    * ```
    *
    * @example
    * ```ts
    * // Add a new column named 'rowNumber' with the row number for each 'category'
-   * await table.addRowNumber("rowNumber", { categories: "category" });
+   * table.addRowNumber("rowNumber", { categories: "category" });
    * ```
    */
-  async addRowNumber(
+  addRowNumber(
     newColumn: string,
     options: { categories?: string | string[] } = {},
-  ): Promise<this> {
-    await addRowNumber(this, newColumn, options);
+  ): this {
+    addRowNumber(this, newColumn, options);
     return this;
   }
 
@@ -2396,12 +2402,14 @@ export default class SimpleTable extends Simple {
    * column is of a different type. `null` values remain `null`. If any string
    * already exceeds the target length, an error is thrown (no silent truncation).
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - The column name(s) containing strings to be padded.
    * @param length - The target length of the padded strings.
    * @param options - An optional object with configuration options:
    * @param options.method - Which side to pad. `'left'` (default) or `'right'`.
    * @param options.char - The character to use for padding. Defaults to `'0'`.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @throws {Error} If any column is not of string (VARCHAR) type.
    * @throws {Error} If any string value exceeds the target length.
    * @category Updating Data
@@ -2409,30 +2417,30 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Left-pad 'id' column to 3 characters with zeros (default)
-   * await table.pad("id", 3);
+   * table.pad("id", 3);
    * // Result: '1' -> '001', '23' -> '023', null -> null
    * ```
    *
    * @example
    * ```ts
    * // Right-pad 'code' column to 5 characters with spaces
-   * await table.pad("code", 5, { method: "right", char: " " });
+   * table.pad("code", 5, { method: "right", char: " " });
    * // Result: '123' -> '123  ', '45' -> '45   ', null -> null
    * ```
    *
    * @example
    * ```ts
    * // Left-pad multiple columns to 5 characters with dashes
-   * await table.pad(["id", "code"], 5, { method: "left", char: "-" });
+   * table.pad(["id", "code"], 5, { method: "left", char: "-" });
    * // Result: '1' -> '----1', '23' -> '---23'
    * ```
    */
-  async pad(
+  pad(
     columns: string | string[],
     length: number,
     options: { method?: "left" | "right"; char?: string } = {},
-  ): Promise<this> {
-    await pad(this, columns, length, options);
+  ): this {
+    pad(this, columns, length, options);
     return this;
   }
 
@@ -2440,34 +2448,36 @@ export default class SimpleTable extends Simple {
    * Splits strings in a specified column by a separator and extracts a substring at a given index, storing the result in a new or existing column.
    * If the index is out of bounds, an empty string will be returned for that row.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing the strings to be split.
    * @param separator - The substring to use as a delimiter for splitting the strings.
    * @param index - The zero-based index of the substring to extract after splitting. For example, `0` for the first part, `1` for the second, etc.
    * @param newColumn - The name of the column where the extracted substrings will be stored. To overwrite the original column, use the same name as `column`.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Split 'address' by comma and extract the second part (index 1) into a new 'city' column
    * // e.g., "123 Main St, Anytown, USA" -> "Anytown"
-   * await table.splitExtract("address", ",", 1, "city");
+   * table.splitExtract("address", ",", 1, "city");
    * ```
    *
    * @example
    * ```ts
    * // Split 'fileName' by dot and extract the first part (index 0), overwriting 'fileName'
    * // e.g., "document.pdf" -> "document"
-   * await table.splitExtract("fileName", ".", 0, "fileName");
+   * table.splitExtract("fileName", ".", 0, "fileName");
    * ```
    */
-  async splitExtract(
+  splitExtract(
     column: string,
     separator: string,
     index: number,
     newColumn: string,
-  ): Promise<this> {
-    await splitExtract(this, column, separator, index, newColumn);
+  ): this {
+    splitExtract(this, column, separator, index, newColumn);
     return this;
   }
 
@@ -2478,43 +2488,45 @@ export default class SimpleTable extends Simple {
    * If a row has fewer parts than the number of new columns, a warning will be logged and the extra columns will contain empty strings (unless `noCheck` is set to true).
    * If a row has more parts than the number of new columns, an error will be thrown unless `noCheck` is set to true.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing the strings to be split.
    * @param separator - The substring to use as a delimiter for splitting the strings.
    * @param newColumns - An array of column names for the extracted parts.
    * @param options - Optional configuration.
    * @param options.noCheck - If true, skips all validation checks (both max and min parts). Default is false.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Split 'fullName' by comma and spread into 'lastName' and 'firstName'
    * // e.g., "Shiab, Nael" -> lastName: "Shiab", firstName: "Nael"
-   * await table.splitSpread("fullName", ",", ["lastName", "firstName"]);
+   * table.splitSpread("fullName", ",", ["lastName", "firstName"]);
    * ```
    *
    * @example
    * ```ts
    * // Split 'address' by comma and spread into three columns
    * // e.g., "123 Main St, Anytown, USA" -> street: "123 Main St", city: "Anytown", country: "USA"
-   * await table.splitSpread("address", ",", ["street", "city", "country"]);
+   * table.splitSpread("address", ",", ["street", "city", "country"]);
    * ```
    *
    * @example
    * ```ts
    * // Skip validation for performance with noCheck option
-   * await table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
+   * table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
    * ```
    */
-  async splitSpread(
+  splitSpread(
     column: string,
     separator: string,
     newColumns: string[],
     options: {
       noCheck?: boolean;
     } = {},
-  ): Promise<this> {
-    await splitSpread(this, column, separator, newColumns, options);
+  ): this {
+    splitSpread(this, column, separator, newColumns, options);
     return this;
   }
 
@@ -2700,9 +2712,11 @@ export default class SimpleTable extends Simple {
    *
    * Each value in the specified column is split using the provided separator, and a new row is created for each resulting substring. All other column values are duplicated across the newly created rows.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column containing string values to be split and unnested.
    * @param separator - The delimiter string used to split the column values.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
@@ -2710,7 +2724,7 @@ export default class SimpleTable extends Simple {
    * // Unnest 'tags' column separated by commas
    * // Before: [{ id: 1, tags: "red,blue,green" }]
    * // After:  [{ id: 1, tags: "red" }, { id: 1, tags: "blue" }, { id: 1, tags: "green" }]
-   * await table.unnest("tags", ",");
+   * table.unnest("tags", ",");
    * ```
    *
    * @example
@@ -2720,11 +2734,11 @@ export default class SimpleTable extends Simple {
    * // After:  [{ city: "Montreal", neighborhoods: "Old Montreal" },
    * //         { city: "Montreal", neighborhoods: "Chinatown" },
    * //         { city: "Montreal", neighborhoods: "Griffintown" }]
-   * await table.unnest("neighborhoods", " / ");
+   * table.unnest("neighborhoods", " / ");
    * ```
    */
-  async unnest(column: string, separator: string): Promise<this> {
-    await unnest(this, column, separator);
+  unnest(column: string, separator: string): this {
+    unnest(this, column, separator);
     return this;
   }
 
@@ -2804,44 +2818,46 @@ export default class SimpleTable extends Simple {
   /**
    * Rounds numeric values in specified columns.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param columns - The column name or an array of column names containing numeric values to be rounded.
    * @param options - An optional object with configuration options:
    * @param options.decimals - The number of decimal places to round to. Defaults to `0` (rounds to the nearest integer).
    * @param options.method - The rounding method to use: `"round"` (rounds to the nearest integer, with halves rounding up), `"ceiling"` (rounds up to the nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults to `"round"`.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Round 'column1' values to the nearest integer
-   * await table.round("column1");
+   * table.round("column1");
    * ```
    *
    * @example
    * ```ts
    * // Round 'column1' values to 2 decimal places
-   * await table.round("column1", { decimals: 2 });
+   * table.round("column1", { decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Round 'column1' values down to the nearest integer (floor)
-   * await table.round("column1", { method: "floor" });
+   * table.round("column1", { method: "floor" });
    * ```
    *
    * @example
    * ```ts
    * // Round 'columnA' and 'columnB' values to 1 decimal place using ceiling method
-   * await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
+   * table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
    * ```
    *
    * @example
    * ```ts
    * // Round 'column1' values to 2 decimal places using the shorthand
-   * await table.round("column1", 2);
+   * table.round("column1", 2);
    * ```
    */
-  async round(
+  round(
     columns: string | string[],
     options:
       | number
@@ -2849,39 +2865,41 @@ export default class SimpleTable extends Simple {
         decimals?: number;
         method?: "round" | "ceiling" | "floor";
       } = {},
-  ): Promise<this> {
-    await round(this, columns, options);
+  ): this {
+    round(this, columns, options);
     return this;
   }
 
   /**
    * Updates values in a specified column using a SQL expression.
    *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   *
    * @param column - The name of the column to be updated.
    * @param definition - The SQL expression used to set the new values in the column (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
    * // Update 'column1' with the left 5 characters of 'column2'
-   * await table.updateColumn("column1", `LEFT(column2, 5)`);
+   * table.updateColumn("column1", `LEFT(column2, 5)`);
    * ```
    *
    * @example
    * ```ts
    * // Double the values in 'price' column
-   * await table.updateColumn("price", `price * 2`);
+   * table.updateColumn("price", `price * 2`);
    * ```
    *
    * @example
    * ```ts
    * // Set 'status' to 'active' where 'isActive' is true
-   * await table.updateColumn("status", `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`);
+   * table.updateColumn("status", `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`);
    * ```
    */
-  async updateColumn(column: string, definition: string): Promise<this> {
-    await updateColumn(this, column, definition);
+  updateColumn(column: string, definition: string): this {
+    updateColumn(this, column, definition);
     return this;
   }
 

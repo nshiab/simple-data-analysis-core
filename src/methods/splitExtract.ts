@@ -1,28 +1,25 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function splitExtract(
+export default function splitExtract(
   simpleTable: SimpleTable,
   column: string,
   separator: string,
   index: number,
   newColumn: string,
 ) {
-  await queryDB(
-    simpleTable,
-    `${
-      column === newColumn
-        ? ""
-        : `ALTER TABLE "${simpleTable.name}" ADD "${newColumn}" VARCHAR;`
-    }
-      UPDATE "${simpleTable.name}" SET "${newColumn}" = SPLIT_PART("${column}", '${separator}', ${
-      index + 1
-    })`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "splitExtract()",
-      parameters: { column, separator, index, newColumn },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "splitExtract()",
+    parameters: { column, separator, index, newColumn },
+    needsSchema: false,
+    buildSelect: (input) => {
+      const expression = `SPLIT_PART("${column}", '${separator}', ${
+        index + 1
+      })`;
+      return column === newColumn
+        ? `SELECT * REPLACE (${expression} AS "${newColumn}") FROM ${input}`
+        : `SELECT *, ${expression} AS "${newColumn}" FROM ${input}`;
+    },
+  });
 }

@@ -1386,10 +1386,13 @@ const tableB = await tableA.cloneTable({
 Clones an existing column in this table, creating a new column with identical
 values.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async cloneColumn(originalColumn: string, newColumn: string): Promise<this>;
+cloneColumn(originalColumn: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -1399,13 +1402,13 @@ async cloneColumn(originalColumn: string, newColumn: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Clone 'firstName' column as 'contactName'
-await table.cloneColumn("firstName", "contactName");
+table.cloneColumn("firstName", "contactName");
 ```
 
 #### `cloneColumnWithOffset`
@@ -1418,10 +1421,13 @@ different time points.
 table. For meaningful results, ensure your data is sorted appropriately (e.g.,
 by date/time for time-series analysis) before calling this method.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async cloneColumnWithOffset(originalColumn: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): Promise<this>;
+cloneColumnWithOffset(originalColumn: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -1438,23 +1444,23 @@ async cloneColumnWithOffset(originalColumn: string, newColumn: string, options?:
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Clone 'value' as 'previous_value', offsetting by 1 row (value of row N-1 goes to row N)
-await table.cloneColumnWithOffset("value", "previous_value");
+table.cloneColumnWithOffset("value", "previous_value");
 ```
 
 ```ts
 // Clone 'sales' as 'sales_2_days_ago', offsetting by 2 rows
-await table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 });
+table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 });
 ```
 
 ```ts
 // Clone 'temperature' as 'prev_temp_by_city', offsetting by 1 row within each 'city' category
-await table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
+table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
   offset: 1,
   categories: "city",
 });
@@ -1462,14 +1468,10 @@ await table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
 
 ```ts
 // Clone 'stock_price' as 'prev_price_by_stock_and_exchange', offsetting by 1 row within each 'stock_symbol' and 'exchange' category
-await table.cloneColumnWithOffset(
-  "stock_price",
-  "prev_price_by_stock_and_exchange",
-  {
-    offset: 1,
-    categories: ["stock_symbol", "exchange"],
-  },
-);
+table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
+  offset: 1,
+  categories: ["stock_symbol", "exchange"],
+});
 ```
 
 #### `fill`
@@ -2403,10 +2405,13 @@ table.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid("country")`);
 Adds a new column to the table containing the row number, starting at 0 (like an
 index).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async addRowNumber(newColumn: string, options?: { categories?: string | string[] }): Promise<this>;
+addRowNumber(newColumn: string, options?: { categories?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -2419,18 +2424,18 @@ async addRowNumber(newColumn: string, options?: { categories?: string | string[]
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Add a new column named 'rowNumber' with the row number for each row
-await table.addRowNumber("rowNumber");
+table.addRowNumber("rowNumber");
 ```
 
 ```ts
 // Add a new column named 'rowNumber' with the row number for each 'category'
-await table.addRowNumber("rowNumber", { categories: "category" });
+table.addRowNumber("rowNumber", { categories: "category" });
 ```
 
 #### `crossJoin`
@@ -2906,10 +2911,13 @@ The columns must contain string (VARCHAR) values. An error is thrown if any
 column is of a different type. `null` values remain `null`. If any string
 already exceeds the target length, an error is thrown (no silent truncation).
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): Promise<this>;
+pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): this;
 ```
 
 ##### Parameters
@@ -2922,7 +2930,7 @@ async pad(columns: string | string[], length: number, options?: { method?: "left
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Throws
 
@@ -2933,19 +2941,19 @@ A promise that resolves to the table, so methods can be chained.
 
 ```ts
 // Left-pad 'id' column to 3 characters with zeros (default)
-await table.pad("id", 3);
+table.pad("id", 3);
 // Result: '1' -> '001', '23' -> '023', null -> null
 ```
 
 ```ts
 // Right-pad 'code' column to 5 characters with spaces
-await table.pad("code", 5, { method: "right", char: " " });
+table.pad("code", 5, { method: "right", char: " " });
 // Result: '123' -> '123  ', '45' -> '45   ', null -> null
 ```
 
 ```ts
 // Left-pad multiple columns to 5 characters with dashes
-await table.pad(["id", "code"], 5, { method: "left", char: "-" });
+table.pad(["id", "code"], 5, { method: "left", char: "-" });
 // Result: '1' -> '----1', '23' -> '---23'
 ```
 
@@ -2955,10 +2963,13 @@ Splits strings in a specified column by a separator and extracts a substring at
 a given index, storing the result in a new or existing column. If the index is
 out of bounds, an empty string will be returned for that row.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async splitExtract(column: string, separator: string, index: number, newColumn: string): Promise<this>;
+splitExtract(column: string, separator: string, index: number, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -2973,20 +2984,20 @@ async splitExtract(column: string, separator: string, index: number, newColumn: 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Split 'address' by comma and extract the second part (index 1) into a new 'city' column
 // e.g., "123 Main St, Anytown, USA" -> "Anytown"
-await table.splitExtract("address", ",", 1, "city");
+table.splitExtract("address", ",", 1, "city");
 ```
 
 ```ts
 // Split 'fileName' by dot and extract the first part (index 0), overwriting 'fileName'
 // e.g., "document.pdf" -> "document"
-await table.splitExtract("fileName", ".", 0, "fileName");
+table.splitExtract("fileName", ".", 0, "fileName");
 ```
 
 #### `splitSpread`
@@ -3001,10 +3012,13 @@ extra columns will contain empty strings (unless `noCheck` is set to true). If a
 row has more parts than the number of new columns, an error will be thrown
 unless `noCheck` is set to true.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async splitSpread(column: string, separator: string, newColumns: string[], options?: { noCheck?: boolean }): Promise<this>;
+splitSpread(column: string, separator: string, newColumns: string[], options?: { noCheck?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3019,25 +3033,25 @@ async splitSpread(column: string, separator: string, newColumns: string[], optio
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Split 'fullName' by comma and spread into 'lastName' and 'firstName'
 // e.g., "Shiab, Nael" -> lastName: "Shiab", firstName: "Nael"
-await table.splitSpread("fullName", ",", ["lastName", "firstName"]);
+table.splitSpread("fullName", ",", ["lastName", "firstName"]);
 ```
 
 ```ts
 // Split 'address' by comma and spread into three columns
 // e.g., "123 Main St, Anytown, USA" -> street: "123 Main St", city: "Anytown", country: "USA"
-await table.splitSpread("address", ",", ["street", "city", "country"]);
+table.splitSpread("address", ",", ["street", "city", "country"]);
 ```
 
 ```ts
 // Skip validation for performance with noCheck option
-await table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
+table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
 ```
 
 #### `left`
@@ -3259,10 +3273,13 @@ Each value in the specified column is split using the provided separator, and a
 new row is created for each resulting substring. All other column values are
 duplicated across the newly created rows.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async unnest(column: string, separator: string): Promise<this>;
+unnest(column: string, separator: string): this;
 ```
 
 ##### Parameters
@@ -3273,7 +3290,7 @@ async unnest(column: string, separator: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
@@ -3281,7 +3298,7 @@ A promise that resolves to the table, so methods can be chained.
 // Unnest 'tags' column separated by commas
 // Before: [{ id: 1, tags: "red,blue,green" }]
 // After:  [{ id: 1, tags: "red" }, { id: 1, tags: "blue" }, { id: 1, tags: "green" }]
-await table.unnest("tags", ",");
+table.unnest("tags", ",");
 ```
 
 ```ts
@@ -3290,7 +3307,7 @@ await table.unnest("tags", ",");
 // After:  [{ city: "Montreal", neighborhoods: "Old Montreal" },
 //         { city: "Montreal", neighborhoods: "Chinatown" },
 //         { city: "Montreal", neighborhoods: "Griffintown" }]
-await table.unnest("neighborhoods", " / ");
+table.unnest("neighborhoods", " / ");
 ```
 
 #### `repeatRows`
@@ -3379,10 +3396,13 @@ await table.nest("tags", ",", ["country", "city"]);
 
 Rounds numeric values in specified columns.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async round(columns: string | string[], options?: number | { decimals?: number; method?: "round" | "ceiling" | "floor" }): Promise<this>;
+round(columns: string | string[], options?: number | { decimals?: number; method?: "round" | "ceiling" | "floor" }): this;
 ```
 
 ##### Parameters
@@ -3399,43 +3419,46 @@ async round(columns: string | string[], options?: number | { decimals?: number; 
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Round 'column1' values to the nearest integer
-await table.round("column1");
+table.round("column1");
 ```
 
 ```ts
 // Round 'column1' values to 2 decimal places
-await table.round("column1", { decimals: 2 });
+table.round("column1", { decimals: 2 });
 ```
 
 ```ts
 // Round 'column1' values down to the nearest integer (floor)
-await table.round("column1", { method: "floor" });
+table.round("column1", { method: "floor" });
 ```
 
 ```ts
 // Round 'columnA' and 'columnB' values to 1 decimal place using ceiling method
-await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
+table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
 ```
 
 ```ts
 // Round 'column1' values to 2 decimal places using the shorthand
-await table.round("column1", 2);
+table.round("column1", 2);
 ```
 
 #### `updateColumn`
 
 Updates values in a specified column using a SQL expression.
 
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+
 ##### Signature
 
 ```typescript
-async updateColumn(column: string, definition: string): Promise<this>;
+updateColumn(column: string, definition: string): this;
 ```
 
 ##### Parameters
@@ -3446,23 +3469,23 @@ async updateColumn(column: string, definition: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+The table, so methods can be chained.
 
 ##### Examples
 
 ```ts
 // Update 'column1' with the left 5 characters of 'column2'
-await table.updateColumn("column1", `LEFT(column2, 5)`);
+table.updateColumn("column1", `LEFT(column2, 5)`);
 ```
 
 ```ts
 // Double the values in 'price' column
-await table.updateColumn("price", `price * 2`);
+table.updateColumn("price", `price * 2`);
 ```
 
 ```ts
 // Set 'status' to 'active' where 'isActive' is true
-await table.updateColumn(
+table.updateColumn(
   "status",
   `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`,
 );

@@ -1,8 +1,9 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function splitSpread(
+export default function splitSpread(
   simpleTable: SimpleTable,
   column: string,
   separator: string,
@@ -11,6 +12,26 @@ export default async function splitSpread(
     noCheck?: boolean;
   } = {},
 ) {
+  // The pre-validation queries the data, so splitSpread can't be expressed
+  // as a single SELECT over its input: it executes as a barrier.
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "splitSpread()",
+    parameters: { column, separator, newColumns, options },
+    execute: () =>
+      executeSplitSpread(simpleTable, column, separator, newColumns, options),
+  });
+}
+
+async function executeSplitSpread(
+  simpleTable: SimpleTable,
+  column: string,
+  separator: string,
+  newColumns: string[],
+  options: {
+    noCheck?: boolean;
+  },
+): Promise<void> {
   const nbParts = newColumns.length;
 
   if (!options.noCheck) {
