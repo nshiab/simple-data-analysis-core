@@ -6793,7 +6793,7 @@ Caches the results of computations in `./.sda-cache`. You should add
 ##### Signature
 
 ```typescript
-async cache(run: () => Promise<void>, options?: { ttl?: number }): Promise<this>;
+async cache(run: () => void | Promise<void>, options?: { ttl?: number }): Promise<this>;
 ```
 
 ##### Parameters
