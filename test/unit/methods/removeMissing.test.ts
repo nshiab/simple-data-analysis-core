@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return a table without any missing values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.removeMissing();
+  table.removeMissing();
   const data = await table.getData();
 
   assertEquals(data, dataNoNulls);
@@ -16,9 +16,9 @@ Deno.test("should return a table without any missing values", async () => {
 Deno.test("should return a table without any missing values even if column names have special characters like spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeMissing();
+  table.removeMissing();
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsSpacesInColumnNames);
@@ -27,11 +27,11 @@ Deno.test("should return a table without any missing values even if column names
 Deno.test("should return a table without any missing values even if column names have special characters like spaces, with option invert", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeMissing({ invert: true });
+  table.removeMissing({ invert: true });
   // Sorting to help the tests
-  await table.sort({ Name: "asc", Job: "asc", Salary: "asc" });
+  table.sort({ Name: "asc", Job: "asc", Salary: "asc" });
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsSpacesInColumnNamesInvert);
@@ -40,10 +40,10 @@ Deno.test("should return a table without any missing values even if column names
 Deno.test("should return a table without any missing values even if there is a type JSON", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.json"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.json"]);
+  table.cleanColumnNames();
 
-  await table.removeMissing();
+  table.removeMissing();
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsJSON);
@@ -53,9 +53,9 @@ Deno.test("should return a table without any missing values even if there is a t
 Deno.test("should return a table without any missing values even if there is a type associated with numbers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataWithMissingValues.json"]);
+  table.loadData(["test/data/files/dataWithMissingValues.json"]);
 
-  await table.removeMissing();
+  table.removeMissing();
 
   const data = await table.getData();
 
@@ -68,9 +68,9 @@ Deno.test("should return a table without any missing values even if there is a t
 Deno.test("should return a table without any missing values even if there is a type associated with numbers and otherMissingValues as number", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataWithMissingValues.json"]);
+  table.loadData(["test/data/files/dataWithMissingValues.json"]);
 
-  await table.removeMissing({
+  table.removeMissing({
     columns: "key3",
     missingValues: [0.5],
   });
@@ -86,10 +86,10 @@ Deno.test("should return a table without any missing values even if there is a t
 Deno.test("should return a table without any missing values for a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.removeMissing({
+  table.removeMissing({
     columns: "name",
   });
   const data = await table.getData();
@@ -101,10 +101,10 @@ Deno.test("should return a table without any missing values for a specific colum
 Deno.test("should return a table without any missing values for multiple specific columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.removeMissing({
+  table.removeMissing({
     columns: ["name", "salary"],
   });
 
@@ -117,13 +117,13 @@ Deno.test("should return a table without any missing values for multiple specifi
 Deno.test("should return a table with null values in any columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.removeMissing({
+  table.removeMissing({
     invert: true,
   });
-  await table.sort({ name: "asc" });
+  table.sort({ name: "asc" });
 
   const data = await table.getData();
 
@@ -134,10 +134,10 @@ Deno.test("should return a table with null values in any columns", async () => {
 Deno.test("should return a table with null values in a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.removeMissing({
+  table.removeMissing({
     columns: "name",
     invert: true,
   });

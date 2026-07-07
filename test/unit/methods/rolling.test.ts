@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should compute a rolling average with 3 preceding and 3 following", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { value: 52 },
     { value: 76 },
     { value: 36 },
@@ -17,7 +17,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following", a
     { value: 41 },
   ]);
 
-  await table.rolling("value", "rollingAvg", "mean", 3, 3);
+  table.rolling("value", "rollingAvg", "mean", 3, 3);
 
   const data = await table.getData();
 
@@ -40,7 +40,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following", a
 Deno.test("should compute a rolling average with 3 preceding and 3 following, and 4 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { value: 52 },
     { value: 76 },
     { value: 36 },
@@ -53,7 +53,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following, an
     { value: 41 },
   ]);
 
-  await table.rolling("value", "rollingAvg", "mean", 3, 3, {
+  table.rolling("value", "rollingAvg", "mean", 3, 3, {
     decimals: 4,
   });
 
@@ -78,7 +78,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following, an
 Deno.test("should compute a rolling max with 0 preceding and 3 following", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { value: 52 },
     { value: 76 },
     { value: 36 },
@@ -91,7 +91,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following", async
     { value: 41 },
   ]);
 
-  await table.rolling("value", "rollingMax", "max", 0, 3);
+  table.rolling("value", "rollingMax", "max", 0, 3);
 
   const data = await table.getData();
 
@@ -114,7 +114,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following", async
 Deno.test("should compute a rolling max with 0 preceding and 3 following, and a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { index: 1, groups: "a", value: 52 },
     { index: 2, groups: "a", value: 76 },
     { index: 3, groups: "a", value: 36 },
@@ -127,10 +127,10 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
     { index: 10, groups: "b", value: 41 },
   ]);
 
-  await table.rolling("value", "rollingMax", "max", 0, 3, {
+  table.rolling("value", "rollingMax", "max", 0, 3, {
     categories: "groups",
   });
-  await table.sort({ index: "asc" });
+  table.sort({ index: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [

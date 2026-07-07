@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the top 3", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
   const data = await table.getTop(3);
   assertEquals(data, [
     {
@@ -38,7 +38,7 @@ Deno.test("should return the top 3", async () => {
 Deno.test("should return the top 3 with a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
   const data = await table.getTop(3, {
     conditions: `Job = 'Programmer'`,
   });

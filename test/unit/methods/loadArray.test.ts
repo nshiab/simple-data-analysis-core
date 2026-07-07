@@ -5,7 +5,7 @@ import SimpleTable from "../../../src/class/SimpleTable.ts";
 Deno.test("should load an array of objects into a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       key1: 1,
       key2: "un",
@@ -90,7 +90,7 @@ Deno.test("should load an array of objects into a table and return the table", a
 Deno.test("should load an array of objects into a table with spaces in column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "column 1": 1,
       "column 2": "un",
@@ -135,7 +135,7 @@ Deno.test("should load an array of objects into a table with spaces in column na
 Deno.test("should load an array of objects even if the first rows have null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "column 1": 1,
       "column 2": null,
@@ -180,7 +180,7 @@ Deno.test("should load an array of objects even if the first rows have null valu
 Deno.test("should load an array of objects even if the all values in a column are null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "column 1": 1,
       "column 2": null,
@@ -236,7 +236,7 @@ Deno.test("should throw a clear error for an empty array", async () => {
 
   let error: unknown;
   try {
-    await table.loadArray([]);
+    table.loadArray([]);
   } catch (e) {
     error = e;
   }

@@ -5,23 +5,23 @@ Deno.test("should check if geometries are inside other geometries", async () => 
   const sdb = new SimpleDB();
 
   const points = sdb.newTable("points");
-  await points.loadGeoData("test/geodata/files/pointsInside.json");
-  await points.renameColumns({
+  points.loadGeoData("test/geodata/files/pointsInside.json");
+  points.renameColumns({
     name: "points",
     geom: "geomPoints",
   });
 
   const polygon = sdb.newTable("polygon");
-  await polygon.loadGeoData("test/geodata/files/polygonInside.json");
-  await polygon.renameColumns({
+  polygon.loadGeoData("test/geodata/files/polygonInside.json");
+  polygon.renameColumns({
     name: "polygon",
     geom: "geomPolygon",
   });
 
-  await points.crossJoin(polygon);
-  await points.inside("geomPoints", "geomPolygon", "isInside");
-  await points.selectColumns(["points", "polygon", "isInside"]);
-  await points.sort({ points: "asc" });
+  points.crossJoin(polygon);
+  points.inside("geomPoints", "geomPolygon", "isInside");
+  points.selectColumns(["points", "polygon", "isInside"]);
+  points.sort({ points: "asc" });
 
   const data = await points.getData();
 

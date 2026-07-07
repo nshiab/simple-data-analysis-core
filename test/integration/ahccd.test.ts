@@ -14,7 +14,7 @@ if (existsSync("test/data/files/ahccd.csv")) {
 
     // Loading
     // const startImporting = Date.now();
-    await table.loadData(`test/data/files/ahccd.csv`, { allText: true });
+    table.loadData(`test/data/files/ahccd.csv`, { allText: true });
     // const endImporting = Date.now();
     // console.log(
     //   "Importing duration",
@@ -24,9 +24,9 @@ if (existsSync("test/data/files/ahccd.csv")) {
 
     // Cleaning
     // const startCleaning = Date.now();
-    await table.selectColumns(["time", "station", "station_name", "tas"]);
-    await table.removeMissing({ columns: "tas" });
-    await table.convert({ tas: "double", time: "date" });
+    table.selectColumns(["time", "station", "station_name", "tas"]);
+    table.removeMissing({ columns: "tas" });
+    table.convert({ tas: "double", time: "date" });
     // const endCleaning = Date.now();
     // console.log(
     //   "Cleaning duration",
@@ -36,7 +36,7 @@ if (existsSync("test/data/files/ahccd.csv")) {
 
     // Modifying
     // const startModifying = Date.now();
-    await table.addColumn("decade", "integer", `FLOOR(YEAR(time) / 10)*10`);
+    table.addColumn("decade", "integer", `FLOOR(YEAR(time) / 10)*10`);
     // const endModifying = Date.now();
     // console.log(
     //   "Modifying duration",
@@ -54,7 +54,7 @@ if (existsSync("test/data/files/ahccd.csv")) {
 
     // Summarizing
     // const startSummarizing = Date.now();
-    await table.summarize({
+    table.summarize({
       values: "tas",
       categories: ["station", "station_name", "decade"],
       summaries: "mean",

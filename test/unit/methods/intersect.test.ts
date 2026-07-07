@@ -4,19 +4,19 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should check if geometries intersect", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("data");
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await prov.renameColumns({ geom: "prov" });
+  prov.renameColumns({ geom: "prov" });
 
   const poly = sdb.newTable("poly");
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
-  await poly.renameColumns({ geom: "pol" });
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.renameColumns({ geom: "pol" });
 
-  const joined = await prov.crossJoin(poly, { outputTable: "joined" });
-  await joined.intersect("pol", "prov", "intersec");
+  const joined = prov.crossJoin(poly, { outputTable: "joined" });
+  joined.intersect("pol", "prov", "intersec");
 
-  await joined.selectColumns(["nameEnglish", "name", "intersec"]);
+  joined.selectColumns(["nameEnglish", "name", "intersec"]);
 
   const data = await joined.getData();
 
@@ -87,19 +87,19 @@ Deno.test("should check if geometries intersect", async () => {
 Deno.test("should check if geometries intersect and the returned booleans could be used to filter", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("data");
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await prov.renameColumns({ geom: "prov" });
+  prov.renameColumns({ geom: "prov" });
 
   const poly = sdb.newTable("poly");
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
-  await poly.renameColumns({ geom: "pol" });
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.renameColumns({ geom: "pol" });
 
-  const joined = await prov.crossJoin(poly, { outputTable: "joined" });
-  await joined.intersect("pol", "prov", "intersec");
-  await joined.selectColumns(["nameEnglish", "name", "intersec"]);
-  await joined.filter("intersec = TRUE");
+  const joined = prov.crossJoin(poly, { outputTable: "joined" });
+  joined.intersect("pol", "prov", "intersec");
+  joined.selectColumns(["nameEnglish", "name", "intersec"]);
+  joined.filter("intersec = TRUE");
 
   const data = await joined.getData();
 

@@ -6,8 +6,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add a column with the rank", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank");
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank");
   const data = await table.getData();
   assertEquals(data, [
     { Name: "Isabella", Subject: "Maths", Mark: 50, rank: 1 },
@@ -26,8 +26,8 @@ Deno.test("should add a column with the rank", async () => {
 Deno.test("should add a column with the rank in descending order", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", { order: "desc" });
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", { order: "desc" });
   const data = await table.getData();
   assertEquals(data, [
     { Name: "Isabella", Subject: "English", Mark: 90, rank: 1 },
@@ -46,8 +46,8 @@ Deno.test("should add a column with the rank in descending order", async () => {
 Deno.test("should add a column with the rank and no gaps", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", {
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", {
     noGaps: true,
   });
   const data = await table.getData();
@@ -69,11 +69,11 @@ Deno.test("should add a column with the rank and no gaps", async () => {
 Deno.test("should add a column with the rank after grouping with one category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", {
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", {
     categories: "Subject",
   });
-  await table.sort({
+  table.sort({
     Subject: "asc",
     Mark: "asc",
   });
@@ -95,12 +95,12 @@ Deno.test("should add a column with the rank after grouping with one category", 
 Deno.test("should add a column with the rank after grouping with multiple categories", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", {
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", {
     categories: ["Name", "Subject"],
   });
 
-  await table.sort({
+  table.sort({
     Name: "asc",
     Subject: "asc",
     Mark: "asc",

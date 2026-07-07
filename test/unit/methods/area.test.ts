@@ -4,12 +4,12 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should calculate the area of geometries in square meters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area");
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area");
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -82,12 +82,12 @@ Deno.test("should calculate the area of geometries in square meters", async () =
 Deno.test("should calculate the area of geometries in square meters from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area", { column: "geom" });
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area", { column: "geom" });
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -160,12 +160,12 @@ Deno.test("should calculate the area of geometries in square meters from a speci
 Deno.test("should calculate the area of geometries in square meters with a file loaded with option toWGS84", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area");
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area");
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -238,12 +238,12 @@ Deno.test("should calculate the area of geometries in square meters with a file 
 Deno.test("should calculate the area of geometries in square kilometers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area", { unit: "km2" });
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area", { unit: "km2" });
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [

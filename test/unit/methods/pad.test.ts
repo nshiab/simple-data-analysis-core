@@ -4,13 +4,13 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should left-pad strings to target length with default zero", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1" },
     { id: "23" },
     { id: "456" },
   ]);
 
-  await table.pad("id", 3);
+  table.pad("id", 3);
 
   const data = await table.getData();
 
@@ -25,13 +25,13 @@ Deno.test("should left-pad strings to target length with default zero", async ()
 Deno.test("should right-pad strings to target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { code: "123" },
     { code: "45" },
     { code: "6" },
   ]);
 
-  await table.pad("code", 5, { method: "right" });
+  table.pad("code", 5, { method: "right" });
 
   const data = await table.getData();
 
@@ -46,12 +46,12 @@ Deno.test("should right-pad strings to target length", async () => {
 Deno.test("should left-pad with custom character", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1" },
     { id: "2" },
   ]);
 
-  await table.pad("id", 4, { method: "left", char: "-" });
+  table.pad("id", 4, { method: "left", char: "-" });
 
   const data = await table.getData();
 
@@ -65,12 +65,12 @@ Deno.test("should left-pad with custom character", async () => {
 Deno.test("should right-pad with custom character", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { code: "AB" },
     { code: "CD" },
   ]);
 
-  await table.pad("code", 5, { method: "right", char: "*" });
+  table.pad("code", 5, { method: "right", char: "*" });
 
   const data = await table.getData();
 
@@ -84,13 +84,13 @@ Deno.test("should right-pad with custom character", async () => {
 Deno.test("should handle null values by leaving them as null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1" },
     { id: null },
     { id: "3" },
   ]);
 
-  await table.pad("id", 3);
+  table.pad("id", 3);
 
   const data = await table.getData();
 
@@ -105,7 +105,7 @@ Deno.test("should handle null values by leaving them as null", async () => {
 Deno.test("should throw error when column is not string type", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: 1 },
     { id: 2 },
   ]);
@@ -121,7 +121,7 @@ Deno.test("should throw error when column is not string type", async () => {
 Deno.test("should throw error when strings exceed target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Hi" },
     { name: "World!!" },
     { name: "OK" },
@@ -138,12 +138,12 @@ Deno.test("should throw error when strings exceed target length", async () => {
 Deno.test("should handle column names with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { "user id": "1" },
     { "user id": "23" },
   ]);
 
-  await table.pad("user id", 4);
+  table.pad("user id", 4);
 
   const data = await table.getData();
 
@@ -157,12 +157,12 @@ Deno.test("should handle column names with spaces", async () => {
 Deno.test("should handle empty strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "" },
     { id: "a" },
   ]);
 
-  await table.pad("id", 3);
+  table.pad("id", 3);
 
   const data = await table.getData();
 
@@ -176,12 +176,12 @@ Deno.test("should handle empty strings", async () => {
 Deno.test("should pad to length 0 when all strings are empty", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { text: "" },
     { text: "" },
   ]);
 
-  await table.pad("text", 0);
+  table.pad("text", 0);
 
   const data = await table.getData();
 
@@ -195,11 +195,11 @@ Deno.test("should pad to length 0 when all strings are empty", async () => {
 Deno.test("should handle padding with multi-character fill string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1" },
   ]);
 
-  await table.pad("id", 5, { method: "left", char: "ab" });
+  table.pad("id", 5, { method: "left", char: "ab" });
 
   const data = await table.getData();
 
@@ -212,11 +212,11 @@ Deno.test("should handle padding with multi-character fill string", async () => 
 Deno.test("should pad with default method being left", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { code: "ABC" },
   ]);
 
-  await table.pad("code", 6);
+  table.pad("code", 6);
 
   const data = await table.getData();
 
@@ -229,11 +229,11 @@ Deno.test("should pad with default method being left", async () => {
 Deno.test("should pad with default char being zero", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { value: "123" },
   ]);
 
-  await table.pad("value", 5, { method: "right" });
+  table.pad("value", 5, { method: "right" });
 
   const data = await table.getData();
 
@@ -246,7 +246,7 @@ Deno.test("should pad with default char being zero", async () => {
 Deno.test("should handle multiple rows with null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1" },
     { id: null },
     { id: "23" },
@@ -254,7 +254,7 @@ Deno.test("should handle multiple rows with null values", async () => {
     { id: "45" },
   ]);
 
-  await table.pad("id", 4, { method: "left", char: "0" });
+  table.pad("id", 4, { method: "left", char: "0" });
 
   const data = await table.getData();
 
@@ -273,12 +273,12 @@ Deno.test("should handle multiple rows with null values", async () => {
 Deno.test("should pad multiple columns at once", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1", code: "AB" },
     { id: "23", code: "C" },
   ]);
 
-  await table.pad(["id", "code"], 4, { method: "left", char: "-" });
+  table.pad(["id", "code"], 4, { method: "left", char: "-" });
 
   const data = await table.getData();
 
@@ -292,12 +292,12 @@ Deno.test("should pad multiple columns at once", async () => {
 Deno.test("should pad multiple columns with right padding", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "A", label: "X" },
     { name: "BC", label: "YZ" },
   ]);
 
-  await table.pad(["name", "label"], 4, { method: "right", char: "*" });
+  table.pad(["name", "label"], 4, { method: "right", char: "*" });
 
   const data = await table.getData();
 
@@ -311,7 +311,7 @@ Deno.test("should pad multiple columns with right padding", async () => {
 Deno.test("should throw error when one of multiple columns is not string type", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Alice", age: 30 },
     { name: "Bob", age: 25 },
   ]);
@@ -327,7 +327,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
 Deno.test("should throw error when one column has overflow in multi-column pad", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { short: "A", long: "ThisIsWayTooLong" },
     { short: "B", long: "OK" },
   ]);
@@ -343,12 +343,12 @@ Deno.test("should throw error when one column has overflow in multi-column pad",
 Deno.test("should pad all null column without error", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: null },
     { id: null },
   ]);
 
-  await table.pad("id", 3);
+  table.pad("id", 3);
 
   const data = await table.getData();
 
@@ -364,12 +364,12 @@ Deno.test("should pad all null column without error", async () => {
 Deno.test("should safely handle single quote in padding character", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: "1" },
     { id: "23" },
   ]);
 
-  await table.pad("id", 5, { method: "left", char: "'" });
+  table.pad("id", 5, { method: "left", char: "'" });
 
   const data = await table.getData();
 

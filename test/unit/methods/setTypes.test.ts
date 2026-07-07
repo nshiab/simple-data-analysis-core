@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should create a new SimpleTable with types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.setTypes({ name: "string", age: "number" });
+  table.setTypes({ name: "string", age: "number" });
   const types = await table.getTypes();
   assertEquals(types, { name: "VARCHAR", age: "DOUBLE" });
   await sdb.done();
@@ -13,7 +13,7 @@ Deno.test("should create a new SimpleTable with types", async () => {
 Deno.test("should create a new SimpleTable with geometry in types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.setTypes({
+  table.setTypes({
     name: "string",
     age: "number",
     city: "geometry('EPSG:4326')",
@@ -29,7 +29,7 @@ Deno.test("should create a new SimpleTable with geometry in types", async () => 
 Deno.test("should create a new SimpleTable with types and column names containing spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.setTypes({ "first name": "string", age: "number" });
+  table.setTypes({ "first name": "string", age: "number" });
   const types = await table.getTypes();
   assertEquals(types, { "first name": "VARCHAR", age: "DOUBLE" });
   await sdb.done();
@@ -38,7 +38,7 @@ Deno.test("should create a new SimpleTable with types and column names containin
 Deno.test("should create a new SimpleTable with types and column names with special uses", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.setTypes({
+  table.setTypes({
     "first name": "string",
     age: "number",
     Group: "string",

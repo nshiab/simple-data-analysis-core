@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the number of a rows in a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { name: "Evangeline", age: 21 },
     { name: "Amelia", age: 29 },
     { name: "Marie", age: 30 },
@@ -31,7 +31,7 @@ Deno.test("should return the number of a rows in a table", async () => {
 Deno.test("should return the number of a rows in a table with nul values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { name: "Evangeline", age: 21 },
     { name: "Amelia", age: 29 },
     { name: "Marie", age: 30 },
@@ -58,7 +58,7 @@ Deno.test("should return the number of a rows in a table with nul values", async
 Deno.test("should return the number of a rows with conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { name: "Evangeline", age: 21 },
     { name: "Amelia", age: 29 },
     { name: "Marie", age: 30 },

@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the count of null values, non null values, and distinct values in each column of a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.json");
+  table.loadData("test/data/files/employees.json");
 
   const description = await table.getDescription();
 

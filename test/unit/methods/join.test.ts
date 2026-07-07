@@ -4,11 +4,11 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should put the result of an inner join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
+  dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
+  categories.loadData("test/data/joins/categories.csv");
 
-  const joined = await dishes.join(categories, {
+  const joined = dishes.join(categories, {
     commonColumn: "dishId",
     type: "inner",
     outputTable: true,
@@ -38,11 +38,11 @@ Deno.test("should put the result of an inner join into a new table", async () =>
 Deno.test("should put the result of a left join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
+  dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
+  categories.loadData("test/data/joins/categories.csv");
 
-  const joined = await dishes.join(categories, {
+  const joined = dishes.join(categories, {
     commonColumn: "dishId",
     type: "left",
     outputTable: true,
@@ -79,11 +79,11 @@ Deno.test("should put the result of a left join into a new table", async () => {
 Deno.test("should put the result of a right join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
+  dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
+  categories.loadData("test/data/joins/categories.csv");
 
-  const joined = await dishes.join(categories, {
+  const joined = dishes.join(categories, {
     commonColumn: "dishId",
     type: "right",
     outputTable: true,
@@ -116,11 +116,11 @@ Deno.test("should put the result of a right join into a new table", async () => 
 Deno.test("should put the result of a full join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
+  dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
+  categories.loadData("test/data/joins/categories.csv");
 
-  const joined = await dishes.join(categories, {
+  const joined = dishes.join(categories, {
     commonColumn: "dishId",
     type: "full",
     outputTable: true,
@@ -155,11 +155,11 @@ Deno.test("should put the result of a full join into a new table", async () => {
 Deno.test("should put the result of a full join into a new table with a specific name in the DB", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
+  dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
+  categories.loadData("test/data/joins/categories.csv");
 
-  await dishes.join(categories, {
+  dishes.join(categories, {
     commonColumn: "dishId",
     type: "full",
     outputTable: "joined",
@@ -196,11 +196,11 @@ Deno.test("should put the result of a full join into a new table with a specific
 Deno.test("should automatically find a common column, make left join and put the result into leftTable", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
-  await dishes.loadData("test/data/joins/dishes.csv");
+  dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
-  await categories.loadData("test/data/joins/categories.csv");
+  categories.loadData("test/data/joins/categories.csv");
 
-  await dishes.join(categories);
+  dishes.join(categories);
 
   const data = await dishes.getData();
 
@@ -233,10 +233,10 @@ Deno.test("should automatically find a common column, make left join and put the
 Deno.test("should join on multiple columns", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("normals");
-  await dishes.loadData("test/data/joins/normals.csv");
+  dishes.loadData("test/data/joins/normals.csv");
   const categories = sdb.newTable("projections");
-  await categories.loadData("test/data/joins/projections.csv");
-  await dishes.join(categories, { commonColumn: ["city", "season"] });
+  categories.loadData("test/data/joins/projections.csv");
+  dishes.join(categories, { commonColumn: ["city", "season"] });
 
   await sdb.done();
 });

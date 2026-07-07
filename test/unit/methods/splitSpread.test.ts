@@ -4,12 +4,12 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should split and spread a string into multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Shiab, Nael" },
     { name: "Bruce, Graeme" },
   ]);
 
-  await table.splitSpread("name", ",", ["lastName", "firstName"]);
+  table.splitSpread("name", ",", ["lastName", "firstName"]);
 
   const data = await table.getData();
 
@@ -23,12 +23,12 @@ Deno.test("should split and spread a string into multiple columns", async () => 
 Deno.test("should split and spread into three columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { address: "123 Main St,Anytown,USA" },
     { address: "456 Oak Ave,Springfield,Canada" },
   ]);
 
-  await table.splitSpread("address", ",", ["street", "city", "country"]);
+  table.splitSpread("address", ",", ["street", "city", "country"]);
 
   const data = await table.getData();
 
@@ -52,7 +52,7 @@ Deno.test("should split and spread into three columns", async () => {
 Deno.test("should handle rows with fewer parts than expected", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { data: "A,B,C" },
     { data: "D,E" },
     { data: "F" },
@@ -89,7 +89,7 @@ Deno.test("should handle rows with fewer parts than expected", async () => {
 Deno.test("should throw error when rows have more parts than expected", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { data: "A,B,C,D,E" },
     { data: "F,G,H" },
     { data: "I,J,K,L" },
@@ -127,14 +127,14 @@ Deno.test("should throw error when rows have more parts than expected", async ()
 Deno.test("should skip validation with noCheck option when rows have more parts than expected", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { data: "A,B,C,D,E" },
     { data: "F,G,H" },
     { data: "I,J,K,L" },
   ]);
 
   // This should not throw an error because noCheck is true
-  await table.splitSpread("data", ",", ["first", "second"], { noCheck: true });
+  table.splitSpread("data", ",", ["first", "second"], { noCheck: true });
 
   const data = await table.getData();
 

@@ -5,12 +5,12 @@ import { readFileSync } from "node:fs";
 Deno.test("should simplify the geometries", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.simplify(0.5);
-  await table.reducePrecision(1);
-  await table.sort();
+  table.simplify(0.5);
+  table.reducePrecision(1);
+  table.sort();
 
   await table.writeGeoData(
     "test/output/CanadianProvincesAndTerritories-simplified.json",
@@ -33,12 +33,12 @@ Deno.test("should simplify the geometries", async () => {
 Deno.test("should simplify the geometries but keep the outer boundaries intact", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.simplify(0.5, { simplifyBoundary: false });
-  await table.reducePrecision(1);
-  await table.sort();
+  table.simplify(0.5, { simplifyBoundary: false });
+  table.reducePrecision(1);
+  table.sort();
 
   await table.writeGeoData(
     "test/output/CanadianProvincesAndTerritories-simplified-interior.json",
@@ -59,12 +59,12 @@ Deno.test("should simplify the geometries but keep the outer boundaries intact",
 Deno.test("should simplify the geometries from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.simplify(0.5, { column: "geom" });
-  await table.reducePrecision(1);
-  await table.sort();
+  table.simplify(0.5, { column: "geom" });
+  table.reducePrecision(1);
+  table.sort();
 
   await table.writeGeoData(
     "test/output/CanadianProvincesAndTerritories-simplified-column.json",

@@ -4,20 +4,20 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return all pairs of rows", async () => {
   const sdb = new SimpleDB();
   const numbers = sdb.newTable("numbers");
-  await numbers.loadArray([
+  numbers.loadArray([
     { key1: 1 },
     { key1: 2 },
     { key1: 3 },
     { key1: 4 },
   ]);
   const letters = sdb.newTable("letters");
-  await letters.loadArray([
+  letters.loadArray([
     { key2: "a" },
     { key2: "b" },
     { key2: "c" },
     { key2: "d" },
   ]);
-  await numbers.crossJoin(letters);
+  numbers.crossJoin(letters);
   const data = await numbers.getData();
   assertEquals(data, [
     { key1: 1, key2: "a" },
@@ -43,20 +43,20 @@ Deno.test("should return all pairs of rows", async () => {
 Deno.test("should return all pairs of rows in a new table", async () => {
   const sdb = new SimpleDB();
   const numbers = sdb.newTable("numbers");
-  await numbers.loadArray([
+  numbers.loadArray([
     { key1: 1 },
     { key1: 2 },
     { key1: 3 },
     { key1: 4 },
   ]);
   const letters = sdb.newTable("letters");
-  await letters.loadArray([
+  letters.loadArray([
     { key2: "a" },
     { key2: "b" },
     { key2: "c" },
     { key2: "d" },
   ]);
-  const joined = await numbers.crossJoin(letters, {
+  const joined = numbers.crossJoin(letters, {
     outputTable: true,
   });
   const data = await joined.getData();
@@ -84,20 +84,20 @@ Deno.test("should return all pairs of rows in a new table", async () => {
 Deno.test("should return all pairs of rows in a new table with a specific name", async () => {
   const sdb = new SimpleDB();
   const numbers = sdb.newTable("numbers");
-  await numbers.loadArray([
+  numbers.loadArray([
     { key1: 1 },
     { key1: 2 },
     { key1: 3 },
     { key1: 4 },
   ]);
   const letters = sdb.newTable("letters");
-  await letters.loadArray([
+  letters.loadArray([
     { key2: "a" },
     { key2: "b" },
     { key2: "c" },
     { key2: "d" },
   ]);
-  const joined = await numbers.crossJoin(letters, {
+  const joined = numbers.crossJoin(letters, {
     outputTable: "joined",
   });
   const data = await joined.getData();

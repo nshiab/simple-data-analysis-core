@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should remove a table and log no tables", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/cities.csv"]);
+  table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();
   const tables = await sdb.getTableNames();
 
@@ -14,7 +14,7 @@ Deno.test("should remove a table and log no tables", async () => {
 Deno.test("should remove a table and show no tables in sdb", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/cities.csv"]);
+  table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();
 
   assertEquals(sdb.tables, []);
@@ -23,11 +23,11 @@ Deno.test("should remove a table and show no tables in sdb", async () => {
 Deno.test("should remove a table and let create the same new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/cities.csv"]);
+  table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();
 
   const table2 = sdb.newTable("data");
-  await table2.loadData(["test/data/files/cities.csv"]);
+  table2.loadData(["test/data/files/cities.csv"]);
 
   const tables = await sdb.getTableNames();
 

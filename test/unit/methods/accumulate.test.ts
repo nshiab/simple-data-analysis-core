@@ -4,12 +4,12 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add the cumulative sum in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 1 },
     { key1: 2 },
     { key1: 3 },
   ]);
-  await table.accumulate("key1", "cumulative");
+  table.accumulate("key1", "cumulative");
   const data = await table.getData();
   assertEquals(data, [
     { key1: 1, cumulative: 1 },
@@ -21,12 +21,12 @@ Deno.test("should add the cumulative sum in a new column", async () => {
 Deno.test("should add the cumulative sum in a new column without reordering the rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 3 },
     { key1: 1 },
     { key1: 2 },
   ]);
-  await table.accumulate("key1", "cumulative");
+  table.accumulate("key1", "cumulative");
   const data = await table.getData();
   assertEquals(data, [
     { key1: 3, cumulative: 3 },
@@ -38,7 +38,7 @@ Deno.test("should add the cumulative sum in a new column without reordering the 
 Deno.test("should add the cumulative sum in a new column with categories", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 6, key2: "b" },
     { key1: 1, key2: "a" },
     { key1: 4, key2: "b" },
@@ -46,7 +46,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
     { key1: 3, key2: "a" },
     { key1: 5, key2: "b" },
   ]);
-  await table.accumulate("key1", "cumulative", { categories: "key2" });
+  table.accumulate("key1", "cumulative", { categories: "key2" });
   const data = await table.getData();
   assertEquals(data, [
     { key1: 6, key2: "b", cumulative: 6 },
@@ -61,7 +61,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
 Deno.test("should add the cumulative sum in a new column with multiple categories", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 6, key2: "b", key3: "c" },
     { key1: 1, key2: "a", key3: "c" },
     { key1: 4, key2: "b", key3: "c" },
@@ -69,7 +69,7 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
     { key1: 3, key2: "a", key3: "c" },
     { key1: 5, key2: "b", key3: "d" },
   ]);
-  await table.accumulate("key1", "cumulative", {
+  table.accumulate("key1", "cumulative", {
     categories: ["key2", "key3"],
   });
   const data = await table.getData();

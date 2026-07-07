@@ -4,12 +4,12 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the first two strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { firstName: "Nael", lastName: "Shiab" },
     { firstName: "Graeme", lastName: "Bruce" },
   ]);
 
-  await table.left("firstName", 2);
+  table.left("firstName", 2);
 
   const data = await table.getData();
 

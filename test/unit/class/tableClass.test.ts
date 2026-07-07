@@ -98,10 +98,10 @@ Deno.test("cloneTable() returns correct generic type", async () => {
 
   const sdb = new MyDB();
   const original = sdb.newTable("original");
-  await original.loadArray([{ a: 1 }, { a: 2 }]);
+  original.loadArray([{ a: 1 }, { a: 2 }]);
 
   // cloneTable() now correctly returns Promise<this>, inferred as MyTable
-  const cloned = await original.cloneTable("cloned");
+  const cloned = original.cloneTable("cloned");
 
   assertEquals(cloned instanceof MyTable, true);
   // No cast needed - TypeScript knows cloned is MyTable
@@ -129,9 +129,9 @@ Deno.test("cloneTable() with default name returns correct generic type", async (
 
   const sdb = new MyDB();
   const original = sdb.newTable("original");
-  await original.loadArray([{ a: 1 }]);
+  original.loadArray([{ a: 1 }]);
 
-  const cloned = await original.cloneTable();
+  const cloned = original.cloneTable();
 
   assertEquals(cloned instanceof MyTable, true);
   assertEquals(cloned.defaultTableName, true);
@@ -231,12 +231,12 @@ Deno.test("crossJoin() returns correct generic type", async () => {
 
   const sdb = new MyDB();
   const tableA = sdb.newTable("tableA");
-  await tableA.loadArray([{ a: 1 }, { a: 2 }]);
+  tableA.loadArray([{ a: 1 }, { a: 2 }]);
 
   const tableB = sdb.newTable("tableB");
-  await tableB.loadArray([{ b: "x" }, { b: "y" }]);
+  tableB.loadArray([{ b: "x" }, { b: "y" }]);
 
-  const result = await tableA.crossJoin(tableB, { outputTable: "joined" });
+  const result = tableA.crossJoin(tableB, { outputTable: "joined" });
 
   assertEquals(result instanceof MyTable, true);
   // No cast needed - TypeScript knows result is MyTable via Promise<this>
@@ -260,9 +260,9 @@ Deno.test("selectRows() returns correct generic type", async () => {
 
   const sdb = new MyDB();
   const table = sdb.newTable("original");
-  await table.loadArray([{ a: 1 }, { a: 2 }, { a: 3 }]);
+  table.loadArray([{ a: 1 }, { a: 2 }, { a: 3 }]);
 
-  const result = await table.selectRows(2, { outputTable: "selected" });
+  const result = table.selectRows(2, { outputTable: "selected" });
 
   assertEquals(result instanceof MyTable, true);
   assertEquals(result.customMethod(), "hello");
@@ -287,9 +287,9 @@ Deno.test("summarize() returns correct generic type", async () => {
 
   const sdb = new MyDB();
   const table = sdb.newTable("original");
-  await table.loadArray([{ a: 1 }, { a: 2 }, { a: 3 }]);
+  table.loadArray([{ a: 1 }, { a: 2 }, { a: 3 }]);
 
-  const result = await table.summarize({
+  const result = table.summarize({
     values: "a",
     summaries: "mean",
     outputTable: "summary",
@@ -316,12 +316,12 @@ Deno.test("join() returns correct generic type", async () => {
 
   const sdb = new MyDB();
   const tableA = sdb.newTable("tableA");
-  await tableA.loadArray([{ id: 1, a: "x" }, { id: 2, a: "y" }]);
+  tableA.loadArray([{ id: 1, a: "x" }, { id: 2, a: "y" }]);
 
   const tableB = sdb.newTable("tableB");
-  await tableB.loadArray([{ id: 1, b: 100 }, { id: 2, b: 200 }]);
+  tableB.loadArray([{ id: 1, b: 100 }, { id: 2, b: 200 }]);
 
-  const result = await tableA.join(tableB, {
+  const result = tableA.join(tableB, {
     commonColumn: "id",
     outputTable: "joined",
   });
@@ -343,9 +343,9 @@ Deno.test("removeTables() accepts generic table type", async () => {
 
   const sdb = new MyDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadArray([{ a: 1 }]);
+  table1.loadArray([{ a: 1 }]);
   const table2 = sdb.newTable("table2");
-  await table2.loadArray([{ a: 2 }]);
+  table2.loadArray([{ a: 2 }]);
 
   // removeTables() accepts MyTable instances (typed as Table)
   await sdb.removeTables(table1);
@@ -368,7 +368,7 @@ Deno.test("hasTable() accepts generic table type", async () => {
 
   const sdb = new MyDB();
   const table = sdb.newTable("myTable");
-  await table.loadArray([{ a: 1 }]);
+  table.loadArray([{ a: 1 }]);
 
   // hasTable() accepts MyTable instances
   const exists = await sdb.hasTable(table);
@@ -394,7 +394,7 @@ Deno.test("loadArray() returns this type for chaining", async () => {
   const table = sdb.newTable("original");
 
   // loadArray() returns Promise<this>, inferred as MyTable
-  const loaded = await table.loadArray([{ a: 1 }, { a: 2 }]);
+  const loaded = table.loadArray([{ a: 1 }, { a: 2 }]);
 
   assertEquals(loaded instanceof MyTable, true);
   // No cast needed - TypeScript knows loaded is MyTable

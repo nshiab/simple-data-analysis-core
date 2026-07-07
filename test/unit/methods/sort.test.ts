@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should sort one number column ascendingly", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSort.csv");
-  await table.sort({ key1: "asc" });
+  table.loadData("test/data/files/dataSort.csv");
+  table.sort({ key1: "asc" });
 
   const data = await table.getData();
 
@@ -24,8 +24,8 @@ Deno.test("should sort one number column ascendingly", async () => {
 Deno.test("should sort one column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([{ "column 1": 2 }, { "column 1": 1 }]);
-  await table.sort({ "column 1": "asc" });
+  table.loadArray([{ "column 1": 2 }, { "column 1": 1 }]);
+  table.sort({ "column 1": "asc" });
 
   const data = await table.getData();
 
@@ -37,8 +37,8 @@ Deno.test("should sort one column with spaces in its name", async () => {
 Deno.test("should sort one number column descendingly", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSort.csv");
-  await table.sort({ key1: "desc" });
+  table.loadData("test/data/files/dataSort.csv");
+  table.sort({ key1: "desc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -56,8 +56,8 @@ Deno.test("should sort one number column descendingly", async () => {
 Deno.test("should sort one text column ascendingly with a specific language", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSort.csv");
-  await table.sort(
+  table.loadData("test/data/files/dataSort.csv");
+  table.sort(
     { key2: "asc" },
     {
       lang: { key2: "fr" },
@@ -79,8 +79,8 @@ Deno.test("should sort one text column ascendingly with a specific language", as
 Deno.test("should sort one text column descendingly with a specific language", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSort.csv");
-  await table.sort(
+  table.loadData("test/data/files/dataSort.csv");
+  table.sort(
     { key2: "desc" },
     {
       lang: { key2: "fr" },
@@ -103,8 +103,8 @@ Deno.test("should sort one text column descendingly with a specific language", a
 Deno.test("should sort mutiple columns ascendingly or descendingly with a specific language", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSort.csv");
-  await table.sort(
+  table.loadData("test/data/files/dataSort.csv");
+  table.sort(
     { key3: "asc", key1: "desc" },
     {
       lang: { key2: "fr" },
@@ -127,8 +127,8 @@ Deno.test("should sort mutiple columns ascendingly or descendingly with a specif
 Deno.test("should sort all columns by defaut, from left to right, in ascending order", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSort.csv");
-  await table.sort();
+  table.loadData("test/data/files/dataSort.csv");
+  table.sort();
   const data = await table.getData();
 
   assertEquals(data, [

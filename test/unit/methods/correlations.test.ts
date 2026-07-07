@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should give all correlations between numeric columns in the table and overwrite the current table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.correlations();
-  await table.sort({ corr: "desc" });
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.correlations();
+  table.sort({ corr: "desc" });
 
   const data = await table.getData();
 
@@ -22,9 +22,9 @@ Deno.test("should give all correlations between numeric columns in the table and
 Deno.test("should give all correlations between numeric columns in the table and return a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  const newTable = await table.correlations({ outputTable: true });
-  await newTable.sort({ corr: "desc" });
+  table.loadData("test/data/files/dataCorrelations.json");
+  const newTable = table.correlations({ outputTable: true });
+  newTable.sort({ corr: "desc" });
 
   const data = await newTable.getData();
 
@@ -40,8 +40,8 @@ Deno.test("should give all correlations between numeric columns in the table and
 Deno.test("should give all correlations between numeric columns in the table and return a new table with a specific name in the DB", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.correlations({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.correlations({
     outputTable: "specificTable",
   });
 
@@ -62,11 +62,11 @@ Deno.test("should give all correlations between numeric columns in the table and
 Deno.test("should give all correlations between numeric columns in the table and overwrite the current table, with one decimal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.correlations({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.correlations({
     decimals: 1,
   });
-  await table.sort({ corr: "desc" });
+  table.sort({ corr: "desc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -81,11 +81,11 @@ Deno.test("should give all correlations between numeric columns in the table and
 Deno.test("should give all correlations between numeric columns in the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.correlations({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.correlations({
     decimals: 1,
   });
-  await table.sort({ corr: "desc" });
+  table.sort({ corr: "desc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -100,12 +100,12 @@ Deno.test("should give all correlations between numeric columns in the table", a
 Deno.test("should give all correlations between numeric columns with a specific x column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.correlations({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.correlations({
     x: "key2",
     decimals: 1,
   });
-  await table.sort({ corr: "desc" });
+  table.sort({ corr: "desc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -119,8 +119,8 @@ Deno.test("should give all correlations between numeric columns with a specific 
 Deno.test("should give the correlation between two specific columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.correlations({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.correlations({
     x: "key2",
     y: "key3",
     decimals: 1,
@@ -136,21 +136,21 @@ Deno.test("should give the correlation between two specific columns", async () =
 Deno.test("should give the correlation between two specific columns and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("./test/data/files/dailyTemperatures.csv");
-  await table.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
-  await table.summarize({
+  table.loadData("./test/data/files/dailyTemperatures.csv");
+  table.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
+  table.summarize({
     values: "t",
     categories: ["decade", "id"],
     summaries: "mean",
   });
-  await table.correlations({
+  table.correlations({
     x: "decade",
     y: "mean",
     categories: "id",
     decimals: 2,
   });
 
-  await table.sort({ corr: "desc" });
+  table.sort({ corr: "desc" });
 
   const data = await table.getData();
 

@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should log a description of the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
 
   await table.logDescription();
 
@@ -26,7 +26,7 @@ Deno.test("should not throw an error when there is no table", async () => {
 Deno.test("should log a description of the table containing dates", async () => {
   const sdb = new SimpleDB();
   const temperatures = sdb.newTable("temperatures");
-  await temperatures.loadData(
+  temperatures.loadData(
     "test/data/files/dailyTemperatures.csv",
   );
   await temperatures.logDescription();

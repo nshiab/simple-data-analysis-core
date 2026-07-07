@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should sucessfully run a search", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  await table.bm25("italian food", "Dish", "Recipe", 5);
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  table.bm25("italian food", "Dish", "Recipe", 5);
 
   const dishes = await table.getValues("Dish");
   assertEquals(dishes.sort(), [
@@ -20,9 +20,9 @@ Deno.test("should sucessfully run a search", async () => {
 Deno.test("should sucessfully run a search with a specific stemmer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  table.bm25("italian food", "Dish", "Recipe", 5, {
     stemmer: "french",
   });
 
@@ -38,9 +38,9 @@ Deno.test("should sucessfully run a search with a specific stemmer", async () =>
 Deno.test("should sucessfully run a search with a specific b and k", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  table.bm25("italian food", "Dish", "Recipe", 5, {
     k: 0.1,
     b: 0.1,
   });
@@ -57,9 +57,9 @@ Deno.test("should sucessfully run a search with a specific b and k", async () =>
 Deno.test("should sucessfully run a search with output table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  const italian = await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  const italian = table.bm25("italian food", "Dish", "Recipe", 5, {
     outputTable: "italian",
   });
 
@@ -78,13 +78,13 @@ Deno.test("should sucessfully run a search with output table", async () => {
 Deno.test("should not recreate index if already exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  const italian = await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  const italian = table.bm25("italian food", "Dish", "Recipe", 5, {
     outputTable: "italian",
     verbose: true,
   });
-  const french = await table.bm25("french food", "Dish", "Recipe", 5, {
+  const french = table.bm25("french food", "Dish", "Recipe", 5, {
     outputTable: "french",
     verbose: true,
   });
@@ -114,9 +114,9 @@ Deno.test("should not recreate index if already exists", async () => {
 Deno.test("should successfully run a search with custom fts options", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  table.bm25("italian food", "Dish", "Recipe", 5, {
     stemmer: "none",
     lower: false,
     stripAccents: false,
@@ -129,8 +129,8 @@ Deno.test("should successfully run a search with custom fts options", async () =
 Deno.test("should recreate index with overwriteIndex option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // First search creates the index
   // bm25() queues the operation; run() executes it.
@@ -163,9 +163,9 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
 Deno.test("should include the score column when scoreColumn option is provided", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  table.bm25("italian food", "Dish", "Recipe", 5, {
     scoreColumn: "bm25_score",
   });
 
@@ -182,9 +182,9 @@ Deno.test("should filter out results below minScore", async () => {
 
   // First, run a standard search to get a baseline score to test against
   const baseTable = sdb.newTable();
-  await baseTable.loadData("test/data/files/recipes.parquet");
-  await baseTable.removeDuplicates({ on: "Dish" });
-  await baseTable.bm25("italian food", "Dish", "Recipe", 5, {
+  baseTable.loadData("test/data/files/recipes.parquet");
+  baseTable.removeDuplicates({ on: "Dish" });
+  baseTable.bm25("italian food", "Dish", "Recipe", 5, {
     scoreColumn: "score",
   });
 
@@ -195,9 +195,9 @@ Deno.test("should filter out results below minScore", async () => {
   const threshold = allScores[2];
 
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
+  table.bm25("italian food", "Dish", "Recipe", 5, {
     minScore: threshold,
     scoreColumn: "filtered_score",
   });
@@ -216,18 +216,18 @@ Deno.test("should filter out results below minScore", async () => {
 Deno.test("should successfully run a search with conjunctive option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // "fennel garlic" should match many things with disjunctive (default)
-  await table.bm25("fennel garlic", "Dish", "Recipe", 30, {
+  table.bm25("fennel garlic", "Dish", "Recipe", 30, {
     outputTable: "disjunctive",
   });
   const disjunctive = await sdb.getTable("disjunctive");
   const disjunctiveCount = await disjunctive.getNbRows();
 
   // With conjunctive, it should only match rows having BOTH tokens
-  await table.bm25("fennel garlic", "Dish", "Recipe", 30, {
+  table.bm25("fennel garlic", "Dish", "Recipe", 30, {
     conjunctive: true,
     outputTable: "conjunctive",
   });

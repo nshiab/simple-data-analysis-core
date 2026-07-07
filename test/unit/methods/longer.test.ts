@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should tidy data by stacking mutiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataUntidy.json");
-  await table.longer(
+  table.loadData("test/data/files/dataUntidy.json");
+  table.longer(
     ["2015", "2016", "2017", "2018", "2019", "2020"],
     "year",
     "employees",
@@ -36,7 +36,7 @@ Deno.test("should tidy data by stacking mutiple columns", async () => {
 Deno.test("should tidy data by stacking mutiple columns with spaces in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "Department or unit": "accounting and others",
       "2015": 10,
@@ -65,7 +65,7 @@ Deno.test("should tidy data by stacking mutiple columns with spaces in their nam
       "2020": 27,
     },
   ]);
-  await table.longer(
+  table.longer(
     ["2015", "2016", "2017", "2018", "2019", "2020"],
     "multiples years",
     "employees full-time",
@@ -170,8 +170,8 @@ Deno.test("should tidy data by stacking mutiple columns with spaces in their nam
 Deno.test("should tidy data by stacking mutiple columns and by including null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataUntidyWithNulls.json");
-  await table.longer(
+  table.loadData("test/data/files/dataUntidyWithNulls.json");
+  table.longer(
     ["2015", "2016", "2017", "2018", "2019", "2020"],
     "year",
     "employees",
@@ -205,7 +205,7 @@ Deno.test("should tidy data by stacking mutiple columns and by including null va
 Deno.test("should tidy data with columns with $ in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       v0: "1998",
       "Breaking and entering": "1,163",
@@ -416,7 +416,7 @@ Deno.test("should tidy data with columns with $ in their names", async () => {
     },
   ]);
 
-  await table.longer(
+  table.longer(
     [
       "Breaking and entering",
       "Motor vehicle theft",

@@ -6,7 +6,7 @@ Deno.test("should successfully create a VSS index", async () => {
   const table = sdb.newTable();
 
   // Create a table with embedding data (FLOAT array)
-  await table.loadArray([
+  table.loadArray([
     { id: 1, embedding: [0.1, 0.2, 0.3] },
     { id: 2, embedding: [0.4, 0.5, 0.6] },
     { id: 3, embedding: [0.7, 0.8, 0.9] },
@@ -28,7 +28,7 @@ Deno.test("should not recreate index if already exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await table.loadArray([
+  table.loadArray([
     { id: 1, embedding: [0.1, 0.2, 0.3] },
     { id: 2, embedding: [0.4, 0.5, 0.6] },
   ]);
@@ -58,7 +58,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await table.loadArray([
+  table.loadArray([
     { id: 1, embedding: [0.1, 0.2, 0.3] },
     { id: 2, embedding: [0.4, 0.5, 0.6] },
   ]);
@@ -86,7 +86,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await table.loadArray([
+  table.loadArray([
     { id: 1, embedding: [0.1, 0.2, 0.3] },
     { id: 2, embedding: [0.4, 0.5, 0.6] },
   ]);
@@ -106,7 +106,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await table.loadArray([
+  table.loadArray([
     { id: 1, embedding: [0.1, 0.2, 0.3] },
     { id: 2, embedding: [0.4, 0.5, 0.6] },
   ]);
@@ -137,7 +137,7 @@ Deno.test("should create index with custom HNSW parameters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await table.loadArray([
+  table.loadArray([
     { id: 1, embedding: [0.1, 0.2, 0.3] },
     { id: 2, embedding: [0.4, 0.5, 0.6] },
     { id: 3, embedding: [0.7, 0.8, 0.9] },

@@ -6,7 +6,7 @@ Deno.test("add rows in an empty table", async () => {
 
   const table = sdb.newTable("data");
 
-  await table.insertRows([
+  table.insertRows([
     { key1: 5, key2: "cinq" },
     { key1: 6, key2: "six" },
   ]);
@@ -25,9 +25,9 @@ Deno.test("add rows in a table", async () => {
   const sdb = new SimpleDB();
 
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
+  table.loadData("test/data/files/data.json");
 
-  await table.insertRows([
+  table.insertRows([
     { key1: 5, key2: "cinq" },
     { key1: 6, key2: "six" },
   ]);

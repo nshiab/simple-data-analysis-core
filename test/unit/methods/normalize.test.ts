@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should normalize values in a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSummarize.json");
+  table.loadData("test/data/files/dataSummarize.json");
 
-  await table.normalize("key2", "normalized");
-  await table.sort({ normalized: "asc" });
+  table.normalize("key2", "normalized");
+  table.sort({ normalized: "asc" });
 
   const data = await table.getData();
 
@@ -36,12 +36,12 @@ Deno.test("should normalize values in a column", async () => {
 Deno.test("should normalize values in a column with two decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSummarize.json");
+  table.loadData("test/data/files/dataSummarize.json");
 
-  await table.normalize("key2", "normalized", {
+  table.normalize("key2", "normalized", {
     decimals: 2,
   });
-  await table.sort({ normalized: "asc" });
+  table.sort({ normalized: "asc" });
 
   const data = await table.getData();
 
@@ -60,12 +60,12 @@ Deno.test("should normalize values in a column with two decimals", async () => {
 Deno.test("should normalize values in a column and keep 4 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSummarize.json");
+  table.loadData("test/data/files/dataSummarize.json");
 
-  await table.normalize("key2", "normalized", {
+  table.normalize("key2", "normalized", {
     decimals: 4,
   });
-  await table.sort({ normalized: "asc" });
+  table.sort({ normalized: "asc" });
 
   const data = await table.getData();
 
@@ -84,12 +84,12 @@ Deno.test("should normalize values in a column and keep 4 decimals", async () =>
 Deno.test("should normalize values in a column with categories", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataSummarize.json");
+  table.loadData("test/data/files/dataSummarize.json");
 
-  await table.normalize("key2", "normalized", {
+  table.normalize("key2", "normalized", {
     categories: "key1",
   });
-  await table.sort({ key3: "asc" });
+  table.sort({ key3: "asc" });
 
   const data = await table.getData();
 
@@ -108,7 +108,7 @@ Deno.test("should normalize values in a column with categories", async () => {
 Deno.test("should normalize data with positive and negative values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { key1: -1 },
     { key1: -0.5 },
     { key1: 0 },
@@ -116,8 +116,8 @@ Deno.test("should normalize data with positive and negative values", async () =>
     { key1: 1 },
   ]);
 
-  await table.normalize("key1", "normalized");
-  await table.sort({ key1: "asc" });
+  table.normalize("key1", "normalized");
+  table.sort({ key1: "asc" });
 
   const data = await table.getData();
 

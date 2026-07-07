@@ -6,9 +6,9 @@ Deno.test("should remove the small circle from the big circle", async () => {
   const sdb = new SimpleDB();
 
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/bigCircleWithHole.json");
+  table.loadGeoData("test/geodata/files/bigCircleWithHole.json");
 
-  await table.fillHoles();
+  table.fillHoles();
 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");

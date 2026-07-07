@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the vertical proportions in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.proportionsVertical("key2", "key2Perc");
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.proportionsVertical("key2", "key2Perc");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -52,8 +52,8 @@ Deno.test("should return the vertical proportions in a new column", async () => 
 Deno.test("should return the vertical proportions in a new column and a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.proportionsVertical("key2", "key2Prop", {
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.proportionsVertical("key2", "key2Prop", {
     decimals: 4,
   });
   const data = await table.getData();
@@ -82,11 +82,11 @@ Deno.test("should return the vertical proportions in a new column and a specific
 Deno.test("should return the vertical proportions in a new column with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.proportionsVertical("key2", "key2Perc", {
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.proportionsVertical("key2", "key2Perc", {
     categories: "key1",
   });
-  await table.sort({
+  table.sort({
     key1: "asc",
     key2Perc: "asc",
   });
@@ -136,11 +136,11 @@ Deno.test("should return the vertical proportions in a new column with a categor
 Deno.test("should return the vertical proportions in a new column with multiple categories", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.proportionsVertical("key3", "key3Perc", {
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.proportionsVertical("key3", "key3Perc", {
     categories: ["key1", "key2"],
   });
-  await table.sort({
+  table.sort({
     key1: "asc",
     key2: "asc",
     key3Perc: "asc",

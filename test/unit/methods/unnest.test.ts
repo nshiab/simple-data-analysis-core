@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should unnest rows based on a specific column values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/nestedData.csv");
-  await table.unnest("neighbourhoods", " / ");
+  table.loadData("test/data/files/nestedData.csv");
+  table.unnest("neighbourhoods", " / ");
 
   const data = await table.getData();
 

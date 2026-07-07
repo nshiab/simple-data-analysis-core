@@ -5,9 +5,9 @@ Deno.test("should extract the lat and lon of points", async () => {
   const sdb = new SimpleDB();
 
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/pointsInside.json");
-  await table.latLon("geom", "lat", "lon");
-  await table.removeColumns("geom");
+  table.loadGeoData("test/geodata/files/pointsInside.json");
+  table.latLon("geom", "lat", "lon");
+  table.removeColumns("geom");
 
   const data = await table.getData();
 

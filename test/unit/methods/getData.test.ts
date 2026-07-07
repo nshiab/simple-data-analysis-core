@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the whole data from a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -423,7 +423,7 @@ Deno.test("should return the whole data from a table", async () => {
 Deno.test("should return data from a table based on a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const data = await table.getData({
     conditions: "Job = 'Programmer'",
   });
@@ -475,7 +475,7 @@ Deno.test("should return data from a table based on a condition", async () => {
 Deno.test("should return data from a table based on a condition and column selection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const data = await table.getData({
     conditions: "Job = 'Programmer'",
     columns: ["Name", "Hire date", "Job"],

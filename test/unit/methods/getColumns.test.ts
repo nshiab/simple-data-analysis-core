@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the columns of a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.csv");
+  table.loadData("test/data/files/data.csv");
 
   const columns = await table.getColumns();
 

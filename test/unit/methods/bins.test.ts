@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add a column with the bins and an interval of 10", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.convert({ Mark: "number" });
-  await table.bins("Mark", 10, "bins");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 10, "bins");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -27,9 +27,9 @@ Deno.test("should add a column with the bins and an interval of 10", async () =>
 Deno.test("should add a column with the bins and an interval of 10 and 45 as start value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.convert({ Mark: "number" });
-  await table.bins("Mark", 10, "bins", {
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 10, "bins", {
     startValue: 45,
   });
   const data = await table.getData();
@@ -52,9 +52,9 @@ Deno.test("should add a column with the bins and an interval of 10 and 45 as sta
 Deno.test("should add a column with the bins and an interval of 0.5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.convert({ Mark: "number" });
-  await table.bins("Mark", 0.5, "bins");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 0.5, "bins");
   const data = await table.getData();
 
   assertEquals(data, [

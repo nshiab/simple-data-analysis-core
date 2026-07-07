@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should concatenate multiple columns in a new one", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
-  await table.loadData(["test/data/files/employees.json"]);
-  await table.concatenate(["Name", "Job"], "concatenated");
+  table.loadData(["test/data/files/employees.json"]);
+  table.concatenate(["Name", "Job"], "concatenated");
   const data = await table.getData();
   assertEquals(data, [
     {
@@ -474,8 +474,8 @@ Deno.test("should concatenate multiple columns in a new one", async () => {
 Deno.test("should concatenate multiple columns in a new one with a separator", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
-  await table.loadData(["test/data/files/employees.json"]);
-  await table.concatenate(["Name", "Job"], "concatenatedWithSeparator", {
+  table.loadData(["test/data/files/employees.json"]);
+  table.concatenate(["Name", "Job"], "concatenatedWithSeparator", {
     separator: "-",
   });
   const data = await table.getData();
@@ -947,8 +947,8 @@ Deno.test("should concatenate multiple columns in a new one with a separator", a
 Deno.test("should concatenate multiple columns in a new one with a separator and special characters in column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
-  await table.loadData(["test/data/files/employees.json"]);
-  await table.concatenate(
+  table.loadData(["test/data/files/employees.json"]);
+  table.concatenate(
     ["Department or unit", "End-of_year-BONUS?"],
     "concat with sep",
     {

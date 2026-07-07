@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should concatenate multiple columns with labels into a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     {
       summary: "A brief overview",
       findings: "Key discoveries",
@@ -17,7 +17,7 @@ Deno.test("should concatenate multiple columns with labels into a new column", a
     },
   ]);
 
-  await table.concatenateRow(["summary", "findings", "context"], "fullText");
+  table.concatenateRow(["summary", "findings", "context"], "fullText");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -43,7 +43,7 @@ Deno.test("should concatenate multiple columns with labels into a new column", a
 Deno.test("should handle null values when concatenating with labels", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     {
       name: "John",
       age: null,
@@ -56,7 +56,7 @@ Deno.test("should handle null values when concatenating with labels", async () =
     },
   ]);
 
-  await table.concatenateRow(["name", "age", "city"], "profile");
+  table.concatenateRow(["name", "age", "city"], "profile");
 
   const data = await table.getData();
 
@@ -81,12 +81,12 @@ Deno.test("should handle null values when concatenating with labels", async () =
 Deno.test("should concatenate a single column with label", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { title: "First" },
     { title: "Second" },
   ]);
 
-  await table.concatenateRow(["title"], "labeled");
+  table.concatenateRow(["title"], "labeled");
 
   const data = await table.getData();
 
@@ -107,7 +107,7 @@ Deno.test("should concatenate a single column with label", async () => {
 Deno.test("should handle columns with special characters in names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     {
       "First Name": "Jane",
       "Last-Name": "Doe",
@@ -115,7 +115,7 @@ Deno.test("should handle columns with special characters in names", async () => 
     },
   ]);
 
-  await table.concatenateRow(
+  table.concatenateRow(
     ["First Name", "Last-Name", "Age (years)"],
     "fullInfo",
   );
@@ -137,7 +137,7 @@ Deno.test("should handle columns with special characters in names", async () => 
 Deno.test("should concatenate after converting numeric columns to strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("mixed");
-  await table.loadArray([
+  table.loadArray([
     {
       name: "Alice",
       age: 30,
@@ -159,9 +159,9 @@ Deno.test("should concatenate after converting numeric columns to strings", asyn
   ]);
 
   // Convert numeric columns to strings first
-  await table.convert({ age: "string", salary: "string" });
+  table.convert({ age: "string", salary: "string" });
 
-  await table.concatenateRow(
+  table.concatenateRow(
     ["name", "age", "salary", "department"],
     "employeeProfile",
   );
@@ -201,7 +201,7 @@ Deno.test("should concatenate after converting numeric columns to strings", asyn
 Deno.test("should throw error when trying to concatenate non-VARCHAR columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { name: "Alice", age: 30, salary: 50000 },
   ]);
 

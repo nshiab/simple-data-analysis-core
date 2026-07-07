@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should remove one column with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
 
-  await table.removeColumns("Hire date");
+  table.removeColumns("Hire date");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -373,10 +373,10 @@ Deno.test("should remove one column with spaces", async () => {
 Deno.test("should remove one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
-  await table.cleanColumnNames();
+  table.loadData("test/data/files/employees.csv");
+  table.cleanColumnNames();
 
-  await table.removeColumns("hireDate");
+  table.removeColumns("hireDate");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -744,9 +744,9 @@ Deno.test("should remove one column", async () => {
 Deno.test("should remove multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
-  await table.cleanColumnNames();
-  await table.removeColumns(["job", "salary"]);
+  table.loadData("test/data/files/employees.csv");
+  table.cleanColumnNames();
+  table.removeColumns(["job", "salary"]);
   const data = await table.getData();
 
   assertEquals(data, [

@@ -5,8 +5,8 @@ Deno.test("should fix invalid geometries", async () => {
   const sdb = new SimpleDB();
   // From https://github.com/chrieke/geojson-invalid-geometry
   const table = sdb.newTable("geodata");
-  await table.loadGeoData("test/geodata/files/invalid.geojson");
-  await table.fixGeo();
+  table.loadGeoData("test/geodata/files/invalid.geojson");
+  table.fixGeo();
 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
@@ -45,8 +45,8 @@ Deno.test("should fix invalid geometries in a specific column", async () => {
   const sdb = new SimpleDB();
   // From https://github.com/chrieke/geojson-invalid-geometry
   const table = sdb.newTable("geodata");
-  await table.loadGeoData("test/geodata/files/invalid.geojson");
-  await table.fixGeo("geom");
+  table.loadGeoData("test/geodata/files/invalid.geojson");
+  table.fixGeo("geom");
   const data = await table.getGeoData();
 
   assertEquals(data, {
@@ -82,10 +82,10 @@ Deno.test("should flag fixed geo as valid", async () => {
   const sdb = new SimpleDB();
   // From https://github.com/chrieke/geojson-invalid-geometry
   const table = sdb.newTable("geodata");
-  await table.loadGeoData("test/geodata/files/invalid.geojson");
-  await table.fixGeo();
-  await table.isValidGeo("isValid");
-  await table.selectColumns("isValid");
+  table.loadGeoData("test/geodata/files/invalid.geojson");
+  table.fixGeo();
+  table.isValidGeo("isValid");
+  table.selectColumns("isValid");
   const data = await table.getData();
 
   assertEquals(data, [{ isValid: true }]);

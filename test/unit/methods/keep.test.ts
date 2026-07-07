@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should keep only specific rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.keep({
+  table.keep({
     job: ["Clerk"],
     departmentOrUnit: ["50", "30"],
   });
@@ -165,10 +165,10 @@ Deno.test("should keep only specific rows", async () => {
 Deno.test("should keep only specific rows and accept arrays or single values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.keep({
+  table.keep({
     job: "Clerk",
     departmentOrUnit: ["50", "30"],
   });
@@ -325,13 +325,13 @@ Deno.test("should keep only specific rows and accept arrays or single values", a
 Deno.test("should keep only specific rows with boolean values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.insertRows([
+  table.insertRows([
     { name: "Alice", latest: true },
     { name: "Bob", latest: false },
     { name: "Charlie", latest: true },
   ]);
 
-  await table.keep({ latest: true });
+  table.keep({ latest: true });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -344,9 +344,9 @@ Deno.test("should keep only specific rows with boolean values", async () => {
 Deno.test("should keep only specific rows even with spaces in column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.keep({
+  table.keep({
     job: ["Clerk"],
     "Department or unit": ["50", "30"],
   });

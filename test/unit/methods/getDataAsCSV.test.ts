@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the whole data from a table as CSV", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV();
 
   const expectedCSV =
@@ -68,7 +68,7 @@ undefined,14-JUN-04,Clerk,3300,50,"18,54%"
 Deno.test("should return data from a table based on a condition as CSV", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV({
     conditions: "Job = 'Programmer'",
   });
@@ -87,7 +87,7 @@ Deno.test("should return data from a table based on a condition as CSV", async (
 Deno.test("should return data from a table based on a condition as CSV with specific columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV({
     columns: ["Name", "Job", "Salary"],
     conditions: "Job = 'Programmer'",

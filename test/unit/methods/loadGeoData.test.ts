@@ -17,7 +17,7 @@ Deno.test("should load a geojson file and return the table", async () => {
 Deno.test("should load a geojson file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
@@ -34,7 +34,7 @@ Deno.test("should load a geojson file", async () => {
 Deno.test("should load a geojson file from a URL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
@@ -51,7 +51,7 @@ Deno.test("should load a geojson file from a URL", async () => {
 Deno.test("should load a shapefile file (not zipped)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories/CanadianProvincesAndTerritories.shp",
   );
 
@@ -68,7 +68,7 @@ Deno.test("should load a shapefile file (not zipped)", async () => {
 Deno.test("should load a shapefile file (zipped)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.shp.zip",
   );
 
@@ -85,9 +85,9 @@ Deno.test("should load a shapefile file (zipped)", async () => {
 Deno.test("should load a geojson file and convert it to WGS84", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/point.json");
-  await table.latLon("geom", "lat", "lon");
-  await table.selectColumns(["lat", "lon"]);
+  table.loadGeoData("test/geodata/files/point.json");
+  table.latLon("geom", "lat", "lon");
+  table.selectColumns(["lat", "lon"]);
 
   const data = await table.getData();
 

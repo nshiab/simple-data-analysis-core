@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should transform lines to polygons", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/closedLines.geojson");
-  await table.linesToPolygons();
+  table.loadGeoData("test/geodata/files/closedLines.geojson");
+  table.linesToPolygons();
 
   const data = await table.getGeoData("geom");
 
@@ -779,8 +779,8 @@ Deno.test("should transform lines to polygons", async () => {
 Deno.test("should transform lines to polygons from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/closedLines.geojson");
-  await table.linesToPolygons("geom");
+  table.loadGeoData("test/geodata/files/closedLines.geojson");
+  table.linesToPolygons("geom");
 
   const data = await table.getGeoData("geom");
 

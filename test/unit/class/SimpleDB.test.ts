@@ -46,9 +46,9 @@ Deno.test("should create tables without names", async () => {
   const sdb = new SimpleDB();
   // Table 2 first to make sure results are sorted alphabetically
   const table1 = sdb.newTable("table2");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table1");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
 
   const tables = await sdb.getTableNames();
 
@@ -65,8 +65,8 @@ Deno.test("should create multiple tables without names before loading data", asy
   const table1 = sdb.newTable();
   const table2 = sdb.newTable();
 
-  await table1.loadData(["test/data/files/data.json"]);
-  await table2.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
 
   const tables = await sdb.getTableNames();
 
@@ -80,7 +80,7 @@ Deno.test("should create multiple tables without names before loading data", asy
 Deno.test("should create tables with names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("tableWithName");
-  await table.loadData(["test/data/files/data.json"]);
+  table.loadData(["test/data/files/data.json"]);
 
   const tables = await sdb.getTableNames();
 
@@ -94,9 +94,9 @@ Deno.test("should create tables with names", async () => {
 Deno.test("should remove one table as an instance", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table2");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
 
   await sdb.removeTables(table1);
 
@@ -112,9 +112,9 @@ Deno.test("should remove one table as an instance", async () => {
 Deno.test("should remove one table as a string", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table2");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
 
   await sdb.removeTables("table1");
 
@@ -130,9 +130,9 @@ Deno.test("should remove one table as a string", async () => {
 Deno.test("should remove multiple tables as instances or strings", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const tableWithName = sdb.newTable("tableWithName");
-  await tableWithName.loadData(["test/data/files/data.json"]);
+  tableWithName.loadData(["test/data/files/data.json"]);
 
   await sdb.removeTables(["table1", tableWithName]);
 
@@ -145,11 +145,11 @@ Deno.test("should remove multiple tables as instances or strings", async () => {
 Deno.test("should remove all tables with 'all'", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table2");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
   const table3 = sdb.newTable("table3");
-  await table3.loadData(["test/data/files/data.json"]);
+  table3.loadData(["test/data/files/data.json"]);
 
   await sdb.removeTables("all");
 
@@ -162,9 +162,9 @@ Deno.test("should remove all tables with 'all'", async () => {
 Deno.test("should select one table as an instance", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table2");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
 
   await sdb.selectTables(table1);
 
@@ -179,9 +179,9 @@ Deno.test("should select one table as an instance", async () => {
 Deno.test("should select one table as a string", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table2");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
 
   await sdb.selectTables("table1");
 
@@ -197,11 +197,11 @@ Deno.test("should select one table as a string", async () => {
 Deno.test("should select multiple tables as instances or strings", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData(["test/data/files/data.json"]);
+  table1.loadData(["test/data/files/data.json"]);
   const table2 = sdb.newTable("table2");
-  await table2.loadData(["test/data/files/data.json"]);
+  table2.loadData(["test/data/files/data.json"]);
   const tableWithName = sdb.newTable("tableWithName");
-  await tableWithName.loadData(["test/data/files/data.json"]);
+  tableWithName.loadData(["test/data/files/data.json"]);
 
   await sdb.selectTables(["table1", table2]);
 
@@ -214,7 +214,7 @@ Deno.test("should select multiple tables as instances or strings", async () => {
 Deno.test("should retrieve a SimpleTable instance", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
-  await tableJSON.loadData(["test/data/files/data.json"]);
+  tableJSON.loadData(["test/data/files/data.json"]);
 
   const tableJsonAgain = await sdb.getTable("tableJSON");
 
@@ -235,7 +235,7 @@ Deno.test("should retrieve a SimpleTable instance", async () => {
 Deno.test("should retrieve a SimpleTable instance with geo data", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableGEOJSON");
-  await tableJSON.loadGeoData(
+  tableJSON.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
@@ -259,9 +259,9 @@ Deno.test("should retrieve a SimpleTable instance with geo data", async () => {
 Deno.test("should return table names", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
-  await tableJSON.loadData(["test/data/files/data.json"]);
+  tableJSON.loadData(["test/data/files/data.json"]);
   const tableCSV = sdb.newTable("tableCSV");
-  await tableCSV.loadData(["test/data/files/data.csv"]);
+  tableCSV.loadData(["test/data/files/data.csv"]);
 
   const tables = await sdb.getTableNames();
 
@@ -275,7 +275,7 @@ Deno.test("should return table names", async () => {
 Deno.test("should return true when a table exists", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
-  await tableJSON.loadData(["test/data/files/data.json"]);
+  tableJSON.loadData(["test/data/files/data.json"]);
 
   assertEquals(await sdb.hasTable("tableJSON"), true);
   await sdb.done();
@@ -284,7 +284,7 @@ Deno.test("should return true when a table exists", async () => {
 Deno.test("should return false when a table doesn't exist", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
-  await tableJSON.loadData(["test/data/files/data.json"]);
+  tableJSON.loadData(["test/data/files/data.json"]);
 
   assertEquals(await sdb.hasTable("tableX"), false);
   await sdb.done();
@@ -306,7 +306,7 @@ Deno.test("should close the db", async () => {
 Deno.test("should log debugging information when debug is true", async () => {
   const sdb = new SimpleDB({ debug: true });
   const test = await sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
 
   // How to test?
   await sdb.done();
@@ -315,7 +315,7 @@ Deno.test("should log debugging information when debug is true", async () => {
 Deno.test("should log the types", async () => {
   const sdb = new SimpleDB({ types: true });
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
   // await test.logTable();
   // How to test?
   await sdb.done();
@@ -324,7 +324,7 @@ Deno.test("should log the types", async () => {
 Deno.test("should log a specific number of rows", async () => {
   const sdb = new SimpleDB({ nbRowsToLog: 2 });
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
   // await test.logTable();
   // How to test?
   await sdb.done();
@@ -333,7 +333,7 @@ Deno.test("should log a specific number of rows", async () => {
 Deno.test("should log a specific number of characters", async () => {
   const sdb = new SimpleDB({ nbCharactersToLog: 5 });
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
   // await test.logTable();
   // How to test?
   await sdb.done();
@@ -341,21 +341,21 @@ Deno.test("should log a specific number of characters", async () => {
 Deno.test("should log the total duration", async () => {
   const sdb = new SimpleDB({ logDuration: true });
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
   // How to test?
   await sdb.done();
 });
 Deno.test("should enable a progress bar", async () => {
   const sdb = new SimpleDB({ progressBar: true });
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
   // How to test?
   await sdb.done();
 });
 Deno.test("should write the db", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
 
   await sdb.writeDB(`${output}database.db`);
   // How to test?
@@ -364,7 +364,7 @@ Deno.test("should write the db", async () => {
 Deno.test("should write the SQLite db", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
 
   await sdb.writeDB(`${output}database.sqlite`);
   // How to test?
@@ -430,7 +430,7 @@ Deno.test("should load the sqlite db", async () => {
 Deno.test("should write the db with geometries", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
-  await test.loadGeoData(
+  test.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   // await test.logProjections();
@@ -445,7 +445,7 @@ Deno.test("should load the db with geometries", async () => {
   await sdb.loadDB(`${output}database_geometry.db`);
   const test = await sdb.getTable("test");
   // await test.logProjections();
-  await test.simplify(0.1);
+  test.simplify(0.1);
   // await test.logTable();
   // How to test?
   await sdb.done();
@@ -453,9 +453,9 @@ Deno.test("should load the db with geometries", async () => {
 Deno.test("should log the table names in the db", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
-  await test.loadData("test/data/files/cities.csv");
+  test.loadData("test/data/files/cities.csv");
   const test1 = sdb.newTable("test1");
-  await test1.loadData("test/data/files/cities.csv");
+  test1.loadData("test/data/files/cities.csv");
 
   // await sdb.logTableNames();
 
@@ -468,7 +468,7 @@ Deno.test("should instantiate by creating a new file", async () => {
     overwrite: true,
   });
   const data = sdb.newTable("data");
-  await data.loadData("test/data/files/data.csv");
+  data.loadData("test/data/files/data.csv");
   // await data.logTable();
 
   await sdb.done();
@@ -477,7 +477,7 @@ Deno.test("should load a db created when instantiating", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_new.db`);
   const data2 = sdb.newTable("data2");
-  await data2.loadData("test/data/files/data.csv");
+  data2.loadData("test/data/files/data.csv");
   // await data2.logTable();
 
   await sdb.done();
@@ -488,7 +488,7 @@ Deno.test("should instantiate by creating a new file and geospatial data", async
     overwrite: true,
   });
   const data = sdb.newTable("geodata");
-  await data.loadGeoData(
+  data.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   // await data.logTable();
@@ -499,7 +499,7 @@ Deno.test("should load a db created with geospatial data", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_new_geo.db`);
   const data = await sdb.getTable("geodata");
-  await data.simplify(0.1);
+  data.simplify(0.1);
   // await data.logProjections();
   // await data.logTable();
 
@@ -530,7 +530,7 @@ Deno.test("should respect the data types when returning data with custom query",
     { date: new Date("2023-03-01"), value: 30 },
     { date: new Date("2023-04-01"), value: 40 },
   ];
-  await table.loadArray(data);
+  table.loadArray(data);
 
   const returnedData = await sdb.customQuery(
     `SELECT date, value FROM "${table.name}"`,
@@ -546,10 +546,10 @@ Deno.test("should respect the data types when returning data with custom query",
 Deno.test("should create a DB with bm25 index", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
-  await table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
+  table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
   // await table.logTable(1);
 
   await sdb.writeDB(`${output}database_bm25.db`);
@@ -562,7 +562,7 @@ Deno.test("should load a DB with bm25 index", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_bm25.db`);
   const table = await sdb.getTable("data");
-  await table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
+  table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
   // await table.logTable(1);
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
@@ -574,10 +574,10 @@ Deno.test("should instantiate by creating a new file and add bm25 index", async 
     overwrite: true,
   });
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
-  await table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
+  table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
   // await table.logTable(1);
 
   // Just making sure it's doesnt crash for now
@@ -588,7 +588,7 @@ Deno.test("should load a DB instantiated with a file, with bm25 index", async ()
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_bm25_new.db`);
   const table = await sdb.getTable("data");
-  await table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
+  table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
   // await table.logTable(1);
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);

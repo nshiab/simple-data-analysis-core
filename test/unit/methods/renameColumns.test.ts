@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should change the name of one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.json"]);
+  table.loadData(["test/data/files/data.json"]);
 
-  await table.renameColumns({
+  table.renameColumns({
     key1: "A",
   });
   const data = await table.getData();
@@ -24,9 +24,9 @@ Deno.test("should change the name of one column", async () => {
 Deno.test("should change the name of multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.json"]);
+  table.loadData(["test/data/files/data.json"]);
 
-  await table.renameColumns({
+  table.renameColumns({
     key1: "A",
     key2: "B",
   });
@@ -45,9 +45,9 @@ Deno.test("should change the name of multiple columns", async () => {
 Deno.test("should change the name of a column with $ in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
+  table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
 
-  await table.renameColumns({
+  table.renameColumns({
     "$ value": "value",
   });
   const data = await table.getData();

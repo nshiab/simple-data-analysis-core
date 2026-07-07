@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should untidy data by expanding mutiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataTidy.json");
-  await table.wider("year", "employees");
+  table.loadData("test/data/files/dataTidy.json");
+  table.wider("year", "employees");
 
-  await table.sort({ Department: "asc" });
+  table.sort({ Department: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -46,7 +46,7 @@ Deno.test("should untidy data by expanding mutiple columns", async () => {
 Deno.test("should untidy data by expanding mutiple columns with spaces in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       Department: "accounting",
       "approximate year": "2015",
@@ -138,9 +138,9 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
       "employees full-time": 27,
     },
   ]);
-  await table.wider("approximate year", "employees full-time");
+  table.wider("approximate year", "employees full-time");
 
-  await table.sort({ Department: "asc" });
+  table.sort({ Department: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [

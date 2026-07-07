@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should update the data from the table with a javascript function and reinsert it into the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.json");
+  table.loadData("test/data/files/employees.json");
   await table.updateWithJS((rows) => {
     const modifiedRows = rows.map((d) => ({
       Name: typeof d.Name === "string" ? d.Name.slice(0, 4) : d.Name,
@@ -75,7 +75,7 @@ Deno.test("should update the data from the table with a javascript function and 
 Deno.test("should update the data from the table with an async javascript function and reinsert it into the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.json");
+  table.loadData("test/data/files/employees.json");
   await table.updateWithJS((rows) => {
     const modifiedRows = rows.map((d) => ({
       Name: typeof d.Name === "string" ? d.Name.slice(0, 4) : d.Name,
@@ -157,11 +157,11 @@ Deno.test("should produce the same result with and without batchSize", async () 
     }));
 
   const plain = sdb.newTable("plain");
-  await plain.loadArray(data);
+  plain.loadArray(data);
   await plain.updateWithJS(modifier);
 
   const batched = sdb.newTable("batched");
-  await batched.loadArray(data);
+  batched.loadArray(data);
   await batched.updateWithJS(modifier, { batchSize: 4 });
 
   assertEquals(await batched.getData(), await plain.getData());
@@ -171,7 +171,7 @@ Deno.test("should produce the same result with and without batchSize", async () 
 Deno.test("should call the modifier once per batch", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("batchCalls");
-  await table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
+  table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
 
   const batchSizes: number[] = [];
   await table.updateWithJS((rows) => {
@@ -187,7 +187,7 @@ Deno.test("should call the modifier once per batch", async () => {
 Deno.test("should work with a batchSize larger than the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("bigBatch");
-  await table.loadArray([{ id: 1 }, { id: 2 }]);
+  table.loadArray([{ id: 1 }, { id: 2 }]);
 
   let calls = 0;
   await table.updateWithJS((rows) => {
@@ -203,7 +203,7 @@ Deno.test("should work with a batchSize larger than the table", async () => {
 Deno.test("should not leave temporary tables behind when batching", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("cleanup");
-  await table.loadArray(Array.from({ length: 5 }, (_, i) => ({ id: i })));
+  table.loadArray(Array.from({ length: 5 }, (_, i) => ({ id: i })));
 
   await table.updateWithJS((rows) => rows, { batchSize: 2 });
 
@@ -215,7 +215,7 @@ Deno.test("should not leave temporary tables behind when batching", async () => 
 Deno.test("should throw for an invalid batchSize", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("invalidBatch");
-  await table.loadArray([{ id: 1 }]);
+  table.loadArray([{ id: 1 }]);
 
   let error: unknown;
   try {
@@ -233,7 +233,7 @@ Deno.test("should throw for an invalid batchSize", async () => {
 Deno.test("should handle batches for which the modifier returns no rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("emptyBatches");
-  await table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
+  table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
 
   // Rows 4 to 7 fill entire batches, so with batchSize 2 the modifier
   // returns an empty array for two of the batches.
@@ -259,7 +259,7 @@ Deno.test("should throw a clear error when the modifier returns no rows at all",
     "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.";
 
   const plain = sdb.newTable("noRowsPlain");
-  await plain.loadArray([{ id: 1 }, { id: 2 }]);
+  plain.loadArray([{ id: 1 }, { id: 2 }]);
   let plainError: unknown;
   try {
     await plain.updateWithJS(() => []);
@@ -269,7 +269,7 @@ Deno.test("should throw a clear error when the modifier returns no rows at all",
   assertEquals((plainError as Error).message, expectedMessage);
 
   const batched = sdb.newTable("noRowsBatched");
-  await batched.loadArray([{ id: 1 }, { id: 2 }]);
+  batched.loadArray([{ id: 1 }, { id: 2 }]);
   let batchedError: unknown;
   try {
     await batched.updateWithJS(() => [], { batchSize: 1 });
@@ -288,7 +288,7 @@ Deno.test("should throw a clear error when the modifier returns no rows at all",
 Deno.test("should not leave temporary tables behind when the modifier throws", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("modifierThrows");
-  await table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
+  table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
 
   let calls = 0;
   let error: unknown;
@@ -312,7 +312,7 @@ Deno.test("should not leave temporary tables behind when the modifier throws", a
 Deno.test("should throw a clear error when the table has a __sda_rowid column and batchSize is used", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("rowidConflict");
-  await table.loadArray([{ __sda_rowid: 1, value: "a" }]);
+  table.loadArray([{ __sda_rowid: 1, value: "a" }]);
 
   let error: unknown;
   try {

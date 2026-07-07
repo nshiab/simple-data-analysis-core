@@ -158,7 +158,7 @@ Deno.test("should return an empty array for an empty result", async () => {
 Deno.test("should convert computed values from a SimpleDB custom query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("computedSource");
-  await table.loadArray([
+  table.loadArray([
     { category: "a", value: 10 },
     { category: "b", value: 20 },
     { category: "b", value: 30 },
@@ -187,7 +187,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
 Deno.test("should convert computed columns not present in any table schema", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("computedCols");
-  await table.loadArray([
+  table.loadArray([
     { category: "a", value: 10 },
     { category: "b", value: 20 },
   ]);

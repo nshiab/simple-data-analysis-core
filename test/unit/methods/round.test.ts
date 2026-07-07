@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should round to the nearest integer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.selectColumns(["key1"]);
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.selectColumns(["key1"]);
 
-  await table.round(["key1"]);
+  table.round(["key1"]);
 
   const data = await table.getData();
 
@@ -24,9 +24,9 @@ Deno.test("should round to the nearest integer", async () => {
 Deno.test("should round to a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.selectColumns(["key1"]);
-  await table.round(["key1"], {
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.selectColumns(["key1"]);
+  table.round(["key1"], {
     decimals: 3,
   });
   const data = await table.getData();
@@ -44,9 +44,9 @@ Deno.test("should round to a specific number of decimals", async () => {
 Deno.test("should floor", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.selectColumns(["key1"]);
-  await table.round(["key1"], {
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.selectColumns(["key1"]);
+  table.round(["key1"], {
     method: "floor",
   });
 
@@ -65,9 +65,9 @@ Deno.test("should floor", async () => {
 Deno.test("should ceil", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.selectColumns(["key1"]);
-  await table.round(["key1"], {
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.selectColumns(["key1"]);
+  table.round(["key1"], {
     method: "ceiling",
   });
   const data = await table.getData();
@@ -85,8 +85,8 @@ Deno.test("should ceil", async () => {
 Deno.test("should round multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.round(["key1", "key2"], {
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.round(["key1", "key2"], {
     decimals: 2,
   });
   const data = await table.getData();
@@ -104,10 +104,10 @@ Deno.test("should round multiple columns", async () => {
 Deno.test("should round using the numeric shorthand", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.selectColumns(["key1"]);
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.selectColumns(["key1"]);
 
-  await table.round("key1", 2);
+  table.round("key1", 2);
 
   const data = await table.getData();
 
@@ -124,10 +124,10 @@ Deno.test("should round using the numeric shorthand", async () => {
 Deno.test("should round to 0 decimals using the numeric shorthand", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataManyDecimals.csv"]);
-  await table.selectColumns(["key1"]);
+  table.loadData(["test/data/files/dataManyDecimals.csv"]);
+  table.selectColumns(["key1"]);
 
-  await table.round("key1", 0);
+  table.round("key1", 0);
 
   const data = await table.getData();
 

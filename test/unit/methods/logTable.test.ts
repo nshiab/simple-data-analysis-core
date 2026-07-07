@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should log a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable();
 
   // How to test?
@@ -14,7 +14,7 @@ Deno.test("should log a table", async () => {
 Deno.test("should log a table with 100 rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable(100);
 
   // How to test?
@@ -24,7 +24,7 @@ Deno.test("should log a table with 100 rows", async () => {
 Deno.test("should log a table with 100 rows in options", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable({ nbRowsToLog: 100 });
 
   // How to test?
@@ -34,7 +34,7 @@ Deno.test("should log a table with 100 rows in options", async () => {
 Deno.test("should log a table with types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable({ types: true });
 
   // How to test?
@@ -44,7 +44,7 @@ Deno.test("should log a table with types", async () => {
 Deno.test("should log a table with 100 rows and types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable({ types: true, nbRowsToLog: 100 });
 
   // How to test?
@@ -64,7 +64,7 @@ Deno.test("should not throw an error when there is no table", async () => {
 Deno.test("should log '<Geometry>' for geospatial data", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   await table.logTable();
@@ -77,8 +77,8 @@ Deno.test("should log '<Geometry>' for geospatial data", async () => {
 Deno.test("should log types even if there is just one column in the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
-  await table.selectColumns("Name");
+  table.loadData("test/data/files/employees.csv");
+  table.selectColumns("Name");
   await table.logTable();
 
   // How to test?
@@ -88,7 +88,7 @@ Deno.test("should log types even if there is just one column in the table", asyn
 Deno.test("should log a table with a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable({ conditions: `Name === 'OConnell, Donald'` });
 
   // How to test?
@@ -98,7 +98,7 @@ Deno.test("should log a table with a condition", async () => {
 Deno.test("should log a table with 'all'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable("all");
 
   // How to test?
@@ -108,7 +108,7 @@ Deno.test("should log a table with 'all'", async () => {
 Deno.test("should log a table with { nbRowsToLog: 'all'}", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logTable({ nbRowsToLog: "all" });
 
   // How to test?
@@ -118,7 +118,7 @@ Deno.test("should log a table with { nbRowsToLog: 'all'}", async () => {
 Deno.test("should log a table with long strings and word wrap the columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
+  table.loadData("test/data/files/recipes.parquet");
   await table.logTable();
 
   // How to test?
@@ -145,7 +145,7 @@ Deno.test("should log different colors for different data types", async () => {
     },
   ];
   console.table(dataArray);
-  await table.loadArray(dataArray);
+  table.loadArray(dataArray);
   await table.logTable();
   await table.logTable({ types: true });
 

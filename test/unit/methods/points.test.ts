@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should create points", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/geodata/files/coordinates.csv");
-  await table.convert({ lat: "double", lon: "double" });
-  await table.points("lat", "lon", "geom");
+  table.loadData("test/geodata/files/coordinates.csv");
+  table.convert({ lat: "double", lon: "double" });
+  table.points("lat", "lon", "geom");
 
   const data = await table.getGeoData("geom");
 
@@ -45,12 +45,12 @@ Deno.test("should create points", async () => {
 Deno.test("points() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { lat: 1, lon: 2, geom: "old" },
     { lat: 3, lon: 4, geom: "old" },
   ]);
 
-  await table.points("lat", "lon", "geom");
+  table.points("lat", "lon", "geom");
 
   const types = await table.getTypes();
   assertEquals(types, {

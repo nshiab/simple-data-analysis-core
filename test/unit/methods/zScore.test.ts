@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add a column with the zScore", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33 },
     { name: "Philip", age: 33 },
     { name: "Sonny", age: 57 },
@@ -22,9 +22,9 @@ Deno.test("should add a column with the zScore", async () => {
     { name: "Genevieve", age: 32 },
     { name: "Jane", age: 32 },
   ]);
-  await table.zScore("age", "ageZ");
+  table.zScore("age", "ageZ");
 
-  await table.sort({ ageZ: "asc" });
+  table.sort({ ageZ: "asc" });
 
   const data = await table.getData();
 
@@ -53,7 +53,7 @@ Deno.test("should add a column with the zScore", async () => {
 Deno.test("should add a column with the zScore rounded to 3 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33 },
     { name: "Philip", age: 33 },
     { name: "Sonny", age: 57 },
@@ -71,11 +71,11 @@ Deno.test("should add a column with the zScore rounded to 3 decimals", async () 
     { name: "Genevieve", age: 32 },
     { name: "Jane", age: 32 },
   ]);
-  await table.zScore("age", "ageSigma", {
+  table.zScore("age", "ageSigma", {
     decimals: 3,
   });
 
-  await table.sort({ ageSigma: "asc" });
+  table.sort({ ageSigma: "asc" });
 
   const data = await table.getData();
 
@@ -104,7 +104,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals", async () 
 Deno.test("should add a column with the zScore rounded to 3 decimals and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33, gender: "Woman" },
     { name: "Philip", age: 33, gender: "Man" },
     { name: "Sonny", age: 57, gender: "Man" },
@@ -122,12 +122,12 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
     { name: "Genevieve", age: 32, gender: "Woman" },
     { name: "Jane", age: 32, gender: "Woman" },
   ]);
-  await table.zScore("age", "ageSigma", {
+  table.zScore("age", "ageSigma", {
     categories: "gender",
     decimals: 3,
   });
 
-  await table.sort({
+  table.sort({
     gender: "asc",
     ageSigma: "asc",
   });

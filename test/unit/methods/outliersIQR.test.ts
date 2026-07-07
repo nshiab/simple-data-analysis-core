@@ -6,7 +6,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33 },
     { name: "Philip", age: 33 },
     { name: "Sonny", age: 57 },
@@ -25,8 +25,8 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Jane", age: 32 },
   ]);
 
-  await table.outliersIQR("age", "ageOutliers");
-  await table.sort({
+  table.outliersIQR("age", "ageOutliers");
+  table.sort({
     ageOutliers: "desc",
     age: "asc",
   });
@@ -59,7 +59,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33 },
     { name: "Philip", age: 33 },
     { name: "Sonny", age: 57 },
@@ -78,9 +78,9 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Genevieve", age: 32 },
     { name: "Jane", age: 32 },
   ]);
-  await table.outliersIQR("age", "ageOutliers");
+  table.outliersIQR("age", "ageOutliers");
 
-  await table.sort({
+  table.sort({
     ageOutliers: "desc",
     age: "asc",
   });
@@ -112,7 +112,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
 Deno.test("should add an outliers column based on the IQR method with an even number of rows and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33, gender: "Woman" },
     { name: "Philip", age: 125, gender: "Man" },
     { name: "Sonny", age: 57, gender: "Man" },
@@ -131,10 +131,10 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Genevieve", age: 3, gender: "Woman" },
     { name: "Jane", age: 32, gender: "Woman" },
   ]);
-  await table.outliersIQR("age", "ageOutliers", {
+  table.outliersIQR("age", "ageOutliers", {
     categories: "gender",
   });
-  await table.sort({
+  table.sort({
     gender: "asc",
     ageOutliers: "desc",
     age: "asc",

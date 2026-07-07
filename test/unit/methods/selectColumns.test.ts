@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectColumns("Name");
+  table.selectColumns("Name");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -69,9 +69,9 @@ Deno.test("should return one column", async () => {
 Deno.test("should return one column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectColumns("Department or unit");
+  table.selectColumns("Department or unit");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -134,9 +134,9 @@ Deno.test("should return one column with spaces in its name", async () => {
 Deno.test("should return multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectColumns(["Name", "Salary"]);
+  table.selectColumns(["Name", "Salary"]);
   const data = await table.getData();
 
   assertEquals(data, [

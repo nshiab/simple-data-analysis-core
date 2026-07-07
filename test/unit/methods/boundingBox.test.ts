@@ -4,11 +4,11 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should create minLon, maxLon, minLat, maxLat columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.boundingBox({ decimals: 3 });
-  await table.removeColumns("geom");
+  table.boundingBox({ decimals: 3 });
+  table.removeColumns("geom");
   const data = await table.getData();
 
   // Ontario
@@ -26,11 +26,11 @@ Deno.test("should create minLon, maxLon, minLat, maxLat columns", async () => {
 Deno.test("should create minLon, maxLon, minLat, maxLat columns for a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.boundingBox({ column: "geom", decimals: 1 });
-  await table.removeColumns("geom");
+  table.boundingBox({ column: "geom", decimals: 1 });
+  table.removeColumns("geom");
   const data = await table.getData();
 
   // Ontario

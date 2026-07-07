@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should remove duplicates from a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeDuplicates();
-  await table.sort({ Name: "asc" });
+  table.removeDuplicates();
+  table.sort({ Name: "asc" });
   const noDuplicates = await table.getData();
 
   assertEquals(noDuplicates, [
@@ -418,12 +418,12 @@ Deno.test("should remove duplicates from a table", async () => {
 Deno.test("should remove duplicates from a table based on a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeDuplicates({
+  table.removeDuplicates({
     on: "Job",
   });
-  await table.sort({ Name: "asc" });
+  table.sort({ Name: "asc" });
   const noDuplicates = await table.getData();
 
   assertEquals(noDuplicates, [
@@ -537,12 +537,12 @@ Deno.test("should remove duplicates from a table based on a specific column", as
 Deno.test("should remove duplicates from a table based on a specific column with special characters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeDuplicates({
+  table.removeDuplicates({
     on: "Department or unit",
   });
-  await table.sort({ Name: "asc" });
+  table.sort({ Name: "asc" });
   const noDuplicates = await table.getData();
 
   assertEquals(noDuplicates, [

@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should convert numbers to string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataJustNumbers.csv"]);
+  table.loadData(["test/data/files/dataJustNumbers.csv"]);
 
-  await table.convert({ key1: "string" });
+  table.convert({ key1: "string" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -20,14 +20,14 @@ Deno.test("should convert numbers to string", async () => {
 Deno.test("should convert strings with comma as thousand separator to number", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: "1,000.3", key2: 2 },
     { key1: "3,000,000", key2: 15 },
     { key1: "8.5", key2: 10 },
     { key1: "1.0", key2: 154 },
   ]);
 
-  await table.convert({ key1: "number" });
+  table.convert({ key1: "number" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -41,11 +41,11 @@ Deno.test("should convert strings with comma as thousand separator to number", a
 Deno.test("should try to convert string to number", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/data.csv"], {
+  table.loadData(["test/data/files/data.csv"], {
     allText: true,
   });
 
-  await table.convert({ key1: "integer" }, { try: true });
+  table.convert({ key1: "integer" }, { try: true });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -60,10 +60,10 @@ Deno.test("should try to convert string to number", async () => {
 Deno.test("should convert string to float", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataJustNumbers.csv"]);
-  await table.convert({ key1: "string" }); // tested above
+  table.loadData(["test/data/files/dataJustNumbers.csv"]);
+  table.convert({ key1: "string" }); // tested above
 
-  await table.convert({ key1: "float" });
+  table.convert({ key1: "float" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -78,10 +78,10 @@ Deno.test("should convert string to float", async () => {
 Deno.test("should convert string to integer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataJustNumbers.csv"]);
-  await table.convert({ key2: "string" }); // tested above
+  table.loadData(["test/data/files/dataJustNumbers.csv"]);
+  table.convert({ key2: "string" }); // tested above
 
-  await table.convert({ key2: "integer" });
+  table.convert({ key2: "integer" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -96,10 +96,10 @@ Deno.test("should convert string to integer", async () => {
 Deno.test("should convert multiple columns in multiple types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataJustNumbers.csv"]);
-  await table.convert({ key1: "string" });
+  table.loadData(["test/data/files/dataJustNumbers.csv"]);
+  table.convert({ key1: "string" });
 
-  await table.convert({
+  table.convert({
     key1: "float",
     key2: "string",
   });
@@ -117,11 +117,11 @@ Deno.test("should convert multiple columns in multiple types", async () => {
 Deno.test("should convert date string to date", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv", {
+  table.loadData("test/data/files/dataDates.csv", {
     allText: true,
   });
 
-  await table.convert({
+  table.convert({
     date: "date",
     datetime: "datetime",
     datetimeWithMs: "datetime",
@@ -169,11 +169,11 @@ Deno.test("should convert date string to date", async () => {
 Deno.test("should convert date and time strings to dates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv", {
+  table.loadData("test/data/files/dataDates.csv", {
     allText: true,
   });
 
-  await table.convert({
+  table.convert({
     date: "date",
     datetime: "datetime",
     datetimeWithMs: "datetime",
@@ -197,17 +197,17 @@ Deno.test("should convert date and time strings to dates", async () => {
 Deno.test("should convert date and time from string to date with a specific format", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv", {
+  table.loadData("test/data/files/dataDates.csv", {
     allText: true,
   });
 
-  await table.convert(
+  table.convert(
     { weirdDatetime: "time" },
     {
       datetimeFormat: "%Y/%m/%d_%Hh_%Mmin_%Ssec",
     },
   );
-  await table.selectColumns("weirdDatetime");
+  table.selectColumns("weirdDatetime");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -230,25 +230,25 @@ Deno.test("should convert date and time from string to date with a specific form
 Deno.test("should convert dates to strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv", {
+  table.loadData("test/data/files/dataDates.csv", {
     allText: true,
   });
 
-  await table.convert({
+  table.convert({
     date: "date",
     datetime: "datetime",
     datetimeWithMs: "datetime",
     time: "time",
     timeMs: "time",
   });
-  await table.convert(
+  table.convert(
     { weirdDatetime: "time" },
     {
       datetimeFormat: "%Y/%m/%d_%Hh_%Mmin_%Ssec",
     },
   ); // tested above
 
-  await table.convert({
+  table.convert({
     date: "string",
     datetime: "string",
     datetimeWithMs: "string",
@@ -298,9 +298,9 @@ Deno.test("should convert dates to strings", async () => {
 Deno.test("should convert dates to strings with a specific format", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv");
+  table.loadData("test/data/files/dataDates.csv");
 
-  await table.convert(
+  table.convert(
     {
       date: "string",
       datetime: "string",
@@ -352,9 +352,9 @@ Deno.test("should convert dates to strings with a specific format", async () => 
 Deno.test("should convert numbers to booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([{ key1: 0 }, { key1: 1 }]);
+  table.loadArray([{ key1: 0 }, { key1: 1 }]);
 
-  await table.convert({ key1: "boolean" });
+  table.convert({ key1: "boolean" });
   const data = await table.getData();
 
   assertEquals(data, [{ key1: false }, { key1: true }]);
@@ -364,9 +364,9 @@ Deno.test("should convert numbers to booleans", async () => {
 Deno.test("should convert booleans to numbers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([{ key1: false }, { key1: true }]);
+  table.loadArray([{ key1: false }, { key1: true }]);
 
-  await table.convert({ key1: "number" });
+  table.convert({ key1: "number" });
   const data = await table.getData();
 
   assertEquals(data, [{ key1: 0 }, { key1: 1 }]);
@@ -375,21 +375,21 @@ Deno.test("should convert booleans to numbers", async () => {
 Deno.test("should convert dates and times to numbers (ms)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv");
+  table.loadData("test/data/files/dataDates.csv");
 
-  await table.convert({
+  table.convert({
     time: "time",
     timeMs: "time",
   });
 
-  await table.convert({
+  table.convert({
     date: "number",
     datetime: "number",
     datetimeWithMs: "number",
     time: "number",
     timeMs: "number",
   });
-  await table.selectColumns([
+  table.selectColumns([
     "date",
     "datetime",
     "datetimeWithMs",
@@ -433,20 +433,20 @@ Deno.test("should convert dates and times to numbers (ms)", async () => {
 Deno.test("should convert numbers (ms) to dates and time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataDates.csv");
+  table.loadData("test/data/files/dataDates.csv");
 
-  await table.convert({
+  table.convert({
     time: "time",
     timeMs: "time",
   });
-  await table.convert({
+  table.convert({
     date: "number",
     datetime: "number",
     datetimeWithMs: "number",
     time: "number",
     timeMs: "number",
   });
-  await table.convert({
+  table.convert({
     date: "date",
     datetime: "datetime",
     datetimeWithMs: "datetime",
@@ -454,7 +454,7 @@ Deno.test("should convert numbers (ms) to dates and time", async () => {
     timeMs: "time",
   });
 
-  await table.selectColumns([
+  table.selectColumns([
     "date",
     "datetime",
     "datetimeWithMs",
@@ -500,9 +500,9 @@ Deno.test("should convert numbers (ms) to dates and time", async () => {
 Deno.test("should convert a column with $ in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
+  table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
 
-  await table.convert({
+  table.convert({
     "$ value": "string",
   });
   const data = await table.getData();

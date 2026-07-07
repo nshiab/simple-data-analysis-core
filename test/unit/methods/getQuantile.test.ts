@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return a quantile", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
+  table.loadData("test/data/files/data.json");
   assertEquals(await table.getQuantile("key1", 0.25), 1.75);
   await sdb.done();
 });
@@ -12,7 +12,7 @@ Deno.test("should return a quantile", async () => {
 Deno.test("should return a quantile rounded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
+  table.loadData("test/data/files/data.json");
   assertEquals(
     await table.getQuantile("key1", 0.25, {
       decimals: 1,
@@ -24,16 +24,16 @@ Deno.test("should return a quantile rounded", async () => {
 Deno.test("should return a quantile even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
-  await table.renameColumns({ key1: "key 1" });
+  table.loadData("test/data/files/data.json");
+  table.renameColumns({ key1: "key 1" });
   assertEquals(await table.getQuantile("key 1", 0.25), 1.75);
   await sdb.done();
 });
 Deno.test("should return a quantile rounded even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
-  await table.renameColumns({ key1: "key 1" });
+  table.loadData("test/data/files/data.json");
+  table.renameColumns({ key1: "key 1" });
   assertEquals(
     await table.getQuantile("key 1", 0.25, {
       decimals: 1,
@@ -45,7 +45,7 @@ Deno.test("should return a quantile rounded even when there are spaces in the co
 Deno.test("should return the median with a quantile of 0.5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
+  table.loadData("test/data/files/data.json");
   assertEquals(await table.getQuantile("key1", 0.5), 2.5);
   await sdb.done();
 });

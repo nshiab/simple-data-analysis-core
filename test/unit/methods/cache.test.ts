@@ -15,7 +15,7 @@ if (existsSync("./.sda-cache")) {
 Deno.test("should log a warning, not an error, when no data or table", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
-  await table.cache(async () => {
+  await table.cache(() => {
     // Nothing in cache
   });
   await sdb.done();
@@ -24,7 +24,7 @@ Deno.test("should log a warning, not an error, when no data or table", async () 
 Deno.test("should log a warning, not an error, when loading cache when no data or table", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
-  await table.cache(async () => {
+  await table.cache(() => {
     // Nothing in cache
   });
   await sdb.done();
@@ -33,9 +33,9 @@ Deno.test("should log a warning, not an error, when loading cache when no data o
 Deno.test("should cache computed values for tabular data", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
-  await table.cache(async () => {
-    await table.loadData("test/data/files/dataSummarize.json");
-    await table.summarize({
+  await table.cache(() => {
+    table.loadData("test/data/files/dataSummarize.json");
+    table.summarize({
       values: "key2",
       decimals: 4,
     });
@@ -62,9 +62,9 @@ Deno.test("should cache computed values for tabular data", async () => {
 Deno.test("should load data from the cache instead of running computations", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
-  await table.cache(async () => {
-    await table.loadData("test/data/files/dataSummarize.json");
-    await table.summarize({
+  await table.cache(() => {
+    table.loadData("test/data/files/dataSummarize.json");
+    table.summarize({
       values: "key2",
       decimals: 4,
     });
@@ -92,9 +92,9 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
-    async () => {
-      await table.loadData("test/data/files/dataSummarize.json");
-      await table.summarize({
+    () => {
+      table.loadData("test/data/files/dataSummarize.json");
+      table.summarize({
         values: "key2",
         decimals: 4,
       });
@@ -124,9 +124,9 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
-    async () => {
-      await table.loadData("test/data/files/dataSummarize.json");
-      await table.summarize({
+    () => {
+      table.loadData("test/data/files/dataSummarize.json");
+      table.summarize({
         values: "key2",
         decimals: 4,
       });
@@ -155,14 +155,14 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
 Deno.test("should cache computed values for geospatial data", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
-  await tableGeo.cache(async () => {
-    await tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
-    await tableGeo.renameColumns({ geom: "points" });
-    await tableGeo.latLon("points", "lat", "lon");
+  await tableGeo.cache(() => {
+    tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
+    tableGeo.renameColumns({ geom: "points" });
+    tableGeo.latLon("points", "lat", "lon");
   });
 
-  await tableGeo.removeColumns("points");
-  await tableGeo.sort();
+  tableGeo.removeColumns("points");
+  tableGeo.sort();
   const data = await tableGeo.getData();
 
   assertEquals(data, [
@@ -193,13 +193,13 @@ Deno.test("should load geospatial data from the cache instead of running computa
   const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
 
-  await tableGeo.cache(async () => {
-    await tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
-    await tableGeo.renameColumns({ geom: "points" });
-    await tableGeo.latLon("points", "lat", "lon");
+  await tableGeo.cache(() => {
+    tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
+    tableGeo.renameColumns({ geom: "points" });
+    tableGeo.latLon("points", "lat", "lon");
   });
 
-  await tableGeo.removeColumns("points");
+  tableGeo.removeColumns("points");
   const data = await tableGeo.getData();
 
   assertEquals(data, [
@@ -230,17 +230,17 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(
-    async () => {
-      await tableGeo.loadGeoData(
+    () => {
+      tableGeo.loadGeoData(
         "test/geodata/files/pointsInside.json",
       );
-      await tableGeo.renameColumns({ geom: "points" });
-      await tableGeo.latLon("points", "lat", "lon");
+      tableGeo.renameColumns({ geom: "points" });
+      tableGeo.latLon("points", "lat", "lon");
     },
     { ttl: 0 },
   );
 
-  await tableGeo.removeColumns("points");
+  tableGeo.removeColumns("points");
   const data = await tableGeo.getData();
 
   assertEquals(data, [
@@ -274,9 +274,9 @@ Deno.test("should clean the cache when calling done", async () => {
 
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
-  await table.cache(async () => {
-    await table.loadData("test/data/files/dataSummarize.json");
-    await table.summarize({
+  await table.cache(() => {
+    table.loadData("test/data/files/dataSummarize.json");
+    table.summarize({
       values: "key2",
       decimals: 4,
     });
@@ -307,11 +307,11 @@ Deno.test("should clean the cache when calling done", async () => {
     { cacheSourcesIdsUpdated, files },
     {
       cacheSourcesIdsUpdated: [
-        "table1.ba119b25f1a06cb34dc4b98b9f63af6777498ad0430df7fb558587e23262356c",
+        "table1.6ab14dfaa5a442a445453499424bfa92a69af566e1d3fd164794d7c7df8996d2",
       ],
       files: [
         "sources.json",
-        "table1.ba119b25f1a06cb34dc4b98b9f63af6777498ad0430df7fb558587e23262356c.parquet",
+        "table1.6ab14dfaa5a442a445453499424bfa92a69af566e1d3fd164794d7c7df8996d2.parquet",
       ],
     },
   );
@@ -321,28 +321,28 @@ Deno.test("should cache dates and retrieve dates", async () => {
 
   const sdb = new SimpleDB({ cacheVerbose: true });
   const temperatures = sdb.newTable("temperatures");
-  await temperatures.cache(async () => {
-    await temperatures.loadData(
+  await temperatures.cache(() => {
+    temperatures.loadData(
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
     );
     const cities = sdb.newTable("cities");
-    await cities.loadData(
+    cities.loadData(
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
     );
-    await temperatures.join(cities);
+    temperatures.join(cities);
   });
   const firstPass = await temperatures.getTop(10);
   // await temperatures.logTable();
 
-  await temperatures.cache(async () => {
-    await temperatures.loadData(
+  await temperatures.cache(() => {
+    temperatures.loadData(
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
     );
     const cities = sdb.newTable("cities");
-    await cities.loadData(
+    cities.loadData(
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
     );
-    await temperatures.join(cities);
+    temperatures.join(cities);
   });
   const secondPass = await temperatures.getTop(10);
   // await temperatures.logTable();

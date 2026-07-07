@@ -5,7 +5,7 @@ import SDAError from "../../../src/class/SDAError.ts";
 Deno.test("should throw an SDAError carrying method, parameters, query and cause", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("errorTable");
-  await table.loadArray([{ key1: 1 }]);
+  table.loadArray([{ key1: 1 }]);
 
   let error: unknown;
   try {

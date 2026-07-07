@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should flip the coordinates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/point.json");
-  await table.flipCoordinates();
+  table.loadGeoData("test/geodata/files/point.json");
+  table.flipCoordinates();
 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
@@ -24,8 +24,8 @@ Deno.test("should flip the coordinates", async () => {
 Deno.test("should flip the coordinates from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/point.json");
-  await table.flipCoordinates("geom");
+  table.loadGeoData("test/geodata/files/point.json");
+  table.flipCoordinates("geom");
   const data = await sdb.customQuery(
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
     { returnDataFrom: "query" },

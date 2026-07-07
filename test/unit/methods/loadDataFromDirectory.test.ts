@@ -17,11 +17,11 @@ Deno.test("should load data from a directory and return the table", async () => 
 Deno.test("should load data from a directory", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadDataFromDirectory("test/data/directory/", {
+  table.loadDataFromDirectory("test/data/directory/", {
     unifyColumns: true,
   });
 
-  await table.sort({ key1: "asc", key2: "asc", key3: "asc" });
+  table.sort({ key1: "asc", key2: "asc", key3: "asc" });
   const data = await table.getData();
 
   assertEquals(
@@ -49,10 +49,10 @@ Deno.test("should load data from a directory", async () => {
 Deno.test("should load data from a directory even when the path doesn't have '/' at the end", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadDataFromDirectory("test/data/directory", {
+  table.loadDataFromDirectory("test/data/directory", {
     unifyColumns: true,
   });
-  await table.sort({ key1: "asc", key2: "asc", key3: "asc" });
+  table.sort({ key1: "asc", key2: "asc", key3: "asc" });
   const data = await table.getData();
 
   assertEquals(
@@ -80,11 +80,11 @@ Deno.test("should load data from a directory even when the path doesn't have '/'
 Deno.test("should load data from a directory with a limit option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadDataFromDirectory("test/data/directory/", {
+  table.loadDataFromDirectory("test/data/directory/", {
     unifyColumns: true,
     limit: 3,
   });
-  await table.sort({ key1: "asc", key2: "asc", key3: "asc" });
+  table.sort({ key1: "asc", key2: "asc", key3: "asc" });
   const data = await table.getData();
 
   assertEquals(data.length, 3);
@@ -94,12 +94,12 @@ Deno.test("should load data from a directory with a limit option", async () => {
 Deno.test("should load only specific columns from directory", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadDataFromDirectory("test/data/directory/", {
+  table.loadDataFromDirectory("test/data/directory/", {
     unifyColumns: true,
     columns: ["key1"],
   });
 
-  await table.sort({ key1: "asc" });
+  table.sort({ key1: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [

@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should successfully create an FTS index", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index
   const result = await table.createFtsIndex("Dish", "Recipe").run();
@@ -19,7 +19,7 @@ Deno.test("should successfully create an FTS index", async () => {
   );
 
   // Should be able to use bm25 after creating index
-  await table.bm25("italian food", "Dish", "Recipe", 5);
+  table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
   assertEquals(dishes.sort(), [
     "Carbonara",
@@ -33,8 +33,8 @@ Deno.test("should successfully create an FTS index", async () => {
 Deno.test("should successfully create an FTS index with a specific stemmer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index with French stemmer
   await table.createFtsIndex("Dish", "Recipe", {
@@ -47,7 +47,7 @@ Deno.test("should successfully create an FTS index with a specific stemmer", asy
   );
 
   // Should work with bm25
-  await table.bm25("french food", "Dish", "Recipe", 5, {
+  table.bm25("french food", "Dish", "Recipe", 5, {
     stemmer: "french",
   });
   const dishes = await table.getValues("Dish");
@@ -57,8 +57,8 @@ Deno.test("should successfully create an FTS index with a specific stemmer", asy
 Deno.test("should not recreate index if already exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index
   await table.createFtsIndex("Dish", "Recipe", {
@@ -84,8 +84,8 @@ Deno.test("should not recreate index if already exists", async () => {
 Deno.test("should recreate index when overwrite is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create initial FTS index
   await table.createFtsIndex("Dish", "Recipe", {
@@ -109,7 +109,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
   assertEquals(indexCountAfter, 1);
 
   // Should work with bm25
-  await table.bm25("italian food", "Dish", "Recipe", 5);
+  table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
   assertEquals(dishes.length, 5);
 });
@@ -117,8 +117,8 @@ Deno.test("should recreate index when overwrite is true", async () => {
 Deno.test("should create index when overwrite is true and no index exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create index with overwrite=true even though no index exists
   await table.createFtsIndex("Dish", "Recipe", {
@@ -131,7 +131,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
   );
 
   // Should work with bm25
-  await table.bm25("italian food", "Dish", "Recipe", 5);
+  table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
   assertEquals(dishes.sort(), [
     "Carbonara",
@@ -145,8 +145,8 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
 Deno.test("should recreate index with verbose logging when overwrite is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create initial index
   await table.createFtsIndex("Dish", "Recipe", {
@@ -170,7 +170,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   assertEquals(indexCountAfter, 1);
 
   // Should work with bm25
-  await table.bm25("italian food", "Dish", "Recipe", 5);
+  table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
   assertEquals(dishes.length, 5);
 });
@@ -178,8 +178,8 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
 Deno.test("should successfully create an FTS index with custom parameters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/recipes.parquet");
-  await table.removeDuplicates({ on: "Dish" });
+  table.loadData("test/data/files/recipes.parquet");
+  table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index with multiple new parameters
   await table.createFtsIndex("Dish", "Recipe", {
@@ -195,7 +195,7 @@ Deno.test("should successfully create an FTS index with custom parameters", asyn
   );
 
   // Verifying the search still works with these parameters
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
+  table.bm25("italian food", "Dish", "Recipe", 5, {
     stemmer: "none",
     lower: false,
     stripAccents: false,

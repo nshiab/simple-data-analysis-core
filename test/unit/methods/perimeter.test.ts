@@ -4,12 +4,12 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should calculate the perimeter of geometries in meters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.perimeter("perim");
-  await table.round("perim");
-  await table.selectColumns(["nameEnglish", "perim"]);
+  table.perimeter("perim");
+  table.round("perim");
+  table.selectColumns(["nameEnglish", "perim"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -34,12 +34,12 @@ Deno.test("should calculate the perimeter of geometries in meters", async () => 
 Deno.test("should calculate the perimeter of geometries from a specific column in meters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.perimeter("perim", { column: "geom" });
-  await table.round("perim");
-  await table.selectColumns(["nameEnglish", "perim"]);
+  table.perimeter("perim", { column: "geom" });
+  table.round("perim");
+  table.selectColumns(["nameEnglish", "perim"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -64,12 +64,12 @@ Deno.test("should calculate the perimeter of geometries from a specific column i
 Deno.test("should calculate the perimeter of geometries in meters with a file loaded with option toWGS84", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.perimeter("perim");
-  await table.round("perim");
-  await table.selectColumns(["nameEnglish", "perim"]);
+  table.perimeter("perim");
+  table.round("perim");
+  table.selectColumns(["nameEnglish", "perim"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -94,12 +94,12 @@ Deno.test("should calculate the perimeter of geometries in meters with a file lo
 Deno.test("should calculate the perimeter of geometries in kilometers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.perimeter("perim", { unit: "km" });
-  await table.round("perim");
-  await table.selectColumns(["nameEnglish", "perim"]);
+  table.perimeter("perim", { unit: "km" });
+  table.round("perim");
+  table.selectColumns(["nameEnglish", "perim"]);
   const data = await table.getData();
 
   assertEquals(data, [

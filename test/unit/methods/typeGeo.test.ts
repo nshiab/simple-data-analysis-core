@@ -4,11 +4,11 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the geometry types in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.typeGeo("type");
-  await table.selectColumns(["nameEnglish", "type"]);
+  table.typeGeo("type");
+  table.selectColumns(["nameEnglish", "type"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -33,11 +33,11 @@ Deno.test("should return the geometry types in a new column", async () => {
 Deno.test("should return the geometry types from a specific column in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.typeGeo("type");
-  await table.selectColumns(["nameEnglish", "type"]);
+  table.typeGeo("type");
+  table.selectColumns(["nameEnglish", "type"]);
   const data = await table.getData();
 
   assertEquals(data, [

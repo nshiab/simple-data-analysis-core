@@ -8,13 +8,13 @@ Deno.test("should write a shapefile", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
+  table.loadGeoData(originalFile);
   const shp = `${output}/shapefile/data.shp`;
   await table.writeGeoData(shp);
 
   // To verify, we load it back
   const tableBack = sdb.newTable();
-  await tableBack.loadGeoData(shp);
+  tableBack.loadGeoData(shp);
 
   const originalData = await table.getGeoData();
   const writtenData = await tableBack.getGeoData();
@@ -39,7 +39,7 @@ Deno.test("should write a shapefile", async () => {
 Deno.test("should throw error for incompatible options with shapefiles", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.loadGeoData("test/geodata/files/polygons.geojson");
   const shp = `${output}/shapefile/errors.shp`;
 
   await assertRejects(() => table.writeGeoData(shp, { precision: 3 }));

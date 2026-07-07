@@ -1,10 +1,15 @@
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import {
+  assertEquals,
+  assertNotEquals,
+  assertRejects,
+  assertThrows,
+} from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should generate a random point in geometries and they should be random", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
@@ -13,17 +18,17 @@ Deno.test("should generate a random point in geometries and they should be rando
     `ALTER TABLE ${table.name} ADD COLUMN nbIterations INTEGER DEFAULT 10`,
   );
   await sdb.customQuery(`UPDATE ${table.name} SET nbIterations = 10`);
-  await table.repeatRows("nbIterations");
+  table.repeatRows("nbIterations");
 
   // We generate random points.
-  await table.randomPoint("randomPoint", 100);
+  table.randomPoint("randomPoint", 100);
 
   // We write to check visually
-  await table.removeColumns("geom");
+  table.removeColumns("geom");
   await table.writeGeoData("test/output/randomPoint.geojson");
 
   // We extract lat and lon.
-  await table.latLon("randomPoint", "lat", "lon");
+  table.latLon("randomPoint", "lat", "lon");
 
   const lats = await table.getValues("lat") as number[];
   const lons = await table.getValues("lon") as number[];
@@ -66,7 +71,7 @@ Deno.test("should generate a random point in geometries and they should be rando
 Deno.test("randomPoint should throw an error if no point is found", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
@@ -86,12 +91,12 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
 Deno.test("randomPoint should not throw an error if no point is found and options.try is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   // With 0 tries, no point should be found.
-  await table.randomPoint("randomPoint", 0, { try: true });
+  table.randomPoint("randomPoint", 0, { try: true });
 
   const nbNulls = await table.getNbRows({
     conditions: '"randomPoint" IS NULL',
@@ -104,14 +109,15 @@ Deno.test("randomPoint should not throw an error if no point is found and option
 Deno.test("randomPoint should throw an error if nbPointsToTry is less than 0", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
-  await assertRejects(
-    async () => {
+  // This validation doesn't need the database, so it throws at call time.
+  assertThrows(
+    () => {
       // @ts-ignore trying invalid value
-      await table.randomPoint("randomPoint", -1);
+      table.randomPoint("randomPoint", -1);
     },
     Error,
     "nbPointsToTry must be a number greater than or equal to 0",
@@ -123,20 +129,20 @@ Deno.test("randomPoint should throw an error if nbPointsToTry is less than 0", a
 Deno.test("randomPoint should have similar performance with many more tries if it exits early", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const start10 = Date.now();
-  await table.randomPoint("point10", 10, { column: "geom", try: true });
+  table.randomPoint("point10", 10, { column: "geom", try: true });
   const duration10 = Date.now() - start10;
 
   const start10k = Date.now();
-  await table.randomPoint("point10k", 10_000, { column: "geom", try: true });
+  table.randomPoint("point10k", 10_000, { column: "geom", try: true });
   const duration10k = Date.now() - start10k;
 
   const start100k = Date.now();
-  await table.randomPoint("point100k", 100_000, { column: "geom", try: true });
+  table.randomPoint("point100k", 100_000, { column: "geom", try: true });
   const duration100k = Date.now() - start100k;
 
   console.log({ duration10, duration10k, duration100k });

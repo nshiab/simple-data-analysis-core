@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return 5 random rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.sample(5);
+  table.sample(5);
 
   const data = await table.getData();
 
@@ -17,9 +17,9 @@ Deno.test("should return 5 random rows", async () => {
 Deno.test("should return 20% random rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.sample("20%");
+  table.sample("20%");
   const data = await table.getData();
 
   assertEquals(data.length, 10);
@@ -29,9 +29,9 @@ Deno.test("should return 20% random rows", async () => {
 Deno.test("should return the 5 same random rows based on seed", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.sample(5, {
+  table.sample(5, {
     seed: 10,
   });
   const data = await table.getData();
@@ -84,9 +84,9 @@ Deno.test("should return the 5 same random rows based on seed", async () => {
 Deno.test("should return the same 20% random rows based on a seed", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.sample("20%", {
+  table.sample("20%", {
     seed: 1,
   });
 

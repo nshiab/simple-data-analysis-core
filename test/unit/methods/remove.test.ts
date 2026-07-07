@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should remove specific rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.remove({
+  table.remove({
     job: ["Clerk"],
     departmentOrUnit: ["50", "30"],
   });
@@ -197,10 +197,10 @@ Deno.test("should remove specific rows", async () => {
 Deno.test("should remove specific rows and accept arrays and single values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.remove({
+  table.remove({
     job: "Clerk",
     departmentOrUnit: ["50", "30"],
   });
@@ -390,9 +390,9 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
 Deno.test("should remove specific rows even column names have spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.remove({
+  table.remove({
     Job: ["Clerk"],
     "Department or Unit": ["50", "30"],
   });

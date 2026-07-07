@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add a column with the quantiles", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.quantiles("Mark", 4, "quantiles");
+  table.loadData("test/data/files/dataRank.csv");
+  table.quantiles("Mark", 4, "quantiles");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -26,12 +26,12 @@ Deno.test("should add a column with the quantiles", async () => {
 Deno.test("should add a column with the quantiles after grouping", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.quantiles("Mark", 2, "quantiles", {
+  table.loadData("test/data/files/dataRank.csv");
+  table.quantiles("Mark", 2, "quantiles", {
     categories: "Subject",
   });
 
-  await table.sort({
+  table.sort({
     Subject: "asc",
     Mark: "asc",
   });

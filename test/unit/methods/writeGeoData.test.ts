@@ -10,7 +10,7 @@ Deno.test("should write a json file", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
+  table.loadGeoData(originalFile);
   await table.writeGeoData(`${output}data.json`);
 
   const originalData = JSON.parse(readFileSync(originalFile, "utf-8"));
@@ -26,7 +26,7 @@ Deno.test("should write a json file with metadata", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
+  table.loadGeoData(originalFile);
   await table.writeGeoData(`${output}data.json`, {
     metadata: { key: "value" },
   });
@@ -49,8 +49,8 @@ Deno.test("should write a json file with dates properties", async () => {
     lat: 1,
     lon: 2,
   }];
-  await table.loadArray(originalData);
-  await table.points("lat", "lon", "geom");
+  table.loadArray(originalData);
+  table.points("lat", "lon", "geom");
   await table.writeGeoData(`${output}geodata-dates.json`, {
     formatDates: true,
   });
@@ -83,12 +83,12 @@ Deno.test("should write a json file with dates properties and keep the original 
     lat: 1,
     lon: 2,
   }];
-  await table.loadArray(originalData);
-  await table.points("lat", "lon", "geom");
+  table.loadArray(originalData);
+  table.points("lat", "lon", "geom");
   await table.writeGeoData(`${output}geodata-dates.json`, {
     formatDates: true,
   });
-  await table.selectColumns(["time", "lat", "lon"]);
+  table.selectColumns(["time", "lat", "lon"]);
   assertEquals(await table.getData(), originalData);
   await sdb.done();
 });
@@ -98,7 +98,7 @@ Deno.test("should write a geojson file", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
+  table.loadGeoData(originalFile);
   await table.writeGeoData(`${output}data.geojson`);
 
   const originalData = JSON.parse(readFileSync(originalFile, "utf-8"));
@@ -115,7 +115,7 @@ Deno.test("should write a geojson file and create the path if it doesn't exist",
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
+  table.loadGeoData(originalFile);
   await table.writeGeoData(`${output}/subfolderGeoData/data.geojson`);
 
   const originalData = JSON.parse(readFileSync(originalFile, "utf-8"));
@@ -132,7 +132,7 @@ Deno.test("should write geojson file that has been converted to WGS84", async ()
   const originalFile = "test/geodata/files/canada-not-4326.shp.zip";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile, { toWGS84: true });
+  table.loadGeoData(originalFile, { toWGS84: true });
   await table.writeGeoData(`${output}dataWithOptionsToWGS84.geojson`, {
     precision: 2,
   });
@@ -153,8 +153,8 @@ Deno.test("should write geojson file that has been manually converted to WGS84",
   const originalFile = "test/geodata/files/canada-not-4326.shp.zip";
 
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
-  await table.reproject("WGS84");
+  table.loadGeoData(originalFile);
+  table.reproject("WGS84");
   await table.writeGeoData(`${output}dataWithOptionsToWGS84.geojson`, {
     precision: 2,
   });
@@ -176,7 +176,7 @@ Deno.test("should write geojson file with coordinates rounded to 3 decimals", as
 
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(originalFile);
+  table.loadGeoData(originalFile);
   await table.writeGeoData(`${output}dataPrecision.geojson`, {
     precision: 3,
   });
@@ -231,7 +231,7 @@ Deno.test("should write a geojson without rewinding the file", async () => {
   const sdb = new SimpleDB();
 
   const data = sdb.newTable();
-  await data.loadGeoData(
+  data.loadGeoData(
     "test/geodata/files/economicRegions-simplified.json",
   );
   await data.writeGeoData(`${output}no-rewind-data.geojson`);
@@ -249,7 +249,7 @@ Deno.test("should write a geojson and rewind the file", async () => {
   const sdb = new SimpleDB();
 
   const data = sdb.newTable();
-  await data.loadGeoData(
+  data.loadGeoData(
     "test/geodata/files/economicRegions-simplified.json",
   );
   await data.writeGeoData(`${output}rewind-data.geojson`, { rewind: true });
@@ -268,11 +268,11 @@ Deno.test("should write a geoparquet file", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const originalData = sdb.newTable();
-  await originalData.loadGeoData(originalFile);
+  originalData.loadGeoData(originalFile);
   await originalData.writeGeoData(`${output}data.geoparquet`);
 
   const writtenData = sdb.newTable();
-  await writtenData.loadGeoData(`${output}data.geoparquet`);
+  writtenData.loadGeoData(`${output}data.geoparquet`);
 
   assertEquals(await writtenData.getGeoData(), await originalData.getGeoData());
   await sdb.done();
@@ -283,13 +283,13 @@ Deno.test("should write a compressed geoparquet file", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const originalData = sdb.newTable();
-  await originalData.loadGeoData(originalFile);
+  originalData.loadGeoData(originalFile);
   await originalData.writeGeoData(`${output}data-compressed.geoparquet`, {
     compression: true,
   });
 
   const writtenData = sdb.newTable();
-  await writtenData.loadGeoData(`${output}data-compressed.geoparquet`);
+  writtenData.loadGeoData(`${output}data-compressed.geoparquet`);
 
   assertEquals(await writtenData.getGeoData(), await originalData.getGeoData());
   await sdb.done();
@@ -300,14 +300,14 @@ Deno.test("should write a geoparquet file with multiple geo columns", async () =
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const originalData = sdb.newTable();
-  await originalData.loadGeoData(originalFile);
-  await originalData.cloneColumn("geom", "anotherGeom");
+  originalData.loadGeoData(originalFile);
+  originalData.cloneColumn("geom", "anotherGeom");
   const originalColumns = await originalData.getColumns();
   const originalNbRows = await originalData.getNbRows();
   await originalData.writeGeoData(`${output}data-multiple-columns.geoparquet`);
 
   const writtenData = sdb.newTable();
-  await writtenData.loadGeoData(`${output}data-multiple-columns.geoparquet`);
+  writtenData.loadGeoData(`${output}data-multiple-columns.geoparquet`);
   const writtenColumns = await writtenData.getColumns();
   const writtenNbRows = await writtenData.getNbRows();
 
@@ -319,7 +319,7 @@ Deno.test("should write a geoparquet file with multiple geo columns", async () =
 Deno.test("writeGeoData should throw an error when there is no geometry column and suggest using writeData", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/data.csv");
+  table.loadData("test/data/files/data.csv");
 
   await assertRejects(
     async () => {

@@ -4,21 +4,21 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should compute the union of geometries", async () => {
   const sdb = new SimpleDB();
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygonsGroups.json");
-  await poly.renameColumns({ geom: "polygons" });
+  poly.loadGeoData("test/geodata/files/polygonsGroups.json");
+  poly.renameColumns({ geom: "polygons" });
 
   const circle = sdb.newTable();
-  await circle.loadGeoData(
+  circle.loadGeoData(
     "test/geodata/files/circleOverlapPolygonsGroups.json",
   );
-  await circle.renameColumns({ geom: "circle" });
+  circle.renameColumns({ geom: "circle" });
 
-  await poly.crossJoin(circle);
+  poly.crossJoin(circle);
 
-  await poly.union("polygons", "circle", "result");
+  poly.union("polygons", "circle", "result");
 
-  await poly.selectColumns("result");
-  await poly.reducePrecision(2);
+  poly.selectColumns("result");
+  poly.reducePrecision(2);
 
   const data = await poly.getGeoData();
 
@@ -240,14 +240,14 @@ Deno.test("should compute the union of geometries", async () => {
 Deno.test("union() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, uni: "old" },
   ]);
-  await table.points("lat", "lon", "geom1");
-  await table.points("lat2", "lon2", "geom2");
+  table.points("lat", "lon", "geom1");
+  table.points("lat2", "lon2", "geom2");
 
   // This should now succeed and overwrite "uni"
-  await table.union("geom1", "geom2", "uni");
+  table.union("geom1", "geom2", "uni");
 
   const types = await table.getTypes();
   assertEquals(types.uni, "GEOMETRY('EPSG:4326')");
@@ -258,13 +258,13 @@ Deno.test("union() should overwrite existing column", async () => {
 Deno.test("union() should overwrite one of the source geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },
   ]);
-  await table.points("lat", "lon", "geom1");
-  await table.points("lat2", "lon2", "geom2");
+  table.points("lat", "lon", "geom1");
+  table.points("lat2", "lon2", "geom2");
 
-  await table.union("geom1", "geom2", "geom1");
+  table.union("geom1", "geom2", "geom1");
 
   const types = await table.getTypes();
   assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");

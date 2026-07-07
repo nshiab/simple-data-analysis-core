@@ -5,7 +5,7 @@ import normalizeString from "../../../src/methods/normalizeString.ts";
 Deno.test("normalizeString - convert to lowercase and strip punctuation", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "Hello, World!" },
     { text: "HELLO" },
     { text: "hElLo" },
@@ -26,7 +26,7 @@ Deno.test("normalizeString - convert to lowercase and strip punctuation", async 
 Deno.test("normalizeString - strip punctuation keeps alphanumeric", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "100%" },
     { text: "email@example.com" },
     { text: "multi-word-string" },
@@ -47,7 +47,7 @@ Deno.test("normalizeString - strip punctuation keeps alphanumeric", async () => 
 Deno.test("normalizeString - keep punctuation option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "Hello, World!" },
     { text: "100%" },
   ]);
@@ -68,7 +68,7 @@ Deno.test("normalizeString - keep punctuation option", async () => {
 Deno.test("normalizeString - keep punctuation for emails and URLs", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "User@Example.com" },
     { text: "https://example.com/path" },
   ]);
@@ -89,7 +89,7 @@ Deno.test("normalizeString - keep punctuation for emails and URLs", async () => 
 Deno.test("normalizeString - trim and normalize whitespace", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "  hello  " },
     { text: "\tworld\n" },
     { text: "  multiple   spaces  " },
@@ -110,7 +110,7 @@ Deno.test("normalizeString - trim and normalize whitespace", async () => {
 Deno.test("normalizeString - NULL handling", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "Hello" },
     { text: null },
     { text: "World" },
@@ -131,7 +131,7 @@ Deno.test("normalizeString - NULL handling", async () => {
 Deno.test("normalizeString - empty and whitespace-only strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "" },
     { text: "   " },
   ]);
@@ -150,7 +150,7 @@ Deno.test("normalizeString - empty and whitespace-only strings", async () => {
 Deno.test("normalizeString - special patterns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "email@example.com" },
     { text: "price: $99.99" },
   ]);
@@ -169,7 +169,7 @@ Deno.test("normalizeString - special patterns", async () => {
 Deno.test("normalizeString - mixed string types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "Hello" },
     { text: "123" },
     { text: "World" },
@@ -193,7 +193,7 @@ Deno.test("normalizeString - long strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   const longText = "Hello " + "World ".repeat(10000) + "!";
-  await table.loadArray([{ text: longText }]);
+  table.loadArray([{ text: longText }]);
 
   await normalizeString(table, "text", "normalized");
 
@@ -209,7 +209,7 @@ Deno.test("normalizeString - long strings", async () => {
 Deno.test("normalizeString - matches journalism-format core tests", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     { text: "Évènement!", expected: "evenement" },
     { text: "Café?", expected: "cafe" },
     { text: "Niño!", expected: "nino" },
@@ -240,7 +240,7 @@ Deno.test("normalizeString - matches journalism-format core tests", async () => 
 Deno.test("normalizeString - complex accented strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  await table.loadArray([
+  table.loadArray([
     {
       text: "ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïñòóôõöùúûüýÿ",
       expected: "aaaaaaceeeeiiiinooooouuuuyaaaaaaceeeeiiiinooooouuuuyy",

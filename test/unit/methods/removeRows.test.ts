@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should remove rows based on one condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeRows(`"Department or unit" = '50'`);
+  table.removeRows(`"Department or unit" = '50'`);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -257,9 +257,9 @@ Deno.test("should remove rows based on one condition", async () => {
 Deno.test("should remove rows based on multiple conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.removeRows(
+  table.removeRows(
     `"Job" = 'Clerk' AND "Department or unit" = '50'`,
   );
   const data = await table.getData();
@@ -567,11 +567,11 @@ Deno.test("should remove rows based on multiple conditions", async () => {
 Deno.test("should remove the rows based on booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Nael", value: true },
     { name: "Graeme", value: false },
   ]);
-  await table.removeRows(`value = TRUE`);
+  table.removeRows(`value = TRUE`);
   const data = await table.getData();
 
   assertEquals(data, [{ name: "Graeme", value: false }]);

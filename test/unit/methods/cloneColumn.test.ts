@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should clone a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([{ firstName: "nael", lastName: "shiab" }]);
+  table.loadArray([{ firstName: "nael", lastName: "shiab" }]);
 
-  await table.cloneColumn("firstName", "firstNameCloned");
+  table.cloneColumn("firstName", "firstNameCloned");
 
   const data = await table.getData();
 
@@ -19,9 +19,9 @@ Deno.test("should clone a column", async () => {
 Deno.test("should clone a column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([{ "first name": "nael", "last name": "shiab" }]);
+  table.loadArray([{ "first name": "nael", "last name": "shiab" }]);
 
-  await table.cloneColumn("first name", "first name cloned");
+  table.cloneColumn("first name", "first name cloned");
 
   const data = await table.getData();
 
@@ -39,7 +39,7 @@ Deno.test("should clone a column with geo data", async () => {
       "test/geodata/files/CanadianProvincesAndTerritories.json",
     );
 
-  await table.cloneColumn("geom", "geom_cloned");
+  table.cloneColumn("geom", "geom_cloned");
 
   assertEquals(await table.getTypes(), {
     geom: "GEOMETRY('EPSG:4326')",

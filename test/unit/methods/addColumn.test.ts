@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return a column with new computed values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.convert({ key2: "integer" });
-  await table.addColumn("multiply", "double", `key2 * key3`);
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.convert({ key2: "integer" });
+  table.addColumn("multiply", "double", `key2 * key3`);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -22,9 +22,9 @@ Deno.test("should return a column with new computed values", async () => {
 Deno.test("should return a column with booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.convert({ key2: "integer" });
-  await table.addColumn("key2GreaterThanTen", "boolean", `key2 > 10`);
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.convert({ key2: "integer" });
+  table.addColumn("key2GreaterThanTen", "boolean", `key2 > 10`);
 
   const data = await table.getData();
 
@@ -71,11 +71,11 @@ Deno.test("should return a column with booleans", async () => {
 Deno.test("should return a column with geometry", async () => {
   const sdb = new SimpleDB();
   const geo = sdb.newTable("geo");
-  await geo.loadGeoData("test/geodata/files/polygons.geojson");
+  geo.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await geo.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid(geom)`);
-  await geo.selectColumns(["name", "centroid"]);
-  await geo.reducePrecision(6);
+  geo.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid(geom)`);
+  geo.selectColumns(["name", "centroid"]);
+  geo.reducePrecision(6);
   const data = await geo.getGeoData("centroid");
 
   assertEquals(data, {
@@ -105,9 +105,9 @@ Deno.test("should return a column with geometry", async () => {
 Deno.test("should return a column with a space in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.convert({ key2: "integer" });
-  await table.addColumn("key 4", "double", `key2 * key3`);
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.convert({ key2: "integer" });
+  table.addColumn("key 4", "double", `key2 * key3`);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -123,9 +123,9 @@ Deno.test("should return a column with a space in its name", async () => {
 Deno.test("should return a column with a $ in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/dataSummarize.json"]);
-  await table.convert({ key2: "integer" });
-  await table.addColumn("$key4", "double", `key2 * key3`);
+  table.loadData(["test/data/files/dataSummarize.json"]);
+  table.convert({ key2: "integer" });
+  table.addColumn("$key4", "double", `key2 * key3`);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -141,8 +141,8 @@ Deno.test("should return a column with a $ in its name", async () => {
 Deno.test("should return a column with null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([{ key1: "Nael" }, { key1: "Graeme" }]);
-  await table.addColumn("age", "integer", "null");
+  table.loadArray([{ key1: "Nael" }, { key1: "Graeme" }]);
+  table.addColumn("age", "integer", "null");
   const data = await table.getData();
 
   assertEquals(data, [{ key1: "Nael", age: null }, {
@@ -154,12 +154,12 @@ Deno.test("should return a column with null values", async () => {
 Deno.test("should add a column with a case statement and null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([{ votes: 10, winnerMax: 10, party: "LIB" }, {
+  table.loadArray([{ votes: 10, winnerMax: 10, party: "LIB" }, {
     votes: 5,
     winnerMax: 10,
     party: "CON",
   }]);
-  await table.addColumn(
+  table.addColumn(
     "winner",
     "string",
     `CASE WHEN votes === winnerMax THEN party ELSE NULL END`,

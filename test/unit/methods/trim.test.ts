@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should remove whitespace", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key1");
+  table.trim("key1");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -22,10 +22,10 @@ Deno.test("should remove whitespace", async () => {
 Deno.test("should remove whitespace with column name containing spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
-  await table.renameColumns({ key1: "key 1" });
+  table.loadData(["test/data/files/dataTrim.json"]);
+  table.renameColumns({ key1: "key 1" });
 
-  await table.trim("key 1");
+  table.trim("key 1");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -41,9 +41,9 @@ Deno.test("should remove whitespace with column name containing spaces", async (
 Deno.test("should remove whitespace from multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim(["key1", "key2"]);
+  table.trim(["key1", "key2"]);
 
   const data = await table.getData();
 
@@ -60,9 +60,9 @@ Deno.test("should remove whitespace from multiple columns", async () => {
 Deno.test("should remove whitespace just on the left", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key1", {
+  table.trim("key1", {
     method: "leftTrim",
   });
   const data = await table.getData();
@@ -80,9 +80,9 @@ Deno.test("should remove whitespace just on the left", async () => {
 Deno.test("should remove whitespace just on the right", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key1", {
+  table.trim("key1", {
     method: "rightTrim",
   });
   const data = await table.getData();
@@ -100,9 +100,9 @@ Deno.test("should remove whitespace just on the right", async () => {
 Deno.test("should remove specific characters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key2", {
+  table.trim("key2", {
     method: "rightTrim",
     character: "!@",
   });

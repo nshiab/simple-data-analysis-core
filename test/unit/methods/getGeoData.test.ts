@@ -6,8 +6,8 @@ import rewind from "../../../src/helpers/rewind.ts";
 Deno.test("should find the column with geometries and return geospatial data as a geojson", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/polygons.geojson");
-  await table.renameColumns({ geom: "newGeom" });
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.renameColumns({ geom: "newGeom" });
   const geoData = await table.getGeoData();
 
   assertEquals(geoData, {
@@ -56,8 +56,8 @@ Deno.test("should find the column with geometries and return geospatial data as 
 Deno.test("should return geospatial data as a geojson with a specific geometry column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/polygons.geojson");
-  await table.renameColumns({ geom: "newGeom" });
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.renameColumns({ geom: "newGeom" });
   const geoData = await table.getGeoData("newGeom");
 
   assertEquals(geoData, {
@@ -105,7 +105,7 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
 Deno.test("should return geospatial data not rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
+  table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData();
 
   const originalData = JSON.parse(
@@ -119,7 +119,7 @@ Deno.test("should return geospatial data not rewinded", async () => {
 Deno.test("should return geospatial data rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
+  table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData(undefined, { rewind: true });
 
   const rewindedData = rewind(JSON.parse(

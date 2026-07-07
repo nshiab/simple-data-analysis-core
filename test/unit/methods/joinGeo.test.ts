@@ -4,14 +4,14 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should do a left spatial join the intersect method", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await prov.joinGeo(poly, "intersect");
-  await prov.selectColumns(["nameEnglish", "name"]);
+  prov.joinGeo(poly, "intersect");
+  prov.selectColumns(["nameEnglish", "name"]);
 
   const data = await prov.getData();
   assertEquals(data, [
@@ -34,16 +34,16 @@ Deno.test("should do a left spatial join the intersect method", async () => {
 Deno.test("should do a left spatial join the intersect method and output the results to a new table", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  const table = await prov.joinGeo(poly, "intersect", {
+  const table = prov.joinGeo(poly, "intersect", {
     outputTable: true,
   });
-  await table.selectColumns(["nameEnglish", "name"]);
+  table.selectColumns(["nameEnglish", "name"]);
 
   const data = await table.getData();
   assertEquals(data, [
@@ -66,13 +66,13 @@ Deno.test("should do a left spatial join the intersect method and output the res
 Deno.test("should do a left spatial join the intersect method and output the results to a new table with a specific name", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await prov.joinGeo(poly, "intersect", {
+  prov.joinGeo(poly, "intersect", {
     outputTable: "specificTable",
   });
 
@@ -101,13 +101,13 @@ Deno.test("should do a left spatial join the intersect method and output the res
 Deno.test("should do a left spatial join the intersect method with tables with default names", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await prov.joinGeo(poly, "intersect");
+  prov.joinGeo(poly, "intersect");
 
   const columnsLeftTable = await prov.getColumns();
 
@@ -123,13 +123,13 @@ Deno.test("should do a left spatial join the intersect method with tables with d
 Deno.test("should do a left spatial join the intersect method with tables with specific names", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   const poly = sdb.newTable("poly");
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await prov.joinGeo(poly, "intersect");
+  prov.joinGeo(poly, "intersect");
 
   const columnsLeftTable = await prov.getColumns();
 
@@ -145,13 +145,13 @@ Deno.test("should do a left spatial join the intersect method with tables with s
 Deno.test("should do a left spatial join the intersect method without changing the name of the original tables", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await prov.joinGeo(poly, "intersect");
+  prov.joinGeo(poly, "intersect");
 
   const columnsLeftTable = await prov.getColumns();
   const columnsRightTable = await poly.getColumns();
@@ -174,14 +174,14 @@ Deno.test("should do a left spatial join the intersect method without changing t
 Deno.test("should do a left spatial join the intersect method without changing the name of the original tables with an outputTable option", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  await prov.joinGeo(poly, "intersect", { outputTable: true });
+  prov.joinGeo(poly, "intersect", { outputTable: true });
 
   const columnsLeftTable = await prov.getColumns();
   const columnsRightTable = await poly.getColumns();
@@ -198,21 +198,21 @@ Deno.test("should do a left spatial join the intersect method without changing t
 Deno.test("should do a left spatial join the intersect method with specific options", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await prov.renameColumns({ geom: "geomProvince" });
+  prov.renameColumns({ geom: "geomProvince" });
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
-  await poly.renameColumns({ geom: "geomPolygon" });
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.renameColumns({ geom: "geomPolygon" });
 
-  const joined = await prov.joinGeo(poly, "intersect", {
+  const joined = prov.joinGeo(poly, "intersect", {
     leftTableColumn: "geomProvince",
     rightTableColumn: "geomPolygon",
     type: "inner",
     outputTable: "joined",
   });
-  await joined.selectColumns(["nameEnglish", "name"]);
+  joined.selectColumns(["nameEnglish", "name"]);
 
   const data = await joined.getData();
 
@@ -231,14 +231,14 @@ Deno.test("should do a left spatial join the intersect method with specific opti
 Deno.test("should do a left spatial join the inside method", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable();
-  await points.loadGeoData("test/geodata/files/pointsInside.json");
+  points.loadGeoData("test/geodata/files/pointsInside.json");
 
   const poly = sdb.newTable();
-  await poly.loadGeoData("test/geodata/files/polygonInside.json");
-  await poly.renameColumns({ name: "polygonName" });
+  poly.loadGeoData("test/geodata/files/polygonInside.json");
+  poly.renameColumns({ name: "polygonName" });
 
-  await points.joinGeo(poly, "inside");
-  await points.selectColumns(["name", "polygonName"]);
+  points.joinGeo(poly, "inside");
+  points.selectColumns(["name", "polygonName"]);
 
   const data = await points.getData();
 
@@ -253,29 +253,29 @@ Deno.test("should do a left spatial join the inside method", async () => {
 Deno.test("should return all intersections and all rows from leftTable when doing a left join", async () => {
   const sdb = new SimpleDB();
   const polygonsWithin = sdb.newTable();
-  await polygonsWithin.loadGeoData(
+  polygonsWithin.loadGeoData(
     "test/geodata/files/polygonsWithinPolygons.json",
   );
 
-  const polygonsWithinNotNull = await polygonsWithin.cloneTable({
+  const polygonsWithinNotNull = polygonsWithin.cloneTable({
     conditions: `name NOT NULL`,
   });
-  await polygonsWithinNotNull.removeColumns("container");
+  polygonsWithinNotNull.removeColumns("container");
 
-  const containers = await polygonsWithin.cloneTable({
+  const containers = polygonsWithin.cloneTable({
     conditions: `container NOT NULL`,
   });
-  await containers.removeColumns("name");
+  containers.removeColumns("name");
 
-  const joined = await polygonsWithinNotNull.joinGeo(
+  const joined = polygonsWithinNotNull.joinGeo(
     containers,
     "intersect",
     {
       outputTable: "joined",
     },
   );
-  await joined.selectColumns(["name", "container"]);
-  await joined.sort({ name: "asc" });
+  joined.selectColumns(["name", "container"]);
+  joined.sort({ name: "asc" });
   const data = await joined.getData();
 
   assertEquals(data, [
@@ -292,21 +292,21 @@ Deno.test("should return all intersections and all rows from leftTable when doin
 Deno.test("should return all intersections - and just intersections - when doing an inner join", async () => {
   const sdb = new SimpleDB();
   const polygonsWithin = sdb.newTable();
-  await polygonsWithin.loadGeoData(
+  polygonsWithin.loadGeoData(
     "test/geodata/files/polygonsWithinPolygons.json",
   );
 
-  const polygonsWithinNotNull = await polygonsWithin.cloneTable({
+  const polygonsWithinNotNull = polygonsWithin.cloneTable({
     conditions: `name NOT NULL`,
   });
-  await polygonsWithinNotNull.removeColumns("container");
+  polygonsWithinNotNull.removeColumns("container");
 
-  const containers = await polygonsWithin.cloneTable({
+  const containers = polygonsWithin.cloneTable({
     conditions: `container NOT NULL`,
   });
-  await containers.removeColumns("name");
+  containers.removeColumns("name");
 
-  const joined = await polygonsWithinNotNull.joinGeo(
+  const joined = polygonsWithinNotNull.joinGeo(
     containers,
     "intersect",
     {
@@ -314,8 +314,8 @@ Deno.test("should return all intersections - and just intersections - when doing
       type: "inner",
     },
   );
-  await joined.selectColumns(["name", "container"]);
-  await joined.sort({ name: "asc" });
+  joined.selectColumns(["name", "container"]);
+  joined.sort({ name: "asc" });
   const data = await joined.getData();
 
   assertEquals(data, [
@@ -331,12 +331,12 @@ Deno.test("should return all intersections - and just intersections - when doing
 Deno.test("should return all points within a target distance (srs method)", async () => {
   const sdb = new SimpleDB();
   const cities = sdb.newTable();
-  await cities.loadGeoData("test/geodata/files/coordinates.geojson");
-  const cloned = await cities.cloneTable();
-  await cloned.renameColumns({ name: "name_1" });
-  await cities.joinGeo(cloned, "within", { distance: 10 });
-  await cities.distance("geom", "geomTable2", "dist", { decimals: 2 });
-  await cities.selectColumns(["name", "name_1", "dist"]);
+  cities.loadGeoData("test/geodata/files/coordinates.geojson");
+  const cloned = cities.cloneTable();
+  cloned.renameColumns({ name: "name_1" });
+  cities.joinGeo(cloned, "within", { distance: 10 });
+  cities.distance("geom", "geomTable2", "dist", { decimals: 2 });
+  cities.selectColumns(["name", "name_1", "dist"]);
 
   const data = await cities.getData();
 
@@ -353,20 +353,20 @@ Deno.test("should return all points within a target distance (srs method)", asyn
 Deno.test("should return all points within a target distance (haversine method)", async () => {
   const sdb = new SimpleDB();
   const cities = sdb.newTable();
-  await cities.loadGeoData("test/geodata/files/coordinates.geojson");
-  const cloned = await cities.cloneTable();
-  await cloned.renameColumns({ name: "name_1" });
+  cities.loadGeoData("test/geodata/files/coordinates.geojson");
+  const cloned = cities.cloneTable();
+  cloned.renameColumns({ name: "name_1" });
 
-  await cities.joinGeo(cloned, "within", {
+  cities.joinGeo(cloned, "within", {
     distance: 500_000,
     distanceMethod: "haversine",
     type: "inner",
   });
-  await cities.distance("geom", "geomTable2", "dist", {
+  cities.distance("geom", "geomTable2", "dist", {
     method: "haversine",
     decimals: 0,
   });
-  await cities.selectColumns(["name", "name_1", "dist"]);
+  cities.selectColumns(["name", "name_1", "dist"]);
   const data = await cities.getData();
 
   assertEquals(data, [
@@ -382,20 +382,20 @@ Deno.test("should return all points within a target distance (haversine method)"
 Deno.test("should return all points within a target distance (spheroid method)", async () => {
   const sdb = new SimpleDB();
   const cities = sdb.newTable();
-  await cities.loadGeoData("test/geodata/files/coordinates.geojson");
-  const cloned = await cities.cloneTable();
-  await cloned.renameColumns({ name: "name_1" });
+  cities.loadGeoData("test/geodata/files/coordinates.geojson");
+  const cloned = cities.cloneTable();
+  cloned.renameColumns({ name: "name_1" });
 
-  await cities.joinGeo(cloned, "within", {
+  cities.joinGeo(cloned, "within", {
     distance: 500_000,
     distanceMethod: "spheroid",
     type: "inner",
   });
-  await cities.distance("geom", "geomTable2", "dist", {
+  cities.distance("geom", "geomTable2", "dist", {
     method: "spheroid",
     decimals: 0,
   });
-  await cities.selectColumns(["name", "name_1", "dist"]);
+  cities.selectColumns(["name", "name_1", "dist"]);
 
   const data = await cities.getData();
 
@@ -415,17 +415,17 @@ Deno.test("should log a table after a joinGeo", async () => {
 
   const fires = sdb.newTable("fires");
 
-  await fires.loadData(
+  fires.loadData(
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
   );
-  await fires.points("lat", "lon", "geom");
+  fires.points("lat", "lon", "geom");
 
   const provinces = sdb.newTable("provinces");
-  await provinces.loadGeoData(
+  provinces.loadGeoData(
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
-  const _firesInsideProvinces = await fires.joinGeo(provinces, "inside", {
+  const _firesInsideProvinces = fires.joinGeo(provinces, "inside", {
     outputTable: "firesInsideProvinces",
   });
   // await firesInsideProvinces.logTable();

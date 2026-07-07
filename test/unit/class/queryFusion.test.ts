@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
-import SimpleTable from "../../../src/class/SimpleTable.ts";
+import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 
 function spyOnQueries(simple: SimpleDB | SimpleTable): string[] {
@@ -184,7 +184,7 @@ Deno.test("should flush queued methods before an unconverted async method runs",
   // first to preserve program order.
   table.loadArray(data);
   table.filter(`value > 1`);
-  await table.sort({ name: "desc" });
+  table.sort({ name: "desc" });
   const result = await table.getData();
 
   assertEquals(result, [
@@ -368,7 +368,7 @@ Deno.test("should fuse geospatial operations with regular ones, loading spatial 
   const table = sdb.newTable("geoFused");
   const queries = spyOnQueries(table);
 
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
