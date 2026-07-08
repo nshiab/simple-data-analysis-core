@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -15,6 +16,7 @@ export default function cloneColumn(
       if (!types[originalColumn]) {
         throw new Error(`Can't find type of ${originalColumn}`);
       }
+      assertNewColumns(types, [newColumn], "cloneColumn()");
       return `SELECT *, "${originalColumn}" AS "${newColumn}" FROM ${input}`;
     },
   });

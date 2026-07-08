@@ -1,7 +1,6 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import parseType from "../helpers/parseTypes.ts";
-import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function addColumn(
@@ -28,35 +27,20 @@ export default function addColumn(
 ) {
   const newType = parseType(type);
 
-  if (newType.toLowerCase().includes("geometry")) {
-    // Loading the spatial extension makes this multi-statement by nature.
-    queueOp(simpleTable, {
-      kind: "barrier",
-      method: "addColumn()",
-      parameters: { newColumn, type, definition },
-      execute: async () => {
-        await queryDB(
-          simpleTable,
-          `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;
-        ALTER TABLE "${simpleTable.name}" ADD "${newColumn}" ${newType};
-        UPDATE "${simpleTable.name}" SET "${newColumn}" = ${definition}`,
-          mergeOptions(simpleTable, {
-            table: simpleTable.name,
-            method: "addColumn()",
-            parameters: { newColumn, type, definition },
-          }),
-        );
-      },
-    });
-    return;
-  }
-
   queueOp(simpleTable, {
     kind: "fusable",
     method: "addColumn()",
     parameters: { newColumn, type, definition },
-    needsSchema: false,
-    buildSelect: (input) =>
-      `SELECT *, CAST((${definition}) AS ${newType}) AS "${newColumn}" FROM ${input}`,
+    // The schema is needed to reject a duplicate column, as v1's ALTER TABLE
+    // ADD did.
+    needsSchema: true,
+    // A geometry column needs the spatial extension, both to cast to the
+    // GEOMETRY type and for the spatial functions in the definition.
+    needsSpatial: newType.toLowerCase().includes("geometry"),
+    rawSQL: [definition],
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [newColumn], "addColumn()");
+      return `SELECT *, CAST((${definition}) AS ${newType}) AS "${newColumn}" FROM ${input}`;
+    },
   });
 }

@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -13,8 +14,9 @@ export default function concatenate(
     kind: "fusable",
     method: "concatenate()",
     parameters: { columns, newColumn, options },
-    needsSchema: false,
-    buildSelect: (input) => {
+    needsSchema: true,
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [newColumn], "concatenate()");
       const expression = typeof options.separator === "string"
         ? `CONCAT_WS('${options.separator}', ${
           columns

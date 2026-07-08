@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -12,6 +13,7 @@ export default function concatenateRow(
     parameters: { columns, newColumn },
     needsSchema: true,
     buildSelect: (input, allTypes) => {
+      assertNewColumns(allTypes, [newColumn], "concatenateRow()");
       for (const col of columns) {
         if (allTypes[col] !== "VARCHAR") {
           throw new Error(

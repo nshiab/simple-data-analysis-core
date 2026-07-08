@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -11,9 +12,11 @@ export default function inside(
     kind: "fusable",
     method: "inside()",
     parameters: { column1, column2, newColumn },
-    needsSchema: false,
+    needsSchema: true,
     needsSpatial: true,
-    buildSelect: (input) =>
-      `SELECT *, CAST(ST_Covers("${column2}", "${column1}") AS BOOLEAN) AS "${newColumn}" FROM ${input}`,
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [newColumn], "inside()");
+      return `SELECT *, CAST(ST_Covers("${column2}", "${column1}") AS BOOLEAN) AS "${newColumn}" FROM ${input}`;
+    },
   });
 }

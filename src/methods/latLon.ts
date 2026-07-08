@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -11,9 +12,11 @@ export default function latLon(
     kind: "fusable",
     method: "latLon()",
     parameters: { column, columnLat, columnLon },
-    needsSchema: false,
+    needsSchema: true,
     needsSpatial: true,
-    buildSelect: (input) =>
-      `SELECT *, CAST(ST_Y("${column}") AS DOUBLE) AS "${columnLat}", CAST(ST_X("${column}") AS DOUBLE) AS "${columnLon}" FROM ${input}`,
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [columnLat, columnLon], "latLon()");
+      return `SELECT *, CAST(ST_Y("${column}") AS DOUBLE) AS "${columnLat}", CAST(ST_X("${column}") AS DOUBLE) AS "${columnLon}" FROM ${input}`;
+    },
   });
 }
