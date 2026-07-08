@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should change the name of one column", async () => {
@@ -37,6 +37,50 @@ Deno.test("should change the name of multiple columns", async () => {
     { A: 2, B: "deux" },
     { A: 3, B: "trois" },
     { A: 4, B: "quatre" },
+  ]);
+
+  await sdb.done();
+});
+
+Deno.test("should throw when a source column does not exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData(["test/data/files/data.json"]);
+
+  table.renameColumns({ nope: "A" });
+
+  await assertRejects(() => table.getData());
+
+  await sdb.done();
+});
+
+Deno.test("should throw when only some source columns exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData(["test/data/files/data.json"]);
+
+  table.renameColumns({ key1: "A", nope: "B" });
+
+  await assertRejects(() => table.getData());
+
+  await sdb.done();
+});
+
+Deno.test("should skip the existence check when checkColumns is false", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData(["test/data/files/data.json"]);
+
+  // "nope" does not exist; with the check off, the rename is silently ignored
+  // by DuckDB and the real column is still renamed.
+  table.renameColumns({ key1: "A", nope: "B" }, { checkColumns: false });
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { A: 1, key2: "un" },
+    { A: 2, key2: "deux" },
+    { A: 3, key2: "trois" },
+    { A: 4, key2: "quatre" },
   ]);
 
   await sdb.done();

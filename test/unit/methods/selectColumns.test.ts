@@ -1,5 +1,17 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should throw when a column to select does not exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData(["test/data/files/employees.csv"]);
+
+  table.selectColumns(["Name", "nope"]);
+
+  await assertRejects(() => table.getData());
+
+  await sdb.done();
+});
 
 Deno.test("should return one column", async () => {
   const sdb = new SimpleDB();

@@ -1,5 +1,20 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should throw when the source column does not exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { name: "Shiab, Nael" },
+    { name: "Bruce, Graeme" },
+  ]);
+
+  table.splitExtract("nope", ",", 0, "lastName");
+
+  await assertRejects(() => table.getData());
+
+  await sdb.done();
+});
 
 Deno.test("should extract a substring based on a separator and substring", async () => {
   const sdb = new SimpleDB();

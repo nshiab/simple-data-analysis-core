@@ -2153,7 +2153,8 @@ table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // 
 
 #### `renameColumns`
 
-Renames one or more columns in the table.
+Renames one or more columns in the table. Throws if a source column does not
+exist, so a typo fails loudly instead of being silently ignored.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -2161,13 +2162,18 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-renameColumns(names: Record<string, string>): this;
+renameColumns(names: Record<string, string>, options?: { checkColumns?: boolean }): this;
 ```
 
 ##### Parameters
 
 - **`names`**: An object mapping old column names to their new column names
   (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
+- **`options`**: Configuration options.
+- **`options.checkColumns`**: Whether to verify the source columns exist before
+  renaming. Defaults to `true`. Set to `false` to skip the check and its schema
+  lookup when you know the columns exist and are renaming across many tables
+  where the extra round-trip adds up.
 
 ##### Returns
 
@@ -2183,6 +2189,11 @@ table.renameColumns({ "How old?": "age", "Man or woman?": "sex" });
 ```ts
 // Rename a single column
 table.renameColumns({ "product_id": "productId" });
+```
+
+```ts
+// Skip the existence check when renaming across many tables
+table.renameColumns({ "product_id": "productId" }, { checkColumns: false });
 ```
 
 #### `cleanColumnNames`

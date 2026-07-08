@@ -1,5 +1,17 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should throw when a column to remove does not exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/employees.csv");
+
+  table.removeColumns("nope");
+
+  await assertRejects(() => table.getData());
+
+  await sdb.done();
+});
 
 Deno.test("should remove one column with spaces", async () => {
   const sdb = new SimpleDB();

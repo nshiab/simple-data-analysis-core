@@ -1696,11 +1696,14 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Renames one or more columns in the table.
+   * Renames one or more columns in the table. Throws if a source column does
+   * not exist, so a typo fails loudly instead of being silently ignored.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
+   * @param options - Configuration options.
+   * @param options.checkColumns - Whether to verify the source columns exist before renaming. Defaults to `true`. Set to `false` to skip the check and its schema lookup when you know the columns exist and are renaming across many tables where the extra round-trip adds up.
    * @returns The table, so methods can be chained.
    * @category Column Operations
    *
@@ -1715,9 +1718,18 @@ export default class SimpleTable extends Simple {
    * // Rename a single column
    * table.renameColumns({ "product_id": "productId" });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Skip the existence check when renaming across many tables
+   * table.renameColumns({ "product_id": "productId" }, { checkColumns: false });
+   * ```
    */
-  renameColumns(names: { [key: string]: string }): this {
-    renameColumns(this, names);
+  renameColumns(
+    names: { [key: string]: string },
+    options: { checkColumns?: boolean } = {},
+  ): this {
+    renameColumns(this, names, options);
     return this;
   }
 
