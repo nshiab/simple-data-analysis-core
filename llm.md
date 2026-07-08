@@ -493,7 +493,7 @@ const sdb = new SimpleDB();
 // Create a new table named "employees"
 const employees = sdb.newTable("employees");
 // Load data from a CSV file into the "employees" table
-await employees.loadData("./employees.csv");
+employees.loadData("./employees.csv");
 // Log the first few rows of the "employees" table to the console
 await employees.logTable();
 // Close the database connection and clean up resources
@@ -745,12 +745,12 @@ table.loadData("./some-data.csv");
 
 ```ts
 // Load data from a remote Parquet file
-await table.loadData("https://some-website.com/some-data.parquet");
+table.loadData("https://some-website.com/some-data.parquet");
 ```
 
 ```ts
 // Load data from multiple local JSON files
-await table.loadData([
+table.loadData([
   "./some-data1.json",
   "./some-data2.json",
   "./some-data3.json",
@@ -759,7 +759,7 @@ await table.loadData([
 
 ```ts
 // Load data from multiple remote Parquet files with column unification
-await table.loadData([
+table.loadData([
   "https://some-website.com/some-data1.parquet",
   "https://some-website.com/some-data2.parquet",
   "https://some-website.com/some-data3.parquet",
@@ -768,7 +768,7 @@ await table.loadData([
 
 ```ts
 // Load only specific columns from a CSV file
-await table.loadData("./employees.csv", { columns: ["name", "salary"] });
+table.loadData("./employees.csv", { columns: ["name", "salary"] });
 ```
 
 #### `loadDataFromDirectory`
@@ -960,7 +960,7 @@ The table, so methods can be chained.
 
 ```ts
 // Load a dataset and create an FTS index
-await table.loadData("recipes.parquet");
+table.loadData("recipes.parquet");
 
 // Create FTS index for later searches
 table.createFtsIndex("Dish", "Recipe");
@@ -1035,7 +1035,7 @@ The table, so methods can be chained.
 
 ```ts
 // Load data that already contains an embedding column
-await table.loadData("data.csv");
+table.loadData("data.csv");
 
 // Create VSS index for fast similarity searches
 table.createVssIndex("embedding_column");
@@ -1135,7 +1135,7 @@ matches first), so methods can be chained.
 
 ```ts
 // Load a dataset of recipes
-await table.loadData("recipes.parquet");
+table.loadData("recipes.parquet");
 
 // Search for "italian food" in the Recipe column, return top 5 results
 table.bm25("italian food", "Dish", "Recipe", 5);
@@ -2329,29 +2329,27 @@ The table, so methods can be chained.
 
 ```ts
 // Convert 'column1' to string and 'column2' to integer (JavaScript types)
-await table.convert({ column1: "string", column2: "integer" });
+table.convert({ column1: "string", column2: "integer" });
 ```
 
 ```ts
 // Convert 'column1' to VARCHAR and 'column2' to BIGINT (SQL types)
-await table.convert({ column1: "varchar", column2: "bigint" });
+table.convert({ column1: "varchar", column2: "bigint" });
 ```
 
 ```ts
 // Convert strings in 'column3' to datetime using a specific format
-await table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" });
+table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" });
 ```
 
 ```ts
 // Convert datetime values in 'column3' to strings using a specific format
-await table.convert({ column3: "string" }, {
-  datetimeFormat: "%Y-%m-%d %H:%M:%S",
-});
+table.convert({ column3: "string" }, { datetimeFormat: "%Y-%m-%d %H:%M:%S" });
 ```
 
 ```ts
 // Convert 'amount' to float, replacing unconvertible values with NULL
-await table.convert({ amount: "float" }, { try: true });
+table.convert({ amount: "float" }, { try: true });
 ```
 
 #### `removeTable`
@@ -2653,12 +2651,12 @@ new table), so methods can be chained.
 ```ts
 // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) with a threshold of 80
 // A length-based pre-filter is automatically applied.
-await tableA.fuzzyJoin(tableB, "name", "standardName", 80);
+tableA.fuzzyJoin(tableB, "name", "standardName", 80);
 ```
 
 ```ts
 // Fuzzy join with a prefix-based pre-filter and a threshold of 80
-await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
+tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
   preFilterPrefixLen: 3, // Must share the same first 3 characters
 });
 ```
@@ -2673,7 +2671,7 @@ const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", 90, {
 
 ```ts
 // Fuzzy join with a custom similarity column name and a threshold of 80
-await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
+tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
   similarityColumn: "matchScore",
 });
 ```
@@ -3312,7 +3310,7 @@ table.concatenateRow(
 ```ts
 // Convert numeric columns to strings first, then concatenate
 // NULL values will appear as 'Unknown'
-await table.convert({ age: "string", salary: "string" });
+table.convert({ age: "string", salary: "string" });
 table.concatenateRow(["name", "age", "salary"], "profile");
 ```
 
@@ -5956,23 +5954,23 @@ or a new table), so methods can be chained.
 
 ```ts
 // Merge data based on intersecting geometries, overwriting tableA
-await tableA.joinGeo(tableB, "intersect");
+tableA.joinGeo(tableB, "intersect");
 ```
 
 ```ts
 // Merge data where geometries in tableA are inside geometries in tableB
-await tableA.joinGeo(tableB, "inside");
+tableA.joinGeo(tableB, "inside");
 ```
 
 ```ts
 // Merge data where geometries in tableA are within 10 units (SRS) of geometries in tableB
-await tableA.joinGeo(tableB, "within", { distance: 10 });
+tableA.joinGeo(tableB, "within", { distance: 10 });
 ```
 
 ```ts
 // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
 // Input geometries must be in EPSG:4326.
-await tableA.joinGeo(tableB, "within", {
+tableA.joinGeo(tableB, "within", {
   distance: 10,
   distanceMethod: "haversine",
   unit: "km",
@@ -5981,7 +5979,7 @@ await tableA.joinGeo(tableB, "within", {
 
 ```ts
 // Merge data with specific geometry columns and an inner join type, storing results in a new table
-const tableC = await tableA.joinGeo(tableB, "intersect", {
+const tableC = tableA.joinGeo(tableB, "intersect", {
   leftTableColumn: "geometriesA",
   rightTableColumn: "geometriesB",
   type: "inner",
@@ -6817,9 +6815,9 @@ A promise that resolves to the table, so methods can be chained.
 const sdb = new SimpleDB();
 const table = sdb.newTable();
 
-await table.cache(async () => {
-  await table.loadData("items.csv");
-  await table.summarize({
+await table.cache(() => {
+  table.loadData("items.csv");
+  table.summarize({
     values: "price",
     categories: "department",
     summaries: ["min", "max", "mean"],
@@ -6837,9 +6835,9 @@ await sdb.done();
 const sdb = new SimpleDB();
 const table = sdb.newTable();
 
-await table.cache(async () => {
-  await table.loadData("items.csv");
-  await table.summarize({
+await table.cache(() => {
+  table.loadData("items.csv");
+  table.summarize({
     values: "price",
     categories: "department",
     summaries: ["min", "max", "mean"],
@@ -6854,9 +6852,9 @@ await sdb.done();
 const sdb = new SimpleDB({ cacheVerbose: true });
 const table = sdb.newTable();
 
-await table.cache(async () => {
-  await table.loadData("items.csv");
-  await table.summarize({
+await table.cache(() => {
+  table.loadData("items.csv");
+  table.summarize({
     values: "price",
     categories: "department",
     summaries: ["min", "max", "mean"],
@@ -7182,7 +7180,7 @@ const sdb = new SimpleDB();
 const employees = sdb.newTable("employees");
 
 // Load data from a CSV file into the "employees" table
-await employees.loadData("./employees.csv");
+employees.loadData("./employees.csv");
 
 // Log the first few rows of the "employees" table to the console
 await employees.logTable();
@@ -7200,7 +7198,7 @@ const sdb = new SimpleDB();
 const boundaries = sdb.newTable("boundaries");
 
 // Load geospatial data from a GeoJSON file
-await boundaries.loadGeoData("./boundaries.geojson");
+boundaries.loadGeoData("./boundaries.geojson");
 
 // Close the database connection
 await sdb.done();

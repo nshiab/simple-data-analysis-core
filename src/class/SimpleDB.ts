@@ -30,7 +30,7 @@ import { discardAllPending } from "../helpers/queueOp.ts";
  * // Create a new table named "employees"
  * const employees = sdb.newTable("employees");
  * // Load data from a CSV file into the "employees" table
- * await employees.loadData("./employees.csv");
+ * employees.loadData("./employees.csv");
  * // Log the first few rows of the "employees" table to the console
  * await employees.logTable();
  * // Close the database connection and clean up resources
