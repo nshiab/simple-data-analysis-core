@@ -11,9 +11,14 @@ export default function replaceNulls(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "replaceNulls()",
+    // The schema resolves "all" to the column list and gives each column's
+    // type: v1 replaced nulls with an UPDATE, which assignment-casts the
+    // value to the column's type (e.g. 0 into a VARCHAR column becomes '0').
+    // COALESCE can't mix types, so the value is cast to the column's type to
+    // reproduce that.
+    needsSchema: true,
+    preservesSchema: true,
     parameters: { columns, value },
-    // The schema is only needed to resolve "all" to the column list.
-    needsSchema: columns === "all",
     buildSelect: (input, schema) => {
       const columnList = columns === "all"
         ? Object.keys(schema)
@@ -22,7 +27,9 @@ export default function replaceNulls(
       return `SELECT * REPLACE (${
         columnList
           .map((column) =>
-            `COALESCE("${column}", ${valueParsed}) AS "${column}"`
+            `COALESCE("${column}", CAST(${valueParsed} AS ${
+              schema[column]
+            })) AS "${column}"`
           )
           .join(", ")
       }) FROM ${input}`;

@@ -92,6 +92,23 @@ the call.
 To debug, pass `debug: true` to `SimpleDB`: fusion is disabled and every method
 executes immediately, step by step, with the same logging as v1.
 
+## Don't mutate arguments after passing them
+
+Because a sync builder reads its arguments when the chain executes, not when you
+call it, treat any object or array you pass to a builder as owned by the library
+from that point on. Mutating and reusing the same object before the next
+observer runs would change the already-queued operation:
+
+```ts
+const replacements = { old: "new" };
+table.replace("col", replacements);
+replacements.old = "other"; // don't: the queued replace() would use "other"
+await table.getData();
+```
+
+Pass a fresh object per call instead. (This only affects mutable arguments;
+strings, numbers and booleans are unaffected.)
+
 ## Order matters for `sort()`
 
 Methods queued after a `sort()` are fused with it into a single query and may

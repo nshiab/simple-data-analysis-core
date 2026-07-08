@@ -1,3 +1,4 @@
+import ensureSpatial from "../helpers/ensureSpatial.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import parseType from "../helpers/parseTypes.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -33,18 +34,16 @@ export default function setTypes(
     method: "setTypes()",
     parameters: { types },
     execute: async () => {
-      let spatial = "";
       if (
         Object.values(types)
           .map((d) => d.toLowerCase())
           .some((d) => d.startsWith("geometry"))
       ) {
-        spatial =
-          "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;\n";
+        await ensureSpatial(simpleTable);
       }
       await queryDB(
         simpleTable,
-        `${spatial}CREATE OR REPLACE TABLE "${simpleTable.name}" (${
+        `CREATE OR REPLACE TABLE "${simpleTable.name}" (${
           Object.keys(
             types,
           )

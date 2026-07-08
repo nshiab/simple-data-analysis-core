@@ -1,3 +1,4 @@
+import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default async function updateWithJS(
@@ -43,7 +44,11 @@ export default async function updateWithJS(
         "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.",
       );
     }
-    await simpleTable.loadArray(newData);
+    // updateWithJS is an async-immediate exception: the update must be
+    // applied when the promise resolves, so the queued load executes now
+    // instead of waiting for a later observer.
+    simpleTable.loadArray(newData);
+    await flushAllTables(simpleTable.sdb);
     return;
   }
 
@@ -64,7 +69,8 @@ export default async function updateWithJS(
     if (newData.length === 0) {
       return;
     }
-    await simpleTable.loadArray(newData);
+    simpleTable.loadArray(newData);
+    await flushAllTables(simpleTable.sdb);
     return;
   }
 

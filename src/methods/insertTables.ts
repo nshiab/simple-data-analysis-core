@@ -1,3 +1,4 @@
+import ensureSpatial from "../helpers/ensureSpatial.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -34,14 +35,16 @@ async function executeInsertTables(
     // The table is created directly (not with the sync setTypes builder,
     // which would queue for the next flush).
     const firstTableTypes = await array[0].getTypes();
-    const spatial = Object.values(firstTableTypes)
+    if (
+      Object.values(firstTableTypes)
         .map((d) => d.toLowerCase())
         .some((d) => d.startsWith("geometry"))
-      ? "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;\n"
-      : "";
+    ) {
+      await ensureSpatial(simpleTable);
+    }
     await queryDB(
       simpleTable,
-      `${spatial}CREATE OR REPLACE TABLE "${simpleTable.name}" (${
+      `CREATE OR REPLACE TABLE "${simpleTable.name}" (${
         Object.keys(firstTableTypes)
           .map((d) => `"${d}" ${firstTableTypes[d]}`)
           .join(", ")

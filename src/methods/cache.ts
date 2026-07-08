@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import type SimpleTable from "../class/SimpleTable.ts";
 import crypto from "node:crypto";
+import flushAllTables from "../helpers/flushAllTables.ts";
 import formatDate from "../helpers/formatDate.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
 
@@ -151,6 +152,10 @@ async function runAndWrite(
 ) {
   const start = Date.now();
   await run();
+  // run() only queues the sync builders in the user's callback; the actual
+  // computation happens at the flush, so it must be included in the timing
+  // that decides how much the cache saves on later hits.
+  await flushAllTables(table.sdb);
   const end = Date.now();
   const duration = end - start;
   table.sdb.cacheVerbose &&
