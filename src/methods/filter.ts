@@ -10,6 +10,8 @@ export default function filter(
     method: "filter()",
     parameters: { conditions },
     needsSchema: false,
+    rawSQL: [conditions],
+    preservesSchema: true,
     buildSelect: (input) =>
       `SELECT *
         FROM ${input}

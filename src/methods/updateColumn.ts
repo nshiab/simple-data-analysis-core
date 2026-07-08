@@ -13,6 +13,8 @@ export default function updateColumn(
     // The schema is needed to keep the column's type: UPDATE casts the
     // definition to the column's type on assignment.
     needsSchema: true,
+    rawSQL: [definition],
+    preservesSchema: true,
     buildSelect: (input, types) =>
       `SELECT * REPLACE (CAST((${definition}) AS ${
         types[column]

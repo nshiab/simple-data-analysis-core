@@ -45,6 +45,7 @@ export default function selectRows(
     method: "selectRows()",
     parameters: { count, options },
     needsSchema: false,
+    preservesSchema: true,
     buildSelect: (input) => `SELECT * FROM ${input} ${limitAndOffset}`,
   });
   return simpleTable;

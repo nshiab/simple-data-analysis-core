@@ -15,7 +15,10 @@ import removeTables from "../methods/removeTables.ts";
 import selectTables from "../methods/selectTables.ts";
 import loadDB from "../methods/loadDB.ts";
 import writeDB from "../methods/writeDB.ts";
-import flushAllTables from "../helpers/flushAllTables.ts";
+import flushAllTables, {
+  runExemptFromFlush,
+} from "../helpers/flushAllTables.ts";
+import { discardAllPending } from "../helpers/queueOp.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -120,14 +123,23 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   progressBar: boolean;
   /**
-   * A flag indicating that the pending chains of the tables are currently
-   * being executed, so the queries run by the flush itself don't trigger a
-   * new flush. This is for internal use only.
+   * The in-flight flush of the pending chains, if one is running. Concurrent
+   * observers await it instead of reading mid-flush state. This is for
+   * internal use only.
    *
-   * @defaultValue `false`
+   * @defaultValue `null`
    * @internal
    */
-  flushing: boolean;
+  flushPromise: Promise<void> | null;
+  /**
+   * The number of queued operations across all tables, so query execution
+   * points skip the flush entirely when nothing is pending. This is for
+   * internal use only.
+   *
+   * @defaultValue `0`
+   * @internal
+   */
+  pendingCount: number;
   /**
    * A counter stamping queued operations with their position in program
    * order across all tables, so flushes replay them in the order they were
@@ -277,7 +289,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       : options.duckDbCache;
     this.memoryLimit = options.memoryLimit;
     this.tempDirectory = options.tempDirectory;
-    this.flushing = false;
+    this.flushPromise = null;
+    this.pendingCount = 0;
     this.opSequence = 0;
     this.spatialLoaded = false;
     this.runQuery = runQuery;
@@ -297,13 +310,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     if (this.db === undefined || this.connection === undefined) {
       // The setup queries below must run before any queued operation, so
       // they must not trigger a flush.
-      const wasFlushing = this.flushing;
-      this.flushing = true;
-      try {
-        await this.#setup();
-      } finally {
-        this.flushing = wasFlushing;
-      }
+      await runExemptFromFlush(this, () => this.#setup());
     }
     return this;
   }
@@ -776,22 +783,17 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       // The forgotten-run() safety net: queued methods that were never
       // observed are dropped, not executed. Warning must come before any
       // query below, since running a query would execute them.
-      for (const table of this.tables) {
-        if (table.pendingOps.length > 0) {
-          console.warn(
-            `The table "${table.name}" has queued methods that were never executed: ${
-              table.pendingOps.map((op) => op.method).join(", ")
-            }. To execute them, await an observer method (like getData(), logTable(), or writeData()) or call run().`,
-          );
-          table.pendingOps.length = 0;
-        }
+      for (const { table, methods } of discardAllPending(this)) {
+        console.warn(
+          `The table "${table.name}" has queued methods that were never executed: ${
+            methods.join(", ")
+          }. To execute them, await an observer method (like getData(), logTable(), or writeData()) or call run().`,
+        );
       }
     } else {
       // For a file-based database, done() persists the data, so it executes
       // the queued methods like any other observer.
       await flushAllTables(this);
-    }
-    if (this.file !== ":memory:") {
       await this.customQuery("CHECKPOINT;");
       // To make sure the files will have the proper names.
       writeIndexes(this, getExtension(this.file), this.file);

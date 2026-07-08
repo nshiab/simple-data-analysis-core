@@ -13,6 +13,7 @@ export default function sample(
     method: "sample()",
     parameters: { quantity, options },
     needsSchema: false,
+    preservesSchema: true,
     buildSelect: (input) =>
       `SELECT * FROM ${input} USING SAMPLE RESERVOIR(${
         typeof quantity === "number" ? `${quantity} ROWS` : quantity

@@ -238,20 +238,19 @@ Deno.test("should replay interleaved operations across tables in program order",
   assertEquals(resultB, [{ n: 1, m: 10 }]);
 
   // The operation on tableB queued between the two operations on tableA
-  // must execute between them, exactly in the order the user queued them.
+  // reads only its own chain, so it doesn't split tableA's segment: the two
+  // operations on tableA fuse into one statement even though an operation on
+  // tableB was queued between them.
   const creates = queries.filter((q) => q.includes("CREATE OR REPLACE TABLE"));
-  const iFilter = creates.findIndex((q) =>
-    q.includes(`"orderA"`) && q.includes("WHERE")
+  const iFused = creates.findIndex((q) =>
+    q.includes(`"orderA"`) && q.includes("WHERE") &&
+    q.includes(`SELECT "name"`)
   );
   const iAddColumn = creates.findIndex((q) =>
     q.includes(`"orderB"`) && q.includes(`"m"`)
   );
-  const iSelect = creates.findIndex((q) =>
-    q.includes(`"orderA"`) && q.includes(`SELECT "name"`)
-  );
-  assert(iFilter !== -1 && iAddColumn !== -1 && iSelect !== -1);
-  assert(iFilter < iAddColumn);
-  assert(iAddColumn < iSelect);
+  assert(iFused !== -1 && iAddColumn !== -1);
+  assert(iFused !== iAddColumn);
 
   await sdb.done();
 });

@@ -18,6 +18,7 @@ export default function removeDuplicates(
     method: "removeDuplicates()",
     parameters: { options },
     needsSchema: false,
+    preservesSchema: true,
     buildSelect: (input) => `SELECT ${distinct} FROM ${input}`,
   });
 }

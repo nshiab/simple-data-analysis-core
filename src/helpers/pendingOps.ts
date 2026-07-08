@@ -32,6 +32,23 @@ export type FusableOp = {
    */
   needsSpatial?: boolean;
   /**
+   * The user-supplied SQL fragments embedded verbatim in the SELECT (e.g.,
+   * filter conditions, addColumn definitions). Such SQL can reference tables
+   * by name, and names don't follow a fused chain: a subquery on the
+   * operation's own table would read the pre-chain state instead of the
+   * previous step's output. The flush compiler scans these fragments and
+   * executes the operation against materialized tables when they reference
+   * one.
+   */
+  rawSQL?: string[];
+  /**
+   * Whether the SELECT returns exactly the schema of its input (same columns,
+   * same types), like `SELECT * REPLACE` with type-preserving expressions.
+   * The flush compiler reuses the schema across consecutive
+   * schema-preserving operations instead of running a DESCRIBE per step.
+   */
+  preservesSchema?: boolean;
+  /**
    * Returns a single SELECT statement over `input`, which is either the
    * quoted table name or the alias of the previous CTE in the fused chain.
    */

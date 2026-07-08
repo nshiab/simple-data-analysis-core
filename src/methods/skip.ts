@@ -10,6 +10,7 @@ export default function skip(
     method: "skip()",
     parameters: { nbRowsToSkip },
     needsSchema: false,
+    preservesSchema: true,
     buildSelect: (input) =>
       `SELECT * FROM ${input} OFFSET ${nbRowsToSkip} ROWS`,
   });

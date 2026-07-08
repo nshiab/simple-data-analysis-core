@@ -13,6 +13,7 @@ export default function sort(
     method: "sort()",
     parameters: { order, options },
     needsSchema: false,
+    preservesSchema: true,
     buildSelect: (input) => sortSelect(input, order, options),
   });
 }

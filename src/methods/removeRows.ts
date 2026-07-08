@@ -10,6 +10,8 @@ export default function removeRows(
     method: "removeRows()",
     parameters: { conditions },
     needsSchema: false,
+    rawSQL: [conditions],
+    preservesSchema: true,
     // DELETE removes rows where the conditions are TRUE and keeps rows where
     // they are FALSE or NULL, so the SELECT equivalent is IS NOT TRUE.
     buildSelect: (input) =>
