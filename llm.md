@@ -462,6 +462,38 @@ await sdb.writeDB("./my_exported_database.db");
 await sdb.writeDB("./my_exported_database.sqlite", { noMetaData: true });
 ```
 
+#### `run`
+
+Executes all queued methods across every table in the database. Sync builder
+methods (like `filter()` or `convert()`) only queue their operation; execution
+happens when an async observer method (like `getData()`, `logTable()`, or
+`writeData()`) is awaited. Use `run()` when your script ends in pure mutations
+with nothing to observe and you want the work done now.
+
+The whole database is flushed in program order, so operations on different
+tables execute exactly in the order they were queued. This is the database-level
+counterpart to `SimpleTable.run()`.
+
+##### Signature
+
+```typescript
+async run(): Promise<SimpleDB>;
+```
+
+##### Returns
+
+A promise that resolves to the SimpleDB instance once the queued methods have
+been executed.
+
+##### Examples
+
+```ts
+// Nothing is observed after the mutations, so run() executes them.
+table1.loadData("data1.csv").convert({ price: "number" });
+table2.loadData("data2.csv").filter(`price > 0`);
+await sdb.run();
+```
+
 #### `done`
 
 Frees up memory by closing the database connection and instance, and cleans up
@@ -549,11 +581,15 @@ Creates an instance of SimpleTable.
 
 #### `run`
 
-Executes all queued methods. Sync builder methods (like `filter()` or
-`convert()`) only queue their operation; execution happens when an async
-observer method (like `getData()`, `logTable()`, or `writeData()`) is awaited.
-Use `run()` when a chain ends in pure mutations with nothing to observe and you
-want the work done now.
+Executes all queued methods across every table in the database, not just this
+table. Sync builder methods (like `filter()` or `convert()`) only queue their
+operation; execution happens when an async observer method (like `getData()`,
+`logTable()`, or `writeData()`) is awaited. Use `run()` when a chain ends in
+pure mutations with nothing to observe and you want the work done now.
+
+Because the whole database is flushed in program order, this behaves identically
+to `SimpleDB.run()`; call `sdb.run()` when your intent is to flush the database
+rather than this specific table.
 
 ##### Signature
 

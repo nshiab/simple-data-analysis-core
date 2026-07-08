@@ -766,6 +766,34 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   }
 
   /**
+   * Executes all queued methods across every table in the database. Sync
+   * builder methods (like `filter()` or `convert()`) only queue their
+   * operation; execution happens when an async observer method (like
+   * `getData()`, `logTable()`, or `writeData()`) is awaited. Use `run()` when
+   * your script ends in pure mutations with nothing to observe and you want
+   * the work done now.
+   *
+   * The whole database is flushed in program order, so operations on
+   * different tables execute exactly in the order they were queued. This is
+   * the database-level counterpart to `SimpleTable.run()`.
+   *
+   * @returns A promise that resolves to the SimpleDB instance once the queued methods have been executed.
+   * @category Lifecycle
+   *
+   * @example
+   * ```ts
+   * // Nothing is observed after the mutations, so run() executes them.
+   * table1.loadData("data1.csv").convert({ price: "number" });
+   * table2.loadData("data2.csv").filter(`price > 0`);
+   * await sdb.run();
+   * ```
+   */
+  async run(): Promise<SimpleDB> {
+    await flushAllTables(this);
+    return this;
+  }
+
+  /**
    * Frees up memory by closing the database connection and instance, and cleans up the cache.
    * If the database is file-based, it also compacts the database file to optimize storage.
    *

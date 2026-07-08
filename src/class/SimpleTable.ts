@@ -245,11 +245,16 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Executes all queued methods. Sync builder methods (like `filter()` or
-   * `convert()`) only queue their operation; execution happens when an async
-   * observer method (like `getData()`, `logTable()`, or `writeData()`) is
-   * awaited. Use `run()` when a chain ends in pure mutations with nothing to
-   * observe and you want the work done now.
+   * Executes all queued methods across every table in the database, not just
+   * this table. Sync builder methods (like `filter()` or `convert()`) only
+   * queue their operation; execution happens when an async observer method
+   * (like `getData()`, `logTable()`, or `writeData()`) is awaited. Use `run()`
+   * when a chain ends in pure mutations with nothing to observe and you want
+   * the work done now.
+   *
+   * Because the whole database is flushed in program order, this behaves
+   * identically to `SimpleDB.run()`; call `sdb.run()` when your intent is to
+   * flush the database rather than this specific table.
    *
    * @returns A promise that resolves to the table once the queued methods have been executed.
    * @category Table Management
