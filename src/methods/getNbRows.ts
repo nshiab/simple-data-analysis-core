@@ -13,7 +13,7 @@ export default async function getNbRows(
     }`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getNbRows()",
       parameters: { options },
     }),

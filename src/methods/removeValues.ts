@@ -15,11 +15,11 @@ export default function removeValues(
     method: "removeValues()",
     parameters: { columnsAndValues },
     needsSchema: false,
-    buildSelect: (input) => removeSelect(input, columnsAndValues),
+    buildSelect: (input) => removeValuesSelect(input, columnsAndValues),
   });
 }
 
-function removeSelect(
+function removeValuesSelect(
   input: string,
   columnsAndValues: {
     [key: string]:

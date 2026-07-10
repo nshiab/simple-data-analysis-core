@@ -198,9 +198,9 @@ Deno.test("interleaved per-table chains still fuse within each table", async () 
   const queries: string[] = [];
   for (const simple of [a, b]) {
     const original = simple.runQuery;
-    simple.runQuery = (query, connection, returnDataFromQuery, options) => {
+    simple.runQuery = (query, connection, returnData, options) => {
       queries.push(query);
-      return original(query, connection, returnDataFromQuery, options);
+      return original(query, connection, returnData, options);
     };
   }
 

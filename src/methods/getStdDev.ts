@@ -16,7 +16,7 @@ export default async function getStdDev(
       : `SELECT STDDEV("${column}") AS "${column}" FROM "${SimpleTable.name}"`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getStdDev()",
       parameters: { column, options },
     }),

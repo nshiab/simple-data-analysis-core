@@ -43,7 +43,7 @@ async function executeSplitSpread(
         table: simpleTable.name,
         method: "splitSpread()",
         parameters: { column, separator, newColumns },
-        returnDataFrom: "query",
+        returnData: true,
       }),
     );
 
@@ -62,7 +62,7 @@ async function executeSplitSpread(
             table: simpleTable.name,
             method: "splitSpread()",
             parameters: { column, separator, newColumns },
-            returnDataFrom: "query",
+            returnData: true,
           }),
         );
 
@@ -89,7 +89,7 @@ First 5 rows with too many values:\n  - ${exampleRows}`,
         table: simpleTable.name,
         method: "splitSpread()",
         parameters: { column, separator, newColumns },
-        returnDataFrom: "query",
+        returnData: true,
       }),
     );
 

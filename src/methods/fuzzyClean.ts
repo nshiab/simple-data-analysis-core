@@ -96,7 +96,7 @@ async function executeFuzzyClean(
       table: table.name,
       method: "fuzzyClean()",
       parameters: { column, newColumn, threshold, options },
-      returnDataFrom: "query",
+      returnData: true,
     }),
   ) as
     | Array<{

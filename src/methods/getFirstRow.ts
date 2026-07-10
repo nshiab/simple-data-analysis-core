@@ -15,7 +15,7 @@ export default async function getFirstRow(
     } LIMIT 1`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getFirstRow()",
       parameters: { options },
     }),

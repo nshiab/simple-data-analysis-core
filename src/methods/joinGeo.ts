@@ -54,18 +54,18 @@ async function executeJoinGeo(
   const rightColumn = options.rightColumn ??
     (await findGeoColumn(rightTable));
 
-  const commonColumn = leftColumn === rightColumn ? leftColumn : "";
+  const sharedColumn = leftColumn === rightColumn ? leftColumn : "";
   const identicalColumns = (
     getIdenticalColumns(
       await leftTable.getColumns(),
       await rightTable.getColumns(),
     )
-  ).filter((d) => d !== commonColumn);
+  ).filter((d) => d !== sharedColumn);
   if (identicalColumns.length > 0) {
     throw new Error(
       `The tables have columns with identical names ${
-        commonColumn !== ""
-          ? `(excluding the columns "${commonColumn}" used for the geospatial join)`
+        sharedColumn !== ""
+          ? `(excluding the columns "${sharedColumn}" used for the geospatial join)`
           : ""
       }. Rename or remove ${
         identicalColumns.map((d) => `"${d}"`).join(", ")

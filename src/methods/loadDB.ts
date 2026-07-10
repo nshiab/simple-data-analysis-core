@@ -37,7 +37,7 @@ export default async function loadDB(
 COPY FROM DATABASE ${name} TO memory;
 DETACH ${name};`,
         mergeOptions(simpleDB, {
-          returnDataFrom: "none",
+          returnData: false,
           table: null,
           method: "loadDB()",
           parameters: {},
@@ -49,7 +49,7 @@ DETACH ${name};`,
         `ATTACH '${cleanPath(file)}' AS ${name};
           USE ${name};`,
         mergeOptions(simpleDB, {
-          returnDataFrom: "none",
+          returnData: false,
           table: null,
           method: "loadDB()",
           parameters: {},
@@ -65,7 +65,7 @@ DETACH ${name};`,
 COPY FROM DATABASE ${name} TO memory;
 DETACH ${name};`,
         mergeOptions(simpleDB, {
-          returnDataFrom: "none",
+          returnData: false,
           table: null,
           method: "loadDB()",
           parameters: {},
@@ -78,7 +78,7 @@ DETACH ${name};`,
         ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
         USE ${name};`,
         mergeOptions(simpleDB, {
-          returnDataFrom: "none",
+          returnData: false,
           table: null,
           method: "loadDB()",
           parameters: {},

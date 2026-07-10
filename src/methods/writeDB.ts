@@ -33,7 +33,7 @@ export default async function writeDB(
 COPY FROM DATABASE ${getName(simpleDB.file)} TO ${name};
 DETACH ${name};`,
       mergeOptions(simpleDB, {
-        returnDataFrom: "none",
+        returnData: false,
         table: null,
         method: "writeDB()",
         parameters: {},
@@ -47,7 +47,7 @@ DETACH ${name};`,
 COPY FROM DATABASE ${getName(simpleDB.file)} TO ${name};
 DETACH ${name};`,
       mergeOptions(simpleDB, {
-        returnDataFrom: "none",
+        returnData: false,
         table: null,
         method: "writeDB()",
         parameters: {},

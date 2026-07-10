@@ -16,7 +16,7 @@ export default async function getTop(
     } LIMIT ${count}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getTop()",
       parameters: { count, options },
     }),

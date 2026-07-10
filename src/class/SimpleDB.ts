@@ -638,7 +638,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       this,
       `FROM duckdb_extensions();`,
       mergeOptions(this, {
-        returnDataFrom: "query",
+        returnData: true,
         table: null,
         method: "getExtensions()",
         parameters: {},
@@ -690,7 +690,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       this,
       query,
       mergeOptions(this, {
-        returnDataFrom: options.returnData ? "query" : "none",
+        returnData: options.returnData ?? false,
         table: options.table ?? null,
         method: "customQuery()",
         parameters: { query, options },

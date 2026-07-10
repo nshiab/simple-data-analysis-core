@@ -11,7 +11,7 @@ export default async function getNbCharacters(
     `SELECT CAST(SUM(LENGTH("${column}")) AS BIGINT) AS total_chars FROM "${SimpleTable.name}"`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getNbCharacters()",
       parameters: { column },
     }),

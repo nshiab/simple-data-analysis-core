@@ -29,7 +29,7 @@ export default async function getData(
       options.conditions ? ` WHERE ${options.conditions}` : ""
     }`,
     mergeOptions(simpleTable, {
-      returnDataFrom: "query",
+      returnData: true,
       table: simpleTable.name,
       method: "getData()",
       parameters: { options },

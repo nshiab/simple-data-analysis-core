@@ -11,7 +11,7 @@ export default async function getValues(
     `SELECT "${column}" FROM "${simpleTable.name}"`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getValues()",
       parameters: { column },
     }),

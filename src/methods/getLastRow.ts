@@ -18,7 +18,7 @@ export default async function getLastRow(
             SELECT * FROM "numberedRowsForGetLastRow" ORDER BY "rowNumberForGetLastRow" DESC LIMIT 1;`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getLastRow()",
       parameters: { options },
     }),

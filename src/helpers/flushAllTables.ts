@@ -384,7 +384,7 @@ async function describeChain(
       table: table.name,
       method: null,
       parameters: null,
-      returnDataFrom: "query",
+      returnData: true,
       noClean: true,
     }),
   );

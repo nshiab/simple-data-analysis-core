@@ -20,7 +20,7 @@ export default async function getBottom(
             SELECT * FROM "numberedRowsForGetBottom" ORDER BY "rowNumberForGetBottom" DESC LIMIT ${count};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getBottom()",
       parameters: { count, options },
     }),

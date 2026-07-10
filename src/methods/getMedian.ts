@@ -16,7 +16,7 @@ export default async function getMedian(
       : `SELECT MEDIAN("${column}") AS "${column}" FROM "${SimpleTable.name}"`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getMedian()",
       parameters: { column, options },
     }),

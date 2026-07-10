@@ -46,16 +46,16 @@ async function executeJoin(
     rightTableColumns,
   );
 
-  let commonColumn: string[] | undefined;
+  let on: string[] | undefined;
   if (typeof options.on === "string") {
-    commonColumn = [options.on];
+    on = [options.on];
   } else if (Array.isArray(options.on)) {
-    commonColumn = options.on;
+    on = options.on;
   } else {
     if (identicalColumns.length === 0) {
       throw new Error("No common column");
     } else if (identicalColumns.length === 1) {
-      commonColumn = identicalColumns;
+      on = identicalColumns;
     } else {
       throw new Error(
         "Multiple columns with identical names in the tables. You need to pick the ones you want.",
@@ -64,13 +64,13 @@ async function executeJoin(
   }
 
   const identicalColumnsForError = identicalColumns.filter(
-    (d) => !commonColumn.includes(d),
+    (d) => !on.includes(d),
   );
   if (identicalColumnsForError.length > 0) {
     if (identicalColumnsForError.length === 1) {
       throw new Error(
         `The tables have columns with identical names (excluding ${
-          commonColumn.map((d) => `"${d}"`).join(", ")
+          on.map((d) => `"${d}"`).join(", ")
         } used for the join). Rename or remove ${
           identicalColumnsForError.map((d) => `"${d}"`).join(", ")
         } in one of the two tables before doing the join. If relevant, you can also add it to the on option.`,
@@ -78,7 +78,7 @@ async function executeJoin(
     } else {
       throw new Error(
         `The tables have columns with identical names (excluding ${
-          commonColumn.map((d) => `"${d}"`).join(", ")
+          on.map((d) => `"${d}"`).join(", ")
         } used for the join). Rename or remove ${
           identicalColumnsForError.map((d) => `"${d}"`).join(", ")
         } in one of the two tables before doing the join. If relevant, you can also add them to the on option.`,
@@ -91,7 +91,7 @@ async function executeJoin(
     joinQuery(
       leftTable.name,
       rightTable.name,
-      commonColumn,
+      on,
       options.type ?? "left",
       outputTable.name,
     ),
@@ -107,7 +107,7 @@ async function executeJoin(
 
   const columns = await outputTable.getColumns();
   const extraCommonColumns = columns.filter(
-    (d) => commonColumn.map((c) => `${c}_1`).includes(d),
+    (d) => on.map((c) => `${c}_1`).includes(d),
   );
   if (extraCommonColumns.length > 0) {
     await removeColumnsNow(outputTable, extraCommonColumns, "join()");
@@ -117,7 +117,7 @@ async function executeJoin(
 function joinQuery(
   leftTable: string,
   rightTable: string,
-  commonColumn: string[],
+  on: string[],
   join: "inner" | "left" | "right" | "full",
   outputTable: string,
 ) {
@@ -136,7 +136,7 @@ function joinQuery(
   }
 
   query += ` ON (${
-    commonColumn.map((d) => `"${leftTable}"."${d}" = "${rightTable}"."${d}"`)
+    on.map((d) => `"${leftTable}"."${d}" = "${rightTable}"."${d}"`)
       .join(
         " AND ",
       )

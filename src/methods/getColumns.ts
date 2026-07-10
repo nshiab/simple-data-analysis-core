@@ -8,7 +8,7 @@ export default async function getColumns(simpleTable: SimpleTable) {
     `DESCRIBE ${simpleTable.name}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getColumns()",
       parameters: {},
     }),

@@ -16,7 +16,7 @@ export default async function getMean(
       : `SELECT AVG("${column}") AS "${column}" FROM "${simpleTable.name}"`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getMean()",
       parameters: { column, options },
     }),

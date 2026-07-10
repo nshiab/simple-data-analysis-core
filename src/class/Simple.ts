@@ -48,7 +48,7 @@ export default class Simple {
   runQuery!: (
     query: string,
     connection: DuckDBConnection,
-    returnDataFromQuery: boolean,
+    returnData: boolean,
     options: {
       debug: boolean;
       method: string | null;

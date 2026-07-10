@@ -12,15 +12,15 @@ export default function renameColumns(
   // DuckDB's SELECT * RENAME silently drops a rename whose source column is
   // absent, so a typo would pass unnoticed. Validating requires the schema;
   // strict: false skips both the check and its DESCRIBE round-trip.
-  const check = options.strict !== false;
+  const strict = options.strict !== false;
 
   queueOp(simpleTable, {
     kind: "fusable",
     method: "renameColumns()",
     parameters: { names, options },
-    needsSchema: check,
+    needsSchema: strict,
     buildSelect: (input, schema) => {
-      if (check) {
+      if (strict) {
         assertColumnsExist(schema, oldNames, "renameColumns()");
       }
       return `SELECT * RENAME (${

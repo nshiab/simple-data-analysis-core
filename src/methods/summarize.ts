@@ -178,16 +178,16 @@ async function executeSummarize(
   const types = await SimpleTable.getTypes();
   if (options.datesToMs) {
     const originalTypes = { ...types };
-    const toMsObj: {
+    const datesToMsObj: {
       [key: string]: "bigint";
     } = {};
     for (const key of Object.keys(types)) {
       if (types[key].includes("TIME") || types[key].includes("DATE")) {
-        toMsObj[key] = "bigint";
+        datesToMsObj[key] = "bigint";
         types[key] = "bigint";
       }
     }
-    if (Object.keys(toMsObj).length > 0) {
+    if (Object.keys(datesToMsObj).length > 0) {
       // The conversion runs directly (not with the sync convert builder,
       // which would queue for the next flush).
       await queryDB(
@@ -195,8 +195,8 @@ async function executeSummarize(
         `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS ${
           convertSelect(
             `"${SimpleTable.name}"`,
-            Object.keys(toMsObj),
-            Object.values(toMsObj),
+            Object.keys(datesToMsObj),
+            Object.values(datesToMsObj),
             Object.keys(originalTypes),
             originalTypes,
             {},

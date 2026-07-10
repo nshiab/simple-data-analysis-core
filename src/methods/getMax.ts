@@ -11,7 +11,7 @@ export default async function getMax(
     `SELECT MAX("${column}") AS "${column}" FROM "${simpleTable.name}"`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getMax()",
       parameters: { column },
     }),

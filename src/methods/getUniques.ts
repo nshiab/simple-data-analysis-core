@@ -11,7 +11,7 @@ export default async function getUniques(
     `SELECT DISTINCT "${column}" FROM "${simpleTable.name}" ORDER BY "${column}" ASC`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getUniques()",
       parameters: { column },
     }),

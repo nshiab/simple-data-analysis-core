@@ -7,7 +7,7 @@ export default function mergeOptions(
     method: string | null;
     parameters: { [key: string]: unknown } | null;
     rowsToLog?: number;
-    returnDataFrom?: "query" | "none";
+    returnData?: boolean;
     debug?: boolean;
     noClean?: boolean;
   },
@@ -17,7 +17,7 @@ export default function mergeOptions(
   parameters: { [key: string]: unknown } | null;
   rowsToLog: number;
   charsToLog: number | undefined;
-  returnDataFrom: "query" | "none";
+  returnData: boolean;
   debug: boolean;
   noClean?: boolean;
 } {
@@ -27,7 +27,7 @@ export default function mergeOptions(
     parameters: options.parameters,
     rowsToLog: options.rowsToLog ?? simple.rowsToLog,
     charsToLog: simple.charsToLog,
-    returnDataFrom: options.returnDataFrom ?? "none",
+    returnData: options.returnData ?? false,
     debug: options.debug ?? simple.debug,
     noClean: options.noClean,
   };

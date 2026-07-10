@@ -12,7 +12,7 @@ export default async function queryDB(
     parameters: { [key: string]: unknown } | null;
     rowsToLog: number;
     charsToLog: number | undefined;
-    returnDataFrom: "query" | "none";
+    returnData: boolean;
     debug: boolean;
     noClean?: boolean;
   },
@@ -60,24 +60,19 @@ export default async function queryDB(
     console.log(query);
   }
 
-  let data = null;
-
-  if (options.returnDataFrom === "none") {
-    await simple.runQuery(query, simple.connection, false, options);
-  } else if (options.returnDataFrom === "query") {
-    data = await simple.runQuery(query, simple.connection, true, options);
-  } else {
-    throw new Error(
-      `Unknown ${options.returnDataFrom} options.returnDataFrom`,
+  if (options.returnData) {
+    const data = await simple.runQuery(
+      query,
+      simple.connection,
+      true,
+      options,
     );
-  }
-
-  if (options.returnDataFrom === "query") {
     if (data === null) {
       throw new Error("data is null");
     }
     return data;
   } else {
+    await simple.runQuery(query, simple.connection, false, options);
     return null;
   }
 }

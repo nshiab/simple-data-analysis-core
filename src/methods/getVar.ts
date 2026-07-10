@@ -16,7 +16,7 @@ export default async function getVar(
       : `SELECT VARIANCE("${column}") AS "${column}" FROM "${SimpleTable.name}"`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getVar()",
       parameters: { column, options },
     }),

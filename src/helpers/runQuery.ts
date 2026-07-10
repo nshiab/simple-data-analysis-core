@@ -84,7 +84,7 @@ export function makeConverter(
 export default async function runQuery(
   query: string,
   connection: DuckDBConnection,
-  returnDataFromQuery: boolean,
+  returnData: boolean,
   options: {
     debug: boolean;
     method: string | null;
@@ -98,7 +98,7 @@ export default async function runQuery(
   | null
 > {
   try {
-    if (returnDataFromQuery) {
+    if (returnData) {
       const reader = await connection.runAndReadAll(query);
       const columnNames = reader.deduplicatedColumnNames();
       const columnTypes = reader.columnTypes();

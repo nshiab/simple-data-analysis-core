@@ -20,7 +20,7 @@ export default async function getGeoData(
       table: null,
       method: "getGeoData()",
       parameters: { column },
-      returnDataFrom: "query",
+      returnData: true,
     }),
   );
 

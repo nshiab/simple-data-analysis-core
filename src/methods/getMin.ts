@@ -11,7 +11,7 @@ export default async function getMin(
     `SELECT MIN("${column}") AS "${column}" FROM "${simpleTable.name}"`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getMin()",
       parameters: { column },
     }),

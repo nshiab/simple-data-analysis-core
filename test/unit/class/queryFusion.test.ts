@@ -6,9 +6,9 @@ import SDAError from "../../../src/class/SDAError.ts";
 function spyOnQueries(simple: SimpleDB | SimpleTable): string[] {
   const queries: string[] = [];
   const original = simple.runQuery;
-  simple.runQuery = (query, connection, returnDataFromQuery, options) => {
+  simple.runQuery = (query, connection, returnData, options) => {
     queries.push(query);
-    return original(query, connection, returnDataFromQuery, options);
+    return original(query, connection, returnData, options);
   };
   return queries;
 }
@@ -219,9 +219,9 @@ Deno.test("should replay interleaved operations across tables in program order",
   const queries: string[] = [];
   for (const simple of [sdb, tableA, tableB]) {
     const original = simple.runQuery;
-    simple.runQuery = (query, connection, returnDataFromQuery, options) => {
+    simple.runQuery = (query, connection, returnData, options) => {
       queries.push(query);
-      return original(query, connection, returnDataFromQuery, options);
+      return original(query, connection, returnData, options);
     };
   }
 

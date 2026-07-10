@@ -49,7 +49,7 @@ async function executePad(
         table: simpleTable.name,
         method: "pad()",
         parameters: { columns, length, options },
-        returnDataFrom: "query",
+        returnData: true,
       }),
     );
     const overflowCount = Number(overflowResult![0].cnt);
@@ -78,17 +78,17 @@ function padQuery(
   options: { side?: "left" | "right"; character?: string },
 ) {
   const side = options.side ?? "left";
-  const char = options.character ?? "0";
+  const character = options.character ?? "0";
 
   // Escape single quotes and wrap in single quotes for SQL
-  const escapedChar = char.replace(/'/g, "''");
-  const paddedChar = `'${escapedChar}'`;
+  const escapedCharacter = character.replace(/'/g, "''");
+  const paddedCharacter = `'${escapedCharacter}'`;
   const func = side === "left" ? "LPAD" : "RPAD";
 
   let query = "";
   for (const column of columns) {
     query +=
-      `\nUPDATE "${table}" SET "${column}" = ${func}("${column}", ${length}, ${paddedChar});`;
+      `\nUPDATE "${table}" SET "${column}" = ${func}("${column}", ${length}, ${paddedCharacter});`;
   }
 
   return query;

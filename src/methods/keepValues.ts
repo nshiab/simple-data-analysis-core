@@ -15,11 +15,11 @@ export default function keepValues(
     method: "keepValues()",
     parameters: { columnsAndValues },
     needsSchema: false,
-    buildSelect: (input) => keepSelect(input, columnsAndValues),
+    buildSelect: (input) => keepValuesSelect(input, columnsAndValues),
   });
 }
 
-function keepSelect(
+function keepValuesSelect(
   input: string,
   columnsAndValues: {
     [key: string]:

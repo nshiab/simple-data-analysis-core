@@ -7,7 +7,7 @@ export default async function getTableNames(simpleDB: SimpleDB) {
     simpleDB,
     `SHOW TABLES`,
     mergeOptions(simpleDB, {
-      returnDataFrom: "query",
+      returnData: true,
       table: null,
       method: "getTables",
       parameters: {},

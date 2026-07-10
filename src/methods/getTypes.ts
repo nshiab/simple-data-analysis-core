@@ -9,7 +9,7 @@ export default async function getTypes(simpleTable: SimpleTable) {
     `DESCRIBE "${simpleTable.name}"`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getTypes()",
       parameters: {},
     }),

@@ -17,7 +17,7 @@ export default async function getQuantile(
       : `SELECT QUANTILE_CONT("${column}", ${quantile}) AS "${column}" FROM "${SimpleTable.name}"`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getQuantile()",
       parameters: { column, quantile, options },
     }),

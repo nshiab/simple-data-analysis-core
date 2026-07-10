@@ -20,7 +20,7 @@ export default async function getBoundingBox(
       table: simpleTable.name,
       method: "getBoundingBox()",
       parameters: { column },
-      returnDataFrom: "query",
+      returnData: true,
     }),
   )) as { minX: number; minY: number; maxX: number; maxY: number }[];
   return [result[0].minY, result[0].minX, result[0].maxY, result[0].maxX];
