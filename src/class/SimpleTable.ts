@@ -4325,9 +4325,11 @@ export default class SimpleTable extends Simple {
     options: {
       conditions?: string;
     } = {},
-  ): Promise<{
-    [key: string]: unknown;
-  }> {
+  ): Promise<
+    {
+      [key: string]: unknown;
+    } | null
+  > {
     return await getFirstRow(this, options);
   }
 
@@ -4358,9 +4360,11 @@ export default class SimpleTable extends Simple {
     options: {
       conditions?: string;
     } = {},
-  ): Promise<{
-    [key: string]: unknown;
-  }> {
+  ): Promise<
+    {
+      [key: string]: unknown;
+    } | null
+  > {
     return await getLastRow(this, options);
   }
 
@@ -4454,8 +4458,8 @@ export default class SimpleTable extends Simple {
    *
    * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
    * @param options - Optional settings:
-   * @param options.strict - If `false`, no error will be thrown when no row or more than one row match the condition. Defaults to `true`.
-   * @returns A promise that resolves to an object representing the matched row.
+   * @param options.strict - If `false`, no error will be thrown when no row or more than one row match the condition. With no match, `null` is returned; with multiple matches, the first row is returned. Defaults to `true`.
+   * @returns A promise that resolves to an object representing the matched row, or `null` if `strict` is `false` and no row matches.
    * @throws {Error} If `strict` is `true` and no row or more than one row matches the conditions.
    * @category Getting Data
    *
@@ -4486,7 +4490,7 @@ export default class SimpleTable extends Simple {
   ): Promise<
     {
       [key: string]: unknown;
-    } | undefined
+    } | null
   > {
     const data = await this.getData({ conditions });
     if (options.strict !== false) {
@@ -4499,7 +4503,7 @@ export default class SimpleTable extends Simple {
       }
     }
 
-    return data[0];
+    return data[0] ?? null;
   }
 
   /**

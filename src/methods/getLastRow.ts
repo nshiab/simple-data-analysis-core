@@ -27,6 +27,9 @@ export default async function getLastRow(
     throw new Error("No queryResult");
   }
   const result = queryResult[0];
+  if (result === undefined) {
+    return null;
+  }
   delete result.rowNumberForGetLastRow;
 
   return result;

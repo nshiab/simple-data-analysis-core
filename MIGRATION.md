@@ -169,6 +169,13 @@ Methods that could skip validations or error-throwing now all use
 | `customQuery()`                 | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                  |
 | `new SimpleDB()` / `newTable()` | `{ types: true }`                                 | `{ typesToLog: true }`                  |
 
+### `null` instead of `undefined` for missing rows
+
+`getRow()` (with `strict: false`), `getFirstRow()` and `getLastRow()` now return
+`null` when no row matches, consistent with how the library represents missing
+values everywhere else (SQL `NULL` cells, `customQuery()`). In v1 they returned
+`undefined` — and `getLastRow()` threw a `TypeError` on an empty result.
+
 ### Renamed positional parameters
 
 These don't break any calls (arguments are positional), but documentation and

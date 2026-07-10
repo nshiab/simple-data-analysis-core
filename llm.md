@@ -5089,7 +5089,7 @@ can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getFirstRow(options?: { conditions?: string }): Promise<Record<string, unknown>>;
+async getFirstRow(options?: { conditions?: string }): Promise<Record<string, unknown> | null>;
 ```
 
 ##### Parameters
@@ -5127,7 +5127,7 @@ can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getLastRow(options?: { conditions?: string }): Promise<Record<string, unknown>>;
+async getLastRow(options?: { conditions?: string }): Promise<Record<string, unknown> | null>;
 ```
 
 ##### Parameters
@@ -5254,7 +5254,7 @@ JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getRow(conditions: string, options?: { strict?: boolean }): Promise<Record<string, unknown> | undefined>;
+async getRow(conditions: string, options?: { strict?: boolean }): Promise<Record<string, unknown> | null>;
 ```
 
 ##### Parameters
@@ -5262,11 +5262,13 @@ async getRow(conditions: string, options?: { strict?: boolean }): Promise<Record
 - **`conditions`**: The conditions to match, specified as a SQL `WHERE` clause.
 - **`options`**: Optional settings:
 - **`options.strict`**: If `false`, no error will be thrown when no row or more
-  than one row match the condition. Defaults to `true`.
+  than one row match the condition. With no match, `null` is returned; with
+  multiple matches, the first row is returned. Defaults to `true`.
 
 ##### Returns
 
-A promise that resolves to an object representing the matched row.
+A promise that resolves to an object representing the matched row, or `null` if
+`strict` is `false` and no row matches.
 
 ##### Throws
 

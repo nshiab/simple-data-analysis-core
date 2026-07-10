@@ -50,7 +50,7 @@ Deno.test("should not throw when no row matches and strict is false", async () =
   table.loadData("test/data/files/employees.csv");
   const data = await table.getRow(`Name === 'Nobody'`, { strict: false });
 
-  assertEquals(data, undefined);
+  assertEquals(data, null);
   await sdb.done();
 });
 

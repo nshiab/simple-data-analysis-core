@@ -26,5 +26,5 @@ export default async function getFirstRow(
 
   const result = queryResult[0];
 
-  return result;
+  return result ?? null;
 }
