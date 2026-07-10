@@ -2,7 +2,7 @@ import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function keep(
+export default function keepValues(
   simpleTable: SimpleTable,
   columnsAndValues: {
     [key: string]:
@@ -12,7 +12,7 @@ export default function keep(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "keep()",
+    method: "keepValues()",
     parameters: { columnsAndValues },
     needsSchema: false,
     buildSelect: (input) => keepSelect(input, columnsAndValues),

@@ -7,7 +7,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function cloneTable(
   simpleTable: SimpleTable,
   nameOrOptions: string | {
-    outputTable?: string;
+    name?: string;
     conditions?: string;
     columns?: string | string[];
     nbRows?: number;
@@ -23,10 +23,10 @@ export default function cloneTable(
   // makes subclasses using tableClass work correctly.
   let clonedTable: SimpleTable;
   const options = typeof nameOrOptions === "string"
-    ? { outputTable: nameOrOptions }
+    ? { name: nameOrOptions }
     : nameOrOptions;
-  if (typeof options.outputTable === "string") {
-    clonedTable = simpleTable.sdb.newTable(options.outputTable);
+  if (typeof options.name === "string") {
+    clonedTable = simpleTable.sdb.newTable(options.name);
   } else {
     clonedTable = simpleTable.sdb.newTable(undefined);
   }

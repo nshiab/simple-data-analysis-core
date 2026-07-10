@@ -7,7 +7,7 @@ Deno.test("should keep only specific rows", async () => {
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
 
-  table.keep({
+  table.keepValues({
     job: ["Clerk"],
     departmentOrUnit: ["50", "30"],
   });
@@ -168,7 +168,7 @@ Deno.test("should keep only specific rows and accept arrays or single values", a
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
 
-  table.keep({
+  table.keepValues({
     job: "Clerk",
     departmentOrUnit: ["50", "30"],
   });
@@ -331,7 +331,7 @@ Deno.test("should keep only specific rows with boolean values", async () => {
     { name: "Charlie", latest: true },
   ]);
 
-  table.keep({ latest: true });
+  table.keepValues({ latest: true });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -346,7 +346,7 @@ Deno.test("should keep only specific rows even with spaces in column names", asy
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
-  table.keep({
+  table.keepValues({
     job: ["Clerk"],
     "Department or unit": ["50", "30"],
   });

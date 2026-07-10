@@ -322,7 +322,7 @@ Deno.test("join() returns correct generic type", async () => {
   tableB.loadArray([{ id: 1, b: 100 }, { id: 2, b: 200 }]);
 
   const result = tableA.join(tableB, {
-    commonColumn: "id",
+    on: "id",
     outputTable: "joined",
   });
 

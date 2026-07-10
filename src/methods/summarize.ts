@@ -55,7 +55,7 @@ export default function summarize(
           | "var";
       };
     decimals?: number;
-    toMs?: boolean;
+    datesToMs?: boolean;
     valueColumn?: boolean;
   } = {},
 ): SimpleTable {
@@ -131,7 +131,7 @@ async function executeSummarize(
           | "var";
       };
     decimals?: number;
-    toMs?: boolean;
+    datesToMs?: boolean;
     valueColumn?: boolean;
   } = {},
 ) {
@@ -176,7 +176,7 @@ async function executeSummarize(
   }
 
   const types = await SimpleTable.getTypes();
-  if (options.toMs) {
+  if (options.datesToMs) {
     const originalTypes = { ...types };
     const toMsObj: {
       [key: string]: "bigint";
@@ -295,7 +295,7 @@ function summarizeQuery(
 
   if (doubleAndDate) {
     throw new Error(
-      "You are trying to summarize numbers and timestamps/dates/times. You can specify values in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { toMs: true }.",
+      "You are trying to summarize numbers and timestamps/dates/times. You can specify values in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { datesToMs: true }.",
     );
   }
 

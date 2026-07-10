@@ -33,7 +33,7 @@ Deno.test("should clone a table with a specific name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  const clone = table.cloneTable({ outputTable: "clone" });
+  const clone = table.cloneTable({ name: "clone" });
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.done();
@@ -42,7 +42,7 @@ Deno.test("should find the table name in the DB", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  table.cloneTable({ outputTable: "clone" });
+  table.cloneTable({ name: "clone" });
 
   const tables = await sdb.getTableNames();
 
@@ -88,7 +88,7 @@ Deno.test("should clone a table with a specific name with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  const clone = table.cloneTable({ outputTable: "clone table" });
+  const clone = table.cloneTable({ name: "clone table" });
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.done();
@@ -144,7 +144,7 @@ Deno.test("should clone a table with a specific name with spaces and '", async (
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  const clone = table.cloneTable({ outputTable: "clone 'table" });
+  const clone = table.cloneTable({ name: "clone 'table" });
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.done();

@@ -2,24 +2,24 @@ import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function concatenateRow(
+export default function rowToText(
   simpleTable: SimpleTable,
   columns: string[],
   newColumn: string,
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "concatenateRow()",
+    method: "rowToText()",
     parameters: { columns, newColumn },
     needsSchema: true,
     buildSelect: (input, allTypes) => {
-      assertNewColumns(allTypes, [newColumn], "concatenateRow()");
+      assertNewColumns(allTypes, [newColumn], "rowToText()");
       for (const col of columns) {
         if (allTypes[col] !== "VARCHAR") {
           throw new Error(
             `The column ${col} is of type ${
               allTypes[col]
-            }. The concatenateRow() method only works with string columns. Please convert the column to string first with the .convert() method.`,
+            }. The rowToText() method only works with string columns. Please convert the column to string first with the .convert() method.`,
           );
         }
       }

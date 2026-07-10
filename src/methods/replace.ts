@@ -5,7 +5,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function replace(
   simpleTable: SimpleTable,
   columns: "all" | string | string[],
-  strings: { [key: string]: string },
+  replacements: { [key: string]: string },
   options: {
     entireString?: boolean;
     regex?: boolean;
@@ -23,7 +23,7 @@ export default function replace(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "replace()",
-    parameters: { columns, strings, options },
+    parameters: { columns, replacements, options },
     // The schema is only needed to resolve "all" to the column list.
     needsSchema: columns === "all",
     buildSelect: (input, schema) => {
@@ -33,8 +33,8 @@ export default function replace(
       return replaceSelect(
         input,
         columnList,
-        Object.keys(strings),
-        Object.values(strings),
+        Object.keys(replacements),
+        Object.values(replacements),
         options,
       );
     },

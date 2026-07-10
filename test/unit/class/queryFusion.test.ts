@@ -341,7 +341,7 @@ Deno.test("should fuse row filters, string updates and sort into one statement",
     .removeRows(`value > 3`)
     .trim("name")
     .replace("name", { e: "3" })
-    .keep({ name: ["appl3", "banana", "ch3rry"] })
+    .keepValues({ name: ["appl3", "banana", "ch3rry"] })
     .replaceNulls("value", 0)
     .concatenate(["name", "value"], "label", { separator: "-" })
     .sort({ name: "desc" })

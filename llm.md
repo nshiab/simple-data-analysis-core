@@ -1370,7 +1370,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string; columns?: string | string[]; nbRows?: number; offset?: number }): this;
+cloneTable(nameOrOptions?: string | { name?: string; conditions?: string; columns?: string | string[]; nbRows?: number; offset?: number }): this;
 ```
 
 ##### Parameters
@@ -1378,9 +1378,9 @@ cloneTable(nameOrOptions?: string | { outputTable?: string; conditions?: string;
 - **`nameOrOptions`**: Either a string specifying the name of the new table, or
   an optional object with configuration options. If not provided, a default name
   (e.g., "table1", "table2") will be generated.
-- **`nameOrOptions.outputTable`**: The name of the new table to be created in
-  the database. If not provided, a default name (e.g., "table1", "table2") will
-  be generated.
+- **`nameOrOptions.name`**: The name of the new table to be created in the
+  database. If not provided, a default name (e.g., "table1", "table2") will be
+  generated.
 - **`nameOrOptions.conditions`**: A SQL `WHERE` clause condition to filter the
   data during cloning. Defaults to no condition (clones all rows).
 - **`nameOrOptions.columns`**: An array of column names to include in the cloned
@@ -1453,12 +1453,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-cloneColumn(originalColumn: string, newColumn: string): this;
+cloneColumn(column: string, newColumn: string): this;
 ```
 
 ##### Parameters
 
-- **`originalColumn`**: The name of the original column to clone.
+- **`column`**: The name of the original column to clone.
 - **`newColumn`**: The name of the new column to be created.
 
 ##### Returns
@@ -1488,12 +1488,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-cloneColumnWithOffset(originalColumn: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): this;
+cloneColumnWithOffset(column: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): this;
 ```
 
 ##### Parameters
 
-- **`originalColumn`**: The name of the original column.
+- **`column`**: The name of the original column.
 - **`newColumn`**: The name of the new column to be created with offset values.
 - **`options`**: An optional object with configuration options:
 - **`options.offset`**: The number of rows to offset the values. A positive
@@ -2035,7 +2035,7 @@ table.filter(`category === 'Electronics' || category === 'Appliances'`); // Usin
 table.filter(`lastPurchaseDate >= '2023-01-01'`);
 ```
 
-#### `keep`
+#### `keepValues`
 
 Keeps rows in this table that have specific values in specified columns,
 removing all other rows.
@@ -2046,7 +2046,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-keep(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
+keepValues(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
 ```
 
 ##### Parameters
@@ -2062,15 +2062,15 @@ The table, so methods can be chained.
 
 ```ts
 // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-table.keep({ job: ["accountant", "developer"], city: "Montreal" });
+table.keepValues({ job: ["accountant", "developer"], city: "Montreal" });
 ```
 
 ```ts
 // Keep only rows where 'status' is 'active'
-table.keep({ status: "active" });
+table.keepValues({ status: "active" });
 ```
 
-#### `remove`
+#### `removeValues`
 
 Removes rows from this table that have specific values in specified columns.
 
@@ -2080,7 +2080,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-remove(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
+removeValues(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
 ```
 
 ##### Parameters
@@ -2096,12 +2096,12 @@ The table, so methods can be chained.
 
 ```ts
 // Remove rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-table.remove({ job: ["accountant", "developer"], city: "Montreal" });
+table.removeValues({ job: ["accountant", "developer"], city: "Montreal" });
 ```
 
 ```ts
 // Remove rows where 'status' is 'inactive'
-table.remove({ status: "inactive" });
+table.removeValues({ status: "inactive" });
 ```
 
 #### `removeRows`
@@ -2589,17 +2589,16 @@ this call: operations queued on it afterwards run after the join.
 ##### Signature
 
 ```typescript
-join(rightTable: SimpleTable, options?: { commonColumn?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): this;
+join(rightTable: SimpleTable, options?: { on?: string | string[]; type?: "inner" | "left" | "right" | "full"; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
 
 - **`rightTable`**: The SimpleTable instance to be joined with this table.
 - **`options`**: An optional object with configuration options:
-- **`options.commonColumn`**: The common column(s) used for the join operation.
-  If omitted, the method automatically searches for a column name that exists in
-  both tables. Can be a single string or an array of strings for multiple join
-  keys.
+- **`options.on`**: The column(s) to join on. If omitted, the method
+  automatically searches for a column name that exists in both tables. Can be a
+  single string or an array of strings for multiple join keys.
 - **`options.type`**: The type of join operation to perform. Possible values are
   `"inner"`, `"left"` (default), `"right"`, or `"full"`.
 - **`options.outputTable`**: If `true`, the results will be stored in a new
@@ -2622,7 +2621,7 @@ tableA.join(tableB);
 ```ts
 // Perform an inner join with 'tableB' on the 'id' column, storing results in a new table named 'tableC'
 const tableC = tableA.join(tableB, {
-  commonColumn: "id",
+  on: "id",
   type: "inner",
   outputTable: "tableC",
 });
@@ -2630,7 +2629,7 @@ const tableC = tableA.join(tableB, {
 
 ```ts
 // Perform a join on multiple columns ('name' and 'category')
-tableA.join(tableB, { commonColumn: ["name", "category"] });
+tableA.join(tableB, { on: ["name", "category"] });
 ```
 
 #### `fuzzyJoin`
@@ -2815,14 +2814,14 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-replace(columns: "all" | string | string[], strings: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): this;
+replace(columns: "all" | string | string[], replacements: Record<string, string>, options?: { entireString?: boolean; regex?: boolean }): this;
 ```
 
 ##### Parameters
 
 - **`columns`**: The column name, an array of column names, or `"all"` to apply
   the replacement to every column in the table.
-- **`strings`**: An object mapping old strings to new strings (e.g.,
+- **`replacements`**: An object mapping old strings to new strings (e.g.,
   `{ "oldValue": "newValue" }`).
 - **`options`**: An optional object with configuration options:
 - **`options.entireString`**: A boolean indicating whether the entire cell
@@ -3147,7 +3146,7 @@ table.splitSpread("address", ",", ["street", "city", "country"]);
 table.splitSpread("data", "|", ["col1", "col2"], { strict: false });
 ```
 
-#### `left`
+#### `firstChars`
 
 Extracts a specific number of characters from the beginning (left side) of
 string values in the specified column.
@@ -3158,7 +3157,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-left(column: string, nbCharacters: number): this;
+firstChars(column: string, nbCharacters: number): this;
 ```
 
 ##### Parameters
@@ -3176,10 +3175,10 @@ The table, so methods can be chained.
 ```ts
 // Replace strings in 'productCode' with their first two characters
 // e.g., "ABC-123" becomes "AB"
-table.left("productCode", 2);
+table.firstChars("productCode", 2);
 ```
 
-#### `right`
+#### `lastChars`
 
 Extracts a specific number of characters from the end (right side) of string
 values in the specified column.
@@ -3190,7 +3189,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-right(column: string, nbCharacters: number): this;
+lastChars(column: string, nbCharacters: number): this;
 ```
 
 ##### Parameters
@@ -3208,7 +3207,7 @@ The table, so methods can be chained.
 ```ts
 // Replace strings in 'productCode' with their last two characters
 // e.g., "ABC-123" becomes "23"
-table.right("productCode", 2);
+table.lastChars("productCode", 2);
 ```
 
 #### `replaceNulls`
@@ -3293,7 +3292,7 @@ table.concatenate(["firstName", "lastName"], "fullName");
 table.concatenate(["city", "country"], "location", { separator: ", " });
 ```
 
-#### `concatenateRow`
+#### `rowToText`
 
 Concatenates values from multiple columns into a new column with labeled rows.
 
@@ -3314,7 +3313,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-concatenateRow(columns: string[], newColumn: string): this;
+rowToText(columns: string[], newColumn: string): this;
 ```
 
 ##### Parameters
@@ -3332,7 +3331,7 @@ The table, so methods can be chained.
 
 ```ts
 // Concatenate multiple string columns into a labeled text field
-table.concatenateRow(
+table.rowToText(
   ["summary", "findings", "context", "date", "quote"],
   "fullText",
 );
@@ -3357,7 +3356,7 @@ table.concatenateRow(
 // Convert numeric columns to strings first, then concatenate
 // NULL values will appear as 'Unknown'
 table.convert({ age: "string", salary: "string" });
-table.concatenateRow(["name", "age", "salary"], "profile");
+table.rowToText(["name", "age", "salary"], "profile");
 ```
 
 #### `unnest`
@@ -3876,7 +3875,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; valueColumn?: boolean }): this;
+summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; datesToMs?: boolean; valueColumn?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3899,9 +3898,10 @@ summarize(options?: { values?: string | string[]; categories?: string | string[]
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
   Defaults to `false`.
-- **`options.toMs`**: If `true`, timestamps, dates, and times will be converted
-  to milliseconds before summarizing. This is useful when summarizing mixed data
-  types (numbers and dates) as values must be of the same type for aggregation.
+- **`options.datesToMs`**: If `true`, timestamps, dates, and times will be
+  converted to milliseconds before summarizing. This is useful when summarizing
+  mixed data types (numbers and dates) as values must be of the same type for
+  aggregation.
 - **`options.valueColumn`**: If `false`, the default `value` column will be
   removed. This option only works when summarizing a single column without
   categories. Defaults to `true`.
@@ -3984,7 +3984,11 @@ table.summarize({ values: ["price", "cost"], decimals: 2 });
 
 ```ts
 // Summarize 'timestamp_column' by converting to milliseconds first
-table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
+table.summarize({
+  values: "timestamp_column",
+  datesToMs: true,
+  summaries: "mean",
+});
 ```
 
 ```ts
@@ -5745,12 +5749,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-reproject(to: string, options?: { column?: string }): this;
+reproject(crs: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
 
-- **`to`**: The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
+- **`crs`**: The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
 - **`options`**: An optional object with configuration options:
 - **`options.column`**: The name of the column storing the geometries. If
   omitted, the method will automatically attempt to find a geometry column.
@@ -5964,7 +5968,7 @@ operations queued on it afterwards run after the join.
 ##### Signature
 
 ```typescript
-joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftColumn?: string; rightColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): this;
+joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "withinDistance", options?: { leftColumn?: string; rightColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -5972,8 +5976,8 @@ joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", opti
 - **`rightTable`**: The SimpleTable instance to be joined with this table.
 - **`method`**: The spatial join method to use: `"intersect"` (geometries
   overlap), `"inside"` (geometries of the left table are entirely within
-  geometries of the right table), or `"within"` (geometries of the left table
-  are within a specified distance of geometries in the right table).
+  geometries of the right table), or `"withinDistance"` (geometries of the left
+  table are within a specified distance of geometries in the right table).
 - **`options`**: An optional object with configuration options:
 - **`options.leftColumn`**: The name of the column storing geometries in the
   left table (this table). If omitted, the method attempts to find one.
@@ -5982,7 +5986,7 @@ joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", opti
 - **`options.type`**: The type of join operation to perform: `"inner"`, `"left"`
   (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table
   order is important.
-- **`options.distance`**: Required if `method` is `"within"`. The target
+- **`options.distance`**: Required if `method` is `"withinDistance"`. The target
   distance for the spatial join. The unit depends on `distanceMethod`.
 - **`options.distanceMethod`**: The method for distance calculations: `"srs"`
   (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326
@@ -6012,13 +6016,13 @@ tableA.joinGeo(tableB, "inside");
 
 ```ts
 // Merge data where geometries in tableA are within 10 units (SRS) of geometries in tableB
-tableA.joinGeo(tableB, "within", { distance: 10 });
+tableA.joinGeo(tableB, "withinDistance", { distance: 10 });
 ```
 
 ```ts
 // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
 // Input geometries must be in EPSG:4326.
-tableA.joinGeo(tableB, "within", {
+tableA.joinGeo(tableB, "withinDistance", {
   distance: 10,
   distanceMethod: "haversine",
   unit: "km",

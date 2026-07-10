@@ -4,20 +4,20 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function cloneColumn(
   simpleTable: SimpleTable,
-  originalColumn: string,
+  column: string,
   newColumn: string,
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "cloneColumn()",
-    parameters: { originalColumn, newColumn },
+    parameters: { column, newColumn },
     needsSchema: true,
     buildSelect: (input, types) => {
-      if (!types[originalColumn]) {
-        throw new Error(`Can't find type of ${originalColumn}`);
+      if (!types[column]) {
+        throw new Error(`Can't find type of ${column}`);
       }
       assertNewColumns(types, [newColumn], "cloneColumn()");
-      return `SELECT *, "${originalColumn}" AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, "${column}" AS "${newColumn}" FROM ${input}`;
     },
   });
 }

@@ -9,7 +9,7 @@ export default function join(
   leftTable: SimpleTable,
   rightTable: SimpleTable,
   options: {
-    commonColumn?: string | string[];
+    on?: string | string[];
     type?: "inner" | "left" | "right" | "full";
     outputTable?: string | boolean;
   } = {},
@@ -35,7 +35,7 @@ async function executeJoin(
   rightTable: SimpleTable,
   outputTable: SimpleTable,
   options: {
-    commonColumn?: string | string[];
+    on?: string | string[];
     type?: "inner" | "left" | "right" | "full";
   },
 ): Promise<void> {
@@ -47,10 +47,10 @@ async function executeJoin(
   );
 
   let commonColumn: string[] | undefined;
-  if (typeof options.commonColumn === "string") {
-    commonColumn = [options.commonColumn];
-  } else if (Array.isArray(options.commonColumn)) {
-    commonColumn = options.commonColumn;
+  if (typeof options.on === "string") {
+    commonColumn = [options.on];
+  } else if (Array.isArray(options.on)) {
+    commonColumn = options.on;
   } else {
     if (identicalColumns.length === 0) {
       throw new Error("No common column");
@@ -73,7 +73,7 @@ async function executeJoin(
           commonColumn.map((d) => `"${d}"`).join(", ")
         } used for the join). Rename or remove ${
           identicalColumnsForError.map((d) => `"${d}"`).join(", ")
-        } in one of the two tables before doing the join. If relevant, you can also add it to the commonColumn option.`,
+        } in one of the two tables before doing the join. If relevant, you can also add it to the on option.`,
       );
     } else {
       throw new Error(
@@ -81,7 +81,7 @@ async function executeJoin(
           commonColumn.map((d) => `"${d}"`).join(", ")
         } used for the join). Rename or remove ${
           identicalColumnsForError.map((d) => `"${d}"`).join(", ")
-        } in one of the two tables before doing the join. If relevant, you can also add them to the commonColumn option.`,
+        } in one of the two tables before doing the join. If relevant, you can also add them to the on option.`,
       );
     }
   }

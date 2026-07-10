@@ -136,11 +136,21 @@ await tableA.getData();
 - **`cache()`** must read the cache to decide between running your function and
   restoring cached data.
 
-## Renamed parameters and options
+## Renamed methods, parameters and options
 
-v2 unifies parameter and option names across the API. Positional parameter
-renames (like `values` → `column`) don't require any code change — only the
-renamed option keys below are breaking.
+v2 unifies method, parameter and option names across the API. Positional
+parameter renames (like `values` → `column`) don't require any code change —
+only the renamed methods and option keys below are breaking.
+
+### Renamed methods
+
+| v1                 | v2               | Why                                                                         |
+| :----------------- | :--------------- | :-------------------------------------------------------------------------- |
+| `keep()`           | `keepValues()`   | Says it filters rows by value maps, distinct from `filter()`'s conditions.  |
+| `remove()`         | `removeValues()` | Same, and no longer blends into the `remove*` family (`removeRows()`, ...). |
+| `left()`           | `firstChars()`   | "Left/right" read as join sides in a join-heavy API.                        |
+| `right()`          | `lastChars()`    | Same.                                                                       |
+| `concatenateRow()` | `rowToText()`    | It doesn't concatenate rows — it turns each row into a labeled text block.  |
 
 ### One `strict` option instead of five names
 
@@ -157,17 +167,21 @@ Methods that could skip validations or error-throwing now all use
 
 ### Renamed option keys
 
-| Method                          | v1                                                | v2                                      |
-| :------------------------------ | :------------------------------------------------ | :-------------------------------------- |
-| `ranks()`                       | `{ noGaps: true }`                                | `{ dense: true }`                       |
-| `summarize()`                   | `{ noColumnValue: true }`                         | `{ valueColumn: false }`                |
-| `writeDB()`                     | `{ noMetaData: true }`                            | `{ metadata: false }`                   |
-| `trim()`                        | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }` |
-| `pad()`                         | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`      |
-| `fuzzyClean()`                  | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`            |
-| `joinGeo()`                     | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`           |
-| `customQuery()`                 | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                  |
-| `new SimpleDB()` / `newTable()` | `{ types: true }`                                 | `{ typesToLog: true }`                  |
+| Method                          | v1                                                | v2                                       |
+| :------------------------------ | :------------------------------------------------ | :--------------------------------------- |
+| `join()`                        | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
+| `joinGeo()`                     | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
+| `cloneTable()`                  | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
+| `summarize()`                   | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
+| `ranks()`                       | `{ noGaps: true }`                                | `{ dense: true }`                        |
+| `summarize()`                   | `{ noColumnValue: true }`                         | `{ valueColumn: false }`                 |
+| `writeDB()`                     | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
+| `trim()`                        | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
+| `pad()`                         | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
+| `fuzzyClean()`                  | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
+| `joinGeo()`                     | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
+| `customQuery()`                 | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
+| `new SimpleDB()` / `newTable()` | `{ types: true }`                                 | `{ typesToLog: true }`                   |
 
 ### `null` instead of `undefined` for missing rows
 
@@ -182,8 +196,12 @@ These don't break any calls (arguments are positional), but documentation and
 editor hints now use the new names:
 
 - `sample(quantity)` → `sample(count)`; `skip(nbRowsToSkip)` → `skip(count)`
-- `left()` / `right()`: `numberOfCharacters` → `nbCharacters`
+- `firstChars()` / `lastChars()` (formerly `left()` / `right()`):
+  `numberOfCharacters` → `nbCharacters`
 - `ranks()`, `quantiles()`, `bins()`: `values` → `column`
+- `replace()`: `strings` → `replacements`
+- `reproject(to)` → `reproject(crs)`
+- `cloneColumn()` and `cloneColumnWithOffset()`: `originalColumn` → `column`
 - `createFtsIndex()` and `bm25()`: `columnId`, `columnText` → `idColumn`,
   `textColumn`
 - `points()` and `latLon()`: `columnLat`, `columnLon` → `latColumn`, `lonColumn`

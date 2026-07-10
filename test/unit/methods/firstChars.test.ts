@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the last two strings", async () => {
+Deno.test("should return the first two strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -9,13 +9,13 @@ Deno.test("should return the last two strings", async () => {
     { firstName: "Graeme", lastName: "Bruce" },
   ]);
 
-  table.right("firstName", 2);
+  table.firstChars("firstName", 2);
 
   const data = await table.getData();
 
   assertEquals(data, [
-    { firstName: "el", lastName: "Shiab" },
-    { firstName: "me", lastName: "Bruce" },
+    { firstName: "Na", lastName: "Shiab" },
+    { firstName: "Gr", lastName: "Bruce" },
   ]);
 
   await sdb.done();

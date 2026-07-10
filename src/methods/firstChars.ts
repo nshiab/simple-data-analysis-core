@@ -1,14 +1,14 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function left(
+export default function firstChars(
   simpleTable: SimpleTable,
   column: string,
   nbCharacters: number,
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "left()",
+    method: "firstChars()",
     parameters: { column, nbCharacters },
     needsSchema: false,
     buildSelect: (input) =>

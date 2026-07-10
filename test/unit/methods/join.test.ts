@@ -9,7 +9,7 @@ Deno.test("should put the result of an inner join into a new table", async () =>
   categories.loadData("test/data/joins/categories.csv");
 
   const joined = dishes.join(categories, {
-    commonColumn: "dishId",
+    on: "dishId",
     type: "inner",
     outputTable: true,
   });
@@ -43,7 +43,7 @@ Deno.test("should put the result of a left join into a new table", async () => {
   categories.loadData("test/data/joins/categories.csv");
 
   const joined = dishes.join(categories, {
-    commonColumn: "dishId",
+    on: "dishId",
     type: "left",
     outputTable: true,
   });
@@ -84,7 +84,7 @@ Deno.test("should put the result of a right join into a new table", async () => 
   categories.loadData("test/data/joins/categories.csv");
 
   const joined = dishes.join(categories, {
-    commonColumn: "dishId",
+    on: "dishId",
     type: "right",
     outputTable: true,
   });
@@ -121,7 +121,7 @@ Deno.test("should put the result of a full join into a new table", async () => {
   categories.loadData("test/data/joins/categories.csv");
 
   const joined = dishes.join(categories, {
-    commonColumn: "dishId",
+    on: "dishId",
     type: "full",
     outputTable: true,
   });
@@ -160,7 +160,7 @@ Deno.test("should put the result of a full join into a new table with a specific
   categories.loadData("test/data/joins/categories.csv");
 
   dishes.join(categories, {
-    commonColumn: "dishId",
+    on: "dishId",
     type: "full",
     outputTable: "joined",
   });
@@ -236,7 +236,7 @@ Deno.test("should join on multiple columns", async () => {
   dishes.loadData("test/data/joins/normals.csv");
   const categories = sdb.newTable("projections");
   categories.loadData("test/data/joins/projections.csv");
-  dishes.join(categories, { commonColumn: ["city", "season"] });
+  dishes.join(categories, { on: ["city", "season"] });
 
   await sdb.done();
 });

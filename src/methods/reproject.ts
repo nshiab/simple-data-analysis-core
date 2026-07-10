@@ -4,10 +4,10 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function reproject(
   simpleTable: SimpleTable,
-  to: string,
+  crs: string,
   options: { column?: string } = {},
 ) {
-  const cleanedTo = to.replace("WGS84", "EPSG:4326");
+  const cleanedTo = crs.replace("WGS84", "EPSG:4326");
   const targetGeoType = `GEOMETRY${
     cleanedTo !== "null" ? `('${cleanedTo}')` : ""
   }`;
@@ -15,7 +15,7 @@ export default function reproject(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "reproject()",
-    parameters: { to, options },
+    parameters: { crs, options },
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {

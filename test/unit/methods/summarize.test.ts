@@ -912,7 +912,7 @@ Deno.test("should summarize with dates converted to milliseconds", async () => {
     { keyA: null },
   ]);
 
-  table.summarize({ values: "keyA", toMs: true });
+  table.summarize({ values: "keyA", datesToMs: true });
   const data = await table.getData();
 
   assertEquals(data, [

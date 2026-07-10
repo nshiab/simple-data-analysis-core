@@ -6,7 +6,7 @@ export default async function getDescription(simpleTable: SimpleTable) {
   const summaryForGetDescription = await simpleTable.summarize({
     values: columns,
     summaries: ["count", "countUnique", "countNull"],
-    toMs: true,
+    datesToMs: true,
     outputTable: "summaryForGetDescription",
   });
   const summaryData = await summaryForGetDescription.getData();

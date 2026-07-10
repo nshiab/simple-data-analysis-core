@@ -7,7 +7,7 @@ Deno.test("should remove specific rows", async () => {
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
 
-  table.remove({
+  table.removeValues({
     job: ["Clerk"],
     departmentOrUnit: ["50", "30"],
   });
@@ -200,7 +200,7 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
 
-  table.remove({
+  table.removeValues({
     job: "Clerk",
     departmentOrUnit: ["50", "30"],
   });
@@ -392,7 +392,7 @@ Deno.test("should remove specific rows even column names have spaces", async () 
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
-  table.remove({
+  table.removeValues({
     Job: ["Clerk"],
     "Department or Unit": ["50", "30"],
   });

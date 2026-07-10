@@ -8,7 +8,7 @@ import queueOp from "../helpers/queueOp.ts";
 
 export default function joinGeo(
   leftTable: SimpleTable,
-  method: "intersect" | "inside" | "within",
+  method: "intersect" | "inside" | "withinDistance",
   rightTable: SimpleTable,
   options: {
     leftColumn?: string;
@@ -38,7 +38,7 @@ export default function joinGeo(
 
 async function executeJoinGeo(
   leftTable: SimpleTable,
-  method: "intersect" | "inside" | "within",
+  method: "intersect" | "inside" | "withinDistance",
   rightTable: SimpleTable,
   outputTable: SimpleTable,
   options: {
@@ -155,7 +155,7 @@ async function renameColumnNow(
 function joinGeoQuery(
   leftTable: string,
   leftColumn: string,
-  method: "intersect" | "inside" | "within",
+  method: "intersect" | "inside" | "withinDistance",
   rightTable: string,
   rightColumn: string,
   join: "inner" | "left" | "right" | "full",
@@ -183,7 +183,7 @@ function joinGeoQuery(
     // Order is important
     query +=
       ` ON ST_Covers("${rightTable}"."${rightColumn}", "${leftTable}"."${leftColumn}");`;
-  } else if (method === "within") {
+  } else if (method === "withinDistance") {
     if (typeof distance === "number") {
       if (distanceMethod === undefined || distanceMethod === "srs") {
         query +=

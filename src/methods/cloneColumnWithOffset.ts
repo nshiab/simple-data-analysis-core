@@ -6,7 +6,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function cloneColumnWithOffset(
   simpleTable: SimpleTable,
-  originalColumn: string,
+  column: string,
   newColumn: string,
   options: {
     offset?: number;
@@ -19,11 +19,11 @@ export default function cloneColumnWithOffset(
   queueOp(simpleTable, {
     kind: "barrier",
     method: "cloneColumnWithOffset()",
-    parameters: { originalColumn, newColumn, options },
+    parameters: { column, newColumn, options },
     execute: () =>
       executeCloneColumnWithOffset(
         simpleTable,
-        originalColumn,
+        column,
         newColumn,
         options,
       ),
@@ -32,7 +32,7 @@ export default function cloneColumnWithOffset(
 
 async function executeCloneColumnWithOffset(
   simpleTable: SimpleTable,
-  originalColumn: string,
+  column: string,
   newColumn: string,
   options: {
     offset?: number;
@@ -56,7 +56,7 @@ async function executeCloneColumnWithOffset(
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "cloneColumnWithOffset()",
-      parameters: { originalColumn, newColumn },
+      parameters: { column, newColumn },
     }),
   );
 
@@ -64,7 +64,7 @@ async function executeCloneColumnWithOffset(
   // When categories are specified, also sort the final result by categories
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE("${tempRowCol}"), LEAD("${originalColumn}", ${offset}) OVER(${partition} ORDER BY "${tempRowCol}") AS "${newColumn}" FROM "${simpleTable.name}"${
+    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE("${tempRowCol}"), LEAD("${column}", ${offset}) OVER(${partition} ORDER BY "${tempRowCol}") AS "${newColumn}" FROM "${simpleTable.name}"${
       categories.length > 0
         ? ` ORDER BY ${
           categories.map((d) => `"${d}"`).join(", ")
@@ -74,7 +74,7 @@ async function executeCloneColumnWithOffset(
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "cloneColumnWithOffset()",
-      parameters: { originalColumn, newColumn },
+      parameters: { column, newColumn },
     }),
   );
 }

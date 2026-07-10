@@ -334,7 +334,7 @@ Deno.test("should return all points within a target distance (srs method)", asyn
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
   const cloned = cities.cloneTable();
   cloned.renameColumns({ name: "name_1" });
-  cities.joinGeo(cloned, "within", { distance: 10 });
+  cities.joinGeo(cloned, "withinDistance", { distance: 10 });
   cities.distance("geom", "geomTable2", "dist", { decimals: 2 });
   cities.selectColumns(["name", "name_1", "dist"]);
 
@@ -357,7 +357,7 @@ Deno.test("should return all points within a target distance (haversine method)"
   const cloned = cities.cloneTable();
   cloned.renameColumns({ name: "name_1" });
 
-  cities.joinGeo(cloned, "within", {
+  cities.joinGeo(cloned, "withinDistance", {
     distance: 500_000,
     distanceMethod: "haversine",
     type: "inner",
@@ -386,7 +386,7 @@ Deno.test("should return all points within a target distance (spheroid method)",
   const cloned = cities.cloneTable();
   cloned.renameColumns({ name: "name_1" });
 
-  cities.joinGeo(cloned, "within", {
+  cities.joinGeo(cloned, "withinDistance", {
     distance: 500_000,
     distanceMethod: "spheroid",
     type: "inner",

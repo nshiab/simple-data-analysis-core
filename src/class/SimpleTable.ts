@@ -63,8 +63,8 @@ import nest from "../methods/nest.ts";
 import repeatRows from "../methods/repeatRows.ts";
 import unnest from "../methods/unnest.ts";
 import concatenate from "../methods/concatenate.ts";
-import right from "../methods/right.ts";
-import left from "../methods/left.ts";
+import lastChars from "../methods/lastChars.ts";
+import firstChars from "../methods/firstChars.ts";
 import splitExtract from "../methods/splitExtract.ts";
 import truncate from "../methods/truncate.ts";
 import capitalize from "../methods/capitalize.ts";
@@ -73,8 +73,8 @@ import lower from "../methods/lower.ts";
 import removeTable from "../methods/removeTable.ts";
 import wider from "../methods/wider.ts";
 import removeRows from "../methods/removeRows.ts";
-import remove from "../methods/remove.ts";
-import keep from "../methods/keep.ts";
+import removeValues from "../methods/removeValues.ts";
+import keepValues from "../methods/keepValues.ts";
 import filter from "../methods/filter.ts";
 import removeDuplicates from "../methods/removeDuplicates.ts";
 import sample from "../methods/sample.ts";
@@ -116,7 +116,7 @@ import getSchema from "../methods/getSchema.ts";
 import outliersIQR from "../methods/outliersIQR.ts";
 import bins from "../methods/bins.ts";
 import round from "../methods/round.ts";
-import concatenateRow from "../methods/concatenateRow.ts";
+import rowToText from "../methods/rowToText.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
@@ -1020,7 +1020,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param nameOrOptions - Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
-   * @param nameOrOptions.outputTable - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
+   * @param nameOrOptions.name - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
    * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
    * @param nameOrOptions.nbRows - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
@@ -1083,7 +1083,7 @@ export default class SimpleTable extends Simple {
    */
   cloneTable(
     nameOrOptions: string | {
-      outputTable?: string;
+      name?: string;
       conditions?: string;
       columns?: string | string[];
       nbRows?: number;
@@ -1098,7 +1098,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param originalColumn - The name of the original column to clone.
+   * @param column - The name of the original column to clone.
    * @param newColumn - The name of the new column to be created.
    * @returns The table, so methods can be chained.
    * @category Column Operations
@@ -1109,8 +1109,8 @@ export default class SimpleTable extends Simple {
    * table.cloneColumn("firstName", "contactName");
    * ```
    */
-  cloneColumn(originalColumn: string, newColumn: string): this {
-    cloneColumn(this, originalColumn, newColumn);
+  cloneColumn(column: string, newColumn: string): this {
+    cloneColumn(this, column, newColumn);
     return this;
   }
 
@@ -1122,7 +1122,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param originalColumn - The name of the original column.
+   * @param column - The name of the original column.
    * @param newColumn - The name of the new column to be created with offset values.
    * @param options - An optional object with configuration options:
    * @param options.offset - The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
@@ -1161,14 +1161,14 @@ export default class SimpleTable extends Simple {
    * ```
    */
   cloneColumnWithOffset(
-    originalColumn: string,
+    column: string,
     newColumn: string,
     options: {
       offset?: number;
       categories?: string | string[];
     } = {},
   ): this {
-    cloneColumnWithOffset(this, originalColumn, newColumn, options);
+    cloneColumnWithOffset(this, column, newColumn, options);
     return this;
   }
 
@@ -1604,23 +1604,23 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-   * table.keep({ job: ["accountant", "developer"], city: "Montreal" });
+   * table.keepValues({ job: ["accountant", "developer"], city: "Montreal" });
    * ```
    *
    * @example
    * ```ts
    * // Keep only rows where 'status' is 'active'
-   * table.keep({ status: "active" });
+   * table.keepValues({ status: "active" });
    * ```
    */
-  keep(
+  keepValues(
     columnsAndValues: {
       [key: string]:
         | (number | string | Date | boolean | null)[]
         | (number | string | Date | boolean | null);
     },
   ): this {
-    keep(this, columnsAndValues);
+    keepValues(this, columnsAndValues);
     return this;
   }
 
@@ -1636,23 +1636,23 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Remove rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-   * table.remove({ job: ["accountant", "developer"], city: "Montreal" });
+   * table.removeValues({ job: ["accountant", "developer"], city: "Montreal" });
    * ```
    *
    * @example
    * ```ts
    * // Remove rows where 'status' is 'inactive'
-   * table.remove({ status: "inactive" });
+   * table.removeValues({ status: "inactive" });
    * ```
    */
-  remove(
+  removeValues(
     columnsAndValues: {
       [key: string]:
         | (number | string | Date | boolean | null)[]
         | (number | string | Date | boolean | null);
     },
   ): this {
-    remove(this, columnsAndValues);
+    removeValues(this, columnsAndValues);
     return this;
   }
 
@@ -2092,7 +2092,7 @@ export default class SimpleTable extends Simple {
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param options - An optional object with configuration options:
-   * @param options.commonColumn - The common column(s) used for the join operation. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
+   * @param options.on - The column(s) to join on. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
    * @param options.type - The type of join operation to perform. Possible values are `"inner"`, `"left"` (default), `"right"`, or `"full"`.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the joined data (either the current table or a new table), so methods can be chained.
@@ -2107,20 +2107,20 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Perform an inner join with 'tableB' on the 'id' column, storing results in a new table named 'tableC'
-   * const tableC = tableA.join(tableB, { commonColumn: 'id', type: 'inner', outputTable: "tableC" });
+   * const tableC = tableA.join(tableB, { on: "id", type: 'inner', outputTable: "tableC" });
    * ```
    *
    * @example
    * ```ts
    * // Perform a join on multiple columns ('name' and 'category')
-   * tableA.join(tableB, { commonColumn: ['name', 'category'] });
+   * tableA.join(tableB, { on: ["name", "category"] });
    * ```
    */
 
   join(
     rightTable: SimpleTable,
     options: {
-      commonColumn?: string | string[];
+      on?: string | string[];
       type?: "inner" | "left" | "right" | "full";
       outputTable?: string | boolean;
     } = {},
@@ -2308,7 +2308,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
-   * @param strings - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
+   * @param replacements - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
    * @param options - An optional object with configuration options:
    * @param options.entireString - A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
    * @param options.regex - A boolean indicating whether the `oldString` should be treated as a regular expression for global replacement. Cannot be used with `entireString: true`. Defaults to `false`.
@@ -2347,13 +2347,13 @@ export default class SimpleTable extends Simple {
    */
   replace(
     columns: "all" | string | string[],
-    strings: { [key: string]: string },
+    replacements: { [key: string]: string },
     options: {
       entireString?: boolean;
       regex?: boolean;
     } = {},
   ): this {
-    replace(this, columns, strings, options);
+    replace(this, columns, replacements, options);
     return this;
   }
 
@@ -2605,11 +2605,11 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Replace strings in 'productCode' with their first two characters
    * // e.g., "ABC-123" becomes "AB"
-   * table.left("productCode", 2);
+   * table.firstChars("productCode", 2);
    * ```
    */
-  left(column: string, nbCharacters: number): this {
-    left(this, column, nbCharacters);
+  firstChars(column: string, nbCharacters: number): this {
+    firstChars(this, column, nbCharacters);
     return this;
   }
 
@@ -2627,11 +2627,11 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Replace strings in 'productCode' with their last two characters
    * // e.g., "ABC-123" becomes "23"
-   * table.right("productCode", 2);
+   * table.lastChars("productCode", 2);
    * ```
    */
-  right(column: string, nbCharacters: number): this {
-    right(this, column, nbCharacters);
+  lastChars(column: string, nbCharacters: number): this {
+    lastChars(this, column, nbCharacters);
     return this;
   }
 
@@ -2733,7 +2733,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Concatenate multiple string columns into a labeled text field
-   * table.concatenateRow(
+   * table.rowToText(
    *   ["summary", "findings", "context", "date", "quote"],
    *   "fullText"
    * );
@@ -2759,14 +2759,14 @@ export default class SimpleTable extends Simple {
    * // Convert numeric columns to strings first, then concatenate
    * // NULL values will appear as 'Unknown'
    * table.convert({ age: "string", salary: "string" });
-   * table.concatenateRow(["name", "age", "salary"], "profile");
+   * table.rowToText(["name", "age", "salary"], "profile");
    * ```
    */
-  concatenateRow(
+  rowToText(
     columns: string[],
     newColumn: string,
   ): this {
-    concatenateRow(this, columns, newColumn);
+    rowToText(this, columns, newColumn);
     return this;
   }
 
@@ -3222,7 +3222,7 @@ export default class SimpleTable extends Simple {
    * @param options.summaries - The summary operations to be performed. Can be a single operation (e.g., `"mean"`), an array of operations (e.g., `["min", "max"]`), or an object mapping new column names to operations (e.g., `{ avgSalary: "mean" }`). Supported operations include: `"count"`, `"countUnique"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, `"var"`.
    * @param options.decimals - The number of decimal places to round the summarized values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @param options.toMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
+   * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
    * @param options.valueColumn - If `false`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `true`.
    * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained.
    * @category Analyzing Data
@@ -3299,7 +3299,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Summarize 'timestamp_column' by converting to milliseconds first
-   * table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
+   * table.summarize({ values: "timestamp_column", datesToMs: true, summaries: "mean" });
    * ```
    *
    * @example
@@ -3355,7 +3355,7 @@ export default class SimpleTable extends Simple {
         };
       decimals?: number;
       outputTable?: string | boolean;
-      toMs?: boolean;
+      datesToMs?: boolean;
       valueColumn?: boolean;
     } = {},
   ): this {
@@ -4872,7 +4872,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param to - The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
+   * @param crs - The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -4891,10 +4891,10 @@ export default class SimpleTable extends Simple {
    * ```
    */
   reproject(
-    to: string,
+    crs: string,
     options: { column?: string } = {},
   ): this {
-    reproject(this, to, options);
+    reproject(this, crs, options);
     return this;
   }
 
@@ -5056,12 +5056,12 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
-   * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"within"` (geometries of the left table are within a specified distance of geometries in the right table).
+   * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"withinDistance"` (geometries of the left table are within a specified distance of geometries in the right table).
    * @param options - An optional object with configuration options:
    * @param options.leftColumn - The name of the column storing geometries in the left table (this table). If omitted, the method attempts to find one.
    * @param options.rightColumn - The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
    * @param options.type - The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
-   * @param options.distance - Required if `method` is `"within"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
+   * @param options.distance - Required if `method` is `"withinDistance"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
    * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate but slowest).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the spatially joined data (either the current table or a new table), so methods can be chained.
@@ -5082,14 +5082,14 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Merge data where geometries in tableA are within 10 units (SRS) of geometries in tableB
-   * tableA.joinGeo(tableB, "within", { distance: 10 });
+   * tableA.joinGeo(tableB, "withinDistance", { distance: 10 });
    * ```
    *
    * @example
    * ```ts
    * // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
    * // Input geometries must be in EPSG:4326.
-   * tableA.joinGeo(tableB, "within", { distance: 10, distanceMethod: "haversine", unit: "km" });
+   * tableA.joinGeo(tableB, "withinDistance", { distance: 10, distanceMethod: "haversine", unit: "km" });
    * ```
    *
    * @example
@@ -5105,7 +5105,7 @@ export default class SimpleTable extends Simple {
    */
   joinGeo(
     rightTable: SimpleTable,
-    method: "intersect" | "inside" | "within",
+    method: "intersect" | "inside" | "withinDistance",
     options: {
       leftColumn?: string;
       rightColumn?: string;

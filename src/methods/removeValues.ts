@@ -2,7 +2,7 @@ import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function remove(
+export default function removeValues(
   simpleTable: SimpleTable,
   columnsAndValues: {
     [key: string]:
@@ -12,7 +12,7 @@ export default function remove(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "remove()",
+    method: "removeValues()",
     parameters: { columnsAndValues },
     needsSchema: false,
     buildSelect: (input) => removeSelect(input, columnsAndValues),

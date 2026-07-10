@@ -17,7 +17,7 @@ Deno.test("should concatenate multiple columns with labels into a new column", a
     },
   ]);
 
-  table.concatenateRow(["summary", "findings", "context"], "fullText");
+  table.rowToText(["summary", "findings", "context"], "fullText");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -56,7 +56,7 @@ Deno.test("should handle null values when concatenating with labels", async () =
     },
   ]);
 
-  table.concatenateRow(["name", "age", "city"], "profile");
+  table.rowToText(["name", "age", "city"], "profile");
 
   const data = await table.getData();
 
@@ -86,7 +86,7 @@ Deno.test("should concatenate a single column with label", async () => {
     { title: "Second" },
   ]);
 
-  table.concatenateRow(["title"], "labeled");
+  table.rowToText(["title"], "labeled");
 
   const data = await table.getData();
 
@@ -115,7 +115,7 @@ Deno.test("should handle columns with special characters in names", async () => 
     },
   ]);
 
-  table.concatenateRow(
+  table.rowToText(
     ["First Name", "Last-Name", "Age (years)"],
     "fullInfo",
   );
@@ -161,7 +161,7 @@ Deno.test("should concatenate after converting numeric columns to strings", asyn
   // Convert numeric columns to strings first
   table.convert({ age: "string", salary: "string" });
 
-  table.concatenateRow(
+  table.rowToText(
     ["name", "age", "salary", "department"],
     "employeeProfile",
   );
@@ -207,11 +207,11 @@ Deno.test("should throw error when trying to concatenate non-VARCHAR columns", a
 
   await assertRejects(
     async () => {
-      // concatenateRow() queues the operation; run() executes it.
-      await table.concatenateRow(["name", "age", "salary"], "profile").run();
+      // rowToText() queues the operation; run() executes it.
+      await table.rowToText(["name", "age", "salary"], "profile").run();
     },
     Error,
-    "The column age is of type DOUBLE. The concatenateRow() method only works with string columns. Please convert the column to string first with the .convert() method.",
+    "The column age is of type DOUBLE. The rowToText() method only works with string columns. Please convert the column to string first with the .convert() method.",
   );
 
   await sdb.done();
