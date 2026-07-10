@@ -12,7 +12,7 @@ Deno.test("should flip the coordinates", async () => {
 
   const data = await sdb.customQuery(
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -28,7 +28,7 @@ Deno.test("should flip the coordinates from a specific column", async () => {
   table.flipCoordinates("geom");
   const data = await sdb.customQuery(
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [

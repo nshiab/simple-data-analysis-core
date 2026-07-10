@@ -3,7 +3,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function sample(
   simpleTable: SimpleTable,
-  quantity: number | string,
+  count: number | string,
   options: {
     seed?: number;
   } = {},
@@ -11,12 +11,12 @@ export default function sample(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "sample()",
-    parameters: { quantity, options },
+    parameters: { count, options },
     needsSchema: false,
     preservesSchema: true,
     buildSelect: (input) =>
       `SELECT * FROM ${input} USING SAMPLE RESERVOIR(${
-        typeof quantity === "number" ? `${quantity} ROWS` : quantity
+        typeof count === "number" ? `${count} ROWS` : count
       })${
         typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
       }`,

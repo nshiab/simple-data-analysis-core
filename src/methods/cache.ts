@@ -16,7 +16,7 @@ type cacheSources = {
 
 export default async function cache(
   table: SimpleTable,
-  run: () => void | Promise<void>,
+  compute: () => void | Promise<void>,
   options: { ttl?: number; verbose?: boolean } = {},
 ) {
   options.verbose &&
@@ -32,7 +32,7 @@ export default async function cache(
     cacheSources = JSON.parse(readFileSync(cacheSourcesPath, "utf-8"));
   }
 
-  const functionBody = run.toString();
+  const functionBody = compute.toString();
   const hash = crypto
     .createHash("sha256")
     .update(table.name + options.toString() + functionBody)
@@ -47,7 +47,7 @@ export default async function cache(
       console.log(`Nothing in cache. Running and storing in cache.`);
     await runAndWrite(
       table,
-      run,
+      compute,
       cacheSources,
       cacheSourcesPath,
       cachePath,
@@ -73,7 +73,7 @@ export default async function cache(
       );
     await runAndWrite(
       table,
-      run,
+      compute,
       cacheSources,
       cacheSourcesPath,
       cachePath,
@@ -144,14 +144,14 @@ export default async function cache(
 
 async function runAndWrite(
   table: SimpleTable,
-  run: () => void | Promise<void>,
+  compute: () => void | Promise<void>,
   cacheSources: cacheSources,
   cacheSourcesPath: string,
   cachePath: string,
   id: string,
 ) {
   const start = Date.now();
-  await run();
+  await compute();
   // run() only queues the sync builders in the user's callback; the actual
   // computation happens at the flush, so it must be included in the timing
   // that decides how much the cache saves on later hits.

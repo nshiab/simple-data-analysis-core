@@ -82,7 +82,7 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
       await table.randomPoint("randomPoint", 0).run();
     },
     Error,
-    "13 points could not be generated. Consider increasing nbPointsToTry or set options.try to true.",
+    "13 points could not be generated. Consider increasing nbPointsToTry or set options.strict to false.",
   );
 
   await sdb.done();
@@ -96,7 +96,7 @@ Deno.test("randomPoint should not throw an error if no point is found and option
   );
 
   // With 0 tries, no point should be found.
-  table.randomPoint("randomPoint", 0, { try: true });
+  table.randomPoint("randomPoint", 0, { strict: false });
 
   const nbNulls = await table.getNbRows({
     conditions: '"randomPoint" IS NULL',
@@ -134,15 +134,15 @@ Deno.test("randomPoint should have similar performance with many more tries if i
   );
 
   const start10 = Date.now();
-  table.randomPoint("point10", 10, { column: "geom", try: true });
+  table.randomPoint("point10", 10, { column: "geom", strict: false });
   const duration10 = Date.now() - start10;
 
   const start10k = Date.now();
-  table.randomPoint("point10k", 10_000, { column: "geom", try: true });
+  table.randomPoint("point10k", 10_000, { column: "geom", strict: false });
   const duration10k = Date.now() - start10k;
 
   const start100k = Date.now();
-  table.randomPoint("point100k", 100_000, { column: "geom", try: true });
+  table.randomPoint("point100k", 100_000, { column: "geom", strict: false });
   const duration100k = Date.now() - start100k;
 
   console.log({ duration10, duration10k, duration100k });

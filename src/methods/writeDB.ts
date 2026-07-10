@@ -11,9 +11,9 @@ import type SimpleDB from "../class/SimpleDB.ts";
 export default async function writeDB(
   simpleDB: SimpleDB,
   file: string,
-  options: { noMetaData?: boolean } = {},
+  options: { metadata?: boolean } = {},
 ) {
-  const noMetaData = options.noMetaData ?? false;
+  const metadata = options.metadata ?? true;
 
   if (existsSync(file)) {
     rmSync(file);
@@ -21,7 +21,7 @@ export default async function writeDB(
   createDirectory(file);
   const extension = getExtension(file);
 
-  if (!noMetaData) {
+  if (metadata) {
     writeIndexes(simpleDB, extension, file);
   }
 

@@ -36,7 +36,7 @@ Deno.test("should start and instantiate a connection", async () => {
 Deno.test("should run a custom query and return the result", async () => {
   const sdb = new SimpleDB();
   const result = await sdb.customQuery(`select 42 as result`, {
-    returnDataFrom: "query",
+    returnData: true,
   });
   assertEquals(result, [{ result: 42 }]);
   await sdb.done();
@@ -313,7 +313,7 @@ Deno.test("should log debugging information when debug is true", async () => {
 });
 
 Deno.test("should log the types", async () => {
-  const sdb = new SimpleDB({ types: true });
+  const sdb = new SimpleDB({ typesToLog: true });
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
   // await test.logTable();
@@ -535,7 +535,7 @@ Deno.test("should respect the data types when returning data with custom query",
   const returnedData = await sdb.customQuery(
     `SELECT date, value FROM "${table.name}"`,
     {
-      returnDataFrom: "query",
+      returnData: true,
       table: table.name,
     },
   );

@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should normalize strings in-place with mostCommon keep strategy", async () => {
+Deno.test("should normalize strings in-place with mostCommon strategy", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -31,7 +31,7 @@ Deno.test("should normalize strings in-place with mostCommon keep strategy", asy
   await sdb.done();
 });
 
-Deno.test("should keep the longest string in each cluster when keep is 'longestString'", async () => {
+Deno.test("should keep the longest string in each cluster when strategy is 'longestString'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -41,7 +41,7 @@ Deno.test("should keep the longest string in each cluster when keep is 'longestS
     { city: "Pariss" },
   ]);
 
-  table.fuzzyClean("city", "city", 80, { keep: "longestString" });
+  table.fuzzyClean("city", "city", 80, { strategy: "longestString" });
 
   const data = await table.getData();
 
@@ -55,7 +55,7 @@ Deno.test("should keep the longest string in each cluster when keep is 'longestS
   await sdb.done();
 });
 
-Deno.test("should keep the shortest string in each cluster when keep is 'shortestString'", async () => {
+Deno.test("should keep the shortest string in each cluster when strategy is 'shortestString'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -65,7 +65,7 @@ Deno.test("should keep the shortest string in each cluster when keep is 'shortes
     { city: "Pariss" },
   ]);
 
-  table.fuzzyClean("city", "city", 80, { keep: "shortestString" });
+  table.fuzzyClean("city", "city", 80, { strategy: "shortestString" });
 
   const data = await table.getData();
 
@@ -79,7 +79,7 @@ Deno.test("should keep the shortest string in each cluster when keep is 'shortes
   await sdb.done();
 });
 
-Deno.test("should keep the most central string when keep is 'mostCentral'", async () => {
+Deno.test("should keep the most central string when strategy is 'mostCentral'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "Alice" has the highest *total* similarity to all other cluster members.
@@ -90,7 +90,7 @@ Deno.test("should keep the most central string when keep is 'mostCentral'", asyn
   ]);
 
   table.fuzzyClean("name", "name", 70, {
-    keep: "mostCentral",
+    strategy: "mostCentral",
   });
 
   const data = await table.getData();
@@ -105,7 +105,7 @@ Deno.test("should keep the most central string when keep is 'mostCentral'", asyn
   await sdb.done();
 });
 
-Deno.test("should keep the string with the highest single pairwise score when keep is 'maxScore'", async () => {
+Deno.test("should keep the string with the highest single pairwise score when strategy is 'maxScore'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "Alice" pairs with both "Alicee" (~91) and "Alce" (~89).
@@ -119,7 +119,7 @@ Deno.test("should keep the string with the highest single pairwise score when ke
   ]);
 
   table.fuzzyClean("name", "name", 70, {
-    keep: "maxScore",
+    strategy: "maxScore",
   });
 
   const data = await table.getData();
@@ -262,7 +262,7 @@ Deno.test("should normalize multiple clusters across a larger dataset", async ()
   await sdb.done();
 });
 
-Deno.test("should break ties by score when keep is 'mostCommon' and counts are equal", async () => {
+Deno.test("should break ties by score when strategy is 'mostCommon' and counts are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // All count=1 (primary tie). "mouse" scores highest (pairs with both others at threshold);
@@ -287,7 +287,7 @@ Deno.test("should break ties by score when keep is 'mostCommon' and counts are e
   await sdb.done();
 });
 
-Deno.test("should break ties by score when keep is 'longestString' and lengths are equal", async () => {
+Deno.test("should break ties by score when strategy is 'longestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // All length=5 (primary tie). "mouse" scores highest; alphabetically it comes last,
@@ -299,7 +299,7 @@ Deno.test("should break ties by score when keep is 'longestString' and lengths a
   ]);
 
   table.fuzzyClean("word", "word", 60, {
-    keep: "longestString",
+    strategy: "longestString",
   });
 
   const data = await table.getData();
@@ -313,7 +313,7 @@ Deno.test("should break ties by score when keep is 'longestString' and lengths a
   await sdb.done();
 });
 
-Deno.test("should break ties by score when keep is 'shortestString' and lengths are equal", async () => {
+Deno.test("should break ties by score when strategy is 'shortestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // All length=5 (primary tie). "mouse" scores highest; alphabetically it comes last,
@@ -325,7 +325,7 @@ Deno.test("should break ties by score when keep is 'shortestString' and lengths 
   ]);
 
   table.fuzzyClean("word", "word", 60, {
-    keep: "shortestString",
+    strategy: "shortestString",
   });
 
   const data = await table.getData();
@@ -339,7 +339,7 @@ Deno.test("should break ties by score when keep is 'shortestString' and lengths 
   await sdb.done();
 });
 
-Deno.test("should break ties alphabetically when keep is 'mostCommon' and counts are equal", async () => {
+Deno.test("should break ties alphabetically when strategy is 'mostCommon' and counts are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "color" and "colur" each appear once — equal counts, alphabetical picks "color"
@@ -360,7 +360,7 @@ Deno.test("should break ties alphabetically when keep is 'mostCommon' and counts
   await sdb.done();
 });
 
-Deno.test("should break ties alphabetically when keep is 'longestString' and lengths are equal", async () => {
+Deno.test("should break ties alphabetically when strategy is 'longestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "color" and "colur" are both 5 chars — equal lengths, alphabetical picks "color"
@@ -370,7 +370,7 @@ Deno.test("should break ties alphabetically when keep is 'longestString' and len
   ]);
 
   table.fuzzyClean("word", "word", 80, {
-    keep: "longestString",
+    strategy: "longestString",
   });
 
   const data = await table.getData();
@@ -383,7 +383,7 @@ Deno.test("should break ties alphabetically when keep is 'longestString' and len
   await sdb.done();
 });
 
-Deno.test("should break ties alphabetically when keep is 'shortestString' and lengths are equal", async () => {
+Deno.test("should break ties alphabetically when strategy is 'shortestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "color" and "colur" are both 5 chars — equal lengths, alphabetical picks "color"
@@ -393,7 +393,7 @@ Deno.test("should break ties alphabetically when keep is 'shortestString' and le
   ]);
 
   table.fuzzyClean("word", "word", 80, {
-    keep: "shortestString",
+    strategy: "shortestString",
   });
 
   const data = await table.getData();
@@ -406,7 +406,7 @@ Deno.test("should break ties alphabetically when keep is 'shortestString' and le
   await sdb.done();
 });
 
-Deno.test("should break ties alphabetically when keep is 'mostCentral' and scores are equal", async () => {
+Deno.test("should break ties alphabetically when strategy is 'mostCentral' and scores are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // In a 2-element cluster both members have the same total score (each scores against the other once).
@@ -417,7 +417,7 @@ Deno.test("should break ties alphabetically when keep is 'mostCentral' and score
   ]);
 
   table.fuzzyClean("word", "word", 80, {
-    keep: "mostCentral",
+    strategy: "mostCentral",
   });
 
   const data = await table.getData();
@@ -430,7 +430,7 @@ Deno.test("should break ties alphabetically when keep is 'mostCentral' and score
   await sdb.done();
 });
 
-Deno.test("should break ties by sum when keep is 'maxScore' and max scores are equal", async () => {
+Deno.test("should break ties by sum when strategy is 'maxScore' and max scores are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "mouse" pairs with both "moose" and "mause"; the other two do not pair with each other.
@@ -444,7 +444,7 @@ Deno.test("should break ties by sum when keep is 'maxScore' and max scores are e
     { word: "mause" },
   ]);
 
-  table.fuzzyClean("word", "word", 60, { keep: "maxScore" });
+  table.fuzzyClean("word", "word", 60, { strategy: "maxScore" });
 
   const data = await table.getData();
 
@@ -457,7 +457,7 @@ Deno.test("should break ties by sum when keep is 'maxScore' and max scores are e
   await sdb.done();
 });
 
-Deno.test("should break ties alphabetically when keep is 'maxScore' and max and sum scores are equal", async () => {
+Deno.test("should break ties alphabetically when strategy is 'maxScore' and max and sum scores are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // In a 2-element cluster both members have the same max score AND the same sum score.
@@ -468,7 +468,7 @@ Deno.test("should break ties alphabetically when keep is 'maxScore' and max and 
   ]);
 
   table.fuzzyClean("word", "word", 80, {
-    keep: "maxScore",
+    strategy: "maxScore",
   });
 
   const data = await table.getData();

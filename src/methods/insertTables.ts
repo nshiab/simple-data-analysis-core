@@ -8,18 +8,16 @@ import unifyColumns from "../helpers/unifyColumns.ts";
 
 export default function insertTables(
   simpleTable: SimpleTable,
-  tablesToInsert: SimpleTable | SimpleTable[],
+  tables: SimpleTable | SimpleTable[],
   options: { unifyColumns?: boolean } = {},
 ) {
-  const array = Array.isArray(tablesToInsert)
-    ? tablesToInsert
-    : [tablesToInsert];
+  const array = Array.isArray(tables) ? tables : [tables];
 
   queueOp(simpleTable, {
     kind: "barrier",
     method: "insertTables()",
     parameters: {
-      tablesToInsert: array.map((t) => t.name),
+      tables: array.map((t) => t.name),
       options,
     },
     execute: () => executeInsertTables(simpleTable, array, options),
@@ -104,7 +102,7 @@ async function executeInsertTables(
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "insertTables()",
-      parameters: { tablesToInsert: array.map((t) => t.name) },
+      parameters: { tables: array.map((t) => t.name) },
     }),
   );
 

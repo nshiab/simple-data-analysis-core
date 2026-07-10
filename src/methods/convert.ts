@@ -23,7 +23,7 @@ export default function convert(
       | "boolean";
   },
   options: {
-    try?: boolean;
+    strict?: boolean;
     datetimeFormat?: string;
   } = {},
 ) {
@@ -76,11 +76,11 @@ export function convertSelect(
   )[],
   allColumns: string[],
   allTypes: TableSchema,
-  options: { datetimeFormat?: string; try?: boolean },
+  options: { datetimeFormat?: string; strict?: boolean },
 ) {
   let query = `SELECT`;
 
-  const cast = options.try ? "TRY_CAST" : "CAST";
+  const cast = options.strict === false ? "TRY_CAST" : "CAST";
 
   for (const column of allColumns) {
     const indexOf = columns.indexOf(column);

@@ -67,7 +67,7 @@ Creates a new SimpleDB instance.
 - **`options.nbRowsToLog`**: The number of rows to display when logging a table.
 - **`options.nbCharactersToLog`**: The maximum number of characters to display
   for text-based cells.
-- **`options.types`**: A flag indicating whether to include data types when
+- **`options.typesToLog`**: A flag indicating whether to include data types when
   logging a table.
 - **`options.cacheVerbose`**: A flag indicating whether to log verbose
   cache-related messages.
@@ -351,22 +351,22 @@ Executes a custom SQL query directly against the DuckDB instance.
 ##### Signature
 
 ```typescript
-async customQuery(query: string, options?: { returnDataFrom?: "query" | "none"; table?: string }): Promise<Record<string, unknown>[] | null>;
+async customQuery(query: string, options?: { returnData?: boolean; table?: string }): Promise<Record<string, unknown>[] | null>;
 ```
 
 ##### Parameters
 
 - **`query`**: The SQL query string to execute.
 - **`options`**: Configuration options for the query.
-- **`options.returnDataFrom`**: Specifies whether to return data from the query.
-  Can be `"query"` to return data or `"none"` (default) to not return data.
+- **`options.returnData`**: If `true`, the query result is returned. Defaults to
+  `false`.
 - **`options.table`**: The name of the table associated with the query,
   primarily used for debugging and logging.
 
 ##### Returns
 
 A promise that resolves to the query result as an array of objects if
-`returnDataFrom` is `"query"`, otherwise `null`.
+`returnData` is `true`, otherwise `null`.
 
 ##### Examples
 
@@ -381,7 +381,7 @@ await sdb.customQuery(
 // Execute a query and return the results
 const youngEmployees = await sdb.customQuery(
   "SELECT * FROM employees WHERE age < 30",
-  { returnDataFrom: "query" },
+  { returnData: true },
 );
 console.log(youngEmployees);
 ```
@@ -435,7 +435,7 @@ file types are `.db` (DuckDB) and `.sqlite` (SQLite).
 ##### Signature
 
 ```typescript
-async writeDB(file: string, options?: { noMetaData?: boolean }): Promise<this>;
+async writeDB(file: string, options?: { metadata?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
@@ -443,8 +443,8 @@ async writeDB(file: string, options?: { noMetaData?: boolean }): Promise<this>;
 - **`file`**: The absolute path to the output file (e.g.,
   "./my_exported_database.db").
 - **`options`**: Configuration options for writing the database.
-- **`options.noMetaData`**: If `true`, metadata files (indexes) are not created
-  alongside the database file. Defaults to `false`.
+- **`options.metadata`**: If `false`, metadata files (indexes) are not created
+  alongside the database file. Defaults to `true`.
 
 ##### Returns
 
@@ -459,7 +459,7 @@ await sdb.writeDB("./my_exported_database.db");
 
 ```ts
 // Write the current database to a SQLite file without metadata
-await sdb.writeDB("./my_exported_database.sqlite", { noMetaData: true });
+await sdb.writeDB("./my_exported_database.sqlite", { metadata: false });
 ```
 
 #### `run`
@@ -574,8 +574,8 @@ Creates an instance of SimpleTable.
   data.
 - **`options.nbCharactersToLog`**: The maximum number of characters to log for
   strings. Useful to avoid logging large text content.
-- **`options.types`**: A boolean indicating whether to include data types when
-  logging a table.
+- **`options.typesToLog`**: A boolean indicating whether to include data types
+  when logging a table.
 
 ### Methods
 
@@ -680,13 +680,13 @@ is awaited, or when `run()` is called.
 ##### Signature
 
 ```typescript
-loadArray(arrayOfObjects: Record<string, unknown>[]): this;
+loadArray(rows: Record<string, unknown>[]): this;
 ```
 
 ##### Parameters
 
-- **`arrayOfObjects`**: An array of objects, where each object represents a row
-  and its properties represent columns.
+- **`rows`**: An array of objects, where each object represents a row and its
+  properties represent columns.
 
 ##### Returns
 
@@ -950,14 +950,14 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): this;
+createFtsIndex(idColumn: string, textColumn: string, options?: { stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwrite?: boolean; verbose?: boolean }): this;
 ```
 
 ##### Parameters
 
-- **`columnId`**: The name of the column containing unique identifiers for each
+- **`idColumn`**: The name of the column containing unique identifiers for each
   row.
-- **`columnText`**: The name of the column containing the text to index.
+- **`textColumn`**: The name of the column containing the text to index.
 - **`options`**: An optional object with configuration options:
 - **`options.stemmer`**: The language stemmer to apply for word normalization.
   Supports multiple languages or "none" to disable stemming. Defaults to
@@ -969,8 +969,8 @@ createFtsIndex(columnId: string, columnText: string, options?: { stemmer?: "arab
   exists. Defaults to `false`.
 - **`options.verbose`**: If `true`, logs additional debugging information,
   including index creation status. Defaults to `false`.
-- **`columnId`**: The column containing the document identifiers.
-- **`columnText`**: The column containing the text to search.
+- **`idColumn`**: The column containing the document identifiers.
+- **`textColumn`**: The column containing the text to search.
 - **`options`**: An optional object with configuration options:
 - **`options.stemmer`**: The stemmer to use for the FTS index. Supports multiple
   languages or "none" to disable stemming. Defaults to "porter".
@@ -1121,15 +1121,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-bm25(text: string, columnId: string, columnText: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): this;
+bm25(text: string, idColumn: string, textColumn: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): this;
 ```
 
 ##### Parameters
 
 - **`text`**: The search query text to match against the text column.
-- **`columnId`**: The name of the column containing unique identifiers for each
+- **`idColumn`**: The name of the column containing unique identifiers for each
   row.
-- **`columnText`**: The name of the column containing the text to search.
+- **`textColumn`**: The name of the column containing the text to search.
 - **`nbResults`**: The number of top-ranked results to return.
 - **`options`**: An optional object with configuration options:
 - **`options.outputTable`**: The name of a new table where the results will be
@@ -1285,13 +1285,13 @@ is called.
 ##### Signature
 
 ```typescript
-insertTables(tablesToInsert: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): this;
+insertTables(tables: SimpleTable | SimpleTable[], options?: { unifyColumns?: boolean }): this;
 ```
 
 ##### Parameters
 
-- **`tablesToInsert`**: The name(s) of the table(s) or SimpleTable instance(s)
-  from which rows will be inserted.
+- **`tables`**: The name(s) of the table(s) or SimpleTable instance(s) from
+  which rows will be inserted.
 - **`options`**: An optional object with configuration options:
 - **`options.unifyColumns`**: A boolean indicating whether to unify the columns
   of the tables. If `true`, missing columns in a table will be filled with
@@ -1711,13 +1711,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-skip(nbRowsToSkip: number): this;
+skip(count: number): this;
 ```
 
 ##### Parameters
 
-- **`nbRowsToSkip`**: The number of rows to skip from the beginning of the
-  table.
+- **`count`**: The number of rows to skip from the beginning of the table.
 
 ##### Returns
 
@@ -1767,13 +1766,13 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-sample(quantity: number | string, options?: { seed?: number }): this;
+sample(count: number | string, options?: { seed?: number }): this;
 ```
 
 ##### Parameters
 
-- **`quantity`**: The number of rows to select (e.g., `100`) or a percentage
-  string (e.g., `"10%"`) specifying the sampling size.
+- **`count`**: The number of rows to select (e.g., `100`) or a percentage string
+  (e.g., `"10%"`) specifying the sampling size.
 - **`options`**: An optional object with configuration options:
 - **`options.seed`**: A number specifying the seed for repeatable sampling.
   Using the same seed will always yield the same random rows. Defaults to a
@@ -1957,7 +1956,7 @@ async observer method (like `getData()` or `logTable()`) is awaited, or when
 ##### Signature
 
 ```typescript
-trim(columns: string | string[], options?: { character?: string; method?: "leftTrim" | "rightTrim" | "trim" }): this;
+trim(columns: string | string[], options?: { character?: string; side?: "left" | "right" | "both" }): this;
 ```
 
 ##### Parameters
@@ -1966,9 +1965,9 @@ trim(columns: string | string[], options?: { character?: string; method?: "leftT
 - **`options`**: An optional object with configuration options:
 - **`options.character`**: The string to trim. Defaults to whitespace
   characters.
-- **`options.method`**: The trimming method to apply: `"leftTrim"` (removes from
-  the beginning), `"rightTrim"` (removes from the end), or `"trim"` (removes
-  from both sides). Defaults to `"trim"`.
+- **`options.side`**: The side to trim: `"left"` (removes from the beginning),
+  `"right"` (removes from the end), or `"both"` (removes from both sides).
+  Defaults to `"both"`.
 
 ##### Returns
 
@@ -1988,7 +1987,7 @@ table.trim("productCode", { character: "*" });
 
 ```ts
 // Right-trim whitespace from 'description' and 'notes' columns
-table.trim(["description", "notes"], { method: "rightTrim" });
+table.trim(["description", "notes"], { side: "right" });
 ```
 
 #### `filter`
@@ -2162,7 +2161,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-renameColumns(names: Record<string, string>, options?: { checkColumns?: boolean }): this;
+renameColumns(names: Record<string, string>, options?: { strict?: boolean }): this;
 ```
 
 ##### Parameters
@@ -2170,7 +2169,7 @@ renameColumns(names: Record<string, string>, options?: { checkColumns?: boolean 
 - **`names`**: An object mapping old column names to their new column names
   (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
 - **`options`**: Configuration options.
-- **`options.checkColumns`**: Whether to verify the source columns exist before
+- **`options.strict`**: Whether to verify the source columns exist before
   renaming. Defaults to `true`. Set to `false` to skip the check and its schema
   lookup when you know the columns exist and are renaming across many tables
   where the extra round-trip adds up.
@@ -2193,7 +2192,7 @@ table.renameColumns({ "product_id": "productId" });
 
 ```ts
 // Skip the existence check when renaming across many tables
-table.renameColumns({ "product_id": "productId" }, { checkColumns: false });
+table.renameColumns({ "product_id": "productId" }, { strict: false });
 ```
 
 #### `cleanColumnNames`
@@ -2240,14 +2239,14 @@ and their corresponding employee counts into a new column named `Employees`.
 ##### Signature
 
 ```typescript
-longer(columns: string[], columnsTo: string, valuesTo: string): this;
+longer(columns: string[], namesTo: string, valuesTo: string): this;
 ```
 
 ##### Parameters
 
 - **`columns`**: An array of strings representing the names of the columns to be
   stacked (unpivoted).
-- **`columnsTo`**: The name of the new column that will contain the original
+- **`namesTo`**: The name of the new column that will contain the original
   column names (e.g., "Year").
 - **`valuesTo`**: The name of the new column that will contain the values from
   the stacked columns (e.g., "Employees").
@@ -2299,12 +2298,12 @@ employee counts as values.
 ##### Signature
 
 ```typescript
-wider(columnsFrom: string, valuesFrom: string): this;
+wider(namesFrom: string, valuesFrom: string): this;
 ```
 
 ##### Parameters
 
-- **`columnsFrom`**: The name of the column containing the values that will be
+- **`namesFrom`**: The name of the column containing the values that will be
   transformed into new column headers (e.g., "Year").
 - **`valuesFrom`**: The name of the column containing the values to be spread
   across the new columns (e.g., "Employees").
@@ -2353,7 +2352,7 @@ doesn't exist, the error is thrown at that point too.
 ##### Signature
 
 ```typescript
-convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { try?: boolean; datetimeFormat?: string }): this;
+convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { strict?: boolean; datetimeFormat?: string }): this;
 ```
 
 ##### Parameters
@@ -2361,8 +2360,8 @@ convert(types: Record<string, "integer" | "float" | "number" | "string" | "date"
 - **`types`**: An object mapping column names to their target data types for
   conversion.
 - **`options`**: An optional object with configuration options:
-- **`options.try`**: If `true`, values that cannot be converted will be replaced
-  by `NULL` instead of throwing an error. Defaults to `false`.
+- **`options.strict`**: If `false`, values that cannot be converted will be
+  replaced by `NULL` instead of throwing an error. Defaults to `true`.
 - **`options.datetimeFormat`**: A string specifying the format for date and time
   conversions. Uses `strftime` and `strptime` functions from DuckDB. For format
   specifiers, see
@@ -2396,7 +2395,7 @@ table.convert({ column3: "string" }, { datetimeFormat: "%Y-%m-%d %H:%M:%S" });
 
 ```ts
 // Convert 'amount' to float, replacing unconvertible values with NULL
-table.convert({ amount: "float" }, { try: true });
+table.convert({ amount: "float" }, { strict: false });
 ```
 
 #### `removeTable`
@@ -2732,7 +2731,7 @@ Similar strings are grouped into clusters. Matching is transitive: if
 `"New York"` is similar to `"New Yorke"` and `"New Yorke"` is similar to
 `"New Yorkk"`, all three land in the same cluster even if `"New York"` and
 `"New Yorkk"` would not match directly. Each cluster is then collapsed to one
-representative value based on the `keep` strategy.
+representative value based on the `strategy` option.
 
 Similarity is computed using the
 [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community
@@ -2744,7 +2743,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; keep?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): this;
+fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; strategy?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): this;
 ```
 
 ##### Parameters
@@ -2762,9 +2761,9 @@ fuzzyClean(column: string, newColumn: string, threshold: number, options?: { met
   partial/substring similarity. - `"token_sort_ratio"`: Similarity after sorting
   tokens (words), useful for reordered words. - `"token_set_ratio"`: Similarity
   based on sets of tokens, ignoring duplicates and word order.
-- **`options.keep`**: The strategy for choosing the canonical value within each
-  cluster of similar strings. Defaults to `"mostCommon"`. - `"mostCommon"`: Keep
-  the value that appears most frequently in the original column. -
+- **`options.strategy`**: The strategy for choosing the canonical value within
+  each cluster of similar strings. Defaults to `"mostCommon"`. - `"mostCommon"`:
+  Keep the value that appears most frequently in the original column. -
   `"longestString"`: Keep the longest string in the cluster. -
   `"shortestString"`: Keep the shortest string in the cluster. -
   `"mostCentral"`: Keep the string with the highest total similarity score to
@@ -2803,7 +2802,7 @@ table.fuzzyClean("companyName", "companyNameClean", 90, {
 
 ```ts
 // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
-table.fuzzyClean("category", "category", 80, { keep: "longestString" });
+table.fuzzyClean("category", "category", 80, { strategy: "longestString" });
 ```
 
 #### `replace`
@@ -3011,7 +3010,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-pad(columns: string | string[], length: number, options?: { method?: "left" | "right"; char?: string }): this;
+pad(columns: string | string[], length: number, options?: { side?: "left" | "right"; character?: string }): this;
 ```
 
 ##### Parameters
@@ -3019,8 +3018,8 @@ pad(columns: string | string[], length: number, options?: { method?: "left" | "r
 - **`columns`**: The column name(s) containing strings to be padded.
 - **`length`**: The target length of the padded strings.
 - **`options`**: An optional object with configuration options:
-- **`options.method`**: Which side to pad. `'left'` (default) or `'right'`.
-- **`options.char`**: The character to use for padding. Defaults to `'0'`.
+- **`options.side`**: Which side to pad. `'left'` (default) or `'right'`.
+- **`options.character`**: The character to use for padding. Defaults to `'0'`.
 
 ##### Returns
 
@@ -3041,13 +3040,13 @@ table.pad("id", 3);
 
 ```ts
 // Right-pad 'code' column to 5 characters with spaces
-table.pad("code", 5, { method: "right", char: " " });
+table.pad("code", 5, { side: "right", character: " " });
 // Result: '123' -> '123  ', '45' -> '45   ', null -> null
 ```
 
 ```ts
 // Left-pad multiple columns to 5 characters with dashes
-table.pad(["id", "code"], 5, { method: "left", char: "-" });
+table.pad(["id", "code"], 5, { side: "left", character: "-" });
 // Result: '1' -> '----1', '23' -> '---23'
 ```
 
@@ -3102,9 +3101,9 @@ parts into multiple new columns.
 Each part of the split string will be stored in a separate column. The number of
 columns created is determined by the length of the `newColumns` array. If a row
 has fewer parts than the number of new columns, a warning will be logged and the
-extra columns will contain empty strings (unless `noCheck` is set to true). If a
-row has more parts than the number of new columns, an error will be thrown
-unless `noCheck` is set to true.
+extra columns will contain empty strings (unless `strict` is set to `false`). If
+a row has more parts than the number of new columns, an error will be thrown
+unless `strict` is set to `false`.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -3112,7 +3111,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-splitSpread(column: string, separator: string, newColumns: string[], options?: { noCheck?: boolean }): this;
+splitSpread(column: string, separator: string, newColumns: string[], options?: { strict?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3122,8 +3121,8 @@ splitSpread(column: string, separator: string, newColumns: string[], options?: {
   strings.
 - **`newColumns`**: An array of column names for the extracted parts.
 - **`options`**: Optional configuration.
-- **`options.noCheck`**: If true, skips all validation checks (both max and min
-  parts). Default is false.
+- **`options.strict`**: If `false`, skips all validation checks (both max and
+  min parts). Defaults to `true`.
 
 ##### Returns
 
@@ -3144,8 +3143,8 @@ table.splitSpread("address", ",", ["street", "city", "country"]);
 ```
 
 ```ts
-// Skip validation for performance with noCheck option
-table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
+// Skip validation for performance
+table.splitSpread("data", "|", ["col1", "col2"], { strict: false });
 ```
 
 #### `left`
@@ -3159,14 +3158,14 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-left(column: string, numberOfCharacters: number): this;
+left(column: string, nbCharacters: number): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The name of the column containing the strings to be modified.
-- **`numberOfCharacters`**: The number of characters to extract from the left
-  side of each string.
+- **`nbCharacters`**: The number of characters to extract from the left side of
+  each string.
 
 ##### Returns
 
@@ -3191,14 +3190,14 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-right(column: string, numberOfCharacters: number): this;
+right(column: string, nbCharacters: number): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The name of the column containing the strings to be modified.
-- **`numberOfCharacters`**: The number of characters to extract from the right
-  side of each string.
+- **`nbCharacters`**: The number of characters to extract from the right side of
+  each string.
 
 ##### Returns
 
@@ -3608,12 +3607,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; noGaps?: boolean }): this;
+ranks(column: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; dense?: boolean }): this;
 ```
 
 ##### Parameters
 
-- **`values`**: The column containing the values to be used for ranking.
+- **`column`**: The column containing the values to be used for ranking.
 - **`newColumn`**: The name of the new column where the ranks will be stored.
 - **`options`**: An optional object with configuration options:
 - **`options.order`**: The order of values for ranking: `"asc"` for ascending
@@ -3621,9 +3620,9 @@ ranks(values: string, newColumn: string, options?: { order?: "asc" | "desc"; cat
 - **`options.categories`**: The column name or an array of column names that
   define categories for ranking. Ranks will be assigned independently within
   each category.
-- **`options.noGaps`**: A boolean indicating whether to assign ranks without
-  gaps (dense ranking). If `true`, ranks will be consecutive integers (e.g., 1,
-  2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
+- **`options.dense`**: A boolean indicating whether to use dense ranking (no
+  gaps). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If
+  `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
 
 ##### Returns
 
@@ -3643,7 +3642,7 @@ table.ranks("score", "descRank", { order: "desc" });
 
 ```ts
 // Compute ranks within 'department' categories, based on 'salary' values, without gaps
-table.ranks("salary", "salaryRank", { categories: "department", noGaps: true });
+table.ranks("salary", "salaryRank", { categories: "department", dense: true });
 ```
 
 ```ts
@@ -3661,12 +3660,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-quantiles(values: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): this;
+quantiles(column: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): this;
 ```
 
 ##### Parameters
 
-- **`values`**: The column containing values from which quantiles will be
+- **`column`**: The column containing values from which quantiles will be
   assigned.
 - **`nbQuantiles`**: The number of quantiles to divide the data into (e.g., `4`
   for quartiles, `10` for deciles).
@@ -3708,12 +3707,12 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-bins(values: string, interval: number, newColumn: string, options?: { startValue?: number }): this;
+bins(column: string, interval: number, newColumn: string, options?: { startValue?: number }): this;
 ```
 
 ##### Parameters
 
-- **`values`**: The column containing values from which bins will be computed.
+- **`column`**: The column containing values from which bins will be computed.
 - **`interval`**: The interval size for binning the values.
 - **`newColumn`**: The name of the new column where the bins will be stored.
 - **`options`**: An optional object with configuration options:
@@ -3877,7 +3876,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; noColumnValue?: boolean }): this;
+summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; toMs?: boolean; valueColumn?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3903,9 +3902,9 @@ summarize(options?: { values?: string | string[]; categories?: string | string[]
 - **`options.toMs`**: If `true`, timestamps, dates, and times will be converted
   to milliseconds before summarizing. This is useful when summarizing mixed data
   types (numbers and dates) as values must be of the same type for aggregation.
-- **`options.noColumnValue`**: If `true`, the default `value` column will be
+- **`options.valueColumn`**: If `false`, the default `value` column will be
   removed. This option only works when summarizing a single column without
-  categories. Defaults to `false`.
+  categories. Defaults to `true`.
 
 ##### Returns
 
@@ -3990,7 +3989,7 @@ table.summarize({ values: "timestamp_column", toMs: true, summaries: "mean" });
 
 ```ts
 // Summarize a single column 'value_column' without the default 'value' column in the output
-table.summarize({ values: "value_column", noColumnValue: true });
+table.summarize({ values: "value_column", valueColumn: false });
 ```
 
 #### `accumulate`
@@ -5255,15 +5254,15 @@ JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
 ##### Signature
 
 ```typescript
-async getRow(conditions: string, options?: { noCheck?: boolean }): Promise<Record<string, unknown> | undefined>;
+async getRow(conditions: string, options?: { strict?: boolean }): Promise<Record<string, unknown> | undefined>;
 ```
 
 ##### Parameters
 
 - **`conditions`**: The conditions to match, specified as a SQL `WHERE` clause.
 - **`options`**: Optional settings:
-- **`options.noCheck`**: If `true`, no error will be thrown when no row or more
-  than one row match the condition. Defaults to `false`.
+- **`options.strict`**: If `false`, no error will be thrown when no row or more
+  than one row match the condition. Defaults to `true`.
 
 ##### Returns
 
@@ -5271,8 +5270,8 @@ A promise that resolves to an object representing the matched row.
 
 ##### Throws
 
-- **`Error`**: If `noCheck` is `false` and no row or more than one row matches
-  the conditions.
+- **`Error`**: If `strict` is `true` and no row or more than one row matches the
+  conditions.
 
 ##### Examples
 
@@ -5290,7 +5289,7 @@ console.log(rowById);
 
 ```ts
 // Get a row without throwing an error if multiple matches or no match
-const flexibleRow = await table.getRow(`status = 'pending'`, { noCheck: true });
+const flexibleRow = await table.getRow(`status = 'pending'`, { strict: false });
 console.log(flexibleRow);
 ```
 
@@ -5450,13 +5449,13 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-points(columnLat: string, columnLon: string, newColumn: string): this;
+points(latColumn: string, lonColumn: string, newColumn: string): this;
 ```
 
 ##### Parameters
 
-- **`columnLat`**: The name of the column storing the latitude values.
-- **`columnLon`**: The name of the column storing the longitude values.
+- **`latColumn`**: The name of the column storing the latitude values.
+- **`lonColumn`**: The name of the column storing the longitude values.
 - **`newColumn`**: The name of the new column where the point geometries will be
   stored.
 
@@ -5963,7 +5962,7 @@ operations queued on it afterwards run after the join.
 ##### Signature
 
 ```typescript
-joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftTableColumn?: string; rightTableColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): this;
+joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", options?: { leftColumn?: string; rightColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -5974,10 +5973,10 @@ joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "within", opti
   geometries of the right table), or `"within"` (geometries of the left table
   are within a specified distance of geometries in the right table).
 - **`options`**: An optional object with configuration options:
-- **`options.leftTableColumn`**: The name of the column storing geometries in
-  the left table (this table). If omitted, the method attempts to find one.
-- **`options.rightTableColumn`**: The name of the column storing geometries in
-  the right table. If omitted, the method attempts to find one.
+- **`options.leftColumn`**: The name of the column storing geometries in the
+  left table (this table). If omitted, the method attempts to find one.
+- **`options.rightColumn`**: The name of the column storing geometries in the
+  right table. If omitted, the method attempts to find one.
 - **`options.type`**: The type of join operation to perform: `"inner"`, `"left"`
   (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table
   order is important.
@@ -6027,8 +6026,8 @@ tableA.joinGeo(tableB, "within", {
 ```ts
 // Merge data with specific geometry columns and an inner join type, storing results in a new table
 const tableC = tableA.joinGeo(tableB, "intersect", {
-  leftTableColumn: "geometriesA",
-  rightTableColumn: "geometriesB",
+  leftColumn: "geometriesA",
+  rightColumn: "geometriesB",
   type: "inner",
   outputTable: true,
 });
@@ -6170,8 +6169,8 @@ table.intersect("geomA", "geomB", "doIntersect");
 
 #### `inside`
 
-Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in
-`column2`, and `FALSE` otherwise.
+Returns `TRUE` if all points of a geometry in `column` lie inside a geometry in
+`containerColumn`, and `FALSE` otherwise.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -6179,15 +6178,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-inside(column1: string, column2: string, newColumn: string): this;
+inside(column: string, containerColumn: string, newColumn: string): this;
 ```
 
 ##### Parameters
 
-- **`column1`**: The name of the column storing the geometries to be tested for
+- **`column`**: The name of the column storing the geometries to be tested for
   containment.
-- **`column2`**: The name of the column storing the geometries to be tested as
-  containers. Both columns must have the same projection.
+- **`containerColumn`**: The name of the column storing the geometries to be
+  tested as containers. Both columns must have the same projection.
 - **`newColumn`**: The name of the new column where the boolean results (`TRUE`
   for inside, `FALSE` otherwise) will be stored.
 
@@ -6246,15 +6245,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-latLon(column: string, columnLat: string, columnLon: string): this;
+latLon(column: string, latColumn: string, lonColumn: string): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The name of the column storing the point geometries.
-- **`columnLat`**: The name of the new column where the extracted latitude
+- **`latColumn`**: The name of the new column where the extracted latitude
   values will be stored.
-- **`columnLon`**: The name of the new column where the extracted longitude
+- **`lonColumn`**: The name of the new column where the extracted longitude
   values will be stored.
 
 ##### Returns
@@ -6357,7 +6356,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; try?: boolean }): this;
+randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; strict?: boolean }): this;
 ```
 
 ##### Parameters
@@ -6370,9 +6369,9 @@ randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: strin
 - **`options.column`**: The name of the column storing the geometries within
   which the random points will be generated. If omitted, the method will
   automatically attempt to find a geometry column.
-- **`options.try`**: If `true`, the method will not throw an error if some
+- **`options.strict`**: If `false`, the method will not throw an error if some
   points cannot be generated. Corresponding rows will have `NULL` in the new
-  column.
+  column. Defaults to `true`.
 
 ##### Examples
 
@@ -6388,7 +6387,7 @@ table.randomPoint("pointInArea", 50, { column: "areaGeom" });
 
 ```ts
 // Generate a random point for each geometry, but don't throw if some points cannot be generated
-table.randomPoint("pointInArea", 1, { try: true });
+table.randomPoint("pointInArea", 1, { strict: false });
 ```
 
 #### `distance`
@@ -6838,13 +6837,14 @@ Caches the results of computations in `./.sda-cache`. You should add
 ##### Signature
 
 ```typescript
-async cache(run: () => void | Promise<void>, options?: { ttl?: number }): Promise<this>;
+async cache(compute: () => void | Promise<void>, options?: { ttl?: number }): Promise<this>;
 ```
 
 ##### Parameters
 
-- **`run`**: A function wrapping the computations to be cached. This function
-  will be executed on the first run or if the cached data is invalid/expired.
+- **`compute`**: A function wrapping the computations to be cached. This
+  function will be executed on the first run or if the cached data is
+  invalid/expired.
 - **`options`**: An optional object with configuration options:
 - **`options.ttl`**: Time to live (in seconds). If the data in the cache is
   older than this duration, the `run` function will be executed again to refresh

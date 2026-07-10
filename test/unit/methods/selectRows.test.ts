@@ -237,7 +237,7 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
   });
 
   const data = await sdb.customQuery(`select * from newData`, {
-    returnDataFrom: "query",
+    returnData: true,
   });
 
   assertEquals(data, [

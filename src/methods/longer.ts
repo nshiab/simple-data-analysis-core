@@ -4,19 +4,19 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function longer(
   simpleTable: SimpleTable,
   columns: string[],
-  columnsTo: string,
+  namesTo: string,
   valuesTo: string,
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "longer()",
-    parameters: { columns, columnsTo, valuesTo },
+    parameters: { columns, namesTo, valuesTo },
     needsSchema: false,
     buildSelect: (input) =>
       `SELECT * FROM (
             FROM ${input} UNPIVOT INCLUDE NULLS (
             "${valuesTo}"
-            for "${columnsTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
+            for "${namesTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
             )
         )`,
   });

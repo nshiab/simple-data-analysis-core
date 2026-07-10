@@ -4,7 +4,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function quantiles(
   simpleTable: SimpleTable,
-  values: string,
+  column: string,
   nbQuantiles: number,
   newColumn: string,
   options: {
@@ -14,7 +14,7 @@ export default function quantiles(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "quantiles()",
-    parameters: { values, nbQuantiles, newColumn, options },
+    parameters: { column, nbQuantiles, newColumn, options },
     needsSchema: false,
     buildSelect: (input) => {
       const categories = options.categories
@@ -25,7 +25,7 @@ export default function quantiles(
         ? ""
         : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
 
-      return `SELECT *, ntile(${nbQuantiles}) OVER (${partition}ORDER BY "${values}") AS "${newColumn}"
+      return `SELECT *, ntile(${nbQuantiles}) OVER (${partition}ORDER BY "${column}") AS "${newColumn}"
     FROM ${input}`;
     },
   });

@@ -8,7 +8,7 @@ Deno.test("should return the results of a custom query", async () => {
 
   const data = await sdb.customQuery(
     "SELECT * FROM employees WHERE Job = 'Clerk'",
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -182,7 +182,7 @@ Deno.test("should work with ==", async () => {
 
   const data = await sdb.customQuery(
     "SELECT * FROM employees WHERE Name == 'Patel, Joshua'",
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -204,7 +204,7 @@ Deno.test("should work with ===", async () => {
 
   const data = await sdb.customQuery(
     "SELECT * FROM employees WHERE Name === 'Patel, Joshua'",
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -226,7 +226,7 @@ Deno.test("should work with &&", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM employees WHERE Job === 'Clerk' && Salary == '2500' && "Department or unit" = '30'`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -248,7 +248,7 @@ Deno.test("should work with ||", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM employees WHERE Job === 'Clerk' && Salary === '2500' && ("Department or unit" = '30' || "Department or unit" = '50')`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -286,7 +286,7 @@ Deno.test("should work with || as OR or concatenation", async () => {
 
   const data = await sdb.customQuery(
     `SELECT *, "Job" || '-' || "Name" as JobName FROM employees WHERE Job === 'Clerk' && Salary === '2500' && ("Department or unit" = '30' || "Department or unit" = '50')`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -327,7 +327,7 @@ Deno.test("should work with !==", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM employees WHERE Job !== 'Clerk' && Job !== 'Assistant' && Job !== 'Accountant' && Job !== 'Salesperson' && Job !== 'Programmer' && Job !== 'Manager'`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -405,7 +405,7 @@ Deno.test("should work with === null", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 === null`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: null }]);
@@ -418,7 +418,7 @@ Deno.test("should work with = null", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 = null`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: null }]);
@@ -431,7 +431,7 @@ Deno.test("should work with === NULL", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 === NULL`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: null }]);
@@ -444,7 +444,7 @@ Deno.test("should work with == NULL", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 == NULL`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: null }]);
@@ -457,7 +457,7 @@ Deno.test("should work with = NULL", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 = NULL`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: null }]);
@@ -470,7 +470,7 @@ Deno.test("should work with !== null", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 !== null`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
@@ -483,7 +483,7 @@ Deno.test("should work with != null", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 != null`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
@@ -496,7 +496,7 @@ Deno.test("should work with !== NULL", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 !== NULL`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
@@ -509,7 +509,7 @@ Deno.test("should work with != NULL", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 != NULL`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
@@ -522,7 +522,7 @@ Deno.test("should work with === null not at the end of query", async () => {
 
   const data = await sdb.customQuery(
     `SELECT * FROM test WHERE key1 === null || key1 === 2`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [{ key1: 2 }, { key1: null }]);

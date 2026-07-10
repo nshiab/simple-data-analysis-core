@@ -56,7 +56,7 @@ export default function summarize(
       };
     decimals?: number;
     toMs?: boolean;
-    noColumnValue?: boolean;
+    valueColumn?: boolean;
   } = {},
 ): SimpleTable {
   if (options.outputTable === true) {
@@ -132,7 +132,7 @@ async function executeSummarize(
       };
     decimals?: number;
     toMs?: boolean;
-    noColumnValue?: boolean;
+    valueColumn?: boolean;
   } = {},
 ) {
   const outputTable = output.name;
@@ -271,12 +271,12 @@ function summarizeQuery(
     | "stdDev"
     | "var"
   )[],
-  options: { decimals?: number; noColumnValue?: boolean } = {},
+  options: { decimals?: number; valueColumn?: boolean } = {},
   columns: string[] | undefined,
 ) {
-  if (values.length > 1 && options.noColumnValue) {
+  if (values.length > 1 && options.valueColumn === false) {
     throw new Error(
-      "The options `noColumnValue` works only when you aggregate the values from one column. Remove the option `noColumnValue` or specify just one column in the option `values`.",
+      "The option `valueColumn: false` works only when you aggregate the values from one column. Remove the option `valueColumn` or specify just one column in the option `values`.",
     );
   }
 
@@ -338,7 +338,9 @@ function summarizeQuery(
     } else {
       query += "\nUNION";
     }
-    query += `\nSELECT ${options.noColumnValue ? "" : `'${value}' AS 'value'`}${
+    query += `\nSELECT ${
+      options.valueColumn === false ? "" : `'${value}' AS 'value'`
+    }${
       categories.length > 0
         ? `, ${categories.map((d) => `"${d}"`).join(", ")}`
         : ""
@@ -415,7 +417,7 @@ function summarizeQuery(
     }
   }
 
-  if (options.noColumnValue) {
+  if (options.valueColumn === false) {
     if (categories.length > 0) {
       query += `\nORDER BY ${categories.map((d) => `"${d}" ASC`).join(", ")}`;
     }

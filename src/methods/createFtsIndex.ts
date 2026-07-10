@@ -4,8 +4,8 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function createFtsIndex(
   simpleTable: SimpleTable,
-  columnId: string,
-  columnText: string,
+  idColumn: string,
+  textColumn: string,
   options: {
     stemmer?:
       | "arabic"
@@ -48,9 +48,9 @@ export default function createFtsIndex(
   queueOp(simpleTable, {
     kind: "barrier",
     method: "createFtsIndex()",
-    parameters: { columnId, columnText, options },
+    parameters: { idColumn, textColumn, options },
     execute: () =>
-      executeCreateFtsIndex(simpleTable, columnId, columnText, options),
+      executeCreateFtsIndex(simpleTable, idColumn, textColumn, options),
   });
 }
 
@@ -60,8 +60,8 @@ export default function createFtsIndex(
  */
 export async function executeCreateFtsIndex(
   simpleTable: SimpleTable,
-  columnId: string,
-  columnText: string,
+  idColumn: string,
+  textColumn: string,
   options: {
     stemmer?: string;
     stopwords?: string;
@@ -78,7 +78,7 @@ export async function executeCreateFtsIndex(
   if (indexExists && options.overwrite) {
     options.verbose &&
       console.log(
-        `\nDropping existing FTS index on "${columnText}" column...`,
+        `\nDropping existing FTS index on "${textColumn}" column...`,
       );
 
     await simpleTable.sdb.customQuery(
@@ -91,11 +91,11 @@ export async function executeCreateFtsIndex(
   if (!indexExists || options.overwrite) {
     options.verbose &&
       console.log(
-        `\nCreating FTS index on "${columnText}" column...`,
+        `\nCreating FTS index on "${textColumn}" column...`,
       );
 
     await simpleTable.sdb.customQuery(
-      `PRAGMA create_fts_index("${simpleTable.name}", "${columnId}", "${columnText}"${
+      `PRAGMA create_fts_index("${simpleTable.name}", "${idColumn}", "${textColumn}"${
         options.stemmer ? `, stemmer = '${options.stemmer}'` : ""
       }${options.stopwords ? `, stopwords = '${options.stopwords}'` : ""}${
         options.ignore ? `, ignore = '${options.ignore}'` : ""

@@ -226,7 +226,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       debug?: boolean;
       nbRowsToLog?: number;
       nbCharactersToLog?: number;
-      types?: boolean;
+      typesToLog?: boolean;
     },
   ) => Table = SimpleTable as new (
     name: string,
@@ -235,7 +235,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       debug?: boolean;
       nbRowsToLog?: number;
       nbCharactersToLog?: number;
-      types?: boolean;
+      typesToLog?: boolean;
     },
   ) => Table;
 
@@ -248,7 +248,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.logDuration - A flag indicating whether to log the total execution duration.
    * @param options.nbRowsToLog - The number of rows to display when logging a table.
    * @param options.nbCharactersToLog - The maximum number of characters to display for text-based cells.
-   * @param options.types - A flag indicating whether to include data types when logging a table.
+   * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
    * @param options.cacheVerbose - A flag indicating whether to log verbose cache-related messages.
    * @param options.debug - A flag indicating whether to log debugging information.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
@@ -264,7 +264,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       logDuration?: boolean;
       nbRowsToLog?: number;
       nbCharactersToLog?: number;
-      types?: boolean;
+      typesToLog?: boolean;
       cacheVerbose?: boolean;
       debug?: boolean;
       duckDbCache?: boolean | null;
@@ -415,7 +415,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         debug: this.debug,
         nbRowsToLog: this.nbRowsToLog,
         nbCharactersToLog: this.nbCharactersToLog,
-        types: this.types,
+        typesToLog: this.typesToLog,
       });
       table.defaultTableName = false;
     } else {
@@ -423,7 +423,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         debug: this.debug,
         nbRowsToLog: this.nbRowsToLog,
         nbCharactersToLog: this.nbCharactersToLog,
-        types: this.types,
+        typesToLog: this.typesToLog,
       });
       table.defaultTableName = true;
       this.tableIncrement += 1;
@@ -653,9 +653,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    *
    * @param query - The SQL query string to execute.
    * @param options - Configuration options for the query.
-   * @param options.returnDataFrom - Specifies whether to return data from the query. Can be `"query"` to return data or `"none"` (default) to not return data.
+   * @param options.returnData - If `true`, the query result is returned. Defaults to `false`.
    * @param options.table - The name of the table associated with the query, primarily used for debugging and logging.
-   * @returns A promise that resolves to the query result as an array of objects if `returnDataFrom` is `"query"`, otherwise `null`.
+   * @returns A promise that resolves to the query result as an array of objects if `returnData` is `true`, otherwise `null`.
    * @category DuckDB
    *
    * @example
@@ -669,7 +669,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * // Execute a query and return the results
    * const youngEmployees = await sdb.customQuery(
    *   "SELECT * FROM employees WHERE age < 30",
-   *   { returnDataFrom: "query" }
+   *   { returnData: true }
    * );
    * console.log(youngEmployees);
    * ```
@@ -677,7 +677,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   async customQuery(
     query: string,
     options: {
-      returnDataFrom?: "query" | "none";
+      returnData?: boolean;
       table?: string;
     } = {},
   ): Promise<
@@ -690,7 +690,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       this,
       query,
       mergeOptions(this, {
-        returnDataFrom: options.returnDataFrom,
+        returnDataFrom: options.returnData ? "query" : "none",
         table: options.table ?? null,
         method: "customQuery()",
         parameters: { query, options },
@@ -741,7 +741,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    *
    * @param file - The absolute path to the output file (e.g., "./my_exported_database.db").
    * @param options - Configuration options for writing the database.
-   * @param options.noMetaData - If `true`, metadata files (indexes) are not created alongside the database file. Defaults to `false`.
+   * @param options.metadata - If `false`, metadata files (indexes) are not created alongside the database file. Defaults to `true`.
    * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
@@ -754,12 +754,12 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @example
    * ```ts
    * // Write the current database to a SQLite file without metadata
-   * await sdb.writeDB("./my_exported_database.sqlite", { noMetaData: true });
+   * await sdb.writeDB("./my_exported_database.sqlite", { metadata: false });
    * ```
    */
   async writeDB(
     file: string,
-    options: { noMetaData?: boolean } = {},
+    options: { metadata?: boolean } = {},
   ): Promise<this> {
     await writeDB(this, file, options);
     return this;
@@ -826,7 +826,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       // To make sure the files will have the proper names.
       writeIndexes(this, getExtension(this.file), this.file);
       await this.writeDB(this.file.replace(".db", "_compacted.db"), {
-        noMetaData: true,
+        metadata: false,
       });
       rmSync(this.file);
       renameSync(this.file.replace(".db", "_compacted.db"), this.file);

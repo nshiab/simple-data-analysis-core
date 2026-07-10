@@ -63,7 +63,7 @@ Deno.test("should remove whitespace just on the left", async () => {
   table.loadData(["test/data/files/dataTrim.json"]);
 
   table.trim("key1", {
-    method: "leftTrim",
+    side: "left",
   });
   const data = await table.getData();
 
@@ -83,7 +83,7 @@ Deno.test("should remove whitespace just on the right", async () => {
   table.loadData(["test/data/files/dataTrim.json"]);
 
   table.trim("key1", {
-    method: "rightTrim",
+    side: "right",
   });
   const data = await table.getData();
 
@@ -103,7 +103,7 @@ Deno.test("should remove specific characters", async () => {
   table.loadData(["test/data/files/dataTrim.json"]);
 
   table.trim("key2", {
-    method: "rightTrim",
+    side: "right",
     character: "!@",
   });
   const data = await table.getData();

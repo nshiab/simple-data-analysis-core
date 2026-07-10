@@ -31,7 +31,7 @@ Deno.test("should right-pad strings to target length", async () => {
     { code: "6" },
   ]);
 
-  table.pad("code", 5, { method: "right" });
+  table.pad("code", 5, { side: "right" });
 
   const data = await table.getData();
 
@@ -51,7 +51,7 @@ Deno.test("should left-pad with custom character", async () => {
     { id: "2" },
   ]);
 
-  table.pad("id", 4, { method: "left", char: "-" });
+  table.pad("id", 4, { side: "left", character: "-" });
 
   const data = await table.getData();
 
@@ -70,7 +70,7 @@ Deno.test("should right-pad with custom character", async () => {
     { code: "CD" },
   ]);
 
-  table.pad("code", 5, { method: "right", char: "*" });
+  table.pad("code", 5, { side: "right", character: "*" });
 
   const data = await table.getData();
 
@@ -199,7 +199,7 @@ Deno.test("should handle padding with multi-character fill string", async () => 
     { id: "1" },
   ]);
 
-  table.pad("id", 5, { method: "left", char: "ab" });
+  table.pad("id", 5, { side: "left", character: "ab" });
 
   const data = await table.getData();
 
@@ -233,7 +233,7 @@ Deno.test("should pad with default char being zero", async () => {
     { value: "123" },
   ]);
 
-  table.pad("value", 5, { method: "right" });
+  table.pad("value", 5, { side: "right" });
 
   const data = await table.getData();
 
@@ -254,7 +254,7 @@ Deno.test("should handle multiple rows with null values", async () => {
     { id: "45" },
   ]);
 
-  table.pad("id", 4, { method: "left", char: "0" });
+  table.pad("id", 4, { side: "left", character: "0" });
 
   const data = await table.getData();
 
@@ -278,7 +278,7 @@ Deno.test("should pad multiple columns at once", async () => {
     { id: "23", code: "C" },
   ]);
 
-  table.pad(["id", "code"], 4, { method: "left", char: "-" });
+  table.pad(["id", "code"], 4, { side: "left", character: "-" });
 
   const data = await table.getData();
 
@@ -297,7 +297,7 @@ Deno.test("should pad multiple columns with right padding", async () => {
     { name: "BC", label: "YZ" },
   ]);
 
-  table.pad(["name", "label"], 4, { method: "right", char: "*" });
+  table.pad(["name", "label"], 4, { side: "right", character: "*" });
 
   const data = await table.getData();
 
@@ -333,7 +333,8 @@ Deno.test("should throw error when one column has overflow in multi-column pad",
   ]);
 
   await assertRejects(
-    () => table.pad(["short", "long"], 5, { method: "left", char: "-" }).run(),
+    () =>
+      table.pad(["short", "long"], 5, { side: "left", character: "-" }).run(),
     Error,
     'The column "long" has 1 string(s) exceeding the target length of 5',
   );
@@ -369,7 +370,7 @@ Deno.test("should safely handle single quote in padding character", async () => 
     { id: "23" },
   ]);
 
-  table.pad("id", 5, { method: "left", char: "'" });
+  table.pad("id", 5, { side: "left", character: "'" });
 
   const data = await table.getData();
 

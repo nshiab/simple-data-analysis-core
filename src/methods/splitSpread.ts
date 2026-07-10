@@ -9,7 +9,7 @@ export default function splitSpread(
   separator: string,
   newColumns: string[],
   options: {
-    noCheck?: boolean;
+    strict?: boolean;
   } = {},
 ) {
   // The pre-validation queries the data, so splitSpread can't be expressed
@@ -29,12 +29,12 @@ async function executeSplitSpread(
   separator: string,
   newColumns: string[],
   options: {
-    noCheck?: boolean;
+    strict?: boolean;
   },
 ): Promise<void> {
   const nbParts = newColumns.length;
 
-  if (!options.noCheck) {
+  if (options.strict !== false) {
     // Check if any row has more parts than expected
     const maxPartsResult = await queryDB(
       simpleTable,

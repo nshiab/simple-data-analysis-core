@@ -5,7 +5,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function bins(
   simpleTable: SimpleTable,
-  values: string,
+  column: string,
   interval: number,
   newColumn: string,
   options: {
@@ -18,16 +18,16 @@ export default function bins(
   queueOp(simpleTable, {
     kind: "barrier",
     method: "bins()",
-    parameters: { values, interval, newColumn, options },
+    parameters: { column, interval, newColumn, options },
     execute: async () => {
       await queryDB(
         simpleTable,
-        await binsQuery(simpleTable, values, interval, newColumn, options),
+        await binsQuery(simpleTable, column, interval, newColumn, options),
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "bins()",
           parameters: {
-            values,
+            column,
             interval,
             newColumn,
             options,
@@ -40,16 +40,16 @@ export default function bins(
 
 async function binsQuery(
   SimpleTable: SimpleTable,
-  values: string,
+  column: string,
   interval: number,
   newColumn: string,
   options: {
     startValue?: number;
   } = {},
 ) {
-  const minValue = await SimpleTable.getMin(values);
+  const minValue = await SimpleTable.getMin(column);
   if (typeof minValue !== "number") {
-    throw new Error(`minValue of ${values} is not a number`);
+    throw new Error(`minValue of ${column} is not a number`);
   }
 
   let startValue = 0;
@@ -64,9 +64,9 @@ async function binsQuery(
     startValue = minValue;
   }
 
-  const maxValue = await SimpleTable.getMax(values);
+  const maxValue = await SimpleTable.getMax(column);
   if (typeof maxValue !== "number") {
-    throw new Error(`maxValue of ${values} is not a number`);
+    throw new Error(`maxValue of ${column} is not a number`);
   }
   const endValue = maxValue;
 
@@ -85,7 +85,7 @@ async function binsQuery(
     const start = i;
     const end = (i + interval - increment).toFixed(decimals);
     intervals.push(
-      `WHEN "${values}" >= ${start} AND "${values}" <= ${end} THEN '[${start}-${end}]'`,
+      `WHEN "${column}" >= ${start} AND "${column}" <= ${end} THEN '[${start}-${end}]'`,
     );
   }
 

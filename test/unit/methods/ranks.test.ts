@@ -48,7 +48,7 @@ Deno.test("should add a column with the rank and no gaps", async () => {
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", {
-    noGaps: true,
+    dense: true,
   });
   const data = await table.getData();
 

@@ -14,7 +14,7 @@ export default function fuzzyClean(
       | "partial_ratio"
       | "token_sort_ratio"
       | "token_set_ratio";
-    keep?:
+    strategy?:
       | "mostCommon"
       | "longestString"
       | "shortestString"
@@ -46,7 +46,7 @@ async function executeFuzzyClean(
       | "partial_ratio"
       | "token_sort_ratio"
       | "token_set_ratio";
-    keep?:
+    strategy?:
       | "mostCommon"
       | "longestString"
       | "shortestString"
@@ -56,7 +56,7 @@ async function executeFuzzyClean(
   } = {},
 ): Promise<void> {
   const method = options.method ?? "ratio";
-  const keep = options.keep ?? "mostCommon";
+  const strategy = options.strategy ?? "mostCommon";
 
   let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
 
@@ -226,24 +226,24 @@ async function executeFuzzyClean(
     };
 
     let canonical: string;
-    if (keep === "longestString") {
+    if (strategy === "longestString") {
       canonical = members.reduce((a, b) => {
         if (a.length !== b.length) return a.length > b.length ? a : b;
         return byScore(a, b);
       });
-    } else if (keep === "shortestString") {
+    } else if (strategy === "shortestString") {
       canonical = members.reduce((a, b) => {
         if (a.length !== b.length) return a.length < b.length ? a : b;
         return byScore(a, b);
       });
-    } else if (keep === "mostCommon") {
+    } else if (strategy === "mostCommon") {
       canonical = members.reduce((a, b) => {
         const ca = countMap.get(a) ?? 0;
         const cb = countMap.get(b) ?? 0;
         if (ca !== cb) return ca > cb ? a : b;
         return byScore(a, b);
       });
-    } else if (keep === "mostCentral") {
+    } else if (strategy === "mostCentral") {
       // Most central string — highest total similarity to all other cluster members.
       canonical = members.reduce((a, b) => byScore(a, b));
     } else {

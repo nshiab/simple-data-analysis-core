@@ -66,14 +66,14 @@ Deno.test("should throw when only some source columns exist", async () => {
   await sdb.done();
 });
 
-Deno.test("should skip the existence check when checkColumns is false", async () => {
+Deno.test("should skip the existence check when strict is false", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
 
   // "nope" does not exist; with the check off, the rename is silently ignored
   // by DuckDB and the real column is still renamed.
-  table.renameColumns({ key1: "A", nope: "B" }, { checkColumns: false });
+  table.renameColumns({ key1: "A", nope: "B" }, { strict: false });
   const data = await table.getData();
 
   assertEquals(data, [

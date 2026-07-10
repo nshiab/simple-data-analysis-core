@@ -11,8 +11,8 @@ export default function joinGeo(
   method: "intersect" | "inside" | "within",
   rightTable: SimpleTable,
   options: {
-    leftTableColumn?: string;
-    rightTableColumn?: string;
+    leftColumn?: string;
+    rightColumn?: string;
     type?: "inner" | "left" | "right" | "full";
     distance?: number;
     distanceMethod?: "srs" | "haversine" | "spheroid";
@@ -42,21 +42,19 @@ async function executeJoinGeo(
   rightTable: SimpleTable,
   outputTable: SimpleTable,
   options: {
-    leftTableColumn?: string;
-    rightTableColumn?: string;
+    leftColumn?: string;
+    rightColumn?: string;
     type?: "inner" | "left" | "right" | "full";
     distance?: number;
     distanceMethod?: "srs" | "haversine" | "spheroid";
   },
 ): Promise<void> {
-  const leftTableColumn = options.leftTableColumn ??
+  const leftColumn = options.leftColumn ??
     (await findGeoColumn(leftTable));
-  const rightTableColumn = options.rightTableColumn ??
+  const rightColumn = options.rightColumn ??
     (await findGeoColumn(rightTable));
 
-  const commonColumn = leftTableColumn === rightTableColumn
-    ? leftTableColumn
-    : "";
+  const commonColumn = leftColumn === rightColumn ? leftColumn : "";
   const identicalColumns = (
     getIdenticalColumns(
       await leftTable.getColumns(),
@@ -75,26 +73,24 @@ async function executeJoinGeo(
     );
   }
 
-  let leftTableColumnForQuery = leftTableColumn;
-  let rightTableColumnForQuery = rightTableColumn;
+  let leftColumnForQuery = leftColumn;
+  let rightColumnForQuery = rightColumn;
 
   // We change the column names for geometries. renameColumnsNow runs
   // immediately, so it's safe inside this barrier.
-  if (leftTableColumn === rightTableColumn) {
-    leftTableColumnForQuery = `${leftTableColumn}${capitalize(leftTable.name)}`;
+  if (leftColumn === rightColumn) {
+    leftColumnForQuery = `${leftColumn}${capitalize(leftTable.name)}`;
     await renameColumnNow(
       leftTable,
-      leftTableColumn,
-      leftTableColumnForQuery,
+      leftColumn,
+      leftColumnForQuery,
     );
 
-    rightTableColumnForQuery = `${rightTableColumn}${
-      capitalize(rightTable.name)
-    }`;
+    rightColumnForQuery = `${rightColumn}${capitalize(rightTable.name)}`;
     await renameColumnNow(
       rightTable,
-      rightTableColumn,
-      rightTableColumnForQuery,
+      rightColumn,
+      rightColumnForQuery,
     );
   }
 
@@ -104,10 +100,10 @@ async function executeJoinGeo(
     leftTable,
     joinGeoQuery(
       leftTable.name,
-      leftTableColumnForQuery,
+      leftColumnForQuery,
       method,
       rightTable.name,
-      rightTableColumnForQuery,
+      rightColumnForQuery,
       type,
       outputTable.name,
       options.distance,
@@ -126,16 +122,16 @@ async function executeJoinGeo(
   );
 
   // We bring back the column names for geometries
-  if (leftTableColumn === rightTableColumn) {
+  if (leftColumn === rightColumn) {
     await renameColumnNow(
       leftTable,
-      leftTableColumnForQuery,
-      leftTableColumn,
+      leftColumnForQuery,
+      leftColumn,
     );
     await renameColumnNow(
       rightTable,
-      rightTableColumnForQuery,
-      rightTableColumn,
+      rightColumnForQuery,
+      rightColumn,
     );
   }
 }
@@ -158,10 +154,10 @@ async function renameColumnNow(
 
 function joinGeoQuery(
   leftTable: string,
-  leftTableColumn: string,
+  leftColumn: string,
   method: "intersect" | "inside" | "within",
   rightTable: string,
-  rightTableColumn: string,
+  rightColumn: string,
   join: "inner" | "left" | "right" | "full",
   outputTable: string,
   distance: number | undefined,
@@ -182,24 +178,24 @@ function joinGeoQuery(
 
   if (method === "intersect") {
     query +=
-      ` ON ST_Intersects("${leftTable}"."${leftTableColumn}", "${rightTable}"."${rightTableColumn}");`;
+      ` ON ST_Intersects("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}");`;
   } else if (method === "inside") {
     // Order is important
     query +=
-      ` ON ST_Covers("${rightTable}"."${rightTableColumn}", "${leftTable}"."${leftTableColumn}");`;
+      ` ON ST_Covers("${rightTable}"."${rightColumn}", "${leftTable}"."${leftColumn}");`;
   } else if (method === "within") {
     if (typeof distance === "number") {
       if (distanceMethod === undefined || distanceMethod === "srs") {
         query +=
-          ` ON ST_DWithin("${leftTable}"."${leftTableColumn}", "${rightTable}"."${rightTableColumn}", ${distance})`;
+          ` ON ST_DWithin("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}", ${distance})`;
       } else if (distanceMethod === "haversine") {
         // Maybe ST_DWithin_Sphere will be available soon?
         query +=
-          ` ON ST_Distance_Sphere("${leftTable}"."${leftTableColumn}", "${rightTable}"."${rightTableColumn}") < ${distance}`;
+          ` ON ST_Distance_Sphere("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}") < ${distance}`;
       } else if (distanceMethod === "spheroid") {
         // Should be using ST_DWithin_Spheroid but doesn't work?
         query +=
-          ` ON ST_Distance_Spheroid("${leftTable}"."${leftTableColumn}"::GEOMETRY, "${rightTable}"."${rightTableColumn}"::GEOMETRY) < ${distance}`;
+          ` ON ST_Distance_Spheroid("${leftTable}"."${leftColumn}"::GEOMETRY, "${rightTable}"."${rightColumn}"::GEOMETRY) < ${distance}`;
       } else {
         throw new Error(`Unknown ${distanceMethod}`);
       }

@@ -78,7 +78,7 @@ Deno.test("should do a left spatial join the intersect method and output the res
 
   const data = await sdb.customQuery(
     "select nameEnglish, name from specificTable",
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [
@@ -207,8 +207,8 @@ Deno.test("should do a left spatial join the intersect method with specific opti
   poly.renameColumns({ geom: "geomPolygon" });
 
   const joined = prov.joinGeo(poly, "intersect", {
-    leftTableColumn: "geomProvince",
-    rightTableColumn: "geomPolygon",
+    leftColumn: "geomProvince",
+    rightColumn: "geomPolygon",
     type: "inner",
     outputTable: "joined",
   });

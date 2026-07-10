@@ -8,8 +8,8 @@ import { executeCreateFtsIndex } from "./createFtsIndex.ts";
 export default function bm25(
   simpleTable: SimpleTable,
   text: string,
-  columnId: string,
-  columnText: string,
+  idColumn: string,
+  textColumn: string,
   nbResults: number,
   options: {
     stemmer?:
@@ -67,14 +67,14 @@ export default function bm25(
   queueOp(outputTable, {
     kind: "barrier",
     method: "bm25()",
-    parameters: { text, columnId, columnText, nbResults, options },
+    parameters: { text, idColumn, textColumn, nbResults, options },
     execute: () =>
       executeBm25(
         simpleTable,
         outputTable,
         text,
-        columnId,
-        columnText,
+        idColumn,
+        textColumn,
         nbResults,
         options,
       ),
@@ -87,8 +87,8 @@ async function executeBm25(
   simpleTable: SimpleTable,
   outputTable: SimpleTable,
   text: string,
-  columnId: string,
-  columnText: string,
+  idColumn: string,
+  textColumn: string,
   nbResults: number,
   options: {
     stemmer?: string;
@@ -108,7 +108,7 @@ async function executeBm25(
 ): Promise<void> {
   // The index creation runs directly (not with the sync createFtsIndex
   // builder, which would queue for the next flush).
-  await executeCreateFtsIndex(simpleTable, columnId, columnText, {
+  await executeCreateFtsIndex(simpleTable, idColumn, textColumn, {
     stemmer: options.stemmer,
     stopwords: options.stopwords,
     ignore: options.ignore,
@@ -130,7 +130,7 @@ async function executeBm25(
     simpleTable,
     `CREATE OR REPLACE TABLE "${outputTable.name}" AS SELECT ${selectClause} FROM (SELECT *, fts_main_${
       camelCase(simpleTable.name)
-    }.match_bm25(${columnId}, '${text.replace(/'/g, "''")}'${
+    }.match_bm25(${idColumn}, '${text.replace(/'/g, "''")}'${
       typeof options.k === "number" ? `, k := ${options.k}` : ""
     }${typeof options.b === "number" ? `, b := ${options.b}` : ""}${
       options.conjunctive === true ? `, conjunctive := 1` : ""
@@ -140,8 +140,8 @@ async function executeBm25(
       method: "bm25",
       parameters: {
         text,
-        columnId,
-        columnText,
+        idColumn,
+        textColumn,
         nbResults,
         minScore: options.minScore,
         scoreColumn: options.scoreColumn,

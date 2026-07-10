@@ -7,20 +7,20 @@ export default function trim(
   columns: string | string[],
   options: {
     character?: string;
-    method?: "leftTrim" | "rightTrim" | "trim";
+    side?: "left" | "right" | "both";
   } = {},
 ) {
   const cols = stringToArray(columns);
-  const method = options.method ?? "trim";
-  const fn = method === "leftTrim"
+  const side = options.side ?? "both";
+  const fn = side === "left"
     ? "LTRIM"
-    : method === "rightTrim"
+    : side === "right"
     ? "RTRIM"
-    : method === "trim"
+    : side === "both"
     ? "TRIM"
     : null;
   if (fn === null) {
-    throw new Error(`Unknown method ${options.method}`);
+    throw new Error(`Unknown side ${options.side}`);
   }
   const specialCharacter = typeof options.character === "string"
     ? `, '${options.character}'`

@@ -90,7 +90,7 @@ export default async function updateWithJS(
         `SELECT *, rowid AS __sda_rowid FROM "${simpleTable.name}"${
           lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
         } ORDER BY rowid LIMIT ${batchSize}`,
-        { returnDataFrom: "query" },
+        { returnData: true },
       )) as { [key: string]: unknown }[];
       if (batch.length === 0) {
         break;

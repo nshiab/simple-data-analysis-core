@@ -8,7 +8,7 @@ export default function randomPoint(
   simpleTable: SimpleTable,
   newColumn: string,
   nbPointsToTry: number,
-  options: { column?: string; try?: boolean } = {},
+  options: { column?: string; strict?: boolean } = {},
 ) {
   // This validation doesn't need the database, so it stays at call time.
   if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
@@ -33,7 +33,7 @@ async function executeRandomPoint(
   simpleTable: SimpleTable,
   newColumn: string,
   nbPointsToTry: number,
-  options: { column?: string; try?: boolean },
+  options: { column?: string; strict?: boolean },
 ): Promise<void> {
   const column = typeof options.column === "string"
     ? options.column
@@ -60,9 +60,9 @@ async function executeRandomPoint(
   const nbNulls = await simpleTable.getNbRows({
     conditions: `"${newColumn}" IS NULL`,
   });
-  if (nbNulls > 0 && !options.try) {
+  if (nbNulls > 0 && options.strict !== false) {
     throw new Error(
-      `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.try to true.`,
+      `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.strict to false.`,
     );
   }
 }

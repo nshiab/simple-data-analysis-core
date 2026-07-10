@@ -4,18 +4,18 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function ranks(
   simpleTable: SimpleTable,
-  values: string,
+  column: string,
   newColumn: string,
   options: {
     order?: "asc" | "desc";
     categories?: string | string[];
-    noGaps?: boolean;
+    dense?: boolean;
   } = {},
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "ranks()",
-    parameters: { values, newColumn, options },
+    parameters: { column, newColumn, options },
     needsSchema: false,
     buildSelect: (input) => {
       const categories = options.categories
@@ -27,8 +27,8 @@ export default function ranks(
         : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
 
       return `SELECT *, ${
-        options.noGaps ? "dense_rank()" : "rank()"
-      } OVER (${partition}ORDER BY "${values}" ${
+        options.dense ? "dense_rank()" : "rank()"
+      } OVER (${partition}ORDER BY "${column}" ${
         typeof options.order === "string" ? options.order.toUpperCase() : ""
       }) AS "${newColumn}"
     FROM ${input}`;

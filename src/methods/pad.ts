@@ -8,7 +8,7 @@ export default function pad(
   simpleTable: SimpleTable,
   columns: string | string[],
   length: number,
-  options: { method?: "left" | "right"; char?: string } = {},
+  options: { side?: "left" | "right"; character?: string } = {},
 ) {
   // The overflow pre-validation queries the data, so pad can't be expressed
   // as a single SELECT over its input: it executes as a barrier.
@@ -24,7 +24,7 @@ async function executePad(
   simpleTable: SimpleTable,
   columns: string | string[],
   length: number,
-  options: { method?: "left" | "right"; char?: string },
+  options: { side?: "left" | "right"; character?: string },
 ) {
   const columnList = stringToArray(columns);
 
@@ -75,15 +75,15 @@ function padQuery(
   table: string,
   columns: string[],
   length: number,
-  options: { method?: "left" | "right"; char?: string },
+  options: { side?: "left" | "right"; character?: string },
 ) {
-  const method = options.method ?? "left";
-  const char = options.char ?? "0";
+  const side = options.side ?? "left";
+  const char = options.character ?? "0";
 
   // Escape single quotes and wrap in single quotes for SQL
   const escapedChar = char.replace(/'/g, "''");
   const paddedChar = `'${escapedChar}'`;
-  const func = method === "left" ? "LPAD" : "RPAD";
+  const func = side === "left" ? "LPAD" : "RPAD";
 
   let query = "";
   for (const column of columns) {

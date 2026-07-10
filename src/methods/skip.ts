@@ -3,15 +3,14 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function skip(
   simpleTable: SimpleTable,
-  nbRowsToSkip: number,
+  count: number,
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "skip()",
-    parameters: { nbRowsToSkip },
+    parameters: { count },
     needsSchema: false,
     preservesSchema: true,
-    buildSelect: (input) =>
-      `SELECT * FROM ${input} OFFSET ${nbRowsToSkip} ROWS`,
+    buildSelect: (input) => `SELECT * FROM ${input} OFFSET ${count} ROWS`,
   });
 }

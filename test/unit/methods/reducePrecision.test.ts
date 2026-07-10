@@ -12,7 +12,7 @@ Deno.test("should round the coordinates to 3 decimals", async () => {
 
   const data = await sdb.customQuery(
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
   assertEquals(data, [{ geomText: "POINT (-73.623 45.514)" }]);
   await sdb.done();
@@ -25,7 +25,7 @@ Deno.test("should round the coordinates to 3 decimals from a specific column", a
   table.reducePrecision(3, { column: "geom" });
   const data = await sdb.customQuery(
     `SELECT ST_AsText(geom) as geomText FROM geoData;`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
   assertEquals(data, [{ geomText: "POINT (-73.623 45.514)" }]);
   await sdb.done();

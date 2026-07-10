@@ -282,7 +282,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
     outputTable: "newTable",
   });
   const data = await sdb.customQuery("select * from newTable", {
-    returnDataFrom: "query",
+    returnData: true,
   });
 
   assertEquals(data, [
@@ -396,7 +396,7 @@ Deno.test("should summarize and output a table without the column value, when on
   table.summarize({
     values: "key2",
     decimals: 4,
-    noColumnValue: true,
+    valueColumn: false,
   });
   const data = await table.getData();
 
@@ -425,7 +425,7 @@ Deno.test("should summarize and output a table without the column value, when on
     values: "key2",
     categories: "key1",
     decimals: 4,
-    noColumnValue: true,
+    valueColumn: false,
   });
   const data = await table.getData();
 

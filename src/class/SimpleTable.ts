@@ -223,7 +223,7 @@ export default class SimpleTable extends Simple {
    * @param options.debug - A boolean indicating whether to enable debug mode.
    * @param options.nbRowsToLog - The number of rows to log when displaying table data.
    * @param options.nbCharactersToLog - The maximum number of characters to log for strings. Useful to avoid logging large text content.
-   * @param options.types - A boolean indicating whether to include data types when logging a table.
+   * @param options.typesToLog - A boolean indicating whether to include data types when logging a table.
    * @category Constructor
    */
   constructor(
@@ -233,7 +233,7 @@ export default class SimpleTable extends Simple {
       debug?: boolean;
       nbRowsToLog?: number;
       nbCharactersToLog?: number;
-      types?: boolean;
+      typesToLog?: boolean;
     } = {},
   ) {
     super(options);
@@ -337,7 +337,7 @@ export default class SimpleTable extends Simple {
   /**
    * Loads an array of JavaScript objects into the table. This method queues the load; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param arrayOfObjects - An array of objects, where each object represents a row and its properties represent columns.
+   * @param rows - An array of objects, where each object represents a row and its properties represent columns.
    * @returns The table, so methods can be chained.
    * @category Importing Data
    *
@@ -352,9 +352,9 @@ export default class SimpleTable extends Simple {
    * ```
    */
   loadArray(
-    arrayOfObjects: { [key: string]: unknown }[],
+    rows: { [key: string]: unknown }[],
   ): this {
-    loadArray(this, arrayOfObjects);
+    loadArray(this, rows);
 
     return this;
   }
@@ -581,8 +581,8 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param columnId - The name of the column containing unique identifiers for each row.
-   * @param columnText - The name of the column containing the text to index.
+   * @param idColumn - The name of the column containing unique identifiers for each row.
+   * @param textColumn - The name of the column containing the text to index.
    * @param options - An optional object with configuration options:
    * @param options.stemmer - The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
    * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
@@ -600,8 +600,8 @@ export default class SimpleTable extends Simple {
    * table.createFtsIndex("Dish", "Recipe");
    * ```
    *
-   * @param columnId - The column containing the document identifiers.
-   * @param columnText - The column containing the text to search.
+   * @param idColumn - The column containing the document identifiers.
+   * @param textColumn - The column containing the text to search.
    * @param options - An optional object with configuration options:
    * @param options.stemmer - The stemmer to use for the FTS index. Supports multiple languages or "none" to disable stemming. Defaults to "porter".
    * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
@@ -639,8 +639,8 @@ export default class SimpleTable extends Simple {
    * ```
    */
   createFtsIndex(
-    columnId: string,
-    columnText: string,
+    idColumn: string,
+    textColumn: string,
     options: {
       stemmer?:
         | "arabic"
@@ -679,7 +679,7 @@ export default class SimpleTable extends Simple {
       verbose?: boolean;
     } = {},
   ): this {
-    createFtsIndex(this, columnId, columnText, options);
+    createFtsIndex(this, idColumn, textColumn, options);
     return this;
   }
 
@@ -759,8 +759,8 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param text - The search query text to match against the text column.
-   * @param columnId - The name of the column containing unique identifiers for each row.
-   * @param columnText - The name of the column containing the text to search.
+   * @param idColumn - The name of the column containing unique identifiers for each row.
+   * @param textColumn - The name of the column containing the text to search.
    * @param nbResults - The number of top-ranked results to return.
    * @param options - An optional object with configuration options:
    * @param options.outputTable - The name of a new table where the results will be stored. If not provided, the current table will be replaced with the search results.
@@ -857,8 +857,8 @@ export default class SimpleTable extends Simple {
    */
   bm25(
     text: string,
-    columnId: string,
-    columnText: string,
+    idColumn: string,
+    textColumn: string,
     nbResults: number,
     options: {
       outputTable?: string;
@@ -907,8 +907,8 @@ export default class SimpleTable extends Simple {
     return bm25(
       this,
       text,
-      columnId,
-      columnText,
+      idColumn,
+      textColumn,
       nbResults,
       options,
     ) as this;
@@ -941,7 +941,7 @@ export default class SimpleTable extends Simple {
   /**
    * Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param tablesToInsert - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
+   * @param tables - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
    * @param options - An optional object with configuration options:
    * @param options.unifyColumns - A boolean indicating whether to unify the columns of the tables. If `true`, missing columns in a table will be filled with `NULL` values. Defaults to `false`.
    * @returns The table, so methods can be chained.
@@ -966,10 +966,10 @@ export default class SimpleTable extends Simple {
    * ```
    */
   insertTables(
-    tablesToInsert: SimpleTable | SimpleTable[],
+    tables: SimpleTable | SimpleTable[],
     options: { unifyColumns?: boolean } = {},
   ): this {
-    insertTables(this, tablesToInsert, options);
+    insertTables(this, tables, options);
     return this;
   }
 
@@ -1314,7 +1314,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param nbRowsToSkip - The number of rows to skip from the beginning of the table.
+   * @param count - The number of rows to skip from the beginning of the table.
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
@@ -1324,8 +1324,8 @@ export default class SimpleTable extends Simple {
    * table.skip(10);
    * ```
    */
-  skip(nbRowsToSkip: number): this {
-    skip(this, nbRowsToSkip);
+  skip(count: number): this {
+    skip(this, count);
     return this;
   }
 
@@ -1353,7 +1353,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param quantity - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
+   * @param count - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
    * @param options - An optional object with configuration options:
    * @param options.seed - A number specifying the seed for repeatable sampling. Using the same seed will always yield the same random rows. Defaults to a random seed.
    * @returns The table, so methods can be chained.
@@ -1378,12 +1378,12 @@ export default class SimpleTable extends Simple {
    * ```
    */
   sample(
-    quantity: number | string,
+    count: number | string,
     options: {
       seed?: number;
     } = {},
   ): this {
-    sample(this, quantity, options);
+    sample(this, count, options);
     return this;
   }
 
@@ -1521,7 +1521,7 @@ export default class SimpleTable extends Simple {
    * @param columns - The column name or an array of column names to trim.
    * @param options - An optional object with configuration options:
    * @param options.character - The string to trim. Defaults to whitespace characters.
-   * @param options.method - The trimming method to apply: `"leftTrim"` (removes from the beginning), `"rightTrim"` (removes from the end), or `"trim"` (removes from both sides). Defaults to `"trim"`.
+   * @param options.side - The side to trim: `"left"` (removes from the beginning), `"right"` (removes from the end), or `"both"` (removes from both sides). Defaults to `"both"`.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -1540,14 +1540,14 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Right-trim whitespace from 'description' and 'notes' columns
-   * table.trim(["description", "notes"], { method: "rightTrim" });
+   * table.trim(["description", "notes"], { side: "right" });
    * ```
    */
   trim(
     columns: string | string[],
     options: {
       character?: string;
-      method?: "leftTrim" | "rightTrim" | "trim";
+      side?: "left" | "right" | "both";
     } = {},
   ): this {
     trim(this, columns, options);
@@ -1703,7 +1703,7 @@ export default class SimpleTable extends Simple {
    *
    * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
    * @param options - Configuration options.
-   * @param options.checkColumns - Whether to verify the source columns exist before renaming. Defaults to `true`. Set to `false` to skip the check and its schema lookup when you know the columns exist and are renaming across many tables where the extra round-trip adds up.
+   * @param options.strict - Whether to verify the source columns exist before renaming. Defaults to `true`. Set to `false` to skip the check and its schema lookup when you know the columns exist and are renaming across many tables where the extra round-trip adds up.
    * @returns The table, so methods can be chained.
    * @category Column Operations
    *
@@ -1722,12 +1722,12 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Skip the existence check when renaming across many tables
-   * table.renameColumns({ "product_id": "productId" }, { checkColumns: false });
+   * table.renameColumns({ "product_id": "productId" }, { strict: false });
    * ```
    */
   renameColumns(
     names: { [key: string]: string },
-    options: { checkColumns?: boolean } = {},
+    options: { strict?: boolean } = {},
   ): this {
     renameColumns(this, names, options);
     return this;
@@ -1797,17 +1797,17 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param columns - An array of strings representing the names of the columns to be stacked (unpivoted).
-   * @param columnsTo - The name of the new column that will contain the original column names (e.g., "Year").
+   * @param namesTo - The name of the new column that will contain the original column names (e.g., "Year").
    * @param valuesTo - The name of the new column that will contain the values from the stacked columns (e.g., "Employees").
    * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
   longer(
     columns: string[],
-    columnsTo: string,
+    namesTo: string,
     valuesTo: string,
   ): this {
-    longer(this, columns, columnsTo, valuesTo);
+    longer(this, columns, namesTo, valuesTo);
     return this;
   }
 
@@ -1842,13 +1842,13 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param columnsFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
+   * @param namesFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
    * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
-  wider(columnsFrom: string, valuesFrom: string): this {
-    wider(this, columnsFrom, valuesFrom);
+  wider(namesFrom: string, valuesFrom: string): this {
+    wider(this, namesFrom, valuesFrom);
     return this;
   }
 
@@ -1865,7 +1865,7 @@ export default class SimpleTable extends Simple {
    *
    * @param types - An object mapping column names to their target data types for conversion.
    * @param options - An optional object with configuration options:
-   * @param options.try - If `true`, values that cannot be converted will be replaced by `NULL` instead of throwing an error. Defaults to `false`.
+   * @param options.strict - If `false`, values that cannot be converted will be replaced by `NULL` instead of throwing an error. Defaults to `true`.
    * @param options.datetimeFormat - A string specifying the format for date and time conversions. Uses `strftime` and `strptime` functions from DuckDB. For format specifiers, see [DuckDB's documentation](https://duckdb.org/docs/sql/functions/dateformat).
    * @returns The table, so methods can be chained.
    * @category Updating Data
@@ -1897,7 +1897,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Convert 'amount' to float, replacing unconvertible values with NULL
-   * table.convert({ amount: "float" }, { try: true });
+   * table.convert({ amount: "float" }, { strict: false });
    * ```
    */
   convert(
@@ -1919,7 +1919,7 @@ export default class SimpleTable extends Simple {
         | "boolean";
     },
     options: {
-      try?: boolean;
+      strict?: boolean;
       datetimeFormat?: string;
     } = {},
   ): this {
@@ -2226,7 +2226,7 @@ export default class SimpleTable extends Simple {
    *
    * Similar strings are grouped into clusters. Matching is transitive: if `"New York"` is similar to `"New Yorke"` and
    * `"New Yorke"` is similar to `"New Yorkk"`, all three land in the same cluster even if `"New York"` and `"New Yorkk"`
-   * would not match directly. Each cluster is then collapsed to one representative value based on the `keep` strategy.
+   * would not match directly. Each cluster is then collapsed to one representative value based on the `strategy` option.
    *
    * Similarity is computed using the [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension,
    * which is installed and loaded automatically.
@@ -2242,7 +2242,7 @@ export default class SimpleTable extends Simple {
    *   - `"partial_ratio"`: Best partial/substring similarity.
    *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.keep - The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`.
+   * @param options.strategy - The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`.
    *   - `"mostCommon"`: Keep the value that appears most frequently in the original column.
    *   - `"longestString"`: Keep the longest string in the cluster.
    *   - `"shortestString"`: Keep the shortest string in the cluster.
@@ -2276,7 +2276,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
-   * table.fuzzyClean("category", "category", 80, { keep: "longestString" });
+   * table.fuzzyClean("category", "category", 80, { strategy: "longestString" });
    * ```
    */
   fuzzyClean(
@@ -2289,7 +2289,7 @@ export default class SimpleTable extends Simple {
         | "partial_ratio"
         | "token_sort_ratio"
         | "token_set_ratio";
-      keep?:
+      strategy?:
         | "mostCommon"
         | "longestString"
         | "shortestString"
@@ -2468,8 +2468,8 @@ export default class SimpleTable extends Simple {
    * @param columns - The column name(s) containing strings to be padded.
    * @param length - The target length of the padded strings.
    * @param options - An optional object with configuration options:
-   * @param options.method - Which side to pad. `'left'` (default) or `'right'`.
-   * @param options.char - The character to use for padding. Defaults to `'0'`.
+   * @param options.side - Which side to pad. `'left'` (default) or `'right'`.
+   * @param options.character - The character to use for padding. Defaults to `'0'`.
    * @returns The table, so methods can be chained.
    * @throws {Error} If any column is not of string (VARCHAR) type.
    * @throws {Error} If any string value exceeds the target length.
@@ -2485,21 +2485,21 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Right-pad 'code' column to 5 characters with spaces
-   * table.pad("code", 5, { method: "right", char: " " });
+   * table.pad("code", 5, { side: "right", character: " " });
    * // Result: '123' -> '123  ', '45' -> '45   ', null -> null
    * ```
    *
    * @example
    * ```ts
    * // Left-pad multiple columns to 5 characters with dashes
-   * table.pad(["id", "code"], 5, { method: "left", char: "-" });
+   * table.pad(["id", "code"], 5, { side: "left", character: "-" });
    * // Result: '1' -> '----1', '23' -> '---23'
    * ```
    */
   pad(
     columns: string | string[],
     length: number,
-    options: { method?: "left" | "right"; char?: string } = {},
+    options: { side?: "left" | "right"; character?: string } = {},
   ): this {
     pad(this, columns, length, options);
     return this;
@@ -2546,8 +2546,8 @@ export default class SimpleTable extends Simple {
    * Splits strings in a specified column by a separator and spreads the resulting parts into multiple new columns.
    *
    * Each part of the split string will be stored in a separate column. The number of columns created is determined by the length of the `newColumns` array.
-   * If a row has fewer parts than the number of new columns, a warning will be logged and the extra columns will contain empty strings (unless `noCheck` is set to true).
-   * If a row has more parts than the number of new columns, an error will be thrown unless `noCheck` is set to true.
+   * If a row has fewer parts than the number of new columns, a warning will be logged and the extra columns will contain empty strings (unless `strict` is set to `false`).
+   * If a row has more parts than the number of new columns, an error will be thrown unless `strict` is set to `false`.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
@@ -2555,7 +2555,7 @@ export default class SimpleTable extends Simple {
    * @param separator - The substring to use as a delimiter for splitting the strings.
    * @param newColumns - An array of column names for the extracted parts.
    * @param options - Optional configuration.
-   * @param options.noCheck - If true, skips all validation checks (both max and min parts). Default is false.
+   * @param options.strict - If `false`, skips all validation checks (both max and min parts). Defaults to `true`.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2575,8 +2575,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Skip validation for performance with noCheck option
-   * table.splitSpread("data", "|", ["col1", "col2"], { noCheck: true });
+   * // Skip validation for performance
+   * table.splitSpread("data", "|", ["col1", "col2"], { strict: false });
    * ```
    */
   splitSpread(
@@ -2584,7 +2584,7 @@ export default class SimpleTable extends Simple {
     separator: string,
     newColumns: string[],
     options: {
-      noCheck?: boolean;
+      strict?: boolean;
     } = {},
   ): this {
     splitSpread(this, column, separator, newColumns, options);
@@ -2597,7 +2597,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be modified.
-   * @param numberOfCharacters - The number of characters to extract from the left side of each string.
+   * @param nbCharacters - The number of characters to extract from the left side of each string.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2608,8 +2608,8 @@ export default class SimpleTable extends Simple {
    * table.left("productCode", 2);
    * ```
    */
-  left(column: string, numberOfCharacters: number): this {
-    left(this, column, numberOfCharacters);
+  left(column: string, nbCharacters: number): this {
+    left(this, column, nbCharacters);
     return this;
   }
 
@@ -2619,7 +2619,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be modified.
-   * @param numberOfCharacters - The number of characters to extract from the right side of each string.
+   * @param nbCharacters - The number of characters to extract from the right side of each string.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2630,8 +2630,8 @@ export default class SimpleTable extends Simple {
    * table.right("productCode", 2);
    * ```
    */
-  right(column: string, numberOfCharacters: number): this {
-    right(this, column, numberOfCharacters);
+  right(column: string, nbCharacters: number): this {
+    right(this, column, nbCharacters);
     return this;
   }
 
@@ -2976,12 +2976,12 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param values - The column containing the values to be used for ranking.
+   * @param column - The column containing the values to be used for ranking.
    * @param newColumn - The name of the new column where the ranks will be stored.
    * @param options - An optional object with configuration options:
    * @param options.order - The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
    * @param options.categories - The column name or an array of column names that define categories for ranking. Ranks will be assigned independently within each category.
-   * @param options.noGaps - A boolean indicating whether to assign ranks without gaps (dense ranking). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
+   * @param options.dense - A boolean indicating whether to use dense ranking (no gaps). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -3000,7 +3000,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute ranks within 'department' categories, based on 'salary' values, without gaps
-   * table.ranks("salary", "salaryRank", { categories: "department", noGaps: true });
+   * table.ranks("salary", "salaryRank", { categories: "department", dense: true });
    * ```
    *
    * @example
@@ -3010,15 +3010,15 @@ export default class SimpleTable extends Simple {
    * ```
    */
   ranks(
-    values: string,
+    column: string,
     newColumn: string,
     options: {
       order?: "asc" | "desc";
       categories?: string | string[];
-      noGaps?: boolean;
+      dense?: boolean;
     } = {},
   ): this {
-    ranks(this, values, newColumn, options);
+    ranks(this, column, newColumn, options);
     return this;
   }
 
@@ -3027,7 +3027,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param values - The column containing values from which quantiles will be assigned.
+   * @param column - The column containing values from which quantiles will be assigned.
    * @param nbQuantiles - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
    * @param newColumn - The name of the new column where the assigned quantiles will be stored.
    * @param options - An optional object with configuration options:
@@ -3054,14 +3054,14 @@ export default class SimpleTable extends Simple {
    * ```
    */
   quantiles(
-    values: string,
+    column: string,
     nbQuantiles: number,
     newColumn: string,
     options: {
       categories?: string | string[];
     } = {},
   ): this {
-    quantiles(this, values, nbQuantiles, newColumn, options);
+    quantiles(this, column, nbQuantiles, newColumn, options);
     return this;
   }
 
@@ -3070,7 +3070,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param values - The column containing values from which bins will be computed.
+   * @param column - The column containing values from which bins will be computed.
    * @param interval - The interval size for binning the values.
    * @param newColumn - The name of the new column where the bins will be stored.
    * @param options - An optional object with configuration options:
@@ -3093,14 +3093,14 @@ export default class SimpleTable extends Simple {
    * ```
    */
   bins(
-    values: string,
+    column: string,
     interval: number,
     newColumn: string,
     options: {
       startValue?: number;
     } = {},
   ): this {
-    bins(this, values, interval, newColumn, options);
+    bins(this, column, interval, newColumn, options);
     return this;
   }
 
@@ -3223,7 +3223,7 @@ export default class SimpleTable extends Simple {
    * @param options.decimals - The number of decimal places to round the summarized values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.toMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
-   * @param options.noColumnValue - If `true`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `false`.
+   * @param options.valueColumn - If `false`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `true`.
    * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained.
    * @category Analyzing Data
    *
@@ -3305,7 +3305,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Summarize a single column 'value_column' without the default 'value' column in the output
-   * table.summarize({ values: "value_column", noColumnValue: true });
+   * table.summarize({ values: "value_column", valueColumn: false });
    * ```
    */
   summarize(
@@ -3356,7 +3356,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
       toMs?: boolean;
-      noColumnValue?: boolean;
+      valueColumn?: boolean;
     } = {},
   ): this {
     return summarize(this, options) as this;
@@ -4454,9 +4454,9 @@ export default class SimpleTable extends Simple {
    *
    * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
    * @param options - Optional settings:
-   * @param options.noCheck - If `true`, no error will be thrown when no row or more than one row match the condition. Defaults to `false`.
+   * @param options.strict - If `false`, no error will be thrown when no row or more than one row match the condition. Defaults to `true`.
    * @returns A promise that resolves to an object representing the matched row.
-   * @throws {Error} If `noCheck` is `false` and no row or more than one row matches the conditions.
+   * @throws {Error} If `strict` is `true` and no row or more than one row matches the conditions.
    * @category Getting Data
    *
    * @example
@@ -4476,20 +4476,20 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get a row without throwing an error if multiple matches or no match
-   * const flexibleRow = await table.getRow(`status = 'pending'`, { noCheck: true });
+   * const flexibleRow = await table.getRow(`status = 'pending'`, { strict: false });
    * console.log(flexibleRow);
    * ```
    */
   async getRow(
     conditions: string,
-    options: { noCheck?: boolean } = {},
+    options: { strict?: boolean } = {},
   ): Promise<
     {
       [key: string]: unknown;
     } | undefined
   > {
     const data = await this.getData({ conditions });
-    if (options.noCheck !== true) {
+    if (options.strict !== false) {
       if (data.length === 0) {
         throw new Error(`No row found with condition \`${conditions}\`.`);
       } else if (data.length > 1) {
@@ -4632,8 +4632,8 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param columnLat - The name of the column storing the latitude values.
-   * @param columnLon - The name of the column storing the longitude values.
+   * @param latColumn - The name of the column storing the latitude values.
+   * @param lonColumn - The name of the column storing the longitude values.
    * @param newColumn - The name of the new column where the point geometries will be stored.
    * @returns The table, so methods can be chained.
    * @category Geospatial
@@ -4645,11 +4645,11 @@ export default class SimpleTable extends Simple {
    * ```
    */
   points(
-    columnLat: string,
-    columnLon: string,
+    latColumn: string,
+    lonColumn: string,
     newColumn: string,
   ): this {
-    points(this, columnLat, columnLon, newColumn);
+    points(this, latColumn, lonColumn, newColumn);
     return this;
   }
 
@@ -5054,8 +5054,8 @@ export default class SimpleTable extends Simple {
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"within"` (geometries of the left table are within a specified distance of geometries in the right table).
    * @param options - An optional object with configuration options:
-   * @param options.leftTableColumn - The name of the column storing geometries in the left table (this table). If omitted, the method attempts to find one.
-   * @param options.rightTableColumn - The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
+   * @param options.leftColumn - The name of the column storing geometries in the left table (this table). If omitted, the method attempts to find one.
+   * @param options.rightColumn - The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
    * @param options.type - The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
    * @param options.distance - Required if `method` is `"within"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
    * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate but slowest).
@@ -5092,8 +5092,8 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Merge data with specific geometry columns and an inner join type, storing results in a new table
    * const tableC = tableA.joinGeo(tableB, "intersect", {
-   *   leftTableColumn: "geometriesA",
-   *   rightTableColumn: "geometriesB",
+   *   leftColumn: "geometriesA",
+   *   rightColumn: "geometriesB",
    *   type: "inner",
    *   outputTable: true,
    * });
@@ -5103,8 +5103,8 @@ export default class SimpleTable extends Simple {
     rightTable: SimpleTable,
     method: "intersect" | "inside" | "within",
     options: {
-      leftTableColumn?: string;
-      rightTableColumn?: string;
+      leftColumn?: string;
+      rightColumn?: string;
       type?: "inner" | "left" | "right" | "full";
       distance?: number;
       distanceMethod?: "srs" | "haversine" | "spheroid";
@@ -5228,12 +5228,12 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Returns `TRUE` if all points of a geometry in `column1` lie inside a geometry in `column2`, and `FALSE` otherwise.
+   * Returns `TRUE` if all points of a geometry in `column` lie inside a geometry in `containerColumn`, and `FALSE` otherwise.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param column1 - The name of the column storing the geometries to be tested for containment.
-   * @param column2 - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
+   * @param column - The name of the column storing the geometries to be tested for containment.
+   * @param containerColumn - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for inside, `FALSE` otherwise) will be stored.
    * @returns The table, so methods can be chained.
    * @category Geospatial
@@ -5245,11 +5245,11 @@ export default class SimpleTable extends Simple {
    * ```
    */
   inside(
-    column1: string,
-    column2: string,
+    column: string,
+    containerColumn: string,
     newColumn: string,
   ): this {
-    inside(this, column1, column2, newColumn);
+    inside(this, column, containerColumn, newColumn);
     return this;
   }
 
@@ -5286,8 +5286,8 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the point geometries.
-   * @param columnLat - The name of the new column where the extracted latitude values will be stored.
-   * @param columnLon - The name of the new column where the extracted longitude values will be stored.
+   * @param latColumn - The name of the new column where the extracted latitude values will be stored.
+   * @param lonColumn - The name of the new column where the extracted longitude values will be stored.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -5299,10 +5299,10 @@ export default class SimpleTable extends Simple {
    */
   latLon(
     column: string,
-    columnLat: string,
-    columnLon: string,
+    latColumn: string,
+    lonColumn: string,
   ): this {
-    latLon(this, column, columnLat, columnLon);
+    latLon(this, column, latColumn, lonColumn);
     return this;
   }
 
@@ -5379,7 +5379,7 @@ export default class SimpleTable extends Simple {
    * @param nbPointsToTry - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries within which the random points will be generated. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.try - If `true`, the method will not throw an error if some points cannot be generated. Corresponding rows will have `NULL` in the new column.
+   * @param options.strict - If `false`, the method will not throw an error if some points cannot be generated. Corresponding rows will have `NULL` in the new column. Defaults to `true`.
    *
    * @example
    * ```ts
@@ -5396,13 +5396,13 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Generate a random point for each geometry, but don't throw if some points cannot be generated
-   * table.randomPoint("pointInArea", 1, { try: true });
+   * table.randomPoint("pointInArea", 1, { strict: false });
    * ```
    */
   randomPoint(
     newColumn: string,
     nbPointsToTry: number,
-    options: { column?: string; try?: boolean } = {},
+    options: { column?: string; strict?: boolean } = {},
   ): this {
     randomPoint(this, newColumn, nbPointsToTry, options);
     return this;
@@ -5789,7 +5789,7 @@ export default class SimpleTable extends Simple {
    * Caches the results of computations in `./.sda-cache`.
    * You should add `./.sda-cache` to your `.gitignore` file.
    *
-   * @param run - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
+   * @param compute - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
    * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `run` function will be executed again to refresh the cache. By default, there is no TTL, meaning the cache is only invalidated if the `run` function's content changes.
    * @returns A promise that resolves to the table, so methods can be chained.
@@ -5853,10 +5853,10 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async cache(
-    run: () => void | Promise<void>,
+    compute: () => void | Promise<void>,
     options: { ttl?: number } = {},
   ): Promise<this> {
-    await cache(this, run, { ...options, verbose: this.sdb.cacheVerbose });
+    await cache(this, compute, { ...options, verbose: this.sdb.cacheVerbose });
     return this;
   }
 
@@ -5951,7 +5951,7 @@ export default class SimpleTable extends Simple {
       conditions && console.log(`Conditions: ${conditions}`);
       const data = await this.getTop(rows, { conditions });
       logData(
-        this.types || types ? await this.getTypes() : null,
+        this.typesToLog || types ? await this.getTypes() : null,
         data,
         this.nbCharactersToLog,
       );
@@ -5959,7 +5959,7 @@ export default class SimpleTable extends Simple {
         ? parseInt(
           (await this.sdb.customQuery(
             `select count(*) as count from "${this.name}" where ${conditions}`,
-            { returnDataFrom: "query" },
+            { returnData: true },
           ) as { count: string }[])[0].count,
         )
         : await this.getNbRows();
@@ -6043,7 +6043,7 @@ export default class SimpleTable extends Simple {
   async getProjection(column: string): Promise<string> {
     const res = (await this.sdb.customQuery(
       `SELECT ST_CRS("${column}") AS proj FROM "${this.name}" LIMIT 1;`,
-      { returnDataFrom: "query" },
+      { returnData: true },
     ) as { proj: string | null }[])[0];
     const proj = res && res.proj !== "null" ? res.proj : null;
 

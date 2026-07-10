@@ -12,10 +12,10 @@ import parseDuckDBType from "../helpers/parseDuckDBType.ts";
 
 export default function loadArray(
   simpleTable: SimpleTable,
-  arrayOfObjects: { [key: string]: unknown }[],
+  rows: { [key: string]: unknown }[],
 ) {
   // This validation doesn't need the database, so it stays at call time.
-  if (arrayOfObjects.length === 0) {
+  if (rows.length === 0) {
     throw new Error(
       "The array is empty. loadArray needs at least one object to infer the column types.",
     );
@@ -24,8 +24,8 @@ export default function loadArray(
   queueOp(simpleTable, {
     kind: "barrier",
     method: "loadArray()",
-    parameters: { arrayOfObjects },
-    execute: () => executeLoadArray(simpleTable, arrayOfObjects),
+    parameters: { rows },
+    execute: () => executeLoadArray(simpleTable, rows),
   });
 }
 
@@ -36,21 +36,21 @@ export default function loadArray(
  */
 export async function executeLoadArray(
   simpleTable: SimpleTable,
-  arrayOfObjects: { [key: string]: unknown }[],
+  rows: { [key: string]: unknown }[],
 ) {
   if (simpleTable.connection === undefined) {
     await simpleTable.sdb.start();
     simpleTable.connection = simpleTable.sdb.connection;
   }
 
-  const keys = Object.keys(arrayOfObjects[0]);
+  const keys = Object.keys(rows[0]);
   const firstNonNullValue = keys.map((key) =>
-    arrayOfObjects.find((obj) => obj[key] !== null && obj[key] !== undefined)
+    rows.find((obj) => obj[key] !== null && obj[key] !== undefined)
       ?.[key]
   );
   const types: string[] = [];
 
-  const dataForChunk: DuckDBValue[][] = arrayOfObjects.map(() => []);
+  const dataForChunk: DuckDBValue[][] = rows.map(() => []);
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const value = firstNonNullValue[i];
@@ -66,15 +66,15 @@ export async function executeLoadArray(
       // If all values in the column are null or undefined, default to VARCHAR type.
       types[i] = "VARCHAR";
 
-      for (let j = 0; j < arrayOfObjects.length; j++) {
+      for (let j = 0; j < rows.length; j++) {
         dataForChunk[j][i] = null;
       }
     } else if (type === "object") {
       if (value instanceof Date) {
         types[i] = "TIMESTAMP";
 
-        for (let j = 0; j < arrayOfObjects.length; j++) {
-          const d = arrayOfObjects[j][key];
+        for (let j = 0; j < rows.length; j++) {
+          const d = rows[j][key];
           if (d === null || d === undefined || Number.isNaN(d)) {
             dataForChunk[j][i] = null;
           } else {
@@ -87,8 +87,8 @@ export async function executeLoadArray(
       } else if (Array.isArray(value)) {
         types[i] = `FLOAT[${value.length}]`;
 
-        for (let j = 0; j < arrayOfObjects.length; j++) {
-          const d = arrayOfObjects[j][key];
+        for (let j = 0; j < rows.length; j++) {
+          const d = rows[j][key];
           dataForChunk[j][i] = arrayValue(d as number[]);
         }
       } else {
@@ -99,8 +99,8 @@ export async function executeLoadArray(
     } else {
       types[i] = parseType(type);
 
-      for (let j = 0; j < arrayOfObjects.length; j++) {
-        const d = arrayOfObjects[j][key];
+      for (let j = 0; j < rows.length; j++) {
+        const d = rows[j][key];
         if (d === null || d === undefined || Number.isNaN(d)) {
           dataForChunk[j][i] = null;
         } else {

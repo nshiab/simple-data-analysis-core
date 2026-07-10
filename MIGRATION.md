@@ -136,6 +136,56 @@ await tableA.getData();
 - **`cache()`** must read the cache to decide between running your function and
   restoring cached data.
 
+## Renamed parameters and options
+
+v2 unifies parameter and option names across the API. Positional parameter
+renames (like `values` → `column`) don't require any code change — only the
+renamed option keys below are breaking.
+
+### One `strict` option instead of five names
+
+Methods that could skip validations or error-throwing now all use
+`strict: false` (validations are on by default):
+
+| Method            | v1                        | v2                  |
+| :---------------- | :------------------------ | :------------------ |
+| `getRow()`        | `{ noCheck: true }`       | `{ strict: false }` |
+| `splitSpread()`   | `{ noCheck: true }`       | `{ strict: false }` |
+| `renameColumns()` | `{ checkColumns: false }` | `{ strict: false }` |
+| `convert()`       | `{ try: true }`           | `{ strict: false }` |
+| `randomPoint()`   | `{ try: true }`           | `{ strict: false }` |
+
+### Renamed option keys
+
+| Method                          | v1                                                | v2                                      |
+| :------------------------------ | :------------------------------------------------ | :-------------------------------------- |
+| `ranks()`                       | `{ noGaps: true }`                                | `{ dense: true }`                       |
+| `summarize()`                   | `{ noColumnValue: true }`                         | `{ valueColumn: false }`                |
+| `writeDB()`                     | `{ noMetaData: true }`                            | `{ metadata: false }`                   |
+| `trim()`                        | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }` |
+| `pad()`                         | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`      |
+| `fuzzyClean()`                  | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`            |
+| `joinGeo()`                     | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`           |
+| `customQuery()`                 | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                  |
+| `new SimpleDB()` / `newTable()` | `{ types: true }`                                 | `{ typesToLog: true }`                  |
+
+### Renamed positional parameters
+
+These don't break any calls (arguments are positional), but documentation and
+editor hints now use the new names:
+
+- `sample(quantity)` → `sample(count)`; `skip(nbRowsToSkip)` → `skip(count)`
+- `left()` / `right()`: `numberOfCharacters` → `nbCharacters`
+- `ranks()`, `quantiles()`, `bins()`: `values` → `column`
+- `createFtsIndex()` and `bm25()`: `columnId`, `columnText` → `idColumn`,
+  `textColumn`
+- `points()` and `latLon()`: `columnLat`, `columnLon` → `latColumn`, `lonColumn`
+- `longer()`: `columnsTo` → `namesTo`; `wider()`: `columnsFrom` → `namesFrom`
+- `inside()`: `column1`, `column2` → `column`, `containerColumn`
+- `loadArray(arrayOfObjects)` → `loadArray(rows)`;
+  `insertTables(tablesToInsert)` → `insertTables(tables)`; `cache(run)` →
+  `cache(compute)`
+
 ## Performance tips
 
 - The more consecutive transformations you queue, the fewer queries run. A

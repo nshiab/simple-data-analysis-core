@@ -172,7 +172,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
   // dates are Date objects even here.
   const data = await sdb.customQuery(
     `SELECT count(*) AS cnt, max(dt) AS maxDate, sum(value)::BIGINT AS sumValue FROM "computedSource2"`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
   assertEquals(data, [
     {
@@ -193,7 +193,7 @@ Deno.test("should convert computed columns not present in any table schema", asy
   ]);
   const data = await sdb.customQuery(
     `SELECT category || '!' AS exclaimed, count(*)::BIGINT AS cnt FROM "computedCols" GROUP BY category ORDER BY category`,
-    { returnDataFrom: "query", table: "computedCols" },
+    { returnData: true, table: "computedCols" },
   );
   assertEquals(data, [
     { exclaimed: "a!", cnt: 1 },
@@ -240,7 +240,7 @@ Deno.test("should keep duplicate column names in results by suffixing them", asy
   // columns. The typed read path deduplicates the names instead.
   const data = await sdb.customQuery(
     `SELECT 1 AS a, 2 AS a, 3 AS b`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
   assertEquals(data, [{ a: 1, "a:1": 2, b: 3 }]);
   await sdb.done();

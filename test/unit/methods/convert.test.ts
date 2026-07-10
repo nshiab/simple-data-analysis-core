@@ -45,7 +45,7 @@ Deno.test("should try to convert string to number", async () => {
     allText: true,
   });
 
-  table.convert({ key1: "integer" }, { try: true });
+  table.convert({ key1: "integer" }, { strict: false });
   const data = await table.getData();
 
   assertEquals(data, [

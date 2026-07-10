@@ -21,7 +21,7 @@ export default class Simple {
    *
    * @defaultValue `false`
    */
-  types: boolean;
+  typesToLog: boolean;
   /**
    * The maximum number of characters to display for text-based cells. If undefined, the entire text is shown.
    *
@@ -67,12 +67,12 @@ export default class Simple {
       debug?: boolean;
       nbRowsToLog?: number;
       nbCharactersToLog?: number;
-      types?: boolean;
+      typesToLog?: boolean;
     } = {},
   ) {
     this.nbRowsToLog = options.nbRowsToLog ?? 10;
     this.nbCharactersToLog = options.nbCharactersToLog;
-    this.types = options.types ?? false;
+    this.typesToLog = options.typesToLog ?? false;
     this.debug = options.debug ?? false;
     this.defaultTableName = false;
   }

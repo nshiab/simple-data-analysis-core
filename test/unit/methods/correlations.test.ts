@@ -47,7 +47,7 @@ Deno.test("should give all correlations between numeric columns in the table and
 
   const data = await sdb.customQuery(
     "select * FROM specificTable ORDER BY corr DESC",
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
 
   assertEquals(data, [

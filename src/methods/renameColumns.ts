@@ -5,14 +5,14 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function renameColumns(
   simpleTable: SimpleTable,
   names: { [key: string]: string },
-  options: { checkColumns?: boolean } = {},
+  options: { strict?: boolean } = {},
 ) {
   const oldNames = Object.keys(names);
   const newNames = Object.values(names);
   // DuckDB's SELECT * RENAME silently drops a rename whose source column is
   // absent, so a typo would pass unnoticed. Validating requires the schema;
-  // checkColumns: false skips both the check and its DESCRIBE round-trip.
-  const check = options.checkColumns !== false;
+  // strict: false skips both the check and its DESCRIBE round-trip.
+  const check = options.strict !== false;
 
   queueOp(simpleTable, {
     kind: "fusable",

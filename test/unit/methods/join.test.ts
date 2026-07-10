@@ -166,7 +166,7 @@ Deno.test("should put the result of a full join into a new table with a specific
   });
 
   const data = await sdb.customQuery("select * from joined", {
-    returnDataFrom: "query",
+    returnData: true,
   });
 
   assertEquals(data, [
