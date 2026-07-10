@@ -50,9 +50,15 @@ export async function executeLoadArray(
   );
   const types: string[] = [];
 
-  const dataForChunk: DuckDBValue[][] = rows.map(() => []);
+  // DuckDB data chunks are columnar, so the values are laid out column by
+  // column and appended with setColumnValues, avoiding a row-major
+  // transposition.
+  const columnsData: DuckDBValue[][] = keys.map(
+    () => new Array(rows.length),
+  );
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
+    const columnData = columnsData[i];
     const value = firstNonNullValue[i];
     const type = typeof value;
     if (
@@ -67,7 +73,7 @@ export async function executeLoadArray(
       types[i] = "VARCHAR";
 
       for (let j = 0; j < rows.length; j++) {
-        dataForChunk[j][i] = null;
+        columnData[j] = null;
       }
     } else if (type === "object") {
       if (value instanceof Date) {
@@ -76,10 +82,10 @@ export async function executeLoadArray(
         for (let j = 0; j < rows.length; j++) {
           const d = rows[j][key];
           if (d === null || d === undefined || Number.isNaN(d)) {
-            dataForChunk[j][i] = null;
+            columnData[j] = null;
           } else {
             const date = d as Date;
-            dataForChunk[j][i] = new DuckDBTimestampValue(
+            columnData[j] = new DuckDBTimestampValue(
               BigInt(date.getTime() * 1000),
             );
           }
@@ -89,7 +95,7 @@ export async function executeLoadArray(
 
         for (let j = 0; j < rows.length; j++) {
           const d = rows[j][key];
-          dataForChunk[j][i] = arrayValue(d as number[]);
+          columnData[j] = arrayValue(d as number[]);
         }
       } else {
         throw new Error(
@@ -102,9 +108,9 @@ export async function executeLoadArray(
       for (let j = 0; j < rows.length; j++) {
         const d = rows[j][key];
         if (d === null || d === undefined || Number.isNaN(d)) {
-          dataForChunk[j][i] = null;
+          columnData[j] = null;
         } else {
-          dataForChunk[j][i] = d as DuckDBValue;
+          columnData[j] = d as DuckDBValue;
         }
       }
     }
@@ -119,17 +125,15 @@ export async function executeLoadArray(
   const appender = await (simpleTable.connection as DuckDBConnection)
     .createAppender(simpleTable.name);
 
+  const duckDBTypes = types.map((d) => parseDuckDBType(d));
   // The maximum capacity of a DuckDB data chunk is 2048 rows.
   const chunkSize = 2000;
-  for (let i = 0; i < dataForChunk.length; i += chunkSize) {
-    const chunk = dataForChunk.slice(i, i + chunkSize);
-    const dataChunk = DuckDBDataChunk.create(
-      types.map((d) => parseDuckDBType(d)),
-      chunk.length,
-    );
-    dataChunk.setRows(
-      chunk,
-    );
+  for (let start = 0; start < rows.length; start += chunkSize) {
+    const end = Math.min(start + chunkSize, rows.length);
+    const dataChunk = DuckDBDataChunk.create(duckDBTypes, end - start);
+    for (let i = 0; i < keys.length; i++) {
+      dataChunk.setColumnValues(i, columnsData[i].slice(start, end));
+    }
     appender.appendDataChunk(dataChunk);
   }
 

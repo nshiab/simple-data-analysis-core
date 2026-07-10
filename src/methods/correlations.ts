@@ -113,26 +113,22 @@ function correlationsSelect(
     ? ""
     : ` GROUP BY ${categories.map((d) => `"${d}"`).join(",")}`;
 
-  let query = ``;
+  const catSelect = categories.length > 0
+    ? `${categories.map((d) => `"${d}"`).join(",")}, `
+    : "";
 
-  let firstValue = true;
-  for (const comb of combinations) {
-    if (firstValue) {
-      firstValue = false;
-    } else {
-      query += "\nUNION";
-    }
-    const tempQuery = typeof options.decimals === "number"
+  // One UNION ALL branch per pair (each with a distinct pair of literals, so
+  // deduplication would never remove anything). DuckDB runs the branches as
+  // concurrent pipelines, which parallelizes the aggregates better than
+  // computing them all in one scan.
+  const branches = combinations.map((comb) => {
+    const expression = typeof options.decimals === "number"
       ? `ROUND(corr("${comb[0]}", "${comb[1]}"), ${options.decimals})`
       : `corr("${comb[0]}", "${comb[1]}")`;
-    query += `\nSELECT ${
-      categories.length > 0
-        ? `${categories.map((d) => `"${d}"`).join(",")}, `
-        : ""
-    }'${comb[0]}' AS x, '${
+    return `SELECT ${catSelect}'${comb[0]}' AS x, '${
       comb[1]
-    }' AS y, ${tempQuery}  as "corr" FROM ${input}${groupBy}`;
-  }
+    }' AS y, ${expression} as "corr" FROM ${input}${groupBy}`;
+  });
 
-  return query;
+  return branches.join("\nUNION ALL\n");
 }

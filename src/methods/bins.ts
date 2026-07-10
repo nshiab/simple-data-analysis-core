@@ -47,7 +47,19 @@ async function binsQuery(
     startValue?: number;
   } = {},
 ) {
-  const minValue = await SimpleTable.getMin(column);
+  // The minimum and maximum are computed in one scan instead of one
+  // getMin/getMax query each.
+  const minMax = await queryDB(
+    SimpleTable,
+    `SELECT MIN("${column}") AS "min", MAX("${column}") AS "max" FROM "${SimpleTable.name}"`,
+    mergeOptions(SimpleTable, {
+      table: SimpleTable.name,
+      method: "bins()",
+      parameters: { column, interval, newColumn, options },
+      returnData: true,
+    }),
+  );
+  const minValue = minMax?.[0]?.min;
   if (typeof minValue !== "number") {
     throw new Error(`minValue of ${column} is not a number`);
   }
@@ -64,7 +76,7 @@ async function binsQuery(
     startValue = minValue;
   }
 
-  const maxValue = await SimpleTable.getMax(column);
+  const maxValue = minMax?.[0]?.max;
   if (typeof maxValue !== "number") {
     throw new Error(`maxValue of ${column} is not a number`);
   }

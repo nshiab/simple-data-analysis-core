@@ -99,22 +99,32 @@ export default async function runQuery(
 > {
   try {
     if (returnData) {
-      const reader = await connection.runAndReadAll(query);
-      const columnNames = reader.deduplicatedColumnNames();
-      const columnTypes = reader.columnTypes();
+      const result = await connection.run(query);
+      const columnNames = result.deduplicatedColumnNames();
+      const columnTypes = result.columnTypes();
       const converters = columnTypes.map((type, i) =>
         makeConverter(type, columnNames[i], options.table ?? null)
       );
       const nbColumns = columnNames.length;
-      const rawRows = reader.getRows();
-      const rows: { [key: string]: unknown }[] = new Array(rawRows.length);
-      for (let i = 0; i < rawRows.length; i++) {
-        const rawRow = rawRows[i];
-        const row: { [key: string]: unknown } = {};
-        for (let j = 0; j < nbColumns; j++) {
-          row[columnNames[j]] = converters[j](rawRow[j]);
+      // The result is converted chunk by chunk, so no intermediate row-major
+      // copy of the whole result is materialized.
+      const rows: { [key: string]: unknown }[] = [];
+      while (true) {
+        const chunk = await result.fetchChunk();
+        if (chunk === null || chunk === undefined || chunk.rowCount === 0) {
+          break;
         }
-        rows[i] = row;
+        const base = rows.length;
+        for (let i = 0; i < chunk.rowCount; i++) {
+          rows.push({});
+        }
+        for (let j = 0; j < nbColumns; j++) {
+          const columnName = columnNames[j];
+          const converter = converters[j];
+          chunk.visitColumnValues(j, (value, rowIndex) => {
+            rows[base + rowIndex][columnName] = converter(value);
+          });
+        }
       }
       return rows;
     } else {

@@ -1,433 +1,294 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
-import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import stringToArray from "../helpers/stringToArray.ts";
-import { convertSelect } from "./convert.ts";
 
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
+
+type Summary =
+  | "count"
+  | "countUnique"
+  | "countNull"
+  | "min"
+  | "max"
+  | "mean"
+  | "median"
+  | "sum"
+  | "skew"
+  | "stdDev"
+  | "var";
+
+type SummarizeOptions = {
+  outputTable?: string | boolean;
+  values?: string | string[];
+  categories?: string | string[];
+  summaries?: Summary | Summary[] | { [key: string]: Summary };
+  decimals?: number;
+  datesToMs?: boolean;
+  valueColumn?: boolean;
+};
 
 export default function summarize(
   simpleTable: SimpleTable,
-  options: {
-    outputTable?: string | boolean;
-    values?: string | string[];
-    categories?: string | string[];
-    summaries?:
-      | (
-        | "count"
-        | "countUnique"
-        | "countNull"
-        | "min"
-        | "max"
-        | "mean"
-        | "median"
-        | "sum"
-        | "skew"
-        | "stdDev"
-        | "var"
-      )
-      | (
-        | "count"
-        | "countUnique"
-        | "countNull"
-        | "min"
-        | "max"
-        | "mean"
-        | "median"
-        | "sum"
-        | "skew"
-        | "stdDev"
-        | "var"
-      )[]
-      | {
-        [key: string]:
-          | "count"
-          | "countUnique"
-          | "countNull"
-          | "min"
-          | "max"
-          | "mean"
-          | "median"
-          | "sum"
-          | "skew"
-          | "stdDev"
-          | "var";
-      };
-    decimals?: number;
-    datesToMs?: boolean;
-    valueColumn?: boolean;
-  } = {},
+  options: SummarizeOptions = {},
 ): SimpleTable {
   if (options.outputTable === true) {
     options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
     simpleTable.sdb.tableIncrement += 1;
   }
 
-  // The summary needs the schema, optional unit conversions and a temporary
-  // row number, so it can't be expressed as a single SELECT over its input:
-  // it executes as a barrier. The output table instance is created at call
-  // time so it can be returned synchronously and chained on right away.
-  const outputTable = typeof options.outputTable === "string"
-    ? simpleTable.sdb.newTable(options.outputTable)
-    : simpleTable;
+  if (typeof options.outputTable === "string") {
+    // The output table instance is created at call time so it can be
+    // returned synchronously and chained on right away.
+    const outputTable = simpleTable.sdb.newTable(options.outputTable);
+    queueOp(outputTable, {
+      kind: "barrier",
+      method: "summarize()",
+      parameters: { options },
+      execute: async () => {
+        await queryDB(
+          simpleTable,
+          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+            summarizeSelect(
+              `"${simpleTable.name}"`,
+              await simpleTable.getTypes(),
+              options,
+            )
+          }`,
+          mergeOptions(simpleTable, {
+            table: outputTable.name,
+            method: "summarize()",
+            parameters: { options },
+          }),
+        );
+      },
+    });
+    return outputTable;
+  }
 
-  queueOp(outputTable, {
-    kind: "barrier",
+  queueOp(simpleTable, {
+    kind: "fusable",
     method: "summarize()",
     parameters: { options },
-    execute: () => executeSummarize(simpleTable, outputTable, options),
+    needsSchema: true,
+    buildSelect: (input, types) => summarizeSelect(input, types, options),
   });
-
-  return outputTable;
+  return simpleTable;
 }
 
-async function executeSummarize(
-  SimpleTable: SimpleTable,
-  output: SimpleTable,
-  options: {
-    outputTable?: string | boolean;
-    values?: string | string[];
-    categories?: string | string[];
-    summaries?:
-      | (
-        | "count"
-        | "countUnique"
-        | "countNull"
-        | "min"
-        | "max"
-        | "mean"
-        | "median"
-        | "sum"
-        | "skew"
-        | "stdDev"
-        | "var"
-      )
-      | (
-        | "count"
-        | "countUnique"
-        | "countNull"
-        | "min"
-        | "max"
-        | "mean"
-        | "median"
-        | "sum"
-        | "skew"
-        | "stdDev"
-        | "var"
-      )[]
-      | {
-        [key: string]:
-          | "count"
-          | "countUnique"
-          | "countNull"
-          | "min"
-          | "max"
-          | "mean"
-          | "median"
-          | "sum"
-          | "skew"
-          | "stdDev"
-          | "var";
-      };
-    decimals?: number;
-    datesToMs?: boolean;
-    valueColumn?: boolean;
-  } = {},
-) {
-  const outputTable = output.name;
+const allSummaries: Summary[] = [
+  "count",
+  "countUnique",
+  "countNull",
+  "min",
+  "max",
+  "mean",
+  "median",
+  "sum",
+  "skew",
+  "stdDev",
+  "var",
+];
 
-  options.values = options.values ? stringToArray(options.values) : [];
-  if (options.values.length === 0) {
-    // The temporary row number is created directly (not with the sync
-    // addRowNumber builder, which would queue for the next flush).
-    await queryDB(
-      SimpleTable,
-      `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS SELECT *, (ROW_NUMBER() OVER(ORDER BY rowid) - 1) AS "rowNumberToSummarizeQuerySDA" FROM "${SimpleTable.name}" ORDER BY rowid`,
-      mergeOptions(SimpleTable, {
-        table: SimpleTable.name,
-        method: "summarize()",
-        parameters: { options },
-      }),
-    );
-    options.values = ["rowNumberToSummarizeQuerySDA"];
-  }
-  options.categories = options.categories
+const aggregateFunctions: { [key: string]: string } = {
+  min: "MIN",
+  max: "MAX",
+  mean: "AVG",
+  median: "MEDIAN",
+  sum: "SUM",
+  skew: "SKEWNESS",
+  stdDev: "STDDEV",
+  var: "VARIANCE",
+};
+
+const timeTypes = [
+  "DATE",
+  "TIME",
+  "TIMESTAMP",
+  "TIMESTAMP_MS",
+  "TIMESTAMP WITH TIME ZONE",
+];
+
+function summarizeSelect(
+  input: string,
+  types: TableSchema,
+  options: SummarizeOptions,
+): string {
+  const categories = options.categories
     ? stringToArray(options.categories)
     : [];
+  // Duplicated values would duplicate rows now that the branches are combined
+  // with UNION ALL instead of a deduplicating UNION.
+  const values = [
+    ...new Set(
+      (options.values ? stringToArray(options.values) : []).filter(
+        (d) => !categories.includes(d),
+      ),
+    ),
+  ];
+
+  let summaries: Summary[];
   let columns: string[] | undefined;
   if (options.summaries === undefined) {
-    if (
-      options.values.length === 1 &&
-      options.values[0] === "rowNumberToSummarizeQuerySDA"
-    ) {
-      options.summaries = ["count"];
-    } else {
-      options.summaries = [];
-    }
+    summaries = values.length === 0 ? ["count"] : allSummaries;
   } else if (typeof options.summaries === "string") {
-    options.summaries = [options.summaries];
-  } else if (
-    !Array.isArray(options.summaries) && typeof options.summaries === "object"
-  ) {
+    summaries = [options.summaries];
+  } else if (Array.isArray(options.summaries)) {
+    summaries = options.summaries.length === 0
+      ? allSummaries
+      : options.summaries;
+  } else {
     const entries = Object.entries(options.summaries);
     columns = entries.map((d) => d[0]);
-    options.summaries = entries.map((d) => d[1]);
+    summaries = entries.map((d) => d[1]);
   }
 
-  const types = await SimpleTable.getTypes();
-  if (options.datesToMs) {
-    const originalTypes = { ...types };
-    const datesToMsObj: {
-      [key: string]: "bigint";
-    } = {};
-    for (const key of Object.keys(types)) {
-      if (types[key].includes("TIME") || types[key].includes("DATE")) {
-        datesToMsObj[key] = "bigint";
-        types[key] = "bigint";
-      }
-    }
-    if (Object.keys(datesToMsObj).length > 0) {
-      // The conversion runs directly (not with the sync convert builder,
-      // which would queue for the next flush).
-      await queryDB(
-        SimpleTable,
-        `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS ${
-          convertSelect(
-            `"${SimpleTable.name}"`,
-            Object.keys(datesToMsObj),
-            Object.values(datesToMsObj),
-            Object.keys(originalTypes),
-            originalTypes,
-            {},
-          )
-        }`,
-        mergeOptions(SimpleTable, {
-          table: SimpleTable.name,
-          method: "summarize()",
-          parameters: { options },
-        }),
-      );
-    }
-  }
-
-  options.values = options.values.filter(
-    (d) => !options.categories?.includes(d),
-  );
-
-  await queryDB(
-    SimpleTable,
-    summarizeQuery(
-      SimpleTable.name,
-      types,
-      outputTable,
-      options.values,
-      options.categories,
-      options.summaries,
-      options,
-      columns,
-    ),
-    mergeOptions(SimpleTable, {
-      table: outputTable,
-      method: "summarize()",
-      parameters: {
-        options,
-      },
-    }),
-  );
-
-  if (options.values.includes("rowNumberToSummarizeQuerySDA")) {
-    if (await SimpleTable.hasColumn("rowNumberToSummarizeQuerySDA")) {
-      await removeColumnsNow(
-        SimpleTable,
-        ["rowNumberToSummarizeQuerySDA"],
-        "summarize()",
-      );
-    }
-    await SimpleTable.sdb.customQuery(
-      `ALTER TABLE "${outputTable}" DROP COLUMN value;`,
-    );
-  }
-}
-
-function summarizeQuery(
-  table: string,
-  types: {
-    [key: string]: string;
-  },
-  outputTable: string,
-  values: string[],
-  categories: string[],
-  summaries: (
-    | "count"
-    | "countUnique"
-    | "countNull"
-    | "min"
-    | "max"
-    | "mean"
-    | "median"
-    | "sum"
-    | "skew"
-    | "stdDev"
-    | "var"
-  )[],
-  options: { decimals?: number; valueColumn?: boolean } = {},
-  columns: string[] | undefined,
-) {
   if (values.length > 1 && options.valueColumn === false) {
     throw new Error(
       "The option `valueColumn: false` works only when you aggregate the values from one column. Remove the option `valueColumn` or specify just one column in the option `values`.",
     );
   }
 
-  const typesOfValues = values.map((d) => types[d]);
+  // With datesToMs, dates are converted to milliseconds inside the aggregate
+  // expressions (same conversions as convert()), so the input table is left
+  // untouched instead of being rewritten.
+  const references: { [column: string]: string } = {};
+  const effectiveTypes: TableSchema = {};
+  for (const value of values) {
+    const type = types[value];
+    if (
+      options.datesToMs === true &&
+      typeof type === "string" &&
+      (type.includes("TIME") || type.includes("DATE"))
+    ) {
+      references[value] = type.includes("TIME")
+        ? `(date_part('epoch', "${value}") * 1000)`
+        : `(epoch("${value}") * 1000)`;
+      effectiveTypes[value] = "BIGINT";
+    } else {
+      references[value] = `"${value}"`;
+      effectiveTypes[value] = type;
+    }
+  }
 
-  const doubleAndDate = Object.values(typesOfValues).includes("DOUBLE") &&
-    Object.values(typesOfValues).filter((d) =>
-        [
-          "DATE",
-          "TIME",
-          "TIMESTAMP",
-          "TIMESTAMP_MS",
-          "TIMESTAMP WITH TIME ZONE",
-        ].includes(d)
-      ).length >= 1;
-
+  const typesOfValues = values.map((d) => effectiveTypes[d]);
+  const doubleAndDate = typesOfValues.includes("DOUBLE") &&
+    typesOfValues.filter((d) => timeTypes.includes(d)).length >= 1;
   if (doubleAndDate) {
     throw new Error(
       "You are trying to summarize numbers and timestamps/dates/times. You can specify values in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { datesToMs: true }.",
     );
   }
 
-  const aggregates: { [key: string]: string } = {
-    count: "count", // specific implementation
-    countUnique: "countUnique", // specific implementation
-    countNull: "countNull", // Specific implementation
-    min: "MIN(",
-    max: "MAX(",
-    mean: "AVG(",
-    median: "MEDIAN(",
-    sum: "SUM(",
-    skew: "SKEWNESS(",
-    stdDev: "STDDEV(",
-    var: "VARIANCE(",
-  };
+  const catSelect = categories.map((d) => `"${d}"`).join(", ");
+  const groupBy = categories.length > 0 ? `\nGROUP BY ${catSelect}` : "";
 
-  if (summaries.length === 0) {
-    summaries = Object.keys(aggregates) as (
-      | "count"
-      | "countUnique"
-      | "countNull"
-      | "min"
-      | "max"
-      | "mean"
-      | "median"
-      | "sum"
-      | "skew"
-      | "stdDev"
-      | "var"
-    )[];
+  // With no values, the only meaningful summary is the row count, which
+  // doesn't need a value column (or any temporary column) at all.
+  if (values.length === 0) {
+    const summaryColumns = summaries.map((summary, i) => {
+      const name = columns ? columns[i] : summary;
+      return summary === "count"
+        ? `CAST(COUNT(*) AS INTEGER) AS '${name}'`
+        : `NULL AS '${name}'`;
+    });
+    const orderBy = categories.length > 0
+      ? `\nORDER BY ${categories.map((d) => `"${d}" ASC`).join(", ")}`
+      : "";
+    return `SELECT ${
+      [
+        ...categories.map((d) => `"${d}"`),
+        ...summaryColumns,
+      ].join(", ")
+    }\nFROM ${input}${groupBy}${orderBy}`;
   }
 
-  let query = `CREATE OR REPLACE TABLE "${outputTable}" AS`;
-
-  let firstValue = true;
+  // One UNION ALL branch per value column. DuckDB runs the branches as
+  // concurrent pipelines, which parallelizes the expensive aggregates
+  // (medians, distinct counts) better than computing them all in one scan.
+  const branches: string[] = [];
   for (const value of values) {
-    if (firstValue) {
-      firstValue = false;
+    let hasAggregate = false;
+    const projections = summaries.map((summary, j) => {
+      const name = columns ? columns[j] : summary;
+      const expression = aggregateExpression(
+        summary,
+        effectiveTypes[value],
+        references[value],
+        options.decimals,
+      );
+      if (expression === null) {
+        return `NULL AS '${name}'`;
+      }
+      hasAggregate = true;
+      return `${expression} AS '${name}'`;
+    });
+    const select = `SELECT ${
+      options.valueColumn === false ? "" : `'${value}' AS 'value', `
+    }${catSelect === "" ? "" : `${catSelect}, `}${projections.join(", ")}`;
+    if (categories.length === 0 && !hasAggregate) {
+      // Every summary is NULL and there is nothing to group by: the branch
+      // is a single constant row, so the input is not even scanned.
+      branches.push(select);
     } else {
-      query += "\nUNION";
-    }
-    query += `\nSELECT ${
-      options.valueColumn === false ? "" : `'${value}' AS 'value'`
-    }${
-      categories.length > 0
-        ? `, ${categories.map((d) => `"${d}"`).join(", ")}`
-        : ""
-    },${
-      summaries.map((summary, i) => {
-        if (
-          value === "rowNumberToSummarizeQuerySDA" &&
-          aggregates[summary] !== "count"
-        ) {
-          return `\nNULL as '${columns ? columns[i] : summary}'`;
-        } else if (types[value].toLowerCase().includes("geometry")) {
-          return `\nNULL AS '${columns ? columns[i] : summary}'`;
-        } else if (
-          types[value] === "VARCHAR" &&
-          [
-            "MIN(",
-            "MAX(",
-            "AVG(",
-            "MEDIAN(",
-            "SUM(",
-            "SKEWNESS(",
-            "STDDEV(",
-            "VARIANCE(",
-          ].includes(aggregates[summary])
-        ) {
-          return `\nNULL AS '${columns ? columns[i] : summary}'`;
-        } else if (
-          [
-            "DATE",
-            "TIME",
-            "TIMESTAMP",
-            "TIMESTAMP_MS",
-            "TIMESTAMP WITH TIME ZONE",
-          ].includes(types[value]) &&
-          ["AVG(", "SUM(", "SKEWNESS(", "STDDEV(", "VARIANCE("].includes(
-            aggregates[summary],
-          )
-        ) {
-          return `\nNULL AS '${columns ? columns[i] : summary}'`;
-        } else if (summary === "count") {
-          return `\nCAST(COUNT(*) AS INTEGER) AS '${
-            columns ? columns[i] : "count"
-          }'`;
-        } else if (summary === "countUnique") {
-          return `\nCAST(COUNT(DISTINCT "${value}") AS INTEGER) AS '${
-            columns ? columns[i] : "countUnique"
-          }'`;
-        } else if (summary === "countNull") {
-          return `\nCAST(COUNT(CASE WHEN "${value}" IS NULL THEN 1 END) AS INTEGER) as '${
-            columns ? columns[i] : "countNull"
-          }'`;
-        } else {
-          return typeof options.decimals === "number" &&
-              ![
-                "VARCHAR",
-                "DATE",
-                "TIME",
-                "TIMESTAMP",
-                "TIMESTAMP WITH TIME ZONE",
-              ].includes(types[value])
-            ? `\nROUND(${
-              aggregates[summary]
-            }"${value}"), ${options.decimals}) AS '${
-              columns ? columns[i] : summary
-            }'`
-            : `\n${aggregates[summary]}"${value}") AS '${
-              columns ? columns[i] : summary
-            }'`;
-        }
-      })
-    }\nFROM "${table}"`;
-    if (categories.length > 0) {
-      query += `\nGROUP BY ${categories.map((d) => `"${d}"`).join(", ")}`;
+      branches.push(`${select}\nFROM ${input}${groupBy}`);
     }
   }
 
-  if (options.valueColumn === false) {
-    if (categories.length > 0) {
-      query += `\nORDER BY ${categories.map((d) => `"${d}" ASC`).join(", ")}`;
-    }
-  } else {
-    query += `\nORDER BY ${
-      ["value", ...categories]
-        .map((d) => `"${d}" ASC`)
-        .join(", ")
-    }`;
-  }
+  const orderByColumns = options.valueColumn === false
+    ? categories
+    : ["value", ...categories];
+  const orderBy = orderByColumns.length > 0
+    ? `\nORDER BY ${orderByColumns.map((d) => `"${d}" ASC`).join(", ")}`
+    : "";
 
-  return query.replace("SELECT ,", "SELECT ");
+  return `${branches.join("\nUNION ALL\n")}${orderBy}`;
+}
+
+/**
+ * Returns the aggregate expression for one summary of one value column, or
+ * `null` when the combination of summary and column type is not supported
+ * (the output column is NULL for that value column).
+ */
+function aggregateExpression(
+  summary: Summary,
+  type: string | undefined,
+  reference: string,
+  decimals: number | undefined,
+): string | null {
+  if (typeof type === "string" && type.toLowerCase().includes("geometry")) {
+    return null;
+  }
+  if (summary === "count") {
+    return `CAST(COUNT(*) AS INTEGER)`;
+  }
+  if (summary === "countUnique") {
+    return `CAST(COUNT(DISTINCT ${reference}) AS INTEGER)`;
+  }
+  if (summary === "countNull") {
+    return `CAST(COUNT(CASE WHEN ${reference} IS NULL THEN 1 END) AS INTEGER)`;
+  }
+  if (type === "VARCHAR") {
+    return null;
+  }
+  if (
+    typeof type === "string" &&
+    timeTypes.includes(type) &&
+    ["mean", "sum", "skew", "stdDev", "var"].includes(summary)
+  ) {
+    return null;
+  }
+  const aggregate = `${aggregateFunctions[summary]}(${reference})`;
+  return typeof decimals === "number" &&
+      typeof type === "string" &&
+      ![
+        "VARCHAR",
+        "DATE",
+        "TIME",
+        "TIMESTAMP",
+        "TIMESTAMP WITH TIME ZONE",
+      ].includes(type)
+    ? `ROUND(${aggregate}, ${decimals})`
+    : aggregate;
 }

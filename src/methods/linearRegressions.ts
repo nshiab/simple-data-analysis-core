@@ -116,44 +116,30 @@ function linearRegressionsSelect(
     ? ""
     : ` GROUP BY ${categories.map((d) => `"${d}"`).join(",")}`;
 
-  let query = ``;
+  const catSelect = categories.length > 0
+    ? `${categories.map((d) => `"${d}"`).join(",")}, `
+    : "";
 
-  let firstValue = true;
-  for (const perm of permutations) {
-    if (firstValue) {
-      firstValue = false;
-    } else {
-      query += "\nUNION";
+  // One UNION ALL branch per permutation (each with a distinct pair of
+  // literals, so deduplication would never remove anything). DuckDB runs the
+  // branches as concurrent pipelines, which parallelizes the aggregates
+  // better than computing them all in one scan.
+  const branches = permutations.map((perm) => {
+    const expressions = [
+      ["slope", "REGR_SLOPE"],
+      ["yIntercept", "REGR_INTERCEPT"],
+      ["r2", "REGR_R2"],
+    ].map(([alias, fn]) => {
+      const expression = typeof options.decimals === "number"
+        ? `ROUND(${fn}("${perm[1]}", "${perm[0]}"), ${options.decimals})`
+        : `${fn}("${perm[1]}", "${perm[0]}")`;
+      return `${expression} AS "${alias}"`;
+    });
+    return `SELECT ${catSelect}'${perm[0]}' AS "x", '${perm[1]}' AS "y", ${
+      expressions.join(", ")
     }
-
-    let tempSlop;
-    let tempIntercept;
-    let tempR2;
-    if (typeof options.decimals === "number") {
-      tempSlop = `ROUND(REGR_SLOPE("${perm[1]}", "${
-        perm[0]
-      }"), ${options.decimals})`;
-      tempIntercept = `ROUND(REGR_INTERCEPT("${perm[1]}", "${
-        perm[0]
-      }"), ${options.decimals})`;
-      tempR2 = `ROUND(REGR_R2("${perm[1]}", "${
-        perm[0]
-      }"), ${options.decimals})`;
-    } else {
-      tempSlop = `REGR_SLOPE("${perm[1]}", "${perm[0]}")`;
-      tempIntercept = `REGR_INTERCEPT("${perm[1]}", "${perm[0]}")`;
-      tempR2 = `REGR_R2("${perm[1]}", "${perm[0]}")`;
-    }
-
-    query += `\nSELECT ${
-      categories.length > 0
-        ? `${categories.map((d) => `"${d}"`).join(",")}, `
-        : ""
-    }'${perm[0]}' AS "x", '${
-      perm[1]
-    }' AS "y", ${tempSlop} AS "slope", ${tempIntercept} AS "yIntercept", ${tempR2} as "r2"
         FROM ${input}${groupBy}`;
-  }
+  });
 
-  return query;
+  return branches.join("\nUNION ALL\n");
 }
