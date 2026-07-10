@@ -82,7 +82,7 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
       await table.randomPoint("randomPoint", 0).run();
     },
     Error,
-    "13 points could not be generated. Consider increasing nbPointsToTry or set options.strict to false.",
+    "13 points could not be generated. Consider increasing tries or set options.strict to false.",
   );
 
   await sdb.done();
@@ -106,7 +106,7 @@ Deno.test("randomPoint should not throw an error if no point is found and option
   await sdb.done();
 });
 
-Deno.test("randomPoint should throw an error if nbPointsToTry is less than 0", async () => {
+Deno.test("randomPoint should throw an error if tries is less than 0", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
@@ -120,7 +120,7 @@ Deno.test("randomPoint should throw an error if nbPointsToTry is less than 0", a
       table.randomPoint("randomPoint", -1);
     },
     Error,
-    "nbPointsToTry must be a number greater than or equal to 0",
+    "tries must be a number greater than or equal to 0",
   );
 
   await sdb.done();

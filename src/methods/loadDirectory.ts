@@ -5,7 +5,7 @@ import queueOp from "../helpers/queueOp.ts";
 import { loadDataQuery } from "./loadData.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function loadDataFromDirectory(
+export default function loadDirectory(
   simpleTable: SimpleTable,
   directory: string,
   options: {
@@ -44,7 +44,7 @@ export default function loadDataFromDirectory(
 
   queueOp(simpleTable, {
     kind: "barrier",
-    method: "loadDataFromDirectory()",
+    method: "loadDirectory()",
     parameters: { directory, options },
     execute: async () => {
       await queryDB(
@@ -52,7 +52,7 @@ export default function loadDataFromDirectory(
         query,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
-          method: "loadDataFromDirectory",
+          method: "loadDirectory()",
           parameters: { directory, options },
         }),
       );

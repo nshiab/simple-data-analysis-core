@@ -5,7 +5,7 @@ Deno.test("should return the vertical proportions in a new column", async () => 
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
-  table.proportionsVertical("key2", "key2Perc");
+  table.columnProportions("key2", "key2Perc");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -53,7 +53,7 @@ Deno.test("should return the vertical proportions in a new column and a specific
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
-  table.proportionsVertical("key2", "key2Prop", {
+  table.columnProportions("key2", "key2Prop", {
     decimals: 4,
   });
   const data = await table.getData();
@@ -83,7 +83,7 @@ Deno.test("should return the vertical proportions in a new column with a categor
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
-  table.proportionsVertical("key2", "key2Perc", {
+  table.columnProportions("key2", "key2Perc", {
     categories: "key1",
   });
   table.sort({
@@ -137,7 +137,7 @@ Deno.test("should return the vertical proportions in a new column with multiple 
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
-  table.proportionsVertical("key3", "key3Perc", {
+  table.columnProportions("key3", "key3Perc", {
     categories: ["key1", "key2"],
   });
   table.sort({

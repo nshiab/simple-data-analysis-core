@@ -10,7 +10,7 @@ export default function cloneTable(
     name?: string;
     conditions?: string;
     columns?: string | string[];
-    nbRows?: number;
+    limit?: number;
     offset?: number;
   } = {},
 ): SimpleTable {
@@ -58,7 +58,7 @@ function cloneQuery(
   columns: string[],
   options: {
     conditions?: string;
-    nbRows?: number;
+    limit?: number;
     offset?: number;
   } = {},
 ) {
@@ -68,7 +68,7 @@ function cloneQuery(
 
   return `CREATE OR REPLACE TABLE "${newTable}" AS SELECT ${selectClause} FROM "${table}"${
     options.conditions ? ` WHERE ${options.conditions}` : ""
-  }${typeof options.nbRows === "number" ? ` LIMIT ${options.nbRows}` : ""}${
+  }${typeof options.limit === "number" ? ` LIMIT ${options.limit}` : ""}${
     typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""
   }`;
 }

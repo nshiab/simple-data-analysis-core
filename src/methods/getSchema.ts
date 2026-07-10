@@ -10,7 +10,7 @@ export default async function getSchema(
     `DESCRIBE "${simpleTable.name}"`,
     mergeOptions(simpleTable, {
       returnDataFrom: "query",
-      nbRowsToLog: Infinity,
+      rowsToLog: Infinity,
       table: simpleTable.name,
       method: "getSchema()",
       parameters: {},

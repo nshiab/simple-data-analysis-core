@@ -15,7 +15,7 @@ export default class Simple {
    *
    * @defaultValue `10`
    */
-  nbRowsToLog: number;
+  rowsToLog: number;
   /**
    * A flag indicating whether to include data types when logging a table.
    *
@@ -27,7 +27,7 @@ export default class Simple {
    *
    * @defaultValue `undefined`
    */
-  nbCharactersToLog: number | undefined;
+  charsToLog: number | undefined;
   /**
    * A DuckDB database instance.
    */
@@ -65,13 +65,13 @@ export default class Simple {
   constructor(
     options: {
       debug?: boolean;
-      nbRowsToLog?: number;
-      nbCharactersToLog?: number;
+      rowsToLog?: number;
+      charsToLog?: number;
       typesToLog?: boolean;
     } = {},
   ) {
-    this.nbRowsToLog = options.nbRowsToLog ?? 10;
-    this.nbCharactersToLog = options.nbCharactersToLog;
+    this.rowsToLog = options.rowsToLog ?? 10;
+    this.charsToLog = options.charsToLog;
     this.typesToLog = options.typesToLog ?? false;
     this.debug = options.debug ?? false;
     this.defaultTableName = false;

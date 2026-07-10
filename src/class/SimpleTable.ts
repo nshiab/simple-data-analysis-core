@@ -54,8 +54,8 @@ import normalize from "../methods/normalize.ts";
 import zScore from "../methods/zScore.ts";
 import rolling from "../methods/rolling.ts";
 import accumulate from "../methods/accumulate.ts";
-import proportionsVertical from "../methods/proportionsVertical.ts";
-import proportionsHorizontal from "../methods/proportionsHorizontal.ts";
+import columnProportions from "../methods/columnProportions.ts";
+import rowProportions from "../methods/rowProportions.ts";
 import quantiles from "../methods/quantiles.ts";
 import ranks from "../methods/ranks.ts";
 import updateColumn from "../methods/updateColumn.ts";
@@ -134,7 +134,7 @@ import cloneTable from "../methods/cloneTable.ts";
 import insertTables from "../methods/insertTables.ts";
 import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
-import loadDataFromDirectory from "../methods/loadDataFromDirectory.ts";
+import loadDirectory from "../methods/loadDirectory.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -221,8 +221,8 @@ export default class SimpleTable extends Simple {
    * @param simpleDB - The SimpleDB instance that this table belongs to.
    * @param options - An optional object with configuration options:
    * @param options.debug - A boolean indicating whether to enable debug mode.
-   * @param options.nbRowsToLog - The number of rows to log when displaying table data.
-   * @param options.nbCharactersToLog - The maximum number of characters to log for strings. Useful to avoid logging large text content.
+   * @param options.rowsToLog - The number of rows to log when displaying table data.
+   * @param options.charsToLog - The maximum number of characters to log for strings. Useful to avoid logging large text content.
    * @param options.typesToLog - A boolean indicating whether to include data types when logging a table.
    * @category Constructor
    */
@@ -231,8 +231,8 @@ export default class SimpleTable extends Simple {
     simpleDB: SimpleDB,
     options: {
       debug?: boolean;
-      nbRowsToLog?: number;
-      nbCharactersToLog?: number;
+      rowsToLog?: number;
+      charsToLog?: number;
       typesToLog?: boolean;
     } = {},
   ) {
@@ -490,16 +490,16 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Load all supported data files from the "./data/" directory
-   * table.loadDataFromDirectory("./data/");
+   * table.loadDirectory("./data/");
    * ```
    *
    * @example
    * ```ts
    * // Load only specific columns from all CSV files in a directory
-   * table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
+   * table.loadDirectory("./data/", { columns: ["name", "salary"] });
    * ```
    */
-  loadDataFromDirectory(
+  loadDirectory(
     directory: string,
     options: {
       fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
@@ -527,7 +527,7 @@ export default class SimpleTable extends Simple {
       sheet?: string;
     } = {},
   ): this {
-    loadDataFromDirectory(this, directory, options);
+    loadDirectory(this, directory, options);
     return this;
   }
 
@@ -1013,7 +1013,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns a new table with the same structure and data as this table. The data can be optionally filtered, limited to a specific number of rows, and offset.
    *
-   * If `conditions`, `nbRows`, and `offset` are all used, they are applied in this order: `conditions` (WHERE clause) first, then `offset`, and finally `nbRows` (LIMIT).
+   * If `conditions`, `limit`, and `offset` are all used, they are applied in this order: `conditions` (WHERE clause) first, then `offset`, and finally `limit` (LIMIT).
    *
    * Note that cloning large tables can be a slow operation.
    *
@@ -1023,7 +1023,7 @@ export default class SimpleTable extends Simple {
    * @param nameOrOptions.name - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
    * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
-   * @param nameOrOptions.nbRows - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
+   * @param nameOrOptions.limit - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
    * @param nameOrOptions.offset - The number of rows to skip before starting to clone rows.
    * @returns A new table instance containing the cloned data, so methods can be chained.
    * @category Table Management
@@ -1061,13 +1061,13 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Clone only the first 10 rows of tableA
-   * const tableB = tableA.cloneTable({ nbRows: 10 });
+   * const tableB = tableA.cloneTable({ limit: 10 });
    * ```
    *
    * @example
    * ```ts
    * // Clone 10 rows after skipping the first 5 rows
-   * const tableB = tableA.cloneTable({ nbRows: 10, offset: 5 });
+   * const tableB = tableA.cloneTable({ limit: 10, offset: 5 });
    * ```
    *
    * @example
@@ -1077,7 +1077,7 @@ export default class SimpleTable extends Simple {
    *   outputTable: "filtered_data",
    *   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
    *   columns: ["name", "status", "created_date"],
-   *   nbRows: 100
+   *   limit: 100
    * });
    * ```
    */
@@ -1086,7 +1086,7 @@ export default class SimpleTable extends Simple {
       name?: string;
       conditions?: string;
       columns?: string | string[];
-      nbRows?: number;
+      limit?: number;
       offset?: number;
     } = {},
   ): this {
@@ -3120,7 +3120,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute horizontal proportions for 'Men', 'Women', and 'NonBinary' columns, rounded to 2 decimal places
-   * table.proportionsHorizontal(["Men", "Women", "NonBinary"], { decimals: 2 });
+   * table.rowProportions(["Men", "Women", "NonBinary"], { decimals: 2 });
    * ```
    *
    * The table will then look like this:
@@ -3136,7 +3136,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute horizontal proportions with a custom suffix "Prop"
-   * table.proportionsHorizontal(["Men", "Women", "NonBinary"], { suffix: "Prop", decimals: 2 });
+   * table.rowProportions(["Men", "Women", "NonBinary"], { suffix: "Prop", decimals: 2 });
    * ```
    *
    * The table will then look like this:
@@ -3156,14 +3156,14 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
-  proportionsHorizontal(
+  rowProportions(
     columns: string[],
     options: {
       suffix?: string;
       decimals?: number;
     } = {},
   ): this {
-    proportionsHorizontal(this, columns, options);
+    rowProportions(this, columns, options);
     return this;
   }
 
@@ -3183,22 +3183,22 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Add a new column 'perc' with each 'column1' value divided by the sum of all 'column1' values
-   * table.proportionsVertical("column1", "perc");
+   * table.columnProportions("column1", "perc");
    * ```
    *
    * @example
    * ```ts
    * // Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-   * table.proportionsVertical("column1", "perc", { categories: "column2", decimals: 2 });
+   * table.columnProportions("column1", "perc", { categories: "column2", decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Compute proportions for 'sales' within 'region' and 'product_type' categories
-   * table.proportionsVertical("sales", "sales_proportion", { categories: ["region", "product_type"] });
+   * table.columnProportions("sales", "sales_proportion", { categories: ["region", "product_type"] });
    * ```
    */
-  proportionsVertical(
+  columnProportions(
     column: string,
     newColumn: string,
     options: {
@@ -3206,7 +3206,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): this {
-    proportionsVertical(this, column, newColumn, options);
+    columnProportions(this, column, newColumn, options);
     return this;
   }
 
@@ -5380,7 +5380,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the random points will be stored.
-   * @param nbPointsToTry - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
+   * @param tries - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries within which the random points will be generated. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.strict - If `false`, the method will not throw an error if some points cannot be generated. Corresponding rows will have `NULL` in the new column. Defaults to `true`.
@@ -5405,10 +5405,10 @@ export default class SimpleTable extends Simple {
    */
   randomPoint(
     newColumn: string,
-    nbPointsToTry: number,
+    tries: number,
     options: { column?: string; strict?: boolean } = {},
   ): this {
-    randomPoint(this, newColumn, nbPointsToTry, options);
+    randomPoint(this, newColumn, tries, options);
     return this;
   }
 
@@ -5870,7 +5870,7 @@ export default class SimpleTable extends Simple {
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
-   * @param options.nbRowsToLog - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
+   * @param options.rowsToLog - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
    * @param options.types - If `true`, logs the column types along with the data. Defaults to `false`.
    * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
    * @returns A promise that resolves to the table, so methods can be chained.
@@ -5897,7 +5897,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Log the first 20 rows and include column types
-   * await table.logTable({ nbRowsToLog: 20, types: true });
+   * await table.logTable({ rowsToLog: 20, types: true });
    * ```
    *
    * @example
@@ -5908,7 +5908,7 @@ export default class SimpleTable extends Simple {
    */
   async logTable(
     options: "all" | number | {
-      nbRowsToLog?: number | "all";
+      rowsToLog?: number | "all";
       types?: boolean;
       conditions?: string;
     } = {},
@@ -5930,15 +5930,15 @@ export default class SimpleTable extends Simple {
     } else if (options === "all") {
       rows = await this.getNbRows();
     } else if (typeof options === "object") {
-      if (options.nbRowsToLog === "all") {
+      if (options.rowsToLog === "all") {
         rows = await this.getNbRows();
-      } else if (typeof options.nbRowsToLog === "number") {
-        rows = options.nbRowsToLog;
+      } else if (typeof options.rowsToLog === "number") {
+        rows = options.rowsToLog;
       } else {
-        rows = this.nbRowsToLog;
+        rows = this.rowsToLog;
       }
     } else {
-      rows = this.nbRowsToLog;
+      rows = this.rowsToLog;
     }
     const types = typeof options === "object" ? options.types ?? false : false;
     const conditions = typeof options === "object"
@@ -5957,7 +5957,7 @@ export default class SimpleTable extends Simple {
       logData(
         this.typesToLog || types ? await this.getTypes() : null,
         data,
-        this.nbCharactersToLog,
+        this.charsToLog,
       );
       const nbRows = conditions
         ? parseInt(
@@ -5968,9 +5968,9 @@ export default class SimpleTable extends Simple {
         )
         : await this.getNbRows();
       console.log(
-        `${formatNumber(nbRows)} rows in total ${`(nbRowsToLog: ${rows}${
-          typeof this.nbCharactersToLog === "number"
-            ? `, nbCharactersToLog: ${this.nbCharactersToLog}`
+        `${formatNumber(nbRows)} rows in total ${`(rowsToLog: ${rows}${
+          typeof this.charsToLog === "number"
+            ? `, charsToLog: ${this.charsToLog}`
             : ""
         })`}`,
       );
@@ -6191,7 +6191,7 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the bottom `n` rows of the table to the console. By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
    *
-   * @param count - The number of rows to log from the bottom of the table. Defaults to the table's `nbRowsToLog` option if not specified.
+   * @param count - The number of rows to log from the bottom of the table. Defaults to the table's `rowsToLog` option if not specified.
    * @param options - An optional object with logging preferences.
    * @param options.originalOrder - If true, the rows are displayed in their original order (top to bottom). Defaults to false.
    * @returns A promise that resolves to the table, so methods can be chained.
@@ -6199,7 +6199,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Log bottom rows with default count (uses table's nbRowsToLog option)
+   * // Log bottom rows with default count (uses table's rowsToLog option)
    * await table.logBottom();
    * ```
    *
@@ -6219,13 +6219,13 @@ export default class SimpleTable extends Simple {
     count?: number,
     options: { originalOrder?: boolean } = {},
   ): Promise<this> {
-    const rows = count ?? this.nbRowsToLog;
+    const rows = count ?? this.rowsToLog;
     console.log(`\nTable ${this.name} (${rows} bottom rows):`);
     const data = await this.getBottom(rows, options);
     logData(
       null,
       data,
-      this.nbCharactersToLog,
+      this.charsToLog,
     );
     return this;
   }

@@ -1,7 +1,7 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function proportionsHorizontal(
+export default function rowProportions(
   simpleTable: SimpleTable,
   columns: string[],
   options: {
@@ -11,7 +11,7 @@ export default function proportionsHorizontal(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "proportionsHorizontal()",
+    method: "rowProportions()",
     parameters: { columns, options },
     needsSchema: false,
     buildSelect: (input) => {

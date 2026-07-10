@@ -2,7 +2,7 @@ import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function proportionsVertical(
+export default function columnProportions(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
@@ -13,7 +13,7 @@ export default function proportionsVertical(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "proportionsVertical()",
+    method: "columnProportions()",
     parameters: { column, newColumn, options },
     needsSchema: false,
     buildSelect: (input) => {

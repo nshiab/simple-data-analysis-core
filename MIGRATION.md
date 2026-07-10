@@ -144,13 +144,16 @@ only the renamed methods and option keys below are breaking.
 
 ### Renamed methods
 
-| v1                 | v2               | Why                                                                         |
-| :----------------- | :--------------- | :-------------------------------------------------------------------------- |
-| `keep()`           | `keepValues()`   | Says it filters rows by value maps, distinct from `filter()`'s conditions.  |
-| `remove()`         | `removeValues()` | Same, and no longer blends into the `remove*` family (`removeRows()`, ...). |
-| `left()`           | `firstChars()`   | "Left/right" read as join sides in a join-heavy API.                        |
-| `right()`          | `lastChars()`    | Same.                                                                       |
-| `concatenateRow()` | `rowToText()`    | It doesn't concatenate rows — it turns each row into a labeled text block.  |
+| v1                        | v2                    | Why                                                                         |
+| :------------------------ | :-------------------- | :-------------------------------------------------------------------------- |
+| `keep()`                  | `keepValues()`        | Says it filters rows by value maps, distinct from `filter()`'s conditions.  |
+| `remove()`                | `removeValues()`      | Same, and no longer blends into the `remove*` family (`removeRows()`, ...). |
+| `left()`                  | `firstChars()`        | "Left/right" read as join sides in a join-heavy API.                        |
+| `right()`                 | `lastChars()`         | Same.                                                                       |
+| `concatenateRow()`        | `rowToText()`         | It doesn't concatenate rows — it turns each row into a labeled text block.  |
+| `loadDataFromDirectory()` | `loadDirectory()`     | Shorter; "data from" added nothing.                                         |
+| `proportionsHorizontal()` | `rowProportions()`    | Shorter and names the unit instead of a visual direction.                   |
+| `proportionsVertical()`   | `columnProportions()` | Same.                                                                       |
 
 ### One `strict` option instead of five names
 
@@ -167,21 +170,25 @@ Methods that could skip validations or error-throwing now all use
 
 ### Renamed option keys
 
-| Method                          | v1                                                | v2                                       |
-| :------------------------------ | :------------------------------------------------ | :--------------------------------------- |
-| `join()`                        | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
-| `joinGeo()`                     | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
-| `cloneTable()`                  | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
-| `summarize()`                   | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
-| `ranks()`                       | `{ noGaps: true }`                                | `{ dense: true }`                        |
-| `summarize()`                   | `{ noColumnValue: true }`                         | `{ valueColumn: false }`                 |
-| `writeDB()`                     | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
-| `trim()`                        | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
-| `pad()`                         | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
-| `fuzzyClean()`                  | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
-| `joinGeo()`                     | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
-| `customQuery()`                 | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
-| `new SimpleDB()` / `newTable()` | `{ types: true }`                                 | `{ typesToLog: true }`                   |
+| Method                                         | v1                                                | v2                                       |
+| :--------------------------------------------- | :------------------------------------------------ | :--------------------------------------- |
+| `join()`                                       | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
+| `joinGeo()`                                    | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
+| `cloneTable()`                                 | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
+| `summarize()`                                  | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
+| `ranks()`                                      | `{ noGaps: true }`                                | `{ dense: true }`                        |
+| `summarize()`                                  | `{ noColumnValue: true }`                         | `{ valueColumn: false }`                 |
+| `writeDB()`                                    | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
+| `trim()`                                       | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
+| `pad()`                                        | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
+| `fuzzyClean()`                                 | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
+| `joinGeo()`                                    | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
+| `customQuery()`                                | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
+| `new SimpleDB()` / `newTable()`                | `{ types: true }`                                 | `{ typesToLog: true }`                   |
+| `new SimpleDB()` / `newTable()` / `logTable()` | `{ nbRowsToLog: 20 }`                             | `{ rowsToLog: 20 }`                      |
+| `new SimpleDB()` / `newTable()`                | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
+| `new SimpleDB()`                               | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
+| `cloneTable()`                                 | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
 
 ### `null` instead of `undefined` for missing rows
 
@@ -202,6 +209,7 @@ editor hints now use the new names:
 - `replace()`: `strings` → `replacements`
 - `reproject(to)` → `reproject(crs)`
 - `cloneColumn()` and `cloneColumnWithOffset()`: `originalColumn` → `column`
+- `randomPoint()`: `nbPointsToTry` → `tries`
 - `createFtsIndex()` and `bm25()`: `columnId`, `columnText` → `idColumn`,
   `textColumn`
 - `points()` and `latLon()`: `columnLat`, `columnLon` → `latColumn`, `lonColumn`

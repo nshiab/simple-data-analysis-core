@@ -25,7 +25,7 @@ Deno.test("should log a table with 100 rows in options", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
-  await table.logTable({ nbRowsToLog: 100 });
+  await table.logTable({ rowsToLog: 100 });
 
   // How to test?
   assertEquals(true, true);
@@ -45,7 +45,7 @@ Deno.test("should log a table with 100 rows and types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
-  await table.logTable({ types: true, nbRowsToLog: 100 });
+  await table.logTable({ types: true, rowsToLog: 100 });
 
   // How to test?
   assertEquals(true, true);
@@ -105,11 +105,11 @@ Deno.test("should log a table with 'all'", async () => {
   assertEquals(true, true);
   await sdb.done();
 });
-Deno.test("should log a table with { nbRowsToLog: 'all'}", async () => {
+Deno.test("should log a table with { rowsToLog: 'all'}", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
-  await table.logTable({ nbRowsToLog: "all" });
+  await table.logTable({ rowsToLog: "all" });
 
   // How to test?
   assertEquals(true, true);

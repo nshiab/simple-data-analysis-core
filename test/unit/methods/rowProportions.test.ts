@@ -5,7 +5,7 @@ Deno.test("should return the horizontal proportions in new columns", async () =>
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataProportions.json"]);
-  table.proportionsHorizontal(["key1", "key2", "key3"]);
+  table.rowProportions(["key1", "key2", "key3"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -42,7 +42,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataProportions.json"]);
-  table.proportionsHorizontal(["key1", "key2", "key3"], {
+  table.rowProportions(["key1", "key2", "key3"], {
     suffix: "Prop",
   });
   const data = await table.getData();
@@ -81,7 +81,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataProportions.json"]);
-  table.proportionsHorizontal(["key1", "key2", "key3"], {
+  table.rowProportions(["key1", "key2", "key3"], {
     suffix: "Prop",
     decimals: 4,
   });

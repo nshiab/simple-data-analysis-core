@@ -7,13 +7,13 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function randomPoint(
   simpleTable: SimpleTable,
   newColumn: string,
-  nbPointsToTry: number,
+  tries: number,
   options: { column?: string; strict?: boolean } = {},
 ) {
   // This validation doesn't need the database, so it stays at call time.
-  if (typeof nbPointsToTry !== "number" || nbPointsToTry < 0) {
+  if (typeof tries !== "number" || tries < 0) {
     throw new Error(
-      "nbPointsToTry must be a number greater than or equal to 0",
+      "tries must be a number greater than or equal to 0",
     );
   }
 
@@ -23,16 +23,15 @@ export default function randomPoint(
   queueOp(simpleTable, {
     kind: "barrier",
     method: "randomPoint()",
-    parameters: { newColumn, nbPointsToTry, options },
-    execute: () =>
-      executeRandomPoint(simpleTable, newColumn, nbPointsToTry, options),
+    parameters: { newColumn, tries, options },
+    execute: () => executeRandomPoint(simpleTable, newColumn, tries, options),
   });
 }
 
 async function executeRandomPoint(
   simpleTable: SimpleTable,
   newColumn: string,
-  nbPointsToTry: number,
+  tries: number,
   options: { column?: string; strict?: boolean },
 ): Promise<void> {
   const column = typeof options.column === "string"
@@ -47,13 +46,13 @@ async function executeRandomPoint(
       simpleTable.name,
       column,
       newColumn,
-      nbPointsToTry,
+      tries,
       geoType,
     ),
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "randomPoint()",
-      parameters: { column, newColumn, nbPointsToTry, options, geoType },
+      parameters: { column, newColumn, tries, options, geoType },
     }),
   );
 
@@ -62,7 +61,7 @@ async function executeRandomPoint(
   });
   if (nbNulls > 0 && options.strict !== false) {
     throw new Error(
-      `${nbNulls} points could not be generated. Consider increasing nbPointsToTry or set options.strict to false.`,
+      `${nbNulls} points could not be generated. Consider increasing tries or set options.strict to false.`,
     );
   }
 }
@@ -71,7 +70,7 @@ function randomPointQuery(
   table: string,
   column: string,
   newColumn: string,
-  nbPointsToTry: number,
+  tries: number,
   geoType: string,
 ) {
   const addColumn = newColumn === column
@@ -83,8 +82,8 @@ function randomPointQuery(
   // as ST_Within is satisfied — giving O(1) behaviour for easy polygons instead
   // of the O(N) materialisation that occurs with LATERAL + range() + WHERE.
   //
-  // Zero-tries contract: `WHERE 1 <= ${nbPointsToTry}` in the base case
-  // produces no rows when nbPointsToTry is 0, so the LEFT JOIN returns NULL for
+  // Zero-tries contract: `WHERE 1 <= ${tries}` in the base case
+  // produces no rows when tries is 0, so the LEFT JOIN returns NULL for
   // every row and the UPDATE sets the column to NULL — no special-case branch
   // needed and the normal UPDATE code path is always exercised.
   //
@@ -114,7 +113,7 @@ attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (
         ),
         1
     FROM base
-    WHERE 1 <= ${nbPointsToTry}
+    WHERE 1 <= ${tries}
     UNION ALL
     SELECT
         rid, geom, xmin, xdiff, ymin, ydiff,
@@ -124,7 +123,7 @@ attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (
         ),
         n + 1
     FROM attempts
-    WHERE NOT ST_Within(pt, geom) AND n < ${nbPointsToTry}
+    WHERE NOT ST_Within(pt, geom) AND n < ${tries}
 )
 UPDATE "${table}" AS t
 SET "${newColumn}" = v.pt::${geoType}

@@ -97,7 +97,7 @@ Deno.test("should clone a table with a specific number of rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  const clone = table.cloneTable({ nbRows: 2 });
+  const clone = table.cloneTable({ limit: 2 });
 
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(0, 2));
@@ -117,19 +117,19 @@ Deno.test("should clone a table with a specific number of rows and an offset", a
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  const clone = table.cloneTable({ nbRows: 2, offset: 2 });
+  const clone = table.cloneTable({ limit: 2, offset: 2 });
 
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(2, 4));
   await sdb.done();
 });
-Deno.test("should clone a table with conditions, nbRows and offset", async () => {
+Deno.test("should clone a table with conditions, limit and offset", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.cloneTable({
     conditions: `Job = 'Developer'`,
-    nbRows: 2,
+    limit: 2,
     offset: 1,
   });
 

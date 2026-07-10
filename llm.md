@@ -64,9 +64,9 @@ Creates a new SimpleDB instance.
   file if it already exists.
 - **`options.logDuration`**: A flag indicating whether to log the total
   execution duration.
-- **`options.nbRowsToLog`**: The number of rows to display when logging a table.
-- **`options.nbCharactersToLog`**: The maximum number of characters to display
-  for text-based cells.
+- **`options.rowsToLog`**: The number of rows to display when logging a table.
+- **`options.charsToLog`**: The maximum number of characters to display for
+  text-based cells.
 - **`options.typesToLog`**: A flag indicating whether to include data types when
   logging a table.
 - **`options.cacheVerbose`**: A flag indicating whether to log verbose
@@ -78,10 +78,10 @@ Creates a new SimpleDB instance.
   for long-running operations.
 - **`options.memoryLimit`**: The maximum amount of memory DuckDB is allowed to
   use (e.g., `'4GB'`). Defaults to 80% of system RAM.
-- **`options.tempDirectory`**: The path to the directory used for temporary
-  files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`).
-  Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based
-  databases. Automatically removed when calling `done()`.
+- **`options.tempDir`**: The path to the directory used for temporary files when
+  data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp`
+  for in-memory databases or `<file>.tmp` for file-based databases.
+  Automatically removed when calling `done()`.
 
 ### Methods
 
@@ -545,7 +545,7 @@ await sdb.done();
 // Create a database instance with custom options
 const sdb = new SimpleDB({
   debug: true, // Enable debugging output
-  nbRowsToLog: 20, // Set the number of rows to log by default
+  rowsToLog: 20, // Set the number of rows to log by default
 });
 ```
 
@@ -570,10 +570,9 @@ Creates an instance of SimpleTable.
 - **`simpleDB`**: The SimpleDB instance that this table belongs to.
 - **`options`**: An optional object with configuration options:
 - **`options.debug`**: A boolean indicating whether to enable debug mode.
-- **`options.nbRowsToLog`**: The number of rows to log when displaying table
-  data.
-- **`options.nbCharactersToLog`**: The maximum number of characters to log for
-  strings. Useful to avoid logging large text content.
+- **`options.rowsToLog`**: The number of rows to log when displaying table data.
+- **`options.charsToLog`**: The maximum number of characters to log for strings.
+  Useful to avoid logging large text content.
 - **`options.typesToLog`**: A boolean indicating whether to include data types
   when logging a table.
 
@@ -807,7 +806,7 @@ table.loadData([
 table.loadData("./employees.csv", { columns: ["name", "salary"] });
 ```
 
-#### `loadDataFromDirectory`
+#### `loadDirectory`
 
 Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
 directory into the table.
@@ -818,7 +817,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-loadDataFromDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
+loadDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -880,12 +879,12 @@ The table, so methods can be chained.
 
 ```ts
 // Load all supported data files from the "./data/" directory
-table.loadDataFromDirectory("./data/");
+table.loadDirectory("./data/");
 ```
 
 ```ts
 // Load only specific columns from all CSV files in a directory
-table.loadDataFromDirectory("./data/", { columns: ["name", "salary"] });
+table.loadDirectory("./data/", { columns: ["name", "salary"] });
 ```
 
 #### `loadGeoData`
@@ -1358,8 +1357,8 @@ table.loadSample("fires");
 Returns a new table with the same structure and data as this table. The data can
 be optionally filtered, limited to a specific number of rows, and offset.
 
-If `conditions`, `nbRows`, and `offset` are all used, they are applied in this
-order: `conditions` (WHERE clause) first, then `offset`, and finally `nbRows`
+If `conditions`, `limit`, and `offset` are all used, they are applied in this
+order: `conditions` (WHERE clause) first, then `offset`, and finally `limit`
 (LIMIT).
 
 Note that cloning large tables can be a slow operation.
@@ -1370,7 +1369,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-cloneTable(nameOrOptions?: string | { name?: string; conditions?: string; columns?: string | string[]; nbRows?: number; offset?: number }): this;
+cloneTable(nameOrOptions?: string | { name?: string; conditions?: string; columns?: string | string[]; limit?: number; offset?: number }): this;
 ```
 
 ##### Parameters
@@ -1385,7 +1384,7 @@ cloneTable(nameOrOptions?: string | { name?: string; conditions?: string; column
   data during cloning. Defaults to no condition (clones all rows).
 - **`nameOrOptions.columns`**: An array of column names to include in the cloned
   table. If not provided, all columns will be included.
-- **`nameOrOptions.nbRows`**: The number of rows to include in the cloned table.
+- **`nameOrOptions.limit`**: The number of rows to include in the cloned table.
   If provided, only the first X rows (potentially after filtering and offset)
   will be cloned.
 - **`nameOrOptions.offset`**: The number of rows to skip before starting to
@@ -1424,12 +1423,12 @@ const tableB = tableA.cloneTable({ columns: ["name", "age", "city"] });
 
 ```ts
 // Clone only the first 10 rows of tableA
-const tableB = tableA.cloneTable({ nbRows: 10 });
+const tableB = tableA.cloneTable({ limit: 10 });
 ```
 
 ```ts
 // Clone 10 rows after skipping the first 5 rows
-const tableB = tableA.cloneTable({ nbRows: 10, offset: 5 });
+const tableB = tableA.cloneTable({ limit: 10, offset: 5 });
 ```
 
 ```ts
@@ -1438,7 +1437,7 @@ const tableB = tableA.cloneTable({
   outputTable: "filtered_data",
   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
   columns: ["name", "status", "created_date"],
-  nbRows: 100,
+  limit: 100,
 });
 ```
 
@@ -3736,7 +3735,7 @@ table.bins("column1", 10, "bins");
 table.bins("column1", 10, "bins", { startValue: 0 });
 ```
 
-#### `proportionsHorizontal`
+#### `rowProportions`
 
 Computes proportions horizontally across specified columns for each row.
 
@@ -3755,7 +3754,7 @@ each row, adding new columns for these proportions.
 ##### Signature
 
 ```typescript
-proportionsHorizontal(columns: string[], options?: { suffix?: string; decimals?: number }): this;
+rowProportions(columns: string[], options?: { suffix?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -3776,7 +3775,7 @@ The table, so methods can be chained.
 
 ```ts
 // Compute horizontal proportions for 'Men', 'Women', and 'NonBinary' columns, rounded to 2 decimal places
-table.proportionsHorizontal(["Men", "Women", "NonBinary"], { decimals: 2 });
+table.rowProportions(["Men", "Women", "NonBinary"], { decimals: 2 });
 ```
 
 The table will then look like this:
@@ -3792,7 +3791,7 @@ customize this suffix using the `suffix` option.
 
 ```ts
 // Compute horizontal proportions with a custom suffix "Prop"
-table.proportionsHorizontal(["Men", "Women", "NonBinary"], {
+table.rowProportions(["Men", "Women", "NonBinary"], {
   suffix: "Prop",
   decimals: 2,
 });
@@ -3809,7 +3808,7 @@ The table will then look like this:
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
 
-#### `proportionsVertical`
+#### `columnProportions`
 
 Computes proportions vertically over a column's values, relative to the sum of
 all values in that column (or within specified categories).
@@ -3820,7 +3819,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-proportionsVertical(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
+columnProportions(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -3845,12 +3844,12 @@ The table, so methods can be chained.
 
 ```ts
 // Add a new column 'perc' with each 'column1' value divided by the sum of all 'column1' values
-table.proportionsVertical("column1", "perc");
+table.columnProportions("column1", "perc");
 ```
 
 ```ts
 // Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-table.proportionsVertical("column1", "perc", {
+table.columnProportions("column1", "perc", {
   categories: "column2",
   decimals: 2,
 });
@@ -3858,7 +3857,7 @@ table.proportionsVertical("column1", "perc", {
 
 ```ts
 // Compute proportions for 'sales' within 'region' and 'product_type' categories
-table.proportionsVertical("sales", "sales_proportion", {
+table.columnProportions("sales", "sales_proportion", {
   categories: ["region", "product_type"],
 });
 ```
@@ -6362,15 +6361,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-randomPoint(newColumn: string, nbPointsToTry: number, options?: { column?: string; strict?: boolean }): this;
+randomPoint(newColumn: string, tries: number, options?: { column?: string; strict?: boolean }): this;
 ```
 
 ##### Parameters
 
 - **`newColumn`**: The name of the new column where the random points will be
   stored.
-- **`nbPointsToTry`**: The number of points to generate within the bounding box
-  of each geometry to find one that is within the geometry itself.
+- **`tries`**: The number of points to generate within the bounding box of each
+  geometry to find one that is within the geometry itself.
 - **`options`**: An optional object with configuration options:
 - **`options.column`**: The name of the column storing the geometries within
   which the random points will be generated. If omitted, the method will
@@ -6927,14 +6926,14 @@ data based on conditions. You can also use JavaScript syntax for conditions
 ##### Signature
 
 ```typescript
-async logTable(options?: "all" | number | { nbRowsToLog?: number | "all"; types?: boolean; conditions?: string }): Promise<this>;
+async logTable(options?: "all" | number | { rowsToLog?: number | "all"; types?: boolean; conditions?: string }): Promise<this>;
 ```
 
 ##### Parameters
 
 - **`options`**: Either the number of rows to log (a specific number or `"all"`)
   or an object with configuration options:
-- **`options.nbRowsToLog`**: The number of rows to log. Defaults to 10 or the
+- **`options.rowsToLog`**: The number of rows to log. Defaults to 10 or the
   value set in the SimpleDB instance. Use `"all"` to log all rows.
 - **`options.types`**: If `true`, logs the column types along with the data.
   Defaults to `false`.
@@ -6964,7 +6963,7 @@ await table.logTable("all");
 
 ```ts
 // Log the first 20 rows and include column types
-await table.logTable({ nbRowsToLog: 20, types: true });
+await table.logTable({ rowsToLog: 20, types: true });
 ```
 
 ```ts
@@ -7172,7 +7171,7 @@ async logBottom(count?: number, options?: { originalOrder?: boolean }): Promise<
 ##### Parameters
 
 - **`count`**: The number of rows to log from the bottom of the table. Defaults
-  to the table's `nbRowsToLog` option if not specified.
+  to the table's `rowsToLog` option if not specified.
 - **`options`**: An optional object with logging preferences.
 - **`options.originalOrder`**: If true, the rows are displayed in their original
   order (top to bottom). Defaults to false.
@@ -7184,7 +7183,7 @@ A promise that resolves to the table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Log bottom rows with default count (uses table's nbRowsToLog option)
+// Log bottom rows with default count (uses table's rowsToLog option)
 await table.logBottom();
 ```
 

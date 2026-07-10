@@ -6,7 +6,7 @@ export default function mergeOptions(
     table: string | null;
     method: string | null;
     parameters: { [key: string]: unknown } | null;
-    nbRowsToLog?: number;
+    rowsToLog?: number;
     returnDataFrom?: "query" | "none";
     debug?: boolean;
     noClean?: boolean;
@@ -15,8 +15,8 @@ export default function mergeOptions(
   table: string | null;
   method: string | null;
   parameters: { [key: string]: unknown } | null;
-  nbRowsToLog: number;
-  nbCharactersToLog: number | undefined;
+  rowsToLog: number;
+  charsToLog: number | undefined;
   returnDataFrom: "query" | "none";
   debug: boolean;
   noClean?: boolean;
@@ -25,8 +25,8 @@ export default function mergeOptions(
     table: options.table,
     method: options.method,
     parameters: options.parameters,
-    nbRowsToLog: options.nbRowsToLog ?? simple.nbRowsToLog,
-    nbCharactersToLog: simple.nbCharactersToLog,
+    rowsToLog: options.rowsToLog ?? simple.rowsToLog,
+    charsToLog: simple.charsToLog,
     returnDataFrom: options.returnDataFrom ?? "none",
     debug: options.debug ?? simple.debug,
     noClean: options.noClean,

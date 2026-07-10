@@ -322,7 +322,7 @@ Deno.test("should log the types", async () => {
 });
 
 Deno.test("should log a specific number of rows", async () => {
-  const sdb = new SimpleDB({ nbRowsToLog: 2 });
+  const sdb = new SimpleDB({ rowsToLog: 2 });
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
   // await test.logTable();
@@ -331,7 +331,7 @@ Deno.test("should log a specific number of rows", async () => {
 });
 
 Deno.test("should log a specific number of characters", async () => {
-  const sdb = new SimpleDB({ nbCharactersToLog: 5 });
+  const sdb = new SimpleDB({ charsToLog: 5 });
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
   // await test.logTable();
@@ -600,8 +600,8 @@ Deno.test("should start with memoryLimit option", async () => {
   assertEquals(true, true);
   await sdb.done();
 });
-Deno.test("should start with tempDirectory option", async () => {
-  const sdb = new SimpleDB({ tempDirectory: `${output}tmp` });
+Deno.test("should start with tempDir option", async () => {
+  const sdb = new SimpleDB({ tempDir: `${output}tmp` });
   await sdb.start();
   assertEquals(true, true);
   await sdb.done();

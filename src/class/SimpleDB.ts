@@ -52,7 +52,7 @@ import { discardAllPending } from "../helpers/queueOp.ts";
  * // Create a database instance with custom options
  * const sdb = new SimpleDB({
  *   debug: true, // Enable debugging output
- *   nbRowsToLog: 20 // Set the number of rows to log by default
+ *   rowsToLog: 20 // Set the number of rows to log by default
  * });
  * ```
  */
@@ -177,7 +177,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @defaultValue `undefined`
    * @category Properties
    */
-  tempDirectory: string | undefined;
+  tempDir: string | undefined;
   /**
    * The path to the database file. If not provided, an in-memory database is used.
    *
@@ -224,8 +224,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     sdb: SimpleDB,
     options?: {
       debug?: boolean;
-      nbRowsToLog?: number;
-      nbCharactersToLog?: number;
+      rowsToLog?: number;
+      charsToLog?: number;
       typesToLog?: boolean;
     },
   ) => Table = SimpleTable as new (
@@ -233,8 +233,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     sdb: SimpleDB,
     options?: {
       debug?: boolean;
-      nbRowsToLog?: number;
-      nbCharactersToLog?: number;
+      rowsToLog?: number;
+      charsToLog?: number;
       typesToLog?: boolean;
     },
   ) => Table;
@@ -246,15 +246,15 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.file - The path to the database file. If not provided, an in-memory database is used.
    * @param options.overwrite - A flag indicating whether to overwrite the database file if it already exists.
    * @param options.logDuration - A flag indicating whether to log the total execution duration.
-   * @param options.nbRowsToLog - The number of rows to display when logging a table.
-   * @param options.nbCharactersToLog - The maximum number of characters to display for text-based cells.
+   * @param options.rowsToLog - The number of rows to display when logging a table.
+   * @param options.charsToLog - The maximum number of characters to display for text-based cells.
    * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
    * @param options.cacheVerbose - A flag indicating whether to log verbose cache-related messages.
    * @param options.debug - A flag indicating whether to log debugging information.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
    * @param options.progressBar - A flag indicating whether to display a progress bar for long-running operations.
    * @param options.memoryLimit - The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
-   * @param options.tempDirectory - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `done()`.
+   * @param options.tempDir - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `done()`.
    * @category Constructor
    */
   constructor(
@@ -262,15 +262,15 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       file?: string;
       overwrite?: boolean;
       logDuration?: boolean;
-      nbRowsToLog?: number;
-      nbCharactersToLog?: number;
+      rowsToLog?: number;
+      charsToLog?: number;
       typesToLog?: boolean;
       cacheVerbose?: boolean;
       debug?: boolean;
       duckDbCache?: boolean | null;
       progressBar?: boolean;
       memoryLimit?: string;
-      tempDirectory?: string;
+      tempDir?: string;
     } = {},
   ) {
     super(options);
@@ -288,7 +288,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       ? false
       : options.duckDbCache;
     this.memoryLimit = options.memoryLimit;
-    this.tempDirectory = options.tempDirectory;
+    this.tempDir = options.tempDir;
     this.flushPromise = null;
     this.pendingCount = 0;
     this.opSequence = 0;
@@ -356,9 +356,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     if (this.memoryLimit !== undefined) {
       await this.customQuery(`SET memory_limit = '${this.memoryLimit}';`);
     }
-    if (this.tempDirectory !== undefined) {
+    if (this.tempDir !== undefined) {
       await this.customQuery(
-        `SET temp_directory = '${this.tempDirectory}';`,
+        `SET temp_directory = '${this.tempDir}';`,
       );
     }
   }
@@ -413,16 +413,16 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     if (typeof name === "string") {
       table = new TableClass(name, this, {
         debug: this.debug,
-        nbRowsToLog: this.nbRowsToLog,
-        nbCharactersToLog: this.nbCharactersToLog,
+        rowsToLog: this.rowsToLog,
+        charsToLog: this.charsToLog,
         typesToLog: this.typesToLog,
       });
       table.defaultTableName = false;
     } else {
       table = new TableClass(`table${this.tableIncrement}`, this, {
         debug: this.debug,
-        nbRowsToLog: this.nbRowsToLog,
-        nbCharactersToLog: this.nbCharactersToLog,
+        rowsToLog: this.rowsToLog,
+        charsToLog: this.charsToLog,
         typesToLog: this.typesToLog,
       });
       table.defaultTableName = true;
@@ -835,7 +835,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       this.connection.closeSync();
       this.db.closeSync();
     }
-    const tmpDir = this.tempDirectory ??
+    const tmpDir = this.tempDir ??
       (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
     if (existsSync(tmpDir)) {
       rmSync(tmpDir, { recursive: true });

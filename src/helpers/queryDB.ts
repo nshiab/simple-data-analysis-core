@@ -10,8 +10,8 @@ export default async function queryDB(
     table: string | null;
     method: string | null;
     parameters: { [key: string]: unknown } | null;
-    nbRowsToLog: number;
-    nbCharactersToLog: number | undefined;
+    rowsToLog: number;
+    charsToLog: number | undefined;
     returnDataFrom: "query" | "none";
     debug: boolean;
     noClean?: boolean;

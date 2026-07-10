@@ -69,7 +69,7 @@ Deno.test("logData - types parameter adds types row in grey", () => {
   assertEquals(logs[2].includes("INTEGER/number"), true);
 });
 
-Deno.test("logData - nbCharactersToLog truncates strings and sets maxColumnWidth", () => {
+Deno.test("logData - charsToLog truncates strings and sets maxColumnWidth", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -92,7 +92,7 @@ Deno.test("logData - nbCharactersToLog truncates strings and sets maxColumnWidth
   assertEquals(allOutput.includes("..."), true);
 });
 
-Deno.test("logData - combines types and nbCharactersToLog", () => {
+Deno.test("logData - combines types and charsToLog", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));

@@ -6,7 +6,7 @@ Deno.test("should load data from a directory and return the table", async () => 
   const sdb = new SimpleDB();
   const table = await sdb
     .newTable()
-    .loadDataFromDirectory("test/data/directory/", {
+    .loadDirectory("test/data/directory/", {
       unifyColumns: true,
     });
 
@@ -17,7 +17,7 @@ Deno.test("should load data from a directory and return the table", async () => 
 Deno.test("should load data from a directory", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadDataFromDirectory("test/data/directory/", {
+  table.loadDirectory("test/data/directory/", {
     unifyColumns: true,
   });
 
@@ -49,7 +49,7 @@ Deno.test("should load data from a directory", async () => {
 Deno.test("should load data from a directory even when the path doesn't have '/' at the end", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadDataFromDirectory("test/data/directory", {
+  table.loadDirectory("test/data/directory", {
     unifyColumns: true,
   });
   table.sort({ key1: "asc", key2: "asc", key3: "asc" });
@@ -80,7 +80,7 @@ Deno.test("should load data from a directory even when the path doesn't have '/'
 Deno.test("should load data from a directory with a limit option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadDataFromDirectory("test/data/directory/", {
+  table.loadDirectory("test/data/directory/", {
     unifyColumns: true,
     limit: 3,
   });
@@ -94,7 +94,7 @@ Deno.test("should load data from a directory with a limit option", async () => {
 Deno.test("should load only specific columns from directory", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadDataFromDirectory("test/data/directory/", {
+  table.loadDirectory("test/data/directory/", {
     unifyColumns: true,
     columns: ["key1"],
   });
