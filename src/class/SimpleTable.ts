@@ -3223,8 +3223,7 @@ export default class SimpleTable extends Simple {
    * @param options.decimals - The number of decimal places to round the summarized values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
-   * @param options.valueColumn - If `false`, the default `value` column will be removed. This option only works when summarizing a single column without categories. Defaults to `true`.
-   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained.
+   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `value` column identifies which column each row summarizes.
    * @category Analyzing Data
    *
    * @example
@@ -3301,12 +3300,6 @@ export default class SimpleTable extends Simple {
    * // Summarize 'timestamp_column' by converting to milliseconds first
    * table.summarize({ values: "timestamp_column", datesToMs: true, summaries: "mean" });
    * ```
-   *
-   * @example
-   * ```ts
-   * // Summarize a single column 'value_column' without the default 'value' column in the output
-   * table.summarize({ values: "value_column", valueColumn: false });
-   * ```
    */
   summarize(
     options: {
@@ -3356,7 +3349,6 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
       datesToMs?: boolean;
-      valueColumn?: boolean;
     } = {},
   ): this {
     return summarize(this, options) as this;

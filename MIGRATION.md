@@ -177,7 +177,6 @@ Methods that could skip validations or error-throwing now all use
 | `cloneTable()`                                 | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
 | `summarize()`                                  | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
 | `ranks()`                                      | `{ noGaps: true }`                                | `{ dense: true }`                        |
-| `summarize()`                                  | `{ noColumnValue: true }`                         | `{ valueColumn: false }`                 |
 | `writeDB()`                                    | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
 | `trim()`                                       | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
 | `pad()`                                        | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
@@ -189,6 +188,22 @@ Methods that could skip validations or error-throwing now all use
 | `new SimpleDB()` / `newTable()`                | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
 | `new SimpleDB()`                               | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
 | `cloneTable()`                                 | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
+
+### `summarize()`: the `value` column is now automatic
+
+The `value` column identifies which column each row summarizes, so it only
+carries information when more than one column is summarized. `summarize()` now
+adds it exactly in that case: summarizing several columns produces a `value`
+column, summarizing a single column (or none) does not. The v1 `noColumnValue`
+option is gone — there is nothing left to configure.
+
+```ts
+table.summarize({ values: "salary" }); // no value column
+table.summarize({ values: ["salary", "age"] }); // value column
+```
+
+If you summarized a single column in v1 without `noColumnValue: true`, the
+output loses its constant `value` column in v2.
 
 ### `null` instead of `undefined` for missing rows
 

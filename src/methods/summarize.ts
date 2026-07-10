@@ -26,7 +26,6 @@ type SummarizeOptions = {
   summaries?: Summary | Summary[] | { [key: string]: Summary };
   decimals?: number;
   datesToMs?: boolean;
-  valueColumn?: boolean;
 };
 
 export default function summarize(
@@ -144,11 +143,9 @@ function summarizeSelect(
     summaries = entries.map((d) => d[1]);
   }
 
-  if (values.length > 1 && options.valueColumn === false) {
-    throw new Error(
-      "The option `valueColumn: false` works only when you aggregate the values from one column. Remove the option `valueColumn` or specify just one column in the option `values`.",
-    );
-  }
+  // The value column is a row key: it distinguishes the rows of different
+  // value columns, so it appears only when there is more than one.
+  const valueColumn = values.length > 1;
 
   // With datesToMs, dates are converted to milliseconds inside the aggregate
   // expressions (same conversions as convert()), so the input table is left
@@ -224,9 +221,9 @@ function summarizeSelect(
       hasAggregate = true;
       return `${expression} AS '${name}'`;
     });
-    const select = `SELECT ${
-      options.valueColumn === false ? "" : `'${value}' AS 'value', `
-    }${catSelect === "" ? "" : `${catSelect}, `}${projections.join(", ")}`;
+    const select = `SELECT ${valueColumn ? `'${value}' AS 'value', ` : ""}${
+      catSelect === "" ? "" : `${catSelect}, `
+    }${projections.join(", ")}`;
     if (categories.length === 0 && !hasAggregate) {
       // Every summary is NULL and there is nothing to group by: the branch
       // is a single constant row, so the input is not even scanned.
@@ -236,9 +233,7 @@ function summarizeSelect(
     }
   }
 
-  const orderByColumns = options.valueColumn === false
-    ? categories
-    : ["value", ...categories];
+  const orderByColumns = valueColumn ? ["value", ...categories] : categories;
   const orderBy = orderByColumns.length > 0
     ? `\nORDER BY ${orderByColumns.map((d) => `"${d}" ASC`).join(", ")}`
     : "";

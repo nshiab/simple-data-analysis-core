@@ -36,3 +36,21 @@ Deno.test("should return the count of null values, non null values, and distinct
   ]);
   await sdb.done();
 });
+
+Deno.test("should describe a table with a single column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadArray([
+    { name: "Chloe" },
+    { name: "Philip" },
+    { name: null },
+    { name: "Chloe" },
+  ]);
+
+  const description = await table.getDescription();
+
+  assertEquals(description, [
+    { column: "name", type: "VARCHAR", count: 4, unique: 2, null: 1 },
+  ]);
+  await sdb.done();
+});

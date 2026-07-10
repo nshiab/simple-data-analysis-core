@@ -45,7 +45,6 @@ Deno.test("should summarize all rows into a new table, even if column names have
   const data = await summaryAllRows.getData();
   assertEquals(data, [
     {
-      value: "key 2",
       "key 1": "Banane",
       count: 2,
       countUnique: 0,
@@ -60,7 +59,6 @@ Deno.test("should summarize all rows into a new table, even if column names have
       var: null,
     },
     {
-      value: "key 2",
       "key 1": "Fraise",
       count: 2,
       countUnique: 2,
@@ -75,7 +73,6 @@ Deno.test("should summarize all rows into a new table, even if column names have
       var: 60.5,
     },
     {
-      value: "key 2",
       "key 1": "Rubarbe",
       count: 2,
       countUnique: 2,
@@ -344,7 +341,6 @@ Deno.test("should summarize specific columns in a table", async () => {
 
   assertEquals(data, [
     {
-      value: "key2",
       count: 6,
       countUnique: 4,
       countNull: 2,
@@ -373,7 +369,6 @@ Deno.test("should summarize specific columns in a table with a specific number o
 
   assertEquals(data, [
     {
-      value: "key2",
       count: 6,
       countUnique: 4,
       countNull: 2,
@@ -389,14 +384,13 @@ Deno.test("should summarize specific columns in a table with a specific number o
   ]);
   await sdb.done();
 });
-Deno.test("should summarize and output a table without the column value, when only one column is aggregated", async () => {
+Deno.test("should summarize a single column without adding a value column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
     values: "key2",
     decimals: 4,
-    valueColumn: false,
   });
   const data = await table.getData();
 
@@ -417,7 +411,7 @@ Deno.test("should summarize and output a table without the column value, when on
   ]);
   await sdb.done();
 });
-Deno.test("should summarize and output a table without the column value, when only one column is aggregated and with categories", async () => {
+Deno.test("should summarize a single column with categories without adding a value column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -425,7 +419,6 @@ Deno.test("should summarize and output a table without the column value, when on
     values: "key2",
     categories: "key1",
     decimals: 4,
-    valueColumn: false,
   });
   const data = await table.getData();
 
@@ -472,6 +465,62 @@ Deno.test("should summarize and output a table without the column value, when on
       stdDev: 0.7071,
       var: 0.5,
     },
+  ]);
+  await sdb.done();
+});
+Deno.test("should not add a value column when summarizing a single column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataSummarize.json");
+  table.summarize({
+    values: "key2",
+    summaries: ["count", "mean"],
+  });
+  const columns = await table.getColumns();
+
+  assertEquals(columns, ["count", "mean"]);
+  await sdb.done();
+});
+Deno.test("should add a value column when summarizing multiple columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataSummarize.json");
+  table.summarize({
+    values: ["key2", "key3"],
+    summaries: ["count", "mean"],
+  });
+  const columns = await table.getColumns();
+
+  assertEquals(columns, ["value", "count", "mean"]);
+  await sdb.done();
+});
+Deno.test("should deduplicate value columns and not add a value column when one column is passed twice", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataSummarize.json");
+  table.summarize({
+    values: ["key2", "key2"],
+    summaries: ["count", "mean"],
+  });
+  const data = await table.getData();
+
+  assertEquals(data, [{ count: 6, mean: 9 }]);
+  await sdb.done();
+});
+Deno.test("should count rows when all value columns are also categories", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataSummarize.json");
+  table.summarize({
+    values: "key1",
+    categories: "key1",
+  });
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: "Banane", count: 2 },
+    { key1: "Fraise", count: 2 },
+    { key1: "Rubarbe", count: 2 },
   ]);
   await sdb.done();
 });
@@ -840,9 +889,9 @@ Deno.test("should summarize specific columns in a table with specific summaries 
   const data = await table.getData();
 
   assertEquals(data, [
-    { value: "key2", key1: "Banane", mean: null, count: 2 },
-    { value: "key2", key1: "Fraise", mean: 16.5, count: 2 },
-    { value: "key2", key1: "Rubarbe", mean: 1.5, count: 2 },
+    { key1: "Banane", mean: null, count: 2 },
+    { key1: "Fraise", mean: 16.5, count: 2 },
+    { key1: "Rubarbe", mean: 1.5, count: 2 },
   ]);
   await sdb.done();
 });
@@ -859,11 +908,11 @@ Deno.test("should summarize with multiple categories", async () => {
   const data = await table.getData();
 
   assertEquals(data, [
-    { value: "key3", key1: "Banane", key2: null, mean: null, count: 2 },
-    { value: "key3", key1: "Fraise", key2: 11, mean: 2.35, count: 1 },
-    { value: "key3", key1: "Fraise", key2: 22, mean: 12.34, count: 1 },
-    { value: "key3", key1: "Rubarbe", key2: 1, mean: 10.5, count: 1 },
-    { value: "key3", key1: "Rubarbe", key2: 2, mean: 4.57, count: 1 },
+    { key1: "Banane", key2: null, mean: null, count: 2 },
+    { key1: "Fraise", key2: 11, mean: 2.35, count: 1 },
+    { key1: "Fraise", key2: 22, mean: 12.34, count: 1 },
+    { key1: "Rubarbe", key2: 1, mean: 10.5, count: 1 },
+    { key1: "Rubarbe", key2: 2, mean: 4.57, count: 1 },
   ]);
   await sdb.done();
 });
@@ -884,7 +933,6 @@ Deno.test("should summarize with dates", async () => {
 
   assertEquals(data, [
     {
-      value: "keyA",
       count: 5,
       countUnique: 3,
       countNull: 1,
@@ -917,7 +965,6 @@ Deno.test("should summarize with dates converted to milliseconds", async () => {
 
   assertEquals(data, [
     {
-      value: "keyA",
       count: 5,
       countUnique: 3,
       countNull: 1,

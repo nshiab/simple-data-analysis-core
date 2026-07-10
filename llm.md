@@ -3874,7 +3874,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; datesToMs?: boolean; valueColumn?: boolean }): this;
+summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; datesToMs?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3901,14 +3901,12 @@ summarize(options?: { values?: string | string[]; categories?: string | string[]
   converted to milliseconds before summarizing. This is useful when summarizing
   mixed data types (numbers and dates) as values must be of the same type for
   aggregation.
-- **`options.valueColumn`**: If `false`, the default `value` column will be
-  removed. This option only works when summarizing a single column without
-  categories. Defaults to `true`.
 
 ##### Returns
 
 A table instance containing the summarized data (either the current table or a
-new table), so methods can be chained.
+new table), so methods can be chained. When summarizing more than one column, a
+`value` column identifies which column each row summarizes.
 
 ##### Examples
 
@@ -3988,11 +3986,6 @@ table.summarize({
   datesToMs: true,
   summaries: "mean",
 });
-```
-
-```ts
-// Summarize a single column 'value_column' without the default 'value' column in the output
-table.summarize({ values: "value_column", valueColumn: false });
 ```
 
 #### `accumulate`

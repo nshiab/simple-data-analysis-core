@@ -43,7 +43,6 @@ Deno.test("should cache computed values for tabular data", async () => {
   const data = await table.getData();
   assertEquals(data, [
     {
-      value: "key2",
       count: 6,
       countUnique: 4,
       countNull: 2,
@@ -72,7 +71,6 @@ Deno.test("should load data from the cache instead of running computations", asy
   const data = await table.getData();
   assertEquals(data, [
     {
-      value: "key2",
       count: 6,
       countUnique: 4,
       countNull: 2,
@@ -104,7 +102,6 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
   const data = await table.getData();
   assertEquals(data, [
     {
-      value: "key2",
       count: 6,
       countUnique: 4,
       countNull: 2,
@@ -136,7 +133,6 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   const data = await table.getData();
   assertEquals(data, [
     {
-      value: "key2",
       count: 6,
       countUnique: 4,
       countNull: 2,
