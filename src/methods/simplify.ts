@@ -3,7 +3,6 @@ import findGeoColumn from "../helpers/findGeoColumn.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
-import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function simplify(
@@ -11,8 +10,8 @@ export default function simplify(
   tolerance: number,
   options: { column?: string; simplifyBoundary?: boolean } = {},
 ) {
-  // The coverage simplification aggregates over a rowid-based row number,
-  // which only exists on the materialized table: it executes as a barrier.
+  // The coverage simplification groups by rowid, which only exists on the
+  // materialized table: it executes as a barrier.
   queueOp(simpleTable, {
     kind: "barrier",
     method: "simplify()",
@@ -32,31 +31,27 @@ async function executeSimplify(
     ? options.column
     : await findGeoColumn(simpleTable);
 
-  // The temporary row number is created directly (not with the sync
-  // addRowNumber builder, which would queue for the next flush).
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT *, (ROW_NUMBER() OVER(ORDER BY rowid) - 1) AS "rowNumberForSimplify" FROM "${simpleTable.name}" ORDER BY rowid`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "simplify()",
-      parameters: { column, tolerance },
-    }),
-  );
-
   const geoType = await simpleTable.getProjection(column);
+
+  // Each row is its own coverage group: grouping by rowid directly avoids
+  // materializing a temporary row-number column. rowid is not part of
+  // SELECT *, so the other columns are listed explicitly in the GROUP BY.
+  const groupBy = [
+    "rowid",
+    ...(await simpleTable.getColumns())
+      .filter((d) => d !== column)
+      .map((d) => `"${d}"`),
+  ].join(", ");
 
   await queryDB(
     simpleTable,
     `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * REPLACE(ST_CoverageSimplify(ARRAY_AGG("${column}"), ${tolerance}${
       options.simplifyBoundary === false ? ", FAlSE" : ""
-    })::${geoType} AS "${column}") FROM "${simpleTable.name}" GROUP BY ALL;`,
+    })::${geoType} AS "${column}") FROM "${simpleTable.name}" GROUP BY ${groupBy};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "simplify()",
       parameters: { column, tolerance },
     }),
   );
-
-  await removeColumnsNow(simpleTable, ["rowNumberForSimplify"], "simplify()");
 }

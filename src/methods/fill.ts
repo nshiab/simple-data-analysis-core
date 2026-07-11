@@ -20,8 +20,8 @@ export default function fill(
     );
   }
 
-  // The fill order is based on a rowid-based row number, which only exists
-  // on the materialized table: it executes as a barrier.
+  // The fill order is based on rowid, which only exists on the materialized
+  // table: it executes as a barrier.
   queueOp(simpleTable, {
     kind: "barrier",
     method: "fill()",
@@ -42,35 +42,25 @@ async function executeFill(
   const categories = options.categories
     ? stringToArray(options.categories)
     : [];
-  const tempRowCol = `rowNumberForFill`;
-
-  // The temporary row number is created directly (not with the sync
-  // addRowNumber builder, which would queue for the next flush).
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT *, (ROW_NUMBER() OVER(ORDER BY rowid) - 1) AS "${tempRowCol}" FROM "${simpleTable.name}" ORDER BY rowid`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "fill()",
-      parameters: { columns, ...options },
-    }),
-  );
 
   const cols = stringToArray(columns);
-  const excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
+  const excludeList = cols.map((col) => `"${col}"`).join(", ");
   let selectList: string;
 
   if (options.interpolate || options.interpolateBy) {
-    // Use interpolateBy for the window function's ORDER BY (correct interpolation math),
-    // but always order final output by tempRowCol to preserve input row order
-    const windowOrderCol = options.interpolateBy ?? tempRowCol;
+    // Use interpolateBy for the window function's ORDER BY (correct
+    // interpolation math), but always order the final output by rowid to
+    // preserve input row order.
+    const windowOrder = options.interpolateBy
+      ? `"${options.interpolateBy}"`
+      : "rowid";
     const overClause = categories.length > 0
       ? `(PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")})`
       : `()`;
     selectList = cols
       .map(
         (col) =>
-          `fill(${col} ORDER BY "${windowOrderCol}") OVER ${overClause} as ${col}`,
+          `fill("${col}" ORDER BY ${windowOrder}) OVER ${overClause} as "${col}"`,
       )
       .join(", ");
   } else if (categories.length > 0) {
@@ -80,20 +70,21 @@ async function executeFill(
     selectList = cols
       .map(
         (col) =>
-          `COALESCE(${col}, LAG(${col} IGNORE NULLS) OVER(${partition} ORDER BY "${tempRowCol}")) as ${col}`,
+          `COALESCE("${col}", LAG("${col}" IGNORE NULLS) OVER(${partition} ORDER BY rowid)) as "${col}"`,
       )
       .join(", ");
   } else {
     selectList = cols
       .map(
-        (col) => `COALESCE(${col}, LAG(${col} IGNORE NULLS) OVER()) as ${col}`,
+        (col) =>
+          `COALESCE("${col}", LAG("${col}" IGNORE NULLS) OVER(ORDER BY rowid)) as "${col}"`,
       )
       .join(", ");
   }
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${tempRowCol}";`,
+    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY rowid;`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "fill()",

@@ -205,6 +205,19 @@ table.summarize({ values: ["salary", "age"] }); // value column
 If you summarized a single column in v1 without `noColumnValue: true`, the
 output loses its constant `value` column in v2.
 
+### `join()`: right and full joins keep their join keys
+
+In v1, the join columns of a right or full join came from the left table, so
+rows existing only in the right table had `null` join keys. In v2, the join keys
+are always populated: a right join takes them from the right table, and a full
+join takes them from whichever side matched.
+
+```ts
+// v1: { dishId: null, name: null, category: "Soup" }
+// v2: { dishId: 8, name: null, category: "Soup" }
+dishes.join(categories, { on: "dishId", type: "right" });
+```
+
 ### `null` instead of `undefined` for missing rows
 
 `getRow()` (with `strict: false`), `getFirstRow()` and `getLastRow()` now return

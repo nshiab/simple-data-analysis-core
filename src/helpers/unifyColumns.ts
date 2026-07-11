@@ -15,9 +15,16 @@ export default async function unifyColumns(
     [key: string]: string[];
   } = {};
 
+  // Each table's columns are fetched once, instead of one hasColumn
+  // round-trip per column and table.
+  const existingColumns = new Map<SimpleTable, Set<string>>();
+  for (const table of allTables) {
+    existingColumns.set(table, new Set(await table.getColumns()));
+  }
+
   for (const column in allTypes) {
     for (const table of allTables) {
-      if (!(await table.hasColumn(column))) {
+      if (!existingColumns.get(table)!.has(column)) {
         await queryDB(
           table,
           `ALTER TABLE "${table.name}" ADD "${column}" ${allTypes[column]};`,

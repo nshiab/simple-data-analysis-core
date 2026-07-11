@@ -12,7 +12,7 @@ export default function accumulate(
     categories?: string | string[];
   } = {},
 ) {
-  // The accumulation order is based on the physical row order of the
+  // The accumulation order is based on rowid, which only exists on the
   // materialized table, not on the output of a fused step: it executes as a
   // barrier.
   queueOp(simpleTable, {
@@ -49,11 +49,9 @@ function accumulateQuery(
     : "";
 
   const query =
-    `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ROW_NUMBER() OVER() AS "idForAccumulate" FROM "${table}";
-    CREATE OR REPLACE TABLE "${table}" AS SELECT *, SUM("${column}") OVER (${partition}ORDER BY "idForAccumulate") AS "${newColumn}"
+    `CREATE OR REPLACE TABLE "${table}" AS SELECT *, SUM("${column}") OVER (${partition}ORDER BY rowid) AS "${newColumn}"
     FROM "${table}"
-    ORDER BY "idForAccumulate";
-    ALTER TABLE "${table}" DROP "idForAccumulate";`;
+    ORDER BY rowid;`;
 
   return query;
 }

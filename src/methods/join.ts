@@ -3,7 +3,6 @@ import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
-import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 
 export default function join(
   leftTable: SimpleTable,
@@ -86,14 +85,39 @@ async function executeJoin(
     }
   }
 
+  // The right table's copies of the join columns are excluded from the
+  // SELECT directly, instead of dropping them with a rewrite after the join.
+  // The join columns come from the side that has a value for every row of
+  // the result: the left table for inner and left joins, the right table for
+  // right joins, and whichever side matched for full joins.
+  const type = options.type ?? "left";
+  const joinColumn = (d: string) => {
+    if (type === "right") {
+      return `"${rightTable.name}"."${d}" AS "${d}"`;
+    }
+    if (type === "full") {
+      return `COALESCE("${leftTable.name}"."${d}", "${rightTable.name}"."${d}") AS "${d}"`;
+    }
+    return `"${leftTable.name}"."${d}"`;
+  };
+  const selectList = [
+    ...leftTableColumns.map((d) =>
+      on.includes(d) ? joinColumn(d) : `"${leftTable.name}"."${d}"`
+    ),
+    ...rightTableColumns
+      .filter((d) => !on.includes(d))
+      .map((d) => `"${rightTable.name}"."${d}"`),
+  ].join(", ");
+
   await queryDB(
     leftTable,
     joinQuery(
       leftTable.name,
       rightTable.name,
       on,
-      options.type ?? "left",
+      type,
       outputTable.name,
+      selectList,
     ),
     mergeOptions(leftTable, {
       table: outputTable.name,
@@ -104,14 +128,6 @@ async function executeJoin(
       },
     }),
   );
-
-  const columns = await outputTable.getColumns();
-  const extraCommonColumns = columns.filter(
-    (d) => on.map((c) => `${c}_1`).includes(d),
-  );
-  if (extraCommonColumns.length > 0) {
-    await removeColumnsNow(outputTable, extraCommonColumns, "join()");
-  }
 }
 
 function joinQuery(
@@ -120,8 +136,10 @@ function joinQuery(
   on: string[],
   join: "inner" | "left" | "right" | "full",
   outputTable: string,
+  selectList: string,
 ) {
-  let query = `CREATE OR REPLACE TABLE "${outputTable}" AS SELECT *`;
+  let query =
+    `CREATE OR REPLACE TABLE "${outputTable}" AS SELECT ${selectList}`;
 
   if (join === "inner") {
     query += ` FROM "${leftTable}" JOIN "${rightTable}"`;

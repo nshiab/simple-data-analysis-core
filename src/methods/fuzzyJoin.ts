@@ -3,7 +3,6 @@ import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
-import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 
 export default function fuzzyJoin(
   leftTable: SimpleTable,
@@ -105,6 +104,15 @@ async function executeFuzzyJoin(
   const method = options.method ?? "ratio";
   const similarityColumn = options.similarityColumn;
 
+  // The right table's copy of a column shared with the left table (only
+  // rightColumn can be shared, checked above) is excluded from the SELECT
+  // directly, instead of dropping its _1 duplicate with a rewrite after the
+  // join.
+  const rightSelect = rightCols
+    .filter((d) => !leftCols.includes(d))
+    .map((d) => `"${rightTable.name}"."${d}"`)
+    .join(", ");
+
   const sql = `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;\n` +
     fuzzyJoinQuery(
       leftTable.name,
@@ -115,6 +123,7 @@ async function executeFuzzyJoin(
       threshold,
       outputTable.name,
       similarityColumn,
+      rightSelect,
       options.preFilterPrefixLen,
     );
 
@@ -133,14 +142,6 @@ async function executeFuzzyJoin(
       },
     }),
   );
-
-  // Remove the duplicate right-column produced when leftColumn === rightColumn
-  // (DuckDB suffixes it with _1 in SELECT *)
-  const outputCols = await outputTable.getColumns();
-  const duplicateCol = `${rightColumn}_1`;
-  if (outputCols.includes(duplicateCol)) {
-    await removeColumnsNow(outputTable, [duplicateCol], "fuzzyJoin()");
-  }
 }
 
 function fuzzyJoinQuery(
@@ -156,6 +157,7 @@ function fuzzyJoinQuery(
   threshold: number,
   outputTable: string,
   similarityColumn: string | undefined,
+  rightSelect: string,
   preFilterPrefixLen?: number,
 ) {
   const fn =
@@ -177,7 +179,7 @@ function fuzzyJoinQuery(
     return `CREATE OR REPLACE TABLE "${outputTable}" AS
 SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS "${similarityColumn}"
 FROM (
-  SELECT "${leftTable}".*, "${rightTable}".*, ${fn} AS "_sda_score"
+  SELECT "${leftTable}".*, ${rightSelect}, ${fn} AS "_sda_score"
   FROM "${leftTable}" LEFT JOIN "${rightTable}" ON ${onClause}
 ) _sda
 ORDER BY "${leftColumn}", "_sda_score" DESC;\n`;
@@ -186,7 +188,7 @@ ORDER BY "${leftColumn}", "_sda_score" DESC;\n`;
   return `CREATE OR REPLACE TABLE "${outputTable}" AS
 SELECT *
 FROM (
-  SELECT "${leftTable}".*, "${rightTable}".*
+  SELECT "${leftTable}".*, ${rightSelect}
   FROM "${leftTable}" LEFT JOIN "${rightTable}" ON ${onClause}
 ) _sda
 ORDER BY "${leftColumn}", "${rightColumn}";\n`;

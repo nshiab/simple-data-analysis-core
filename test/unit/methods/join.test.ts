@@ -105,9 +105,9 @@ Deno.test("should put the result of a right join into a new table", async () => 
       country: "Mexico",
       category: "Dessert",
     },
-    { dishId: null, name: null, country: null, category: "Dessert" },
-    { dishId: null, name: null, country: null, category: "Main" },
-    { dishId: null, name: null, country: null, category: "Main" },
+    { dishId: 8, name: null, country: null, category: "Dessert" },
+    { dishId: 7, name: null, country: null, category: "Main" },
+    { dishId: 6, name: null, country: null, category: "Main" },
   ]);
 
   await sdb.done();
@@ -144,9 +144,9 @@ Deno.test("should put the result of a full join into a new table", async () => {
     },
     { dishId: 4, name: "Couscous", country: "Morrocco", category: null },
     { dishId: 5, name: "Mochi", country: "Japan", category: null },
-    { dishId: null, name: null, country: null, category: "Dessert" },
-    { dishId: null, name: null, country: null, category: "Main" },
-    { dishId: null, name: null, country: null, category: "Main" },
+    { dishId: 8, name: null, country: null, category: "Dessert" },
+    { dishId: 7, name: null, country: null, category: "Main" },
+    { dishId: 6, name: null, country: null, category: "Main" },
   ]);
 
   await sdb.done();
@@ -185,9 +185,9 @@ Deno.test("should put the result of a full join into a new table with a specific
     },
     { dishId: 4, name: "Couscous", country: "Morrocco", category: null },
     { dishId: 5, name: "Mochi", country: "Japan", category: null },
-    { dishId: null, name: null, country: null, category: "Dessert" },
-    { dishId: null, name: null, country: null, category: "Main" },
-    { dishId: null, name: null, country: null, category: "Main" },
+    { dishId: 8, name: null, country: null, category: "Dessert" },
+    { dishId: 7, name: null, country: null, category: "Main" },
+    { dishId: 6, name: null, country: null, category: "Main" },
   ]);
 
   await sdb.done();
@@ -237,6 +237,61 @@ Deno.test("should join on multiple columns", async () => {
   const categories = sdb.newTable("projections");
   categories.loadData("test/data/joins/projections.csv");
   dishes.join(categories, { on: ["city", "season"] });
+
+  await sdb.done();
+});
+
+Deno.test("should keep the join keys of unmatched right rows in a right join", async () => {
+  const sdb = new SimpleDB();
+  const tableA = sdb.newTable("tableA");
+  tableA.loadArray([
+    { key: "a", valueA: 1 },
+    { key: "b", valueA: 2 },
+  ]);
+  const tableB = sdb.newTable("tableB");
+  tableB.loadArray([
+    { key: "b", valueB: 20 },
+    { key: "c", valueB: 30 },
+  ]);
+
+  const joined = tableA.join(tableB, { type: "right", outputTable: true });
+  joined.sort({ key: "asc" });
+  const data = await joined.getData();
+
+  assertEquals(data, [
+    { key: "b", valueA: 2, valueB: 20 },
+    { key: "c", valueA: null, valueB: 30 },
+  ]);
+
+  await sdb.done();
+});
+
+Deno.test("should keep the join keys of unmatched rows on both sides in a full join with multiple keys", async () => {
+  const sdb = new SimpleDB();
+  const tableA = sdb.newTable("tableA");
+  tableA.loadArray([
+    { year: 2024, city: "Montreal", sales: 10 },
+    { year: 2025, city: "Toronto", sales: 20 },
+  ]);
+  const tableB = sdb.newTable("tableB");
+  tableB.loadArray([
+    { year: 2024, city: "Montreal", visits: 100 },
+    { year: 2026, city: "Vancouver", visits: 300 },
+  ]);
+
+  const joined = tableA.join(tableB, {
+    on: ["year", "city"],
+    type: "full",
+    outputTable: true,
+  });
+  joined.sort({ year: "asc" });
+  const data = await joined.getData();
+
+  assertEquals(data, [
+    { year: 2024, city: "Montreal", sales: 10, visits: 100 },
+    { year: 2025, city: "Toronto", sales: 20, visits: null },
+    { year: 2026, city: "Vancouver", sales: null, visits: 300 },
+  ]);
 
   await sdb.done();
 });
