@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should split and spread a string into multiple columns", async () => {
@@ -144,6 +144,22 @@ Deno.test("should skip validation with strict: false when rows have more parts t
     { data: "F,G,H", first: "F", second: "G" },
     { data: "I,J,K,L", first: "I", second: "J" },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { name: "Shiab, Nael", lastName: "already here" },
+  ]);
+
+  await assertRejects(
+    () => table.splitSpread("name", ",", ["lastName", "firstName"]).run(),
+    Error,
+    'the column "lastName" already exists',
+  );
 
   await sdb.done();
 });

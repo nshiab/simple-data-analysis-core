@@ -1,5 +1,3 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -31,44 +29,28 @@ export default function cloneTable(
     clonedTable = simpleTable.sdb.newTable(undefined);
   }
 
-  queueOp(clonedTable, {
-    kind: "barrier",
-    method: "cloneTable()",
-    parameters: { options },
-    execute: async () => {
-      await queryDB(
-        simpleTable,
-        cloneQuery(simpleTable.name, clonedTable.name, columns, options),
-        mergeOptions(simpleTable, {
-          table: clonedTable.name,
-          method: "cloneTable()",
-          parameters: { options },
-        }),
-      );
-      clonedTable.connection = clonedTable.sdb.connection;
-    },
-  });
-
-  return clonedTable;
-}
-
-function cloneQuery(
-  table: string,
-  newTable: string,
-  columns: string[],
-  options: {
-    conditions?: string;
-    limit?: number;
-    offset?: number;
-  } = {},
-) {
   const selectClause = columns.length > 0
     ? columns.map((col) => `"${col}"`).join(", ")
     : "*";
 
-  return `CREATE OR REPLACE TABLE "${newTable}" AS SELECT ${selectClause} FROM "${table}"${
-    options.conditions ? ` WHERE ${options.conditions}` : ""
-  }${typeof options.limit === "number" ? ` LIMIT ${options.limit}` : ""}${
-    typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""
-  }`;
+  queueOp(clonedTable, {
+    kind: "fusable",
+    method: "cloneTable()",
+    parameters: { options },
+    // The clone has no prior state of its own to describe; its SELECT reads
+    // simpleTable directly instead.
+    needsSchema: false,
+    // The clone reads simpleTable by name rather than through clonedTable's
+    // own (nonexistent) chain, so simpleTable's pending work must close and
+    // execute before this SELECT runs, as it would at this call position.
+    rawSQL: [`"${simpleTable.name}"`],
+    buildSelect: () =>
+      `SELECT ${selectClause} FROM "${simpleTable.name}"${
+        options.conditions ? ` WHERE ${options.conditions}` : ""
+      }${typeof options.limit === "number" ? ` LIMIT ${options.limit}` : ""}${
+        typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""
+      }`,
+  });
+
+  return clonedTable;
 }

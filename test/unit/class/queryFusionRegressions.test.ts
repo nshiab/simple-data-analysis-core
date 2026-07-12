@@ -223,3 +223,47 @@ Deno.test("interleaved per-table chains still fuse within each table", async () 
 
   await sdb.done();
 });
+
+Deno.test("cloneTable() fuses with a subsequent op on the clone into one statement", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("cloneFuseSrc");
+  table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
+
+  const clone = table.cloneTable("cloneFuseDst");
+  const queries: string[] = [];
+  const original = clone.runQuery;
+  clone.runQuery = (query, connection, returnData, options) => {
+    queries.push(query);
+    return original(query, connection, returnData, options);
+  };
+  clone.filter("v > 1");
+
+  assertEquals(await clone.getData(), [{ v: 2 }, { v: 3 }]);
+
+  const fused = queries.filter((q) =>
+    q.includes(`CREATE OR REPLACE TABLE "cloneFuseDst"`) &&
+    q.includes("WITH s1 AS")
+  );
+  assertEquals(fused.length, 1);
+
+  await sdb.done();
+});
+
+Deno.test("cloneTable() reads simpleTable's state at its call position, not later mutations", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("clonePosition");
+  table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
+  table.filter("v > 1");
+
+  const clone = table.cloneTable();
+  // Queued after cloneTable(): the clone must not see this later mutation.
+  table.addColumn("doubled", "integer", "v * 2");
+
+  assertEquals(await clone.getData(), [{ v: 2 }, { v: 3 }]);
+  assertEquals(await table.getData(), [
+    { v: 2, doubled: 4 },
+    { v: 3, doubled: 6 },
+  ]);
+
+  await sdb.done();
+});

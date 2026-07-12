@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -33,12 +34,21 @@ async function executeSplitSpread(
   },
 ): Promise<void> {
   const nbParts = newColumns.length;
+  const strict = options.strict !== false;
 
-  if (options.strict !== false) {
-    // Check if any row has more parts than expected
-    const maxPartsResult = await queryDB(
+  // A SELECT *, expr AS col colliding with an existing column would be
+  // silently renamed by DuckDB (col -> col_1) instead of erroring, unlike
+  // the ALTER TABLE ADD this used to run.
+  assertNewColumns(await simpleTable.getTypes(), newColumns, "splitSpread()");
+
+  if (strict) {
+    // Both bounds come from the same scan instead of one query each.
+    const partsResult = await queryDB(
       simpleTable,
-      `SELECT MAX(ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}'))) as max_parts FROM "${simpleTable.name}"`,
+      `SELECT
+        MAX(ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}'))) AS max_parts,
+        MIN(ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}'))) AS min_parts
+      FROM "${simpleTable.name}"`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "splitSpread()",
@@ -47,15 +57,16 @@ async function executeSplitSpread(
       }),
     );
 
-    if (maxPartsResult && maxPartsResult.length > 0) {
-      const maxParts = maxPartsResult[0].max_parts as number;
+    if (partsResult && partsResult.length > 0) {
+      const maxParts = partsResult[0].max_parts as number;
+      const minParts = partsResult[0].min_parts as number;
 
       if (maxParts > nbParts) {
         // Get the first 5 rows with more parts than expected
         const problematicRows = await queryDB(
           simpleTable,
-          `SELECT "${column}" 
-         FROM "${simpleTable.name}" 
+          `SELECT "${column}"
+         FROM "${simpleTable.name}"
          WHERE ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}')) > ${nbParts}
          LIMIT 5`,
           mergeOptions(simpleTable, {
@@ -79,22 +90,6 @@ When splitting by '${separator}', each row must produce at most ${nbParts} value
 First 5 rows with too many values:\n  - ${exampleRows}`,
         );
       }
-    }
-
-    // Check if any row has fewer parts than expected
-    const minPartsResult = await queryDB(
-      simpleTable,
-      `SELECT MIN(ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}'))) as min_parts FROM "${simpleTable.name}"`,
-      mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        method: "splitSpread()",
-        parameters: { column, separator, newColumns },
-        returnData: true,
-      }),
-    );
-
-    if (minPartsResult && minPartsResult.length > 0) {
-      const minParts = minPartsResult[0].min_parts as number;
 
       if (minParts < nbParts) {
         console.warn(
@@ -104,27 +99,31 @@ First 5 rows with too many values:\n  - ${exampleRows}`,
     }
   }
 
-  const alterStatements = newColumns
-    .map((col) => `ALTER TABLE "${simpleTable.name}" ADD "${col}" VARCHAR;`)
-    .join("\n");
-
-  const updateStatements = newColumns
-    .map(
-      (col, i) =>
-        `UPDATE "${simpleTable.name}" SET "${col}" = SPLIT_PART("${column}", '${separator}', ${
-          i + 1
-        });`,
-    )
-    .join("\n");
-
   await queryDB(
     simpleTable,
-    `${alterStatements}
-    ${updateStatements}`,
+    splitSpreadQuery(simpleTable.name, column, separator, newColumns),
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "splitSpread()",
       parameters: { column, separator, newColumns },
     }),
   );
+}
+
+function splitSpreadQuery(
+  table: string,
+  column: string,
+  separator: string,
+  newColumns: string[],
+) {
+  // All columns are added in a single rewrite, so the table is scanned once
+  // instead of once per ALTER + once per UPDATE.
+  const splitColumns = newColumns
+    .map(
+      (col, i) =>
+        `SPLIT_PART("${column}", '${separator}', ${i + 1}) AS "${col}"`,
+    )
+    .join(", ");
+
+  return `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ${splitColumns} FROM "${table}"`;
 }

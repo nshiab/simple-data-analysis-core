@@ -53,33 +53,23 @@ function outliersIQRQuery(
     : [];
 
   const quantileFunc = parity === "even" ? "quantile_disc" : "quantile_cont";
-
-  const where = categories.length > 0
-    ? `WHERE ${
-      categories
-        .map((d) => `"${table}".${d} = "iqr".${d}`)
-        .join(" AND ")
-    }`
+  const partition = categories.length > 0
+    ? `PARTITION BY ${categories.join(", ")}`
     : "";
 
-  const query = `ALTER TABLE "${table}"
-    ADD COLUMN "${newColumn}" BOOLEAN;
-    WITH "iqr" AS (
-        SELECT${categories.length > 0 ? `\n${categories.join(", ")},` : ""}
-            ${quantileFunc}("${column}", 0.25) as "q1",
-            ${quantileFunc}("${column}", 0.75) as "q3",
-            ("q3"-"q1")*1.5 as "range",
-            "q1"-"range" as "lowThreshold",
-            "q3"+"range" as "highThreshold"
-        FROM "${table}"
-        ${categories.length > 0 ? `GROUP BY ${categories.join(", ")}` : ""}
-    )
-    UPDATE "${table}"
-    SET "${newColumn}" = CASE
-        WHEN "${column}" > (SELECT "highThreshold" FROM "iqr" ${where}) OR "${column}" < (SELECT "lowThreshold" FROM "iqr" ${where}) THEN TRUE
+  // q1/q3 are computed as window values (one pass) instead of a per-category
+  // CTE joined back through a correlated subquery per row.
+  return `CREATE OR REPLACE TABLE "${table}" AS
+    SELECT * EXCLUDE ("_sda_q1", "_sda_q3"), CASE
+        WHEN "${column}" > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
+          OR "${column}" < "_sda_q1" - ("_sda_q3" - "_sda_q1") * 1.5
+        THEN TRUE
         ELSE FALSE
-    END;
-    `;
-
-  return query;
+    END AS "${newColumn}"
+    FROM (
+        SELECT *,
+            ${quantileFunc}("${column}", 0.25) OVER (${partition}) AS "_sda_q1",
+            ${quantileFunc}("${column}", 0.75) OVER (${partition}) AS "_sda_q3"
+        FROM "${table}"
+    ) "_sda"`;
 }

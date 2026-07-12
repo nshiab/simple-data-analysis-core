@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -47,6 +48,11 @@ async function binsQuery(
     startValue?: number;
   } = {},
 ) {
+  // A SELECT *, expr AS col colliding with an existing column would be
+  // silently renamed by DuckDB (col -> col_1) instead of erroring, unlike
+  // the ALTER TABLE ADD this used to run.
+  assertNewColumns(await SimpleTable.getTypes(), [newColumn], "bins()");
+
   // The minimum and maximum are computed in one scan instead of one
   // getMin/getMax query each.
   const minMax = await queryDB(
@@ -101,10 +107,13 @@ async function binsQuery(
     );
   }
 
-  const query = `ALTER TABLE "${SimpleTable.name}" ADD "${newColumn}" VARCHAR;
-    UPDATE "${SimpleTable.name}" SET "${newColumn}" = CASE
+  // A single rewrite, so the table is scanned once instead of once for the
+  // ALTER and once for the UPDATE.
+  const query = `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS
+    SELECT *, CASE
     ${intervals.join("\n")}
-    END`;
+    END AS "${newColumn}"
+    FROM "${SimpleTable.name}"`;
 
   return query;
 }

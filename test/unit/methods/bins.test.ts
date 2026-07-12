@@ -64,6 +64,21 @@ Deno.test("should throw when startValue is greater than the minimum value", asyn
   await sdb.done();
 });
 
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+
+  await assertRejects(
+    () => table.bins("Mark", 10, "Mark").run(),
+    Error,
+    'the column "Mark" already exists',
+  );
+
+  await sdb.done();
+});
+
 Deno.test("should add a column with the bins and an interval of 0.5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
