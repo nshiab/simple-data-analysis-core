@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add a column with the zScore", async () => {
@@ -151,6 +151,20 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
     { name: "Sarah", age: 64, gender: "Woman", ageSigma: 2.125 },
     { name: "Frankie", age: 65, gender: "Woman", ageSigma: 2.202 },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ age: 33, name: "already here" }, { age: 21, name: "x" }]);
+
+  await assertRejects(
+    () => table.zScore("age", "name").run(),
+    Error,
+    'the column "name" already exists',
+  );
 
   await sdb.done();
 });

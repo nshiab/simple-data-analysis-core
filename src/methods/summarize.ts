@@ -1,6 +1,7 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -32,10 +33,7 @@ export default function summarize(
   simpleTable: SimpleTable,
   options: SummarizeOptions = {},
 ): SimpleTable {
-  if (options.outputTable === true) {
-    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
-    simpleTable.sdb.tableIncrement += 1;
-  }
+  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   if (typeof options.outputTable === "string") {
     // The output table instance is created at call time so it can be

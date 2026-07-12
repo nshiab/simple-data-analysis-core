@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -15,8 +16,10 @@ export default function quantiles(
     kind: "fusable",
     method: "quantiles()",
     parameters: { column, nbQuantiles, newColumn, options },
-    needsSchema: false,
-    buildSelect: (input) => {
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      assertNewColumns(schema, [newColumn], "quantiles()");
+
       const categories = options.categories
         ? stringToArray(options.categories)
         : [];

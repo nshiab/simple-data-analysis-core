@@ -1,7 +1,7 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 const output = "./test/output/";
 if (!existsSync(output)) {
@@ -370,6 +370,19 @@ Deno.test("should write the SQLite db", async () => {
   // How to test?
   await sdb.done();
 });
+Deno.test("should throw when writing the db with an unsupported extension", async () => {
+  const sdb = new SimpleDB();
+  const test = sdb.newTable("test");
+  test.loadData("test/data/files/cities.csv");
+
+  await assertRejects(
+    () => sdb.writeDB(`${output}database.txt`),
+    Error,
+    "The extension txt is not supported",
+  );
+
+  await sdb.done();
+});
 Deno.test("should load the db", async () => {
   const sdb = new SimpleDB();
 
@@ -424,6 +437,30 @@ Deno.test("should load the sqlite db", async () => {
   await sdb.loadDB(`${output}database.sqlite`);
   // const test = await sdb.getTable("test");
   // await test.logTable();
+
+  await sdb.done();
+});
+Deno.test("should throw when loading a db with an unsupported extension", async () => {
+  const sdb = new SimpleDB();
+  // loadDB() checks the file exists before checking its extension.
+  writeFileSync(`${output}database.txt`, "");
+
+  await assertRejects(
+    () => sdb.loadDB(`${output}database.txt`),
+    Error,
+    "The extension txt is not supported",
+  );
+
+  await sdb.done();
+});
+Deno.test("should throw when loading a db file that doesn't exist", async () => {
+  const sdb = new SimpleDB();
+
+  await assertRejects(
+    () => sdb.loadDB(`${output}notARealDatabase.db`),
+    Error,
+    "does not exist",
+  );
 
   await sdb.done();
 });

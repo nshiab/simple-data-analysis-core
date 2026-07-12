@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should tidy data by stacking mutiple columns", async () => {
@@ -562,4 +562,36 @@ Deno.test("should tidy data with columns with $ in their names", async () => {
     { "v0": "2023", "crime": "Shoplifting of $5,000 or under", "rate": "387" },
     { "v0": "2023", "crime": "Theft of $5,000 or under", "rate": "924" },
   ]);
+});
+
+Deno.test("should throw when namesTo/valuesTo collides with a remaining column, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ Department: "accounting", c1: 1, c2: 2 }]);
+
+  await assertRejects(
+    () => table.longer(["c1", "c2"], "key", "Department").run(),
+    Error,
+    'the column "Department" already exists',
+  );
+
+  await sdb.done();
+});
+
+Deno.test("should allow valuesTo to reuse the name of one of the pivoted columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ Department: "accounting", c1: 1, c2: 2 }]);
+
+  // "c1" is one of the pivoted columns, so it no longer exists in the
+  // output once UNPIVOT consumes it, and reusing its name isn't a collision.
+  table.longer(["c1", "c2"], "key", "c1");
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { Department: "accounting", key: "c1", c1: 1 },
+    { Department: "accounting", key: "c2", c1: 2 },
+  ]);
+
+  await sdb.done();
 });

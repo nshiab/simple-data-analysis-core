@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should update the data from the table with a javascript function and reinsert it into the table", async () => {
@@ -342,5 +342,19 @@ Deno.test("should be a no-op on an empty table when the modifier returns no rows
   );
   await batched.updateWithJS((rows) => rows, { batchSize: 2 });
   assertEquals(await batched.getNbRows(), 0);
+  await sdb.done();
+});
+
+Deno.test("should throw on a table containing a geometry column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  table.loadGeoData("test/geodata/files/pointsInside.json");
+
+  await assertRejects(
+    () => table.updateWithJS((rows) => rows),
+    Error,
+    "updateWithJS doesn't work with tables containing geometries.",
+  );
+
   await sdb.done();
 });

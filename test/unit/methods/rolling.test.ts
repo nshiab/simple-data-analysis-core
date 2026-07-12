@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should compute a rolling average with 3 preceding and 3 following", async () => {
@@ -145,6 +145,23 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
     { index: 9, groups: "b", value: 83, rollingMax: null },
     { index: 10, groups: "b", value: 41, rollingMax: null },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { value: 1, existing: "already here" },
+    { value: 2, existing: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.rolling("value", "existing", "mean", 1, 0).run(),
+    Error,
+    'the column "existing" already exists',
+  );
 
   await sdb.done();
 });

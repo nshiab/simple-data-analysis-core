@@ -1,6 +1,5 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function selectRows(
@@ -8,10 +7,7 @@ export default function selectRows(
   count: number | string,
   options: { offset?: number; outputTable?: string | boolean } = {},
 ): SimpleTable {
-  if (options.outputTable === true) {
-    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
-    simpleTable.sdb.tableIncrement += 1;
-  }
+  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   const limitAndOffset = `LIMIT ${count}${
     typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""
@@ -22,20 +18,17 @@ export default function selectRows(
     // returned synchronously and chained on right away.
     const outputTable = simpleTable.sdb.newTable(options.outputTable);
     queueOp(outputTable, {
-      kind: "barrier",
+      kind: "fusable",
       method: "selectRows()",
       parameters: { count, options },
-      execute: async () => {
-        await queryDB(
-          simpleTable,
-          `CREATE OR REPLACE TABLE "${outputTable.name}" AS SELECT * FROM "${simpleTable.name}" ${limitAndOffset};`,
-          mergeOptions(simpleTable, {
-            table: outputTable.name,
-            method: "selectRows",
-            parameters: { count, options },
-          }),
-        );
-      },
+      needsSchema: false,
+      // The output table reads simpleTable by name rather than through its
+      // own (nonexistent) chain, so simpleTable's pending work must close
+      // and execute before this SELECT runs, as it would at this call
+      // position.
+      rawSQL: [`"${simpleTable.name}"`],
+      buildSelect: () =>
+        `SELECT * FROM "${simpleTable.name}" ${limitAndOffset}`,
     });
     return outputTable;
   }

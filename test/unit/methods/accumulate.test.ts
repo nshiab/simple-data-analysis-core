@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add the cumulative sum in a new column", async () => {
@@ -81,5 +81,22 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
     { key1: 3, key2: "a", key3: "c", cumulative: 4 },
     { key1: 5, key2: "b", key3: "d", cumulative: 5 },
   ]);
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { key1: 1, cumulative: "already here" },
+    { key1: 2, cumulative: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.accumulate("key1", "cumulative").run(),
+    Error,
+    'the column "cumulative" already exists',
+  );
+
   await sdb.done();
 });

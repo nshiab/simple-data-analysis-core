@@ -23,7 +23,10 @@ export default async function updateWithJS(
   options: { batchSize?: number } = {},
 ) {
   const types = await simpleTable.getTypes();
-  if (Object.values(types).includes("GEOMETRY")) {
+  // Geometry columns are typed as GEOMETRY('<crs>'), not a bare "GEOMETRY".
+  if (
+    Object.values(types).some((d) => d.toUpperCase().startsWith("GEOMETRY"))
+  ) {
     throw new Error(
       "updateWithJS doesn't work with tables containing geometries.",
     );

@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add a column with the quantiles", async () => {
@@ -49,6 +49,23 @@ Deno.test("should add a column with the quantiles after grouping", async () => {
     { Name: "Isabella", Subject: "Science", Mark: 70, quantiles: 1 },
     { Name: "Lily", Subject: "Science", Mark: 80, quantiles: 2 },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { value: 1, existing: "already here" },
+    { value: 2, existing: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.quantiles("value", 4, "existing").run(),
+    Error,
+    'the column "existing" already exists',
+  );
 
   await sdb.done();
 });

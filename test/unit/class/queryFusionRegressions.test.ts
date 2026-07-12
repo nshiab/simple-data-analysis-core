@@ -267,3 +267,48 @@ Deno.test("cloneTable() reads simpleTable's state at its call position, not late
 
   await sdb.done();
 });
+
+Deno.test("selectRows() with outputTable fuses with a subsequent op into one statement", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("selectRowsFuseSrc");
+  table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
+
+  const out = table.selectRows(2, { outputTable: "selectRowsFuseDst" });
+  const queries: string[] = [];
+  const original = out.runQuery;
+  out.runQuery = (query, connection, returnData, options) => {
+    queries.push(query);
+    return original(query, connection, returnData, options);
+  };
+  out.filter("v > 1");
+
+  assertEquals(await out.getData(), [{ v: 2 }]);
+
+  const fused = queries.filter((q) =>
+    q.includes(`CREATE OR REPLACE TABLE "selectRowsFuseDst"`) &&
+    q.includes("WITH s1 AS")
+  );
+  assertEquals(fused.length, 1);
+
+  await sdb.done();
+});
+
+Deno.test("selectRows() with outputTable reads simpleTable's state at its call position", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("selectRowsPosition");
+  table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
+  table.filter("v > 1");
+
+  const out = table.selectRows(10, { outputTable: true });
+  // Queued after selectRows(): the output table must not see this later
+  // mutation.
+  table.addColumn("doubled", "integer", "v * 2");
+
+  assertEquals(await out.getData(), [{ v: 2 }, { v: 3 }]);
+  assertEquals(await table.getData(), [
+    { v: 2, doubled: 4 },
+    { v: 3, doubled: 6 },
+  ]);
+
+  await sdb.done();
+});

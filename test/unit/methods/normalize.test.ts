@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 
@@ -155,6 +155,20 @@ Deno.test("should report column and newColumn in a thrown SDAError's parameters"
     newColumn: "normalized",
     options: {},
   });
+
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ key1: 1, normalized: "already here" }]);
+
+  await assertRejects(
+    () => table.normalize("key1", "normalized").run(),
+    Error,
+    'the column "normalized" already exists',
+  );
 
   await sdb.done();
 });

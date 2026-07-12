@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -20,6 +21,14 @@ export default function accumulate(
     method: "accumulate()",
     parameters: { column, newColumn, options },
     execute: async () => {
+      // A SELECT *, expr AS col colliding with an existing column would be
+      // silently renamed by DuckDB (col -> col_1) instead of erroring.
+      assertNewColumns(
+        await simpleTable.getTypes(),
+        [newColumn],
+        "accumulate()",
+      );
+
       await queryDB(
         simpleTable,
         accumulateQuery(simpleTable.name, column, newColumn, options),

@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the horizontal proportions in new columns", async () => {
@@ -113,6 +113,20 @@ Deno.test("should return the horizontal proportions in new columns with a specif
       key3Prop: 0.375,
     },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ a: 1, b: 2, aPerc: "already here" }]);
+
+  await assertRejects(
+    () => table.rowProportions(["a", "b"]).run(),
+    Error,
+    'the column "aPerc" already exists',
+  );
 
   await sdb.done();
 });

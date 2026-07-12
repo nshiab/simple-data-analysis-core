@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -15,8 +16,10 @@ export default function normalize(
     kind: "fusable",
     method: "normalize()",
     parameters: { column, newColumn, options },
-    needsSchema: false,
-    buildSelect: (input) => {
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      assertNewColumns(schema, [newColumn], "normalize()");
+
       const categories = options.categories
         ? stringToArray(options.categories)
         : [];
@@ -34,7 +37,7 @@ export default function normalize(
           ? `ROUND(${tempQuery}, ${options.decimals})`
           : tempQuery
       }
-        ) AS ${newColumn},
+        ) AS "${newColumn}",
     FROM ${input}`;
     },
   });

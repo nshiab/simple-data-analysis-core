@@ -1,5 +1,7 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function rolling(
@@ -18,10 +20,11 @@ export default function rolling(
     kind: "fusable",
     method: "rolling()",
     parameters: { column, newColumn, summary, preceding, following, options },
-    needsSchema: false,
-    buildSelect: (input) =>
+    needsSchema: true,
+    buildSelect: (input, schema) =>
       rollingSelect(
         input,
+        schema,
         column,
         newColumn,
         summary,
@@ -34,6 +37,7 @@ export default function rolling(
 
 function rollingSelect(
   input: string,
+  schema: TableSchema,
   column: string,
   newColumn: string,
   summary: "count" | "min" | "max" | "mean" | "median" | "sum",
@@ -44,6 +48,8 @@ function rollingSelect(
     decimals?: number;
   } = {},
 ) {
+  assertNewColumns(schema, [newColumn], "rolling()");
+
   const aggregates: { [key: string]: string } = {
     count: "COUNT",
     min: "MIN",

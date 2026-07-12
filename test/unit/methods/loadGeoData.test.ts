@@ -197,3 +197,21 @@ Deno.test("should load a geoparquet file with multiple columns", async () => {
   });
   await sdb.done();
 });
+
+Deno.test("should skip reprojection when the data is already in EPSG:4326 with toWGS84", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  table.loadGeoData("test/geodata/files/pointsInside.json", {
+    toWGS84: true,
+  });
+
+  const projection = await table.getProjection("geom");
+  assertEquals(projection, "GEOMETRY('EPSG:4326')");
+
+  const withoutOption = sdb.newTable("geodataWithout");
+  withoutOption.loadGeoData("test/geodata/files/pointsInside.json");
+
+  assertEquals(await table.getGeoData(), await withoutOption.getGeoData());
+
+  await sdb.done();
+});

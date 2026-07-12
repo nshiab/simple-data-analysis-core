@@ -149,8 +149,14 @@ export function loadDataQuery(
     return `CREATE OR REPLACE TABLE "${table}"
             AS SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit};`;
   } else if (options.fileType === "json" || fileExtension === "json") {
+    // DuckDB expects "newline_delimited" (snake_case), unlike the other two
+    // format values, which already match the public camelCase option.
     const jsonFormat = options.jsonFormat
-      ? `, format='${options.jsonFormat}'`
+      ? `, format='${
+        options.jsonFormat === "newlineDelimited"
+          ? "newline_delimited"
+          : options.jsonFormat
+      }'`
       : "";
     const records = typeof options.records === "boolean"
       ? `, records=${String(options.records).toUpperCase()}`

@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -13,8 +14,15 @@ export default function rowProportions(
     kind: "fusable",
     method: "rowProportions()",
     parameters: { columns, options },
-    needsSchema: false,
-    buildSelect: (input) => {
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      const suffix = options.suffix ?? "Perc";
+      assertNewColumns(
+        schema,
+        columns.map((col) => `${col}${suffix}`),
+        "rowProportions()",
+      );
+
       let query = `SELECT *,`;
 
       for (const col of columns) {
@@ -26,7 +34,7 @@ export default function rowProportions(
         } else {
           query += ` ${tempQuery}`;
         }
-        query += ` AS "${col}${options.suffix ?? "Perc"}",`;
+        query += ` AS "${col}${suffix}",`;
       }
 
       query += `FROM ${input}`;

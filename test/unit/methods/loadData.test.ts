@@ -802,3 +802,57 @@ Deno.test("combining columns with Excel files (by fileType) should throw an erro
 
   await sdb.done();
 });
+
+Deno.test("should skip malformed rows with ignoreErrors and parse the rest normally", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataMalformedRows.csv", {
+    ignoreErrors: true,
+  });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1, key2: 2 },
+    { key1: 5, key2: 6 },
+  ]);
+
+  await sdb.done();
+});
+
+Deno.test("should load newline-delimited JSON with jsonFormat", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataNewlineDelimited.ndjson", {
+    fileType: "json",
+    jsonFormat: "newlineDelimited",
+  });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1, key2: "a" },
+    { key1: 2, key2: "b" },
+  ]);
+
+  await sdb.done();
+});
+
+Deno.test("should load JSON records with the records option", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/data.json", {
+    records: true,
+  });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1, key2: "un" },
+    { key1: 2, key2: "deux" },
+    { key1: 3, key2: "trois" },
+    { key1: 4, key2: "quatre" },
+  ]);
+
+  await sdb.done();
+});

@@ -2297,7 +2297,7 @@ employee counts as values.
 ##### Signature
 
 ```typescript
-wider(namesFrom: string, valuesFrom: string): this;
+wider(namesFrom: string, valuesFrom: string, options?: { aggregation?: "sum" | "count" | "min" | "max" | "avg" | "median" | "first" }): this;
 ```
 
 ##### Parameters
@@ -2306,6 +2306,10 @@ wider(namesFrom: string, valuesFrom: string): this;
   transformed into new column headers (e.g., "Year").
 - **`valuesFrom`**: The name of the column containing the values to be spread
   across the new columns (e.g., "Employees").
+- **`options`**: An optional object with configuration options:
+- **`options.aggregation`**: The aggregation function applied when multiple rows
+  share the same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`,
+  `"max"`, `"avg"`, `"median"`, or `"first"`. Defaults to `"sum"`.
 
 ##### Returns
 
@@ -2324,6 +2328,10 @@ The table will then look like this:
 | :--------- | :--- | :--- | :--- |
 | Accounting | 10   | 9    | 15   |
 | Sales      | 52   | 75   | 98   |
+
+When multiple rows share the same `namesFrom`/grouping combination, their
+`valuesFrom` values are combined with the `options.aggregation` function
+(`"sum"` by default).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.

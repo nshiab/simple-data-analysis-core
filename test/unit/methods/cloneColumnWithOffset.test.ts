@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should clone a column with an offset", async () => {
@@ -1277,6 +1277,23 @@ Deno.test("should clone a column with geo data with an offset", async () => {
   assertEquals(
     (await table.getBottom(1))[0].geom_cloned,
     null,
+  );
+
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { firstName: "a", nextFirstName: "already here" },
+    { firstName: "b", nextFirstName: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.cloneColumnWithOffset("firstName", "nextFirstName").run(),
+    Error,
+    'the column "nextFirstName" already exists',
   );
 
   await sdb.done();

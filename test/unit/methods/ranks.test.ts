@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 // Based on https://www.sqlshack.com/overview-of-sql-rank-functions/
@@ -119,5 +119,22 @@ Deno.test("should add a column with the rank after grouping with multiple catego
     { Name: "Olivia", Subject: "Maths", Mark: 55, rank: 1 },
     { Name: "Olivia", Subject: "Science", Mark: 60, rank: 1 },
   ]);
+  await sdb.done();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { value: 1, existing: "already here" },
+    { value: 2, existing: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.ranks("value", "existing").run(),
+    Error,
+    'the column "existing" already exists',
+  );
+
   await sdb.done();
 });

@@ -1,3 +1,4 @@
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -20,6 +21,14 @@ export default function cloneColumnWithOffset(
     method: "cloneColumnWithOffset()",
     parameters: { column, newColumn, options },
     execute: async () => {
+      // A SELECT *, expr AS col colliding with an existing column would be
+      // silently renamed by DuckDB (col -> col_1) instead of erroring.
+      assertNewColumns(
+        await simpleTable.getTypes(),
+        [newColumn],
+        "cloneColumnWithOffset()",
+      );
+
       const offset = options.offset ?? 1;
       const categories = options.categories
         ? stringToArray(options.categories)

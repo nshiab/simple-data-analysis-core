@@ -2,6 +2,7 @@ import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function crossJoin(
@@ -11,10 +12,7 @@ export default function crossJoin(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
-  if (options.outputTable === true) {
-    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
-    simpleTable.sdb.tableIncrement += 1;
-  }
+  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.

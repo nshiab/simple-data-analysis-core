@@ -175,3 +175,35 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
 
   await sdb.done();
 });
+
+Deno.test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { Department: "accounting", year: "2015", employees: 10 },
+    { Department: "accounting", year: "2015", employees: 5 },
+  ]);
+  table.wider("year", "employees");
+
+  const data = await table.getData();
+
+  assertEquals(data, [{ Department: "accounting", "2015": 15 }]);
+
+  await sdb.done();
+});
+
+Deno.test("should use the aggregation option instead of the default sum", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { Department: "accounting", year: "2015", employees: 10 },
+    { Department: "accounting", year: "2015", employees: 5 },
+  ]);
+  table.wider("year", "employees", { aggregation: "max" });
+
+  const data = await table.getData();
+
+  assertEquals(data, [{ Department: "accounting", "2015": 10 }]);
+
+  await sdb.done();
+});
