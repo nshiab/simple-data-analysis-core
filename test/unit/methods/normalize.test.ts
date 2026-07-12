@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+import SDAError from "../../../src/class/SDAError.ts";
 
 Deno.test("should normalize values in a column", async () => {
   const sdb = new SimpleDB();
@@ -128,6 +129,32 @@ Deno.test("should normalize data with positive and negative values", async () =>
     { key1: 0.5, normalized: 0.75 },
     { key1: 1, normalized: 1 },
   ]);
+
+  await sdb.done();
+});
+
+Deno.test("should report column and newColumn in a thrown SDAError's parameters", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ key1: 1 }]);
+
+  table.normalize("aColumnThatDoesNotExist", "normalized");
+
+  let error: unknown;
+  try {
+    await table.getData();
+  } catch (e) {
+    error = e;
+  }
+
+  assertEquals(error instanceof SDAError, true);
+  const sdaError = error as SDAError;
+  assertEquals(sdaError.method, "normalize()");
+  assertEquals(sdaError.parameters, {
+    column: "aColumnThatDoesNotExist",
+    newColumn: "normalized",
+    options: {},
+  });
 
   await sdb.done();
 });

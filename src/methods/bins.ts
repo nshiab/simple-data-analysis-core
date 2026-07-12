@@ -64,9 +64,9 @@ async function binsQuery(
     throw new Error(`minValue of ${column} is not a number`);
   }
 
-  let startValue = 0;
+  let startValue: number;
   if (typeof options.startValue === "number") {
-    if (startValue > minValue) {
+    if (options.startValue > minValue) {
       throw new Error(
         `startValue ${options.startValue} can't be greater than minValue ${minValue}`,
       );

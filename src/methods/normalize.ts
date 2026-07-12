@@ -14,7 +14,7 @@ export default function normalize(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "normalize()",
-    parameters: { column, options },
+    parameters: { column, newColumn, options },
     needsSchema: false,
     buildSelect: (input) => {
       const categories = options.categories
