@@ -45,9 +45,9 @@ table.convert({ tas: "double", time: "date" });
 await table.logTable(); // executes everything, then prints
 ```
 
-Methods with an `outputTable` option (`join()`, `joinGeo()`, `cloneTable()`,
-`summarize()`, ...) return the output table instance synchronously, so you can
-keep chaining on it:
+Methods that create an output table—through `outputTable` (`join()`,
+`joinGeo()`, `summarize()`, ...) or `name` (`cloneTable()`)—return the output
+table instance synchronously, so you can keep chaining on it:
 
 ```ts
 const joined = tableA

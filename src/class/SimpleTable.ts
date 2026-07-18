@@ -1043,7 +1043,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Clone tableA to a new table named "my_cloned_table" using options object
-   * const tableB = tableA.cloneTable({ outputTable: "my_cloned_table" });
+   * const tableB = tableA.cloneTable({ name: "my_cloned_table" });
    * ```
    *
    * @example
@@ -1074,7 +1074,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
    * const tableB = tableA.cloneTable({
-   *   outputTable: "filtered_data",
+   *   name: "filtered_data",
    *   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
    *   columns: ["name", "status", "created_date"],
    *   limit: 100

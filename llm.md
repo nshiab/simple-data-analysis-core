@@ -647,7 +647,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): this;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}')>): this;
 ```
 
 ##### Parameters
@@ -1408,7 +1408,7 @@ const tableB = tableA.cloneTable("my_cloned_table");
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using options object
-const tableB = tableA.cloneTable({ outputTable: "my_cloned_table" });
+const tableB = tableA.cloneTable({ name: "my_cloned_table" });
 ```
 
 ```ts
@@ -1434,7 +1434,7 @@ const tableB = tableA.cloneTable({ limit: 10, offset: 5 });
 ```ts
 // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
 const tableB = tableA.cloneTable({
-  outputTable: "filtered_data",
+  name: "filtered_data",
   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
   columns: ["name", "status", "created_date"],
   limit: 100,
@@ -2469,7 +2469,7 @@ async observer method (like `getData()` or `logTable()`) is awaited, or when
 ##### Signature
 
 ```typescript
-addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): this;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
 ```
 
 ##### Parameters
