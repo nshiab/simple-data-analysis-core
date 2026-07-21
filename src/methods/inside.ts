@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -16,7 +17,9 @@ export default function inside(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "inside()");
-      return `SELECT *, CAST(ST_Covers("${containerColumn}", "${column}") AS BOOLEAN) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST(ST_Covers(${quoteIdentifier(containerColumn)}, ${
+        quoteIdentifier(column)
+      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

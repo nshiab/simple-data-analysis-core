@@ -2,6 +2,7 @@ import SimpleTable from "../class/SimpleTable.ts";
 import SimpleDB from "../class/SimpleDB.ts";
 import cleanSQL from "./cleanSQL.ts";
 import flushAllTables from "./flushAllTables.ts";
+import type { DuckDBValue } from "@duckdb/node-api";
 
 export default async function queryDB(
   simple: SimpleTable | SimpleDB,
@@ -13,7 +14,7 @@ export default async function queryDB(
     rowsToLog: number;
     charsToLog: number | undefined;
     returnData: boolean;
-    debug: boolean;
+    values?: DuckDBValue[];
     noClean?: boolean;
   },
 ): Promise<
@@ -44,35 +45,26 @@ export default async function queryDB(
     query = cleanSQL(query);
   }
 
-  if (options.debug) {
-    // We beautify it a little bit
-    if (query.at(-1) !== ";") {
-      query += ";";
-    }
-    if (query.includes("\n")) {
-      query = query
-        .trim()
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line !== "" && line !== ";")
-        .join("\n");
-    }
-    console.log(query);
-  }
+  const sdb = simple instanceof SimpleTable ? simple.sdb : simple;
+  const executionOptions = {
+    ...options,
+    logSQL: sdb.logSQL,
+    explainSQL: sdb.explainSQL,
+  };
 
   if (options.returnData) {
     const data = await simple.runQuery(
       query,
       simple.connection,
       true,
-      options,
+      executionOptions,
     );
     if (data === null) {
       throw new Error("data is null");
     }
     return data;
   } else {
-    await simple.runQuery(query, simple.connection, false, options);
+    await simple.runQuery(query, simple.connection, false, executionOptions);
     return null;
   }
 }

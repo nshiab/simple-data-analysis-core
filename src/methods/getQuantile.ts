@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -13,8 +14,14 @@ export default async function getQuantile(
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(QUANTILE_CONT("${column}", ${quantile}), ${options.decimals}) AS "${column}" FROM "${SimpleTable.name}"`
-      : `SELECT QUANTILE_CONT("${column}", ${quantile}) AS "${column}" FROM "${SimpleTable.name}"`,
+      ? `SELECT ROUND(QUANTILE_CONT(${
+        quoteIdentifier(column)
+      }, ${quantile}), ${options.decimals}) AS ${
+        quoteIdentifier(column)
+      } FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT QUANTILE_CONT(${quoteIdentifier(column)}, ${quantile}) AS ${
+        quoteIdentifier(column)
+      } FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

@@ -2,6 +2,7 @@ import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 export default async function getData(
   simpleTable: SimpleTable,
@@ -23,11 +24,9 @@ export default async function getData(
     : undefined;
   return (await queryDB(
     simpleTable,
-    `SELECT ${
-      columns ? columns.map((d) => `"${d}"`).join(", ") : "*"
-    } from "${simpleTable.name}"${
-      options.conditions ? ` WHERE ${options.conditions}` : ""
-    }`,
+    `SELECT ${columns ? columns.map(quoteIdentifier).join(", ") : "*"} from ${
+      quoteIdentifier(simpleTable.name)
+    }${options.conditions ? ` WHERE ${options.conditions}` : ""}`,
     mergeOptions(simpleTable, {
       returnData: true,
       table: simpleTable.name,

@@ -2,6 +2,19 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
+Deno.test("should escape geospatial file paths containing apostrophes", async () => {
+  await Deno.mkdir("test/output", { recursive: true });
+  const file = "test/output/point's.json";
+  await Deno.copyFile("test/geodata/files/point.json", file);
+
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadGeoData(file);
+
+  assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+  await sdb.done();
+});
+
 Deno.test("should load a geojson file and return the table", async () => {
   const sdb = new SimpleDB();
   const table = await sdb
@@ -11,6 +24,7 @@ Deno.test("should load a geojson file and return the table", async () => {
     );
 
   assertEquals(table instanceof SimpleTable, true);
+  await table.run();
   await sdb.done();
 });
 

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -8,7 +9,9 @@ export default async function getUniques(
 ) {
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT DISTINCT "${column}" FROM "${simpleTable.name}" ORDER BY "${column}" ASC`,
+    `SELECT DISTINCT ${quoteIdentifier(column)} FROM ${
+      quoteIdentifier(simpleTable.name)
+    } ORDER BY ${quoteIdentifier(column)} ASC`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,

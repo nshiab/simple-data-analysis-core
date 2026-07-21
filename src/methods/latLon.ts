@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -16,7 +17,11 @@ export default function latLon(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [latColumn, lonColumn], "latLon()");
-      return `SELECT *, CAST(ST_Y("${column}") AS DOUBLE) AS "${latColumn}", CAST(ST_X("${column}") AS DOUBLE) AS "${lonColumn}" FROM ${input}`;
+      return `SELECT *, CAST(ST_Y(${quoteIdentifier(column)}) AS DOUBLE) AS ${
+        quoteIdentifier(latColumn)
+      }, CAST(ST_X(${quoteIdentifier(column)}) AS DOUBLE) AS ${
+        quoteIdentifier(lonColumn)
+      } FROM ${input}`;
     },
   });
 }

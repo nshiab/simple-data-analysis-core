@@ -1,3 +1,4 @@
+import quoteIdentifier from "./quoteIdentifier.ts";
 import type { TableSchema } from "./pendingOps.ts";
 
 /**
@@ -23,7 +24,7 @@ export default function assertColumnsExist(
     const plural = missing.length > 1;
     throw new Error(
       `${method} the column${plural ? "s" : ""} ${
-        missing.map((column) => `"${column}"`).join(", ")
+        missing.map((column) => `${quoteIdentifier(column)}`).join(", ")
       } ${
         plural ? "do" : "does"
       } not exist. Check for typos, or load the data first.`,

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -8,9 +9,9 @@ export default async function getNbRows(
 ) {
   const queryResult = await queryDB(
     SimpleTable,
-    `SELECT CAST(COUNT(*) AS INTEGER) AS nbRows FROM "${SimpleTable.name}"${
-      options.conditions ? ` WHERE ${options.conditions}` : ""
-    }`,
+    `SELECT CAST(COUNT(*) AS INTEGER) AS nbRows FROM ${
+      quoteIdentifier(SimpleTable.name)
+    }${options.conditions ? ` WHERE ${options.conditions}` : ""}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -12,6 +13,7 @@ export default function normalize(
     decimals?: number;
   } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "normalize()",
@@ -24,12 +26,18 @@ export default function normalize(
         ? stringToArray(options.categories)
         : [];
       const partition = categories.length > 0
-        ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
+        ? `PARTITION BY ${
+          categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+        }`
         : "";
 
-      const tempQuery = `("${column}" - MIN("${column}") OVER(${partition}))
+      const tempQuery = `(${quoteIdentifier(column)} - MIN(${
+        quoteIdentifier(column)
+      }) OVER(${partition}))
     /
-    (MAX("${column}") OVER(${partition}) - MIN("${column}") OVER(${partition}))`;
+    (MAX(${quoteIdentifier(column)}) OVER(${partition}) - MIN(${
+        quoteIdentifier(column)
+      }) OVER(${partition}))`;
 
       return `SELECT *, (
         ${
@@ -37,7 +45,7 @@ export default function normalize(
           ? `ROUND(${tempQuery}, ${options.decimals})`
           : tempQuery
       }
-        ) AS "${newColumn}",
+        ) AS ${quoteIdentifier(newColumn)},
     FROM ${input}`;
     },
   });

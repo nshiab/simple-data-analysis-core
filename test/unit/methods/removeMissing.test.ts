@@ -148,6 +148,20 @@ Deno.test("should return a table with null values in a specific column", async (
   await sdb.done();
 });
 
+Deno.test("should bind custom missing values containing apostrophes", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { name: "O'Brien" },
+    { name: "Smith" },
+  ]);
+
+  table.removeMissing({ missingValues: ["O'Brien"] });
+
+  assertEquals(await table.getData(), [{ name: "Smith" }]);
+  await sdb.done();
+});
+
 const dataNoNulls = [
   {
     name: "OConnell, Donald",

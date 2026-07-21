@@ -234,6 +234,7 @@ Deno.test("should throw when interpolateBy is set and interpolate is false", asy
     error?.message,
     "interpolate cannot be false when interpolateBy is set.",
   );
+  await table.run();
   await sdb.done();
 });
 

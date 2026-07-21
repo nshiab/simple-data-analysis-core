@@ -209,6 +209,25 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
   await sdb.done();
 });
 
+Deno.test("should bind result labels containing apostrophes", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { "x's": 1, y: 3 },
+    { "x's": 2, y: 5 },
+  ]);
+  table.linearRegressions({ x: "x's", y: "y" });
+
+  assertEquals(await table.getData(), [{
+    x: "x's",
+    y: "y",
+    slope: 2,
+    yIntercept: 1,
+    r2: 1,
+  }]);
+  await sdb.done();
+});
+
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns, with a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

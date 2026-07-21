@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -7,6 +8,7 @@ export default function selectRows(
   count: number | string,
   options: { offset?: number; outputTable?: string | boolean } = {},
 ): SimpleTable {
+  options = { ...options };
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   const limitAndOffset = `LIMIT ${count}${
@@ -26,9 +28,9 @@ export default function selectRows(
       // own (nonexistent) chain, so simpleTable's pending work must close
       // and execute before this SELECT runs, as it would at this call
       // position.
-      rawSQL: [`"${simpleTable.name}"`],
+      rawSQL: [`${quoteIdentifier(simpleTable.name)}`],
       buildSelect: () =>
-        `SELECT * FROM "${simpleTable.name}" ${limitAndOffset}`,
+        `SELECT * FROM ${quoteIdentifier(simpleTable.name)} ${limitAndOffset}`,
     });
     return outputTable;
   }

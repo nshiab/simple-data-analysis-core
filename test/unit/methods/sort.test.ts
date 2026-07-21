@@ -142,3 +142,92 @@ Deno.test("should sort all columns by defaut, from left to right, in ascending o
 
   await sdb.done();
 });
+
+Deno.test("sort captures mutable arguments when queued", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("capturedSort");
+  const order: { value: "asc" | "desc" } = { value: "asc" };
+  const lang: Record<string, string> = {};
+  const options = { lang };
+
+  table.loadArray([{ value: 2 }, { value: 1 }]).sort(order, options);
+  order.value = "desc";
+  lang.value = "fr";
+
+  assertEquals(await table.getData(), [{ value: 1 }, { value: 2 }]);
+  assertEquals(options, { lang: { value: "fr" } });
+  await sdb.done();
+});
+
+Deno.test("order-preserving fused methods retain an earlier sort", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sortBeforeTransforms");
+
+  const result = await table
+    .loadArray([
+      { name: " c ", value: 3 },
+      { name: " a ", value: 1 },
+      { name: " b ", value: 2 },
+    ])
+    .sort({ value: "desc" })
+    .trim("name")
+    .filter("value > 1")
+    .selectColumns(["name", "value"])
+    .getData();
+
+  assertEquals(result, [
+    { name: "c", value: 3 },
+    { name: "b", value: 2 },
+  ]);
+  await sdb.done();
+});
+
+Deno.test("grouped results can be sorted deterministically afterward", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sortedGroups");
+
+  table
+    .loadArray([
+      { group: "b", value: 2 },
+      { group: "a", value: 3 },
+      { group: "b", value: 4 },
+    ])
+    .summarize({ values: "value", categories: "group", summaries: "sum" })
+    .sort({ group: "asc" });
+
+  assertEquals(await table.getData(), [
+    { group: "a", sum: 3 },
+    { group: "b", sum: 6 },
+  ]);
+  await sdb.done();
+});
+
+Deno.test("aggregated results can be sorted deterministically afterward", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sortedAggregates");
+
+  table
+    .loadArray([{ x: 1, y: 10 }, { x: 2, y: 20 }])
+    .summarize({ values: ["x", "y"], summaries: "sum" })
+    .sort({ value: "desc" });
+
+  assertEquals(await table.getData(), [
+    { value: "y", sum: 30 },
+    { value: "x", sum: 3 },
+  ]);
+  await sdb.done();
+});
+
+Deno.test("sampled results can be sorted deterministically afterward", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sortedSample");
+
+  table
+    .loadArray([1, 2, 3, 4, 5, 6].map((value) => ({ value })))
+    .sample(4, { seed: 7 })
+    .sort({ value: "asc" });
+
+  const values = (await table.getData()).map((row) => row.value as number);
+  assertEquals(values, [...values].sort((a, b) => a - b));
+  await sdb.done();
+});

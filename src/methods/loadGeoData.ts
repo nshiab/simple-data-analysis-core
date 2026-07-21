@@ -1,6 +1,7 @@
-import cleanPath from "../helpers/cleanPath.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getExtension from "../helpers/getExtension.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
+import parseValue from "../helpers/parseValue.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import removeColumnsNow from "../helpers/removeColumnsNow.ts";
@@ -11,6 +12,7 @@ export default function loadGeoData(
   file: string,
   options: { toWGS84?: boolean } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "loadGeoData()",
@@ -32,9 +34,9 @@ async function executeLoadGeoData(
       `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
         file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""
       }
-              CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM read_parquet('${
-        cleanPath(file)
-      }');`,
+      CREATE OR REPLACE TABLE ${
+        quoteIdentifier(simpleTable.name)
+      } AS SELECT * FROM read_parquet(${parseValue(file)});`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",
@@ -47,7 +49,9 @@ async function executeLoadGeoData(
       `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
         file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""
       }
-              CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM ST_Read('${file}');`,
+      CREATE OR REPLACE TABLE ${
+        quoteIdentifier(simpleTable.name)
+      } AS SELECT * FROM ST_Read(${parseValue(file)});`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",
@@ -68,7 +72,11 @@ async function executeLoadGeoData(
       // which would queue for the next flush).
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * REPLACE (ST_Transform("geom", 'EPSG:4326')::GEOMETRY('EPSG:4326') AS "geom") FROM "${simpleTable.name}"`,
+        `CREATE OR REPLACE TABLE ${
+          quoteIdentifier(simpleTable.name)
+        } AS SELECT * REPLACE (ST_Transform("geom", 'EPSG:4326')::GEOMETRY('EPSG:4326') AS "geom") FROM ${
+          quoteIdentifier(simpleTable.name)
+        }`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "loadGeoData()",

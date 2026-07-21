@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -7,11 +8,16 @@ export default function rowToText(
   columns: string[],
   newColumn: string,
 ) {
+  columns = [...columns];
   queueOp(simpleTable, {
     kind: "fusable",
     method: "rowToText()",
     parameters: { columns, newColumn },
     needsSchema: true,
+    values: columns.flatMap((col, i) => [
+      `${i === 0 ? "" : "\n\n"}${col}:\n`,
+      "Unknown",
+    ]),
     buildSelect: (input, allTypes) => {
       assertNewColumns(allTypes, [newColumn], "rowToText()");
       for (const col of columns) {
@@ -24,15 +30,14 @@ export default function rowToText(
         }
       }
 
-      const parts = columns.map(
-        (col, i) =>
-          i === 0
-            ? `'${col}:\n' || COALESCE("${col}", 'Unknown')`
-            : `'\n\n${col}:\n' || COALESCE("${col}", 'Unknown')`,
+      const parts = columns.map((col) =>
+        `? || COALESCE(${quoteIdentifier(col)}, ?)`
       );
       const concatenatedExpression = parts.join(" || ");
 
-      return `SELECT *, CAST(${concatenatedExpression} AS VARCHAR) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST(${concatenatedExpression} AS VARCHAR) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
     },
   });
 }

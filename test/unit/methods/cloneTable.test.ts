@@ -8,6 +8,7 @@ Deno.test("should clone a table", async () => {
   const clone = table.cloneTable();
 
   assertEquals(await table.getData(), await clone.getData());
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone and log a table", async () => {
@@ -18,6 +19,7 @@ Deno.test("should clone and log a table", async () => {
   // await clone.logTable();
 
   assertEquals(await table.getData(), await clone.getData());
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table and give it a different name", async () => {
@@ -27,6 +29,7 @@ Deno.test("should clone a table and give it a different name", async () => {
   const clone = table.cloneTable();
 
   assertEquals(table.name !== clone.name, true);
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with a specific name", async () => {
@@ -36,6 +39,7 @@ Deno.test("should clone a table with a specific name", async () => {
   const clone = table.cloneTable({ name: "clone" });
 
   assertEquals(await table.getData(), await clone.getData());
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should find the table name in the DB", async () => {
@@ -50,6 +54,7 @@ Deno.test("should find the table name in the DB", async () => {
     tables.sort((a, b) => (a > b ? -1 : 1)),
     ["data", "clone"],
   );
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should keep the original table intact", async () => {
@@ -64,6 +69,7 @@ Deno.test("should keep the original table intact", async () => {
   const originalData = await originalTable.getData();
 
   assertEquals(await table.getData(), originalData);
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with a condition", async () => {
@@ -82,6 +88,7 @@ Deno.test("should clone a table with a condition", async () => {
     await clone.getData(),
     originalData.filter((d) => d.Job === "Manager"),
   );
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with a specific name with spaces", async () => {
@@ -91,6 +98,7 @@ Deno.test("should clone a table with a specific name with spaces", async () => {
   const clone = table.cloneTable({ name: "clone table" });
 
   assertEquals(await table.getData(), await clone.getData());
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with a specific number of rows", async () => {
@@ -101,6 +109,7 @@ Deno.test("should clone a table with a specific number of rows", async () => {
 
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(0, 2));
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with an offset", async () => {
@@ -111,6 +120,7 @@ Deno.test("should clone a table with an offset", async () => {
 
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(2));
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with a specific number of rows and an offset", async () => {
@@ -121,6 +131,7 @@ Deno.test("should clone a table with a specific number of rows and an offset", a
 
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(2, 4));
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with conditions, limit and offset", async () => {
@@ -138,6 +149,7 @@ Deno.test("should clone a table with conditions, limit and offset", async () => 
     await clone.getData(),
     data.filter((d) => d.Job === "Developer").slice(1, 3),
   );
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with a specific name with spaces and '", async () => {
@@ -147,6 +159,7 @@ Deno.test("should clone a table with a specific name with spaces and '", async (
   const clone = table.cloneTable({ name: "clone 'table" });
 
   assertEquals(await table.getData(), await clone.getData());
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with string parameter directly", async () => {
@@ -161,6 +174,7 @@ Deno.test("should clone a table with string parameter directly", async () => {
   const tables = await sdb.getTableNames();
   assertEquals(tables.includes("my_cloned_table"), true);
 
+  await sdb.run();
   await sdb.done();
 });
 
@@ -193,6 +207,7 @@ Deno.test("should clone a table with specific columns", async () => {
 
   assertEquals(cloneData, expectedData);
 
+  await sdb.run();
   await sdb.done();
 });
 
@@ -220,6 +235,7 @@ Deno.test("should clone a table with specific columns and conditions", async () 
 
   assertEquals(cloneData, expectedData);
 
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should clone a table with geo data", async () => {
@@ -236,5 +252,6 @@ Deno.test("should clone a table with geo data", async () => {
   assertEquals(await table.getNbRows(), await cloned.getNbRows());
   assertEquals(await table.getNbColumns(), await cloned.getNbColumns());
 
+  await sdb.run();
   await sdb.done();
 });

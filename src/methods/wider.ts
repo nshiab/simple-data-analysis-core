@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -15,6 +16,7 @@ export default function wider(
 
   // DuckDB rewrites PIVOT into multiple statements internally, so it can't
   // be part of a fused chain: it executes as a barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "wider()",
@@ -22,7 +24,11 @@ export default function wider(
     execute: async () => {
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM (PIVOT "${simpleTable.name}" ON "${namesFrom}" USING ${aggregation}("${valuesFrom}"));`,
+        `CREATE OR REPLACE TABLE ${
+          quoteIdentifier(simpleTable.name)
+        } AS SELECT * FROM (PIVOT ${quoteIdentifier(simpleTable.name)} ON ${
+          quoteIdentifier(namesFrom)
+        } USING ${aggregation}(${quoteIdentifier(valuesFrom)}));`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "wider()",

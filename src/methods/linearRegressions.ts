@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getCombinations from "../helpers/getCombinations.ts";
 import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -18,6 +19,7 @@ export default function linearRegressions(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   if (typeof options.outputTable === "string") {
@@ -35,9 +37,9 @@ export default function linearRegressions(
         );
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
             linearRegressionsSelect(
-              `"${simpleTable.name}"`,
+              `${quoteIdentifier(simpleTable.name)}`,
               permutations,
               options,
             )
@@ -49,6 +51,7 @@ export default function linearRegressions(
               options,
               "permutations (computed)": permutations,
             },
+            values: linearRegressionsValues(permutations),
           }),
         );
       },
@@ -61,6 +64,10 @@ export default function linearRegressions(
     method: "linearRegressions()",
     parameters: { options },
     needsSchema: true,
+    values: (types) =>
+      linearRegressionsValues(
+        getLinearRegressionsPermutations(types, options),
+      ),
     buildSelect: (input, types) =>
       linearRegressionsSelect(
         input,
@@ -69,6 +76,12 @@ export default function linearRegressions(
       ),
   });
   return simpleTable;
+}
+
+function linearRegressionsValues(
+  permutations: [string, string][],
+): string[] {
+  return permutations.flatMap(([x, y]) => [x, y]);
 }
 
 function getLinearRegressionsPermutations(
@@ -112,10 +125,10 @@ function linearRegressionsSelect(
 
   const groupBy = categories.length === 0
     ? ""
-    : ` GROUP BY ${categories.map((d) => `"${d}"`).join(",")}`;
+    : ` GROUP BY ${categories.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
 
   const catSelect = categories.length > 0
-    ? `${categories.map((d) => `"${d}"`).join(",")}, `
+    ? `${categories.map((d) => `${quoteIdentifier(d)}`).join(",")}, `
     : "";
 
   // One UNION ALL branch per permutation (each with a distinct pair of
@@ -129,13 +142,15 @@ function linearRegressionsSelect(
       ["r2", "REGR_R2"],
     ].map(([alias, fn]) => {
       const expression = typeof options.decimals === "number"
-        ? `ROUND(${fn}("${perm[1]}", "${perm[0]}"), ${options.decimals})`
-        : `${fn}("${perm[1]}", "${perm[0]}")`;
-      return `${expression} AS "${alias}"`;
+        ? `ROUND(${fn}(${quoteIdentifier(perm[1])}, ${
+          quoteIdentifier(perm[0])
+        }), ${options.decimals})`
+        : `${fn}(${quoteIdentifier(perm[1])}, ${quoteIdentifier(perm[0])})`;
+      return `${expression} AS ${quoteIdentifier(alias)}`;
     });
-    return `SELECT ${catSelect}'${perm[0]}' AS "x", '${perm[1]}' AS "y", ${
-      expressions.join(", ")
-    }
+    return `SELECT ${catSelect}? AS ${quoteIdentifier("x")}, ? AS ${
+      quoteIdentifier("y")
+    }, ${expressions.join(", ")}
         FROM ${input}${groupBy}`;
   });
 

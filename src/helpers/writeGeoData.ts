@@ -1,3 +1,4 @@
+import quoteIdentifier from "./quoteIdentifier.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import createDirectory from "./createDirectory.ts";
 import getExtension from "./getExtension.ts";
@@ -113,7 +114,9 @@ export default async function writeGeoData(
     }
     await queryDB(
       table,
-      `COPY "${table.name}" TO '${cleanPath(file)}' WITH (FORMAT PARQUET${
+      `COPY ${quoteIdentifier(table.name)} TO '${
+        cleanPath(file)
+      }' WITH (FORMAT PARQUET${
         options.compression === true ? ", COMPRESSION 'zstd'" : ""
       });`,
       mergeOptions(table, {
@@ -140,9 +143,9 @@ function writeGeoDataQuery(
     }
     layerOptions.push(`RFC7946=YES`);
 
-    return `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; COPY "${table}" to '${
-      cleanPath(file)
-    }' WITH (FORMAT GDAL, DRIVER 'GeoJSON'${
+    return `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; COPY ${
+      quoteIdentifier(table)
+    } to '${cleanPath(file)}' WITH (FORMAT GDAL, DRIVER 'GeoJSON'${
       layerOptions.length > 0
         ? `, LAYER_CREATION_OPTIONS ('WRITE_NAME=NO', ${
           layerOptions.map((d) => `'${d}'`).join(", ")
@@ -150,7 +153,9 @@ function writeGeoDataQuery(
         : ""
     })`;
   } else if (fileExtension === "shp") {
-    return `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; COPY "${table}" TO '${
+    return `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; COPY ${
+      quoteIdentifier(table)
+    } TO '${
       cleanPath(file)
     }' WITH (FORMAT GDAL, DRIVER 'ESRI Shapefile', LAYER_CREATION_OPTIONS 'ENCODING=UTF-8')`;
   } else {

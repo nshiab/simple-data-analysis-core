@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import camelCase from "../helpers/camelCase.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -14,6 +15,7 @@ export default function createVssIndex(
   } = {},
 ) {
   // Index creation is multi-statement by nature: it executes as a barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "createVssIndex()",
@@ -39,7 +41,7 @@ async function executeCreateVssIndex(
   if (indexExists && options.overwrite) {
     options.verbose &&
       console.log(
-        `\nDropping existing VSS index on "${column}" column...`,
+        `\nDropping existing VSS index on ${quoteIdentifier(column)} column...`,
       );
 
     await simpleTable.sdb.customQuery(
@@ -52,7 +54,7 @@ async function executeCreateVssIndex(
   if (!indexExists || options.overwrite) {
     options.verbose &&
       console.log(
-        `\nCreating VSS index on "${column}" column...`,
+        `\nCreating VSS index on ${quoteIdentifier(column)} column...`,
       );
 
     // Build the WITH clause with all options
@@ -73,7 +75,9 @@ async function executeCreateVssIndex(
           ? "\nSET hnsw_enable_experimental_persistence=true;"
           : ""
       }
-    CREATE INDEX ${indexName} ON "${simpleTable.name}" USING HNSW ("${column}") WITH (${
+    CREATE INDEX ${indexName} ON ${
+        quoteIdentifier(simpleTable.name)
+      } USING HNSW (${quoteIdentifier(column)}) WITH (${
         withOptions.join(", ")
       });`,
     );

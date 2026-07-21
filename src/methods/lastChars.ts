@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -12,6 +13,8 @@ export default function lastChars(
     parameters: { column, nbCharacters },
     needsSchema: false,
     buildSelect: (input) =>
-      `SELECT * REPLACE (RIGHT("${column}", ${nbCharacters}) AS "${column}") FROM ${input}`,
+      `SELECT * REPLACE (RIGHT(${
+        quoteIdentifier(column)
+      }, ${nbCharacters}) AS ${quoteIdentifier(column)}) FROM ${input}`,
   });
 }

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -16,7 +17,9 @@ export default function capitalize(
       `SELECT * REPLACE (${
         cols
           .map((c) =>
-            `CONCAT(UPPER(LEFT("${c}", 1)), LOWER(RIGHT("${c}", LENGTH("${c}")-1))) AS "${c}"`
+            `CONCAT(UPPER(LEFT(${quoteIdentifier(c)}, 1)), LOWER(RIGHT(${
+              quoteIdentifier(c)
+            }, LENGTH(${quoteIdentifier(c)})-1))) AS ${quoteIdentifier(c)}`
           )
           .join(", ")
       }) FROM ${input}`,

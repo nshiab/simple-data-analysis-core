@@ -17,4 +17,5 @@ export { default as createDirectory } from "./createDirectory.ts";
 export { default as mergeOptions } from "./mergeOptions.ts";
 export { default as parseValue } from "./parseValue.ts";
 export { default as queryDB } from "./queryDB.ts";
+export { default as quoteIdentifier } from "./quoteIdentifier.ts";
 export { default as stringToArray } from "./stringToArray.ts";

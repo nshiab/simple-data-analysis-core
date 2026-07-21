@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -10,7 +11,7 @@ export default async function getFirstRow(
 ) {
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT * FROM "${simpleTable.name}"${
+    `SELECT * FROM ${quoteIdentifier(simpleTable.name)}${
       options.conditions ? ` WHERE ${options.conditions}` : ""
     } LIMIT 1`,
     mergeOptions(simpleTable, {

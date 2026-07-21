@@ -1,7 +1,9 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import parseValue from "../helpers/parseValue.ts";
 
 export default function fuzzyClean(
   table: SimpleTable,
@@ -26,6 +28,7 @@ export default function fuzzyClean(
   // The clustering runs in JS over the fuzzy pairs read from the table, so
   // fuzzyClean can't be expressed as a single SELECT over its input: it
   // executes as a barrier.
+  options = structuredClone(options);
   queueOp(table, {
     kind: "barrier",
     method: "fuzzyClean()",
@@ -77,10 +80,10 @@ async function executeFuzzyClean(
     table,
     `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;
      WITH uniques AS (
-       SELECT "${column}" AS value, COUNT(*) AS cnt
-       FROM "${table.name}"
-       WHERE "${column}" IS NOT NULL
-       GROUP BY "${column}"
+       SELECT ${quoteIdentifier(column)} AS value, COUNT(*) AS cnt
+       FROM ${quoteIdentifier(table.name)}
+       WHERE ${quoteIdentifier(column)} IS NOT NULL
+       GROUP BY ${quoteIdentifier(column)}
      )
      SELECT
        a.value AS left_value,
@@ -113,9 +116,11 @@ async function executeFuzzyClean(
     if (newColumn !== column) {
       await queryDB(
         table,
-        `ALTER TABLE "${table.name}" ADD "${newColumn}" VARCHAR;
-         UPDATE "${table.name}"
-           SET "${newColumn}" = "${column}";`,
+        `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
+          quoteIdentifier(newColumn)
+        } VARCHAR;
+         UPDATE ${quoteIdentifier(table.name)}
+           SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};`,
         mergeOptions(table, {
           table: table.name,
           method: "fuzzyClean()",
@@ -260,22 +265,25 @@ async function executeFuzzyClean(
 
   // Use a VALUES-based CTE for the UPDATE so DuckDB can use a hash join
   // instead of evaluating a potentially huge CASE WHEN expression.
-  const escape = (s: string) => s.replace(/'/g, "''");
   const valuesList = [...replacement.entries()]
-    .map(([from, to]) => `('${escape(from)}', '${escape(to)}')`)
+    .map(([from, to]) => `(${parseValue(from)}, ${parseValue(to)})`)
     .join(",\n     ");
 
   if (newColumn !== column) {
     await queryDB(
       table,
-      `ALTER TABLE "${table.name}" ADD "${newColumn}" VARCHAR;
-       UPDATE "${table.name}"
-         SET "${newColumn}" = "${column}";
+      `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
+        quoteIdentifier(newColumn)
+      } VARCHAR;
+       UPDATE ${quoteIdentifier(table.name)}
+         SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};
        WITH mapping(original, canonical) AS (VALUES ${valuesList})
-       UPDATE "${table.name}"
-         SET "${newColumn}" = m.canonical
+       UPDATE ${quoteIdentifier(table.name)}
+         SET ${quoteIdentifier(newColumn)} = m.canonical
          FROM mapping m
-         WHERE "${table.name}"."${newColumn}" = m.original`,
+         WHERE ${quoteIdentifier(table.name)}.${
+        quoteIdentifier(newColumn)
+      } = m.original`,
       mergeOptions(table, {
         table: table.name,
         method: "fuzzyClean()",
@@ -286,10 +294,12 @@ async function executeFuzzyClean(
     await queryDB(
       table,
       `WITH mapping(original, canonical) AS (VALUES ${valuesList})
-       UPDATE "${table.name}"
-         SET "${column}" = m.canonical
+       UPDATE ${quoteIdentifier(table.name)}
+         SET ${quoteIdentifier(column)} = m.canonical
          FROM mapping m
-         WHERE "${table.name}"."${column}" = m.original`,
+         WHERE ${quoteIdentifier(table.name)}.${
+        quoteIdentifier(column)
+      } = m.original`,
       mergeOptions(table, {
         table: table.name,
         method: "fuzzyClean()",

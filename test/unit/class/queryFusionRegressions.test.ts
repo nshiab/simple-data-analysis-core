@@ -148,7 +148,7 @@ Deno.test("a fused filter with a subquery on its own table matches stepwise exec
   await sdb.done();
 });
 
-Deno.test("debug mode and fused mode agree on a self-referencing chain", async () => {
+Deno.test("self-referencing chains agree when SQL logging is enabled", async () => {
   const rows = [{ x: 1 }, { x: 2 }, { x: 3 }, { x: 4 }, { x: 5 }];
 
   const fusedDB = new SimpleDB();
@@ -158,17 +158,36 @@ Deno.test("debug mode and fused mode agree on a self-referencing chain", async (
   );
   const fusedResult = await fused.getData();
 
-  const debugDB = new SimpleDB({ debug: true });
-  const stepwise = debugDB.newTable("f");
-  stepwise.loadArray(rows).filter("x > 2").filter(
+  const loggedDB = new SimpleDB({ logSQL: true });
+  const logged = loggedDB.newTable("f");
+  logged.loadArray(rows).filter("x > 2").filter(
     `x > (SELECT AVG(x) FROM "f")`,
   );
-  const stepwiseResult = await stepwise.getData();
+  const originalLog = console.log;
+  console.log = () => {};
+  let loggedResult;
+  try {
+    loggedResult = await logged.getData();
+  } finally {
+    console.log = originalLog;
+  }
 
-  assertEquals(fusedResult, stepwiseResult);
+  assertEquals(fusedResult, loggedResult);
 
   await fusedDB.done();
-  await debugDB.done();
+  await loggedDB.done();
+});
+
+Deno.test("raw SQL strings are preserved when queued", async () => {
+  const sdb = new SimpleDB();
+  const marker = "__sda_captured_input_relation__";
+  const table = sdb.newTable("rawSqlCapture");
+
+  table.loadArray([{ value: marker }, { value: "other" }]);
+  table.filter(`value = '${marker}'`);
+
+  assertEquals(await table.getData(), [{ value: marker }]);
+  await sdb.done();
 });
 
 Deno.test("a flush-time validation error still applies the steps before it", async () => {
@@ -217,7 +236,8 @@ Deno.test("interleaved per-table chains still fuse within each table", async () 
   assertEquals(await b.getData(), [{ w: 2 }, { w: 3 }]);
 
   const fusedA = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "fuseA"`) && q.includes("WITH s1 AS")
+    q.includes(`CREATE OR REPLACE TABLE "fuseA"`) &&
+    q.includes('WITH "s1" AS')
   );
   assertEquals(fusedA.length, 1);
 
@@ -242,7 +262,7 @@ Deno.test("cloneTable() fuses with a subsequent op on the clone into one stateme
 
   const fused = queries.filter((q) =>
     q.includes(`CREATE OR REPLACE TABLE "cloneFuseDst"`) &&
-    q.includes("WITH s1 AS")
+    q.includes('WITH "s1" AS')
   );
   assertEquals(fused.length, 1);
 
@@ -286,7 +306,7 @@ Deno.test("selectRows() with outputTable fuses with a subsequent op into one sta
 
   const fused = queries.filter((q) =>
     q.includes(`CREATE OR REPLACE TABLE "selectRowsFuseDst"`) &&
-    q.includes("WITH s1 AS")
+    q.includes('WITH "s1" AS')
   );
   assertEquals(fused.length, 1);
 

@@ -345,6 +345,7 @@ Deno.test("should return the table", async () => {
   const result = table1.insertTables(table2);
   assertEquals(result instanceof SimpleTable, true);
   assertEquals(result.name, "table1");
+  await result.run();
   await sdb.done();
 });
 Deno.test("should add rows to an empty table", async () => {

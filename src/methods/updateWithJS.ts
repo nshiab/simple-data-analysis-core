@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -90,7 +91,9 @@ export default async function updateWithJS(
 
     while (true) {
       const batch = (await simpleTable.sdb.customQuery(
-        `SELECT *, rowid AS __sda_rowid FROM "${simpleTable.name}"${
+        `SELECT *, rowid AS __sda_rowid FROM ${
+          quoteIdentifier(simpleTable.name)
+        }${
           lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
         } ORDER BY rowid LIMIT ${batchSize}`,
         { returnData: true },
@@ -110,12 +113,16 @@ export default async function updateWithJS(
       await scratch.loadArray(modified);
       if (first) {
         await simpleTable.sdb.customQuery(
-          `CREATE OR REPLACE TABLE "${accumulator}" AS SELECT * FROM "${scratch.name}"`,
+          `CREATE OR REPLACE TABLE ${
+            quoteIdentifier(accumulator)
+          } AS SELECT * FROM ${quoteIdentifier(scratch.name)}`,
         );
         first = false;
       } else {
         await simpleTable.sdb.customQuery(
-          `INSERT INTO "${accumulator}" BY NAME SELECT * FROM "${scratch.name}"`,
+          `INSERT INTO ${quoteIdentifier(accumulator)} BY NAME SELECT * FROM ${
+            quoteIdentifier(scratch.name)
+          }`,
         );
       }
     }
@@ -127,12 +134,14 @@ export default async function updateWithJS(
     }
 
     await simpleTable.sdb.customQuery(
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${accumulator}"`,
+      `CREATE OR REPLACE TABLE ${
+        quoteIdentifier(simpleTable.name)
+      } AS SELECT * FROM ${quoteIdentifier(accumulator)}`,
     );
   } finally {
     await simpleTable.sdb.customQuery(
-      `DROP TABLE IF EXISTS "${accumulator}";
-DROP TABLE IF EXISTS "${scratch.name}";`,
+      `DROP TABLE IF EXISTS ${quoteIdentifier(accumulator)};
+DROP TABLE IF EXISTS ${quoteIdentifier(scratch.name)};`,
     );
     simpleTable.sdb.tables = simpleTable.sdb.tables.filter((t) =>
       t !== scratch

@@ -1,3 +1,4 @@
+import quoteIdentifier from "./quoteIdentifier.ts";
 import {
   type DuckDBConnection,
   type DuckDBDateValue,
@@ -8,6 +9,7 @@ import {
   JsonDuckDBValueConverter,
 } from "@duckdb/node-api";
 import SDAError from "../class/SDAError.ts";
+import observeQuery from "./observeQuery.ts";
 
 const msPerDay = 24 * 60 * 60 * 1000;
 const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER);
@@ -30,8 +32,8 @@ function makeIntegerConverter(columnName: string, tableName: string | null) {
     ) {
       warnedUnsafeIntegerColumns.add(warnKey);
       console.warn(
-        `SDA: Column "${columnName}"${
-          tableName === null ? "" : ` of table "${tableName}"`
+        `SDA: Column ${quoteIdentifier(columnName)}${
+          tableName === null ? "" : ` of table ${quoteIdentifier(tableName)}`
         } has at least one value exceeding Number.MAX_SAFE_INTEGER. Converted numbers may lose precision.`,
       );
     }
@@ -86,10 +88,12 @@ export default async function runQuery(
   connection: DuckDBConnection,
   returnData: boolean,
   options: {
-    debug: boolean;
     method: string | null;
     parameters: { [key: string]: unknown } | null;
     table?: string | null;
+    values?: DuckDBValue[];
+    logSQL: boolean;
+    explainSQL: boolean;
   },
 ): Promise<
   | {
@@ -97,9 +101,11 @@ export default async function runQuery(
   }[]
   | null
 > {
+  const values = options.values ?? [];
   try {
+    await observeQuery(connection, query, values, options);
     if (returnData) {
-      const result = await connection.run(query);
+      const result = await connection.run(query, values);
       const columnNames = result.deduplicatedColumnNames();
       const columnTypes = result.columnTypes();
       const converters = columnTypes.map((type, i) =>
@@ -128,13 +134,10 @@ export default async function runQuery(
       }
       return rows;
     } else {
-      await connection.run(query);
+      await connection.run(query, values);
       return null;
     }
   } catch (error) {
-    if (options.debug) {
-      console.warn(error);
-    }
     throw new SDAError({
       method: options.method,
       parameters: options.parameters,

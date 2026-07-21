@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -16,6 +17,7 @@ export default function accumulate(
   // The accumulation order is based on rowid, which only exists on the
   // materialized table, not on the output of a fused step: it executes as a
   // barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "accumulate()",
@@ -54,12 +56,17 @@ function accumulateQuery(
     ? stringToArray(options.categories)
     : [];
   const partition = categories.length > 0
-    ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")} `
+    ? `PARTITION BY ${
+      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+    } `
     : "";
 
-  const query =
-    `CREATE OR REPLACE TABLE "${table}" AS SELECT *, SUM("${column}") OVER (${partition}ORDER BY rowid) AS "${newColumn}"
-    FROM "${table}"
+  const query = `CREATE OR REPLACE TABLE ${
+    quoteIdentifier(table)
+  } AS SELECT *, SUM(${
+    quoteIdentifier(column)
+  }) OVER (${partition}ORDER BY rowid) AS ${quoteIdentifier(newColumn)}
+    FROM ${quoteIdentifier(table)}
     ORDER BY rowid;`;
 
   return query;

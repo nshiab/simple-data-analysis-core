@@ -3413,3 +3413,42 @@ Deno.test("should replace text in all columns with the 'all' option", async () =
 
   await sdb.done();
 });
+
+Deno.test("replace captures arguments and leaves options unchanged", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("capturedReplace");
+  const replacements = { old: "new" };
+  const options: { entireString?: boolean; regex?: boolean } = {};
+
+  table.loadArray([{ value: "old" }]).replace(
+    "value",
+    replacements,
+    options,
+  );
+  replacements.old = "later";
+  options.regex = true;
+
+  assertEquals(options, { regex: true });
+  assertEquals(await table.getData(), [{ value: "new" }]);
+  await sdb.done();
+});
+
+Deno.test("entire-string replacement binds multiple sequential mappings", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundEntireReplacement");
+
+  table
+    .loadArray([{ value: "a" }, { value: "b" }, { value: "O'Brien" }])
+    .replace(
+      "value",
+      { a: "b", b: "c", "O'Brien": "D'Angelo" },
+      { entireString: true },
+    );
+
+  assertEquals(await table.getData(), [
+    { value: "c" },
+    { value: "c" },
+    { value: "D'Angelo" },
+  ]);
+  await sdb.done();
+});

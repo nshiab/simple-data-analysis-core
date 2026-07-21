@@ -49,3 +49,14 @@ Deno.test("should extract a substring based on a separator and substring, and ov
   assertEquals(data, [{ name: "Shiab" }, { name: "Bruce" }]);
   await sdb.done();
 });
+
+Deno.test("should bind an extraction separator containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundSplitExtract");
+
+  table.loadArray([{ value: "rock'n'roll" }]);
+  table.splitExtract("value", "'n'", 1, "part");
+
+  assertEquals(await table.getData(), [{ value: "rock'n'roll", part: "roll" }]);
+  await sdb.done();
+});

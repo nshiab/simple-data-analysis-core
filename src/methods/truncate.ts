@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -12,6 +13,8 @@ export default function truncate(
     parameters: { column, length },
     needsSchema: false,
     buildSelect: (input) =>
-      `SELECT * REPLACE (LEFT("${column}", ${length}) AS "${column}") FROM ${input}`,
+      `SELECT * REPLACE (LEFT(${quoteIdentifier(column)}, ${length}) AS ${
+        quoteIdentifier(column)
+      }) FROM ${input}`,
   });
 }

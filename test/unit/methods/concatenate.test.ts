@@ -988,3 +988,19 @@ Deno.test("should concatenate multiple columns in a new one with a separator and
   ]);
   await sdb.done();
 });
+
+Deno.test("should bind separators containing apostrophes", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundConcatenation");
+
+  table
+    .loadArray([{ first: "rock", second: "roll" }])
+    .concatenate(["first", "second"], "combined", { separator: "'n'" });
+
+  assertEquals(await table.getData(), [{
+    first: "rock",
+    second: "roll",
+    combined: "rock'n'roll",
+  }]);
+  await sdb.done();
+});

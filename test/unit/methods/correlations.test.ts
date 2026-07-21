@@ -133,6 +133,23 @@ Deno.test("should give the correlation between two specific columns", async () =
   await sdb.done();
 });
 
+Deno.test("should bind result labels containing apostrophes", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadArray([
+    { "x's": 1, y: 2 },
+    { "x's": 2, y: 4 },
+  ]);
+  const result = table.correlations({
+    x: "x's",
+    y: "y",
+    outputTable: true,
+  });
+
+  assertEquals(await result.getData(), [{ x: "x's", y: "y", corr: 1 }]);
+  await sdb.done();
+});
+
 Deno.test("should give the correlation between two specific columns and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -8,6 +9,7 @@ export default function typeGeo(
   newColumn: string,
   options: { column?: string } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "typeGeo()",
@@ -19,7 +21,9 @@ export default function typeGeo(
       const column = typeof options.column === "string"
         ? options.column
         : findGeoColumnFromSchema(types);
-      return `SELECT *, CAST(ST_GeometryType("${column}") AS VARCHAR) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST(ST_GeometryType(${
+        quoteIdentifier(column)
+      }) AS VARCHAR) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

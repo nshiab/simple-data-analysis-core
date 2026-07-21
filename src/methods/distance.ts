@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -25,7 +26,9 @@ export default function distance(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "distance()");
-      return `SELECT *, CAST(${expression} AS DOUBLE) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
     },
   });
 }
@@ -39,6 +42,7 @@ function distanceExpression(
     decimals?: number;
   } = {},
 ) {
+  options = structuredClone(options);
   options.method = options.method ?? "srs";
 
   if (options.method === "srs" && typeof options.unit === "string") {
@@ -56,16 +60,17 @@ function distanceExpression(
 
   let expression = "";
   if (options.method === "srs") {
-    expression = `ST_Distance("${column1}", "${column2}")`;
+    expression = `ST_Distance(${quoteIdentifier(column1)}, ${
+      quoteIdentifier(column2)
+    })`;
   } else if (options.method === "haversine") {
-    expression = `ST_Distance_Sphere("${column1}", "${column2}") ${
-      options.unit === "km" ? "/ 1000" : ""
-    }`;
+    expression = `ST_Distance_Sphere(${quoteIdentifier(column1)}, ${
+      quoteIdentifier(column2)
+    }) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else if (options.method === "spheroid") {
-    expression =
-      `ST_Distance_Spheroid("${column1}"::GEOMETRY, "${column2}"::GEOMETRY) ${
-        options.unit === "km" ? "/ 1000" : ""
-      }`;
+    expression = `ST_Distance_Spheroid(${quoteIdentifier(column1)}::GEOMETRY, ${
+      quoteIdentifier(column2)
+    }::GEOMETRY) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else {
     throw new Error(
       `Uknown method ${options.method}. Choose between 'srs', 'haversine' and 'spheroid'.`,

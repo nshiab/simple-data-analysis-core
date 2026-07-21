@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -16,6 +17,7 @@ export default function cloneColumnWithOffset(
 ) {
   // The offset is based on rowid, which only exists on the materialized
   // table, not on the output of a fused step: it executes as a barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "cloneColumnWithOffset()",
@@ -34,16 +36,26 @@ export default function cloneColumnWithOffset(
         ? stringToArray(options.categories)
         : [];
       const partition = categories.length > 0
-        ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
+        ? `PARTITION BY ${
+          categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+        }`
         : "";
 
       // When categories are specified, also sort the final result by
       // categories.
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT *, LEAD("${column}", ${offset}) OVER(${partition} ORDER BY rowid) AS "${newColumn}" FROM "${simpleTable.name}"${
+        `CREATE OR REPLACE TABLE ${
+          quoteIdentifier(simpleTable.name)
+        } AS SELECT *, LEAD(${
+          quoteIdentifier(column)
+        }, ${offset}) OVER(${partition} ORDER BY rowid) AS ${
+          quoteIdentifier(newColumn)
+        } FROM ${quoteIdentifier(simpleTable.name)}${
           categories.length > 0
-            ? ` ORDER BY ${categories.map((d) => `"${d}"`).join(", ")}, rowid`
+            ? ` ORDER BY ${
+              categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+            }, rowid`
             : ` ORDER BY rowid`
         };`,
         mergeOptions(simpleTable, {

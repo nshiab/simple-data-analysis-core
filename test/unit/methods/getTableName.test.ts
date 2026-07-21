@@ -17,6 +17,7 @@ Deno.test("should return the name of the table after loading data", async () => 
   const tableName = table.getTableName();
 
   assertEquals(tableName, "data");
+  await table.run();
   await sdb.done();
 });
 Deno.test("should return the updated name after renaming the table", async () => {

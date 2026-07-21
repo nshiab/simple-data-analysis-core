@@ -23,3 +23,17 @@ Deno.test("should unnest rows based on a specific column values", async () => {
 
   await sdb.done();
 });
+
+Deno.test("should bind an unnesting separator containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundUnnest");
+
+  table.loadArray([{ group: "a", value: "rock'n'roll" }]);
+  table.unnest("value", "'n'");
+
+  assertEquals(await table.getData(), [
+    { group: "a", value: "rock" },
+    { group: "a", value: "roll" },
+  ]);
+  await sdb.done();
+});

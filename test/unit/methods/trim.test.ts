@@ -117,3 +117,14 @@ Deno.test("should remove specific characters", async () => {
 
   await sdb.done();
 });
+
+Deno.test("should bind trim characters containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundTrim");
+
+  table.loadArray([{ value: "''quoted''" }]);
+  table.trim("value", { character: "'" });
+
+  assertEquals(await table.getData(), [{ value: "quoted" }]);
+  await sdb.done();
+});

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -13,6 +14,7 @@ export default function ranks(
     dense?: boolean;
   } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "ranks()",
@@ -27,13 +29,15 @@ export default function ranks(
 
       const partition = categories.length === 0
         ? ""
-        : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
+        : `PARTITION BY ${
+          categories.map((d) => `${quoteIdentifier(d)}`).join(",")
+        } `;
 
       return `SELECT *, ${
         options.dense ? "dense_rank()" : "rank()"
-      } OVER (${partition}ORDER BY "${column}" ${
+      } OVER (${partition}ORDER BY ${quoteIdentifier(column)} ${
         typeof options.order === "string" ? options.order.toUpperCase() : ""
-      }) AS "${newColumn}"
+      }) AS ${quoteIdentifier(newColumn)}
     FROM ${input}`;
     },
   });

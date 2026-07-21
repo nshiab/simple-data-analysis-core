@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import parseType from "../helpers/parseTypes.ts";
@@ -40,7 +41,9 @@ export default function addColumn(
     rawSQL: [definition],
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addColumn()");
-      return `SELECT *, CAST((${definition}) AS ${newType}) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST((${definition}) AS ${newType}) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
     },
   });
 }

@@ -1,3 +1,4 @@
+import quoteIdentifier from "./quoteIdentifier.ts";
 import mergeOptions from "./mergeOptions.ts";
 import queryDB from "./queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -14,7 +15,11 @@ export default async function removeColumnsNow(
 ): Promise<void> {
   await queryDB(
     simpleTable,
-    columns.map((d) => `ALTER TABLE "${simpleTable.name}" DROP "${d}";`).join(
+    columns.map((d) =>
+      `ALTER TABLE ${quoteIdentifier(simpleTable.name)} DROP ${
+        quoteIdentifier(d)
+      };`
+    ).join(
       "\n",
     ),
     mergeOptions(simpleTable, {

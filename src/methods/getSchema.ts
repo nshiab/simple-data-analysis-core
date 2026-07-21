@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -7,7 +8,7 @@ export default async function getSchema(
 ) {
   return (await queryDB(
     simpleTable,
-    `DESCRIBE "${simpleTable.name}"`,
+    `DESCRIBE ${quoteIdentifier(simpleTable.name)}`,
     mergeOptions(simpleTable, {
       returnData: true,
       rowsToLog: Infinity,

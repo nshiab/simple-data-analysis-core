@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -14,7 +15,7 @@ export default function removeColumns(
     needsSchema: false,
     buildSelect: (input) =>
       `SELECT * EXCLUDE (${
-        cols.map((d) => `"${d}"`).join(", ")
+        cols.map((d) => `${quoteIdentifier(d)}`).join(", ")
       }) FROM ${input}`,
   });
 }

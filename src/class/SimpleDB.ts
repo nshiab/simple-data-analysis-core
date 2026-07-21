@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import { DuckDBInstance } from "@duckdb/node-api";
 import runQuery from "../helpers/runQuery.ts";
 import SimpleTable from "./SimpleTable.ts";
@@ -51,7 +52,7 @@ import { discardAllPending } from "../helpers/queueOp.ts";
  * ```ts
  * // Create a database instance with custom options
  * const sdb = new SimpleDB({
- *   debug: true, // Enable debugging output
+ *   logSQL: true, // Log SQL immediately before it runs
  *   rowsToLog: 20 // Set the number of rows to log by default
  * });
  * ```
@@ -59,6 +60,28 @@ import { discardAllPending } from "../helpers/queueOp.ts";
 
 export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   extends Simple {
+  /**
+   * Whether to log each SQL statement immediately before execution.
+   *
+   * @defaultValue `false`
+   * @category Properties
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ logSQL: true });
+   * ```
+   */
+  logSQL: boolean;
+  /**
+   * Whether to log DuckDB query plans before supported statements execute.
+   *
+   * @defaultValue `false`
+   * @category Properties
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ explainSQL: true });
+   * ```
+   */
+  explainSQL: boolean;
   /**
    * An array of paths to the data sources used in the cache.
    *
@@ -223,7 +246,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     name: string,
     sdb: SimpleDB,
     options?: {
-      debug?: boolean;
       rowsToLog?: number;
       charsToLog?: number;
       typesToLog?: boolean;
@@ -232,7 +254,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     name: string,
     sdb: SimpleDB,
     options?: {
-      debug?: boolean;
       rowsToLog?: number;
       charsToLog?: number;
       typesToLog?: boolean;
@@ -250,12 +271,18 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.charsToLog - The maximum number of characters to display for text-based cells.
    * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
    * @param options.cacheVerbose - A flag indicating whether to log verbose cache-related messages.
-   * @param options.debug - A flag indicating whether to log debugging information.
+   * @param options.logSQL - A flag indicating whether to log SQL immediately before execution.
+   * @param options.explainSQL - A flag indicating whether to log DuckDB query plans for supported statements.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
    * @param options.progressBar - A flag indicating whether to display a progress bar for long-running operations.
    * @param options.memoryLimit - The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
    * @param options.tempDir - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `done()`.
    * @category Constructor
+   *
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ logSQL: true, explainSQL: true });
+   * ```
    */
   constructor(
     options: {
@@ -266,7 +293,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       charsToLog?: number;
       typesToLog?: boolean;
       cacheVerbose?: boolean;
-      debug?: boolean;
+      logSQL?: boolean;
+      explainSQL?: boolean;
       duckDbCache?: boolean | null;
       progressBar?: boolean;
       memoryLimit?: string;
@@ -275,6 +303,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   ) {
     super(options);
     this.file = options.file ?? ":memory:";
+    this.logSQL = options.logSQL ?? false;
+    this.explainSQL = options.explainSQL ?? false;
     this.overwrite = options.overwrite ?? false;
     this.logDuration = options.logDuration ?? false;
     this.tableIncrement = 1;
@@ -337,7 +367,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     // By default, DuckDB does not compress in-memory databases, so we enable it here.
     if (this.file === ":memory:") {
       await this.customQuery(
-        "ATTACH OR REPLACE ':memory:' AS memory (COMPRESS);",
+        `ATTACH OR REPLACE ':memory:' AS ${
+          quoteIdentifier("memory")
+        } (COMPRESS);`,
       );
     }
 
@@ -412,7 +444,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     let table;
     if (typeof name === "string") {
       table = new TableClass(name, this, {
-        debug: this.debug,
         rowsToLog: this.rowsToLog,
         charsToLog: this.charsToLog,
         typesToLog: this.typesToLog,
@@ -420,7 +451,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       table.defaultTableName = false;
     } else {
       table = new TableClass(`table${this.tableIncrement}`, this, {
-        debug: this.debug,
         rowsToLog: this.rowsToLog,
         charsToLog: this.charsToLog,
         typesToLog: this.typesToLog,
@@ -796,51 +826,62 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Frees up memory by closing the database connection and instance, and cleans up the cache.
    * If the database is file-based, it also compacts the database file to optimize storage.
+   * Pending transformations are discarded after being recorded; cleanup completes and the
+   * method then rejects with the affected table and method names.
    *
    * @returns A promise that resolves to the SimpleDB instance after cleanup.
+   * @throws An error after cleanup when one or more tables still have queued methods.
    * @category Lifecycle
    *
    * @example
    * ```ts
    * // Close the database and clean up resources
+   * await sdb.run();
    * await sdb.done();
    * ```
    */
   async done(): Promise<SimpleDB> {
-    if (this.file === ":memory:") {
-      // The forgotten-run() safety net: queued methods that were never
-      // observed are dropped, not executed. Warning must come before any
-      // query below, since running a query would execute them.
-      for (const { table, methods } of discardAllPending(this)) {
-        console.warn(
-          `The table "${table.name}" has queued methods that were never executed: ${
-            methods.join(", ")
-          }. To execute them, await an observer method (like getData(), logTable(), or writeData()) or call run().`,
-        );
+    const discarded = discardAllPending(this);
+    let cleanupError: unknown;
+    try {
+      if (this.file !== ":memory:" && this.db instanceof DuckDBInstance) {
+        await this.customQuery("CHECKPOINT;");
+        // To make sure the files will have the proper names.
+        writeIndexes(this, getExtension(this.file), this.file);
+        await this.writeDB(this.file.replace(".db", "_compacted.db"), {
+          metadata: false,
+        });
+        rmSync(this.file);
+        renameSync(this.file.replace(".db", "_compacted.db"), this.file);
       }
-    } else {
-      // For a file-based database, done() persists the data, so it executes
-      // the queued methods like any other observer.
-      await flushAllTables(this);
-      await this.customQuery("CHECKPOINT;");
-      // To make sure the files will have the proper names.
-      writeIndexes(this, getExtension(this.file), this.file);
-      await this.writeDB(this.file.replace(".db", "_compacted.db"), {
-        metadata: false,
-      });
-      rmSync(this.file);
-      renameSync(this.file.replace(".db", "_compacted.db"), this.file);
+    } catch (error) {
+      cleanupError = error;
+    } finally {
+      if (this.db instanceof DuckDBInstance) {
+        this.connection.closeSync();
+        this.db.closeSync();
+      }
+      const tmpDir = this.tempDir ??
+        (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
+      if (existsSync(tmpDir)) {
+        rmSync(tmpDir, { recursive: true });
+      }
+      cleanCache(this);
     }
-    if (this.db instanceof DuckDBInstance) {
-      this.connection.closeSync();
-      this.db.closeSync();
+
+    if (discarded.length > 0) {
+      const details = discarded.map(({ table, methods }) =>
+        `The table ${
+          quoteIdentifier(table.name)
+        } has queued methods that were not executed: ${methods.join(", ")}.`
+      ).join(" ");
+      throw new Error(
+        `${details} Call run() or await an observer method before done() to execute them.`,
+      );
     }
-    const tmpDir = this.tempDir ??
-      (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
-    if (existsSync(tmpDir)) {
-      rmSync(tmpDir, { recursive: true });
+    if (cleanupError !== undefined) {
+      throw cleanupError;
     }
-    cleanCache(this);
 
     if (typeof this.durationStart === "number") {
       let string = prettyDuration(this.durationStart, {

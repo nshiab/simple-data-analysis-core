@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import rewind from "../helpers/rewind.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -11,7 +12,9 @@ export default async function getGeoData(
   options: { rewind?: boolean } = {},
 ) {
   const query =
-    `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(${column}) as geoJsonFragment from "${SimpleTable.name}";`;
+    `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(${column}) as geoJsonFragment from ${
+      quoteIdentifier(SimpleTable.name)
+    };`;
 
   const queryResult = await queryDB(
     SimpleTable,

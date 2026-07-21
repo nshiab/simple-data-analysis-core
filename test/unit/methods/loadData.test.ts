@@ -1,6 +1,30 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import {
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+  assertThrows,
+} from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
+import { loadDataQuery } from "../../../src/methods/loadData.ts";
+
+Deno.test("loadDataQuery escapes generated string literals", () => {
+  const csvQuery = loadDataQuery("data", ["owner's.csv"], {
+    fileType: "csv",
+    delim: "'",
+    encoding: "owner's encoding",
+  });
+  assertStringIncludes(csvQuery, "['owner''s.csv']");
+  assertStringIncludes(csvQuery, "delim=''''");
+  assertStringIncludes(csvQuery, "encoding='owner''s encoding'");
+
+  const excelQuery = loadDataQuery("data", ["owner's.xlsx"], {
+    fileType: "excel",
+    sheet: "Owner's Data",
+  });
+  assertStringIncludes(excelQuery, "read_xlsx('owner''s.xlsx'");
+  assertStringIncludes(excelQuery, "sheet='Owner''s Data'");
+});
 
 Deno.test("should load data from a csv file and return the table", async () => {
   const sdb = new SimpleDB();
@@ -9,6 +33,7 @@ Deno.test("should load data from a csv file and return the table", async () => {
     .loadData(["test/data/files/data.csv"]);
 
   assertEquals(table instanceof SimpleTable, true);
+  await table.run();
   await sdb.done();
 });
 Deno.test("should load data from a csv file with a specific encoding and return the table", async () => {
@@ -18,6 +43,7 @@ Deno.test("should load data from a csv file with a specific encoding and return 
     .loadData(["test/data/files/data.csv"], { encoding: "latin-1" });
 
   assertEquals(table instanceof SimpleTable, true);
+  await table.run();
   await sdb.done();
 });
 Deno.test("should load data from a csv file with strict false", async () => {
@@ -27,6 +53,7 @@ Deno.test("should load data from a csv file with strict false", async () => {
     .loadData(["test/data/files/data.csv"], { strict: false });
 
   assertEquals(table instanceof SimpleTable, true);
+  await table.run();
   await sdb.done();
 });
 Deno.test("should load data from a csv file", async () => {

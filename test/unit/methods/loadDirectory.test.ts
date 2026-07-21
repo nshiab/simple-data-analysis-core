@@ -11,6 +11,7 @@ Deno.test("should load data from a directory and return the table", async () => 
     });
 
   assertEquals(table instanceof SimpleTable, true);
+  await table.run();
   await sdb.done();
 });
 

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import findGeoColumn from "../helpers/findGeoColumn.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -10,6 +11,7 @@ export default function randomPoint(
   tries: number,
   options: { column?: string; strict?: boolean } = {},
 ) {
+  options = structuredClone(options);
   // This validation doesn't need the database, so it stays at call time.
   if (typeof tries !== "number" || tries < 0) {
     throw new Error(
@@ -57,7 +59,7 @@ async function executeRandomPoint(
   );
 
   const nbNulls = await simpleTable.getNbRows({
-    conditions: `"${newColumn}" IS NULL`,
+    conditions: `${quoteIdentifier(newColumn)} IS NULL`,
   });
   if (nbNulls > 0 && options.strict !== false) {
     throw new Error(
@@ -75,7 +77,9 @@ function randomPointQuery(
 ) {
   const addColumn = newColumn === column
     ? ""
-    : `ALTER TABLE "${table}" ADD COLUMN "${newColumn}" ${geoType};`;
+    : `ALTER TABLE ${quoteIdentifier(table)} ADD COLUMN ${
+      quoteIdentifier(newColumn)
+    } ${geoType};`;
 
   // Recursive CTE approach: each iteration only carries forward the rows that
   // have NOT yet found a valid interior point, so DuckDB stops per-row as soon
@@ -97,12 +101,16 @@ WITH RECURSIVE
 base AS (
     SELECT
         rowid AS rid,
-        "${column}" AS geom,
-        ST_XMin("${column}") AS xmin,
-        ST_XMax("${column}") - ST_XMin("${column}") AS xdiff,
-        ST_YMin("${column}") AS ymin,
-        ST_YMax("${column}") - ST_YMin("${column}") AS ydiff
-    FROM "${table}"
+        ${quoteIdentifier(column)} AS geom,
+        ST_XMin(${quoteIdentifier(column)}) AS xmin,
+        ST_XMax(${quoteIdentifier(column)}) - ST_XMin(${
+    quoteIdentifier(column)
+  }) AS xdiff,
+        ST_YMin(${quoteIdentifier(column)}) AS ymin,
+        ST_YMax(${quoteIdentifier(column)}) - ST_YMin(${
+    quoteIdentifier(column)
+  }) AS ydiff
+    FROM ${quoteIdentifier(table)}
 ),
 attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (
     SELECT
@@ -125,11 +133,11 @@ attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (
     FROM attempts
     WHERE NOT ST_Within(pt, geom) AND n < ${tries}
 )
-UPDATE "${table}" AS t
-SET "${newColumn}" = v.pt::${geoType}
+UPDATE ${quoteIdentifier(table)} AS t
+SET ${quoteIdentifier(newColumn)} = v.pt::${geoType}
 FROM (
     SELECT b.rid, vp.pt
-    FROM (SELECT rowid AS rid FROM "${table}") b
+    FROM (SELECT rowid AS rid FROM ${quoteIdentifier(table)}) b
     LEFT JOIN (
         SELECT rid, pt
         FROM attempts

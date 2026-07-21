@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import findGeoColumn from "../helpers/findGeoColumn.ts";
 import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -16,6 +17,7 @@ export default function aggregateGeo(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   if (typeof options.outputTable === "string") {
@@ -32,8 +34,13 @@ export default function aggregateGeo(
           : await findGeoColumn(simpleTable);
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
-            aggregateGeoSelect(`"${simpleTable.name}"`, column, method, options)
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
+            aggregateGeoSelect(
+              `${quoteIdentifier(simpleTable.name)}`,
+              column,
+              method,
+              options,
+            )
           }`,
           mergeOptions(simpleTable, {
             table: outputTable.name,
@@ -75,15 +82,20 @@ function aggregateGeoSelect(
 
   let query = `SELECT${
     categories.length > 0
-      ? ` ${categories.map((d) => `"${d}"`).join(", ")},`
+      ? ` ${categories.map((d) => `${quoteIdentifier(d)}`).join(", ")},`
       : ""
   }`;
 
   if (method === "union") {
-    query +=
-      ` CASE WHEN ST_IsEmpty(ST_Union_Agg("${column}")) THEN NULL ELSE ST_Union_Agg("${column}") END AS "${column}"`;
+    query += ` CASE WHEN ST_IsEmpty(ST_Union_Agg(${
+      quoteIdentifier(column)
+    })) THEN NULL ELSE ST_Union_Agg(${quoteIdentifier(column)}) END AS ${
+      quoteIdentifier(column)
+    }`;
   } else if (method === "intersection") {
-    query += ` ST_Intersection_Agg("${column}") AS "${column}"`;
+    query += ` ST_Intersection_Agg(${quoteIdentifier(column)}) AS ${
+      quoteIdentifier(column)
+    }`;
   } else {
     throw new Error(`Unkown method ${method}`);
   }
@@ -91,8 +103,12 @@ function aggregateGeoSelect(
   query += `\nFROM ${input}`;
 
   if (categories.length > 0) {
-    query += `\nGROUP BY ${categories.map((d) => `"${d}"`).join(", ")}`;
-    query += `\nORDER BY ${categories.map((d) => `"${d}" ASC`).join(", ")}`;
+    query += `\nGROUP BY ${
+      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+    }`;
+    query += `\nORDER BY ${
+      categories.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
+    }`;
   }
 
   return query;

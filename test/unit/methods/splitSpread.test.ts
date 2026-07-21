@@ -163,3 +163,18 @@ Deno.test("should throw when a new column name already exists, instead of silent
 
   await sdb.done();
 });
+
+Deno.test("should bind a spread separator containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundSplitSpread");
+
+  table.loadArray([{ value: "rock'n'roll" }]);
+  table.splitSpread("value", "'n'", ["first", "second"]);
+
+  assertEquals(await table.getData(), [{
+    value: "rock'n'roll",
+    first: "rock",
+    second: "roll",
+  }]);
+  await sdb.done();
+});

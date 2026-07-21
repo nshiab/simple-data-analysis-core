@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -33,7 +34,10 @@ export default function summarize(
   simpleTable: SimpleTable,
   options: SummarizeOptions = {},
 ): SimpleTable {
+  options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
+  const values = getSummarizeValues(options);
+  const boundValues = values.length > 1 ? values : [];
 
   if (typeof options.outputTable === "string") {
     // The output table instance is created at call time so it can be
@@ -46,9 +50,9 @@ export default function summarize(
       execute: async () => {
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
             summarizeSelect(
-              `"${simpleTable.name}"`,
+              `${quoteIdentifier(simpleTable.name)}`,
               await simpleTable.getTypes(),
               options,
             )
@@ -57,6 +61,7 @@ export default function summarize(
             table: outputTable.name,
             method: "summarize()",
             parameters: { options },
+            values: boundValues,
           }),
         );
       },
@@ -69,9 +74,23 @@ export default function summarize(
     method: "summarize()",
     parameters: { options },
     needsSchema: true,
+    values: boundValues,
     buildSelect: (input, types) => summarizeSelect(input, types, options),
   });
   return simpleTable;
+}
+
+function getSummarizeValues(options: SummarizeOptions): string[] {
+  const categories = options.categories
+    ? stringToArray(options.categories)
+    : [];
+  return [
+    ...new Set(
+      (options.values ? stringToArray(options.values) : []).filter(
+        (value) => !categories.includes(value),
+      ),
+    ),
+  ];
 }
 
 const allSummaries: Summary[] = [
@@ -117,13 +136,7 @@ function summarizeSelect(
     : [];
   // Duplicated values would duplicate rows now that the branches are combined
   // with UNION ALL instead of a deduplicating UNION.
-  const values = [
-    ...new Set(
-      (options.values ? stringToArray(options.values) : []).filter(
-        (d) => !categories.includes(d),
-      ),
-    ),
-  ];
+  const values = getSummarizeValues(options);
 
   let summaries: Summary[];
   let columns: string[] | undefined;
@@ -158,11 +171,11 @@ function summarizeSelect(
       (type.includes("TIME") || type.includes("DATE"))
     ) {
       references[value] = type.includes("TIME")
-        ? `(date_part('epoch', "${value}") * 1000)`
-        : `(epoch("${value}") * 1000)`;
+        ? `(date_part('epoch', ${quoteIdentifier(value)}) * 1000)`
+        : `(epoch(${quoteIdentifier(value)}) * 1000)`;
       effectiveTypes[value] = "BIGINT";
     } else {
-      references[value] = `"${value}"`;
+      references[value] = `${quoteIdentifier(value)}`;
       effectiveTypes[value] = type;
     }
   }
@@ -176,7 +189,7 @@ function summarizeSelect(
     );
   }
 
-  const catSelect = categories.map((d) => `"${d}"`).join(", ");
+  const catSelect = categories.map((d) => `${quoteIdentifier(d)}`).join(", ");
   const groupBy = categories.length > 0 ? `\nGROUP BY ${catSelect}` : "";
 
   // With no values, the only meaningful summary is the row count, which
@@ -185,15 +198,17 @@ function summarizeSelect(
     const summaryColumns = summaries.map((summary, i) => {
       const name = columns ? columns[i] : summary;
       return summary === "count"
-        ? `CAST(COUNT(*) AS INTEGER) AS '${name}'`
-        : `NULL AS '${name}'`;
+        ? `CAST(COUNT(*) AS INTEGER) AS ${quoteIdentifier(name)}`
+        : `NULL AS ${quoteIdentifier(name)}`;
     });
     const orderBy = categories.length > 0
-      ? `\nORDER BY ${categories.map((d) => `"${d}" ASC`).join(", ")}`
+      ? `\nORDER BY ${
+        categories.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
+      }`
       : "";
     return `SELECT ${
       [
-        ...categories.map((d) => `"${d}"`),
+        ...categories.map((d) => `${quoteIdentifier(d)}`),
         ...summaryColumns,
       ].join(", ")
     }\nFROM ${input}${groupBy}${orderBy}`;
@@ -214,14 +229,14 @@ function summarizeSelect(
         options.decimals,
       );
       if (expression === null) {
-        return `NULL AS '${name}'`;
+        return `NULL AS ${quoteIdentifier(name)}`;
       }
       hasAggregate = true;
-      return `${expression} AS '${name}'`;
+      return `${expression} AS ${quoteIdentifier(name)}`;
     });
-    const select = `SELECT ${valueColumn ? `'${value}' AS 'value', ` : ""}${
-      catSelect === "" ? "" : `${catSelect}, `
-    }${projections.join(", ")}`;
+    const select = `SELECT ${
+      valueColumn ? `? AS ${quoteIdentifier("value")}, ` : ""
+    }${catSelect === "" ? "" : `${catSelect}, `}${projections.join(", ")}`;
     if (categories.length === 0 && !hasAggregate) {
       // Every summary is NULL and there is nothing to group by: the branch
       // is a single constant row, so the input is not even scanned.
@@ -233,7 +248,9 @@ function summarizeSelect(
 
   const orderByColumns = valueColumn ? ["value", ...categories] : categories;
   const orderBy = orderByColumns.length > 0
-    ? `\nORDER BY ${orderByColumns.map((d) => `"${d}" ASC`).join(", ")}`
+    ? `\nORDER BY ${
+      orderByColumns.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
+    }`
     : "";
 
   return `${branches.join("\nUNION ALL\n")}${orderBy}`;

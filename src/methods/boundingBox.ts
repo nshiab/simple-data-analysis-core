@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -9,6 +10,7 @@ export default function boundingBox(
     decimals?: number;
   } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "boundingBox()",
@@ -22,10 +24,10 @@ export default function boundingBox(
           ? `ROUND(${expression}, ${options.decimals})`
           : expression;
       return `SELECT *,
-    ${round(`ST_XMin("${column}")`)} AS minLon,
-    ${round(`ST_YMin("${column}")`)} AS minLat,
-    ${round(`ST_XMax("${column}")`)} AS maxLon,
-    ${round(`ST_YMax("${column}")`)} AS maxLat
+    ${round(`ST_XMin(${quoteIdentifier(column)})`)} AS minLon,
+    ${round(`ST_YMin(${quoteIdentifier(column)})`)} AS minLat,
+    ${round(`ST_XMax(${quoteIdentifier(column)})`)} AS maxLon,
+    ${round(`ST_YMax(${quoteIdentifier(column)})`)} AS maxLat
     FROM ${input}`;
     },
   });

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -15,6 +16,7 @@ export default function outliersIQR(
   // The quantile function depends on the parity of the number of rows, so
   // outliersIQR can't be expressed as a single SELECT over its input: it
   // executes as a barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "outliersIQR()",
@@ -49,7 +51,7 @@ function outliersIQRQuery(
   } = {},
 ) {
   const categories = options.categories
-    ? stringToArray(options.categories).map((d) => `"${d}"`)
+    ? stringToArray(options.categories).map((d) => `${quoteIdentifier(d)}`)
     : [];
 
   const quantileFunc = parity === "even" ? "quantile_disc" : "quantile_cont";
@@ -59,17 +61,25 @@ function outliersIQRQuery(
 
   // q1/q3 are computed as window values (one pass) instead of a per-category
   // CTE joined back through a correlated subquery per row.
-  return `CREATE OR REPLACE TABLE "${table}" AS
+  return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS
     SELECT * EXCLUDE ("_sda_q1", "_sda_q3"), CASE
-        WHEN "${column}" > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
-          OR "${column}" < "_sda_q1" - ("_sda_q3" - "_sda_q1") * 1.5
+        WHEN ${
+    quoteIdentifier(column)
+  } > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
+          OR ${
+    quoteIdentifier(column)
+  } < "_sda_q1" - ("_sda_q3" - "_sda_q1") * 1.5
         THEN TRUE
         ELSE FALSE
-    END AS "${newColumn}"
+    END AS ${quoteIdentifier(newColumn)}
     FROM (
         SELECT *,
-            ${quantileFunc}("${column}", 0.25) OVER (${partition}) AS "_sda_q1",
-            ${quantileFunc}("${column}", 0.75) OVER (${partition}) AS "_sda_q3"
-        FROM "${table}"
+            ${quantileFunc}(${
+    quoteIdentifier(column)
+  }, 0.25) OVER (${partition}) AS "_sda_q1",
+            ${quantileFunc}(${
+    quoteIdentifier(column)
+  }, 0.75) OVER (${partition}) AS "_sda_q3"
+        FROM ${quoteIdentifier(table)}
     ) "_sda"`;
 }

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -21,10 +22,13 @@ export default function fuzzyJoin(
     preFilterPrefixLen?: number;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   // This validation doesn't need the database, so it stays at call time.
   if (leftColumn === rightColumn) {
     throw new Error(
-      `The leftColumn and rightColumn have the same name "${leftColumn}". Rename one of them before doing the fuzzy join.`,
+      `The leftColumn and rightColumn have the same name ${
+        quoteIdentifier(leftColumn)
+      }. Rename one of them before doing the fuzzy join.`,
     );
   }
 
@@ -95,7 +99,9 @@ async function executeFuzzyJoin(
     } else {
       throw new Error(
         `The tables have columns with identical names. Rename or remove ${
-          identicalColumnsForError.map((d) => `"${d}"`).join(", ")
+          identicalColumnsForError.map((d) => `${quoteIdentifier(d)}`).join(
+            ", ",
+          )
         } in one of the two tables before doing the fuzzy join.`,
       );
     }
@@ -110,7 +116,7 @@ async function executeFuzzyJoin(
   // join.
   const rightSelect = rightCols
     .filter((d) => !leftCols.includes(d))
-    .map((d) => `"${rightTable.name}"."${d}"`)
+    .map((d) => `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}`)
     .join(", ");
 
   const sql = `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;\n` +
@@ -160,36 +166,53 @@ function fuzzyJoinQuery(
   rightSelect: string,
   preFilterPrefixLen?: number,
 ) {
-  const fn =
-    `ROUND(rapidfuzz_${method}("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}"), 2)`;
+  const fn = `ROUND(rapidfuzz_${method}(${quoteIdentifier(leftTable)}.${
+    quoteIdentifier(leftColumn)
+  }, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)}), 2)`;
 
   let onClause = `${fn} >= ${threshold}`;
 
   if (method === "ratio") {
     const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
-    onClause +=
-      ` AND ABS(LENGTH("${leftTable}"."${leftColumn}") - LENGTH("${rightTable}"."${rightColumn}")) <= ${maxDiffMultiplier} * GREATEST(LENGTH("${leftTable}"."${leftColumn}"), LENGTH("${rightTable}"."${rightColumn}"))`;
+    onClause += ` AND ABS(LENGTH(${quoteIdentifier(leftTable)}.${
+      quoteIdentifier(leftColumn)
+    }) - LENGTH(${quoteIdentifier(rightTable)}.${
+      quoteIdentifier(rightColumn)
+    })) <= ${maxDiffMultiplier} * GREATEST(LENGTH(${
+      quoteIdentifier(leftTable)
+    }.${quoteIdentifier(leftColumn)}), LENGTH(${quoteIdentifier(rightTable)}.${
+      quoteIdentifier(rightColumn)
+    }))`;
   }
   if (preFilterPrefixLen !== undefined) {
-    onClause +=
-      ` AND SUBSTR("${leftTable}"."${leftColumn}", 1, ${preFilterPrefixLen}) = SUBSTR("${rightTable}"."${rightColumn}", 1, ${preFilterPrefixLen})`;
+    onClause += ` AND SUBSTR(${quoteIdentifier(leftTable)}.${
+      quoteIdentifier(leftColumn)
+    }, 1, ${preFilterPrefixLen}) = SUBSTR(${quoteIdentifier(rightTable)}.${
+      quoteIdentifier(rightColumn)
+    }, 1, ${preFilterPrefixLen})`;
   }
 
   if (similarityColumn) {
-    return `CREATE OR REPLACE TABLE "${outputTable}" AS
-SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS "${similarityColumn}"
+    return `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable)} AS
+SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS ${
+      quoteIdentifier(similarityColumn)
+    }
 FROM (
-  SELECT "${leftTable}".*, ${rightSelect}, ${fn} AS "_sda_score"
-  FROM "${leftTable}" LEFT JOIN "${rightTable}" ON ${onClause}
+  SELECT ${quoteIdentifier(leftTable)}.*, ${rightSelect}, ${fn} AS "_sda_score"
+  FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
+      quoteIdentifier(rightTable)
+    } ON ${onClause}
 ) _sda
-ORDER BY "${leftColumn}", "_sda_score" DESC;\n`;
+ORDER BY ${quoteIdentifier(leftColumn)}, "_sda_score" DESC;\n`;
   }
 
-  return `CREATE OR REPLACE TABLE "${outputTable}" AS
+  return `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable)} AS
 SELECT *
 FROM (
-  SELECT "${leftTable}".*, ${rightSelect}
-  FROM "${leftTable}" LEFT JOIN "${rightTable}" ON ${onClause}
+  SELECT ${quoteIdentifier(leftTable)}.*, ${rightSelect}
+  FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
+    quoteIdentifier(rightTable)
+  } ON ${onClause}
 ) _sda
-ORDER BY "${leftColumn}", "${rightColumn}";\n`;
+ORDER BY ${quoteIdentifier(leftColumn)}, ${quoteIdentifier(rightColumn)};\n`;
 }

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -22,6 +23,8 @@ export default function fill(
 
   // The fill order is based on rowid, which only exists on the materialized
   // table: it executes as a barrier.
+  columns = Array.isArray(columns) ? [...columns] : columns;
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "fill()",
@@ -44,7 +47,7 @@ async function executeFill(
     : [];
 
   const cols = stringToArray(columns);
-  const excludeList = cols.map((col) => `"${col}"`).join(", ");
+  const excludeList = cols.map((col) => `${quoteIdentifier(col)}`).join(", ");
   let selectList: string;
 
   if (options.interpolate || options.interpolateBy) {
@@ -52,39 +55,55 @@ async function executeFill(
     // interpolation math), but always order the final output by rowid to
     // preserve input row order.
     const windowOrder = options.interpolateBy
-      ? `"${options.interpolateBy}"`
+      ? `${quoteIdentifier(options.interpolateBy)}`
       : "rowid";
     const overClause = categories.length > 0
-      ? `(PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")})`
+      ? `(PARTITION BY ${
+        categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+      })`
       : `()`;
     selectList = cols
       .map(
         (col) =>
-          `fill("${col}" ORDER BY ${windowOrder}) OVER ${overClause} as "${col}"`,
+          `fill(${
+            quoteIdentifier(col)
+          } ORDER BY ${windowOrder}) OVER ${overClause} as ${
+            quoteIdentifier(col)
+          }`,
       )
       .join(", ");
   } else if (categories.length > 0) {
     const partition = `PARTITION BY ${
-      categories.map((d) => `"${d}"`).join(", ")
+      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
     }`;
     selectList = cols
       .map(
         (col) =>
-          `COALESCE("${col}", LAG("${col}" IGNORE NULLS) OVER(${partition} ORDER BY rowid)) as "${col}"`,
+          `COALESCE(${quoteIdentifier(col)}, LAG(${
+            quoteIdentifier(col)
+          } IGNORE NULLS) OVER(${partition} ORDER BY rowid)) as ${
+            quoteIdentifier(col)
+          }`,
       )
       .join(", ");
   } else {
     selectList = cols
       .map(
         (col) =>
-          `COALESCE("${col}", LAG("${col}" IGNORE NULLS) OVER(ORDER BY rowid)) as "${col}"`,
+          `COALESCE(${quoteIdentifier(col)}, LAG(${
+            quoteIdentifier(col)
+          } IGNORE NULLS) OVER(ORDER BY rowid)) as ${quoteIdentifier(col)}`,
       )
       .join(", ");
   }
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY rowid;`,
+    `CREATE OR REPLACE TABLE ${
+      quoteIdentifier(simpleTable.name)
+    } AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM ${
+      quoteIdentifier(simpleTable.name)
+    } ORDER BY rowid;`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "fill()",

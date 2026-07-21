@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -13,9 +14,9 @@ export default async function getBottom(
   const queryResult = await queryDB(
     simpleTable,
     `WITH "numberedRowsForGetBottom" AS (
-                SELECT *, row_number() OVER () as "rowNumberForGetBottom" FROM "${simpleTable.name}"${
-      options.conditions ? ` WHERE ${options.conditions}` : ""
-    }
+                SELECT *, row_number() OVER () as "rowNumberForGetBottom" FROM ${
+      quoteIdentifier(simpleTable.name)
+    }${options.conditions ? ` WHERE ${options.conditions}` : ""}
             )
             SELECT * FROM "numberedRowsForGetBottom" ORDER BY "rowNumberForGetBottom" DESC LIMIT ${count};`,
     mergeOptions(simpleTable, {

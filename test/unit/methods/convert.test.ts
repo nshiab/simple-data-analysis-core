@@ -1,6 +1,18 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("should bind datetime formats containing apostrophes", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ date: "2010'-01-02" }]);
+  table.convert({ date: "date" }, { datetimeFormat: "%Y'-%m-%d" });
+
+  assertEquals(await table.getData(), [{
+    date: new Date("2010-01-02T00:00:00.000Z"),
+  }]);
+  await sdb.done();
+});
+
 Deno.test("should convert numbers to string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");

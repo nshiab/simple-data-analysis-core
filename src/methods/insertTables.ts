@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import ensureSpatial from "../helpers/ensureSpatial.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -11,7 +12,8 @@ export default function insertTables(
   tables: SimpleTable | SimpleTable[],
   options: { unifyColumns?: boolean } = {},
 ) {
-  const array = Array.isArray(tables) ? tables : [tables];
+  const array = Array.isArray(tables) ? [...tables] : [tables];
+  options = structuredClone(options);
 
   queueOp(simpleTable, {
     kind: "barrier",
@@ -42,9 +44,9 @@ async function executeInsertTables(
     }
     await queryDB(
       simpleTable,
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" (${
+      `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} (${
         Object.keys(firstTableTypes)
-          .map((d) => `"${d}" ${firstTableTypes[d]}`)
+          .map((d) => `${quoteIdentifier(d)} ${firstTableTypes[d]}`)
           .join(", ")
       });`,
       mergeOptions(simpleTable, {
@@ -96,7 +98,9 @@ async function executeInsertTables(
     array
       .map(
         (tableToInsert) =>
-          `INSERT INTO "${simpleTable.name}" BY NAME SELECT * FROM "${tableToInsert.name}";`,
+          `INSERT INTO ${
+            quoteIdentifier(simpleTable.name)
+          } BY NAME SELECT * FROM ${quoteIdentifier(tableToInsert.name)};`,
       )
       .join("\n"),
     mergeOptions(simpleTable, {

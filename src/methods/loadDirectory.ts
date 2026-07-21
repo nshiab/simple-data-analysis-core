@@ -42,6 +42,7 @@ export default function loadDirectory(
   );
   const query = loadDataQuery(simpleTable.name, files, options);
 
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "loadDirectory()",

@@ -7,6 +7,7 @@ import ensureSpatial from "./ensureSpatial.ts";
 import extractTypes from "./extractTypes.ts";
 import mergeOptions from "./mergeOptions.ts";
 import queryDB from "./queryDB.ts";
+import quoteIdentifier from "./quoteIdentifier.ts";
 
 /**
  * The databases whose flush is executing on the current async call chain.
@@ -38,9 +39,7 @@ export function runExemptFromFlush<T>(
  * on different tables replay exactly in the order the user queued them,
  * like immediate execution would. Consecutive fusable operations on the
  * same table compose as CTEs into a single statement; barriers execute
- * in order between fused segments. When a table's `debug` flag is `true`,
- * its operations execute step by step, with the same logging as immediate
- * execution.
+ * in order between fused segments.
  *
  * Every query execution point goes through this (via queryDB). Only one
  * flush runs at a time: concurrent observers wait for the in-flight flush,
@@ -91,6 +90,12 @@ type Segment = {
    * must not advance until then.
    */
   reads: Set<SimpleTable>;
+};
+
+type CompiledCte = {
+  alias: string;
+  select: string;
+  values: import("@duckdb/node-api").DuckDBValue[];
 };
 
 async function flush(sdb: SimpleDB): Promise<void> {
@@ -173,12 +178,11 @@ async function flush(sdb: SimpleDB): Promise<void> {
         await runSegmentOf(other);
       }
 
-      if (reads.includes(table) || table.debug) {
+      if (reads.includes(table)) {
         // User-supplied SQL referencing the operation's own table must read
         // the state produced by the previous steps, which a fused chain
         // can't provide (the name would resolve to the pre-chain table). So
-        // the chain materializes and the operation runs on its own. Debug
-        // mode does the same for step-by-step logging.
+        // the chain materializes and the operation runs on its own.
         await runSegmentOf(table);
         executing = table;
         await runStepwise(table, op);
@@ -264,7 +268,7 @@ async function runSegment(
 
   // Each fragment is cleaned individually: cleanSQL's WHERE handling must not
   // cross fragment boundaries once they are composed into one statement.
-  const ctes: { alias: string; select: string }[] = [];
+  const ctes: CompiledCte[] = [];
   // The schema of the next fragment's input, reused while operations declare
   // they preserve it, so a run of same-shape steps costs at most one
   // DESCRIBE round-trip.
@@ -272,8 +276,8 @@ async function runSegment(
   for (let i = 0; i < ops.length; i++) {
     const op = ops[i];
     const input = ctes.length === 0
-      ? `"${table.name}"`
-      : ctes[ctes.length - 1].alias;
+      ? quoteIdentifier(table.name)
+      : quoteIdentifier(ctes[ctes.length - 1].alias);
     let select: string;
     try {
       if (op.needsSchema && schema === null) {
@@ -290,7 +294,11 @@ async function runSegment(
       }
       throw error;
     }
-    ctes.push({ alias: `s${ctes.length + 1}`, select });
+    ctes.push({
+      alias: `s${ctes.length + 1}`,
+      select,
+      values: resolveValues(op, schema ?? {}),
+    });
     if (op.preservesSchema !== true) {
       schema = null;
     }
@@ -301,11 +309,13 @@ async function runSegment(
 async function executeFused(
   table: SimpleTable,
   ops: FusableOp[],
-  ctes: { alias: string; select: string }[],
+  ctes: CompiledCte[],
 ): Promise<void> {
-  const query = `CREATE OR REPLACE TABLE "${table.name}" AS WITH ${
-    ctes.map((c) => `${c.alias} AS (${c.select})`).join(", ")
-  } SELECT * FROM ${ctes[ctes.length - 1].alias}`;
+  const query = `CREATE OR REPLACE TABLE ${
+    quoteIdentifier(table.name)
+  } AS WITH ${
+    ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select})`).join(", ")
+  } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
 
   try {
     await queryDB(
@@ -317,6 +327,7 @@ async function executeFused(
         parameters: Object.fromEntries(
           ops.map((op, i) => [`${i + 1}. ${op.method}`, op.parameters]),
         ),
+        values: ctes.flatMap((cte) => cte.values),
         noClean: true,
       }),
     );
@@ -348,19 +359,23 @@ async function runStepwise(
   }
   const schema = op.needsSchema ? await describeChain(table, []) : {};
   // The fragment is cleaned exactly as it would be inside a fused statement,
-  // so the stepwise (and debug) path executes the same SQL as the fused
-  // path.
-  const select = cleanSQL(op.buildSelect(`"${table.name}"`, schema));
+  // so the stepwise path executes the same SQL as the fused path.
+  const select = cleanSQL(op.buildSelect(quoteIdentifier(table.name), schema));
   await queryDB(
     table,
-    `CREATE OR REPLACE TABLE "${table.name}" AS ${select}`,
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS ${select}`,
     mergeOptions(table, {
       table: table.name,
       method: op.method,
       parameters: op.parameters,
+      values: resolveValues(op, schema),
       noClean: true,
     }),
   );
+}
+
+function resolveValues(op: FusableOp, schema: TableSchema) {
+  return typeof op.values === "function" ? op.values(schema) : op.values ?? [];
 }
 
 /**
@@ -370,13 +385,13 @@ async function runStepwise(
  */
 async function describeChain(
   table: SimpleTable,
-  ctes: { alias: string; select: string }[],
+  ctes: CompiledCte[],
 ): Promise<TableSchema> {
   const query = ctes.length === 0
-    ? `DESCRIBE "${table.name}"`
+    ? `DESCRIBE ${quoteIdentifier(table.name)}`
     : `DESCRIBE WITH ${
-      ctes.map((c) => `${c.alias} AS (${c.select})`).join(", ")
-    } SELECT * FROM ${ctes[ctes.length - 1].alias}`;
+      ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select})`).join(", ")
+    } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
   const types = await queryDB(
     table,
     query,
@@ -385,6 +400,7 @@ async function describeChain(
       method: null,
       parameters: null,
       returnData: true,
+      values: ctes.flatMap((cte) => cte.values),
       noClean: true,
     }),
   );

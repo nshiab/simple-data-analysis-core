@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -16,7 +17,9 @@ export default function intersect(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "intersect()");
-      return `SELECT *, CAST(ST_Intersects("${column1}", "${column2}") AS BOOLEAN) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST(ST_Intersects(${quoteIdentifier(column1)}, ${
+        quoteIdentifier(column2)
+      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

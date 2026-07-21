@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -12,6 +13,7 @@ export default function crossJoin(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   // The output table instance is created at call time so it can be returned
@@ -42,14 +44,18 @@ async function executeCrossJoin(
   if (identicalColumns.length > 0) {
     throw new Error(
       `The tables have columns with identical names. Rename or remove ${
-        identicalColumns.map((d) => `"${d}"`).join(", ")
+        identicalColumns.map((d) => `${quoteIdentifier(d)}`).join(", ")
       } in one of the two tables before doing the cross join.`,
     );
   }
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE "${outputTable.name}" AS SELECT "${simpleTable.name}".*, "${rightTable.name}".* FROM "${simpleTable.name}" CROSS JOIN "${rightTable.name}";`,
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS SELECT ${
+      quoteIdentifier(simpleTable.name)
+    }.*, ${quoteIdentifier(rightTable.name)}.* FROM ${
+      quoteIdentifier(simpleTable.name)
+    } CROSS JOIN ${quoteIdentifier(rightTable.name)};`,
     mergeOptions(simpleTable, {
       table: outputTable.name,
       method: "crossJoin()",

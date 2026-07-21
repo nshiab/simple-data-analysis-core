@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
 import removeMissing from "../methods/removeMissing.ts";
@@ -220,7 +221,6 @@ export default class SimpleTable extends Simple {
    * @param name - The name of the table.
    * @param simpleDB - The SimpleDB instance that this table belongs to.
    * @param options - An optional object with configuration options:
-   * @param options.debug - A boolean indicating whether to enable debug mode.
    * @param options.rowsToLog - The number of rows to log when displaying table data.
    * @param options.charsToLog - The maximum number of characters to log for strings. Useful to avoid logging large text content.
    * @param options.typesToLog - A boolean indicating whether to include data types when logging a table.
@@ -230,7 +230,6 @@ export default class SimpleTable extends Simple {
     name: string,
     simpleDB: SimpleDB,
     options: {
-      debug?: boolean;
       rowsToLog?: number;
       charsToLog?: number;
       typesToLog?: boolean;
@@ -1243,7 +1242,7 @@ export default class SimpleTable extends Simple {
    * Sorts the rows of the table based on specified column(s) and order(s).
    * If no columns are specified, all columns are sorted from left to right in ascending order.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. Methods queued after a sort are fused with it into a single query and may not preserve its row order, so call sort last in a chain of transformations.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. Order-preserving transformations queued after a sort retain that order. Operations such as joins, grouping, aggregation, and sampling do not guarantee input order; chain `sort()` after them when deterministic output order matters.
    *
    * @param order - An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
    * @param options - An optional object with configuration options:
@@ -1758,7 +1757,9 @@ export default class SimpleTable extends Simple {
       buildSelect: (input, schema) =>
         `SELECT * RENAME (${
           Object.keys(schema)
-            .map((col) => `"${col}" AS "${camelCase(col)}"`)
+            .map((col) =>
+              `${quoteIdentifier(col)} AS ${quoteIdentifier(camelCase(col))}`
+            )
             .join(", ")
         }) FROM ${input}`,
     });
@@ -2142,6 +2143,10 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): this {
+    options = {
+      ...options,
+      on: Array.isArray(options.on) ? [...options.on] : options.on,
+    };
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
@@ -2224,6 +2229,7 @@ export default class SimpleTable extends Simple {
       preFilterPrefixLen?: number;
     } = {},
   ): this {
+    options = { ...options };
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
@@ -5124,6 +5130,7 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): this {
+    options = { ...options };
     if (options.outputTable === true) {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
@@ -5971,7 +5978,9 @@ export default class SimpleTable extends Simple {
       const nbRows = conditions
         ? parseInt(
           (await this.sdb.customQuery(
-            `select count(*) as count from "${this.name}" where ${conditions}`,
+            `select count(*) as count from ${
+              quoteIdentifier(this.name)
+            } where ${conditions}`,
             { returnData: true },
           ) as { count: string }[])[0].count,
         )
@@ -6028,6 +6037,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async logDescription(): Promise<this> {
+    await this.run();
     if (
       this.connection === undefined ||
       !(await this.sdb.hasTable(this.name))
@@ -6055,7 +6065,9 @@ export default class SimpleTable extends Simple {
    */
   async getProjection(column: string): Promise<string> {
     const res = (await this.sdb.customQuery(
-      `SELECT ST_CRS("${column}") AS proj FROM "${this.name}" LIMIT 1;`,
+      `SELECT ST_CRS(${quoteIdentifier(column)}) AS proj FROM ${
+        quoteIdentifier(this.name)
+      } LIMIT 1;`,
       { returnData: true },
     ) as { proj: string | null }[])[0];
     const proj = res && res.proj !== "null" ? res.proj : null;
@@ -6087,7 +6099,7 @@ export default class SimpleTable extends Simple {
     } else {
       for (const column of geoColumns) {
         const projection = types[column];
-        console.log(`- Column "${column}": ${projection}`);
+        console.log(`- Column ${quoteIdentifier(column)}: ${projection}`);
       }
     }
 

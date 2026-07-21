@@ -1,4 +1,5 @@
-import cleanPath from "../helpers/cleanPath.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import getExtension from "../helpers/getExtension.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -35,6 +36,8 @@ export default function loadData(
     sheet?: string;
   } = {},
 ) {
+  files = Array.isArray(files) ? [...files] : files;
+  options = structuredClone(options);
   // Building the query doesn't need the database, so invalid arguments
   // (like the columns option with an Excel file) throw at call time.
   const query = loadDataQuery(simpleTable.name, stringToArray(files), options);
@@ -87,7 +90,9 @@ export function loadDataQuery(
   } = {},
 ) {
   const fileExtension = getExtension(files[0]);
-  const filesAsString = JSON.stringify(files.map((d) => cleanPath(d)));
+  const filesAsString = "[" +
+    files.map((file) => parseValue(file)).join(", ") +
+    "]";
 
   // Column selection: throw for Excel, build SELECT list for others
   const isExcel = options.fileType === "excel" || fileExtension === "xlsx";
@@ -97,7 +102,7 @@ export function loadDataQuery(
     );
   }
   const selectColumns = options.columns && options.columns.length > 0
-    ? options.columns.map((c) => `"${c}"`).join(", ")
+    ? options.columns.map((c) => `${quoteIdentifier(c)}`).join(", ")
     : "*";
 
   // General options, except for parquet
@@ -105,13 +110,17 @@ export function loadDataQuery(
     ? `, auto_detect=${String(options.autoDetect).toUpperCase()}`
     : ", auto_detect=TRUE";
   const columnTypes = options.columnTypes
-    ? `, columns=${JSON.stringify(options.columnTypes)}`
+    ? `, columns={${
+      Object.entries(options.columnTypes).map(([column, type]) =>
+        `${parseValue(column)}: ${parseValue(type)}`
+      ).join(", ")
+    }}`
     : "";
   const fileName = typeof options.fileName === "boolean"
     ? `, filename=${String(options.fileName).toUpperCase()}`
     : "";
   const unifyColumns = typeof options.unifyColumns === "boolean"
-    ? `, union_by_name='${String(options.unifyColumns).toUpperCase()}'`
+    ? `, union_by_name=${String(options.unifyColumns).toUpperCase()}`
     : "";
   const generalOptions =
     `${autoDetect}${columnTypes}${fileName}${unifyColumns}`;
@@ -132,7 +141,7 @@ export function loadDataQuery(
     const allText = typeof options.allText === "boolean"
       ? `, all_varchar=${String(options.allText).toUpperCase()}`
       : "";
-    const delim = options.delim ? `, delim='${options.delim}'` : "";
+    const delim = options.delim ? `, delim=${parseValue(options.delim)}` : "";
     const skip = options.skip ? `, skip=${options.skip}` : "";
     const ignoreErrors = options.ignoreErrors
       ? `, ignore_errors	=${options.ignoreErrors}`
@@ -141,30 +150,36 @@ export function loadDataQuery(
       ? `, null_padding=${options.nullPadding}`
       : "";
     const compression = options.compression
-      ? `, compression=${options.compression}`
+      ? `, compression=${parseValue(options.compression)}`
       : "";
-    const encoding = options.encoding ? `, encoding='${options.encoding}'` : "";
+    const encoding = options.encoding
+      ? `, encoding=${parseValue(options.encoding)}`
+      : "";
     const strict = options.strict === false ? `, strict_mode=FALSE` : "";
 
-    return `CREATE OR REPLACE TABLE "${table}"
+    return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)}
             AS SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit};`;
   } else if (options.fileType === "json" || fileExtension === "json") {
     // DuckDB expects "newline_delimited" (snake_case), unlike the other two
     // format values, which already match the public camelCase option.
     const jsonFormat = options.jsonFormat
-      ? `, format='${
-        options.jsonFormat === "newlineDelimited"
-          ? "newline_delimited"
-          : options.jsonFormat
-      }'`
+      ? `, format=${
+        parseValue(
+          options.jsonFormat === "newlineDelimited"
+            ? "newline_delimited"
+            : options.jsonFormat,
+        )
+      }`
       : "";
     const records = typeof options.records === "boolean"
       ? `, records=${String(options.records).toUpperCase()}`
       : "";
-    return `CREATE OR REPLACE TABLE "${table}"
+    return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)}
             AS SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${jsonFormat}${records})${limit};`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
-    return `CREATE OR REPLACE TABLE "${table}" AS SELECT ${selectColumns} FROM read_parquet(${filesAsString}${fileName}${unifyColumns})${limit};`;
+    return `CREATE OR REPLACE TABLE ${
+      quoteIdentifier(table)
+    } AS SELECT ${selectColumns} FROM read_parquet(${filesAsString}${fileName}${unifyColumns})${limit};`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {
     if (files.length > 1) {
       throw new Error(
@@ -179,10 +194,10 @@ export function loadDataQuery(
       ? `, all_varchar=${String(options.allText).toUpperCase()}`
       : "";
 
-    return `CREATE OR REPLACE TABLE "${table}" AS SELECT ${selectColumns} FROM read_xlsx('${
-      files[0]
-    }'${
-      options.sheet ? `, sheet='${options.sheet}'` : ""
+    return `CREATE OR REPLACE TABLE ${
+      quoteIdentifier(table)
+    } AS SELECT ${selectColumns} FROM read_xlsx(${parseValue(files[0])}${
+      options.sheet ? `, sheet=${parseValue(options.sheet)}` : ""
     }${header}${allText});`;
   } else {
     throw new Error(

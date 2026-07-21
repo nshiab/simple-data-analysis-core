@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -10,6 +11,8 @@ export default function rowProportions(
     decimals?: number;
   } = {},
 ) {
+  columns = [...columns];
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "rowProportions()",
@@ -26,15 +29,15 @@ export default function rowProportions(
       let query = `SELECT *,`;
 
       for (const col of columns) {
-        const tempQuery = `"${col}" / (${
-          columns.map((d) => `"${d}"`).join(" + ")
+        const tempQuery = `${quoteIdentifier(col)} / (${
+          columns.map((d) => `${quoteIdentifier(d)}`).join(" + ")
         })`;
         if (typeof options.decimals === "number") {
           query += ` ROUND(${tempQuery}, ${options.decimals})`;
         } else {
           query += ` ${tempQuery}`;
         }
-        query += ` AS "${col}${suffix}",`;
+        query += ` AS ${quoteIdentifier(`${col}${suffix}`)},`;
       }
 
       query += `FROM ${input}`;

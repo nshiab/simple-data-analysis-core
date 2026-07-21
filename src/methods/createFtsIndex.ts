@@ -1,5 +1,7 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import camelCase from "../helpers/camelCase.ts";
 import queueOp from "../helpers/queueOp.ts";
+import parseValue from "../helpers/parseValue.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function createFtsIndex(
@@ -45,6 +47,7 @@ export default function createFtsIndex(
   } = {},
 ) {
   // Index creation is multi-statement by nature: it executes as a barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "createFtsIndex()",
@@ -78,11 +81,13 @@ export async function executeCreateFtsIndex(
   if (indexExists && options.overwrite) {
     options.verbose &&
       console.log(
-        `\nDropping existing FTS index on "${textColumn}" column...`,
+        `\nDropping existing FTS index on ${
+          quoteIdentifier(textColumn)
+        } column...`,
       );
 
     await simpleTable.sdb.customQuery(
-      `PRAGMA drop_fts_index("${simpleTable.name}");`,
+      `PRAGMA drop_fts_index(${quoteIdentifier(simpleTable.name)});`,
     );
 
     options.verbose && console.log("FTS index dropped.");
@@ -91,15 +96,19 @@ export async function executeCreateFtsIndex(
   if (!indexExists || options.overwrite) {
     options.verbose &&
       console.log(
-        `\nCreating FTS index on "${textColumn}" column...`,
+        `\nCreating FTS index on ${quoteIdentifier(textColumn)} column...`,
       );
 
     await simpleTable.sdb.customQuery(
-      `PRAGMA create_fts_index("${simpleTable.name}", "${idColumn}", "${textColumn}"${
-        options.stemmer ? `, stemmer = '${options.stemmer}'` : ""
-      }${options.stopwords ? `, stopwords = '${options.stopwords}'` : ""}${
-        options.ignore ? `, ignore = '${options.ignore}'` : ""
+      `PRAGMA create_fts_index(${quoteIdentifier(simpleTable.name)}, ${
+        quoteIdentifier(idColumn)
+      }, ${quoteIdentifier(textColumn)}${
+        options.stemmer ? `, stemmer = ${parseValue(options.stemmer)}` : ""
       }${
+        options.stopwords
+          ? `, stopwords = ${parseValue(options.stopwords)}`
+          : ""
+      }${options.ignore ? `, ignore = ${parseValue(options.ignore)}` : ""}${
         typeof options.stripAccents === "boolean"
           ? `, strip_accents = ${options.stripAccents ? 1 : 0}`
           : ""

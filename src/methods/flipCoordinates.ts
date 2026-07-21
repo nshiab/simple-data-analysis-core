@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -19,9 +20,9 @@ export default function flipCoordinates(
       const col = column ?? findGeoColumnFromSchema(types);
       // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
       // so the cast keeps it on the new geometries.
-      return `SELECT * REPLACE (ST_FlipCoordinates("${col}")::${
+      return `SELECT * REPLACE (ST_FlipCoordinates(${quoteIdentifier(col)})::${
         types[col]
-      } AS "${col}") FROM ${input}`;
+      } AS ${quoteIdentifier(col)}) FROM ${input}`;
     },
   });
 }

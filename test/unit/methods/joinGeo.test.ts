@@ -425,10 +425,11 @@ Deno.test("should log a table after a joinGeo", async () => {
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
-  const _firesInsideProvinces = fires.joinGeo(provinces, "inside", {
+  const firesInsideProvinces = fires.joinGeo(provinces, "inside", {
     outputTable: "firesInsideProvinces",
   });
   // await firesInsideProvinces.logTable();
 
+  await firesInsideProvinces.run();
   await sdb.done();
 });

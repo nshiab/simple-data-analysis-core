@@ -9,7 +9,7 @@ export default function cleanCache(sdb: SimpleDB) {
     for (const cacheId of Object.keys(cacheSources)) {
       if (!sdb.cacheSourcesUsed.includes(cacheId)) {
         if (cacheSources[cacheId].file !== null) {
-          sdb.debug &&
+          sdb.cacheVerbose &&
             console.log(
               `Removing unused file from cache: ${cacheSources[cacheId].file}`,
             );

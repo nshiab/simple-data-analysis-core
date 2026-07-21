@@ -1,15 +1,13 @@
-import type { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
+import type {
+  DuckDBConnection,
+  DuckDBInstance,
+  DuckDBValue,
+} from "@duckdb/node-api";
 
 /**
  * An abstract base class providing common properties for SimpleDB and SimpleTable. This class is not intended for direct instantiation.
  */
 export default class Simple {
-  /**
-   * A flag indicating whether to log debugging information.
-   *
-   * @defaultValue `false`
-   */
-  debug: boolean;
   /**
    * The number of rows to display when logging a table.
    *
@@ -43,17 +41,36 @@ export default class Simple {
    */
   defaultTableName: boolean;
   /**
-   * A function for running SQL queries. This is for internal use only. To run a custom SQL query, use the SimpleDB.customQuery method.
+   * A function for running SQL queries. Subclasses can wrap this seam to observe
+   * execution while forwarding every argument. To run custom SQL, use
+   * `SimpleDB.customQuery()` instead.
+   *
+   * @param query - The exact SQL statement to execute.
+   * @param connection - The DuckDB connection that executes the statement.
+   * @param returnData - Whether to convert and return result rows.
+   * @param options - Error-attribution, binding, and observability options.
+   * @returns The converted rows when requested, otherwise `null`.
+   *
+   * @example
+   * ```ts
+   * const original = table.runQuery;
+   * table.runQuery = (query, connection, returnData, options) => {
+   *   console.log(query);
+   *   return original(query, connection, returnData, options);
+   * };
+   * ```
    */
   runQuery!: (
     query: string,
     connection: DuckDBConnection,
     returnData: boolean,
     options: {
-      debug: boolean;
       method: string | null;
       parameters: { [key: string]: unknown } | null;
       table?: string | null;
+      values?: DuckDBValue[];
+      logSQL: boolean;
+      explainSQL: boolean;
     },
   ) => Promise<
     | {
@@ -64,7 +81,6 @@ export default class Simple {
 
   constructor(
     options: {
-      debug?: boolean;
       rowsToLog?: number;
       charsToLog?: number;
       typesToLog?: boolean;
@@ -73,7 +89,6 @@ export default class Simple {
     this.rowsToLog = options.rowsToLog ?? 10;
     this.charsToLog = options.charsToLog;
     this.typesToLog = options.typesToLog ?? false;
-    this.debug = options.debug ?? false;
     this.defaultTableName = false;
   }
 }

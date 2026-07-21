@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -12,6 +13,7 @@ export default function quantiles(
     categories?: string | string[];
   } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "quantiles()",
@@ -26,9 +28,13 @@ export default function quantiles(
 
       const partition = categories.length === 0
         ? ""
-        : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
+        : `PARTITION BY ${
+          categories.map((d) => `${quoteIdentifier(d)}`).join(",")
+        } `;
 
-      return `SELECT *, ntile(${nbQuantiles}) OVER (${partition}ORDER BY "${column}") AS "${newColumn}"
+      return `SELECT *, ntile(${nbQuantiles}) OVER (${partition}ORDER BY ${
+        quoteIdentifier(column)
+      }) AS ${quoteIdentifier(newColumn)}
     FROM ${input}`;
     },
   });

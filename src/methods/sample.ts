@@ -8,6 +8,7 @@ export default function sample(
     seed?: number;
   } = {},
 ) {
+  options = { ...options };
   queueOp(simpleTable, {
     kind: "fusable",
     method: "sample()",

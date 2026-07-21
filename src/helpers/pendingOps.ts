@@ -1,3 +1,5 @@
+import type { DuckDBValue } from "@duckdb/node-api";
+
 /**
  * The types of a table's schema, as returned by DESCRIBE: column names mapped
  * to DuckDB types (e.g., { name: "VARCHAR", salary: "BIGINT" }).
@@ -41,6 +43,8 @@ export type FusableOp = {
    * one.
    */
   rawSQL?: string[];
+  /** Data values bound to placeholders in this operation's SELECT. */
+  values?: DuckDBValue[] | ((schema: TableSchema) => DuckDBValue[]);
   /**
    * Whether the SELECT returns exactly the schema of its input (same columns,
    * same types), like `SELECT * REPLACE` with type-preserving expressions.

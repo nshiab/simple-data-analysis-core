@@ -1,6 +1,7 @@
-import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
 export default function removeValues(
   simpleTable: SimpleTable,
@@ -10,12 +11,22 @@ export default function removeValues(
       | (number | string | Date | boolean | null);
   },
 ) {
+  const captured = Object.fromEntries(
+    Object.entries(columnsAndValues).map(([column, values]) => [
+      column,
+      Array.isArray(values) ? [...values] : values,
+    ]),
+  ) as typeof columnsAndValues;
+  const values = Object.values(captured).flatMap((value) =>
+    (Array.isArray(value) ? value : [value]).map(toDuckDBValue)
+  );
   queueOp(simpleTable, {
     kind: "fusable",
     method: "removeValues()",
-    parameters: { columnsAndValues },
+    parameters: { columnsAndValues: captured },
+    values,
     needsSchema: false,
-    buildSelect: (input) => removeValuesSelect(input, columnsAndValues),
+    buildSelect: (input) => removeValuesSelect(input, captured),
   });
 }
 
@@ -38,7 +49,7 @@ function removeValuesSelect(
     }
 
     conditions.push(
-      `"${column}" NOT IN (${values.map((d) => parseValue(d)).join(", ")})`,
+      `${quoteIdentifier(column)} NOT IN (${values.map(() => "?").join(", ")})`,
     );
   }
 

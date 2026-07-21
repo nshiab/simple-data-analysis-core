@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertColumnsExist from "../helpers/assertColumnsExist.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -14,6 +15,8 @@ export default function renameColumns(
   // strict: false skips both the check and its DESCRIBE round-trip.
   const strict = options.strict !== false;
 
+  names = { ...names };
+  options = { ...options };
   queueOp(simpleTable, {
     kind: "fusable",
     method: "renameColumns()",
@@ -25,7 +28,9 @@ export default function renameColumns(
       }
       return `SELECT * RENAME (${
         oldNames
-          .map((d, i) => `"${d}" AS "${newNames[i]}"`)
+          .map((d, i) =>
+            `${quoteIdentifier(d)} AS ${quoteIdentifier(newNames[i])}`
+          )
           .join(", ")
       }) FROM ${input}`;
     },

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -13,6 +14,8 @@ export default function splitSpread(
     strict?: boolean;
   } = {},
 ) {
+  newColumns = [...newColumns];
+  options = structuredClone(options);
   // The pre-validation queries the data, so splitSpread can't be expressed
   // as a single SELECT over its input: it executes as a barrier.
   queueOp(simpleTable, {
@@ -46,14 +49,19 @@ async function executeSplitSpread(
     const partsResult = await queryDB(
       simpleTable,
       `SELECT
-        MAX(ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}'))) AS max_parts,
-        MIN(ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}'))) AS min_parts
-      FROM "${simpleTable.name}"`,
+        MAX(ARRAY_LENGTH(STRING_SPLIT(${
+        quoteIdentifier(column)
+      }, ?))) AS max_parts,
+        MIN(ARRAY_LENGTH(STRING_SPLIT(${
+        quoteIdentifier(column)
+      }, ?))) AS min_parts
+      FROM ${quoteIdentifier(simpleTable.name)}`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "splitSpread()",
         parameters: { column, separator, newColumns },
         returnData: true,
+        values: [separator, separator],
       }),
     );
 
@@ -65,15 +73,18 @@ async function executeSplitSpread(
         // Get the first 5 rows with more parts than expected
         const problematicRows = await queryDB(
           simpleTable,
-          `SELECT "${column}"
-         FROM "${simpleTable.name}"
-         WHERE ARRAY_LENGTH(STRING_SPLIT("${column}", '${separator}')) > ${nbParts}
+          `SELECT ${quoteIdentifier(column)}
+         FROM ${quoteIdentifier(simpleTable.name)}
+         WHERE ARRAY_LENGTH(STRING_SPLIT(${
+            quoteIdentifier(column)
+          }, ?)) > ${nbParts}
          LIMIT 5`,
           mergeOptions(simpleTable, {
             table: simpleTable.name,
             method: "splitSpread()",
             parameters: { column, separator, newColumns },
             returnData: true,
+            values: [separator],
           }),
         );
 
@@ -99,13 +110,20 @@ First 5 rows with too many values:\n  - ${exampleRows}`,
     }
   }
 
+  const split = splitSpreadQuery(
+    simpleTable.name,
+    column,
+    separator,
+    newColumns,
+  );
   await queryDB(
     simpleTable,
-    splitSpreadQuery(simpleTable.name, column, separator, newColumns),
+    split.query,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "splitSpread()",
       parameters: { column, separator, newColumns },
+      values: split.values,
     }),
   );
 }
@@ -115,15 +133,20 @@ function splitSpreadQuery(
   column: string,
   separator: string,
   newColumns: string[],
-) {
+): { query: string; values: string[] } {
   // All columns are added in a single rewrite, so the table is scanned once
   // instead of once per ALTER + once per UPDATE.
   const splitColumns = newColumns
     .map(
       (col, i) =>
-        `SPLIT_PART("${column}", '${separator}', ${i + 1}) AS "${col}"`,
+        `SPLIT_PART(${quoteIdentifier(column)}, ?, ${i + 1}) AS ${
+          quoteIdentifier(col)
+        }`,
     )
     .join(", ");
 
-  return `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ${splitColumns} FROM "${table}"`;
+  const query = `CREATE OR REPLACE TABLE ${
+    quoteIdentifier(table)
+  } AS SELECT *, ${splitColumns} FROM ${quoteIdentifier(table)}`;
+  return { query, values: newColumns.map(() => separator) };
 }

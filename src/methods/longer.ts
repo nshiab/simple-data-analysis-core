@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -8,6 +9,7 @@ export default function longer(
   namesTo: string,
   valuesTo: string,
 ) {
+  columns = [...columns];
   queueOp(simpleTable, {
     kind: "fusable",
     method: "longer()",
@@ -20,8 +22,10 @@ export default function longer(
 
       return `SELECT * FROM (
             FROM ${input} UNPIVOT INCLUDE NULLS (
-            "${valuesTo}"
-            for "${namesTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
+            ${quoteIdentifier(valuesTo)}
+            for ${quoteIdentifier(namesTo)} in (${
+        columns.map((d) => `${quoteIdentifier(d)}`).join(", ")
+      })
             )
         )`;
     },

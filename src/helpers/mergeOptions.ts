@@ -8,7 +8,7 @@ export default function mergeOptions(
     parameters: { [key: string]: unknown } | null;
     rowsToLog?: number;
     returnData?: boolean;
-    debug?: boolean;
+    values?: import("@duckdb/node-api").DuckDBValue[];
     noClean?: boolean;
   },
 ): {
@@ -18,7 +18,7 @@ export default function mergeOptions(
   rowsToLog: number;
   charsToLog: number | undefined;
   returnData: boolean;
-  debug: boolean;
+  values?: import("@duckdb/node-api").DuckDBValue[];
   noClean?: boolean;
 } {
   return {
@@ -28,7 +28,7 @@ export default function mergeOptions(
     rowsToLog: options.rowsToLog ?? simple.rowsToLog,
     charsToLog: simple.charsToLog,
     returnData: options.returnData ?? false,
-    debug: options.debug ?? simple.debug,
+    values: options.values,
     noClean: options.noClean,
   };
 }

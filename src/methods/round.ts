@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -29,8 +30,10 @@ export default function round(
         cols
           .map((c) =>
             method === "ROUND"
-              ? `${method}("${c}", ${decimals}) AS "${c}"`
-              : `${method}("${c}") AS "${c}"`
+              ? `${method}(${quoteIdentifier(c)}, ${decimals}) AS ${
+                quoteIdentifier(c)
+              }`
+              : `${method}(${quoteIdentifier(c)}) AS ${quoteIdentifier(c)}`
           )
           .join(", ")
       }) FROM ${input}`,

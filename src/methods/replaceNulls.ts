@@ -1,13 +1,18 @@
-import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
 export default function replaceNulls(
   simpleTable: SimpleTable,
   columns: "all" | string | string[],
   value: number | string | Date | boolean,
 ) {
+  columns = Array.isArray(columns) ? [...columns] : columns;
+  const capturedValue = value instanceof Date
+    ? new Date(value.getTime())
+    : value;
   queueOp(simpleTable, {
     kind: "fusable",
     method: "replaceNulls()",
@@ -18,18 +23,23 @@ export default function replaceNulls(
     // reproduce that.
     needsSchema: true,
     preservesSchema: true,
-    parameters: { columns, value },
+    parameters: { columns, value: capturedValue },
+    values: (schema) => {
+      const columnList = columns === "all"
+        ? Object.keys(schema)
+        : stringToArray(columns);
+      return columnList.map(() => toDuckDBValue(capturedValue));
+    },
     buildSelect: (input, schema) => {
       const columnList = columns === "all"
         ? Object.keys(schema)
         : stringToArray(columns);
-      const valueParsed = parseValue(value);
       return `SELECT * REPLACE (${
         columnList
           .map((column) =>
-            `COALESCE("${column}", CAST(${valueParsed} AS ${
+            `COALESCE(${quoteIdentifier(column)}, CAST(? AS ${
               schema[column]
-            })) AS "${column}"`
+            })) AS ${quoteIdentifier(column)}`
           )
           .join(", ")
       }) FROM ${input}`;

@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import parseType from "../helpers/parseTypes.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -27,11 +28,21 @@ export default function convert(
     datetimeFormat?: string;
   } = {},
 ) {
+  types = structuredClone(types);
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "convert()",
     parameters: { types, options },
     needsSchema: true,
+    values: (allTypes) =>
+      getDatetimeFormatValues(
+        Object.keys(types),
+        Object.values(types),
+        Object.keys(allTypes),
+        allTypes,
+        options,
+      ),
     buildSelect: (input, allTypes) => {
       const allColumns = Object.keys(allTypes);
 
@@ -85,7 +96,7 @@ export function convertSelect(
   for (const column of allColumns) {
     const indexOf = columns.indexOf(column);
     if (indexOf === -1) {
-      query += ` "${column}",`;
+      query += ` ${quoteIdentifier(column)},`;
     } else {
       const expectedType = parseType(columnsTypes[indexOf]);
       const currentType = allTypes[column];
@@ -110,35 +121,44 @@ export function convertSelect(
         expectedType.includes("TIMESTAMP");
 
       if (datetimeFormatExist && stringToDate) {
-        query +=
-          ` strptime("${column}", '${options.datetimeFormat}') AS "${column}",`;
+        query += ` strptime(${quoteIdentifier(column)}, ?) AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (datetimeFormatExist && dateToString) {
-        query +=
-          ` strftime("${column}", '${options.datetimeFormat}') AS "${column}",`;
+        query += ` strftime(${quoteIdentifier(column)}, ?) AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (timeToMs) {
-        query += ` date_part('epoch', "${column}") * 1000 AS "${column}",`;
+        query += ` date_part('epoch', ${quoteIdentifier(column)}) * 1000 AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (dateToMs) {
-        query += ` epoch("${column}") * 1000 AS "${column}",`;
+        query += ` epoch(${quoteIdentifier(column)}) * 1000 AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (msToTime) {
-        query +=
-          ` TIME '00:00:00' + to_milliseconds("${column}") AS "${column}",`;
+        query += ` TIME '00:00:00' + to_milliseconds(${
+          quoteIdentifier(column)
+        }) AS ${quoteIdentifier(column)},`;
       } else if (msToDate) {
-        query +=
-          ` DATE '1970-01-01' + to_milliseconds("${column}") AS "${column}",`;
+        query += ` DATE '1970-01-01' + to_milliseconds(${
+          quoteIdentifier(column)
+        }) AS ${quoteIdentifier(column)},`;
       } else if (msToTimestamp) {
-        query +=
-          ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds("${column}") AS "${column}",`;
+        query += ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds(${
+          quoteIdentifier(column)
+        }) AS ${quoteIdentifier(column)},`;
       } else if (stringToNumber) {
         // Thousand separators would make the cast fail.
-        query += ` ${cast}(REPLACE("${column}", ',', '') AS ${
+        query += ` ${cast}(REPLACE(${quoteIdentifier(column)}, ',', '') AS ${
           parseType(columnsTypes[indexOf])
-        }) AS "${column}",`;
+        }) AS ${quoteIdentifier(column)},`;
       } else {
-        query += ` ${cast}("${columns[indexOf]}" AS ${
+        query += ` ${cast}(${quoteIdentifier(columns[indexOf])} AS ${
           parseType(
             columnsTypes[indexOf],
           )
-        }) AS "${columns[indexOf]}",`;
+        }) AS ${quoteIdentifier(columns[indexOf])},`;
       }
     }
   }
@@ -147,4 +167,45 @@ export function convertSelect(
   query += ` FROM ${input}`;
 
   return query;
+}
+
+function getDatetimeFormatValues(
+  columns: string[],
+  columnsTypes: (
+    | "integer"
+    | "float"
+    | "number"
+    | "string"
+    | "date"
+    | "time"
+    | "datetime"
+    | "datetimeTz"
+    | "bigint"
+    | "double"
+    | "varchar"
+    | "timestamp"
+    | "timestamp with time zone"
+    | "boolean"
+  )[],
+  allColumns: string[],
+  allTypes: TableSchema,
+  options: { datetimeFormat?: string },
+): string[] {
+  const datetimeFormat = options.datetimeFormat;
+  if (typeof datetimeFormat !== "string") {
+    return [];
+  }
+  return allColumns.flatMap((column) => {
+    const index = columns.indexOf(column);
+    if (index === -1) {
+      return [];
+    }
+    const currentType = allTypes[column];
+    const expectedType = parseType(columnsTypes[index]);
+    const stringToDate = currentType === "VARCHAR" &&
+      (expectedType.includes("TIME") || expectedType.includes("DATE"));
+    const dateToString = (currentType.includes("DATE") ||
+      currentType.includes("TIME")) && expectedType === "VARCHAR";
+    return stringToDate || dateToString ? [datetimeFormat] : [];
+  });
 }

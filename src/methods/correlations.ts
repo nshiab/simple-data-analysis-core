@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getCombinations from "../helpers/getCombinations.ts";
 import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -18,6 +19,7 @@ export default function correlations(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 
   if (typeof options.outputTable === "string") {
@@ -35,9 +37,9 @@ export default function correlations(
         );
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE "${outputTable.name}" AS ${
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
             correlationsSelect(
-              `"${simpleTable.name}"`,
+              `${quoteIdentifier(simpleTable.name)}`,
               combinations,
               options,
             )
@@ -49,6 +51,7 @@ export default function correlations(
               options,
               "combinations (computed)": combinations,
             },
+            values: correlationsValues(combinations),
           }),
         );
       },
@@ -61,6 +64,8 @@ export default function correlations(
     method: "correlations()",
     parameters: { options },
     needsSchema: true,
+    values: (types) =>
+      correlationsValues(getCorrelationsCombinations(types, options)),
     buildSelect: (input, types) =>
       correlationsSelect(
         input,
@@ -69,6 +74,12 @@ export default function correlations(
       ),
   });
   return simpleTable;
+}
+
+function correlationsValues(
+  combinations: [string, string][],
+): string[] {
+  return combinations.flatMap(([x, y]) => [x, y]);
 }
 
 function getCorrelationsCombinations(
@@ -109,10 +120,10 @@ function correlationsSelect(
 
   const groupBy = categories.length === 0
     ? ""
-    : ` GROUP BY ${categories.map((d) => `"${d}"`).join(",")}`;
+    : ` GROUP BY ${categories.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
 
   const catSelect = categories.length > 0
-    ? `${categories.map((d) => `"${d}"`).join(",")}, `
+    ? `${categories.map((d) => `${quoteIdentifier(d)}`).join(",")}, `
     : "";
 
   // One UNION ALL branch per pair (each with a distinct pair of literals, so
@@ -121,11 +132,13 @@ function correlationsSelect(
   // computing them all in one scan.
   const branches = combinations.map((comb) => {
     const expression = typeof options.decimals === "number"
-      ? `ROUND(corr("${comb[0]}", "${comb[1]}"), ${options.decimals})`
-      : `corr("${comb[0]}", "${comb[1]}")`;
-    return `SELECT ${catSelect}'${comb[0]}' AS x, '${
-      comb[1]
-    }' AS y, ${expression} as "corr" FROM ${input}${groupBy}`;
+      ? `ROUND(corr(${quoteIdentifier(comb[0])}, ${
+        quoteIdentifier(comb[1])
+      }), ${options.decimals})`
+      : `corr(${quoteIdentifier(comb[0])}, ${quoteIdentifier(comb[1])})`;
+    return `SELECT ${catSelect}? AS ${quoteIdentifier("x")}, ? AS ${
+      quoteIdentifier("y")
+    }, ${expression} AS ${quoteIdentifier("corr")} FROM ${input}${groupBy}`;
   });
 
   return branches.join("\nUNION ALL\n");

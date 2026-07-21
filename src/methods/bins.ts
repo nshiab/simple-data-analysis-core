@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -16,6 +17,7 @@ export default function bins(
   // The intervals depend on the minimum and maximum values of the data, so
   // bins can't be expressed as a single SELECT over its input: it executes
   // as a barrier.
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "bins()",
@@ -57,7 +59,9 @@ async function binsQuery(
   // getMin/getMax query each.
   const minMax = await queryDB(
     SimpleTable,
-    `SELECT MIN("${column}") AS "min", MAX("${column}") AS "max" FROM "${SimpleTable.name}"`,
+    `SELECT MIN(${quoteIdentifier(column)}) AS "min", MAX(${
+      quoteIdentifier(column)
+    }) AS "max" FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       method: "bins()",
@@ -103,17 +107,19 @@ async function binsQuery(
     const start = i;
     const end = (i + interval - increment).toFixed(decimals);
     intervals.push(
-      `WHEN "${column}" >= ${start} AND "${column}" <= ${end} THEN '[${start}-${end}]'`,
+      `WHEN ${quoteIdentifier(column)} >= ${start} AND ${
+        quoteIdentifier(column)
+      } <= ${end} THEN '[${start}-${end}]'`,
     );
   }
 
   // A single rewrite, so the table is scanned once instead of once for the
   // ALTER and once for the UPDATE.
-  const query = `CREATE OR REPLACE TABLE "${SimpleTable.name}" AS
+  const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(SimpleTable.name)} AS
     SELECT *, CASE
     ${intervals.join("\n")}
-    END AS "${newColumn}"
-    FROM "${SimpleTable.name}"`;
+    END AS ${quoteIdentifier(newColumn)}
+    FROM ${quoteIdentifier(SimpleTable.name)}`;
 
   return query;
 }

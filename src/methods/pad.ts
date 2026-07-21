@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -12,6 +13,8 @@ export default function pad(
 ) {
   // The overflow pre-validation queries the data, so pad can't be expressed
   // as a single SELECT over its input: it executes as a barrier.
+  columns = Array.isArray(columns) ? [...columns] : columns;
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "pad()",
@@ -33,7 +36,7 @@ async function executePad(
   for (const column of columnList) {
     if (allTypes[column] !== "VARCHAR") {
       throw new Error(
-        `The column "${column}" is of type ${
+        `The column ${quoteIdentifier(column)} is of type ${
           allTypes[column]
         }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
       );
@@ -48,10 +51,12 @@ async function executePad(
       columnList
         .map(
           (column) =>
-            `COUNT(*) FILTER (WHERE LENGTH("${column}") > ${length}) AS "${column}"`,
+            `COUNT(*) FILTER (WHERE LENGTH(${
+              quoteIdentifier(column)
+            }) > ${length}) AS ${quoteIdentifier(column)}`,
         )
         .join(", ")
-    } FROM "${simpleTable.name}";`,
+    } FROM ${quoteIdentifier(simpleTable.name)};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "pad()",
@@ -63,18 +68,22 @@ async function executePad(
     const overflowCount = Number(overflowResult![0][column]);
     if (overflowCount > 0) {
       throw new Error(
-        `The column "${column}" has ${overflowCount} string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
+        `The column ${
+          quoteIdentifier(column)
+        } has ${overflowCount} string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
       );
     }
   }
 
+  const padded = padQuery(simpleTable.name, columnList, length, options);
   await queryDB(
     simpleTable,
-    padQuery(simpleTable.name, columnList, length, options),
+    padded.query,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "pad()",
       parameters: { columns, length, options },
+      values: padded.values,
     }),
   );
 }
@@ -84,23 +93,23 @@ function padQuery(
   columns: string[],
   length: number,
   options: { side?: "left" | "right"; character?: string },
-) {
+): { query: string; values: string[] } {
   const side = options.side ?? "left";
   const character = options.character ?? "0";
 
-  // Escape single quotes and wrap in single quotes for SQL
-  const escapedCharacter = character.replace(/'/g, "''");
-  const paddedCharacter = `'${escapedCharacter}'`;
   const func = side === "left" ? "LPAD" : "RPAD";
 
   // All columns are padded in a single UPDATE, so the table is rewritten
   // once instead of once per column.
-  return `UPDATE "${table}" SET ${
+  const query = `UPDATE ${quoteIdentifier(table)} SET ${
     columns
       .map(
         (column) =>
-          `"${column}" = ${func}("${column}", ${length}, ${paddedCharacter})`,
+          `${quoteIdentifier(column)} = ${func}(${
+            quoteIdentifier(column)
+          }, ${length}, ?)`,
       )
       .join(", ")
   };`;
+  return { query, values: columns.map(() => character) };
 }

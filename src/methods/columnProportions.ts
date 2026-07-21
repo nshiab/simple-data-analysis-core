@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -12,6 +13,7 @@ export default function columnProportions(
     decimals?: number;
   } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "columnProportions()",
@@ -26,11 +28,19 @@ export default function columnProportions(
 
       const partition = categories.length === 0
         ? ""
-        : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")}`;
+        : `PARTITION BY ${
+          categories.map((d) => `${quoteIdentifier(d)}`).join(",")
+        }`;
 
       return typeof options.decimals === "number"
-        ? `SELECT *, ROUND("${column}" / sum("${column}") OVER(${partition}), ${options.decimals}) AS "${newColumn}" FROM ${input}`
-        : `SELECT *, "${column}" / sum("${column}") OVER(${partition}) AS "${newColumn}" FROM ${input}`;
+        ? `SELECT *, ROUND(${quoteIdentifier(column)} / sum(${
+          quoteIdentifier(column)
+        }) OVER(${partition}), ${options.decimals}) AS ${
+          quoteIdentifier(newColumn)
+        } FROM ${input}`
+        : `SELECT *, ${quoteIdentifier(column)} / sum(${
+          quoteIdentifier(column)
+        }) OVER(${partition}) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

@@ -341,6 +341,7 @@ Deno.test("should throw an error when tables have conflicting column names", asy
   // it throws at call time.
   assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
+  await sdb.run();
   await sdb.done();
 });
 
@@ -353,5 +354,6 @@ Deno.test("should throw an error when leftColumn and rightColumn have the same n
 
   assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
+  await sdb.run();
   await sdb.done();
 });

@@ -85,6 +85,7 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
     "13 points could not be generated. Consider increasing tries or set options.strict to false.",
   );
 
+  await table.run();
   await sdb.done();
 });
 
@@ -123,6 +124,7 @@ Deno.test("randomPoint should throw an error if tries is less than 0", async () 
     "tries must be a number greater than or equal to 0",
   );
 
+  await table.run();
   await sdb.done();
 });
 
@@ -156,5 +158,6 @@ Deno.test("randomPoint should have similar performance with many more tries if i
     `Performance issue: 100k tries took ${duration100k}ms.`,
   );
 
+  await table.run();
   await sdb.done();
 });

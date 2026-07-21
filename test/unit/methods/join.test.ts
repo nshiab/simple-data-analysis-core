@@ -238,6 +238,33 @@ Deno.test("should join on multiple columns", async () => {
   categories.loadData("test/data/joins/projections.csv");
   dishes.join(categories, { on: ["city", "season"] });
 
+  await dishes.run();
+  await sdb.done();
+});
+
+Deno.test("join captures options without mutating caller-owned objects", async () => {
+  const sdb = new SimpleDB();
+  const left = sdb.newTable("capturedJoinLeft");
+  const right = sdb.newTable("capturedJoinRight");
+  left.loadArray([{ id: 1, left: "a" }]);
+  right.loadArray([{ id: 1, right: "b" }]);
+  const on = ["id"];
+  const options: {
+    on: string[];
+    type: "inner" | "left";
+    outputTable: boolean;
+  } = { on, type: "inner", outputTable: true };
+
+  const joined = left.join(right, options);
+  on[0] = "changed";
+  options.type = "left";
+
+  assertEquals(options, {
+    on: ["changed"],
+    type: "left",
+    outputTable: true,
+  });
+  assertEquals(await joined.getData(), [{ id: 1, left: "a", right: "b" }]);
   await sdb.done();
 });
 

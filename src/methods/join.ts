@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -13,6 +14,7 @@ export default function join(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
   const outputTable = typeof options.outputTable === "string"
@@ -69,17 +71,21 @@ async function executeJoin(
     if (identicalColumnsForError.length === 1) {
       throw new Error(
         `The tables have columns with identical names (excluding ${
-          on.map((d) => `"${d}"`).join(", ")
+          on.map((d) => `${quoteIdentifier(d)}`).join(", ")
         } used for the join). Rename or remove ${
-          identicalColumnsForError.map((d) => `"${d}"`).join(", ")
+          identicalColumnsForError.map((d) => `${quoteIdentifier(d)}`).join(
+            ", ",
+          )
         } in one of the two tables before doing the join. If relevant, you can also add it to the on option.`,
       );
     } else {
       throw new Error(
         `The tables have columns with identical names (excluding ${
-          on.map((d) => `"${d}"`).join(", ")
+          on.map((d) => `${quoteIdentifier(d)}`).join(", ")
         } used for the join). Rename or remove ${
-          identicalColumnsForError.map((d) => `"${d}"`).join(", ")
+          identicalColumnsForError.map((d) => `${quoteIdentifier(d)}`).join(
+            ", ",
+          )
         } in one of the two tables before doing the join. If relevant, you can also add them to the on option.`,
       );
     }
@@ -93,20 +99,28 @@ async function executeJoin(
   const type = options.type ?? "left";
   const joinColumn = (d: string) => {
     if (type === "right") {
-      return `"${rightTable.name}"."${d}" AS "${d}"`;
+      return `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)} AS ${
+        quoteIdentifier(d)
+      }`;
     }
     if (type === "full") {
-      return `COALESCE("${leftTable.name}"."${d}", "${rightTable.name}"."${d}") AS "${d}"`;
+      return `COALESCE(${quoteIdentifier(leftTable.name)}.${
+        quoteIdentifier(d)
+      }, ${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}) AS ${
+        quoteIdentifier(d)
+      }`;
     }
-    return `"${leftTable.name}"."${d}"`;
+    return `${quoteIdentifier(leftTable.name)}.${quoteIdentifier(d)}`;
   };
   const selectList = [
     ...leftTableColumns.map((d) =>
-      on.includes(d) ? joinColumn(d) : `"${leftTable.name}"."${d}"`
+      on.includes(d)
+        ? joinColumn(d)
+        : `${quoteIdentifier(leftTable.name)}.${quoteIdentifier(d)}`
     ),
     ...rightTableColumns
       .filter((d) => !on.includes(d))
-      .map((d) => `"${rightTable.name}"."${d}"`),
+      .map((d) => `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}`),
   ].join(", ");
 
   await queryDB(
@@ -138,23 +152,36 @@ function joinQuery(
   outputTable: string,
   selectList: string,
 ) {
-  let query =
-    `CREATE OR REPLACE TABLE "${outputTable}" AS SELECT ${selectList}`;
+  let query = `CREATE OR REPLACE TABLE ${
+    quoteIdentifier(outputTable)
+  } AS SELECT ${selectList}`;
 
   if (join === "inner") {
-    query += ` FROM "${leftTable}" JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else if (join === "left") {
-    query += ` FROM "${leftTable}" LEFT JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else if (join === "right") {
-    query += ` FROM "${leftTable}" RIGHT JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} RIGHT JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else if (join === "full") {
-    query += ` FROM "${leftTable}" FULL JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} FULL JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else {
     throw new Error(`Unknown ${join} join.`);
   }
 
   query += ` ON (${
-    on.map((d) => `"${leftTable}"."${d}" = "${rightTable}"."${d}"`)
+    on.map((d) =>
+      `${quoteIdentifier(leftTable)}.${quoteIdentifier(d)} = ${
+        quoteIdentifier(rightTable)
+      }.${quoteIdentifier(d)}`
+    )
       .join(
         " AND ",
       )

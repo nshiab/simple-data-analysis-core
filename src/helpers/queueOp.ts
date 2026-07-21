@@ -13,6 +13,23 @@ export default function queueOp(
   op: PendingOpInput,
 ): void {
   const sdb = simpleTable.sdb;
+  let capturedOp: PendingOpInput = {
+    ...op,
+    parameters: op.parameters === null ? null : structuredClone(op.parameters),
+  };
+  if (capturedOp.kind === "fusable") {
+    capturedOp = {
+      ...capturedOp,
+      rawSQL: capturedOp.rawSQL === undefined
+        ? undefined
+        : [...capturedOp.rawSQL],
+      values: capturedOp.values === undefined
+        ? undefined
+        : typeof capturedOp.values === "function"
+        ? capturedOp.values
+        : [...capturedOp.values],
+    };
+  }
   // A table de-registered by removeTable()/removeTables()/selectTables() that
   // queues new work comes back under the flush's responsibility, like v1
   // methods recreating a removed table.
@@ -20,7 +37,7 @@ export default function queueOp(
     sdb.tables.push(simpleTable);
   }
   simpleTable.pendingOps.push({
-    ...op,
+    ...capturedOp,
     sequence: sdb.opSequence++,
   });
   sdb.pendingCount++;
@@ -28,7 +45,7 @@ export default function queueOp(
 
 /**
  * Empties every table's pending queue without executing it and returns what
- * was dropped, for done()'s forgotten-run() warning on in-memory databases.
+ * was dropped, so done() can report forgotten work after cleaning up.
  */
 export function discardAllPending(
   sdb: SimpleDB,

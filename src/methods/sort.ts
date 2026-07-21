@@ -1,5 +1,6 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 export default function sort(
   simpleTable: SimpleTable,
@@ -8,13 +9,18 @@ export default function sort(
     lang?: { [key: string]: string };
   } = {},
 ) {
+  const capturedOrder = order === null ? null : { ...order };
+  const capturedOptions = {
+    ...options,
+    lang: options.lang === undefined ? undefined : { ...options.lang },
+  };
   queueOp(simpleTable, {
     kind: "fusable",
     method: "sort()",
-    parameters: { order, options },
+    parameters: { order: capturedOrder, options: capturedOptions },
     needsSchema: false,
     preservesSchema: true,
-    buildSelect: (input) => sortSelect(input, order, options),
+    buildSelect: (input) => sortSelect(input, capturedOrder, capturedOptions),
   });
 }
 
@@ -33,13 +39,15 @@ function sortSelect(
   } else {
     for (const column of Object.keys(order)) {
       if (options.lang && options.lang[column]) {
-        query += `\n"${column}" COLLATE ${options.lang[column]} ${
+        query += `\n${quoteIdentifier(column)} COLLATE ${
+          options.lang[column]
+        } ${
           order[
             column
           ].toUpperCase()
         },`;
       } else {
-        query += `\n"${column}" ${order[column].toUpperCase()},`;
+        query += `\n${quoteIdentifier(column)} ${order[column].toUpperCase()},`;
       }
     }
   }

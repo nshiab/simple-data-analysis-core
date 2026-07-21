@@ -5,6 +5,7 @@ import getExtension from "../helpers/getExtension.ts";
 import getName from "../helpers/getName.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import writeIndexes from "../helpers/writeIndexes.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
 
@@ -26,12 +27,14 @@ export default async function writeDB(
   }
 
   const name = getName(file);
+  const quotedName = quoteIdentifier(name);
+  const sourceName = quoteIdentifier(getName(simpleDB.file));
   if (extension === "db") {
     await queryDB(
       simpleDB,
-      `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${getName(simpleDB.file)} TO ${name};
-DETACH ${name};`,
+      `ATTACH '${cleanPath(file)}' AS ${quotedName};
+COPY FROM DATABASE ${sourceName} TO ${quotedName};
+DETACH ${quotedName};`,
       mergeOptions(simpleDB, {
         returnData: false,
         table: null,
@@ -43,9 +46,9 @@ DETACH ${name};`,
     await queryDB(
       simpleDB,
       `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${getName(simpleDB.file)} TO ${name};
-DETACH ${name};`,
+        ATTACH '${cleanPath(file)}' AS ${quotedName} (TYPE SQLITE);
+COPY FROM DATABASE ${sourceName} TO ${quotedName};
+DETACH ${quotedName};`,
       mergeOptions(simpleDB, {
         returnData: false,
         table: null,

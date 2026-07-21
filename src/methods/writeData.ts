@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import cleanPath from "../helpers/cleanPath.ts";
 import createDirectory from "../helpers/createDirectory.ts";
 import getExtension from "../helpers/getExtension.ts";
@@ -50,7 +51,7 @@ function writeDataQuery(
 ) {
   const cleanedFile = cleanPath(file);
   if (fileExtension === "csv") {
-    return `COPY "${table}" TO '${
+    return `COPY ${quoteIdentifier(table)} TO '${
       options.compression ? cleanedFile + ".gz" : cleanedFile
     }' (DELIMITER ',', HEADER TRUE${
       options.compression ? ", COMPRESSION GZIP" : ""
@@ -60,7 +61,7 @@ function writeDataQuery(
         : ""
     });`;
   } else if (fileExtension === "json") {
-    return `COPY "${table}" TO '${
+    return `COPY ${quoteIdentifier(table)} TO '${
       options.compression ? cleanedFile + ".gz" : cleanedFile
     }' (FORMAT JSON, ARRAY TRUE${
       options.compression ? ", COMPRESSION GZIP" : ""
@@ -71,26 +72,36 @@ function writeDataQuery(
     });`;
   } else if (fileExtension === "parquet") {
     if (options.compression) {
-      return `COPY "${table}" TO '${cleanedFile}' (FORMAT PARQUET, COMPRESSION ZSTD);`;
+      return `COPY ${
+        quoteIdentifier(table)
+      } TO '${cleanedFile}' (FORMAT PARQUET, COMPRESSION ZSTD);`;
     } else {
-      return `COPY "${table}" TO '${cleanedFile}' (FORMAT PARQUET);`;
+      return `COPY ${
+        quoteIdentifier(table)
+      } TO '${cleanedFile}' (FORMAT PARQUET);`;
     }
   } else if (fileExtension === "db") {
     if (existsSync(file)) {
       rmSync(file);
     }
-    return `ATTACH '${cleanedFile}' AS "my_database";
-COPY FROM DATABASE memory TO "my_database";
-CREATE OR REPLACE TABLE "my_database"."${table}" AS SELECT * FROM "${table}";
-DETACH "my_database";`;
+    const database = quoteIdentifier("my_database");
+    return `ATTACH '${cleanedFile}' AS ${database};
+COPY FROM DATABASE ${quoteIdentifier("memory")} TO ${database};
+CREATE OR REPLACE TABLE ${database}.${
+      quoteIdentifier(table)
+    } AS SELECT * FROM ${quoteIdentifier(table)};
+DETACH ${database};`;
   } else if (fileExtension === "sqlite") {
     if (existsSync(file)) {
       rmSync(file);
     }
+    const database = quoteIdentifier("my_sqlite_db");
     return `INSTALL sqlite; LOAD sqlite;
-    ATTACH '${cleanedFile}' AS "my_sqlite_db" (TYPE SQLITE);
-    CREATE TABLE "my_sqlite_db"."${table}" AS SELECT * FROM "${table}";
-    DETACH "my_sqlite_db";`;
+    ATTACH '${cleanedFile}' AS ${database} (TYPE SQLITE);
+    CREATE TABLE ${database}.${quoteIdentifier(table)} AS SELECT * FROM ${
+      quoteIdentifier(table)
+    };
+    DETACH ${database};`;
   } else {
     throw new Error(`Unknown extension ${fileExtension}`);
   }

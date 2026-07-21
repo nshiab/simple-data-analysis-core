@@ -4,6 +4,7 @@ import cleanPath from "../helpers/cleanPath.ts";
 import getExtension from "../helpers/getExtension.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import setDbProps from "../helpers/setDbProps.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
 
@@ -16,6 +17,8 @@ export default async function loadDB(
   } = {},
 ) {
   const name = options.name ?? "my_database";
+  const quotedName = quoteIdentifier(name);
+  const memory = quoteIdentifier("memory");
   const detach = options.detach ?? true;
 
   if (!existsSync(file)) {
@@ -33,9 +36,9 @@ export default async function loadDB(
     if (detach) {
       await queryDB(
         simpleDB,
-        `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
+        `ATTACH '${cleanPath(file)}' AS ${quotedName};
+COPY FROM DATABASE ${quotedName} TO ${memory};
+DETACH ${quotedName};`,
         mergeOptions(simpleDB, {
           returnData: false,
           table: null,
@@ -46,8 +49,8 @@ DETACH ${name};`,
     } else {
       await queryDB(
         simpleDB,
-        `ATTACH '${cleanPath(file)}' AS ${name};
-          USE ${name};`,
+        `ATTACH '${cleanPath(file)}' AS ${quotedName};
+          USE ${quotedName};`,
         mergeOptions(simpleDB, {
           returnData: false,
           table: null,
@@ -61,9 +64,9 @@ DETACH ${name};`,
       await queryDB(
         simpleDB,
         `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
+        ATTACH '${cleanPath(file)}' AS ${quotedName} (TYPE SQLITE);
+COPY FROM DATABASE ${quotedName} TO ${memory};
+DETACH ${quotedName};`,
         mergeOptions(simpleDB, {
           returnData: false,
           table: null,
@@ -75,8 +78,8 @@ DETACH ${name};`,
       await queryDB(
         simpleDB,
         `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-        USE ${name};`,
+        ATTACH '${cleanPath(file)}' AS ${quotedName} (TYPE SQLITE);
+        USE ${quotedName};`,
         mergeOptions(simpleDB, {
           returnData: false,
           table: null,

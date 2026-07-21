@@ -303,12 +303,38 @@ Deno.test("should close the db", async () => {
   // How to test?
 });
 
-Deno.test("should log debugging information when debug is true", async () => {
-  const sdb = new SimpleDB({ debug: true });
+Deno.test("file-backed done discards all pending work, cleans up, then rejects", async () => {
+  const file = `${output}pending_done.db`;
+  const tempDir = `${output}pending_done.tmp`;
+  const sdb = new SimpleDB({ file, overwrite: true, tempDir });
+  await sdb.start();
+  mkdirSync(tempDir, { recursive: true });
+  const first = sdb.newTable("first pending");
+  const second = sdb.newTable("second pending");
+  first.loadArray([{ value: 1 }]).filter("value > 0");
+  second.loadArray([{ value: 2 }]);
+
+  const error = await assertRejects(() => sdb.done());
+
+  if (!(error instanceof Error)) {
+    throw new Error("Expected done() to reject with an Error.");
+  }
+  assertEquals(error.message.includes('"first pending"'), true);
+  assertEquals(error.message.includes("loadArray(), filter()"), true);
+  assertEquals(error.message.includes('"second pending"'), true);
+  assertEquals(first.pendingOps.length, 0);
+  assertEquals(second.pendingOps.length, 0);
+  assertEquals(existsSync(tempDir), false);
+  await assertRejects(() => sdb.connection.run("SELECT 1"));
+});
+
+Deno.test("should log SQL when logSQL is true", async () => {
+  const sdb = new SimpleDB({ logSQL: true });
   const test = await sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
 
   // How to test?
+  await test.run();
   await sdb.done();
 });
 
@@ -318,6 +344,7 @@ Deno.test("should log the types", async () => {
   test.loadData("test/data/files/cities.csv");
   // await test.logTable();
   // How to test?
+  await test.run();
   await sdb.done();
 });
 
@@ -327,6 +354,7 @@ Deno.test("should log a specific number of rows", async () => {
   test.loadData("test/data/files/cities.csv");
   // await test.logTable();
   // How to test?
+  await test.run();
   await sdb.done();
 });
 
@@ -336,6 +364,7 @@ Deno.test("should log a specific number of characters", async () => {
   test.loadData("test/data/files/cities.csv");
   // await test.logTable();
   // How to test?
+  await test.run();
   await sdb.done();
 });
 Deno.test("should log the total duration", async () => {
@@ -343,6 +372,7 @@ Deno.test("should log the total duration", async () => {
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
   // How to test?
+  await test.run();
   await sdb.done();
 });
 Deno.test("should enable a progress bar", async () => {
@@ -350,6 +380,7 @@ Deno.test("should enable a progress bar", async () => {
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
   // How to test?
+  await test.run();
   await sdb.done();
 });
 Deno.test("should write the db", async () => {
@@ -374,6 +405,7 @@ Deno.test("should throw when writing the db with an unsupported extension", asyn
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
+  await test.run();
 
   await assertRejects(
     () => sdb.writeDB(`${output}database.txt`),
@@ -396,7 +428,7 @@ Deno.test("should load the db", async () => {
 Deno.test("should load the db with a specific name", async () => {
   const sdb = new SimpleDB();
 
-  await sdb.loadDB(`${output}database.db`, { name: "something" });
+  await sdb.loadDB(`${output}database.db`, { name: 'some "thing' });
   // const test = await sdb.getTable("test");
   // await test.logTable();
 
@@ -406,7 +438,7 @@ Deno.test("should load the db with a specific name", async () => {
 Deno.test("should load the sqlite db with a specific name", async () => {
   const sdb = new SimpleDB();
 
-  await sdb.loadDB(`${output}database.sqlite`, { name: "something" });
+  await sdb.loadDB(`${output}database.sqlite`, { name: 'some "thing' });
   // const test = await sdb.getTable("test");
   // await test.logTable();
 
@@ -485,6 +517,7 @@ Deno.test("should load the db with geometries", async () => {
   test.simplify(0.1);
   // await test.logTable();
   // How to test?
+  await test.run();
   await sdb.done();
 });
 Deno.test("should log the table names in the db", async () => {
@@ -497,6 +530,7 @@ Deno.test("should log the table names in the db", async () => {
   // await sdb.logTableNames();
 
   // How to test?
+  await sdb.run();
   await sdb.done();
 });
 Deno.test("should instantiate by creating a new file", async () => {
@@ -508,6 +542,7 @@ Deno.test("should instantiate by creating a new file", async () => {
   data.loadData("test/data/files/data.csv");
   // await data.logTable();
 
+  await data.run();
   await sdb.done();
 });
 Deno.test("should load a db created when instantiating", async () => {
@@ -517,6 +552,7 @@ Deno.test("should load a db created when instantiating", async () => {
   data2.loadData("test/data/files/data.csv");
   // await data2.logTable();
 
+  await data2.run();
   await sdb.done();
 });
 Deno.test("should instantiate by creating a new file and geospatial data", async () => {
@@ -530,6 +566,7 @@ Deno.test("should instantiate by creating a new file and geospatial data", async
   );
   // await data.logTable();
 
+  await data.run();
   await sdb.done();
 });
 Deno.test("should load a db created with geospatial data", async () => {
@@ -540,6 +577,7 @@ Deno.test("should load a db created with geospatial data", async () => {
   // await data.logProjections();
   // await data.logTable();
 
+  await data.run();
   await sdb.done();
 });
 Deno.test("should not change the enable_external_file_cache option", async () => {
@@ -599,8 +637,7 @@ Deno.test("should load a DB with bm25 index", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_bm25.db`);
   const table = await sdb.getTable("data");
-  table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
-  // await table.logTable(1);
+  await table.getNbRows();
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
   await sdb.done();
@@ -619,14 +656,14 @@ Deno.test("should instantiate by creating a new file and add bm25 index", async 
 
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
+  await table.run();
   await sdb.done();
 });
 Deno.test("should load a DB instantiated with a file, with bm25 index", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_bm25_new.db`);
   const table = await sdb.getTable("data");
-  table.bm25("italian food", "Dish", "Recipe", 5, { verbose: true });
-  // await table.logTable(1);
+  await table.getNbRows();
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
   await sdb.done();

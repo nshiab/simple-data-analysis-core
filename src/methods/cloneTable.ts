@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -22,7 +23,7 @@ export default function cloneTable(
   let clonedTable: SimpleTable;
   const options = typeof nameOrOptions === "string"
     ? { name: nameOrOptions }
-    : nameOrOptions;
+    : { ...nameOrOptions };
   if (typeof options.name === "string") {
     clonedTable = simpleTable.sdb.newTable(options.name);
   } else {
@@ -30,7 +31,7 @@ export default function cloneTable(
   }
 
   const selectClause = columns.length > 0
-    ? columns.map((col) => `"${col}"`).join(", ")
+    ? columns.map((col) => `${quoteIdentifier(col)}`).join(", ")
     : "*";
 
   queueOp(clonedTable, {
@@ -43,9 +44,9 @@ export default function cloneTable(
     // The clone reads simpleTable by name rather than through clonedTable's
     // own (nonexistent) chain, so simpleTable's pending work must close and
     // execute before this SELECT runs, as it would at this call position.
-    rawSQL: [`"${simpleTable.name}"`],
+    rawSQL: [`${quoteIdentifier(simpleTable.name)}`],
     buildSelect: () =>
-      `SELECT ${selectClause} FROM "${simpleTable.name}"${
+      `SELECT ${selectClause} FROM ${quoteIdentifier(simpleTable.name)}${
         options.conditions ? ` WHERE ${options.conditions}` : ""
       }${typeof options.limit === "number" ? ` LIMIT ${options.limit}` : ""}${
         typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""

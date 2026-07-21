@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -8,7 +9,9 @@ export default async function getNbCharacters(
 ) {
   const queryResult = await queryDB(
     SimpleTable,
-    `SELECT CAST(SUM(LENGTH("${column}")) AS BIGINT) AS total_chars FROM "${SimpleTable.name}"`,
+    `SELECT CAST(SUM(LENGTH(${
+      quoteIdentifier(column)
+    })) AS BIGINT) AS total_chars FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

@@ -1,8 +1,10 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import { makeConverter } from "../helpers/runQuery.ts";
 import SDAError from "../class/SDAError.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import observeQuery from "../helpers/observeQuery.ts";
 
 export default async function* stream(
   simpleTable: SimpleTable,
@@ -33,15 +35,15 @@ export default async function* stream(
       : options.columns)
     : undefined;
   const query = `SELECT ${
-    columns ? columns.map((d) => `"${d}"`).join(", ") : "*"
-  } FROM "${simpleTable.name}"${
+    columns ? columns.map((d) => `${quoteIdentifier(d)}`).join(", ") : "*"
+  } FROM ${quoteIdentifier(simpleTable.name)}${
     options.conditions ? ` WHERE ${options.conditions}` : ""
   };`;
-  if (simpleTable.debug) {
-    console.log(query);
-  }
-
   try {
+    await observeQuery(simpleTable.connection, query, [], {
+      logSQL: simpleTable.sdb.logSQL,
+      explainSQL: simpleTable.sdb.explainSQL,
+    });
     const result = await simpleTable.connection.stream(query);
     const columnNames = result.deduplicatedColumnNames();
     const columnTypes = result.columnTypes();
@@ -66,9 +68,6 @@ export default async function* stream(
   } catch (error) {
     if (error instanceof SDAError) {
       throw error;
-    }
-    if (simpleTable.debug) {
-      console.warn(error);
     }
     throw new SDAError({
       method: "stream()",

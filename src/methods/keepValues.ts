@@ -1,6 +1,7 @@
-import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
 export default function keepValues(
   simpleTable: SimpleTable,
@@ -10,12 +11,22 @@ export default function keepValues(
       | (number | string | Date | boolean | null);
   },
 ) {
+  const captured = Object.fromEntries(
+    Object.entries(columnsAndValues).map(([column, values]) => [
+      column,
+      Array.isArray(values) ? [...values] : values,
+    ]),
+  ) as typeof columnsAndValues;
+  const values = Object.values(captured).flatMap((value) =>
+    (Array.isArray(value) ? value : [value]).map(toDuckDBValue)
+  );
   queueOp(simpleTable, {
     kind: "fusable",
     method: "keepValues()",
-    parameters: { columnsAndValues },
+    parameters: { columnsAndValues: captured },
+    values,
     needsSchema: false,
-    buildSelect: (input) => keepValuesSelect(input, columnsAndValues),
+    buildSelect: (input) => keepValuesSelect(input, captured),
   });
 }
 
@@ -38,7 +49,7 @@ function keepValuesSelect(
     }
 
     conditions.push(
-      `"${column}" IN (${values.map((d) => parseValue(d)).join(", ")})`,
+      `${quoteIdentifier(column)} IN (${values.map(() => "?").join(", ")})`,
     );
   }
 

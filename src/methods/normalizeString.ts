@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import queueOp from "../helpers/queueOp.ts";
 
@@ -9,7 +10,7 @@ export default function normalizeString(
 ): void {
   const { stripPunctuation = true } = options;
 
-  const accentRemoved = `strip_accents("${column}")`;
+  const accentRemoved = `strip_accents(${quoteIdentifier(column)})`;
 
   const lowercased = `lower(${accentRemoved})`;
 
@@ -28,9 +29,9 @@ export default function normalizeString(
     buildSelect: (input) =>
       `SELECT *,
       CASE
-        WHEN "${column}" IS NULL THEN NULL
+        WHEN ${quoteIdentifier(column)} IS NULL THEN NULL
         ELSE ${normalizedClause}
-      END AS "${newColumn}"
+      END AS ${quoteIdentifier(newColumn)}
     FROM ${input}`,
   });
 }

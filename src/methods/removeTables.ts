@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import SimpleTable from "../class/SimpleTable.ts";
@@ -16,7 +17,7 @@ export default async function removeTables(
   await queryDB(
     simpleDB,
     tablesToBeRemoved.map((d) =>
-      `DROP TABLE "${d instanceof SimpleTable ? d.name : d}";`
+      `DROP TABLE ${quoteIdentifier(d instanceof SimpleTable ? d.name : d)};`
     ).join("\n"),
     mergeOptions(simpleDB, {
       table: null,

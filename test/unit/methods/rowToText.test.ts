@@ -216,3 +216,17 @@ Deno.test("should throw error when trying to concatenate non-VARCHAR columns", a
 
   await sdb.done();
 });
+
+Deno.test("should bind labels derived from column names", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundRowToText");
+
+  table.loadArray([{ "author's name": "Ada" }]);
+  table.rowToText(["author's name"], "profile");
+
+  assertEquals(await table.getData(), [{
+    "author's name": "Ada",
+    profile: "author's name:\nAda",
+  }]);
+  await sdb.done();
+});

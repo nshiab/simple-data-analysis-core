@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -10,11 +11,14 @@ export default function unnest(
     kind: "fusable",
     method: "unnest()",
     parameters: { column, separator },
+    values: [separator],
     needsSchema: false,
     buildSelect: (input) =>
       `SELECT
-  * EXCLUDE "${column}",
-  TRIM(UNNEST(SPLIT("${column}", '${separator}'))) AS "${column}"
+  * EXCLUDE ${quoteIdentifier(column)},
+  TRIM(UNNEST(SPLIT(${quoteIdentifier(column)}, ?))) AS ${
+        quoteIdentifier(column)
+      }
 FROM ${input}`,
   });
 }

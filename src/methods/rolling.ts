@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
@@ -16,6 +17,7 @@ export default function rolling(
     decimals?: number;
   } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "rolling()",
@@ -63,19 +65,23 @@ function rollingSelect(
     ? stringToArray(options.categories)
     : [];
   const partition = categories.length > 0
-    ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
+    ? `PARTITION BY ${
+      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+    }`
     : "";
 
   const window = `OVER (${partition}
                 ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING)`;
 
-  const tempQuery = `${aggregates[summary]}("${column}") ${window}`;
+  const tempQuery = `${aggregates[summary]}(${
+    quoteIdentifier(column)
+  }) ${window}`;
 
   // Windows touching the edges of the frame (or of their category) have
   // fewer values than requested, so their result is NULL.
   return `SELECT *,
     CASE
-        WHEN COUNT("${column}") ${window} != ${
+        WHEN COUNT(${quoteIdentifier(column)}) ${window} != ${
     preceding + following + 1
   } THEN NULL
         ELSE ${
@@ -83,6 +89,6 @@ function rollingSelect(
       ? `ROUND(${tempQuery}, ${options.decimals})`
       : tempQuery
   }
-    END AS "${newColumn}"
+    END AS ${quoteIdentifier(newColumn)}
         FROM ${input}`;
 }

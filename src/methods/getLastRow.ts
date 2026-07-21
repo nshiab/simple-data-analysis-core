@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -11,9 +12,9 @@ export default async function getLastRow(
   const queryResult = await queryDB(
     simpleTable,
     `WITH "numberedRowsForGetLastRow" AS (
-                SELECT *, row_number() OVER () as "rowNumberForGetLastRow" FROM "${simpleTable.name}"${
-      options.conditions ? ` WHERE ${options.conditions}` : ""
-    }
+                SELECT *, row_number() OVER () as "rowNumberForGetLastRow" FROM ${
+      quoteIdentifier(simpleTable.name)
+    }${options.conditions ? ` WHERE ${options.conditions}` : ""}
             )
             SELECT * FROM "numberedRowsForGetLastRow" ORDER BY "rowNumberForGetLastRow" DESC LIMIT 1;`,
     mergeOptions(simpleTable, {

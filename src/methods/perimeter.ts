@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -8,6 +9,7 @@ export default function perimeter(
   newColumn: string,
   options: { unit?: "m" | "km"; column?: string } = {},
 ) {
+  options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "perimeter()",
@@ -19,9 +21,11 @@ export default function perimeter(
       const column = typeof options.column === "string"
         ? options.column
         : findGeoColumnFromSchema(types);
-      return `SELECT *, CAST(ST_Perimeter_Spheroid("${column}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      } AS DOUBLE) AS "${newColumn}" FROM ${input}`;
+      return `SELECT *, CAST(ST_Perimeter_Spheroid(${
+        quoteIdentifier(column)
+      }) ${options.unit === "km" ? "/ 1000" : ""} AS DOUBLE) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
     },
   });
 }

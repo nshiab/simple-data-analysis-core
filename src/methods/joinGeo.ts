@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import capitalize from "../helpers/capitalize.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import findGeoColumn from "../helpers/findGeoColumn.ts";
@@ -19,6 +20,7 @@ export default function joinGeo(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
   const outputTable = typeof options.outputTable === "string"
@@ -65,10 +67,12 @@ async function executeJoinGeo(
     throw new Error(
       `The tables have columns with identical names ${
         sharedColumn !== ""
-          ? `(excluding the columns "${sharedColumn}" used for the geospatial join)`
+          ? `(excluding the columns ${
+            quoteIdentifier(sharedColumn)
+          } used for the geospatial join)`
           : ""
       }. Rename or remove ${
-        identicalColumns.map((d) => `"${d}"`).join(", ")
+        identicalColumns.map((d) => `${quoteIdentifier(d)}`).join(", ")
       } in one of the two tables before doing the join.`,
     );
   }
@@ -143,7 +147,9 @@ async function renameColumnNow(
 ): Promise<void> {
   await queryDB(
     table,
-    `ALTER TABLE "${table.name}" RENAME COLUMN "${oldName}" TO "${newName}";`,
+    `ALTER TABLE ${quoteIdentifier(table.name)} RENAME COLUMN ${
+      quoteIdentifier(oldName)
+    } TO ${quoteIdentifier(newName)};`,
     mergeOptions(table, {
       table: table.name,
       method: "joinGeo()",
@@ -163,39 +169,60 @@ function joinGeoQuery(
   distance: number | undefined,
   distanceMethod: "srs" | "haversine" | "spheroid" | undefined,
 ) {
-  let query = `CREATE OR REPLACE TABLE "${outputTable}" AS SELECT *`;
+  let query = `CREATE OR REPLACE TABLE ${
+    quoteIdentifier(outputTable)
+  } AS SELECT *`;
   if (join === "inner") {
-    query += ` FROM "${leftTable}" JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else if (join === "left") {
-    query += ` FROM "${leftTable}" LEFT JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else if (join === "right") {
-    query += ` FROM "${leftTable}" RIGHT JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} RIGHT JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else if (join === "full") {
-    query += ` FROM "${leftTable}" FULL JOIN "${rightTable}"`;
+    query += ` FROM ${quoteIdentifier(leftTable)} FULL JOIN ${
+      quoteIdentifier(rightTable)
+    }`;
   } else {
     throw new Error(`Unknown ${join} join.`);
   }
 
   if (method === "intersect") {
-    query +=
-      ` ON ST_Intersects("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}");`;
+    query += ` ON ST_Intersects(${quoteIdentifier(leftTable)}.${
+      quoteIdentifier(leftColumn)
+    }, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)});`;
   } else if (method === "inside") {
     // Order is important
-    query +=
-      ` ON ST_Covers("${rightTable}"."${rightColumn}", "${leftTable}"."${leftColumn}");`;
+    query += ` ON ST_Covers(${quoteIdentifier(rightTable)}.${
+      quoteIdentifier(rightColumn)
+    }, ${quoteIdentifier(leftTable)}.${quoteIdentifier(leftColumn)});`;
   } else if (method === "withinDistance") {
     if (typeof distance === "number") {
       if (distanceMethod === undefined || distanceMethod === "srs") {
-        query +=
-          ` ON ST_DWithin("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}", ${distance})`;
+        query += ` ON ST_DWithin(${quoteIdentifier(leftTable)}.${
+          quoteIdentifier(leftColumn)
+        }, ${quoteIdentifier(rightTable)}.${
+          quoteIdentifier(rightColumn)
+        }, ${distance})`;
       } else if (distanceMethod === "haversine") {
         // Maybe ST_DWithin_Sphere will be available soon?
-        query +=
-          ` ON ST_Distance_Sphere("${leftTable}"."${leftColumn}", "${rightTable}"."${rightColumn}") < ${distance}`;
+        query += ` ON ST_Distance_Sphere(${quoteIdentifier(leftTable)}.${
+          quoteIdentifier(leftColumn)
+        }, ${quoteIdentifier(rightTable)}.${
+          quoteIdentifier(rightColumn)
+        }) < ${distance}`;
       } else if (distanceMethod === "spheroid") {
         // Should be using ST_DWithin_Spheroid but doesn't work?
-        query +=
-          ` ON ST_Distance_Spheroid("${leftTable}"."${leftColumn}"::GEOMETRY, "${rightTable}"."${rightColumn}"::GEOMETRY) < ${distance}`;
+        query += ` ON ST_Distance_Spheroid(${quoteIdentifier(leftTable)}.${
+          quoteIdentifier(leftColumn)
+        }::GEOMETRY, ${quoteIdentifier(rightTable)}.${
+          quoteIdentifier(rightColumn)
+        }::GEOMETRY) < ${distance}`;
       } else {
         throw new Error(`Unknown ${distanceMethod}`);
       }

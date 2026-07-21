@@ -2,6 +2,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import SDAError from "../../../src/class/SDAError.ts";
+import { existsSync, mkdirSync } from "node:fs";
 
 function spyOnQueries(simple: SimpleDB | SimpleTable): string[] {
   const queries: string[] = [];
@@ -40,8 +41,8 @@ Deno.test("should fuse consecutive builder methods into a single statement", asy
     q.includes(`CREATE OR REPLACE TABLE "fused"`)
   );
   assertEquals(createStatements.length, 1);
-  assert(createStatements[0].includes("WITH s1 AS"));
-  assert(createStatements[0].includes("s3"));
+  assert(createStatements[0].includes('WITH "s1" AS'));
+  assert(createStatements[0].includes('"s3"'));
 
   await sdb.done();
 });
@@ -67,7 +68,7 @@ Deno.test("should fuse REPLACE-style column updates into the chain", async () =>
     q.includes(`CREATE OR REPLACE TABLE "replaceFused"`)
   );
   assertEquals(createStatements.length, 1);
-  assert(createStatements[0].includes("WITH s1 AS"));
+  assert(createStatements[0].includes('WITH "s1" AS'));
 
   await sdb.done();
 });
@@ -391,15 +392,15 @@ Deno.test("should fuse geospatial operations with regular ones, loading spatial 
   await sdb.done();
 });
 
-Deno.test("should execute step by step with debug: true", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("debugMode");
-  table.debug = true;
+Deno.test("logSQL observes one fused statement without changing execution", async () => {
+  const sdb = new SimpleDB({ logSQL: true });
+  await sdb.start();
+  const table = sdb.newTable("loggedFusion");
   const queries = spyOnQueries(table);
 
-  // Silence the debug logging for the test output.
+  const logs: string[] = [];
   const originalLog = console.log;
-  console.log = () => {};
+  console.log = (message: string) => logs.push(message);
   let result;
   try {
     result = await table
@@ -417,35 +418,91 @@ Deno.test("should execute step by step with debug: true", async () => {
   ]);
 
   const createStatements = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "debugMode"`)
+    q.includes(`CREATE OR REPLACE TABLE "loggedFusion"`)
   );
-  assertEquals(createStatements.length, 2);
-  assert(createStatements.every((q) => !q.includes("WITH s1 AS")));
+  assertEquals(createStatements.length, 1);
+  assert(createStatements[0].includes('WITH "s1" AS'));
+  assert(logs.includes(createStatements[0]));
 
   await sdb.done();
 });
 
-Deno.test("should warn on done() when queued methods were never executed", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("neverExecuted");
+Deno.test("explainSQL logs a plan for a fused statement without changing its result", async () => {
+  const sdb = new SimpleDB({ explainSQL: true });
+  await sdb.start();
+  const table = sdb.newTable("explainedFusion");
+  const logs: string[] = [];
+  const originalLog = console.log;
+  console.log = (message: string) => logs.push(message);
+  let result;
+  try {
+    result = await table
+      .loadArray(data)
+      .filter(`value > 1`)
+      .selectColumns(["name", "value"])
+      .getData();
+  } finally {
+    console.log = originalLog;
+  }
 
-  table.loadArray(data);
-  table.filter(`value > 1`);
+  assertEquals(result, [
+    { name: "b", value: 2 },
+    { name: "c", value: 3 },
+  ]);
+  assert(
+    logs.some((message) =>
+      message.includes("EXPLAIN") && message.includes("explainedFusion")
+    ),
+  );
 
+  await sdb.done();
+});
+
+Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", async () => {
+  const sdb = new SimpleDB({ explainSQL: true });
   const warnings: string[] = [];
   const originalWarn = console.warn;
-  console.warn = (message: string) => {
-    warnings.push(message);
-  };
+  console.warn = (message: string) => warnings.push(message);
   try {
-    await sdb.done();
+    // ATTACH and SET during setup are intentionally not explained.
+    await sdb.start();
+    assertEquals(warnings, []);
+
+    // DuckDB executes CREATE TEMPORARY SECRET but does not support prefixing
+    // it with EXPLAIN. The explanation warning must not block execution.
+    await sdb.customQuery(
+      `CREATE TEMPORARY SECRET issue86_secret (TYPE S3, KEY_ID 'x', SECRET 'y')`,
+    );
   } finally {
     console.warn = originalWarn;
   }
 
   assertEquals(warnings.length, 1);
-  assert(warnings[0].includes(`"neverExecuted"`));
-  assert(warnings[0].includes("loadArray()"));
-  assert(warnings[0].includes("filter()"));
+  assert(warnings[0].includes("executing it normally"));
+  const secrets = await sdb.customQuery(
+    `SELECT name FROM duckdb_secrets() WHERE name = 'issue86_secret'`,
+    { returnData: true },
+  );
+  assertEquals(secrets, [{ name: "issue86_secret" }]);
+  await sdb.done();
+});
+
+Deno.test("done() discards queued methods, cleans up, and rejects", async () => {
+  const tempDir = "./test/output/pending_memory.tmp";
+  const sdb = new SimpleDB({ tempDir });
+  await sdb.start();
+  mkdirSync(tempDir, { recursive: true });
+  const table = sdb.newTable("neverExecuted");
+
+  table.loadArray(data);
+  table.filter(`value > 1`);
+
+  await assertRejects(
+    () => sdb.done(),
+    Error,
+    'The table "neverExecuted" has queued methods that were not executed: loadArray(), filter()',
+  );
   assertEquals(table.pendingOps.length, 0);
+  assertEquals(existsSync(tempDir), false);
+  await assertRejects(() => sdb.connection.run("SELECT 1"));
 });

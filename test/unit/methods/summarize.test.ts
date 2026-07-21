@@ -1,6 +1,26 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("should quote summary aliases and bind value labels", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { "sales'net": 2, cost: 1 },
+    { "sales'net": 4, cost: 3 },
+  ]);
+  const result = table.summarize({
+    values: ["sales'net", "cost"],
+    summaries: { "average's": "mean" },
+    outputTable: true,
+  });
+
+  assertEquals(await result.getData(), [
+    { value: "cost", "average's": 2 },
+    { value: "sales'net", "average's": 3 },
+  ]);
+  await sdb.done();
+});
+
 Deno.test("should summarize all rows (no option values)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

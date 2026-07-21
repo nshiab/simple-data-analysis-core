@@ -71,7 +71,10 @@ Creates a new SimpleDB instance.
   logging a table.
 - **`options.cacheVerbose`**: A flag indicating whether to log verbose
   cache-related messages.
-- **`options.debug`**: A flag indicating whether to log debugging information.
+- **`options.logSQL`**: A flag indicating whether to log SQL immediately before
+  execution.
+- **`options.explainSQL`**: A flag indicating whether to log DuckDB query plans
+  for supported statements.
 - **`options.duckDbCache`**: A flag indicating whether to use DuckDB's external
   file cache.
 - **`options.progressBar`**: A flag indicating whether to display a progress bar
@@ -498,7 +501,9 @@ await sdb.run();
 
 Frees up memory by closing the database connection and instance, and cleans up
 the cache. If the database is file-based, it also compacts the database file to
-optimize storage.
+optimize storage. Pending transformations are discarded after being recorded;
+cleanup completes and the method then rejects with the affected table and method
+names.
 
 ##### Signature
 
@@ -510,10 +515,16 @@ async done(): Promise<SimpleDB>;
 
 A promise that resolves to the SimpleDB instance after cleanup.
 
+##### Throws
+
+- **`Error`**: An error after cleanup when one or more tables still have queued
+  methods.
+
 ##### Examples
 
 ```ts
 // Close the database and clean up resources
+await sdb.run();
 await sdb.done();
 ```
 
@@ -544,7 +555,7 @@ await sdb.done();
 ```ts
 // Create a database instance with custom options
 const sdb = new SimpleDB({
-  debug: true, // Enable debugging output
+  logSQL: true, // Log SQL immediately before it runs
   rowsToLog: 20, // Set the number of rows to log by default
 });
 ```
@@ -569,7 +580,6 @@ Creates an instance of SimpleTable.
 - **`name`**: The name of the table.
 - **`simpleDB`**: The SimpleDB instance that this table belongs to.
 - **`options`**: An optional object with configuration options:
-- **`options.debug`**: A boolean indicating whether to enable debug mode.
 - **`options.rowsToLog`**: The number of rows to log when displaying table data.
 - **`options.charsToLog`**: The maximum number of characters to log for strings.
   Useful to avoid logging large text content.
@@ -1622,9 +1632,10 @@ columns are specified, all columns are sorted from left to right in ascending
 order.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called. Methods
-queued after a sort are fused with it into a single query and may not preserve
-its row order, so call sort last in a chain of transformations.
+`getData()` or `logTable()`) is awaited, or when `run()` is called.
+Order-preserving transformations queued after a sort retain that order.
+Operations such as joins, grouping, aggregation, and sampling do not guarantee
+input order; chain `sort()` after them when deterministic output order matters.
 
 ##### Signature
 

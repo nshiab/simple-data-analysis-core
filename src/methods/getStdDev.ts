@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -12,8 +13,14 @@ export default async function getStdDev(
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(STDDEV("${column}"), ${options.decimals}) AS "${column}" FROM "${SimpleTable.name}"`
-      : `SELECT STDDEV("${column}") AS "${column}" FROM "${SimpleTable.name}"`,
+      ? `SELECT ROUND(STDDEV(${
+        quoteIdentifier(column)
+      }), ${options.decimals}) AS ${quoteIdentifier(column)} FROM ${
+        quoteIdentifier(SimpleTable.name)
+      }`
+      : `SELECT STDDEV(${quoteIdentifier(column)}) AS ${
+        quoteIdentifier(column)
+      } FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

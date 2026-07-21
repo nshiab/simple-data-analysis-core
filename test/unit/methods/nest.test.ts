@@ -93,3 +93,16 @@ Deno.test("should work as inverse of unnest (round-trip test)", async () => {
 
   await sdb.done();
 });
+
+Deno.test("should bind a nesting separator containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundNest");
+
+  table.loadArray([
+    { group: "a", value: "rock" },
+    { group: "a", value: "roll" },
+  ]).nest("value", "'n'", "group");
+
+  assertEquals(await table.getData(), [{ group: "a", value: "rock'n'roll" }]);
+  await sdb.done();
+});

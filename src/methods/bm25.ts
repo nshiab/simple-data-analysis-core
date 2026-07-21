@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import camelCase from "../helpers/camelCase.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -55,6 +56,7 @@ export default function bm25(
     verbose?: boolean;
   } = {},
 ): SimpleTable {
+  options = structuredClone(options);
   // This uses the fts extension
   // https://duckdb.org/docs/stable/core_extensions/full_text_search
 
@@ -123,18 +125,22 @@ async function executeBm25(
     : "";
 
   const selectClause = typeof options.scoreColumn === "string"
-    ? `* EXCLUDE(score), score AS "${options.scoreColumn}"`
+    ? `* EXCLUDE(score), score AS ${quoteIdentifier(options.scoreColumn)}`
     : `* EXCLUDE(score)`;
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE "${outputTable.name}" AS SELECT ${selectClause} FROM (SELECT *, fts_main_${
-      camelCase(simpleTable.name)
-    }.match_bm25(${idColumn}, '${text.replace(/'/g, "''")}'${
+    `CREATE OR REPLACE TABLE ${
+      quoteIdentifier(outputTable.name)
+    } AS SELECT ${selectClause} FROM (SELECT *, ${
+      quoteIdentifier(`fts_main_${camelCase(simpleTable.name)}`)
+    }.match_bm25(${quoteIdentifier(idColumn)}, ?${
       typeof options.k === "number" ? `, k := ${options.k}` : ""
     }${typeof options.b === "number" ? `, b := ${options.b}` : ""}${
       options.conjunctive === true ? `, conjunctive := 1` : ""
-    }) AS score FROM "${simpleTable.name}") sq WHERE score NOT NULL${minScoreCondition} ORDER BY score DESC LIMIT ${nbResults};`,
+    }) AS score FROM ${
+      quoteIdentifier(simpleTable.name)
+    }) sq WHERE score NOT NULL${minScoreCondition} ORDER BY score DESC LIMIT ${nbResults};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "bm25",
@@ -154,6 +160,7 @@ async function executeBm25(
         lower: options.lower,
         table: options.outputTable ?? simpleTable.name,
       },
+      values: [text],
     }),
   );
 }

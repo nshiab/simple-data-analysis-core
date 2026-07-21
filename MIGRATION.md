@@ -68,10 +68,11 @@ await table
   .run();
 ```
 
-`sdb.done()` warns if a table still has queued methods that never executed (the
-forgotten-`run()` safety net). For **in-memory** databases the queued work is
-dropped: nobody could ever observe it. For **file-based** databases, `done()`
-persists the data, so it executes the queued work like any other observer.
+`sdb.done()` rejects if any table still has queued methods that never executed
+(the forgotten-`run()` safety net). It identifies every affected table and
+method, discards the work internally, and completes cleanup before throwing.
+This behavior is identical for in-memory and file-based databases; `done()`
+never executes pending transformations automatically.
 
 ## Errors surface at the observation point
 
@@ -89,30 +90,29 @@ carrying the method name, its parameters and the failing query). Validations
 that don't need the database (invalid options, empty arrays, ...) still throw at
 the call.
 
-To debug, pass `debug: true` to `SimpleDB`: fusion is disabled and every method
-executes immediately, step by step, with the same logging as v1.
+Use `logSQL: true` to log the exact fused statement immediately before it runs,
+or `explainSQL: true` to log supported DuckDB query plans. Observability does
+not disable fusion or change execution.
 
-## Don't mutate arguments after passing them
+## Mutable arguments are captured
 
-Because a sync builder reads its arguments when the chain executes, not when you
-call it, treat any object or array you pass to a builder as owned by the library
-from that point on. Mutating and reusing the same object before the next
-observer runs would change the already-queued operation:
+Sync builders capture mutable options, arrays, and maps when called. Later
+caller mutations do not change already-queued operations, and builders do not
+assign defaults or generated names into caller-owned options.
 
 ```ts
 const replacements = { old: "new" };
 table.replace("col", replacements);
-replacements.old = "other"; // don't: the queued replace() would use "other"
+replacements.old = "other"; // the queued replace() still uses "new"
 await table.getData();
 ```
 
-Pass a fresh object per call instead. (This only affects mutable arguments;
-strings, numbers and booleans are unaffected.)
-
 ## Order matters for `sort()`
 
-Methods queued after a `sort()` are fused with it into a single query and may
-not preserve its row order. Call `sort()` last in a chain of transformations.
+Order-preserving transformations retain an earlier `sort()` when fused. Joins,
+grouping, aggregation, and sampling do not guarantee input order; chain the
+existing `sort()` method after those operations when deterministic output order
+matters.
 
 ## Cross-table operations
 

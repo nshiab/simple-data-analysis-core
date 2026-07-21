@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import ensureSpatial from "../helpers/ensureSpatial.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import parseType from "../helpers/parseTypes.ts";
@@ -29,6 +30,7 @@ export default function setTypes(
 ) {
   // Creating a table from scratch (possibly with the spatial extension) is
   // multi-statement by nature: it executes as a barrier.
+  types = structuredClone(types);
   queueOp(simpleTable, {
     kind: "barrier",
     method: "setTypes()",
@@ -43,11 +45,11 @@ export default function setTypes(
       }
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE "${simpleTable.name}" (${
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} (${
           Object.keys(
             types,
           )
-            .map((d) => `"${d}" ${parseType(types[d])}`)
+            .map((d) => `${quoteIdentifier(d)} ${parseType(types[d])}`)
             .join(", ")
         });`,
         mergeOptions(simpleTable, {
