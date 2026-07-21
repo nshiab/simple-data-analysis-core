@@ -3,7 +3,6 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
-import parseValue from "../helpers/parseValue.ts";
 
 export default function fuzzyClean(
   table: SimpleTable,
@@ -265,16 +264,14 @@ async function executeFuzzyClean(
 
   // Use a VALUES-based CTE for the UPDATE so DuckDB can use a hash join
   // instead of evaluating a potentially huge CASE WHEN expression.
-  const valuesList = [...replacement.entries()]
-    .map(([from, to]) => `(${parseValue(from)}, ${parseValue(to)})`)
-    .join(",\n     ");
+  const replacementEntries = [...replacement.entries()];
+  const valuesList = replacementEntries.map(() => "(?, ?)").join(",\n     ");
+  const values = replacementEntries.flatMap(([from, to]) => [from, to]);
 
-  if (newColumn !== column) {
-    await queryDB(
-      table,
-      `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
-        quoteIdentifier(newColumn)
-      } VARCHAR;
+  const query = newColumn !== column
+    ? `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
+      quoteIdentifier(newColumn)
+    } VARCHAR;
        UPDATE ${quoteIdentifier(table.name)}
          SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};
        WITH mapping(original, canonical) AS (VALUES ${valuesList})
@@ -282,29 +279,24 @@ async function executeFuzzyClean(
          SET ${quoteIdentifier(newColumn)} = m.canonical
          FROM mapping m
          WHERE ${quoteIdentifier(table.name)}.${
-        quoteIdentifier(newColumn)
-      } = m.original`,
-      mergeOptions(table, {
-        table: table.name,
-        method: "fuzzyClean()",
-        parameters: { column, newColumn, options },
-      }),
-    );
-  } else {
-    await queryDB(
-      table,
-      `WITH mapping(original, canonical) AS (VALUES ${valuesList})
+      quoteIdentifier(newColumn)
+    } = m.original`
+    : `WITH mapping(original, canonical) AS (VALUES ${valuesList})
        UPDATE ${quoteIdentifier(table.name)}
          SET ${quoteIdentifier(column)} = m.canonical
          FROM mapping m
          WHERE ${quoteIdentifier(table.name)}.${
-        quoteIdentifier(column)
-      } = m.original`,
-      mergeOptions(table, {
-        table: table.name,
-        method: "fuzzyClean()",
-        parameters: { column, newColumn, options },
-      }),
-    );
-  }
+      quoteIdentifier(column)
+    } = m.original`;
+
+  await queryDB(
+    table,
+    query,
+    mergeOptions(table, {
+      table: table.name,
+      method: "fuzzyClean()",
+      parameters: { column, newColumn, options },
+      values,
+    }),
+  );
 }

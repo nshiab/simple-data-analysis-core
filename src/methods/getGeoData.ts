@@ -11,10 +11,11 @@ export default async function getGeoData(
   column: string,
   options: { rewind?: boolean } = {},
 ) {
+  const quotedColumn = quoteIdentifier(column);
   const query =
-    `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(${column}) as geoJsonFragment from ${
-      quoteIdentifier(SimpleTable.name)
-    };`;
+    `SELECT * EXCLUDE ${quotedColumn}, ST_AsGeoJSON(${quotedColumn}) AS ${
+      quoteIdentifier("geoJsonFragment")
+    } FROM ${quoteIdentifier(SimpleTable.name)};`;
 
   const queryResult = await queryDB(
     SimpleTable,

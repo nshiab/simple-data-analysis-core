@@ -102,6 +102,21 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
 
   await sdb.done();
 });
+
+Deno.test("should quote unusual geometry column names", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geoData");
+  const geometryColumn = 'geo "column';
+
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.renameColumns({ geom: geometryColumn });
+  const geoData = await table.getGeoData(geometryColumn);
+
+  assertEquals(geoData.features.length, 2);
+
+  await sdb.done();
+});
+
 Deno.test("should return geospatial data not rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");

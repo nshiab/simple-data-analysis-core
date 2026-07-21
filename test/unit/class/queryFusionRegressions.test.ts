@@ -46,6 +46,26 @@ Deno.test("a caught flush error keeps other tables' queued work", async () => {
   await sdb.done();
 });
 
+Deno.test("the first failing operation in database-wide order stops the flush", async () => {
+  const sdb = new SimpleDB();
+  const a = sdb.newTable("orderedErrorA");
+  const b = sdb.newTable("orderedErrorB");
+
+  a.loadArray([{ x: 1 }, { x: 2 }]);
+  b.loadArray([{ y: 1 }]);
+  await sdb.run();
+
+  a.filter("x > 1");
+  b.filter("missing_b > 0");
+  a.convert({ missing_a: "integer" });
+
+  await assertRejects(() => a.getData(), Error, "missing_b");
+  await assertRejects(() => a.getData(), Error, "missing_a");
+  assertEquals(await a.getData(), [{ x: 2 }]);
+
+  await sdb.done();
+});
+
 Deno.test("re-queuing on a removed table re-registers it for the flush", async () => {
   const sdb = new SimpleDB();
   const t = sdb.newTable("gone");
@@ -210,7 +230,7 @@ Deno.test("a flush-time validation error still applies the steps before it", asy
   await sdb.done();
 });
 
-Deno.test("interleaved per-table chains still fuse within each table", async () => {
+Deno.test("interleaved table operations execute as contiguous segments", async () => {
   const sdb = new SimpleDB();
   const a = sdb.newTable("fuseA");
   const b = sdb.newTable("fuseB");
@@ -225,8 +245,8 @@ Deno.test("interleaved per-table chains still fuse within each table", async () 
 
   a.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
   b.loadArray([{ w: 1 }, { w: 2 }, { w: 3 }]);
-  // Interleaved, but each operation reads only its own table, so each
-  // table's two operations still fuse into one statement.
+  // Switching tables closes the active segment so global execution and
+  // failure order remain identical to the order in which methods were called.
   a.filter("v > 1");
   b.filter("w > 1");
   a.selectColumns("v");
@@ -235,11 +255,11 @@ Deno.test("interleaved per-table chains still fuse within each table", async () 
   assertEquals(await a.getData(), [{ v: 2 }, { v: 3 }]);
   assertEquals(await b.getData(), [{ w: 2 }, { w: 3 }]);
 
-  const fusedA = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "fuseA"`) &&
-    q.includes('WITH "s1" AS')
+  const statementsForA = queries.filter((q) =>
+    q.includes(`CREATE OR REPLACE TABLE "fuseA"`)
   );
-  assertEquals(fusedA.length, 1);
+  assertEquals(statementsForA.length, 2);
+  assertEquals(statementsForA.every((query) => !query.includes("WITH")), true);
 
   await sdb.done();
 });

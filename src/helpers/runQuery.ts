@@ -11,6 +11,15 @@ import {
 import SDAError from "../class/SDAError.ts";
 import observeQuery from "./observeQuery.ts";
 
+type RunQueryOptions = {
+  method: string | null;
+  parameters: { [key: string]: unknown } | null;
+  table?: string | null;
+  values?: DuckDBValue[];
+  logSQL: boolean;
+  explainSQL: boolean;
+};
+
 const msPerDay = 24 * 60 * 60 * 1000;
 const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER);
 const minSafeInteger = BigInt(Number.MIN_SAFE_INTEGER);
@@ -87,14 +96,7 @@ export default async function runQuery(
   query: string,
   connection: DuckDBConnection,
   returnData: boolean,
-  options: {
-    method: string | null;
-    parameters: { [key: string]: unknown } | null;
-    table?: string | null;
-    values?: DuckDBValue[];
-    logSQL: boolean;
-    explainSQL: boolean;
-  },
+  options: RunQueryOptions,
 ): Promise<
   | {
     [key: string]: unknown;

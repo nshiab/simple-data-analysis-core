@@ -49,6 +49,12 @@ export default class Simple {
    * @param connection - The DuckDB connection that executes the statement.
    * @param returnData - Whether to convert and return result rows.
    * @param options - Error-attribution, binding, and observability options.
+   * @param options.method - The SDA method responsible for the query, when available.
+   * @param options.parameters - The method arguments recorded for error attribution.
+   * @param options.table - The table associated with returned values and warnings.
+   * @param options.values - Data values bound to placeholders in the SQL statement.
+   * @param options.logSQL - Whether to log the SQL immediately before execution.
+   * @param options.explainSQL - Whether to log a supported DuckDB query plan before execution.
    * @returns The converted rows when requested, otherwise `null`.
    *
    * @example

@@ -1,6 +1,35 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("should bind replacement mapping values", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundFuzzyClean");
+  const marker = "O'Connor";
+  let mappingSQL = "";
+  let mappingValues: unknown[] = [];
+  const originalRunQuery = table.runQuery;
+  table.runQuery = (query, connection, returnData, options) => {
+    if (query.includes("WITH mapping")) {
+      mappingSQL = query;
+      mappingValues = options.values ?? [];
+    }
+    return originalRunQuery(query, connection, returnData, options);
+  };
+
+  table.insertRows([
+    { name: marker },
+    { name: marker },
+    { name: "OConnor" },
+  ]);
+  table.fuzzyClean("name", "name", 80);
+  await table.getData();
+
+  assertEquals(mappingSQL.includes(marker), false);
+  assertEquals(mappingValues.includes(marker), true);
+
+  await sdb.done();
+});
+
 Deno.test("should normalize strings in-place with mostCommon strategy", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

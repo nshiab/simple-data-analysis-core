@@ -76,20 +76,14 @@ export default async function flushAllTables(sdb: SimpleDB): Promise<void> {
 
 /**
  * An open run of consecutive fusable operations on one table, accumulated
- * while the flush walks the program-order replay. Segments of different
- * tables stay open across each other — fusable operations only read their
- * own chain — and close when a barrier, a dependency through user-supplied
- * SQL, or the end of the replay forces them to execute.
+ * while the flush walks the program-order replay. A segment closes when the
+ * replay moves to another table, reaches a barrier or dependency through
+ * user-supplied SQL, or reaches the end. Keeping only contiguous operations
+ * together preserves database-wide failure order.
  */
 type Segment = {
   table: SimpleTable;
   ops: FusableOp[];
-  /**
-   * Other tables referenced by user-supplied SQL in this segment's
-   * operations. The reads happen when the segment executes, so those tables
-   * must not advance until then.
-   */
-  reads: Set<SimpleTable>;
 };
 
 type CompiledCte = {
@@ -109,7 +103,7 @@ async function flush(sdb: SimpleDB): Promise<void> {
   sdb.pendingCount = 0;
   entries.sort((a, b) => a!.op.sequence - b!.op.sequence);
 
-  const open = new Map<SimpleTable, Segment>();
+  let open: Segment | null = null;
   // The table whose operation is executing, for error attribution: on
   // failure, that table's chain aborts and the other tables' pending work
   // goes back to their queues.
@@ -118,23 +112,15 @@ async function flush(sdb: SimpleDB): Promise<void> {
   // open segment yet.
   let current: { table: SimpleTable; op: PendingOp } | null = null;
 
-  const runSegmentOf = async (table: SimpleTable) => {
-    const segment = open.get(table);
-    if (segment === undefined) {
+  const runOpenSegment = async () => {
+    if (open === null) {
       return;
     }
-    open.delete(table);
-    executing = table;
-    await runSegment(table, segment.ops);
+    const segment = open;
+    open = null;
+    executing = segment.table;
+    await runSegment(segment.table, segment.ops);
     executing = null;
-  };
-  const runAllOpenSegments = async () => {
-    const segments = [...open.values()].sort(
-      (a, b) => a.ops[0].sequence - b.ops[0].sequence,
-    );
-    for (const segment of segments) {
-      await runSegmentOf(segment.table);
-    }
   };
 
   let index = 0;
@@ -148,10 +134,14 @@ async function flush(sdb: SimpleDB): Promise<void> {
       current = entry;
       const { table, op } = entry;
 
+      if (open !== null && open.table !== table) {
+        await runOpenSegment();
+      }
+
       if (op.kind === "barrier") {
         // A barrier is multi-statement by nature and can read or write any
         // table, so everything pending executes first.
-        await runAllOpenSegments();
+        await runOpenSegment();
         executing = table;
         await op.execute();
         executing = null;
@@ -159,31 +149,16 @@ async function flush(sdb: SimpleDB): Promise<void> {
         continue;
       }
 
-      // Open segments whose user-supplied SQL reads this table saw it at
-      // their call position: they execute before this table advances.
-      for (const segment of [...open.values()]) {
-        if (segment.table !== table && segment.reads.has(table)) {
-          await runSegmentOf(segment.table);
-        }
-      }
-
       const reads = op.rawSQL === undefined
         ? []
         : referencedTables(op.rawSQL, sdb);
-      const otherReads = reads.filter((other) => other !== table);
-      // A read through user-supplied SQL sees the referenced table as it is
-      // at this operation's call position, so the referenced table's pending
-      // work executes now.
-      for (const other of otherReads) {
-        await runSegmentOf(other);
-      }
 
       if (reads.includes(table)) {
         // User-supplied SQL referencing the operation's own table must read
         // the state produced by the previous steps, which a fused chain
         // can't provide (the name would resolve to the pre-chain table). So
         // the chain materializes and the operation runs on its own.
-        await runSegmentOf(table);
+        await runOpenSegment();
         executing = table;
         await runStepwise(table, op);
         executing = null;
@@ -191,18 +166,13 @@ async function flush(sdb: SimpleDB): Promise<void> {
         continue;
       }
 
-      let segment = open.get(table);
-      if (segment === undefined) {
-        segment = { table, ops: [], reads: new Set() };
-        open.set(table, segment);
+      if (open === null) {
+        open = { table, ops: [] };
       }
-      segment.ops.push(op);
-      for (const other of otherReads) {
-        segment.reads.add(other);
-      }
+      open.ops.push(op);
       current = null;
     }
-    await runAllOpenSegments();
+    await runOpenSegment();
   } catch (error) {
     // The failing table's chain aborts, like a v1 script stopping at the
     // failing line. The other tables' pending work was queued successfully
@@ -217,9 +187,9 @@ async function flush(sdb: SimpleDB): Promise<void> {
     if (current !== null) {
       requeue(current.table, current.op);
     }
-    for (const segment of open.values()) {
-      for (const op of segment.ops) {
-        requeue(segment.table, op);
+    if (open !== null) {
+      for (const op of open.ops) {
+        requeue(open.table, op);
       }
     }
     for (let i = index + 1; i < entries.length; i++) {
