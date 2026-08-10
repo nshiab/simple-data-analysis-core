@@ -1613,11 +1613,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   keepValues(
-    columnsAndValues: {
-      [key: string]:
-        | (number | string | Date | boolean | null)[]
-        | (number | string | Date | boolean | null);
-    },
+    columnsAndValues: { [key: string]: unknown },
   ): this {
     keepValues(this, columnsAndValues);
     return this;
@@ -1645,11 +1641,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   removeValues(
-    columnsAndValues: {
-      [key: string]:
-        | (number | string | Date | boolean | null)[]
-        | (number | string | Date | boolean | null);
-    },
+    columnsAndValues: { [key: string]: unknown },
   ): this {
     removeValues(this, columnsAndValues);
     return this;
@@ -2694,7 +2686,7 @@ export default class SimpleTable extends Simple {
    */
   replaceNulls(
     columns: "all" | string | string[],
-    value: number | string | Date | boolean,
+    value: unknown,
   ): this {
     replaceNulls(this, columns, value);
     return this;

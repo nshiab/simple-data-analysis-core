@@ -69,3 +69,15 @@ Deno.test("should replace null values in all columns with the 'all' option", asy
 
   await sdb.done();
 });
+
+Deno.test("should replace nulls with a value typed as unknown", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1n }, { id: null }]);
+  const value: unknown = 2n;
+
+  table.replaceNulls("id", value);
+
+  assertEquals(await table.getData(), [{ id: 1 }, { id: 2 }]);
+  await sdb.done();
+});

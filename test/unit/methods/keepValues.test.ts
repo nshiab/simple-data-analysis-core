@@ -500,3 +500,15 @@ Deno.test("should keep only specific rows even with spaces in column names", asy
   ]);
   await sdb.done();
 });
+
+Deno.test("should keep values typed as unknown", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1n }, { id: 2n }, { id: 3n }]);
+  const value: unknown = 2n;
+
+  table.keepValues({ id: value });
+
+  assertEquals(await table.getData(), [{ id: 2 }]);
+  await sdb.done();
+});

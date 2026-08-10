@@ -5,11 +5,7 @@ import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
 export default function removeValues(
   simpleTable: SimpleTable,
-  columnsAndValues: {
-    [key: string]:
-      | (number | string | Date | boolean | null)[]
-      | (number | string | Date | boolean | null);
-  },
+  columnsAndValues: { [key: string]: unknown },
 ) {
   const captured = Object.fromEntries(
     Object.entries(columnsAndValues).map(([column, values]) => [
@@ -32,21 +28,16 @@ export default function removeValues(
 
 function removeValuesSelect(
   input: string,
-  columnsAndValues: {
-    [key: string]:
-      | (number | string | Date | boolean | null)[]
-      | (number | string | Date | boolean | null);
-  },
+  columnsAndValues: { [key: string]: unknown },
 ) {
   let query = `SELECT * FROM ${input} WHERE\n`;
   const columns = Object.keys(columnsAndValues);
 
   const conditions = [];
   for (const column of columns) {
-    let values = columnsAndValues[column];
-    if (!Array.isArray(values)) {
-      values = [values];
-    }
+    const values = Array.isArray(columnsAndValues[column])
+      ? columnsAndValues[column]
+      : [columnsAndValues[column]];
 
     conditions.push(
       `${quoteIdentifier(column)} NOT IN (${values.map(() => "?").join(", ")})`,

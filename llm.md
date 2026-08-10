@@ -2056,7 +2056,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-keepValues(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
+keepValues(columnsAndValues: Record<string, unknown>): this;
 ```
 
 ##### Parameters
@@ -2090,7 +2090,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-removeValues(columnsAndValues: Record<string, (number | string | Date | boolean | null)[] | (number | string | Date | boolean | null)>): this;
+removeValues(columnsAndValues: Record<string, unknown>): this;
 ```
 
 ##### Parameters
@@ -3238,7 +3238,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-replaceNulls(columns: "all" | string | string[], value: number | string | Date | boolean): this;
+replaceNulls(columns: "all" | string | string[], value: unknown): this;
 ```
 
 ##### Parameters

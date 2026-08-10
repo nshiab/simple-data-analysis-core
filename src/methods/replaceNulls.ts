@@ -7,7 +7,7 @@ import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 export default function replaceNulls(
   simpleTable: SimpleTable,
   columns: "all" | string | string[],
-  value: number | string | Date | boolean,
+  value: unknown,
 ) {
   columns = Array.isArray(columns) ? [...columns] : columns;
   const capturedValue = value instanceof Date

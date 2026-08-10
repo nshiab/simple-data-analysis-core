@@ -578,3 +578,15 @@ Deno.test("should remove specific rows even column names have spaces", async () 
   ]);
   await sdb.done();
 });
+
+Deno.test("should remove values typed as unknown", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1n }, { id: 2n }, { id: 3n }]);
+  const values: unknown = [1n, 3n];
+
+  table.removeValues({ id: values });
+
+  assertEquals(await table.getData(), [{ id: 2 }]);
+  await sdb.done();
+});
