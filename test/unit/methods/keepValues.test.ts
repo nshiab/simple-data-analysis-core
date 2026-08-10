@@ -512,3 +512,36 @@ Deno.test("should keep values typed as unknown", async () => {
   assertEquals(await table.getData(), [{ id: 2 }]);
   await sdb.done();
 });
+
+Deno.test("should keep null values", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.keepValues({ id: null });
+
+  assertEquals(await table.getData(), [{ id: null }]);
+  await sdb.done();
+});
+
+Deno.test("should keep null and non-null values together", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.keepValues({ id: [1, null] });
+
+  assertEquals(await table.getData(), [{ id: 1 }, { id: null }]);
+  await sdb.done();
+});
+
+Deno.test("should keep no rows for an empty values array", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.keepValues({ id: [] });
+
+  assertEquals(await table.getData(), []);
+  await sdb.done();
+});

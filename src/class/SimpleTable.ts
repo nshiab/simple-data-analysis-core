@@ -1596,7 +1596,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns.
+   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns. Use `null` to keep rows where a column is `NULL`.
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
@@ -1611,6 +1611,12 @@ export default class SimpleTable extends Simple {
    * // Keep only rows where 'status' is 'active'
    * table.keepValues({ status: "active" });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Keep only rows where 'status' is NULL
+   * table.keepValues({ status: null });
+   * ```
    */
   keepValues(
     columnsAndValues: { [key: string]: unknown },
@@ -1624,7 +1630,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns.
+   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns. Use `null` to remove rows where a column is `NULL`; otherwise, `NULL` rows are retained.
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    *
@@ -1638,6 +1644,12 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Remove rows where 'status' is 'inactive'
    * table.removeValues({ status: "inactive" });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Remove rows where 'status' is NULL
+   * table.removeValues({ status: null });
    * ```
    */
   removeValues(

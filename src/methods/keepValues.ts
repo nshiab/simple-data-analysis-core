@@ -1,7 +1,9 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import toDuckDBValue from "../helpers/toDuckDBValue.ts";
+import prepareValueFilters, {
+  type ValueFilter,
+} from "../helpers/prepareValueFilters.ts";
 
 export default function keepValues(
   simpleTable: SimpleTable,
@@ -13,34 +15,35 @@ export default function keepValues(
       Array.isArray(values) ? [...values] : values,
     ]),
   ) as typeof columnsAndValues;
-  const values = Object.values(captured).flatMap((value) =>
-    (Array.isArray(value) ? value : [value]).map(toDuckDBValue)
-  );
+  const filters = prepareValueFilters(captured);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "keepValues()",
     parameters: { columnsAndValues: captured },
-    values,
+    values: filters.flatMap((filter) => filter.values),
     needsSchema: false,
-    buildSelect: (input) => keepValuesSelect(input, captured),
+    buildSelect: (input) => keepValuesSelect(input, filters),
   });
 }
 
 function keepValuesSelect(
   input: string,
-  columnsAndValues: { [key: string]: unknown },
+  filters: ValueFilter[],
 ) {
   let query = `SELECT * FROM ${input} WHERE\n`;
-  const columns = Object.keys(columnsAndValues);
 
   const conditions = [];
-  for (const column of columns) {
-    const values = Array.isArray(columnsAndValues[column])
-      ? columnsAndValues[column]
-      : [columnsAndValues[column]];
-
+  for (const filter of filters) {
+    const column = quoteIdentifier(filter.column);
+    const inValues = filter.values.length > 0
+      ? `${column} IN (${filter.values.map(() => "?").join(", ")})`
+      : null;
     conditions.push(
-      `${quoteIdentifier(column)} IN (${values.map(() => "?").join(", ")})`,
+      inValues === null
+        ? filter.includesNull ? `${column} IS NULL` : "FALSE"
+        : filter.includesNull
+        ? `(${inValues} OR ${column} IS NULL)`
+        : inValues,
     );
   }
 

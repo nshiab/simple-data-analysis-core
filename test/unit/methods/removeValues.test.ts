@@ -183,6 +183,14 @@ Deno.test("should remove specific rows", async () => {
       endOfYearBonus: "2,98%",
     },
     {
+      name: "Tobias, Sigal",
+      hireDate: "24-JUL-05",
+      job: "NaN",
+      salary: "2800",
+      departmentOrUnit: null,
+      endOfYearBonus: "undefined",
+    },
+    {
       name: "Kaufling, Payam",
       hireDate: "01-MAY-03",
       job: "Manager",
@@ -374,6 +382,14 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
       salary: "6900",
       departmentOrUnit: "100",
       endOfYearBonus: "2,98%",
+    },
+    {
+      name: "Tobias, Sigal",
+      hireDate: "24-JUL-05",
+      job: "NaN",
+      salary: "2800",
+      departmentOrUnit: null,
+      endOfYearBonus: "undefined",
     },
     {
       name: "Kaufling, Payam",
@@ -568,6 +584,14 @@ Deno.test("should remove specific rows even column names have spaces", async () 
       "End-of_year-BONUS?": "2,98%",
     },
     {
+      Name: "Tobias, Sigal",
+      "Hire date": "24-JUL-05",
+      Job: "NaN",
+      Salary: "2800",
+      "Department or unit": null,
+      "End-of_year-BONUS?": "undefined",
+    },
+    {
       Name: "Kaufling, Payam",
       "Hire date": "01-MAY-03",
       Job: "Manager",
@@ -588,5 +612,49 @@ Deno.test("should remove values typed as unknown", async () => {
   table.removeValues({ id: values });
 
   assertEquals(await table.getData(), [{ id: 2 }]);
+  await sdb.done();
+});
+
+Deno.test("should retain nulls when removing a non-null value", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.removeValues({ id: 1 });
+
+  assertEquals(await table.getData(), [{ id: null }, { id: 2 }]);
+  await sdb.done();
+});
+
+Deno.test("should remove null values", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.removeValues({ id: null });
+
+  assertEquals(await table.getData(), [{ id: 1 }, { id: 2 }]);
+  await sdb.done();
+});
+
+Deno.test("should remove null and non-null values together", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.removeValues({ id: [1, null] });
+
+  assertEquals(await table.getData(), [{ id: 2 }]);
+  await sdb.done();
+});
+
+Deno.test("should remove no rows for an empty values array", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
+
+  table.removeValues({ id: [] });
+
+  assertEquals(await table.getData(), [{ id: 1 }, { id: null }, { id: 2 }]);
   await sdb.done();
 });

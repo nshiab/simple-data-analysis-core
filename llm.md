@@ -2062,7 +2062,8 @@ keepValues(columnsAndValues: Record<string, unknown>): this;
 ##### Parameters
 
 - **`columnsAndValues`**: An object where keys are column names and values are
-  the specific values (or an array of values) to keep in those columns.
+  the specific values (or an array of values) to keep in those columns. Use
+  `null` to keep rows where a column is `NULL`.
 
 ##### Returns
 
@@ -2078,6 +2079,11 @@ table.keepValues({ job: ["accountant", "developer"], city: "Montreal" });
 ```ts
 // Keep only rows where 'status' is 'active'
 table.keepValues({ status: "active" });
+```
+
+```ts
+// Keep only rows where 'status' is NULL
+table.keepValues({ status: null });
 ```
 
 #### `removeValues`
@@ -2096,7 +2102,9 @@ removeValues(columnsAndValues: Record<string, unknown>): this;
 ##### Parameters
 
 - **`columnsAndValues`**: An object where keys are column names and values are
-  the specific values (or an array of values) to remove from those columns.
+  the specific values (or an array of values) to remove from those columns. Use
+  `null` to remove rows where a column is `NULL`; otherwise, `NULL` rows are
+  retained.
 
 ##### Returns
 
@@ -2112,6 +2120,11 @@ table.removeValues({ job: ["accountant", "developer"], city: "Montreal" });
 ```ts
 // Remove rows where 'status' is 'inactive'
 table.removeValues({ status: "inactive" });
+```
+
+```ts
+// Remove rows where 'status' is NULL
+table.removeValues({ status: null });
 ```
 
 #### `removeRows`
