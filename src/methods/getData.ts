@@ -3,6 +3,7 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
 export default async function getData(
   simpleTable: SimpleTable,
@@ -24,9 +25,15 @@ export default async function getData(
     : undefined;
   return (await queryDB(
     simpleTable,
-    `SELECT ${columns ? columns.map(quoteIdentifier).join(", ") : "*"} from ${
-      quoteIdentifier(simpleTable.name)
-    }${options.conditions ? ` WHERE ${options.conditions}` : ""}`,
+    `SELECT ${
+      columns
+        ? columns.map((column) =>
+          quoteQualifiedIdentifier(simpleTable.name, column)
+        ).join(", ")
+        : "*"
+    } from ${quoteIdentifier(simpleTable.name)}${
+      options.conditions ? ` WHERE ${options.conditions}` : ""
+    }`,
     mergeOptions(simpleTable, {
       returnData: true,
       table: simpleTable.name,

@@ -2,6 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
 export default async function getMedian(
   SimpleTable: SimpleTable,
@@ -10,17 +11,16 @@ export default async function getMedian(
     decimals?: number;
   } = {},
 ) {
+  const qualifiedColumn = quoteQualifiedIdentifier(SimpleTable.name, column);
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(MEDIAN(${
+      ? `SELECT ROUND(MEDIAN(${qualifiedColumn}), ${options.decimals}) AS ${
         quoteIdentifier(column)
-      }), ${options.decimals}) AS ${quoteIdentifier(column)} FROM ${
+      } FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT MEDIAN(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${
         quoteIdentifier(SimpleTable.name)
-      }`
-      : `SELECT MEDIAN(${quoteIdentifier(column)}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`,
+      }`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

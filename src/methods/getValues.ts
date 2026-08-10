@@ -2,6 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
 export default async function getValues(
   simpleTable: SimpleTable,
@@ -9,7 +10,7 @@ export default async function getValues(
 ) {
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT ${quoteIdentifier(column)} FROM ${
+    `SELECT ${quoteQualifiedIdentifier(simpleTable.name, column)} FROM ${
       quoteIdentifier(simpleTable.name)
     }`,
     mergeOptions(simpleTable, {

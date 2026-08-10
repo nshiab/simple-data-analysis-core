@@ -2,6 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
 export default async function getMean(
   simpleTable: SimpleTable,
@@ -10,17 +11,16 @@ export default async function getMean(
     decimals?: number;
   } = {},
 ) {
+  const qualifiedColumn = quoteQualifiedIdentifier(simpleTable.name, column);
   const queryResult = await queryDB(
     simpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(AVG(${
+      ? `SELECT ROUND(AVG(${qualifiedColumn}), ${options.decimals}) AS ${
         quoteIdentifier(column)
-      }), ${options.decimals}) AS ${quoteIdentifier(column)} FROM ${
+      } FROM ${quoteIdentifier(simpleTable.name)}`
+      : `SELECT AVG(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${
         quoteIdentifier(simpleTable.name)
-      }`
-      : `SELECT AVG(${quoteIdentifier(column)}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(simpleTable.name)}`,
+      }`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,
