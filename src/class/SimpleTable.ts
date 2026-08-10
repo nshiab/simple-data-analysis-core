@@ -4654,21 +4654,31 @@ export default class SimpleTable extends Simple {
    * @param latColumn - The name of the column storing the latitude values.
    * @param lonColumn - The name of the column storing the longitude values.
    * @param newColumn - The name of the new column where the point geometries will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.projection - The projection of the coordinates. Defaults to `"EPSG:4326"`.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
-   * // Create point geometries in a new 'geom' column using 'lat' and 'lon' columns
+   * // Create point geometries in a new 'geom' column using 'lat' and 'lon' columns.
+   * // The projection is assumed to be EPSG:4326 (WGS84).
    * table.points("lat", "lon", "geom");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Create point geometries from coordinates in a projected coordinate system
+   * table.points("y", "x", "geom", { projection: "EPSG:3347" });
    * ```
    */
   points(
     latColumn: string,
     lonColumn: string,
     newColumn: string,
+    options: { projection?: string } = {},
   ): this {
-    points(this, latColumn, lonColumn, newColumn);
+    points(this, latColumn, lonColumn, newColumn, options);
     return this;
   }
 

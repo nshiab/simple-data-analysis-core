@@ -5466,7 +5466,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-points(latColumn: string, lonColumn: string, newColumn: string): this;
+points(latColumn: string, lonColumn: string, newColumn: string, options?: { projection?: string }): this;
 ```
 
 ##### Parameters
@@ -5475,6 +5475,9 @@ points(latColumn: string, lonColumn: string, newColumn: string): this;
 - **`lonColumn`**: The name of the column storing the longitude values.
 - **`newColumn`**: The name of the new column where the point geometries will be
   stored.
+- **`options`**: An optional object with configuration options:
+- **`options.projection`**: The projection of the coordinates. Defaults to
+  `"EPSG:4326"`.
 
 ##### Returns
 
@@ -5483,8 +5486,14 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Create point geometries in a new 'geom' column using 'lat' and 'lon' columns
+// Create point geometries in a new 'geom' column using 'lat' and 'lon' columns.
+// The projection is assumed to be EPSG:4326 (WGS84).
 table.points("lat", "lon", "geom");
+```
+
+```ts
+// Create point geometries from coordinates in a projected coordinate system
+table.points("y", "x", "geom", { projection: "EPSG:3347" });
 ```
 
 #### `isValidGeo`

@@ -61,3 +61,20 @@ Deno.test("points() should overwrite existing column", async () => {
 
   await sdb.done();
 });
+
+Deno.test("points() should use the specified projection", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ x: 1_234_567, y: 2_345_678 }]);
+
+  table.points("y", "x", "geom", { projection: "EPSG:3347" });
+
+  const types = await table.getTypes();
+  assertEquals(types, {
+    x: "DOUBLE",
+    y: "DOUBLE",
+    geom: "GEOMETRY('EPSG:3347')",
+  });
+
+  await sdb.done();
+});
