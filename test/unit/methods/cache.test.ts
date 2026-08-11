@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import {
   existsSync,
   readdirSync,
@@ -85,6 +86,48 @@ Deno.test("should load data from the cache instead of running computations", asy
     },
   ]);
   await sdb.done();
+});
+Deno.test("should execute a cached load before cache resolves", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const firstSdb = new SimpleDB();
+  const firstTable = firstSdb.newTable("cacheHitExecution");
+  await firstTable.cache(createCompute(firstTable));
+  await firstSdb.done();
+
+  const secondSdb = new SimpleDB();
+  const secondTable = secondSdb.newTable("cacheHitExecution");
+  await secondTable.cache(createCompute(secondTable));
+
+  assertEquals(computationRuns, 1);
+  assertEquals(secondTable.pendingOps.map((op) => op.method), []);
+
+  await secondSdb.done();
+});
+Deno.test("should execute a cached geospatial load before cache resolves", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadGeoData("test/geodata/files/pointsInside.json");
+  };
+
+  const firstSdb = new SimpleDB();
+  const firstTable = firstSdb.newTable("geoCacheHitExecution");
+  await firstTable.cache(createCompute(firstTable));
+  await firstSdb.done();
+
+  const secondSdb = new SimpleDB();
+  const secondTable = secondSdb.newTable("geoCacheHitExecution");
+  await secondTable.cache(createCompute(secondTable));
+
+  assertEquals(computationRuns, 1);
+  assertEquals(secondTable.pendingOps.map((op) => op.method), []);
+
+  await secondSdb.done();
 });
 Deno.test("should load data from the cache if ttl has not expired", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });

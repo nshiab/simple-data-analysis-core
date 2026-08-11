@@ -96,11 +96,14 @@ export default async function cache(
           }.\nThere are ${prettyDuration(now, { end: ttlLimit })} left.`,
         );
     }
+    // Cached-file loaders are sync builders, so cache() must flush their
+    // queued work before it resolves.
     if (cache.file === null) {
       console.log("No data in cache. Nothing to load.");
     } else if (cache.geo) {
       const start = Date.now();
-      await table.loadGeoData(cache.file);
+      table.loadGeoData(cache.file);
+      await flushAllTables(table.sdb);
       if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
         table.sdb.cacheSourcesUsed.push(id);
       }
@@ -120,7 +123,8 @@ export default async function cache(
       }
     } else {
       const start = Date.now();
-      await table.loadData(cache.file);
+      table.loadData(cache.file);
+      await flushAllTables(table.sdb);
       if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
         table.sdb.cacheSourcesUsed.push(id);
       }
