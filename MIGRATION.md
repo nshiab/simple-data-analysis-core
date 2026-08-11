@@ -173,6 +173,7 @@ Methods that could skip validations or error-throwing now all use
 | Method                                         | v1                                                | v2                                       |
 | :--------------------------------------------- | :------------------------------------------------ | :--------------------------------------- |
 | `join()`                                       | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
+| `loadData()` / `loadDirectory()`               | `{ fileName: true }`                              | `{ filename: true }`                     |
 | `joinGeo()`                                    | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
 | `cloneTable()`                                 | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
 | `summarize()`                                  | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |

@@ -12,7 +12,7 @@ export default function loadDirectory(
     fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
     autoDetect?: boolean;
     limit?: number;
-    fileName?: boolean;
+    filename?: boolean;
     unifyColumns?: boolean;
     columnTypes?: { [key: string]: string };
     // column selection

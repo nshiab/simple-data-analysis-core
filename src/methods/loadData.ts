@@ -14,7 +14,7 @@ export default function loadData(
     fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
     autoDetect?: boolean;
     limit?: number;
-    fileName?: boolean;
+    filename?: boolean;
     unifyColumns?: boolean;
     columnTypes?: { [key: string]: string };
     // column selection
@@ -67,7 +67,7 @@ export function loadDataQuery(
     fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
     autoDetect?: boolean;
     limit?: number;
-    fileName?: boolean;
+    filename?: boolean;
     unifyColumns?: boolean;
     columnTypes?: { [key: string]: string };
     // column selection
@@ -116,14 +116,14 @@ export function loadDataQuery(
       ).join(", ")
     }}`
     : "";
-  const fileName = typeof options.fileName === "boolean"
-    ? `, filename=${String(options.fileName).toUpperCase()}`
+  const filename = typeof options.filename === "boolean"
+    ? `, filename=${String(options.filename).toUpperCase()}`
     : "";
   const unifyColumns = typeof options.unifyColumns === "boolean"
     ? `, union_by_name=${String(options.unifyColumns).toUpperCase()}`
     : "";
   const generalOptions =
-    `${autoDetect}${columnTypes}${fileName}${unifyColumns}`;
+    `${autoDetect}${columnTypes}${filename}${unifyColumns}`;
 
   const limit = typeof options.limit === "number"
     ? ` LIMIT ${options.limit}`
@@ -179,7 +179,7 @@ export function loadDataQuery(
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
     return `CREATE OR REPLACE TABLE ${
       quoteIdentifier(table)
-    } AS SELECT ${selectColumns} FROM read_parquet(${filesAsString}${fileName}${unifyColumns})${limit};`;
+    } AS SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${limit};`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {
     if (files.length > 1) {
       throw new Error(

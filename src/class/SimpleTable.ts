@@ -368,7 +368,7 @@ export default class SimpleTable extends Simple {
    * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
    * @param options.limit - A number indicating the maximum number of rows to load. Defaults to all rows.
-   * @param options.fileName - A boolean indicating whether to include the file name as a new column in the loaded data. Defaults to `false`.
+   * @param options.filename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
    * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
@@ -431,7 +431,7 @@ export default class SimpleTable extends Simple {
       fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
       autoDetect?: boolean;
       limit?: number;
-      fileName?: boolean;
+      filename?: boolean;
       unifyColumns?: boolean;
       columnTypes?: { [key: string]: string };
       // column selection
@@ -467,7 +467,7 @@ export default class SimpleTable extends Simple {
    * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
    * @param options.limit - A number indicating the maximum number of rows to load. Defaults to all rows.
-   * @param options.fileName - A boolean indicating whether to include the file name as a new column in the loaded data. Defaults to `false`.
+   * @param options.filename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
    * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
@@ -504,7 +504,7 @@ export default class SimpleTable extends Simple {
       fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
       autoDetect?: boolean;
       limit?: number;
-      fileName?: boolean;
+      filename?: boolean;
       unifyColumns?: boolean;
       columnTypes?: { [key: string]: string };
       // column selection
@@ -2554,9 +2554,9 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Split 'fileName' by dot and extract the first part (index 0), overwriting 'fileName'
+   * // Split 'filename' by dot and extract the first part (index 0), overwriting 'filename'
    * // e.g., "document.pdf" -> "document"
-   * table.splitExtract("fileName", ".", 0, "fileName");
+   * table.splitExtract("filename", ".", 0, "filename");
    * ```
    */
   splitExtract(

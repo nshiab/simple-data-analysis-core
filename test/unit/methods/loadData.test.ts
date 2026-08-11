@@ -483,7 +483,7 @@ Deno.test("should load data from multiple files and add a column with the file n
       "test/data/directory/data2.csv",
       "test/data/directory/data3.csv",
     ],
-    { fileName: true },
+    { filename: true },
   );
 
   const data = await table.getData();

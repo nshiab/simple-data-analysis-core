@@ -92,6 +92,26 @@ Deno.test("should load data from a directory with a limit option", async () => {
   await sdb.done();
 });
 
+Deno.test("should include the filename when loading a directory", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadDirectory("test/data/directory/", {
+    filename: true,
+    unifyColumns: true,
+  });
+
+  const data = await table.getData();
+  const filenames = [...new Set(data.map((row) => row.filename))].sort();
+
+  assertEquals(filenames, [
+    "test/data/directory/data1.csv",
+    "test/data/directory/data2.csv",
+    "test/data/directory/data3.csv",
+    "test/data/directory/data4ExtraColumn.csv",
+  ]);
+  await sdb.done();
+});
+
 Deno.test("should load only specific columns from directory", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
