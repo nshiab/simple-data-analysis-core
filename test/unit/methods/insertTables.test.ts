@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should add rows from a table into another table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable("table1");
   table1.loadData("test/data/files/data.json");
 
@@ -26,7 +26,7 @@ Deno.test("should add rows from a table into another table", async () => {
 });
 
 Deno.test("should add rows from a table into another table even if the column order is not the same", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable("table1");
   table1.loadData("test/data/files/data.json");
 
@@ -49,7 +49,7 @@ Deno.test("should add rows from a table into another table even if the column or
   await sdb.done();
 });
 Deno.test("should throw an error if the tables have different columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadData("test/data/files/data.json");
 
@@ -64,7 +64,7 @@ Deno.test("should throw an error if the tables have different columns", async ()
 });
 
 Deno.test("should add rows from multiple tables into another table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable("table1");
   table1.loadData("test/data/files/data.json");
 
@@ -93,7 +93,7 @@ Deno.test("should add rows from multiple tables into another table", async () =>
   await sdb.done();
 });
 Deno.test("should add rows from tables with different columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable("table1");
   table1.loadArray([
     { firstName: "John", lastName: "Doe" },
@@ -125,7 +125,7 @@ Deno.test("should add rows from tables with different columns", async () => {
   await sdb.done();
 });
 Deno.test("should add rows from tables with different columns without adding columns to the original tables", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable("table1");
   table1.loadArray([
     { firstName: "John", lastName: "Doe" },
@@ -169,7 +169,7 @@ Deno.test("should add rows from tables with different columns without adding col
   await sdb.done();
 });
 Deno.test("should add rows from tables with geometries", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -195,7 +195,7 @@ Deno.test("should add rows from tables with geometries", async () => {
   await sdb.done();
 });
 Deno.test("should throw an error if geometry projections are not the same", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -212,7 +212,7 @@ Deno.test("should throw an error if geometry projections are not the same", asyn
   await sdb.done();
 });
 Deno.test("should throw an error if geometry projections are not the same, even if columns are unified", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -230,7 +230,7 @@ Deno.test("should throw an error if geometry projections are not the same, even 
   await sdb.done();
 });
 Deno.test("should add rows with geometries to a table without geometries", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadData(
     "test/data/files/cities.csv",
@@ -256,7 +256,7 @@ Deno.test("should add rows with geometries to a table without geometries", async
   await sdb.done();
 });
 Deno.test("should add rows without geometries to a table with geometries", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadData(
     "test/data/files/cities.csv",
@@ -282,7 +282,7 @@ Deno.test("should add rows without geometries to a table with geometries", async
   await sdb.done();
 });
 Deno.test("should add rows and unify columns when the second table has more columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadGeoData(
     "test/geodata/files/point.json",
@@ -306,7 +306,7 @@ Deno.test("should add rows and unify columns when the second table has more colu
   await sdb.done();
 });
 Deno.test("should add rows with tables with multiple geometry columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
   table1.loadGeoData(
     "test/geodata/files/point.json",
@@ -335,7 +335,7 @@ Deno.test("should add rows with tables with multiple geometry columns", async ()
   await sdb.done();
 });
 Deno.test("should return the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable("table1");
   table1.loadData("test/data/files/data.json");
 
@@ -349,7 +349,7 @@ Deno.test("should return the table", async () => {
   await sdb.done();
 });
 Deno.test("should add rows to an empty table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
 
   const table2 = sdb.newTable();
@@ -367,7 +367,7 @@ Deno.test("should add rows to an empty table", async () => {
   await sdb.done();
 });
 Deno.test("should add rows with geometries to an empty table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table1 = sdb.newTable();
 
   const table2 = sdb.newTable();

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the whole data from a table as CSV", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV();
@@ -66,7 +66,7 @@ undefined,14-JUN-04,Clerk,3300,50,"18,54%"
 });
 
 Deno.test("should return data from a table based on a condition as CSV", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV({
@@ -85,7 +85,7 @@ Deno.test("should return data from a table based on a condition as CSV", async (
   await sdb.done();
 });
 Deno.test("should return data from a table based on a condition as CSV with specific columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV({

@@ -21,7 +21,7 @@ const data = [
 ];
 
 Deno.test("should fuse consecutive builder methods into a single statement", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("fused");
   const queries = spyOnQueries(table);
 
@@ -48,7 +48,7 @@ Deno.test("should fuse consecutive builder methods into a single statement", asy
 });
 
 Deno.test("should fuse REPLACE-style column updates into the chain", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("replaceFused");
   const queries = spyOnQueries(table);
 
@@ -74,7 +74,7 @@ Deno.test("should fuse REPLACE-style column updates into the chain", async () =>
 });
 
 Deno.test("should produce the same results in statement style", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("statements");
 
   table.loadArray(data);
@@ -92,7 +92,7 @@ Deno.test("should produce the same results in statement style", async () => {
 });
 
 Deno.test("should resolve mid-chain schemas for schema-dependent methods", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("midChainSchema");
 
   // convert() needs the schema of its input, which here is the output of
@@ -109,7 +109,7 @@ Deno.test("should resolve mid-chain schemas for schema-dependent methods", async
 });
 
 Deno.test("should not let cleanSQL cross fragment boundaries", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("fragments");
 
   // The filter uses JS syntax (&&), while the addColumn definition uses the
@@ -126,7 +126,7 @@ Deno.test("should not let cleanSQL cross fragment boundaries", async () => {
 });
 
 Deno.test("should attribute a fused failure to the culprit method", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("attribution");
 
   const error = await assertRejects(() =>
@@ -144,7 +144,7 @@ Deno.test("should attribute a fused failure to the culprit method", async () => 
 });
 
 Deno.test("should throw at the observation point when convert() references a missing column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("convertValidation");
 
   table.loadArray(data);
@@ -162,7 +162,7 @@ Deno.test("should throw at the observation point when convert() references a mis
 });
 
 Deno.test("should execute queued methods with run()", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("run");
 
   await table
@@ -178,7 +178,7 @@ Deno.test("should execute queued methods with run()", async () => {
 });
 
 Deno.test("should flush queued methods before an unconverted async method runs", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("ordering");
 
   // filter() is queued; sort() executes immediately, so the filter must run
@@ -197,7 +197,7 @@ Deno.test("should flush queued methods before an unconverted async method runs",
 });
 
 Deno.test("should flush a table's queued methods when another table observes", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("flushAllA");
   const tableB = sdb.newTable("flushAllB");
 
@@ -213,7 +213,7 @@ Deno.test("should flush a table's queued methods when another table observes", a
 });
 
 Deno.test("should replay interleaved operations across tables in program order", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("orderA");
   const tableB = sdb.newTable("orderB");
 
@@ -257,7 +257,7 @@ Deno.test("should replay interleaved operations across tables in program order",
 });
 
 Deno.test("should join with the other table's state at the join's position in program order", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const left = sdb.newTable("joinLeft");
   const right = sdb.newTable("joinRight");
 
@@ -285,7 +285,7 @@ Deno.test("should join with the other table's state at the join's position in pr
 });
 
 Deno.test("should chain sync builders off a sync join", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const left = sdb.newTable("chainJoinLeft");
   const right = sdb.newTable("chainJoinRight");
 
@@ -311,7 +311,7 @@ Deno.test("should chain sync builders off a sync join", async () => {
 });
 
 Deno.test("should surface join validation errors at the observation point", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const left = sdb.newTable("joinErrLeft");
   const right = sdb.newTable("joinErrRight");
 
@@ -326,7 +326,7 @@ Deno.test("should surface join validation errors at the observation point", asyn
 });
 
 Deno.test("should fuse row filters, string updates and sort into one statement", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("bigChain");
   const queries = spyOnQueries(table);
 
@@ -364,7 +364,7 @@ Deno.test("should fuse row filters, string updates and sort into one statement",
 });
 
 Deno.test("should fuse geospatial operations with regular ones, loading spatial once", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geoFused");
   const queries = spyOnQueries(table);
 
@@ -393,7 +393,7 @@ Deno.test("should fuse geospatial operations with regular ones, loading spatial 
 });
 
 Deno.test("logSQL observes one fused statement without changing execution", async () => {
-  const sdb = new SimpleDB({ logSQL: true });
+  const sdb = new SimpleDB({ dataTransport: "file", logSQL: true });
   await sdb.start();
   const table = sdb.newTable("loggedFusion");
   const queries = spyOnQueries(table);
@@ -428,7 +428,7 @@ Deno.test("logSQL observes one fused statement without changing execution", asyn
 });
 
 Deno.test("explainSQL logs a plan for a fused statement without changing its result", async () => {
-  const sdb = new SimpleDB({ explainSQL: true });
+  const sdb = new SimpleDB({ dataTransport: "file", explainSQL: true });
   await sdb.start();
   const table = sdb.newTable("explainedFusion");
   const logs: string[] = [];
@@ -459,7 +459,7 @@ Deno.test("explainSQL logs a plan for a fused statement without changing its res
 });
 
 Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", async () => {
-  const sdb = new SimpleDB({ explainSQL: true });
+  const sdb = new SimpleDB({ dataTransport: "file", explainSQL: true });
   const warnings: string[] = [];
   const originalWarn = console.warn;
   console.warn = (message: string) => warnings.push(message);
@@ -489,7 +489,7 @@ Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", 
 
 Deno.test("done() discards queued methods, cleans up, and rejects", async () => {
   const tempDir = "./test/output/pending_memory.tmp";
-  const sdb = new SimpleDB({ tempDir });
+  const sdb = new SimpleDB({ dataTransport: "file", tempDir });
   await sdb.start();
   mkdirSync(tempDir, { recursive: true });
   const table = sdb.newTable("neverExecuted");

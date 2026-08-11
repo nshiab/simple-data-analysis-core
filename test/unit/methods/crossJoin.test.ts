@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return all pairs of rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const numbers = sdb.newTable("numbers");
   numbers.loadArray([
     { key1: 1 },
@@ -41,7 +41,7 @@ Deno.test("should return all pairs of rows", async () => {
 });
 
 Deno.test("should return all pairs of rows in a new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const numbers = sdb.newTable("numbers");
   numbers.loadArray([
     { key1: 1 },
@@ -82,7 +82,7 @@ Deno.test("should return all pairs of rows in a new table", async () => {
 });
 
 Deno.test("should return all pairs of rows in a new table with a specific name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const numbers = sdb.newTable("numbers");
   numbers.loadArray([
     { key1: 1 },

@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should update the data from the table with a javascript function and reinsert it into the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.json");
   await table.updateWithJS((rows) => {
@@ -73,7 +73,7 @@ Deno.test("should update the data from the table with a javascript function and 
 });
 
 Deno.test("should update the data from the table with an async javascript function and reinsert it into the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.json");
   await table.updateWithJS((rows) => {
@@ -143,7 +143,7 @@ Deno.test("should update the data from the table with an async javascript functi
   await sdb.done();
 });
 Deno.test("should produce the same result with and without batchSize", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const data = Array.from({ length: 25 }, (_, i) => ({
     id: i,
     value: i * 10,
@@ -169,7 +169,7 @@ Deno.test("should produce the same result with and without batchSize", async () 
 });
 
 Deno.test("should call the modifier once per batch", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("batchCalls");
   table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
 
@@ -185,7 +185,7 @@ Deno.test("should call the modifier once per batch", async () => {
 });
 
 Deno.test("should work with a batchSize larger than the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("bigBatch");
   table.loadArray([{ id: 1 }, { id: 2 }]);
 
@@ -201,7 +201,7 @@ Deno.test("should work with a batchSize larger than the table", async () => {
 });
 
 Deno.test("should not leave temporary tables behind when batching", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("cleanup");
   table.loadArray(Array.from({ length: 5 }, (_, i) => ({ id: i })));
 
@@ -213,7 +213,7 @@ Deno.test("should not leave temporary tables behind when batching", async () => 
 });
 
 Deno.test("should throw for an invalid batchSize", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("invalidBatch");
   table.loadArray([{ id: 1 }]);
 
@@ -231,7 +231,7 @@ Deno.test("should throw for an invalid batchSize", async () => {
 });
 
 Deno.test("should handle batches for which the modifier returns no rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("emptyBatches");
   table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
 
@@ -254,7 +254,7 @@ Deno.test("should handle batches for which the modifier returns no rows", async 
 });
 
 Deno.test("should throw a clear error when the modifier returns no rows at all", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const expectedMessage =
     "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.";
 
@@ -286,7 +286,7 @@ Deno.test("should throw a clear error when the modifier returns no rows at all",
 });
 
 Deno.test("should not leave temporary tables behind when the modifier throws", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("modifierThrows");
   table.loadArray(Array.from({ length: 10 }, (_, i) => ({ id: i })));
 
@@ -310,7 +310,7 @@ Deno.test("should not leave temporary tables behind when the modifier throws", a
 });
 
 Deno.test("should throw a clear error when the table has a __sda_rowid column and batchSize is used", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("rowidConflict");
   table.loadArray([{ __sda_rowid: 1, value: "a" }]);
 
@@ -328,7 +328,7 @@ Deno.test("should throw a clear error when the table has a __sda_rowid column an
 });
 
 Deno.test("should be a no-op on an empty table when the modifier returns no rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const plain = sdb.newTable("emptyPlain");
   await sdb.customQuery(
     `CREATE OR REPLACE TABLE "emptyPlain" AS SELECT 1 AS id WHERE false`,
@@ -346,7 +346,7 @@ Deno.test("should be a no-op on an empty table when the modifier returns no rows
 });
 
 Deno.test("should throw on a table containing a geometry column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/pointsInside.json");
 

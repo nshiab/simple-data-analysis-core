@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should fill empty cells for one column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadArray([
@@ -33,7 +33,7 @@ Deno.test("should fill empty cells for one column", async () => {
 });
 
 Deno.test("should fill empty cells for multiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb.newTable().loadArray([
     { first: "Nael", job: "Senior producer" },
     { first: null, job: null },
@@ -62,7 +62,7 @@ Deno.test("should fill empty cells for multiple columns", async () => {
 });
 
 Deno.test("should fill empty cells with categories (single category)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb.newTable().loadArray([
     { group: "A", value: 1 },
     { group: "B", value: null },
@@ -83,7 +83,7 @@ Deno.test("should fill empty cells with categories (single category)", async () 
 });
 
 Deno.test("should fill empty cells with categories (multiple categories)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb.newTable().loadArray([
     { group: "A", subgroup: "X", value: 10 },
     { group: "A", subgroup: "X", value: null },
@@ -106,7 +106,7 @@ Deno.test("should fill empty cells with categories (multiple categories)", async
 // Linear interpolation
 
 Deno.test("should linearly interpolate NULL values between non-NULL values", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { val: 1 },
@@ -120,7 +120,7 @@ Deno.test("should linearly interpolate NULL values between non-NULL values", asy
 });
 
 Deno.test("should linearly interpolate NULL values independently within each category", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { group: "a", val: 1 },
@@ -144,7 +144,7 @@ Deno.test("should linearly interpolate NULL values independently within each cat
 });
 
 Deno.test("should linearly extrapolate NULL values at the end of the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { val: 2 },
@@ -159,7 +159,7 @@ Deno.test("should linearly extrapolate NULL values at the end of the table", asy
 
 Deno.test("should interpolate proportionally to a non-equidistant x column", async () => {
   // x=[0,1,3], y=[0,null,6]: y at x=1 should be 2 (1/3 of the way), not 3 (row midpoint)
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { x: 0, y: 0 },
@@ -173,7 +173,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column", asy
 });
 
 Deno.test("should interpolate proportionally to a non-equidistant x column within categories", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { group: "a", x: 0, y: 0 },
@@ -203,7 +203,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column withi
 
 Deno.test("should assume interpolate: true when only interpolateBy is set", async () => {
   // x=[0,1,3], y=[0,null,6]: y at x=1 should be 2 (1/3 of the way), not 3 (row midpoint)
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { x: 0, y: 0 },
@@ -217,7 +217,7 @@ Deno.test("should assume interpolate: true when only interpolateBy is set", asyn
 });
 
 Deno.test("should throw when interpolateBy is set and interpolate is false", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { x: 0, y: 0 },
@@ -241,7 +241,7 @@ Deno.test("should throw when interpolateBy is set and interpolate is false", asy
 // Row order preservation tests
 
 Deno.test("should preserve row order after fill() with categories and interpolation", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   const input = [
     { id: 1, group: "a", val: 10 },
@@ -268,7 +268,7 @@ Deno.test("should preserve row order after fill() with categories and interpolat
 });
 
 Deno.test("should preserve row order after simple fill() with no options", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   const input = [
     { id: 1, val: "A" },
@@ -293,7 +293,7 @@ Deno.test("should preserve row order after simple fill() with no options", async
 });
 
 Deno.test("should preserve row order after fill() with categories and interpolateBy", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   const input = [
     { id: 1, group: "a", x: 0, y: 0 },

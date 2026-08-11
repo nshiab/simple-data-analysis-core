@@ -16,6 +16,8 @@ export default async function queryDB(
     returnData: boolean;
     values?: DuckDBValue[];
     noClean?: boolean;
+    dataTransport?: "direct" | "file";
+    rejectGeometry?: boolean;
   },
 ): Promise<
   | {
@@ -50,6 +52,9 @@ export default async function queryDB(
     ...options,
     logSQL: sdb.logSQL,
     explainSQL: sdb.explainSQL,
+    dataTransport: options.returnData
+      ? options.dataTransport ?? sdb.dataTransport
+      : undefined,
   };
 
   if (options.returnData) {

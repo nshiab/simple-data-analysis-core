@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return a column with new computed values", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.convert({ key2: "integer" });
@@ -20,7 +20,7 @@ Deno.test("should return a column with new computed values", async () => {
   await sdb.done();
 });
 Deno.test("should return a column with booleans", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.convert({ key2: "integer" });
@@ -69,7 +69,7 @@ Deno.test("should return a column with booleans", async () => {
   await sdb.done();
 });
 Deno.test("should return a column with geometry", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const geo = sdb.newTable("geo");
   geo.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -103,7 +103,7 @@ Deno.test("should return a column with geometry", async () => {
   await sdb.done();
 });
 Deno.test("should return a column with a space in its name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.convert({ key2: "integer" });
@@ -121,7 +121,7 @@ Deno.test("should return a column with a space in its name", async () => {
   await sdb.done();
 });
 Deno.test("should return a column with a $ in its name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.convert({ key2: "integer" });
@@ -139,7 +139,7 @@ Deno.test("should return a column with a $ in its name", async () => {
   await sdb.done();
 });
 Deno.test("should return a column with null values", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([{ key1: "Nael" }, { key1: "Graeme" }]);
   table.addColumn("age", "integer", "null");
@@ -152,7 +152,7 @@ Deno.test("should return a column with null values", async () => {
   await sdb.done();
 });
 Deno.test("should add a column with a case statement and null", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([{ votes: 10, winnerMax: 10, party: "LIB" }, {
     votes: 5,

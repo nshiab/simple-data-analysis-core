@@ -7,7 +7,7 @@ Deno.test("should escape geospatial file paths containing apostrophes", async ()
   const file = "test/output/point's.json";
   await Deno.copyFile("test/geodata/files/point.json", file);
 
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData(file);
 
@@ -16,7 +16,7 @@ Deno.test("should escape geospatial file paths containing apostrophes", async ()
 });
 
 Deno.test("should load a geojson file and return the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadGeoData(
@@ -29,7 +29,7 @@ Deno.test("should load a geojson file and return the table", async () => {
 });
 
 Deno.test("should load a geojson file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -46,7 +46,7 @@ Deno.test("should load a geojson file", async () => {
 });
 
 Deno.test("should load a geojson file from a URL", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData(
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -63,7 +63,7 @@ Deno.test("should load a geojson file from a URL", async () => {
 });
 
 Deno.test("should load a shapefile file (not zipped)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories/CanadianProvincesAndTerritories.shp",
@@ -80,7 +80,7 @@ Deno.test("should load a shapefile file (not zipped)", async () => {
 });
 
 Deno.test("should load a shapefile file (zipped)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.shp.zip",
@@ -97,7 +97,7 @@ Deno.test("should load a shapefile file (zipped)", async () => {
 });
 
 Deno.test("should load a GeoJSON file in EPSG:4326", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/point.json");
   table.latLon("geom", "lat", "lon");
@@ -112,7 +112,7 @@ Deno.test("should load a GeoJSON file in EPSG:4326", async () => {
 });
 
 Deno.test("should load a geoparquet file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadGeoData(
@@ -154,7 +154,7 @@ Deno.test("should load a geoparquet file", async () => {
   await sdb.done();
 });
 Deno.test("should load a compressed geoparquet file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadGeoData(
@@ -197,7 +197,7 @@ Deno.test("should load a compressed geoparquet file", async () => {
 });
 
 Deno.test("should load a geoparquet file with multiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadGeoData(
@@ -213,7 +213,7 @@ Deno.test("should load a geoparquet file with multiple columns", async () => {
 });
 
 Deno.test("should skip reprojection when the data is already in EPSG:4326", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/pointsInside.json", {
     toEPSG4326: true,

@@ -14,7 +14,7 @@ if (existsSync("./.sda-cache")) {
 }
 
 Deno.test("should log a warning, not an error, when no data or table", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     // Nothing in cache
@@ -23,7 +23,7 @@ Deno.test("should log a warning, not an error, when no data or table", async () 
   assertEquals(true, true);
 });
 Deno.test("should log a warning, not an error, when loading cache when no data or table", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     // Nothing in cache
@@ -32,7 +32,7 @@ Deno.test("should log a warning, not an error, when loading cache when no data o
   assertEquals(true, true);
 });
 Deno.test("should cache computed values for tabular data", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
@@ -60,7 +60,7 @@ Deno.test("should cache computed values for tabular data", async () => {
   await sdb.done();
 });
 Deno.test("should load data from the cache instead of running computations", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
@@ -94,12 +94,12 @@ Deno.test("should execute a cached load before cache resolves", async () => {
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB();
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
   const firstTable = firstSdb.newTable("cacheHitExecution");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.done();
 
-  const secondSdb = new SimpleDB();
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
   const secondTable = secondSdb.newTable("cacheHitExecution");
   await secondTable.cache(createCompute(secondTable));
 
@@ -115,12 +115,12 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
     table.loadGeoData("test/geodata/files/pointsInside.json");
   };
 
-  const firstSdb = new SimpleDB();
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
   const firstTable = firstSdb.newTable("geoCacheHitExecution");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.done();
 
-  const secondSdb = new SimpleDB();
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
   const secondTable = secondSdb.newTable("geoCacheHitExecution");
   await secondTable.cache(createCompute(secondTable));
 
@@ -130,7 +130,7 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
   await secondSdb.done();
 });
 Deno.test("should load data from the cache if ttl has not expired", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
     () => {
@@ -161,7 +161,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
   await sdb.done();
 });
 Deno.test("should not load data from the cache if ttl has expired", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
     () => {
@@ -192,7 +192,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   await sdb.done();
 });
 Deno.test("should cache computed values for geospatial data", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(() => {
     tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
@@ -229,7 +229,7 @@ Deno.test("should cache computed values for geospatial data", async () => {
   await sdb.done();
 });
 Deno.test("should load geospatial data from the cache instead of running computations", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
 
   await tableGeo.cache(() => {
@@ -266,7 +266,7 @@ Deno.test("should load geospatial data from the cache instead of running computa
   await sdb.done();
 });
 Deno.test("should not load data from the cache if ttl has expired", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(
     () => {
@@ -311,7 +311,7 @@ Deno.test("should clean the cache when calling done", async () => {
     rmSync("./.sda-cache", { recursive: true });
   }
 
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
@@ -358,7 +358,7 @@ Deno.test("should clean the cache when calling done", async () => {
 Deno.test("should cache dates and retrieve dates", async () => {
   // Example from Code Like a Journalist lesson about tabular data
 
-  const sdb = new SimpleDB({ cacheVerbose: true });
+  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const temperatures = sdb.newTable("temperatures");
   await temperatures.cache(() => {
     temperatures.loadData(

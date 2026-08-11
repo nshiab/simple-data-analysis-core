@@ -15,7 +15,7 @@ const expectedData = [
 ];
 
 Deno.test("should write a csv file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}test.csv`);
@@ -30,7 +30,7 @@ Deno.test("should write a csv file", async () => {
 });
 
 Deno.test("should write a csv file and create the path if it doesn't exist", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}subfolderData/test.csv`);
@@ -45,7 +45,7 @@ Deno.test("should write a csv file and create the path if it doesn't exist", asy
 });
 
 Deno.test("should write a compressed csv file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}test.csv`, {
@@ -62,7 +62,7 @@ Deno.test("should write a compressed csv file", async () => {
 });
 
 Deno.test("should write a json file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}test.json`);
@@ -76,7 +76,7 @@ Deno.test("should write a json file", async () => {
   await sdb.done();
 });
 Deno.test("should write a json file with dates", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ key1: new Date("2025-01-01T01:23:10.987Z") }, {
     key1: new Date("2025-04-08T14:09:24.155Z"),
@@ -96,7 +96,7 @@ Deno.test("should write a json file with dates", async () => {
   await sdb.done();
 });
 Deno.test("should write a json file with dates and keep the original table unchanged", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   const originalData = [{ key1: new Date("2025-01-01T01:23:10.987Z") }, {
     key1: new Date("2025-04-08T14:09:24.155Z"),
@@ -111,7 +111,7 @@ Deno.test("should write a json file with dates and keep the original table uncha
   await sdb.done();
 });
 Deno.test("should write a compressed json file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}test.json`, {
@@ -128,7 +128,7 @@ Deno.test("should write a compressed json file", async () => {
 });
 
 Deno.test("should write a parquet file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}test.parquet`);
@@ -143,7 +143,7 @@ Deno.test("should write a parquet file", async () => {
 });
 
 Deno.test("should write a compressed parquet file", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}testCompressed.parquet`, {
@@ -160,7 +160,7 @@ Deno.test("should write a compressed parquet file", async () => {
 });
 
 Deno.test("should write a file at the root", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`testRoot.csv`);
@@ -175,7 +175,7 @@ Deno.test("should write a file at the root", async () => {
 });
 
 Deno.test("should write data as arrays", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}testRootArrays.json`, {
@@ -194,7 +194,7 @@ Deno.test("should write data as arrays", async () => {
   await sdb.done();
 });
 Deno.test("should write data as a db", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}data.db`);
@@ -205,7 +205,7 @@ Deno.test("should write data as a db", async () => {
 });
 
 Deno.test("should write data as a SQLite db", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
   await table.writeData(`${output}data.sqlite`);
@@ -216,7 +216,7 @@ Deno.test("should write data as a SQLite db", async () => {
 });
 
 Deno.test("writeData should throw an error when there is a geometry column and suggest using writeGeoData", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/polygons.geojson");
 

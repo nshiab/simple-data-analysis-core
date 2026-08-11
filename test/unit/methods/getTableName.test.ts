@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the name of the table before loading data", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("employees");
 
   const tableName = table.getTableName();
@@ -11,7 +11,7 @@ Deno.test("should return the name of the table before loading data", async () =>
   await sdb.done();
 });
 Deno.test("should return the name of the table after loading data", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.csv");
   const tableName = table.getTableName();
@@ -21,7 +21,7 @@ Deno.test("should return the name of the table after loading data", async () => 
   await sdb.done();
 });
 Deno.test("should return the updated name after renaming the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("oldName");
   table.loadData("test/data/files/data.csv");
 

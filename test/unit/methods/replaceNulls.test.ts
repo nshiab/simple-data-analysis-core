@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should replace null values in one column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { keyA: 1 },
@@ -25,7 +25,7 @@ Deno.test("should replace null values in one column", async () => {
 });
 
 Deno.test("should replace null values in multiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { keyA: 1, keyB: 1 },
@@ -48,7 +48,7 @@ Deno.test("should replace null values in multiple columns", async () => {
 });
 
 Deno.test("should replace null values in all columns with the 'all' option", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { keyA: 1, keyB: 1, keyC: 1 },
@@ -71,7 +71,7 @@ Deno.test("should replace null values in all columns with the 'all' option", asy
 });
 
 Deno.test("should replace nulls with a value typed as unknown", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ id: 1n }, { id: null }]);
   const value: unknown = 2n;

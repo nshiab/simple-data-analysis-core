@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the top 3", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
   const data = await table.getTop(3);
@@ -36,7 +36,7 @@ Deno.test("should return the top 3", async () => {
 });
 
 Deno.test("should return the top 3 with a condition", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
   const data = await table.getTop(3, {

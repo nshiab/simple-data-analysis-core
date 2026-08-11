@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should log the projections of the table, even if there is none", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
@@ -13,7 +13,7 @@ Deno.test("should log the projections of the table, even if there is none", asyn
   await sdb.done();
 });
 Deno.test("should log the projections of the table (Lambert conformal conic)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
@@ -24,7 +24,7 @@ Deno.test("should log the projections of the table (Lambert conformal conic)", a
   await sdb.done();
 });
 Deno.test("should log the projections of the table (Lambert conformal conic converted to EPSG:4326)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip", {
     toEPSG4326: true,
@@ -37,7 +37,7 @@ Deno.test("should log the projections of the table (Lambert conformal conic conv
   await sdb.done();
 });
 Deno.test("should log the projections of the table (GeoJSON EPSG:4326)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

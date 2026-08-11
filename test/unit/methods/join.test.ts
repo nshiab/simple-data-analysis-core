@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should put the result of an inner join into a new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
@@ -36,7 +36,7 @@ Deno.test("should put the result of an inner join into a new table", async () =>
 });
 
 Deno.test("should put the result of a left join into a new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
@@ -77,7 +77,7 @@ Deno.test("should put the result of a left join into a new table", async () => {
 });
 
 Deno.test("should put the result of a right join into a new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
@@ -114,7 +114,7 @@ Deno.test("should put the result of a right join into a new table", async () => 
 });
 
 Deno.test("should put the result of a full join into a new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
@@ -153,7 +153,7 @@ Deno.test("should put the result of a full join into a new table", async () => {
 });
 
 Deno.test("should put the result of a full join into a new table with a specific name in the DB", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
@@ -194,7 +194,7 @@ Deno.test("should put the result of a full join into a new table with a specific
 });
 
 Deno.test("should automatically find a common column, make left join and put the result into leftTable", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
   const categories = sdb.newTable("categories");
@@ -231,7 +231,7 @@ Deno.test("should automatically find a common column, make left join and put the
 });
 
 Deno.test("should join on multiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dishes = sdb.newTable("normals");
   dishes.loadData("test/data/joins/normals.csv");
   const categories = sdb.newTable("projections");
@@ -243,7 +243,7 @@ Deno.test("should join on multiple columns", async () => {
 });
 
 Deno.test("join captures options without mutating caller-owned objects", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const left = sdb.newTable("capturedJoinLeft");
   const right = sdb.newTable("capturedJoinRight");
   left.loadArray([{ id: 1, left: "a" }]);
@@ -269,7 +269,7 @@ Deno.test("join captures options without mutating caller-owned objects", async (
 });
 
 Deno.test("should keep the join keys of unmatched right rows in a right join", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([
     { key: "a", valueA: 1 },
@@ -294,7 +294,7 @@ Deno.test("should keep the join keys of unmatched right rows in a right join", a
 });
 
 Deno.test("should keep the join keys of unmatched rows on both sides in a full join with multiple keys", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([
     { year: 2024, city: "Montreal", sales: 10 },

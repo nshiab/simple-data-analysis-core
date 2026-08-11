@@ -4582,6 +4582,8 @@ export default class SimpleTable extends Simple {
    * @param options.columns - The column name or an array of column names to include. If omitted, all columns are streamed.
    * @param options.conditions - A SQL `WHERE` clause condition to filter the rows.
    * @returns An async generator yielding one row object at a time.
+   * When the database uses file transport, rows are exported to a temporary
+   * newline-delimited JSON file and read incrementally.
    * @category Getting Data
    *
    * @example

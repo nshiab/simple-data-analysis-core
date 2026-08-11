@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should repeat rows based on a specific column values", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { id: 1, count: 2, category: "A" },
@@ -27,7 +27,7 @@ Deno.test("should repeat rows based on a specific column values", async () => {
 });
 
 Deno.test("should repeat rows based on a specific column values and add an index column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { id: 1, count: 2, category: "A" },
@@ -49,7 +49,7 @@ Deno.test("should repeat rows based on a specific column values and add an index
 });
 
 Deno.test("should throw when the index column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ id: 1, count: 2, copyId: "already here" }]);
 

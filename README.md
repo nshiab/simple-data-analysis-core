@@ -65,6 +65,37 @@ If a chain ends with transformations and nothing observes it, call `run()` to
 execute it. If you are migrating from v1, see the
 [migration guide](https://github.com/nshiab/simple-data-analysis-core/blob/main/MIGRATION.md).
 
+### Temporary Deno result-transport workaround
+
+Deno can currently crash while finalizing DuckDB data chunks under garbage-
+collection pressure. Affected applications can opt into a temporary result
+transport backed by a file for materialized query results and streams:
+
+```ts
+const sdb = new SimpleDB({ dataTransport: "file" });
+```
+
+`"direct"` remains the default. File transport requires filesystem read/write
+permissions and adds DuckDB serialization, disk I/O, and JSON parsing overhead.
+Methods returning arrays still materialize their final JavaScript result. The
+`stream()` method writes the complete DuckDB result to disk first, then reads
+the scratch file incrementally.
+
+File transport supports relational custom queries such as `SELECT`, `FROM`,
+`WITH`, and `VALUES`. Result-returning statements such as `SHOW`, `DESCRIBE`,
+`PRAGMA`, and `INSERT ... RETURNING` require a per-query override:
+
+```ts
+const tables = await sdb.customQuery("SHOW TABLES", {
+  returnData: true,
+  dataTransport: "direct",
+});
+```
+
+This option is an experimental compatibility workaround that will be removed
+after [the upstream Deno issue](https://github.com/denoland/deno/issues/36538)
+is fixed and verified.
+
 ## Installation
 
 The library is available on

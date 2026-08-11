@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should throw when the source column does not exist", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Shiab, Nael" },
@@ -17,7 +17,7 @@ Deno.test("should throw when the source column does not exist", async () => {
 });
 
 Deno.test("should extract a substring based on a separator and substring", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Shiab, Nael" },
@@ -35,7 +35,7 @@ Deno.test("should extract a substring based on a separator and substring", async
   await sdb.done();
 });
 Deno.test("should extract a substring based on a separator and substring, and overwrite the original column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Shiab, Nael" },
@@ -51,7 +51,7 @@ Deno.test("should extract a substring based on a separator and substring, and ov
 });
 
 Deno.test("should bind an extraction separator containing an apostrophe", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("boundSplitExtract");
 
   table.loadArray([{ value: "rock'n'roll" }]);

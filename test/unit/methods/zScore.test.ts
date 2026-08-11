@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add a column with the zScore", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Chloe", age: 33 },
@@ -51,7 +51,7 @@ Deno.test("should add a column with the zScore", async () => {
 });
 
 Deno.test("should add a column with the zScore rounded to 3 decimals", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Chloe", age: 33 },
@@ -102,7 +102,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals", async () 
 });
 
 Deno.test("should add a column with the zScore rounded to 3 decimals and with a category", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Chloe", age: 33, gender: "Woman" },
@@ -156,7 +156,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ age: 33, name: "already here" }, { age: 21, name: "x" }]);
 

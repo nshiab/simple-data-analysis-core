@@ -5,7 +5,12 @@ import type SimpleDB from "../class/SimpleDB.ts";
 export default async function getTableNames(simpleDB: SimpleDB) {
   const queryResult = await queryDB(
     simpleDB,
-    `SHOW TABLES`,
+    `SELECT table_name AS name
+    FROM duckdb_tables()
+    WHERE database_name = current_database()
+      AND schema_name = current_schema()
+      AND NOT internal
+    ORDER BY table_name`,
     mergeOptions(simpleDB, {
       returnData: true,
       table: null,

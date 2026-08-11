@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return a column with the row number", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { first: "Nael", last: "Shiab" },
@@ -20,7 +20,7 @@ Deno.test("should return a column with the row number", async () => {
 });
 
 Deno.test("should return a column with the row number restarting for each category (starting at 0)", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { first: "Nael", last: "Shiab", city: "Montreal" },

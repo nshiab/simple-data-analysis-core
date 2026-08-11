@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should bind replacement mapping values", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("boundFuzzyClean");
   const marker = "O'Connor";
   let mappingSQL = "";
@@ -31,7 +31,7 @@ Deno.test("should bind replacement mapping values", async () => {
 });
 
 Deno.test("should normalize strings in-place with mostCommon strategy", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { city: "New York" },
@@ -61,7 +61,7 @@ Deno.test("should normalize strings in-place with mostCommon strategy", async ()
 });
 
 Deno.test("should keep the longest string in each cluster when strategy is 'longestString'", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { city: "New York" },
@@ -85,7 +85,7 @@ Deno.test("should keep the longest string in each cluster when strategy is 'long
 });
 
 Deno.test("should keep the shortest string in each cluster when strategy is 'shortestString'", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { city: "New York" },
@@ -109,7 +109,7 @@ Deno.test("should keep the shortest string in each cluster when strategy is 'sho
 });
 
 Deno.test("should keep the most central string when strategy is 'mostCentral'", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "Alice" has the highest *total* similarity to all other cluster members.
   table.insertRows([
@@ -135,7 +135,7 @@ Deno.test("should keep the most central string when strategy is 'mostCentral'", 
 });
 
 Deno.test("should keep the string with the highest single pairwise score when strategy is 'maxScore'", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "Alice" pairs with both "Alicee" (~91) and "Alce" (~89).
   // "Alicee" and "Alce" also pair with each other (~80).
@@ -163,7 +163,7 @@ Deno.test("should keep the string with the highest single pairwise score when st
 });
 
 Deno.test("should write normalized values to a new column when newColumn is provided", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { city: "New York" },
@@ -187,7 +187,7 @@ Deno.test("should write normalized values to a new column when newColumn is prov
 });
 
 Deno.test("should not change any values when all strings are already unique and below threshold", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { country: "Canada" },
@@ -209,7 +209,7 @@ Deno.test("should not change any values when all strings are already unique and 
 });
 
 Deno.test("should ignore NULL values and leave them unchanged", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { city: "New York" },
@@ -232,7 +232,7 @@ Deno.test("should ignore NULL values and leave them unchanged", async () => {
 });
 
 Deno.test("should normalize multiple clusters across a larger dataset", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.insertRows([
     { brand: "Apple" },
@@ -292,7 +292,7 @@ Deno.test("should normalize multiple clusters across a larger dataset", async ()
 });
 
 Deno.test("should break ties by score when strategy is 'mostCommon' and counts are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // All count=1 (primary tie). "mouse" scores highest (pairs with both others at threshold);
   // "moose" and "mause" only pair with "mouse", not with each other.
@@ -317,7 +317,7 @@ Deno.test("should break ties by score when strategy is 'mostCommon' and counts a
 });
 
 Deno.test("should break ties by score when strategy is 'longestString' and lengths are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // All length=5 (primary tie). "mouse" scores highest; alphabetically it comes last,
   // so score must be checked before alphabetical.
@@ -343,7 +343,7 @@ Deno.test("should break ties by score when strategy is 'longestString' and lengt
 });
 
 Deno.test("should break ties by score when strategy is 'shortestString' and lengths are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // All length=5 (primary tie). "mouse" scores highest; alphabetically it comes last,
   // so score must be checked before alphabetical.
@@ -369,7 +369,7 @@ Deno.test("should break ties by score when strategy is 'shortestString' and leng
 });
 
 Deno.test("should break ties alphabetically when strategy is 'mostCommon' and counts are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "color" and "colur" each appear once — equal counts, alphabetical picks "color"
   table.insertRows([
@@ -390,7 +390,7 @@ Deno.test("should break ties alphabetically when strategy is 'mostCommon' and co
 });
 
 Deno.test("should break ties alphabetically when strategy is 'longestString' and lengths are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "color" and "colur" are both 5 chars — equal lengths, alphabetical picks "color"
   table.insertRows([
@@ -413,7 +413,7 @@ Deno.test("should break ties alphabetically when strategy is 'longestString' and
 });
 
 Deno.test("should break ties alphabetically when strategy is 'shortestString' and lengths are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "color" and "colur" are both 5 chars — equal lengths, alphabetical picks "color"
   table.insertRows([
@@ -436,7 +436,7 @@ Deno.test("should break ties alphabetically when strategy is 'shortestString' an
 });
 
 Deno.test("should break ties alphabetically when strategy is 'mostCentral' and scores are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // In a 2-element cluster both members have the same total score (each scores against the other once).
   // Alphabetical tie-break picks "color" over "colur".
@@ -460,7 +460,7 @@ Deno.test("should break ties alphabetically when strategy is 'mostCentral' and s
 });
 
 Deno.test("should break ties by sum when strategy is 'maxScore' and max scores are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "mouse" pairs with both "moose" and "mause"; the other two do not pair with each other.
   // All three have the same max score (mouse-moose and mouse-mause are both the unique pair for moose/mause,
@@ -487,7 +487,7 @@ Deno.test("should break ties by sum when strategy is 'maxScore' and max scores a
 });
 
 Deno.test("should break ties alphabetically when strategy is 'maxScore' and max and sum scores are equal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // In a 2-element cluster both members have the same max score AND the same sum score.
   // Alphabetical tie-break picks "color" over "colur".
@@ -511,7 +511,7 @@ Deno.test("should break ties alphabetically when strategy is 'maxScore' and max 
 });
 
 Deno.test("should respect a custom threshold and only normalize strings above it", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   // "New York" (count=2) vs "New Yorkk" (count=1) ratio ~94 — should be normalized at threshold 90
   // "Paris" vs "Bonjour" ratio is low — should NOT be normalized
@@ -542,7 +542,7 @@ Deno.test("should respect a custom threshold and only normalize strings above it
 });
 
 Deno.test("should be lossless for all methods with justNames.csv", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const methods = [
     "ratio",
     "token_sort_ratio",

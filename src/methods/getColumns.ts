@@ -4,6 +4,10 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 export default async function getColumns(simpleTable: SimpleTable) {
+  if (simpleTable.sdb.dataTransport === "file") {
+    return Object.keys(await simpleTable.getTypes());
+  }
+
   const queryResult = await queryDB(
     simpleTable,
     `DESCRIBE ${quoteIdentifier(simpleTable.name)}`,

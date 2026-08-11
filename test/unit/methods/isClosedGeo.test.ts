@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add a new column with TRUE when geometries are closed", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo("geom");
@@ -43,7 +43,7 @@ Deno.test("should add a new column with TRUE when geometries are closed", async 
 });
 
 Deno.test("should add a new column with TRUE when geometries in a specific column are closed", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo("geom");

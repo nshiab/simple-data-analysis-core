@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should change the name of one column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
 
@@ -22,7 +22,7 @@ Deno.test("should change the name of one column", async () => {
 });
 
 Deno.test("should change the name of multiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
 
@@ -43,7 +43,7 @@ Deno.test("should change the name of multiple columns", async () => {
 });
 
 Deno.test("should throw when a source column does not exist", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
 
@@ -55,7 +55,7 @@ Deno.test("should throw when a source column does not exist", async () => {
 });
 
 Deno.test("should throw when only some source columns exist", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
 
@@ -67,7 +67,7 @@ Deno.test("should throw when only some source columns exist", async () => {
 });
 
 Deno.test("should skip the existence check when strict is false", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
 
@@ -87,7 +87,7 @@ Deno.test("should skip the existence check when strict is false", async () => {
 });
 
 Deno.test("should change the name of a column with $ in its name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
 

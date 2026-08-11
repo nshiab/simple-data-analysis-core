@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should sucessfully run a search", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -18,7 +18,7 @@ Deno.test("should sucessfully run a search", async () => {
   ]);
 });
 Deno.test("should sucessfully run a search with a specific stemmer", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -36,7 +36,7 @@ Deno.test("should sucessfully run a search with a specific stemmer", async () =>
   ]);
 });
 Deno.test("should sucessfully run a search with a specific b and k", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -55,7 +55,7 @@ Deno.test("should sucessfully run a search with a specific b and k", async () =>
   ]);
 });
 Deno.test("should sucessfully run a search with output table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -76,7 +76,7 @@ Deno.test("should sucessfully run a search with output table", async () => {
   assertEquals(allDishes.length, 336);
 });
 Deno.test("should not recreate index if already exists", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -112,7 +112,7 @@ Deno.test("should not recreate index if already exists", async () => {
 });
 
 Deno.test("should successfully run a search with custom fts options", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -127,7 +127,7 @@ Deno.test("should successfully run a search with custom fts options", async () =
 });
 
 Deno.test("should recreate index with overwriteIndex option", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -161,7 +161,7 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
   assertEquals(dishesFrench.length, 5);
 });
 Deno.test("should include the score column when scoreColumn option is provided", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -178,7 +178,7 @@ Deno.test("should include the score column when scoreColumn option is provided",
 });
 
 Deno.test("should filter out results below minScore", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
 
   // First, run a standard search to get a baseline score to test against
   const baseTable = sdb.newTable();
@@ -214,7 +214,7 @@ Deno.test("should filter out results below minScore", async () => {
 });
 
 Deno.test("should successfully run a search with conjunctive option", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });

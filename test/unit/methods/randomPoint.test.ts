@@ -7,7 +7,7 @@ import {
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should generate a random point in geometries and they should be random", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -69,7 +69,7 @@ Deno.test("should generate a random point in geometries and they should be rando
 });
 
 Deno.test("randomPoint should throw an error if no point is found", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -90,7 +90,7 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
 });
 
 Deno.test("randomPoint should not throw an error if no point is found and options.try is true", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -108,7 +108,7 @@ Deno.test("randomPoint should not throw an error if no point is found and option
 });
 
 Deno.test("randomPoint should throw an error if tries is less than 0", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -129,7 +129,7 @@ Deno.test("randomPoint should throw an error if tries is less than 0", async () 
 });
 
 Deno.test("randomPoint should have similar performance with many more tries if it exits early", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

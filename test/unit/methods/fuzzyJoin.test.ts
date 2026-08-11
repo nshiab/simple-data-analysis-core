@@ -2,7 +2,7 @@ import { assert, assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should perform a basic left fuzzy join and include all left table rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const peopleA = sdb.newTable("peopleA");
   peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
@@ -49,7 +49,7 @@ Deno.test("should perform a basic left fuzzy join and include all left table row
 });
 
 Deno.test("should respect a custom threshold and only match exact strings at threshold 100", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const peopleA = sdb.newTable("peopleA");
   peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
@@ -75,7 +75,7 @@ Deno.test("should respect a custom threshold and only match exact strings at thr
 });
 
 Deno.test("should store result in a new table when outputTable is a string", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const peopleA = sdb.newTable("peopleA");
   peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
@@ -124,7 +124,7 @@ Deno.test("should store result in a new table when outputTable is a string", asy
 });
 
 Deno.test("should store result in a new auto-named table when outputTable is true", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const peopleA = sdb.newTable("peopleA");
   peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
@@ -158,7 +158,7 @@ Deno.test("should store result in a new auto-named table when outputTable is tru
 });
 
 Deno.test("should use a custom similarity column name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const peopleA = sdb.newTable("peopleA");
   peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
@@ -203,7 +203,7 @@ Deno.test("should use a custom similarity column name", async () => {
 });
 
 Deno.test("should work with the token_sort_ratio method for reordered words", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([
     { rowId: 1, label: "world hello" },
@@ -232,7 +232,7 @@ Deno.test("should work with the token_sort_ratio method for reordered words", as
 });
 
 Deno.test("should find matches with significant length differences when using ratio at lower thresholds", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const dataA = [
     { id: 1, name: "New York City" },
     { id: 2, name: "Paris, France" },
@@ -268,7 +268,7 @@ Deno.test("should find matches with significant length differences when using ra
 });
 
 Deno.test("should be lossless for all methods with justNames.csv", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const methods = [
     "ratio",
     "partial_ratio",
@@ -307,7 +307,7 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
 });
 
 Deno.test("should not include a similarity column when similarityColumn is not provided", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const peopleA = sdb.newTable("peopleA");
   peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
@@ -331,7 +331,7 @@ Deno.test("should not include a similarity column when similarityColumn is not p
 });
 
 Deno.test("should throw an error when tables have conflicting column names", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([{ id: 1, name: "Alice" }]);
   const tableB = sdb.newTable("tableB");
@@ -346,7 +346,7 @@ Deno.test("should throw an error when tables have conflicting column names", asy
 });
 
 Deno.test("should throw an error when leftColumn and rightColumn have the same name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([{ name: "Alice" }]);
   const tableB = sdb.newTable("tableB");

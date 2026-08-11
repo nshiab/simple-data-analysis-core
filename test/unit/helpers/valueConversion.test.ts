@@ -85,7 +85,7 @@ const expectedAllTypesRow = {
 };
 
 Deno.test("should convert all DuckDB types read from a table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("allTypes");
   await sdb.customQuery(
     `CREATE OR REPLACE TABLE "allTypes" AS ${allTypesQuery}`,
@@ -96,7 +96,7 @@ Deno.test("should convert all DuckDB types read from a table", async () => {
 });
 
 Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   await sdb.customQuery(`SET TimeZone='UTC'`);
   const table = sdb.newTable("tstz");
   await sdb.customQuery(
@@ -120,7 +120,7 @@ Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => 
 });
 
 Deno.test("should convert dates and timestamps as UTC", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("dates");
   await sdb.customQuery(
     `CREATE OR REPLACE TABLE "dates" AS SELECT
@@ -145,7 +145,7 @@ Deno.test("should convert dates and timestamps as UTC", async () => {
 });
 
 Deno.test("should return an empty array for an empty result", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("empty");
   await sdb.customQuery(
     `CREATE OR REPLACE TABLE "empty" AS SELECT 1 AS a WHERE false`,
@@ -156,7 +156,7 @@ Deno.test("should return an empty array for an empty result", async () => {
 });
 
 Deno.test("should convert computed values from a SimpleDB custom query", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("computedSource");
   table.loadArray([
     { category: "a", value: 10 },
@@ -185,7 +185,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
 });
 
 Deno.test("should convert computed columns not present in any table schema", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("computedCols");
   table.loadArray([
     { category: "a", value: 10 },
@@ -209,7 +209,7 @@ Deno.test("should warn once per column for unsafe BIGINT values", async () => {
     warnings.push(args.map(String).join(" "));
   };
   try {
-    const sdb = new SimpleDB();
+    const sdb = new SimpleDB({ dataTransport: "file" });
     const table = sdb.newTable("unsafeBig");
     await sdb.customQuery(
       `CREATE OR REPLACE TABLE "unsafeBig" AS SELECT * FROM (VALUES
@@ -235,7 +235,7 @@ Deno.test("should warn once per column for unsafe BIGINT values", async () => {
 });
 
 Deno.test("should keep duplicate column names in results by suffixing them", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   // The old JSON-based read path silently kept only one of the duplicated
   // columns. The typed read path deduplicates the names instead.
   const data = await sdb.customQuery(
@@ -253,7 +253,7 @@ Deno.test("should warn about unsafe BIGINT values separately for each table", as
     warnings.push(args.map(String).join(" "));
   };
   try {
-    const sdb = new SimpleDB();
+    const sdb = new SimpleDB({ dataTransport: "file" });
     for (const tableName of ["unsafePerTableA", "unsafePerTableB"]) {
       const table = sdb.newTable(tableName);
       await sdb.customQuery(

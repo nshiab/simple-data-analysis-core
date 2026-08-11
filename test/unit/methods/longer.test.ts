@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should tidy data by stacking mutiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataUntidy.json");
   table.longer(
@@ -34,7 +34,7 @@ Deno.test("should tidy data by stacking mutiple columns", async () => {
   ]);
 });
 Deno.test("should tidy data by stacking mutiple columns with spaces in their names", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -168,7 +168,7 @@ Deno.test("should tidy data by stacking mutiple columns with spaces in their nam
   await sdb.done();
 });
 Deno.test("should tidy data by stacking mutiple columns and by including null values", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataUntidyWithNulls.json");
   table.longer(
@@ -203,7 +203,7 @@ Deno.test("should tidy data by stacking mutiple columns and by including null va
 });
 
 Deno.test("should tidy data with columns with $ in their names", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -565,7 +565,7 @@ Deno.test("should tidy data with columns with $ in their names", async () => {
 });
 
 Deno.test("should throw when namesTo/valuesTo collides with a remaining column, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ Department: "accounting", c1: 1, c2: 2 }]);
 
@@ -579,7 +579,7 @@ Deno.test("should throw when namesTo/valuesTo collides with a remaining column, 
 });
 
 Deno.test("should allow valuesTo to reuse the name of one of the pivoted columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ Department: "accounting", c1: 1, c2: 2 }]);
 

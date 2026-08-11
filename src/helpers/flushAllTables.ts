@@ -357,11 +357,35 @@ async function describeChain(
   table: SimpleTable,
   ctes: CompiledCte[],
 ): Promise<TableSchema> {
-  const query = ctes.length === 0
-    ? `DESCRIBE ${quoteIdentifier(table.name)}`
-    : `DESCRIBE WITH ${
+  const select = ctes.length === 0
+    ? `SELECT * FROM ${quoteIdentifier(table.name)}`
+    : `WITH ${
       ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select})`).join(", ")
     } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
+  const query = ctes.length === 0
+    ? `DESCRIBE ${quoteIdentifier(table.name)}`
+    : `DESCRIBE ${select}`;
+  const values = ctes.flatMap((cte) => cte.values);
+  if (table.sdb.dataTransport === "file") {
+    await queryDB(
+      table,
+      query,
+      mergeOptions(table, {
+        table: table.name,
+        method: null,
+        parameters: null,
+        values,
+        noClean: true,
+      }),
+    );
+    const metadata = await table.connection.run(`${select} LIMIT 0`, values);
+    const columnNames = metadata.deduplicatedColumnNames();
+    const columnTypes = metadata.columnTypes();
+    return Object.fromEntries(columnNames.map((columnName, index) => [
+      columnName,
+      columnTypes[index].alias ?? columnTypes[index].toString(),
+    ]));
+  }
   const types = await queryDB(
     table,
     query,
@@ -370,7 +394,7 @@ async function describeChain(
       method: null,
       parameters: null,
       returnData: true,
-      values: ctes.flatMap((cte) => cte.values),
+      values,
       noClean: true,
     }),
   );

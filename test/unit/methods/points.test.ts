@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should create points", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/geodata/files/coordinates.csv");
   table.convert({ lat: "double", lon: "double" });
@@ -43,7 +43,7 @@ Deno.test("should create points", async () => {
 });
 
 Deno.test("points() should overwrite existing column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { lat: 1, lon: 2, geom: "old" },
@@ -63,7 +63,7 @@ Deno.test("points() should overwrite existing column", async () => {
 });
 
 Deno.test("points() should use the specified projection", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ x: 1_234_567, y: 2_345_678 }]);
 

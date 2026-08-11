@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and overwrite the current table with the results", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   table.linearRegressions({ decimals: 10 });
@@ -58,7 +58,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and overwrite the current table with the results, with 2 decimals", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   table.linearRegressions({ decimals: 2 });
@@ -78,7 +78,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and push the results to a new table, with 2 decimals", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   const regre = table.linearRegressions({
@@ -101,7 +101,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and push the results to a new table with a specific name, with 2 decimals", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   const regre = table.linearRegressions({
@@ -124,7 +124,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for specific columns with a specific category", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const temp = sdb.newTable();
   temp.loadData("./test/data/files/dailyTemperatures.csv");
   temp.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
@@ -174,7 +174,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all combination of a column x and other numeric columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   table.linearRegressions({
@@ -193,7 +193,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   table.linearRegressions({
@@ -210,7 +210,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
 });
 
 Deno.test("should bind result labels containing apostrophes", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { "x's": 1, y: 3 },
@@ -229,7 +229,7 @@ Deno.test("should bind result labels containing apostrophes", async () => {
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns, with a specific number of decimals", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataCorrelations.json");
   table.linearRegressions({

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should untidy data by expanding mutiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataTidy.json");
   table.wider("year", "employees");
@@ -44,7 +44,7 @@ Deno.test("should untidy data by expanding mutiple columns", async () => {
 });
 
 Deno.test("should untidy data by expanding mutiple columns with spaces in their names", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -177,7 +177,7 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
 });
 
 Deno.test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { Department: "accounting", year: "2015", employees: 10 },
@@ -193,7 +193,7 @@ Deno.test("should sum values by default when namesFrom/grouping has duplicate co
 });
 
 Deno.test("should use the aggregation option instead of the default sum", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { Department: "accounting", year: "2015", employees: 10 },

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should stream the same rows as getData", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dailyTemperatures.csv");
 
@@ -16,7 +16,7 @@ Deno.test("should stream the same rows as getData", async () => {
 });
 
 Deno.test("should stream more rows than one DuckDB chunk", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("big");
   const data = Array.from({ length: 5000 }, (_, i) => ({
     id: i,
@@ -36,7 +36,7 @@ Deno.test("should stream more rows than one DuckDB chunk", async () => {
 });
 
 Deno.test("should stream with columns and conditions", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("filtered");
   table.loadArray([
     { name: "a", value: 1 },
@@ -55,7 +55,7 @@ Deno.test("should stream with columns and conditions", async () => {
 });
 
 Deno.test("should convert values while streaming like getData", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("typed");
   await sdb.customQuery(
     `CREATE OR REPLACE TABLE "typed" AS SELECT
@@ -83,7 +83,7 @@ Deno.test("should convert values while streaming like getData", async () => {
 });
 
 Deno.test("should allow breaking out of the stream early", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("early");
   table.loadArray(
     Array.from({ length: 5000 }, (_, i) => ({ id: i })),

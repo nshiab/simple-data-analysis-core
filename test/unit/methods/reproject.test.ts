@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should convert from one projection to another one", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
@@ -20,7 +20,7 @@ Deno.test("should convert from one projection to another one", async () => {
   await sdb.done();
 });
 Deno.test("should convert from one projection to another one from a specific column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
@@ -38,7 +38,7 @@ Deno.test("should convert from one projection to another one from a specific col
   await sdb.done();
 });
 Deno.test("should be able to reproject multiples times by keeping track of the projection", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 

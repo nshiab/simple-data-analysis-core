@@ -85,6 +85,9 @@ Creates a new SimpleDB instance.
   data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp`
   for in-memory databases or `<file>.tmp` for file-based databases.
   Automatically removed when calling `done()`.
+- **`options.dataTransport`**: The result transport for methods that materialize
+  query rows. `"direct"` is the default; `"file"` is a temporary Deno
+  compatibility workaround that requires filesystem read/write permissions.
 
 ### Methods
 
@@ -354,7 +357,7 @@ Executes a custom SQL query directly against the DuckDB instance.
 ##### Signature
 
 ```typescript
-async customQuery(query: string, options?: { returnData?: boolean; table?: string }): Promise<Record<string, unknown>[] | null>;
+async customQuery(query: string, options?: { returnData?: boolean; table?: string; dataTransport?: "direct" | "file" }): Promise<Record<string, unknown>[] | null>;
 ```
 
 ##### Parameters
@@ -365,11 +368,20 @@ async customQuery(query: string, options?: { returnData?: boolean; table?: strin
   `false`.
 - **`options.table`**: The name of the table associated with the query,
   primarily used for debugging and logging.
+- **`options.dataTransport`**: Overrides the database result transport for this
+  query. File transport supports relational queries such as `SELECT`, `FROM`,
+  `WITH`, and `VALUES`; use `"direct"` for result-returning statements such as
+  `SHOW`, `DESCRIBE`, `PRAGMA`, and `INSERT ... RETURNING`.
 
 ##### Returns
 
 A promise that resolves to the query result as an array of objects if
 `returnData` is `true`, otherwise `null`.
+
+##### Throws
+
+- **`Error`**: An error when file transport is used to return rows from a
+  non-relational statement.
 
 ##### Examples
 
@@ -387,6 +399,15 @@ const youngEmployees = await sdb.customQuery(
   { returnData: true },
 );
 console.log(youngEmployees);
+```
+
+```ts
+// Override file transport for a result-returning statement that cannot
+// be exported as a relational query.
+const tables = await sdb.customQuery("SHOW TABLES", {
+  returnData: true,
+  dataTransport: "direct",
+});
 ```
 
 #### `loadDB`
@@ -657,7 +678,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}')>): this;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): this;
 ```
 
 ##### Parameters
@@ -722,7 +743,7 @@ awaited, or when `run()` is called.
 ##### Signature
 
 ```typescript
-loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
+loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; filename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -736,7 +757,7 @@ loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json"
   the data format. Defaults to `true`.
 - **`options.limit`**: A number indicating the maximum number of rows to load.
   Defaults to all rows.
-- **`options.fileName`**: A boolean indicating whether to include the file name
+- **`options.filename`**: A boolean indicating whether to include the filename
   as a new column in the loaded data. Defaults to `false`.
 - **`options.unifyColumns`**: A boolean indicating whether to unify columns
   across multiple files when their structures differ. Missing columns will be
@@ -827,7 +848,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-loadDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; fileName?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
+loadDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; filename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -840,7 +861,7 @@ loadDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" |
   the data format. Defaults to `true`.
 - **`options.limit`**: A number indicating the maximum number of rows to load.
   Defaults to all rows.
-- **`options.fileName`**: A boolean indicating whether to include the file name
+- **`options.filename`**: A boolean indicating whether to include the filename
   as a new column in the loaded data. Defaults to `false`.
 - **`options.unifyColumns`**: A boolean indicating whether to unify columns
   across multiple files when their structures differ. Missing columns will be
@@ -907,7 +928,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-loadGeoData(file: string, options?: { toWGS84?: boolean }): this;
+loadGeoData(file: string, options?: { toEPSG4326?: boolean }): this;
 ```
 
 ##### Parameters
@@ -915,8 +936,8 @@ loadGeoData(file: string, options?: { toWGS84?: boolean }): this;
 - **`file`**: The URL or absolute path to the external file containing the
   geospatial data.
 - **`options`**: An optional object with configuration options:
-- **`options.toWGS84`**: If `true`, the method will attempt to reproject the
-  data to WGS84.
+- **`options.toEPSG4326`**: If `true`, the method will attempt to reproject the
+  data to EPSG:4326 (WGS84).
 
 ##### Returns
 
@@ -935,13 +956,13 @@ table.loadGeoData("./some-data.geojson");
 ```
 
 ```ts
-// Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
-table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+// Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to EPSG:4326 (WGS84)
+table.loadGeoData("./some-data/some-data.shp", { toEPSG4326: true });
 ```
 
 ```ts
-// Load geospatial data from a zipped shapefile and reproject to WGS84
-table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
+// Load geospatial data from a zipped shapefile and reproject to EPSG:4326 (WGS84)
+table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true });
 ```
 
 #### `createFtsIndex`
@@ -2493,7 +2514,7 @@ async observer method (like `getData()` or `logTable()`) is awaited, or when
 ##### Signature
 
 ```typescript
-addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): this;
 ```
 
 ##### Parameters
@@ -3118,9 +3139,9 @@ table.splitExtract("address", ",", 1, "city");
 ```
 
 ```ts
-// Split 'fileName' by dot and extract the first part (index 0), overwriting 'fileName'
+// Split 'filename' by dot and extract the first part (index 0), overwriting 'filename'
 // e.g., "document.pdf" -> "document"
-table.splitExtract("fileName", ".", 0, "fileName");
+table.splitExtract("filename", ".", 0, "filename");
 ```
 
 #### `splitSpread`
@@ -5396,7 +5417,9 @@ stream(options?: { columns?: string | string[]; conditions?: string }): AsyncGen
 
 ##### Returns
 
-An async generator yielding one row object at a time.
+An async generator yielding one row object at a time. When the database uses
+file transport, rows are exported to a temporary newline-delimited JSON file and
+read incrementally.
 
 ##### Examples
 
@@ -5490,7 +5513,7 @@ points(latColumn: string, lonColumn: string, newColumn: string, options?: { proj
   stored.
 - **`options`**: An optional object with configuration options:
 - **`options.projection`**: The projection of the coordinates. Defaults to
-  `"EPSG:4326"`.
+  EPSG:4326 (WGS84), passed as `"EPSG:4326"`.
 
 ##### Returns
 
@@ -5787,7 +5810,8 @@ reproject(crs: string, options?: { column?: string }): this;
 
 ##### Parameters
 
-- **`crs`**: The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
+- **`crs`**: The target SRS (e.g., `"EPSG:3347"`, or `"EPSG:4326"` for EPSG:4326
+  (WGS84)).
 - **`options`**: An optional object with configuration options:
 - **`options.column`**: The name of the column storing the geometries. If
   omitted, the method will automatically attempt to find a geometry column.
@@ -5811,8 +5835,7 @@ table.reproject("EPSG:3347", { column: "myGeom" });
 #### `area`
 
 Computes the area of geometries in square meters (`"m2"`) or optionally square
-kilometers (`"km2"`). The input geometry is assumed to be in the EPSG:4326
-coordinate system (WGS84).
+kilometers (`"km2"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -5857,8 +5880,7 @@ table.area("myGeomArea", { column: "myGeom" });
 #### `length`
 
 Computes the length of line geometries in meters (`"m"`) or optionally
-kilometers (`"km"`). The input geometry is assumed to be in the EPSG:4326
-coordinate system (WGS84).
+kilometers (`"km"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -5903,8 +5925,7 @@ table.length("routeLength", { column: "routeGeom" });
 #### `perimeter`
 
 Computes the perimeter of polygon geometries in meters (`"m"`) or optionally
-kilometers (`"km"`). The input geometry is assumed to be in the EPSG:4326
-coordinate system (WGS84).
+kilometers (`"km"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -6023,8 +6044,8 @@ joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "withinDistanc
   distance for the spatial join. The unit depends on `distanceMethod`.
 - **`options.distanceMethod`**: The method for distance calculations: `"srs"`
   (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326
-  input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate
-  but slowest).
+  (WGS84) input), or `"spheroid"` (uses meters, requires EPSG:4326 (WGS84)
+  input, most accurate but slowest).
 - **`options.outputTable`**: If `true`, the results will be stored in a new
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
@@ -6054,7 +6075,7 @@ tableA.joinGeo(tableB, "withinDistance", { distance: 10 });
 
 ```ts
 // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
-// Input geometries must be in EPSG:4326.
+// Input geometries must be in EPSG:4326 (WGS84).
 tableA.joinGeo(tableB, "withinDistance", {
   distance: 10,
   distanceMethod: "haversine",
@@ -6276,7 +6297,7 @@ table.union("geomA", "geomB", "unionGeom");
 #### `latLon`
 
 Extracts the latitude and longitude coordinates from point geometries. The input
-geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -6435,8 +6456,7 @@ Computes the distance between geometries in two specified columns. By default,
 the distance is calculated in the Spatial Reference System (SRS) unit of the
 input geometries. You can optionally specify `"spheroid"` or `"haversine"`
 methods to get results in meters or kilometers. If using `"spheroid"` or
-`"haversine"`, the input geometries must be in the EPSG:4326 coordinate system
-(WGS84).
+`"haversine"`, the input geometries must be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -6455,8 +6475,9 @@ distance(column1: string, column2: string, newColumn: string, options?: { unit?:
   be stored.
 - **`options`**: An optional object with configuration options:
 - **`options.method`**: The method to use for distance calculations: `"srs"`
-  (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326), or
-  `"spheroid"` (meters, requires EPSG:4326, most accurate but slowest).
+  (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326 (WGS84)),
+  or `"spheroid"` (meters, requires EPSG:4326 (WGS84), most accurate but
+  slowest).
 - **`options.unit`**: If `method` is `"spheroid"` or `"haversine"`, you can
   choose between `"m"` (meters, default) or `"km"` (kilometers).
 - **`options.decimals`**: The number of decimal places to round the distance
@@ -6475,13 +6496,13 @@ table.distance("geomA", "geomB", "distance_srs");
 
 ```ts
 // Compute Haversine distance in meters between 'point1' and 'point2', store in 'distance_m'
-// Input geometries must be in EPSG:4326.
+// Input geometries must be in EPSG:4326 (WGS84).
 table.distance("point1", "point2", "distance_m", { method: "haversine" });
 ```
 
 ```ts
 // Compute Haversine distance in kilometers, rounded to 2 decimal places
-// Input geometries must be in EPSG:4326.
+// Input geometries must be in EPSG:4326 (WGS84).
 table.distance("point1", "point2", "distance_km", {
   method: "haversine",
   unit: "km",
@@ -6491,7 +6512,7 @@ table.distance("point1", "point2", "distance_km", {
 
 ```ts
 // Compute Spheroid distance in kilometers
-// Input geometries must be in EPSG:4326.
+// Input geometries must be in EPSG:4326 (WGS84).
 table.distance("area1", "area2", "distance_spheroid_km", {
   method: "spheroid",
   unit: "km",
@@ -6668,7 +6689,7 @@ table.linesToPolygons("routeLines");
 
 Returns the bounding box of geometries in `[minLon, minLat, maxLon, maxLat]`
 order. By default, the method will try to find the column with the geometries.
-The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 ##### Signature
 

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should create a new SimpleTable with types", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", age: "number" });
   const types = await table.getTypes();
@@ -11,7 +11,7 @@ Deno.test("should create a new SimpleTable with types", async () => {
 });
 
 Deno.test("should create a new SimpleTable with geometry in types", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.setTypes({
     name: "string",
@@ -27,7 +27,7 @@ Deno.test("should create a new SimpleTable with geometry in types", async () => 
 });
 
 Deno.test("should create a new SimpleTable with types and column names containing spaces", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.setTypes({ "first name": "string", age: "number" });
   const types = await table.getTypes();
@@ -36,7 +36,7 @@ Deno.test("should create a new SimpleTable with types and column names containin
 });
 
 Deno.test("should create a new SimpleTable with types and column names with special uses", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.setTypes({
     "first name": "string",

@@ -12,7 +12,10 @@ export default async function getData(
     conditions?: string;
   } = {},
 ) {
-  if (await hasGeometryColumn(simpleTable)) {
+  if (
+    simpleTable.sdb.dataTransport === "direct" &&
+    await hasGeometryColumn(simpleTable)
+  ) {
     throw new Error(
       "Table contains geometry columns. Use getGeoData() instead.",
     );
@@ -39,6 +42,8 @@ export default async function getData(
       table: simpleTable.name,
       method: "getData()",
       parameters: { options },
+      dataTransport: simpleTable.sdb.dataTransport,
+      rejectGeometry: true,
     }),
   )) as {
     [key: string]: unknown;

@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 const output = "./test/output/";
 
 Deno.test("should write a shapefile", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
@@ -37,7 +37,7 @@ Deno.test("should write a shapefile", async () => {
 });
 
 Deno.test("should throw error for incompatible options with shapefiles", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/polygons.geojson");
   const shp = `${output}/shapefile/errors.shp`;

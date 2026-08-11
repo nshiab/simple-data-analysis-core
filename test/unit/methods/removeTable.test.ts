@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should remove a table and log no tables", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();
@@ -12,7 +12,7 @@ Deno.test("should remove a table and log no tables", async () => {
   await sdb.done();
 });
 Deno.test("should remove a table and show no tables in sdb", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();
@@ -21,7 +21,7 @@ Deno.test("should remove a table and show no tables in sdb", async () => {
   await sdb.done();
 });
 Deno.test("should remove a table and let create the same new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();

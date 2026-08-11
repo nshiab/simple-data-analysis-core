@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should clone a column with an offset", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { firstName: "nael", lastName: "shiab" },
@@ -29,7 +29,7 @@ Deno.test("should clone a column with an offset", async () => {
   await sdb.done();
 });
 Deno.test("should clone a column with an offset of 2", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { firstName: "nael", lastName: "shiab" },
@@ -58,7 +58,7 @@ Deno.test("should clone a column with an offset of 2", async () => {
   await sdb.done();
 });
 Deno.test("should clone a column with a category", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { group: "A", firstName: "nael", lastName: "shiab" },
@@ -103,7 +103,7 @@ Deno.test("should clone a column with a category", async () => {
   await sdb.done();
 });
 Deno.test("should clone a column with a positive offset when working with many rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/rents.csv");
   table.cloneColumnWithOffset("rent", "previousYearRent", {
@@ -680,7 +680,7 @@ Deno.test("should clone a column with a positive offset when working with many r
   );
 });
 Deno.test("should clone a column with a negative offset when working with many rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/rents.csv");
   table.cloneColumnWithOffset("rent", "nextYearRent", {
@@ -1257,7 +1257,7 @@ Deno.test("should clone a column with a negative offset when working with many r
   );
 });
 Deno.test("should clone a column with geo data with an offset", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadGeoData(
@@ -1283,7 +1283,7 @@ Deno.test("should clone a column with geo data with an offset", async () => {
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { firstName: "a", nextFirstName: "already here" },

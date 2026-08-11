@@ -25,6 +25,7 @@ export default async function getGeoData(
       method: "getGeoData()",
       parameters: { column },
       returnData: true,
+      dataTransport: SimpleTable.sdb.dataTransport,
     }),
   );
 

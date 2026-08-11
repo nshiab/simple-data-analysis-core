@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should give all correlations between numeric columns in the table and overwrite the current table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   table.correlations();
@@ -20,7 +20,7 @@ Deno.test("should give all correlations between numeric columns in the table and
 });
 
 Deno.test("should give all correlations between numeric columns in the table and return a new table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   const newTable = table.correlations({ outputTable: true });
@@ -38,7 +38,7 @@ Deno.test("should give all correlations between numeric columns in the table and
 });
 
 Deno.test("should give all correlations between numeric columns in the table and return a new table with a specific name in the DB", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   table.correlations({
@@ -60,7 +60,7 @@ Deno.test("should give all correlations between numeric columns in the table and
 });
 
 Deno.test("should give all correlations between numeric columns in the table and overwrite the current table, with one decimal", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   table.correlations({
@@ -79,7 +79,7 @@ Deno.test("should give all correlations between numeric columns in the table and
 });
 
 Deno.test("should give all correlations between numeric columns in the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   table.correlations({
@@ -98,7 +98,7 @@ Deno.test("should give all correlations between numeric columns in the table", a
 });
 
 Deno.test("should give all correlations between numeric columns with a specific x column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   table.correlations({
@@ -117,7 +117,7 @@ Deno.test("should give all correlations between numeric columns with a specific 
 });
 
 Deno.test("should give the correlation between two specific columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataCorrelations.json");
   table.correlations({
@@ -134,7 +134,7 @@ Deno.test("should give the correlation between two specific columns", async () =
 });
 
 Deno.test("should bind result labels containing apostrophes", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { "x's": 1, y: 2 },
@@ -151,7 +151,7 @@ Deno.test("should bind result labels containing apostrophes", async () => {
 });
 
 Deno.test("should give the correlation between two specific columns and with a category", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("./test/data/files/dailyTemperatures.csv");
   table.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");

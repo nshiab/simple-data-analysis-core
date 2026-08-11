@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should load data from a directory and return the table", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb
     .newTable()
     .loadDirectory("test/data/directory/", {
@@ -16,7 +16,7 @@ Deno.test("should load data from a directory and return the table", async () => 
 });
 
 Deno.test("should load data from a directory", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadDirectory("test/data/directory/", {
     unifyColumns: true,
@@ -48,7 +48,7 @@ Deno.test("should load data from a directory", async () => {
 });
 
 Deno.test("should load data from a directory even when the path doesn't have '/' at the end", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadDirectory("test/data/directory", {
     unifyColumns: true,
@@ -79,7 +79,7 @@ Deno.test("should load data from a directory even when the path doesn't have '/'
 });
 
 Deno.test("should load data from a directory with a limit option", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadDirectory("test/data/directory/", {
     unifyColumns: true,
@@ -93,7 +93,7 @@ Deno.test("should load data from a directory with a limit option", async () => {
 });
 
 Deno.test("should include the filename when loading a directory", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadDirectory("test/data/directory/", {
     filename: true,
@@ -113,7 +113,7 @@ Deno.test("should include the filename when loading a directory", async () => {
 });
 
 Deno.test("should load only specific columns from directory", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadDirectory("test/data/directory/", {
     unifyColumns: true,

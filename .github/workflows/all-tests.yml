@@ -15,7 +15,5 @@ jobs:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
-          # Pinned: Deno 2.9.2 crashes (SIGSEGV) at test-file teardown with
-          # the DuckDB node-api module. Unpin once fixed upstream.
-          deno-version: v2.9.1
+          deno-version: v2.x
       - run: deno task all-tests

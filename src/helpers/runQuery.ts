@@ -10,6 +10,7 @@ import {
 } from "@duckdb/node-api";
 import SDAError from "../class/SDAError.ts";
 import observeQuery from "./observeQuery.ts";
+import runQueryFromFile from "./runQueryFromFile.ts";
 
 type RunQueryOptions = {
   method: string | null;
@@ -18,6 +19,8 @@ type RunQueryOptions = {
   values?: DuckDBValue[];
   logSQL: boolean;
   explainSQL: boolean;
+  dataTransport?: "direct" | "file";
+  rejectGeometry?: boolean;
 };
 
 const msPerDay = 24 * 60 * 60 * 1000;
@@ -107,6 +110,9 @@ export default async function runQuery(
   try {
     await observeQuery(connection, query, values, options);
     if (returnData) {
+      if (options.dataTransport === "file") {
+        return await runQueryFromFile(query, connection, options);
+      }
       const result = await connection.run(query, values);
       const columnNames = result.deduplicatedColumnNames();
       const columnTypes = result.columnTypes();

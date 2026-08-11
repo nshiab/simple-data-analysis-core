@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the standard deviation", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   assertEquals(
@@ -12,7 +12,7 @@ Deno.test("should return the standard deviation", async () => {
   await sdb.done();
 });
 Deno.test("should return the standard deviation rounded", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   assertEquals(
@@ -22,7 +22,7 @@ Deno.test("should return the standard deviation rounded", async () => {
   await sdb.done();
 });
 Deno.test("should return the standard deviation even when there are spaces in the column name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   table.renameColumns({ key1: "key 1" });
@@ -33,7 +33,7 @@ Deno.test("should return the standard deviation even when there are spaces in th
   await sdb.done();
 });
 Deno.test("should return the standard deviation rounded even when there are spaces in the column name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   table.renameColumns({ key1: "key 1" });

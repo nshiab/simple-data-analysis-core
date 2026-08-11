@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the bottom 3", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3);
@@ -36,7 +36,7 @@ Deno.test("should return the bottom 3", async () => {
 });
 
 Deno.test("should return the bottom 3 with the original order", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3, {
@@ -72,7 +72,7 @@ Deno.test("should return the bottom 3 with the original order", async () => {
 });
 
 Deno.test("should return the bottom 3 with a condition", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3, {
@@ -108,7 +108,7 @@ Deno.test("should return the bottom 3 with a condition", async () => {
 });
 
 Deno.test("should return the bottom 3 with a condition with original order", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3, {

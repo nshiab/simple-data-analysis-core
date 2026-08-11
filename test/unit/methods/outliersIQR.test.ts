@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
   const table = sdb.newTable();
@@ -55,7 +55,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
 });
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
   const table = sdb.newTable();
@@ -110,7 +110,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
 });
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows and with a category", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { name: "Chloe", age: 33, gender: "Woman" },

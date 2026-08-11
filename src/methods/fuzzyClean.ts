@@ -72,13 +72,24 @@ async function executeFuzzyClean(
       ` AND SUBSTR(a.value, 1, ${options.preFilterPrefixLen}) = SUBSTR(b.value, 1, ${options.preFilterPrefixLen})`;
   }
 
-  // Single round trip: compute fuzzy pairs and embed counts for both sides.
-  // Only values that appear in at least one pair above the threshold can be
-  // normalized — singletons need no processing at all.
+  // Extension setup is kept separate so file result transport can export the
+  // relational statement below instead of receiving a multi-statement query.
+  await queryDB(
+    table,
+    `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;`,
+    mergeOptions(table, {
+      table: table.name,
+      method: "fuzzyClean()",
+      parameters: { column, newColumn, threshold, options },
+    }),
+  );
+
+  // Compute fuzzy pairs and embed counts for both sides. Only values that
+  // appear in at least one pair above the threshold can be normalized —
+  // singletons need no processing at all.
   const pairsData = await queryDB(
     table,
-    `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;
-     WITH uniques AS (
+    `WITH uniques AS (
        SELECT ${quoteIdentifier(column)} AS value, COUNT(*) AS cnt
        FROM ${quoteIdentifier(table.name)}
        WHERE ${quoteIdentifier(column)} IS NOT NULL

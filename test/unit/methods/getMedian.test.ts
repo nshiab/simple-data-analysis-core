@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the median value", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(await table.getMedian("key1"), 2.5);
@@ -10,7 +10,7 @@ Deno.test("should return the median value", async () => {
 });
 
 Deno.test("should return the median value rounded", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(
@@ -20,7 +20,7 @@ Deno.test("should return the median value rounded", async () => {
   await sdb.done();
 });
 Deno.test("should return the median value even when there are spaces in the column name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
@@ -28,7 +28,7 @@ Deno.test("should return the median value even when there are spaces in the colu
   await sdb.done();
 });
 Deno.test("should return the median value rounded even when there are spaces in the column name", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });

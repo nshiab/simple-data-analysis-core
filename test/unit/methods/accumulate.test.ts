@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add the cumulative sum in a new column", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { key1: 1 },
@@ -19,7 +19,7 @@ Deno.test("should add the cumulative sum in a new column", async () => {
   await sdb.done();
 });
 Deno.test("should add the cumulative sum in a new column without reordering the rows", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { key1: 3 },
@@ -36,7 +36,7 @@ Deno.test("should add the cumulative sum in a new column without reordering the 
   await sdb.done();
 });
 Deno.test("should add the cumulative sum in a new column with categories", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { key1: 6, key2: "b" },
@@ -59,7 +59,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
   await sdb.done();
 });
 Deno.test("should add the cumulative sum in a new column with multiple categories", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
     { key1: 6, key2: "b", key3: "c" },
@@ -85,7 +85,7 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { key1: 1, cumulative: "already here" },

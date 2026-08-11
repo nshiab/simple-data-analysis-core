@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should remove whitespace", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
 
@@ -20,7 +20,7 @@ Deno.test("should remove whitespace", async () => {
 });
 
 Deno.test("should remove whitespace with column name containing spaces", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
   table.renameColumns({ key1: "key 1" });
@@ -39,7 +39,7 @@ Deno.test("should remove whitespace with column name containing spaces", async (
 });
 
 Deno.test("should remove whitespace from multiple columns", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
 
@@ -58,7 +58,7 @@ Deno.test("should remove whitespace from multiple columns", async () => {
 });
 
 Deno.test("should remove whitespace just on the left", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
 
@@ -78,7 +78,7 @@ Deno.test("should remove whitespace just on the left", async () => {
 });
 
 Deno.test("should remove whitespace just on the right", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
 
@@ -98,7 +98,7 @@ Deno.test("should remove whitespace just on the right", async () => {
 });
 
 Deno.test("should remove specific characters", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
 
@@ -119,7 +119,7 @@ Deno.test("should remove specific characters", async () => {
 });
 
 Deno.test("should bind trim characters containing an apostrophe", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("boundTrim");
 
   table.loadArray([{ value: "''quoted''" }]);
