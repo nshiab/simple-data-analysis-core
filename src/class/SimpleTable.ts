@@ -4653,12 +4653,12 @@ export default class SimpleTable extends Simple {
   // GEOSPATIAL
 
   /**
-   * Creates point geometries from latitude and longitude columns.
+   * Creates point geometries from latitude (y) and longitude (x) columns.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param latColumn - The name of the column storing the latitude values.
-   * @param lonColumn - The name of the column storing the longitude values.
+   * @param latColumn - The name of the column storing the latitude (y-coordinate) values.
+   * @param lonColumn - The name of the column storing the longitude (x-coordinate) values.
    * @param newColumn - The name of the new column where the point geometries will be stored.
    * @param options - An optional object with configuration options:
    * @param options.projection - The projection of the coordinates. Defaults to EPSG:4326 (WGS84), passed as `"EPSG:4326"`.
@@ -4667,7 +4667,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Create point geometries in a new 'geom' column using 'lat' and 'lon' columns.
+   * // Create point geometries in a new 'geom' column using latitude (y) and longitude (x) columns.
+   * // The resulting coordinates are ordered as [longitude, latitude], or [x, y].
    * // The projection is assumed to be EPSG:4326 (WGS84).
    * table.points("lat", "lon", "geom");
    * ```
@@ -4841,7 +4842,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Flips the coordinate order of geometries in a specified column (e.g., from `[lon, lat]` to `[lat, lon]` or vice-versa).
+   * Flips the coordinate order of geometries in a specified column (e.g., from `[longitude (x), latitude (y)]` to `[latitude (y), longitude (x)]` or vice-versa).
    * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
@@ -5316,20 +5317,20 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Extracts the latitude and longitude coordinates from point geometries.
+   * Extracts the latitude (y) and longitude (x) coordinates from point geometries.
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the point geometries.
-   * @param latColumn - The name of the new column where the extracted latitude values will be stored.
-   * @param lonColumn - The name of the new column where the extracted longitude values will be stored.
+   * @param latColumn - The name of the new column where the extracted latitude (y-coordinate) values will be stored.
+   * @param lonColumn - The name of the new column where the extracted longitude (x-coordinate) values will be stored.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
-   * // Extract latitude and longitude from 'geom' column into new 'lat' and 'lon' columns
+   * // Extract latitude (y) and longitude (x) from 'geom' into new 'lat' and 'lon' columns.
    * table.latLon("geom", "lat", "lon");
    * ```
    */
