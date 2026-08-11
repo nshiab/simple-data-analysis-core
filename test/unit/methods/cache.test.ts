@@ -371,7 +371,7 @@ Deno.test("should cache dates and retrieve dates", async () => {
     temperatures.join(cities);
   });
   const firstPass = await temperatures.getTop(10);
-  // await temperatures.logTable();
+  // await temperatures.log();
 
   await temperatures.cache(() => {
     temperatures.loadData(
@@ -384,7 +384,7 @@ Deno.test("should cache dates and retrieve dates", async () => {
     temperatures.join(cities);
   });
   const secondPass = await temperatures.getTop(10);
-  // await temperatures.logTable();
+  // await temperatures.log();
 
   await sdb.done();
 

@@ -33,7 +33,7 @@ import { discardAllPending } from "../helpers/queueOp.ts";
  * // Load data from a CSV file into the "employees" table
  * employees.loadData("./employees.csv");
  * // Log the first few rows of the "employees" table to the console
- * await employees.logTable();
+ * await employees.log();
  * // Close the database connection and clean up resources
  * await sdb.done();
  * ```
@@ -613,11 +613,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @example
    * ```ts
    * // Log all table names to the console
-   * await sdb.logTableNames();
+   * await sdb.logNames();
    * // Example output: SimpleDB - Tables:  ["employees","customers"]
    * ```
    */
-  async logTableNames(): Promise<this> {
+  async logNames(): Promise<this> {
     const tables = await this.getTableNames();
     if (tables.length > 0) {
       console.log(
@@ -840,7 +840,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * Executes all queued methods across every table in the database. Sync
    * builder methods (like `filter()` or `convert()`) only queue their
    * operation; execution happens when an async observer method (like
-   * `getData()`, `logTable()`, or `writeData()`) is awaited. Use `run()` when
+   * `getData()`, `log()`, or `writeData()`) is awaited. Use `run()` when
    * your script ends in pure mutations with nothing to observe and you want
    * the work done now.
    *

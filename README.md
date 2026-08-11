@@ -36,11 +36,11 @@ observe — and observing executes.**
 
 Methods that transform tables (loads, filters, conversions, joins, geospatial
 operations, etc.) are synchronous: they queue their work and return the table,
-so they can be chained. Methods that produce a result (`getData()`,
-`logTable()`, `writeData()`, etc.) are asynchronous: awaiting one executes
-everything queued so far, fusing consecutive steps into a single DuckDB query
-when possible. On large tables, fused transformations typically run around 3x
-faster than step-by-step execution.
+so they can be chained. Methods that produce a result (`getData()`, `log()`,
+`writeData()`, etc.) are asynchronous: awaiting one executes everything queued
+so far, fusing consecutive steps into a single DuckDB query when possible. On
+large tables, fused transformations typically run around 3x faster than
+step-by-step execution.
 
 ```ts
 import { SimpleDB } from "@nshiab/simple-data-analysis-core";

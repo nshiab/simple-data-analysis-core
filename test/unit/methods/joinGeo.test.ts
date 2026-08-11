@@ -565,7 +565,7 @@ Deno.test("should log a table after a joinGeo", async () => {
   const firesInsideProvinces = fires.joinGeo(provinces, "inside", {
     outputTable: "firesInsideProvinces",
   });
-  // await firesInsideProvinces.logTable();
+  // await firesInsideProvinces.log();
 
   await firesInsideProvinces.run();
   await sdb.done();

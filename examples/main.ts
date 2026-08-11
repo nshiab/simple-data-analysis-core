@@ -7,13 +7,13 @@ const sdb = new SimpleDB();
 const provinces = sdb.newTable("provinces");
 // We fetch the provinces' boundaries. It's a geoJSON.
 // Like all transformation methods, this queues the work: it will
-// run when an observer method (like logTable below) is awaited.
+// run when an observer method (like log below) is awaited.
 provinces.loadGeoData(
   "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
 );
 
 // Uncomment this line if you want to see the table.
-// await provinces.logTable()
+// await provinces.log()
 
 // We create a new table.
 const fires = sdb.newTable("fires");
@@ -58,7 +58,7 @@ const firesInsideProvinces = fires
 // everything queued above, fusing consecutive steps into as few
 // queries as possible. By default, the method logs the first
 // 10 rows, but we can specify the number of rows to log.
-await firesInsideProvinces.logTable(12);
+await firesInsideProvinces.log(12);
 
 // We close everything.
 await sdb.done();

@@ -73,7 +73,7 @@ await firesInsideProvinces.cache(
   { ttl: 60 },
 );
 
-await firesInsideProvinces.logTable(12);
+await firesInsideProvinces.log(12);
 
 // It's important to call done() at the end.
 // This method will remove the unused files

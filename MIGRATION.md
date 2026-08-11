@@ -10,9 +10,8 @@ had to be awaited. In v2, the library follows one rule:
   geospatial operations, summaries, index creation... They queue their work and
   return the table, so they can be chained.
 - **Observer methods stay asynchronous.** `getData()`, `getNbRows()`,
-  `hasColumn()`, `logTable()`, `writeData()`, `stream()`, `customQuery()`,
-  `cache()`, etc. Awaiting one executes everything queued so far, then produces
-  its result.
+  `hasColumn()`, `log()`, `writeData()`, `stream()`, `customQuery()`, `cache()`,
+  etc. Awaiting one executes everything queued so far, then produces its result.
 - At execution time, consecutive transformations are **fused into a single
   DuckDB query** when possible. On large tables, fused transformations typically
   run around 3x faster than v1's step-by-step execution.
@@ -42,7 +41,7 @@ const data = await table
 // v2 (statement style works too — methods queue on the same table)
 table.loadData("temperatures.csv");
 table.convert({ tas: "double", time: "date" });
-await table.logTable(); // executes everything, then prints
+await table.log(); // executes everything, then prints
 ```
 
 Methods that create an output table—through `outputTable` (`join()`,
@@ -53,7 +52,7 @@ table instance synchronously, so you can keep chaining on it:
 const joined = tableA
   .join(tableB, { outputTable: "joined" })
   .filter(`price > 100`);
-await joined.logTable();
+await joined.log();
 ```
 
 ## `run()`: executing without observing
@@ -154,6 +153,7 @@ only the renamed methods and option keys below are breaking.
 | `loadDataFromDirectory()` | `loadDirectory()`     | Shorter; "data from" added nothing.                                         |
 | `proportionsHorizontal()` | `rowProportions()`    | Shorter and names the unit instead of a visual direction.                   |
 | `proportionsVertical()`   | `columnProportions()` | Same.                                                                       |
+| `logTable()`              | `log()`               | The table receiver already supplies the noun.                               |
 
 ### One `strict` option instead of five names
 
@@ -170,26 +170,27 @@ Methods that could skip validations or error-throwing now all use
 
 ### Renamed option keys
 
-| Method                                         | v1                                                | v2                                       |
-| :--------------------------------------------- | :------------------------------------------------ | :--------------------------------------- |
-| `join()`                                       | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
-| `loadData()` / `loadDirectory()`               | `{ fileName: true }`                              | `{ filename: true }`                     |
-| `loadGeoData()`                                | `{ toWGS84: true }`                               | `{ toEPSG4326: true }`                   |
-| `joinGeo()`                                    | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
-| `cloneTable()`                                 | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
-| `summarize()`                                  | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
-| `ranks()`                                      | `{ noGaps: true }`                                | `{ dense: true }`                        |
-| `writeDB()`                                    | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
-| `trim()`                                       | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
-| `pad()`                                        | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
-| `fuzzyClean()`                                 | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
-| `joinGeo()`                                    | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
-| `customQuery()`                                | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
-| `new SimpleDB()` / `newTable()`                | `{ types: true }`                                 | `{ typesToLog: true }`                   |
-| `new SimpleDB()` / `newTable()` / `logTable()` | `{ nbRowsToLog: 20 }`                             | `{ rowsToLog: 20 }`                      |
-| `new SimpleDB()` / `newTable()`                | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
-| `new SimpleDB()`                               | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
-| `cloneTable()`                                 | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
+| Method                           | v1                                                | v2                                       |
+| :------------------------------- | :------------------------------------------------ | :--------------------------------------- |
+| `join()`                         | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
+| `loadData()` / `loadDirectory()` | `{ fileName: true }`                              | `{ filename: true }`                     |
+| `loadGeoData()`                  | `{ toWGS84: true }`                               | `{ toEPSG4326: true }`                   |
+| `joinGeo()`                      | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
+| `cloneTable()`                   | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
+| `summarize()`                    | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
+| `ranks()`                        | `{ noGaps: true }`                                | `{ dense: true }`                        |
+| `writeDB()`                      | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
+| `trim()`                         | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
+| `pad()`                          | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
+| `fuzzyClean()`                   | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
+| `joinGeo()`                      | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
+| `customQuery()`                  | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
+| `new SimpleDB()` / `newTable()`  | `{ types: true }`                                 | `{ typesToLog: true }`                   |
+| `new SimpleDB()` / `newTable()`  | `{ nbRowsToLog: 20 }`                             | `{ rowsToLog: 20 }`                      |
+| `log()`                          | `{ nbRowsToLog: 20 }`                             | `{ count: 20 }`                          |
+| `new SimpleDB()` / `newTable()`  | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
+| `new SimpleDB()`                 | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
+| `cloneTable()`                   | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
 
 ### `summarize()`: the `value` column is now automatic
 

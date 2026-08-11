@@ -250,7 +250,7 @@ const tableNames = await sdb.getTableNames();
 console.log(tableNames); // Output: ["employees", "customers"]
 ```
 
-#### `logTableNames`
+#### `logNames`
 
 Logs the names of all tables in the database to the console, sorted
 alphabetically.
@@ -258,7 +258,7 @@ alphabetically.
 ##### Signature
 
 ```typescript
-async logTableNames(): Promise<this>;
+async logNames(): Promise<this>;
 ```
 
 ##### Returns
@@ -269,7 +269,7 @@ A promise that resolves to the database, so methods can be chained.
 
 ```ts
 // Log all table names to the console
-await sdb.logTableNames();
+await sdb.logNames();
 // Example output: SimpleDB - Tables:  ["employees","customers"]
 ```
 
@@ -490,7 +490,7 @@ await sdb.writeDB("./my_exported_database.sqlite", { metadata: false });
 
 Executes all queued methods across every table in the database. Sync builder
 methods (like `filter()` or `convert()`) only queue their operation; execution
-happens when an async observer method (like `getData()`, `logTable()`, or
+happens when an async observer method (like `getData()`, `log()`, or
 `writeData()`) is awaited. Use `run()` when your script ends in pure mutations
 with nothing to observe and you want the work done now.
 
@@ -559,7 +559,7 @@ const employees = sdb.newTable("employees");
 // Load data from a CSV file into the "employees" table
 employees.loadData("./employees.csv");
 // Log the first few rows of the "employees" table to the console
-await employees.logTable();
+await employees.log();
 // Close the database connection and clean up resources
 await sdb.done();
 ```
@@ -614,8 +614,8 @@ Creates an instance of SimpleTable.
 Executes all queued methods across every table in the database, not just this
 table. Sync builder methods (like `filter()` or `convert()`) only queue their
 operation; execution happens when an async observer method (like `getData()`,
-`logTable()`, or `writeData()`) is awaited. Use `run()` when a chain ends in
-pure mutations with nothing to observe and you want the work done now.
+`log()`, or `writeData()`) is awaited. Use `run()` when a chain ends in pure
+mutations with nothing to observe and you want the work done now.
 
 Because the whole database is flushed in program order, this behaves identically
 to `SimpleDB.run()`; call `sdb.run()` when your intent is to flush the database
@@ -673,12 +673,12 @@ will be replaced. To convert the types of an existing table, use the
 `.convert()` method instead.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
 ```typescript
-setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): this;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}')>): this;
 ```
 
 ##### Parameters
@@ -704,8 +704,8 @@ table.setTypes({
 #### `loadArray`
 
 Loads an array of JavaScript objects into the table. This method queues the
-load; it runs when an async observer method (like `getData()` or `logTable()`)
-is awaited, or when `run()` is called.
+load; it runs when an async observer method (like `getData()` or `log()`) is
+awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -737,8 +737,8 @@ table.loadArray(data);
 
 Loads data from one or more local or remote files into the table. Supported file
 formats include CSV, JSON, Parquet, and Excel. This method queues the load; it
-runs when an async observer method (like `getData()` or `logTable()`) is
-awaited, or when `run()` is called.
+runs when an async observer method (like `getData()` or `log()`) is awaited, or
+when `run()` is called.
 
 ##### Signature
 
@@ -843,7 +843,7 @@ Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
 directory into the table.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -923,7 +923,7 @@ table.loadDirectory("./data/", { columns: ["name", "salary"] });
 Loads geospatial data from an external file or URL into the table.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -975,7 +975,7 @@ log a message (when verbose is enabled), unless the `overwrite` option is set to
 `true`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1066,7 +1066,7 @@ log a message (when verbose is enabled), unless the `overwrite` option is set to
 `true`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1146,7 +1146,7 @@ If the index already exists, it will be reused unless the `overwriteIndex`
 option is set to `true`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1276,7 +1276,7 @@ table.bm25("italian sauce", "Dish", "Recipe", 5, {
 Inserts rows, provided as an array of JavaScript objects, into the table.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1309,8 +1309,8 @@ table.insertRows(newRows);
 Inserts all rows from one or more other tables into this table. If tables do not
 have the same columns, an error will be thrown unless the `unifyColumns` option
 is set to `true`. This method queues the operation; it runs when an async
-observer method (like `getData()` or `logTable()`) is awaited, or when `run()`
-is called.
+observer method (like `getData()` or `log()`) is awaited, or when `run()` is
+called.
 
 ##### Signature
 
@@ -1353,7 +1353,7 @@ tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
 Fetches sample data from the simple-data-analysis-core GitHub repository.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1395,7 +1395,7 @@ order: `conditions` (WHERE clause) first, then `offset`, and finally `limit`
 Note that cloning large tables can be a slow operation.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1478,7 +1478,7 @@ Clones an existing column in this table, creating a new column with identical
 values.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1513,7 +1513,7 @@ table. For meaningful results, ensure your data is sorted appropriately (e.g.,
 by date/time for time-series analysis) before calling this method.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1576,7 +1576,7 @@ distances between X-axis values rather than treating every row as equidistant.
 When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1653,10 +1653,10 @@ columns are specified, all columns are sorted from left to right in ascending
 order.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
-Order-preserving transformations queued after a sort retain that order.
-Operations such as joins, grouping, aggregation, and sampling do not guarantee
-input order; chain `sort()` after them when deterministic output order matters.
+`getData()` or `log()`) is awaited, or when `run()` is called. Order-preserving
+transformations queued after a sort retain that order. Operations such as joins,
+grouping, aggregation, and sampling do not guarantee input order; chain `sort()`
+after them when deterministic output order matters.
 
 ##### Signature
 
@@ -1704,7 +1704,7 @@ table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
 
 Selects specific columns in the table, removing all others. This method queues
 the operation; it runs when an async observer method (like `getData()` or
-`logTable()`) is awaited, or when `run()` is called.
+`log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1737,7 +1737,7 @@ table.selectColumns("productName");
 Skips the first `n` rows of the table, effectively removing them.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1792,7 +1792,7 @@ Selects random rows from the table, removing all others. You can optionally
 specify a seed to ensure repeatable sampling.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1836,7 +1836,7 @@ Selects a specified number of rows from this table. An offset can be applied to
 skip initial rows, and the results can be output to a new table.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1890,7 +1890,7 @@ Removes duplicate rows from this table, keeping only unique rows. Note that the
 resulting data order might differ from the original.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1931,8 +1931,8 @@ table.removeDuplicates({ on: ["firstName", "lastName"] });
 Removes rows with missing values from this table. By default, missing values
 include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`,
 `"NaN"`, `"undefined"`, and empty strings `""`. This method queues the
-operation; it runs when an async observer method (like `getData()` or
-`logTable()`) is awaited, or when `run()` is called.
+operation; it runs when an async observer method (like `getData()` or `log()`)
+is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1981,8 +1981,8 @@ table.removeMissing({ columns: "age", missingValues: [-1] });
 
 Trims specified characters from the beginning, end, or both sides of string
 values in the given columns. This method queues the operation; it runs when an
-async observer method (like `getData()` or `logTable()`) is awaited, or when
-`run()` is called.
+async observer method (like `getData()` or `log()`) is awaited, or when `run()`
+is called.
 
 ##### Signature
 
@@ -2027,7 +2027,7 @@ Filters rows from this table based on SQL conditions. Note that it's often
 faster to use the `removeRows` method for simple removals. You can also use
 JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`). This method
 queues the operation; it runs when an async observer method (like `getData()` or
-`logTable()`) is awaited, or when `run()` is called.
+`log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2072,7 +2072,7 @@ Keeps rows in this table that have specific values in specified columns,
 removing all other rows.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2112,7 +2112,7 @@ table.keepValues({ status: null });
 Removes rows from this table that have specific values in specified columns.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2155,7 +2155,7 @@ Removes rows from this table based on SQL conditions. This method is similar to
 JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2200,7 +2200,7 @@ Renames one or more columns in the table. Throws if a source column does not
 exist, so a typo fails loudly instead of being silently ignored.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2245,7 +2245,7 @@ Cleans column names by removing non-alphanumeric characters and formatting them
 to camel case.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2318,7 +2318,7 @@ The table will then look like this:
 | Sales      | 2023 | 98        |
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 #### `wider`
 
@@ -2379,7 +2379,7 @@ When multiple rows share the same `namesFrom`/grouping combination, their
 (`"sum"` by default).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 #### `convert`
 
@@ -2398,7 +2398,7 @@ When converting strings to numbers, commas (often used as thousand separators)
 will be automatically removed before conversion.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called. If a column
+`getData()` or `log()`) is awaited, or when `run()` is called. If a column
 doesn't exist, the error is thrown at that point too.
 
 ##### Signature
@@ -2475,8 +2475,8 @@ await table.removeTable();
 #### `removeColumns`
 
 Removes one or more columns from this table. This method queues the operation;
-it runs when an async observer method (like `getData()` or `logTable()`) is
-awaited, or when `run()` is called.
+it runs when an async observer method (like `getData()` or `log()`) is awaited,
+or when `run()` is called.
 
 ##### Signature
 
@@ -2508,13 +2508,13 @@ table.removeColumns("tempColumn");
 
 Adds a new column to the table based on a specified data type (JavaScript or SQL
 types) and a SQL definition. This method queues the operation; it runs when an
-async observer method (like `getData()` or `logTable()`) is awaited, or when
-`run()` is called.
+async observer method (like `getData()` or `log()`) is awaited, or when `run()`
+is called.
 
 ##### Signature
 
 ```typescript
-addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): this;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
 ```
 
 ##### Parameters
@@ -2548,7 +2548,7 @@ Adds a new column to the table containing the row number, starting at 0 (like an
 index).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2588,7 +2588,7 @@ rows will be in the resulting table. This means that if the left table has `n`
 rows and the right table has `m` rows, the result will have `n * m` rows.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2634,9 +2634,9 @@ Merges the data of this table (considered the left table) with another table
 order of rows in the returned data is not guaranteed to be the same as in the
 original tables. This operation might create temporary files in a `.tmp` folder;
 consider adding `.tmp` to your `.gitignore`. This method queues the operation;
-it runs when an async observer method (like `getData()` or `logTable()`) is
-awaited, or when `run()` is called. The join uses the other table's state as of
-this call: operations queued on it afterwards run after the join.
+it runs when an async observer method (like `getData()` or `log()`) is awaited,
+or when `run()` is called. The join uses the other table's state as of this
+call: operations queued on it afterwards run after the join.
 
 ##### Signature
 
@@ -2700,9 +2700,9 @@ This operation might create temporary files in a `.tmp` folder; consider adding
 `.tmp` to your `.gitignore`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called. The join
-uses the other table's state as of this call: operations queued on it afterwards
-run after the join.
+`getData()` or `log()`) is awaited, or when `run()` is called. The join uses the
+other table's state as of this call: operations queued on it afterwards run
+after the join.
 
 ##### Signature
 
@@ -2789,7 +2789,7 @@ Similarity is computed using the
 extension, which is installed and loaded automatically.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2861,7 +2861,7 @@ table.fuzzyClean("category", "category", 80, { strategy: "longestString" });
 Replaces specified strings in the selected columns.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2918,7 +2918,7 @@ table.replace("all", { "%": "" });
 
 Converts string values in the specified columns to lowercase. This method queues
 the operation; it runs when an async observer method (like `getData()` or
-`logTable()`) is awaited, or when `run()` is called.
+`log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2951,7 +2951,7 @@ table.lower(["column1", "column2"]);
 
 Converts string values in the specified columns to uppercase. This method queues
 the operation; it runs when an async observer method (like `getData()` or
-`logTable()`) is awaited, or when `run()` is called.
+`log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2984,8 +2984,8 @@ table.upper(["column1", "column2"]);
 
 Capitalizes the first letter of each string in the specified columns and
 converts the rest of the string to lowercase. This method queues the operation;
-it runs when an async observer method (like `getData()` or `logTable()`) is
-awaited, or when `run()` is called.
+it runs when an async observer method (like `getData()` or `log()`) is awaited,
+or when `run()` is called.
 
 ##### Signature
 
@@ -3018,7 +3018,7 @@ table.capitalize(["column1", "column2"]);
 Truncates string values in a specified column to a maximum number of characters.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3056,7 +3056,7 @@ column is of a different type. `null` values remain `null`. If any string
 already exceeds the target length, an error is thrown (no silent truncation).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3108,7 +3108,7 @@ a given index, storing the result in a new or existing column. If the index is
 out of bounds, an empty string will be returned for that row.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3157,7 +3157,7 @@ a row has more parts than the number of new columns, an error will be thrown
 unless `strict` is set to `false`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3204,7 +3204,7 @@ Extracts a specific number of characters from the beginning (left side) of
 string values in the specified column.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3236,7 +3236,7 @@ Extracts a specific number of characters from the end (right side) of string
 values in the specified column.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3267,7 +3267,7 @@ table.lastChars("productCode", 2);
 Replaces `NULL` values in the specified columns with a given value.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3312,7 +3312,7 @@ table.replaceNulls("all", 0);
 Concatenates values from specified columns into a new column.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3360,7 +3360,7 @@ If a column value is `NULL`, it will be replaced by `'Unknown'` in the
 concatenated result.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3421,7 +3421,7 @@ new row is created for each resulting substring. All other column values are
 duplicated across the newly created rows.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3465,7 +3465,7 @@ If a row has a value of 3 in the specified column, it will be repeated 3 times.
 If the value is 0 or negative, the row will be removed.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3511,7 +3511,7 @@ fewer rows by grouping on specified category columns and concatenating the
 target column values with a separator.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3554,7 +3554,7 @@ table.nest("tags", ",", ["country", "city"]);
 Rounds numeric values in specified columns.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3610,7 +3610,7 @@ table.round("column1", 2);
 Updates values in a specified column using a SQL expression.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3653,7 +3653,7 @@ table.updateColumn(
 Assigns ranks to rows in a new column based on the values of a specified column.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3706,7 +3706,7 @@ table.ranks("sales", "salesRank", { categories: ["department", "city"] });
 Assigns quantiles to rows in a new column based on specified column values.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3753,7 +3753,7 @@ table.quantiles("sales", 4, "salesQuartile");
 Assigns bins for specified column values based on an interval size.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3859,7 +3859,7 @@ The table will then look like this:
 | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 #### `columnProportions`
 
@@ -3867,7 +3867,7 @@ Computes proportions vertically over a column's values, relative to the sum of
 all values in that column (or within specified categories).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3922,7 +3922,7 @@ operations. This method allows you to aggregate data, calculate statistics
 (e.g., count, mean, sum), and group results by categorical columns.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4047,7 +4047,7 @@ Computes the cumulative sum of values in a column. For this method to work
 properly, ensure your data is sorted first.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4098,7 +4098,7 @@ window, `NULL` will be returned. For this method to work properly, ensure your
 data is sorted by the relevant column(s) first.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4156,7 +4156,7 @@ combinations. Note that correlation is symmetrical: the correlation of `x` with
 `y` is the same as `y` with `x`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4225,7 +4225,7 @@ permutations. Note that linear regression analysis is asymmetrical: the linear
 regression of `x` over `y` is not the same as `y` over `x`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4292,7 +4292,7 @@ Identifies outliers in a specified column using the Interquartile Range (IQR)
 method.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4331,7 +4331,7 @@ table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
 Computes the Z-score for values in a specified column.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4377,7 +4377,7 @@ table.zScore("score", "scoreZScore", { decimals: 2 });
 Normalizes the values in a column using min-max normalization.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4582,7 +4582,7 @@ Produces identical output to `journalism-format`'s `normalizeString()` function
 for all common cases including accented Latin characters.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5494,10 +5494,10 @@ console.log(booksDataCSV);
 
 #### `points`
 
-Creates point geometries from latitude and longitude columns.
+Creates point geometries from latitude (y) and longitude (x) columns.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5507,8 +5507,10 @@ points(latColumn: string, lonColumn: string, newColumn: string, options?: { proj
 
 ##### Parameters
 
-- **`latColumn`**: The name of the column storing the latitude values.
-- **`lonColumn`**: The name of the column storing the longitude values.
+- **`latColumn`**: The name of the column storing the latitude (y-coordinate)
+  values.
+- **`lonColumn`**: The name of the column storing the longitude (x-coordinate)
+  values.
 - **`newColumn`**: The name of the new column where the point geometries will be
   stored.
 - **`options`**: An optional object with configuration options:
@@ -5522,7 +5524,8 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Create point geometries in a new 'geom' column using 'lat' and 'lon' columns.
+// Create point geometries in a new 'geom' column using latitude (y) and longitude (x) columns.
+// The resulting coordinates are ordered as [longitude, latitude], or [x, y].
 // The projection is assumed to be EPSG:4326 (WGS84).
 table.points("lat", "lon", "geom");
 ```
@@ -5537,7 +5540,7 @@ table.points("y", "x", "geom", { projection: "EPSG:3347" });
 Adds a column with boolean values indicating the validity of geometries.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5576,7 +5579,7 @@ table.isValidGeo("isValidMyGeom", { column: "myGeom" });
 Adds a column with the number of vertices (points) in each geometry.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5614,7 +5617,7 @@ table.nbVertices("myGeomVertices", { column: "myGeom" });
 Attempts to make invalid geometries valid without removing any vertices.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5649,7 +5652,7 @@ Adds a column with boolean values indicating whether geometries are closed
 (e.g., polygons) or open (e.g., linestrings).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5687,7 +5690,7 @@ Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`,
 `"POLYGON"`) for each geometry.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5722,12 +5725,13 @@ table.typeGeo("featureType", { column: "featureGeom" });
 #### `flipCoordinates`
 
 Flips the coordinate order of geometries in a specified column (e.g., from
-`[lon, lat]` to `[lat, lon]` or vice-versa). **Warning:** This method should be
-used with caution as it directly manipulates coordinate order and can affect the
-accuracy of geospatial operations if not used correctly.
+`[longitude (x), latitude (y)]` to `[latitude (y), longitude (x)]` or
+vice-versa). **Warning:** This method should be used with caution as it directly
+manipulates coordinate order and can affect the accuracy of geospatial
+operations if not used correctly.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5762,7 +5766,7 @@ Reduces the precision of geometries in a specified column to a given number of
 decimal places.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5800,7 +5804,7 @@ Reprojects the geometries in a specified column to another Spatial Reference
 System (SRS).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5838,7 +5842,7 @@ Computes the area of geometries in square meters (`"m2"`) or optionally square
 kilometers (`"km2"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5883,7 +5887,7 @@ Computes the length of line geometries in meters (`"m"`) or optionally
 kilometers (`"km"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5928,7 +5932,7 @@ Computes the perimeter of polygon geometries in meters (`"m"`) or optionally
 kilometers (`"km"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5974,7 +5978,7 @@ geometry) for geometries in a specified column. The distance is in the Spatial
 Reference System (SRS) unit of the input geometries.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6015,14 +6019,14 @@ Merges the data of this table (considered the left table) with another table
 in the returned data is not guaranteed to be the same as in the original tables.
 This operation might create temporary files in a `.tmp` folder; consider adding
 `.tmp` to your `.gitignore`. This method queues the operation; it runs when an
-async observer method (like `getData()` or `logTable()`) is awaited, or when
-`run()` is called. The join uses the other table's state as of this call:
-operations queued on it afterwards run after the join.
+async observer method (like `getData()` or `log()`) is awaited, or when `run()`
+is called. The join uses the other table's state as of this call: operations
+queued on it afterwards run after the join.
 
 ##### Signature
 
 ```typescript
-joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "withinDistance", options?: { leftColumn?: string; rightColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; outputTable?: string | boolean }): this;
+joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "withinDistance", options?: { leftColumn?: string; rightColumn?: string; type?: "inner" | "left" | "right" | "full"; distance?: number; distanceMethod?: "srs" | "haversine" | "spheroid"; excludeLeftGeometry?: boolean; excludeRightGeometry?: boolean; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -6046,6 +6050,10 @@ joinGeo(rightTable: SimpleTable, method: "intersect" | "inside" | "withinDistanc
   (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326
   (WGS84) input), or `"spheroid"` (uses meters, requires EPSG:4326 (WGS84)
   input, most accurate but slowest).
+- **`options.excludeLeftGeometry`**: Whether to exclude the selected
+  `leftColumn` geometry from the result. Defaults to `false`.
+- **`options.excludeRightGeometry`**: Whether to exclude the selected
+  `rightColumn` geometry from the result. Defaults to `false`.
 - **`options.outputTable`**: If `true`, the results will be stored in a new
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
@@ -6066,6 +6074,14 @@ tableA.joinGeo(tableB, "intersect");
 ```ts
 // Merge data where geometries in tableA are inside geometries in tableB
 tableA.joinGeo(tableB, "inside");
+```
+
+```ts
+// Join using both geometries without copying them into the result
+tableA.joinGeo(tableB, "intersect", {
+  excludeLeftGeometry: true,
+  excludeRightGeometry: true,
+});
 ```
 
 ```ts
@@ -6099,7 +6115,7 @@ Computes the intersection of two sets of geometries, creating new geometries
 where they overlap.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6132,7 +6148,7 @@ Removes the intersection of two geometries from the first geometry, effectively
 computing the geometric difference.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6165,7 +6181,7 @@ table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
 Fills holes in polygon geometries.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6200,7 +6216,7 @@ Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE`
 otherwise.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6233,7 +6249,7 @@ Returns `TRUE` if all points of a geometry in `column` lie inside a geometry in
 `containerColumn`, and `FALSE` otherwise.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6267,7 +6283,7 @@ Computes the union of two geometries, creating a new geometry that represents
 the merged area of both.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6296,11 +6312,11 @@ table.union("geomA", "geomB", "unionGeom");
 
 #### `latLon`
 
-Extracts the latitude and longitude coordinates from point geometries. The input
-geometry is assumed to be in EPSG:4326 (WGS84).
+Extracts the latitude (y) and longitude (x) coordinates from point geometries.
+The input geometry is assumed to be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6312,9 +6328,9 @@ latLon(column: string, latColumn: string, lonColumn: string): this;
 
 - **`column`**: The name of the column storing the point geometries.
 - **`latColumn`**: The name of the new column where the extracted latitude
-  values will be stored.
+  (y-coordinate) values will be stored.
 - **`lonColumn`**: The name of the new column where the extracted longitude
-  values will be stored.
+  (x-coordinate) values will be stored.
 
 ##### Returns
 
@@ -6323,7 +6339,7 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Extract latitude and longitude from 'geom' column into new 'lat' and 'lon' columns
+// Extract latitude (y) and longitude (x) from 'geom' into new 'lat' and 'lon' columns.
 table.latLon("geom", "lat", "lon");
 ```
 
@@ -6333,7 +6349,7 @@ Simplifies geometries while preserving their overall coverage. A higher
 tolerance results in more significant simplification.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6374,7 +6390,7 @@ Computes the centroid of geometries. The values are returned in the SRS unit of
 the input geometries.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6411,7 +6427,7 @@ table.centroid("areaCentroid", { column: "areaGeom" });
 Generates a random point within the geometries of a specified column.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6459,7 +6475,7 @@ methods to get results in meters or kilometers. If using `"spheroid"` or
 `"haversine"`, the input geometries must be in EPSG:4326 (WGS84).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6525,7 +6541,7 @@ Unnests geometries recursively, transforming multi-part geometries (e.g.,
 MultiPolygon) into individual single-part geometries (e.g., Polygon).
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6560,7 +6576,7 @@ Computes the bounding box of geometries in a specified column, creating four new
 columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6601,7 +6617,7 @@ Aggregates geometries in a specified column based on a chosen aggregation
 method.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6656,7 +6672,7 @@ const intersectionTable = table.aggregateGeo("intersection", {
 Transforms closed linestring geometries into polygon geometries.
 
 This method queues the operation; it runs when an async observer method (like
-`getData()` or `logTable()`) is awaited, or when `run()` is called.
+`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6971,7 +6987,7 @@ await table.cache(() => {
 await sdb.done();
 ```
 
-#### `logTable`
+#### `log`
 
 Logs a specified number of rows from the table to the console. By default, the
 first 10 rows are logged. You can optionally log the column types and filter the
@@ -6981,17 +6997,17 @@ data based on conditions. You can also use JavaScript syntax for conditions
 ##### Signature
 
 ```typescript
-async logTable(options?: "all" | number | { rowsToLog?: number | "all"; types?: boolean; conditions?: string }): Promise<this>;
+async log(options?: "all" | number | { count?: number | "all"; types?: boolean; conditions?: string }): Promise<this>;
 ```
 
 ##### Parameters
 
 - **`options`**: Either the number of rows to log (a specific number or `"all"`)
   or an object with configuration options:
-- **`options.rowsToLog`**: The number of rows to log. Defaults to 10 or the
-  value set in the SimpleDB instance. Use `"all"` to log all rows.
-- **`options.types`**: If `true`, logs the column types along with the data.
-  Defaults to `false`.
+- **`options.count`**: The number of rows to log. Defaults to 10 or the value
+  set in the SimpleDB instance. Use `"all"` to log all rows.
+- **`options.types`**: Whether to log the column types along with the data.
+  Defaults to the value set in the SimpleDB instance.
 - **`options.conditions`**: A SQL `WHERE` clause condition to filter the data
   before logging. Defaults to no condition.
 
@@ -7003,27 +7019,27 @@ A promise that resolves to the table, so methods can be chained.
 
 ```ts
 // Log the first 10 rows (default behavior)
-await table.logTable();
+await table.log();
 ```
 
 ```ts
 // Log the first 50 rows
-await table.logTable(50);
+await table.log(50);
 ```
 
 ```ts
 // Log all rows
-await table.logTable("all");
+await table.log("all");
 ```
 
 ```ts
 // Log the first 20 rows and include column types
-await table.logTable({ rowsToLog: 20, types: true });
+await table.log({ count: 20, types: true });
 ```
 
 ```ts
 // Log rows where 'status' is 'active' (using JS syntax for conditions)
-await table.logTable({ conditions: `status === 'active'` });
+await table.log({ conditions: `status === 'active'` });
 ```
 
 #### `logDescription`
@@ -7290,7 +7306,7 @@ const employees = sdb.newTable("employees");
 employees.loadData("./employees.csv");
 
 // Log the first few rows of the "employees" table to the console
-await employees.logTable();
+await employees.log();
 
 // Close the database connection and free up resources
 await sdb.done();

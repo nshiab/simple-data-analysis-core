@@ -16,7 +16,7 @@ Deno.test("should clone and log a table", async () => {
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.cloneTable();
-  // await clone.logTable();
+  // await clone.log();
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.run();

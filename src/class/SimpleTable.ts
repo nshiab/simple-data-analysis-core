@@ -163,7 +163,7 @@ import type { PendingOp } from "../helpers/pendingOps.ts";
  * employees.loadData("./employees.csv");
  *
  * // Log the first few rows of the "employees" table to the console
- * await employees.logTable();
+ * await employees.log();
  *
  * // Close the database connection and free up resources
  * await sdb.done();
@@ -247,7 +247,7 @@ export default class SimpleTable extends Simple {
    * Executes all queued methods across every table in the database, not just
    * this table. Sync builder methods (like `filter()` or `convert()`) only
    * queue their operation; execution happens when an async observer method
-   * (like `getData()`, `logTable()`, or `writeData()`) is awaited. Use `run()`
+   * (like `getData()`, `log()`, or `writeData()`) is awaited. Use `run()`
    * when a chain ends in pure mutations with nothing to observe and you want
    * the work done now.
    *
@@ -294,7 +294,7 @@ export default class SimpleTable extends Simple {
    * Sets the data types for columns in a new table. If the table already exists, it will be replaced.
    * To convert the types of an existing table, use the `.convert()` method instead.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param types - An object specifying the column names and their target data types (JavaScript or SQL types).
    * @returns The table, so methods can be chained.
@@ -334,7 +334,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Loads an array of JavaScript objects into the table. This method queues the load; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Loads an array of JavaScript objects into the table. This method queues the load; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param rows - An array of objects, where each object represents a row and its properties represent columns.
    * @returns The table, so methods can be chained.
@@ -361,7 +361,7 @@ export default class SimpleTable extends Simple {
   /**
    * Loads data from one or more local or remote files into the table.
    * Supported file formats include CSV, JSON, Parquet, and Excel.
-   * This method queues the load; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the load; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param files - The path(s) or URL(s) of the file(s) containing the data to be loaded.
    * @param options - An optional object with configuration options:
@@ -460,7 +460,7 @@ export default class SimpleTable extends Simple {
   /**
    * Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local directory into the table.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param directory - The absolute path to the directory containing the data files.
    * @param options - An optional object with configuration options:
@@ -533,7 +533,7 @@ export default class SimpleTable extends Simple {
   /**
    * Loads geospatial data from an external file or URL into the table.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param file - The URL or absolute path to the external file containing the geospatial data.
    * @param options - An optional object with configuration options:
@@ -578,7 +578,7 @@ export default class SimpleTable extends Simple {
    *
    * If an FTS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param idColumn - The name of the column containing unique identifiers for each row.
    * @param textColumn - The name of the column containing the text to index.
@@ -687,7 +687,7 @@ export default class SimpleTable extends Simple {
    *
    * If a VSS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing vector embeddings (must be FLOAT array type).
    * @param options - An optional object with configuration options:
@@ -755,7 +755,7 @@ export default class SimpleTable extends Simple {
    *
    * This method creates a full-text search index on the specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search). If the index already exists, it will be reused unless the `overwriteIndex` option is set to `true`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param text - The search query text to match against the text column.
    * @param idColumn - The name of the column containing unique identifiers for each row.
@@ -916,7 +916,7 @@ export default class SimpleTable extends Simple {
   /**
    * Inserts rows, provided as an array of JavaScript objects, into the table.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param rows - An array of objects, where each object represents a row to be inserted and its properties correspond to column names.
    * @returns The table, so methods can be chained.
@@ -938,7 +938,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param tables - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
    * @param options - An optional object with configuration options:
@@ -975,7 +975,7 @@ export default class SimpleTable extends Simple {
   /**
    * Fetches sample data from the simple-data-analysis-core GitHub repository.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param sample - The name of the sample to load.
    *
@@ -1016,7 +1016,7 @@ export default class SimpleTable extends Simple {
    *
    * Note that cloning large tables can be a slow operation.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param nameOrOptions - Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
    * @param nameOrOptions.name - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
@@ -1095,7 +1095,7 @@ export default class SimpleTable extends Simple {
   /**
    * Clones an existing column in this table, creating a new column with identical values.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the original column to clone.
    * @param newColumn - The name of the new column to be created.
@@ -1119,7 +1119,7 @@ export default class SimpleTable extends Simple {
    *
    * **Important:** The offset is applied based on the current row order in the table. For meaningful results, ensure your data is sorted appropriately (e.g., by date/time for time-series analysis) before calling this method.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the original column.
    * @param newColumn - The name of the new column to be created with offset values.
@@ -1174,7 +1174,7 @@ export default class SimpleTable extends Simple {
   /**
    * Fills `NULL` values in specified columns. By default, each `NULL` is replaced with the last non-`NULL` value from the preceding row. When `interpolate` is `true`, `NULL` values are replaced using linear interpolation (or extrapolation at the ends). Pass `interpolateBy` with a real numeric or date column name to use it as the X-axis, so that interpolated values are proportional to the actual distances between X-axis values rather than treating every row as equidistant. When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column(s) for which to fill `NULL` values.
    * @param options - An optional object with configuration options:
@@ -1242,7 +1242,7 @@ export default class SimpleTable extends Simple {
    * Sorts the rows of the table based on specified column(s) and order(s).
    * If no columns are specified, all columns are sorted from left to right in ascending order.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. Order-preserving transformations queued after a sort retain that order. Operations such as joins, grouping, aggregation, and sampling do not guarantee input order; chain `sort()` after them when deterministic output order matters.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called. Order-preserving transformations queued after a sort retain that order. Operations such as joins, grouping, aggregation, and sampling do not guarantee input order; chain `sort()` after them when deterministic output order matters.
    *
    * @param order - An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
    * @param options - An optional object with configuration options:
@@ -1285,7 +1285,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Selects specific columns in the table, removing all others. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Selects specific columns in the table, removing all others. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The name or an array of names of the columns to be selected.
    * @returns The table, so methods can be chained.
@@ -1311,7 +1311,7 @@ export default class SimpleTable extends Simple {
   /**
    * Skips the first `n` rows of the table, effectively removing them.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param count - The number of rows to skip from the beginning of the table.
    * @returns The table, so methods can be chained.
@@ -1350,7 +1350,7 @@ export default class SimpleTable extends Simple {
   /**
    * Selects random rows from the table, removing all others. You can optionally specify a seed to ensure repeatable sampling.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param count - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
    * @param options - An optional object with configuration options:
@@ -1389,7 +1389,7 @@ export default class SimpleTable extends Simple {
   /**
    * Selects a specified number of rows from this table. An offset can be applied to skip initial rows, and the results can be output to a new table.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param count - The number of rows to select.
    * @param options - An optional object with configuration options:
@@ -1433,7 +1433,7 @@ export default class SimpleTable extends Simple {
    * Removes duplicate rows from this table, keeping only unique rows.
    * Note that the resulting data order might differ from the original.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An optional object with configuration options:
    * @param options.on - A column name or an array of column names to consider when identifying duplicates. If specified, duplicates are determined based only on the values in these columns. If omitted, all columns are considered.
@@ -1470,7 +1470,7 @@ export default class SimpleTable extends Simple {
   /**
    * Removes rows with missing values from this table.
    * By default, missing values include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`, `"NaN"`, `"undefined"`, and empty strings `""`.
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An optional object with configuration options:
    * @param options.columns - A string or an array of strings specifying the columns to consider for missing values. If omitted, all columns are considered.
@@ -1515,7 +1515,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Trims specified characters from the beginning, end, or both sides of string values in the given columns. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Trims specified characters from the beginning, end, or both sides of string values in the given columns. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name or an array of column names to trim.
    * @param options - An optional object with configuration options:
@@ -1556,7 +1556,7 @@ export default class SimpleTable extends Simple {
   /**
    * Filters rows from this table based on SQL conditions. Note that it's often faster to use the `removeRows` method for simple removals.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
    * @returns The table, so methods can be chained.
@@ -1594,7 +1594,7 @@ export default class SimpleTable extends Simple {
   /**
    * Keeps rows in this table that have specific values in specified columns, removing all other rows.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns. Use `null` to keep rows where a column is `NULL`.
    * @returns The table, so methods can be chained.
@@ -1628,7 +1628,7 @@ export default class SimpleTable extends Simple {
   /**
    * Removes rows from this table that have specific values in specified columns.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns. Use `null` to remove rows where a column is `NULL`; otherwise, `NULL` rows are retained.
    * @returns The table, so methods can be chained.
@@ -1663,7 +1663,7 @@ export default class SimpleTable extends Simple {
    * Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"fruit = 'apple'"`).
    * @returns The table, so methods can be chained.
@@ -1702,7 +1702,7 @@ export default class SimpleTable extends Simple {
    * Renames one or more columns in the table. Throws if a source column does
    * not exist, so a typo fails loudly instead of being silently ignored.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
    * @param options - Configuration options.
@@ -1739,7 +1739,7 @@ export default class SimpleTable extends Simple {
   /**
    * Cleans column names by removing non-alphanumeric characters and formatting them to camel case.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @returns The table, so methods can be chained.
    * @category Column Operations
@@ -1799,7 +1799,7 @@ export default class SimpleTable extends Simple {
    * | Sales      | 2022 | 75        |
    * | Sales      | 2023 | 98        |
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - An array of strings representing the names of the columns to be stacked (unpivoted).
    * @param namesTo - The name of the new column that will contain the original column names (e.g., "Year").
@@ -1847,7 +1847,7 @@ export default class SimpleTable extends Simple {
    *
    * When multiple rows share the same `namesFrom`/grouping combination, their `valuesFrom` values are combined with the `options.aggregation` function (`"sum"` by default).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param namesFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
@@ -1883,7 +1883,7 @@ export default class SimpleTable extends Simple {
    *
    * When converting strings to numbers, commas (often used as thousand separators) will be automatically removed before conversion.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. If a column doesn't exist, the error is thrown at that point too.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called. If a column doesn't exist, the error is thrown at that point too.
    *
    * @param types - An object mapping column names to their target data types for conversion.
    * @param options - An optional object with configuration options:
@@ -1967,7 +1967,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Removes one or more columns from this table. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Removes one or more columns from this table. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The name or an array of names of the columns to be removed.
    * @returns The table, so methods can be chained.
@@ -1991,7 +1991,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column to be added.
    * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
@@ -2039,7 +2039,7 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a new column to the table containing the row number, starting at 0 (like an index).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column that will store the row number.
    * @param options - An optional object with configuration options:
@@ -2071,7 +2071,7 @@ export default class SimpleTable extends Simple {
    * Performs a cross join operation with another table. A cross join returns the Cartesian product of the rows from both tables, meaning all possible pairs of rows will be in the resulting table.
    * This means that if the left table has `n` rows and the right table has `m` rows, the result will have `n * m` rows.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param rightTable - The SimpleTable instance to cross join with.
    * @param options - An optional object with configuration options:
@@ -2110,7 +2110,7 @@ export default class SimpleTable extends Simple {
    * Merges the data of this table (considered the left table) with another table (the right table) based on a common column or multiple columns.
    * Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param options - An optional object with configuration options:
@@ -2167,7 +2167,7 @@ export default class SimpleTable extends Simple {
    *
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param leftColumn - The name of the column in this (left) table containing the text to compare.
@@ -2258,7 +2258,7 @@ export default class SimpleTable extends Simple {
    * Similarity is computed using the [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension,
    * which is installed and loaded automatically.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to normalize.
    * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
@@ -2332,7 +2332,7 @@ export default class SimpleTable extends Simple {
   /**
    * Replaces specified strings in the selected columns.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param replacements - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
@@ -2385,7 +2385,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Converts string values in the specified columns to lowercase. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Converts string values in the specified columns to lowercase. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name or an array of column names to be converted to lowercase.
    * @returns The table, so methods can be chained.
@@ -2409,7 +2409,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Converts string values in the specified columns to uppercase. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Converts string values in the specified columns to uppercase. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name or an array of column names to be converted to uppercase.
    * @returns The table, so methods can be chained.
@@ -2433,7 +2433,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Capitalizes the first letter of each string in the specified columns and converts the rest of the string to lowercase. This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * Capitalizes the first letter of each string in the specified columns and converts the rest of the string to lowercase. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name or an array of column names to be capitalized.
    * @returns The table, so methods can be chained.
@@ -2459,7 +2459,7 @@ export default class SimpleTable extends Simple {
   /**
    * Truncates string values in a specified column to a maximum number of characters.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column name containing strings to be truncated.
    * @param length - The maximum number of characters to keep.
@@ -2490,7 +2490,7 @@ export default class SimpleTable extends Simple {
    * column is of a different type. `null` values remain `null`. If any string
    * already exceeds the target length, an error is thrown (no silent truncation).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name(s) containing strings to be padded.
    * @param length - The target length of the padded strings.
@@ -2536,7 +2536,7 @@ export default class SimpleTable extends Simple {
    * Splits strings in a specified column by a separator and extracts a substring at a given index, storing the result in a new or existing column.
    * If the index is out of bounds, an empty string will be returned for that row.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be split.
    * @param separator - The substring to use as a delimiter for splitting the strings.
@@ -2576,7 +2576,7 @@ export default class SimpleTable extends Simple {
    * If a row has fewer parts than the number of new columns, a warning will be logged and the extra columns will contain empty strings (unless `strict` is set to `false`).
    * If a row has more parts than the number of new columns, an error will be thrown unless `strict` is set to `false`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be split.
    * @param separator - The substring to use as a delimiter for splitting the strings.
@@ -2621,7 +2621,7 @@ export default class SimpleTable extends Simple {
   /**
    * Extracts a specific number of characters from the beginning (left side) of string values in the specified column.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be modified.
    * @param nbCharacters - The number of characters to extract from the left side of each string.
@@ -2643,7 +2643,7 @@ export default class SimpleTable extends Simple {
   /**
    * Extracts a specific number of characters from the end (right side) of string values in the specified column.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be modified.
    * @param nbCharacters - The number of characters to extract from the right side of each string.
@@ -2665,7 +2665,7 @@ export default class SimpleTable extends Simple {
   /**
    * Replaces `NULL` values in the specified columns with a given value.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
    * @param value - The value to replace `NULL` occurrences with.
@@ -2707,7 +2707,7 @@ export default class SimpleTable extends Simple {
   /**
    * Concatenates values from specified columns into a new column.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - An array of column names whose values will be concatenated.
    * @param newColumn - The name of the new column to store the concatenated values.
@@ -2750,7 +2750,7 @@ export default class SimpleTable extends Simple {
    *
    * If a column value is `NULL`, it will be replaced by `'Unknown'` in the concatenated result.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - An array of column names whose values will be concatenated with labels.
    * @param newColumn - The name of the new column to create with the concatenated values.
@@ -2802,7 +2802,7 @@ export default class SimpleTable extends Simple {
    *
    * Each value in the specified column is split using the provided separator, and a new row is created for each resulting substring. All other column values are duplicated across the newly created rows.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing string values to be split and unnested.
    * @param separator - The delimiter string used to split the column values.
@@ -2837,7 +2837,7 @@ export default class SimpleTable extends Simple {
    *
    * If a row has a value of 3 in the specified column, it will be repeated 3 times. If the value is 0 or negative, the row will be removed.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the number of times each row should be repeated.
    * @param options - An optional object with configuration options:
@@ -2874,7 +2874,7 @@ export default class SimpleTable extends Simple {
    *
    * This is the inverse operation of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column whose values will be aggregated and concatenated.
    * @param separator - The delimiter string used to join the column values.
@@ -2913,7 +2913,7 @@ export default class SimpleTable extends Simple {
   /**
    * Rounds numeric values in specified columns.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name or an array of column names containing numeric values to be rounded.
    * @param options - An optional object with configuration options:
@@ -2968,7 +2968,7 @@ export default class SimpleTable extends Simple {
   /**
    * Updates values in a specified column using a SQL expression.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column to be updated.
    * @param definition - The SQL expression used to set the new values in the column (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
@@ -3001,7 +3001,7 @@ export default class SimpleTable extends Simple {
   /**
    * Assigns ranks to rows in a new column based on the values of a specified column.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column containing the values to be used for ranking.
    * @param newColumn - The name of the new column where the ranks will be stored.
@@ -3052,7 +3052,7 @@ export default class SimpleTable extends Simple {
   /**
    * Assigns quantiles to rows in a new column based on specified column values.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column containing values from which quantiles will be assigned.
    * @param nbQuantiles - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
@@ -3095,7 +3095,7 @@ export default class SimpleTable extends Simple {
   /**
    * Assigns bins for specified column values based on an interval size.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column containing values from which bins will be computed.
    * @param interval - The interval size for binning the values.
@@ -3174,7 +3174,7 @@ export default class SimpleTable extends Simple {
    * | 2022 | 354 | 278   | 56        | 0.51    | 0.4       | 0.08          |
    * | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - An array of column names for which proportions will be computed on each row.
    * @param options - An optional object with configuration options:
@@ -3197,7 +3197,7 @@ export default class SimpleTable extends Simple {
   /**
    * Computes proportions vertically over a column's values, relative to the sum of all values in that column (or within specified categories).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column containing values for which proportions will be computed. The proportions are calculated based on the sum of values in the specified column.
    * @param newColumn - The name of the new column where the proportions will be stored.
@@ -3241,7 +3241,7 @@ export default class SimpleTable extends Simple {
    * Creates a summary table based on specified values, categories, and summary operations.
    * This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An object with configuration options for summarization:
    * @param options.values - The column name or an array of column names whose values will be summarized. If omitted, all columns will be summarized.
@@ -3384,7 +3384,7 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the cumulative sum of values in a column. For this method to work properly, ensure your data is sorted first.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the values to be accumulated.
    * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
@@ -3429,7 +3429,7 @@ export default class SimpleTable extends Simple {
    * For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
    * For this method to work properly, ensure your data is sorted by the relevant column(s) first.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the values to be aggregated.
    * @param newColumn - The name of the new column in which the computed rolling values will be stored.
@@ -3488,7 +3488,7 @@ export default class SimpleTable extends Simple {
    * Calculates correlations between columns. If no `x` and `y` columns are specified, the method computes the correlations for all numeric column combinations.
    * Note that correlation is symmetrical: the correlation of `x` with `y` is the same as `y` with `x`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
@@ -3546,7 +3546,7 @@ export default class SimpleTable extends Simple {
    * If no `x` and `y` columns are specified, the method computes linear regression analysis for all numeric column permutations.
    * Note that linear regression analysis is asymmetrical: the linear regression of `x` over `y` is not the same as `y` over `x`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
@@ -3602,7 +3602,7 @@ export default class SimpleTable extends Simple {
   /**
    * Identifies outliers in a specified column using the Interquartile Range (IQR) method.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column in which outliers will be identified.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
@@ -3637,7 +3637,7 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the Z-score for values in a specified column.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column for which Z-scores will be calculated.
    * @param newColumn - The name of the new column where the computed Z-scores will be stored.
@@ -3680,7 +3680,7 @@ export default class SimpleTable extends Simple {
   /**
    * Normalizes the values in a column using min-max normalization.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column in which values will be normalized.
    * @param newColumn - The name of the new column where normalized values will be stored.
@@ -3868,7 +3868,7 @@ export default class SimpleTable extends Simple {
    * Produces identical output to `journalism-format`'s `normalizeString()` function
    * for all common cases including accented Latin characters.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column The column containing the text to normalize
    * @param newColumn The column to store the normalized results
@@ -4655,7 +4655,7 @@ export default class SimpleTable extends Simple {
   /**
    * Creates point geometries from latitude (y) and longitude (x) columns.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param latColumn - The name of the column storing the latitude (y-coordinate) values.
    * @param lonColumn - The name of the column storing the longitude (x-coordinate) values.
@@ -4692,7 +4692,7 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with boolean values indicating the validity of geometries.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for valid, `FALSE` for invalid) will be stored.
    * @param options - An optional object with configuration options:
@@ -4724,7 +4724,7 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with the number of vertices (points) in each geometry.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the vertex counts will be stored.
    * @param options - An optional object with configuration options:
@@ -4756,7 +4756,7 @@ export default class SimpleTable extends Simple {
   /**
    * Attempts to make invalid geometries valid without removing any vertices.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the geometries to be fixed. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -4782,7 +4782,7 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with boolean values indicating whether geometries are closed (e.g., polygons) or open (e.g., linestrings).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for closed, `FALSE` for open) will be stored.
    * @param options - An optional object with configuration options:
@@ -4813,7 +4813,7 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`, `"POLYGON"`) for each geometry.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the geometry types will be stored.
    * @param options - An optional object with configuration options:
@@ -4845,7 +4845,7 @@ export default class SimpleTable extends Simple {
    * Flips the coordinate order of geometries in a specified column (e.g., from `[longitude (x), latitude (y)]` to `[latitude (y), longitude (x)]` or vice-versa).
    * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -4871,7 +4871,7 @@ export default class SimpleTable extends Simple {
   /**
    * Reduces the precision of geometries in a specified column to a given number of decimal places.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param decimals - The number of decimal places to keep in the coordinates of the geometries.
    * @param options - An optional object with configuration options:
@@ -4902,7 +4902,7 @@ export default class SimpleTable extends Simple {
   /**
    * Reprojects the geometries in a specified column to another Spatial Reference System (SRS).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param crs - The target SRS (e.g., `"EPSG:3347"`, or `"EPSG:4326"` for EPSG:4326 (WGS84)).
    * @param options - An optional object with configuration options:
@@ -4934,7 +4934,7 @@ export default class SimpleTable extends Simple {
    * Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the computed areas will be stored.
    * @param options - An optional object with configuration options:
@@ -4973,7 +4973,7 @@ export default class SimpleTable extends Simple {
    * Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the computed lengths will be stored.
    * @param options - An optional object with configuration options:
@@ -5012,7 +5012,7 @@ export default class SimpleTable extends Simple {
    * Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the computed perimeters will be stored.
    * @param options - An optional object with configuration options:
@@ -5051,7 +5051,7 @@ export default class SimpleTable extends Simple {
    * Computes a buffer (a polygon representing a specified distance around a geometry) for geometries in a specified column.
    * The distance is in the Spatial Reference System (SRS) unit of the input geometries.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the buffered geometries will be stored.
    * @param distance - The distance for the buffer. This value is in the units of the geometry's SRS.
@@ -5085,7 +5085,7 @@ export default class SimpleTable extends Simple {
    * Merges the data of this table (considered the left table) with another table (the right table) based on a spatial relationship.
    * Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called. The join uses the other table's state as of this call: operations queued on it afterwards run after the join.
    *
    * @param rightTable - The SimpleTable instance to be joined with this table.
    * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"withinDistance"` (geometries of the left table are within a specified distance of geometries in the right table).
@@ -5176,7 +5176,7 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the intersection of two sets of geometries, creating new geometries where they overlap.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
@@ -5202,7 +5202,7 @@ export default class SimpleTable extends Simple {
   /**
    * Removes the intersection of two geometries from the first geometry, effectively computing the geometric difference.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column1 - The name of the column storing the reference geometries. These geometries will have the intersection removed.
    * @param column2 - The name of the column storing the geometries used to compute the intersection. Both columns must have the same projection.
@@ -5228,7 +5228,7 @@ export default class SimpleTable extends Simple {
   /**
    * Fills holes in polygon geometries.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -5254,7 +5254,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE` otherwise.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
@@ -5280,7 +5280,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns `TRUE` if all points of a geometry in `column` lie inside a geometry in `containerColumn`, and `FALSE` otherwise.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the geometries to be tested for containment.
    * @param containerColumn - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
@@ -5306,7 +5306,7 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the union of two geometries, creating a new geometry that represents the merged area of both.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
@@ -5333,7 +5333,7 @@ export default class SimpleTable extends Simple {
    * Extracts the latitude (y) and longitude (x) coordinates from point geometries.
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the point geometries.
    * @param latColumn - The name of the new column where the extracted latitude (y-coordinate) values will be stored.
@@ -5359,7 +5359,7 @@ export default class SimpleTable extends Simple {
   /**
    * Simplifies geometries while preserving their overall coverage. A higher tolerance results in more significant simplification.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param tolerance - A numeric value representing the simplification tolerance. A higher value leads to greater simplification.
    * @param options - An optional object with configuration options:
@@ -5392,7 +5392,7 @@ export default class SimpleTable extends Simple {
    * Computes the centroid of geometries.
    * The values are returned in the SRS unit of the input geometries.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the computed centroid geometries will be stored.
    * @param options - An optional object with configuration options:
@@ -5423,7 +5423,7 @@ export default class SimpleTable extends Simple {
   /**
    * Generates a random point within the geometries of a specified column.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param newColumn - The name of the new column where the random points will be stored.
    * @param tries - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
@@ -5464,7 +5464,7 @@ export default class SimpleTable extends Simple {
    * You can optionally specify `"spheroid"` or `"haversine"` methods to get results in meters or kilometers.
    * If using `"spheroid"` or `"haversine"`, the input geometries must be in EPSG:4326 (WGS84).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column1 - The name of the first column storing geometries.
    * @param column2 - The name of the second column storing geometries.
@@ -5520,7 +5520,7 @@ export default class SimpleTable extends Simple {
   /**
    * Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the geometries to be unnested. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -5546,7 +5546,7 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the bounding box of geometries in a specified column, creating four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries for which the bounding box will be computed. If omitted, the method will automatically attempt to find a geometry column.
@@ -5581,7 +5581,7 @@ export default class SimpleTable extends Simple {
   /**
    * Aggregates geometries in a specified column based on a chosen aggregation method.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param method - The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
    * @param options - An optional object with configuration options:
@@ -5623,7 +5623,7 @@ export default class SimpleTable extends Simple {
   /**
    * Transforms closed linestring geometries into polygon geometries.
    *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the linestring geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -5916,8 +5916,8 @@ export default class SimpleTable extends Simple {
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
-   * @param options.rowsToLog - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
-   * @param options.types - If `true`, logs the column types along with the data. Defaults to `false`.
+   * @param options.count - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
+   * @param options.types - Whether to log the column types along with the data. Defaults to the value set in the SimpleDB instance.
    * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Logging
@@ -5925,36 +5925,36 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Log the first 10 rows (default behavior)
-   * await table.logTable();
+   * await table.log();
    * ```
    *
    * @example
    * ```ts
    * // Log the first 50 rows
-   * await table.logTable(50);
+   * await table.log(50);
    * ```
    *
    * @example
    * ```ts
    * // Log all rows
-   * await table.logTable("all");
+   * await table.log("all");
    * ```
    *
    * @example
    * ```ts
    * // Log the first 20 rows and include column types
-   * await table.logTable({ rowsToLog: 20, types: true });
+   * await table.log({ count: 20, types: true });
    * ```
    *
    * @example
    * ```ts
    * // Log rows where 'status' is 'active' (using JS syntax for conditions)
-   * await table.logTable({ conditions: `status === 'active'` });
+   * await table.log({ conditions: `status === 'active'` });
    * ```
    */
-  async logTable(
+  async log(
     options: "all" | number | {
-      rowsToLog?: number | "all";
+      count?: number | "all";
       types?: boolean;
       conditions?: string;
     } = {},
@@ -5970,23 +5970,25 @@ export default class SimpleTable extends Simple {
       throw new Error("this.connection is undefined");
     }
 
-    let rows: number;
+    let count: number;
     if (typeof options === "number") {
-      rows = options;
+      count = options;
     } else if (options === "all") {
-      rows = await this.getNbRows();
+      count = await this.getNbRows();
     } else if (typeof options === "object") {
-      if (options.rowsToLog === "all") {
-        rows = await this.getNbRows();
-      } else if (typeof options.rowsToLog === "number") {
-        rows = options.rowsToLog;
+      if (options.count === "all") {
+        count = await this.getNbRows();
+      } else if (typeof options.count === "number") {
+        count = options.count;
       } else {
-        rows = this.rowsToLog;
+        count = this.rowsToLog;
       }
     } else {
-      rows = this.rowsToLog;
+      count = this.rowsToLog;
     }
-    const types = typeof options === "object" ? options.types ?? false : false;
+    const types = typeof options === "object"
+      ? options.types ?? this.typesToLog
+      : this.typesToLog;
     const conditions = typeof options === "object"
       ? options.conditions ?? undefined
       : undefined;
@@ -5999,9 +6001,9 @@ export default class SimpleTable extends Simple {
     } else {
       console.log(`\nTable ${this.name}:`);
       conditions && console.log(`Conditions: ${conditions}`);
-      const data = await this.getTop(rows, { conditions });
+      const data = await this.getTop(count, { conditions });
       logData(
-        this.typesToLog || types ? await this.getTypes() : null,
+        types ? await this.getTypes() : null,
         data,
         this.charsToLog,
       );
@@ -6016,7 +6018,7 @@ export default class SimpleTable extends Simple {
         )
         : await this.getNbRows();
       console.log(
-        `${formatNumber(nbRows)} rows in total ${`(rowsToLog: ${rows}${
+        `${formatNumber(nbRows)} rows in total ${`(count: ${count}${
           typeof this.charsToLog === "number"
             ? `, charsToLog: ${this.charsToLog}`
             : ""
