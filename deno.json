@@ -1,6 +1,6 @@
 {
   "name": "@nshiab/simple-data-analysis-core",
-  "version": "2.0.0-rc.5",
+  "version": "2.0.0-rc.6",
   "description": "The core functionalities of the simple-data-analysis library, with only one dependency: DuckDB.",
   "repository": "https://github.com/nshiab/simple-data-analysis-core",
   "license": "MIT",
