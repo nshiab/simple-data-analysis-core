@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should do a left spatial join the intersect method", async () => {
@@ -181,17 +181,154 @@ Deno.test("should do a left spatial join the intersect method without changing t
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
-  prov.joinGeo(poly, "intersect", { outputTable: true });
+  const joined = prov.joinGeo(poly, "intersect", { outputTable: true });
 
+  const columnsJoinedTable = await joined.getColumns();
   const columnsLeftTable = await prov.getColumns();
   const columnsRightTable = await poly.getColumns();
 
   assertEquals(
-    { columnsLeftTable, columnsRightTable },
+    { columnsJoinedTable, columnsLeftTable, columnsRightTable },
     {
+      columnsJoinedTable: [
+        "nameEnglish",
+        "nameFrench",
+        "geom",
+        "name",
+        "geomTable2",
+      ],
       columnsLeftTable: ["nameEnglish", "nameFrench", "geom"],
       columnsRightTable: ["name", "geom"],
     },
+  );
+  await sdb.done();
+});
+Deno.test("should exclude the right geometry from a spatial join", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const prov = sdb.newTable("prov");
+  prov.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  const poly = sdb.newTable("poly");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+
+  prov.joinGeo(poly, "intersect", { excludeRightGeometry: true });
+
+  assertEquals(await prov.getColumns(), [
+    "nameEnglish",
+    "nameFrench",
+    "geom",
+    "name",
+  ]);
+  await sdb.done();
+});
+Deno.test("should exclude the left geometry from a spatial join", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const prov = sdb.newTable("prov");
+  prov.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  const poly = sdb.newTable("poly");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+
+  prov.joinGeo(poly, "intersect", { excludeLeftGeometry: true });
+
+  assertEquals(await prov.getColumns(), [
+    "nameEnglish",
+    "nameFrench",
+    "name",
+    "geom",
+  ]);
+  await sdb.done();
+});
+Deno.test("should exclude both geometries from a spatial join", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const prov = sdb.newTable("prov");
+  prov.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  const poly = sdb.newTable("poly");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+
+  const joined = prov.joinGeo(poly, "intersect", {
+    excludeLeftGeometry: true,
+    excludeRightGeometry: true,
+    outputTable: "joined",
+  });
+
+  assertEquals(await joined.getColumns(), [
+    "nameEnglish",
+    "nameFrench",
+    "name",
+  ]);
+  await sdb.done();
+});
+Deno.test("should exclude only the selected right geometry", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const prov = sdb.newTable("prov");
+  prov.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  const poly = sdb.newTable("poly");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.cloneColumn("geom", "otherGeom");
+
+  prov.joinGeo(poly, "intersect", {
+    leftColumn: "geom",
+    rightColumn: "geom",
+    excludeRightGeometry: true,
+  });
+
+  assertEquals(await prov.getColumns(), [
+    "nameEnglish",
+    "nameFrench",
+    "geom",
+    "name",
+    "otherGeom",
+  ]);
+  await sdb.done();
+});
+Deno.test("should exclude only the selected left geometry", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const prov = sdb.newTable("prov");
+  prov.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  prov.cloneColumn("geom", "otherGeom");
+  const poly = sdb.newTable("poly");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+
+  prov.joinGeo(poly, "intersect", {
+    leftColumn: "geom",
+    rightColumn: "geom",
+    excludeLeftGeometry: true,
+  });
+
+  assertEquals(await prov.getColumns(), [
+    "nameEnglish",
+    "nameFrench",
+    "otherGeom",
+    "name",
+    "geom",
+  ]);
+  await sdb.done();
+});
+Deno.test("should throw when the generated right geometry name already exists", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const prov = sdb.newTable("prov");
+  prov.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  prov.addColumn("geomPoly", "string", "'collision'");
+  const poly = sdb.newTable("poly");
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+
+  prov.joinGeo(poly, "intersect");
+
+  await assertRejects(
+    () => prov.getColumns(),
+    Error,
+    'Cannot name the right geometry column "geomPoly" because a column with that name already exists. Rename the existing "geomPoly" column before calling joinGeo(), or call joinGeo() with { excludeRightGeometry: true }.',
   );
   await sdb.done();
 });

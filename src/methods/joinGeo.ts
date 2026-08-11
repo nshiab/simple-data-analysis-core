@@ -17,6 +17,8 @@ export default function joinGeo(
     type?: "inner" | "left" | "right" | "full";
     distance?: number;
     distanceMethod?: "srs" | "haversine" | "spheroid";
+    excludeLeftGeometry?: boolean;
+    excludeRightGeometry?: boolean;
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
@@ -49,6 +51,8 @@ async function executeJoinGeo(
     type?: "inner" | "left" | "right" | "full";
     distance?: number;
     distanceMethod?: "srs" | "haversine" | "spheroid";
+    excludeLeftGeometry?: boolean;
+    excludeRightGeometry?: boolean;
   },
 ): Promise<void> {
   const leftColumn = options.leftColumn ??
@@ -56,11 +60,13 @@ async function executeJoinGeo(
   const rightColumn = options.rightColumn ??
     (await findGeoColumn(rightTable));
 
+  const leftTableColumns = await leftTable.getColumns();
+  const rightTableColumns = await rightTable.getColumns();
   const sharedColumn = leftColumn === rightColumn ? leftColumn : "";
   const identicalColumns = (
     getIdenticalColumns(
-      await leftTable.getColumns(),
-      await rightTable.getColumns(),
+      leftTableColumns,
+      rightTableColumns,
     )
   ).filter((d) => d !== sharedColumn);
   if (identicalColumns.length > 0) {
@@ -77,26 +83,45 @@ async function executeJoinGeo(
     );
   }
 
-  let leftColumnForQuery = leftColumn;
-  let rightColumnForQuery = rightColumn;
+  const excludeLeftGeometry = options.excludeLeftGeometry ?? false;
+  const excludeRightGeometry = options.excludeRightGeometry ?? false;
+  const retainSharedGeometries = sharedColumn !== "" &&
+    !excludeLeftGeometry && !excludeRightGeometry;
+  const rightGeometryOutputColumn = retainSharedGeometries
+    ? `${rightColumn}${capitalize(rightTable.name)}`
+    : undefined;
 
-  // We change the column names for geometries. renameColumnsNow runs
-  // immediately, so it's safe inside this barrier.
-  if (leftColumn === rightColumn) {
-    leftColumnForQuery = `${leftColumn}${capitalize(leftTable.name)}`;
-    await renameColumnNow(
-      leftTable,
-      leftColumn,
-      leftColumnForQuery,
-    );
-
-    rightColumnForQuery = `${rightColumn}${capitalize(rightTable.name)}`;
-    await renameColumnNow(
-      rightTable,
-      rightColumn,
-      rightColumnForQuery,
+  if (
+    rightGeometryOutputColumn !== undefined &&
+    [...leftTableColumns, ...rightTableColumns]
+      .filter((column) => column !== rightColumn)
+      .includes(rightGeometryOutputColumn)
+  ) {
+    throw new Error(
+      `Cannot name the right geometry column ${
+        quoteIdentifier(rightGeometryOutputColumn)
+      } because a column with that name already exists. Rename the existing ${
+        quoteIdentifier(rightGeometryOutputColumn)
+      } column before calling joinGeo(), or call joinGeo() with { excludeRightGeometry: true }.`,
     );
   }
+
+  const leftSelect = `${quoteIdentifier(leftTable.name)}.*${
+    excludeLeftGeometry ? ` EXCLUDE (${quoteIdentifier(leftColumn)})` : ""
+  }`;
+  const excludeRightFromStar = excludeRightGeometry || retainSharedGeometries;
+  const rightSelect = `${quoteIdentifier(rightTable.name)}.*${
+    excludeRightFromStar ? ` EXCLUDE (${quoteIdentifier(rightColumn)})` : ""
+  }`;
+  const selectList = [
+    leftSelect,
+    rightSelect,
+    ...(rightGeometryOutputColumn === undefined ? [] : [
+      `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(rightColumn)} AS ${
+        quoteIdentifier(rightGeometryOutputColumn)
+      }`,
+    ]),
+  ].join(", ");
 
   const type = options.type ?? "left";
 
@@ -104,12 +129,13 @@ async function executeJoinGeo(
     leftTable,
     joinGeoQuery(
       leftTable.name,
-      leftColumnForQuery,
+      leftColumn,
       method,
       rightTable.name,
-      rightColumnForQuery,
+      rightColumn,
       type,
       outputTable.name,
+      selectList,
       options.distance,
       options.distanceMethod,
     ),
@@ -124,38 +150,6 @@ async function executeJoinGeo(
       },
     }),
   );
-
-  // We bring back the column names for geometries
-  if (leftColumn === rightColumn) {
-    await renameColumnNow(
-      leftTable,
-      leftColumnForQuery,
-      leftColumn,
-    );
-    await renameColumnNow(
-      rightTable,
-      rightColumnForQuery,
-      rightColumn,
-    );
-  }
-}
-
-async function renameColumnNow(
-  table: SimpleTable,
-  oldName: string,
-  newName: string,
-): Promise<void> {
-  await queryDB(
-    table,
-    `ALTER TABLE ${quoteIdentifier(table.name)} RENAME COLUMN ${
-      quoteIdentifier(oldName)
-    } TO ${quoteIdentifier(newName)};`,
-    mergeOptions(table, {
-      table: table.name,
-      method: "joinGeo()",
-      parameters: { oldName, newName },
-    }),
-  );
 }
 
 function joinGeoQuery(
@@ -166,12 +160,13 @@ function joinGeoQuery(
   rightColumn: string,
   join: "inner" | "left" | "right" | "full",
   outputTable: string,
+  selectList: string,
   distance: number | undefined,
   distanceMethod: "srs" | "haversine" | "spheroid" | undefined,
 ) {
   let query = `CREATE OR REPLACE TABLE ${
     quoteIdentifier(outputTable)
-  } AS SELECT *`;
+  } AS SELECT ${selectList}`;
   if (join === "inner") {
     query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
       quoteIdentifier(rightTable)

@@ -5095,6 +5095,8 @@ export default class SimpleTable extends Simple {
    * @param options.type - The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
    * @param options.distance - Required if `method` is `"withinDistance"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
    * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 (WGS84) input), or `"spheroid"` (uses meters, requires EPSG:4326 (WGS84) input, most accurate but slowest).
+   * @param options.excludeLeftGeometry - Whether to exclude the selected `leftColumn` geometry from the result. Defaults to `false`.
+   * @param options.excludeRightGeometry - Whether to exclude the selected `rightColumn` geometry from the result. Defaults to `false`.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the spatially joined data (either the current table or a new table), so methods can be chained.
    * @category Geospatial
@@ -5109,6 +5111,15 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Merge data where geometries in tableA are inside geometries in tableB
    * tableA.joinGeo(tableB, "inside");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Join using both geometries without copying them into the result
+   * tableA.joinGeo(tableB, "intersect", {
+   *   excludeLeftGeometry: true,
+   *   excludeRightGeometry: true,
+   * });
    * ```
    *
    * @example
@@ -5144,6 +5155,8 @@ export default class SimpleTable extends Simple {
       type?: "inner" | "left" | "right" | "full";
       distance?: number;
       distanceMethod?: "srs" | "haversine" | "spheroid";
+      excludeLeftGeometry?: boolean;
+      excludeRightGeometry?: boolean;
       outputTable?: string | boolean;
     } = {},
   ): this {
