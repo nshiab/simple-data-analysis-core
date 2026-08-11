@@ -174,6 +174,7 @@ Methods that could skip validations or error-throwing now all use
 | :--------------------------------------------- | :------------------------------------------------ | :--------------------------------------- |
 | `join()`                                       | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
 | `loadData()` / `loadDirectory()`               | `{ fileName: true }`                              | `{ filename: true }`                     |
+| `loadGeoData()`                                | `{ toWGS84: true }`                               | `{ toEPSG4326: true }`                   |
 | `joinGeo()`                                    | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
 | `cloneTable()`                                 | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
 | `summarize()`                                  | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |

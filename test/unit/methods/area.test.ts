@@ -157,7 +157,7 @@ Deno.test("should calculate the area of geometries in square meters from a speci
   await sdb.done();
 });
 
-Deno.test("should calculate the area of geometries in square meters with a file loaded with option toWGS84", async () => {
+Deno.test("should calculate the area of geometries in square meters from an EPSG:4326 file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(

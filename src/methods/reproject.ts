@@ -9,9 +9,8 @@ export default function reproject(
   crs: string,
   options: { column?: string } = {},
 ) {
-  const cleanedTo = crs.replace("WGS84", "EPSG:4326");
   const targetGeoType = `GEOMETRY${
-    cleanedTo !== "null" ? `(${parseValue(cleanedTo)})` : ""
+    crs !== "null" ? `(${parseValue(crs)})` : ""
   }`;
 
   options = structuredClone(options);
@@ -26,7 +25,7 @@ export default function reproject(
         ? options.column
         : findGeoColumnFromSchema(types);
       return `SELECT * REPLACE (ST_Transform(${quoteIdentifier(column)}, ${
-        parseValue(cleanedTo)
+        parseValue(crs)
       })::${targetGeoType} AS ${quoteIdentifier(column)}) FROM ${input}`;
     },
   });

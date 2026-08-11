@@ -27,7 +27,7 @@ Deno.test("should calculate the length of geometries from a specific column in m
   await sdb.done();
 });
 
-Deno.test("should calculate the length of geometries in meters from a file loaded with option toWGS84", async () => {
+Deno.test("should calculate the length of geometries in meters from an EPSG:4326 file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");

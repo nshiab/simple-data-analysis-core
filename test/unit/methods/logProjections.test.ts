@@ -23,11 +23,11 @@ Deno.test("should log the projections of the table (Lambert conformal conic)", a
   assertEquals(true, true);
   await sdb.done();
 });
-Deno.test("should log the projections of the table (Lambert conformal conic converted to WGS84)", async () => {
+Deno.test("should log the projections of the table (Lambert conformal conic converted to EPSG:4326)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip", {
-    toWGS84: true,
+    toEPSG4326: true,
   });
 
   await table.logProjections();
@@ -36,7 +36,7 @@ Deno.test("should log the projections of the table (Lambert conformal conic conv
   assertEquals(true, true);
   await sdb.done();
 });
-Deno.test("should log the projections of the table (geojson WGS84)", async () => {
+Deno.test("should log the projections of the table (GeoJSON EPSG:4326)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(

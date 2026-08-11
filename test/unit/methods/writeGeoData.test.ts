@@ -127,17 +127,17 @@ Deno.test("should write a geojson file and create the path if it doesn't exist",
   await sdb.done();
 });
 
-Deno.test("should write geojson file that has been converted to WGS84", async () => {
+Deno.test("should write a GeoJSON file that has been converted to EPSG:4326", async () => {
   const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/canada-not-4326.shp.zip";
 
   const table = sdb.newTable();
-  table.loadGeoData(originalFile, { toWGS84: true });
-  await table.writeGeoData(`${output}dataWithOptionsToWGS84.geojson`, {
+  table.loadGeoData(originalFile, { toEPSG4326: true });
+  await table.writeGeoData(`${output}dataWithOptionsToEPSG4326.geojson`, {
     precision: 2,
   });
   const writtenData = JSON.parse(
-    readFileSync(`${output}dataWithOptionsToWGS84.geojson`, "utf-8"),
+    readFileSync(`${output}dataWithOptionsToEPSG4326.geojson`, "utf-8"),
   );
 
   const canada = JSON.parse(
@@ -148,19 +148,19 @@ Deno.test("should write geojson file that has been converted to WGS84", async ()
   await sdb.done();
 });
 
-Deno.test("should write geojson file that has been manually converted to WGS84", async () => {
+Deno.test("should write a GeoJSON file that has been manually converted to EPSG:4326", async () => {
   const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/canada-not-4326.shp.zip";
 
   const table = sdb.newTable();
   table.loadGeoData(originalFile);
-  table.reproject("WGS84");
-  await table.writeGeoData(`${output}dataWithOptionsToWGS84.geojson`, {
+  table.reproject("EPSG:4326");
+  await table.writeGeoData(`${output}dataWithOptionsToEPSG4326.geojson`, {
     precision: 2,
   });
 
   const writtenData = JSON.parse(
-    readFileSync(`${output}dataWithOptionsToWGS84.geojson`, "utf-8"),
+    readFileSync(`${output}dataWithOptionsToEPSG4326.geojson`, "utf-8"),
   );
 
   const canada = JSON.parse(

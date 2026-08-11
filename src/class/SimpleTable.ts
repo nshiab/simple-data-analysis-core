@@ -537,7 +537,7 @@ export default class SimpleTable extends Simple {
    *
    * @param file - The URL or absolute path to the external file containing the geospatial data.
    * @param options - An optional object with configuration options:
-   * @param options.toWGS84 - If `true`, the method will attempt to reproject the data to WGS84.
+   * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -555,19 +555,19 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to WGS84
-   * table.loadGeoData("./some-data/some-data.shp", { toWGS84: true });
+   * // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to EPSG:4326 (WGS84)
+   * table.loadGeoData("./some-data/some-data.shp", { toEPSG4326: true });
    * ```
    *
    * @example
    * ```ts
-   * // Load geospatial data from a zipped shapefile and reproject to WGS84
-   * table.loadGeoData("./some-data.shp.zip", { toWGS84: true });
+   * // Load geospatial data from a zipped shapefile and reproject to EPSG:4326 (WGS84)
+   * table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true });
    * ```
    */
   loadGeoData(
     file: string,
-    options: { toWGS84?: boolean } = {},
+    options: { toEPSG4326?: boolean } = {},
   ): this {
     loadGeoData(this, file, options);
     return this;
@@ -4659,7 +4659,7 @@ export default class SimpleTable extends Simple {
    * @param lonColumn - The name of the column storing the longitude values.
    * @param newColumn - The name of the new column where the point geometries will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.projection - The projection of the coordinates. Defaults to `"EPSG:4326"`.
+   * @param options.projection - The projection of the coordinates. Defaults to EPSG:4326 (WGS84), passed as `"EPSG:4326"`.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -4901,7 +4901,7 @@ export default class SimpleTable extends Simple {
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
-   * @param crs - The target SRS (e.g., `"EPSG:3347"`, `"WGS84"`).
+   * @param crs - The target SRS (e.g., `"EPSG:3347"`, or `"EPSG:4326"` for EPSG:4326 (WGS84)).
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns The table, so methods can be chained.
@@ -4929,7 +4929,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+   * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
@@ -4968,7 +4968,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+   * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
@@ -5007,7 +5007,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+   * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
@@ -5091,7 +5091,7 @@ export default class SimpleTable extends Simple {
    * @param options.rightColumn - The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
    * @param options.type - The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
    * @param options.distance - Required if `method` is `"withinDistance"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
-   * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 input), or `"spheroid"` (uses meters, requires EPSG:4326 input, most accurate but slowest).
+   * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 (WGS84) input), or `"spheroid"` (uses meters, requires EPSG:4326 (WGS84) input, most accurate but slowest).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the spatially joined data (either the current table or a new table), so methods can be chained.
    * @category Geospatial
@@ -5117,7 +5117,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
-   * // Input geometries must be in EPSG:4326.
+   * // Input geometries must be in EPSG:4326 (WGS84).
    * tableA.joinGeo(tableB, "withinDistance", { distance: 10, distanceMethod: "haversine", unit: "km" });
    * ```
    *
@@ -5315,7 +5315,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Extracts the latitude and longitude coordinates from point geometries.
-   * The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+   * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
@@ -5446,7 +5446,7 @@ export default class SimpleTable extends Simple {
    * Computes the distance between geometries in two specified columns.
    * By default, the distance is calculated in the Spatial Reference System (SRS) unit of the input geometries.
    * You can optionally specify `"spheroid"` or `"haversine"` methods to get results in meters or kilometers.
-   * If using `"spheroid"` or `"haversine"`, the input geometries must be in the EPSG:4326 coordinate system (WGS84).
+   * If using `"spheroid"` or `"haversine"`, the input geometries must be in EPSG:4326 (WGS84).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `logTable()`) is awaited, or when `run()` is called.
    *
@@ -5454,7 +5454,7 @@ export default class SimpleTable extends Simple {
    * @param column2 - The name of the second column storing geometries.
    * @param newColumn - The name of the new column where the computed distances will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.method - The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326), or `"spheroid"` (meters, requires EPSG:4326, most accurate but slowest).
+   * @param options.method - The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326 (WGS84)), or `"spheroid"` (meters, requires EPSG:4326 (WGS84), most accurate but slowest).
    * @param options.unit - If `method` is `"spheroid"` or `"haversine"`, you can choose between `"m"` (meters, default) or `"km"` (kilometers).
    * @param options.decimals - The number of decimal places to round the distance values. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
@@ -5469,21 +5469,21 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute Haversine distance in meters between 'point1' and 'point2', store in 'distance_m'
-   * // Input geometries must be in EPSG:4326.
+   * // Input geometries must be in EPSG:4326 (WGS84).
    * table.distance("point1", "point2", "distance_m", { method: "haversine" });
    * ```
    *
    * @example
    * ```ts
    * // Compute Haversine distance in kilometers, rounded to 2 decimal places
-   * // Input geometries must be in EPSG:4326.
+   * // Input geometries must be in EPSG:4326 (WGS84).
    * table.distance("point1", "point2", "distance_km", { method: "haversine", unit: "km", decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Compute Spheroid distance in kilometers
-   * // Input geometries must be in EPSG:4326.
+   * // Input geometries must be in EPSG:4326 (WGS84).
    * table.distance("area1", "area2", "distance_spheroid_km", { method: "spheroid", unit: "km" });
    * ```
    */
@@ -5632,7 +5632,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the bounding box of geometries in `[minLon, minLat, maxLon, maxLat]` order.
-   * By default, the method will try to find the column with the geometries. The input geometry is assumed to be in the EPSG:4326 coordinate system (WGS84).
+   * By default, the method will try to find the column with the geometries. The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
    * @param column - The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @returns A promise that resolves to an array `[minLon, minLat, maxLon, maxLat]` representing the bounding box.

@@ -37,24 +37,6 @@ Deno.test("should convert from one projection to another one from a specific col
 
   await sdb.done();
 });
-Deno.test("should return the same result when converting to EPSG:4326 and WGS84", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
-
-  table.reproject("WGS84");
-  table.fixGeo();
-  table.reducePrecision(3);
-
-  const data = await table.getGeoData();
-
-  assertEquals(data, expectedGeo);
-
-  const types3 = await table.getTypes();
-  assertEquals(types3.geom, "GEOMETRY('EPSG:4326')");
-
-  await sdb.done();
-});
 Deno.test("should be able to reproject multiples times by keeping track of the projection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

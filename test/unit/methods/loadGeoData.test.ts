@@ -96,7 +96,7 @@ Deno.test("should load a shapefile file (zipped)", async () => {
   await sdb.done();
 });
 
-Deno.test("should load a geojson file and convert it to WGS84", async () => {
+Deno.test("should load a GeoJSON file in EPSG:4326", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/point.json");
@@ -212,11 +212,11 @@ Deno.test("should load a geoparquet file with multiple columns", async () => {
   await sdb.done();
 });
 
-Deno.test("should skip reprojection when the data is already in EPSG:4326 with toWGS84", async () => {
+Deno.test("should skip reprojection when the data is already in EPSG:4326", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/pointsInside.json", {
-    toWGS84: true,
+    toEPSG4326: true,
   });
 
   const projection = await table.getProjection("geom");

@@ -10,7 +10,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function loadGeoData(
   simpleTable: SimpleTable,
   file: string,
-  options: { toWGS84?: boolean } = {},
+  options: { toEPSG4326?: boolean } = {},
 ) {
   options = structuredClone(options);
   queueOp(simpleTable, {
@@ -24,7 +24,7 @@ export default function loadGeoData(
 async function executeLoadGeoData(
   simpleTable: SimpleTable,
   file: string,
-  options: { toWGS84?: boolean },
+  options: { toEPSG4326?: boolean },
 ): Promise<void> {
   const fileExtension = getExtension(file);
 
@@ -65,7 +65,7 @@ async function executeLoadGeoData(
     await removeColumnsNow(simpleTable, ["OGC_FID"], "loadGeoData()");
   }
 
-  if (options.toWGS84) {
+  if (options.toEPSG4326) {
     const geoType = await simpleTable.getProjection("geom");
     if (geoType !== "GEOMETRY('EPSG:4326')") {
       // The reprojection runs directly (not with the sync reproject builder,

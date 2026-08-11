@@ -61,7 +61,7 @@ Deno.test("should calculate the perimeter of geometries from a specific column i
   await sdb.done();
 });
 
-Deno.test("should calculate the perimeter of geometries in meters with a file loaded with option toWGS84", async () => {
+Deno.test("should calculate the perimeter of geometries in meters from an EPSG:4326 file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
