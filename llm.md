@@ -525,9 +525,7 @@ await sdb.run();
 
 Frees up memory by closing the database connection and instance, and cleans up
 the cache. If the database is file-based, it also compacts the database file to
-optimize storage. Pending transformations are discarded after being recorded;
-cleanup completes and the method then rejects with the affected table and method
-names.
+optimize storage. Pending transformations are executed before cleanup.
 
 ##### Signature
 
@@ -541,14 +539,13 @@ A promise that resolves to the SimpleDB instance after cleanup.
 
 ##### Throws
 
-- **`Error`**: An error after cleanup when one or more tables still have queued
-  methods.
+- **`Error`**: An error after cleanup when pending execution or cleanup fails.
 
 ##### Examples
 
 ```ts
-// Close the database and clean up resources
-await sdb.run();
+// close() executes queued transformations before cleaning up resources.
+table.loadData("data.csv").convert({ price: "number" });
 await sdb.close();
 ```
 
@@ -3880,6 +3877,101 @@ The table will then look like this:
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
 
+#### `highestColumn`
+
+Adds the name of the column containing the highest value on each row.
+
+Null values are ignored. If every selected value on a row is null, the new
+column is null. By default, a tie throws an error. Set `options.ties` to
+`"first"` to use the first tied column in the supplied order, or to `"all"` to
+produce one row for each tied column. The `"all"` option can therefore increase
+the table's row count.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+highestColumn(columns: string[], newColumn: string, options?: { ties?: "strict" | "first" | "all" }): this;
+```
+
+##### Parameters
+
+- **`columns`**: The numeric columns to compare on each row.
+- **`newColumn`**: The name of the new column that will contain the selected
+  column name.
+- **`options`**: Optional tie-handling configuration.
+- **`options.ties`**: How to handle equal highest values: `"strict"` throws,
+  `"first"` selects the first supplied column, and `"all"` produces one row per
+  tied column. Defaults to `"strict"`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Adds winner: "CAQ" when CAQ has the highest value on a row.
+table.highestColumn(["CAQ", "PLQ", "PQ"], "winner");
+```
+
+```ts
+table.loadArray([{ district: "Example", CAQ: 100, PLQ: 100, PQ: 40 }]);
+table.highestColumn(["CAQ", "PLQ", "PQ"], "winner", { ties: "all" });
+await table.getData();
+// [
+//   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "CAQ" },
+//   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "PLQ" },
+// ]
+```
+
+#### `lowestColumn`
+
+Adds the name of the column containing the lowest value on each row.
+
+Null values are ignored. If every selected value on a row is null, the new
+column is null. By default, a tie throws an error. Set `options.ties` to
+`"first"` to use the first tied column in the supplied order, or to `"all"` to
+produce one row for each tied column. The `"all"` option can therefore increase
+the table's row count.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+lowestColumn(columns: string[], newColumn: string, options?: { ties?: "strict" | "first" | "all" }): this;
+```
+
+##### Parameters
+
+- **`columns`**: The numeric columns to compare on each row.
+- **`newColumn`**: The name of the new column that will contain the selected
+  column name.
+- **`options`**: Optional tie-handling configuration.
+- **`options.ties`**: How to handle equal lowest values: `"strict"` throws,
+  `"first"` selects the first supplied column, and `"all"` produces one row per
+  tied column. Defaults to `"strict"`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Adds smallestParty: "PQ" when PQ has the lowest value on a row.
+table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty");
+```
+
+```ts
+// Selects the first supplied column when multiple columns share the minimum.
+table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty", { ties: "first" });
+```
+
 #### `columnProportions`
 
 Computes proportions vertically over a column's values, relative to the sum of
@@ -4188,8 +4280,9 @@ correlations(options?: { x?: string; y?: string; categories?: string | string[];
 - **`options`**: An optional object with configuration options:
 - **`options.x`**: The name of the column for the x-values. If omitted,
   correlations will be computed for all numeric columns.
-- **`options.y`**: The name of the column for the y-values. If omitted,
-  correlations will be computed for all numeric columns.
+- **`options.y`**: The name of the column for the y-values. It can be provided
+  only when `options.x` is also set. If both are omitted, correlations will be
+  computed for all numeric column pairs.
 - **`options.categories`**: The column name or an array of column names that
   define categories. Correlation calculations will be performed independently
   for each category.
@@ -4259,7 +4352,8 @@ linearRegressions(options?: { x?: string; y?: string; categories?: string | stri
   (x-values). If omitted, linear regressions will be computed for all numeric
   columns as x.
 - **`options.y`**: The name of the column for the dependent variable (y-values).
-  If omitted, linear regressions will be computed for all numeric columns as y.
+  It can be provided only when `options.x` is also set. If both are omitted,
+  linear regressions will be computed for all numeric column permutations.
 - **`options.categories`**: The column name or an array of column names that
   define categories. Linear regression analysis will be performed independently
   for each category.
@@ -5372,7 +5466,7 @@ SQL conditions. You can also use JavaScript syntax for conditions (e.g., `&&`,
 ##### Signature
 
 ```typescript
-async getData(options?: { columns?: string | string[]; conditions?: string }): Promise<Record<string, unknown>[]>;
+async getData(options?: { columns?: string | string[]; conditions?: string; limit?: number }): Promise<Record<string, unknown>[]>;
 ```
 
 ##### Parameters
@@ -5382,6 +5476,8 @@ async getData(options?: { columns?: string | string[]; conditions?: string }): P
   omitted, all columns will be included.
 - **`options.conditions`**: The filtering conditions specified as a SQL `WHERE`
   clause (e.g., `"category = 'Book'"`).
+- **`options.limit`**: The maximum number of rows to return. Must be an integer
+  greater than or equal to `0`.
 
 ##### Returns
 
@@ -5409,6 +5505,11 @@ const booksData = await table.getData({
   conditions: `category === 'Book'`,
 });
 console.log(booksData);
+```
+
+```ts
+// Return at most two rows.
+const preview = await table.getData({ limit: 2 });
 ```
 
 #### `stream`

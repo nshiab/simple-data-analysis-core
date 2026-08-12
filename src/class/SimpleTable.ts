@@ -57,9 +57,8 @@ import rolling from "../methods/rolling.ts";
 import accumulate from "../methods/accumulate.ts";
 import columnProportions from "../methods/columnProportions.ts";
 import rowProportions from "../methods/rowProportions.ts";
-import extremeColumn, {
-  type ExtremeColumnOptions,
-} from "../methods/extremeColumn.ts";
+import highestColumn from "../methods/highestColumn.ts";
+import lowestColumn from "../methods/lowestColumn.ts";
 import quantiles from "../methods/quantiles.ts";
 import ranks from "../methods/ranks.ts";
 import updateColumn from "../methods/updateColumn.ts";
@@ -3246,9 +3245,19 @@ export default class SimpleTable extends Simple {
   highestColumn(
     columns: string[],
     newColumn: string,
-    options: ExtremeColumnOptions = {},
+    options: {
+      /**
+       * How to handle equal highest values.
+       *
+       * @example
+       * ```ts
+       * { ties: "first" }
+       * ```
+       */
+      ties?: "strict" | "first" | "all";
+    } = {},
   ): this {
-    extremeColumn(this, columns, newColumn, "highest", options);
+    highestColumn(this, columns, newColumn, options);
     return this;
   }
 
@@ -3286,9 +3295,19 @@ export default class SimpleTable extends Simple {
   lowestColumn(
     columns: string[],
     newColumn: string,
-    options: ExtremeColumnOptions = {},
+    options: {
+      /**
+       * How to handle equal lowest values.
+       *
+       * @example
+       * ```ts
+       * { ties: "all" }
+       * ```
+       */
+      ties?: "strict" | "first" | "all";
+    } = {},
   ): this {
-    extremeColumn(this, columns, newColumn, "lowest", options);
+    lowestColumn(this, columns, newColumn, options);
     return this;
   }
 

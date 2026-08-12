@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should add the highest and lowest column names", async () => {
+Deno.test("should add the highest column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
@@ -10,11 +10,10 @@ Deno.test("should add the highest and lowest column names", async () => {
   ]);
 
   table.highestColumn(["a", "b", "c"], "highest");
-  table.lowestColumn(["a", "b", "c"], "lowest");
 
   assertEquals(await table.getData(), [
-    { id: 1, a: 1, b: 3, c: 2, highest: "b", lowest: "a" },
-    { id: 2, a: 5, b: 4, c: 6, highest: "c", lowest: "b" },
+    { id: 1, a: 1, b: 3, c: 2, highest: "b" },
+    { id: 2, a: 5, b: 4, c: 6, highest: "c" },
   ]);
 
   await sdb.close();
@@ -64,11 +63,11 @@ Deno.test("should ignore null values when finding an extreme", async () => {
     { id: 2, a: 1, b: null, c: 3 },
   ]);
 
-  table.lowestColumn(["a", "b", "c"], "smallest");
+  table.highestColumn(["a", "b", "c"], "largest");
 
   assertEquals(await table.getData(), [
-    { id: 1, a: null, b: 2, c: 3, smallest: "b" },
-    { id: 2, a: 1, b: null, c: 3, smallest: "a" },
+    { id: 1, a: null, b: 2, c: 3, largest: "c" },
+    { id: 2, a: 1, b: null, c: 3, largest: "c" },
   ]);
 
   await sdb.close();

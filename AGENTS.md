@@ -16,6 +16,13 @@
 
 ### Phase 2: Implementation (DURING Development)
 
+- **Public API Organization:** Give every public method a matching
+  implementation file at `src/methods/<methodName>.ts` and test file at
+  `test/unit/methods/<methodName>.test.ts`. Shared internal logic may live in a
+  separate module whose filename matches its exported function.
+- **Inline Option Types:** Define object-shaped parameter types inline in public
+  method signatures so editor hovers show the complete API. Keep reusable
+  implementation-only type aliases unexported.
 - **Strict Typing:** Avoid `any`. Use explicit interfaces and types.
 - **Documentation:** Every new public property, method, or parameter must have a
   JSDoc block.

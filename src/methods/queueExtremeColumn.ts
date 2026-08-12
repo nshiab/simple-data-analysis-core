@@ -6,18 +6,16 @@ import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export type ExtremeColumnOptions = {
-  ties?: "strict" | "first" | "all";
-};
-
 type Extreme = "highest" | "lowest";
 
-export default function extremeColumn(
+export default function queueExtremeColumn(
   simpleTable: SimpleTable,
   columns: string[],
   newColumn: string,
   extreme: Extreme,
-  options: ExtremeColumnOptions = {},
+  options: {
+    ties?: "strict" | "first" | "all";
+  } = {},
 ) {
   columns = [...columns];
   options = structuredClone(options);
