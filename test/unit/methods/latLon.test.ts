@@ -22,5 +22,5 @@ Deno.test("should extract the lat and lon of points", async () => {
     { name: "pointD", lat: 47.43075362784262, lon: -72.2926406368759 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

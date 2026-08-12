@@ -53,7 +53,7 @@ Deno.test("should return the first 5 rows", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows, with an offset of 5", async () => {
@@ -108,7 +108,7 @@ Deno.test("should return the first 5 rows, with an offset of 5", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows and output the results to a new table", async () => {
@@ -165,7 +165,7 @@ Deno.test("should return the first 5 rows and output the results to a new table"
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table", async () => {
@@ -223,7 +223,7 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table with a specific name", async () => {
@@ -283,5 +283,5 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

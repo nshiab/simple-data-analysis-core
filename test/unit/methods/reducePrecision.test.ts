@@ -15,7 +15,7 @@ Deno.test("should round the coordinates to 3 decimals", async () => {
     { returnData: true },
   );
   assertEquals(data, [{ geomText: "POINT (-73.623 45.514)" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should round the coordinates to 3 decimals from a specific column", async () => {
@@ -28,5 +28,5 @@ Deno.test("should round the coordinates to 3 decimals from a specific column", a
     { returnData: true },
   );
   assertEquals(data, [{ geomText: "POINT (-73.623 45.514)" }]);
-  await sdb.done();
+  await sdb.close();
 });

@@ -40,7 +40,7 @@ Deno.test("should untidy data by expanding mutiple columns", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should untidy data by expanding mutiple columns with spaces in their names", async () => {
@@ -173,7 +173,7 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
@@ -189,7 +189,7 @@ Deno.test("should sum values by default when namesFrom/grouping has duplicate co
 
   assertEquals(data, [{ Department: "accounting", "2015": 15 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should use the aggregation option instead of the default sum", async () => {
@@ -205,5 +205,5 @@ Deno.test("should use the aggregation option instead of the default sum", async 
 
   assertEquals(data, [{ Department: "accounting", "2015": 10 }]);
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -4,7 +4,7 @@ import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function nbVertices(
+export default function addVertexCount(
   simpleTable: SimpleTable,
   newColumn: string,
   options: { column?: string } = {},
@@ -12,12 +12,12 @@ export default function nbVertices(
   options = { ...options };
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "nbVertices()",
+    method: "addVertexCount()",
     parameters: { newColumn, options },
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      assertNewColumns(types, [newColumn], "nbVertices()");
+      assertNewColumns(types, [newColumn], "addVertexCount()");
       const column = typeof options.column === "string"
         ? options.column
         : findGeoColumnFromSchema(types);

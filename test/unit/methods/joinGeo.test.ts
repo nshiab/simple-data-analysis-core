@@ -29,7 +29,7 @@ Deno.test("should do a left spatial join the intersect method", async () => {
     { nameEnglish: "New Brunswick", name: null },
     { nameEnglish: "Yukon", name: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method and output the results to a new table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -61,7 +61,7 @@ Deno.test("should do a left spatial join the intersect method and output the res
     { nameEnglish: "New Brunswick", name: null },
     { nameEnglish: "Yukon", name: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method and output the results to a new table with a specific name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -96,7 +96,7 @@ Deno.test("should do a left spatial join the intersect method and output the res
     { nameEnglish: "New Brunswick", name: null },
     { nameEnglish: "Yukon", name: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method with tables with default names", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -118,7 +118,7 @@ Deno.test("should do a left spatial join the intersect method with tables with d
     "name",
     "geomTable2",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method with tables with specific names", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -140,7 +140,7 @@ Deno.test("should do a left spatial join the intersect method with tables with s
     "name",
     "geomPoly",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method without changing the name of the original tables", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -169,7 +169,7 @@ Deno.test("should do a left spatial join the intersect method without changing t
       columnsRightTable: ["name", "geom"],
     },
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method without changing the name of the original tables with an outputTable option", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -201,7 +201,7 @@ Deno.test("should do a left spatial join the intersect method without changing t
       columnsRightTable: ["name", "geom"],
     },
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should exclude the right geometry from a spatial join", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -220,7 +220,7 @@ Deno.test("should exclude the right geometry from a spatial join", async () => {
     "geom",
     "name",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should exclude the left geometry from a spatial join", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -239,7 +239,7 @@ Deno.test("should exclude the left geometry from a spatial join", async () => {
     "name",
     "geom",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should exclude both geometries from a spatial join", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -261,7 +261,7 @@ Deno.test("should exclude both geometries from a spatial join", async () => {
     "nameFrench",
     "name",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should exclude only the selected right geometry", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -286,7 +286,7 @@ Deno.test("should exclude only the selected right geometry", async () => {
     "name",
     "otherGeom",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should exclude only the selected left geometry", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -311,7 +311,7 @@ Deno.test("should exclude only the selected left geometry", async () => {
     "name",
     "geom",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should throw when the generated right geometry name already exists", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -330,7 +330,7 @@ Deno.test("should throw when the generated right geometry name already exists", 
     Error,
     'Cannot name the right geometry column "geomPoly" because a column with that name already exists. Rename the existing "geomPoly" column before calling joinGeo(), or call joinGeo() with { excludeRightGeometry: true }.',
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the intersect method with specific options", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -363,7 +363,7 @@ Deno.test("should do a left spatial join the intersect method with specific opti
     { nameEnglish: "Northwest Territories", name: "polygonB" },
     { nameEnglish: "Nunavut", name: "polygonB" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do a left spatial join the inside method", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -385,7 +385,7 @@ Deno.test("should do a left spatial join the inside method", async () => {
     { name: "pointA", polygonName: null },
     { name: "pointB", polygonName: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return all intersections and all rows from leftTable when doing a left join", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -423,7 +423,7 @@ Deno.test("should return all intersections and all rows from leftTable when doin
     { name: "C", container: "B" },
     { name: "D", container: "A" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return all intersections - and just intersections - when doing an inner join", async () => {
@@ -462,7 +462,7 @@ Deno.test("should return all intersections - and just intersections - when doing
     { name: "C", container: "B" },
     { name: "D", container: "A" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return all points within a target distance (srs method)", async () => {
@@ -484,7 +484,7 @@ Deno.test("should return all points within a target distance (srs method)", asyn
     { name: "montreal", name_1: "montreal", dist: 0 },
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return all points within a target distance (haversine method)", async () => {
@@ -513,7 +513,7 @@ Deno.test("should return all points within a target distance (haversine method)"
     { name: "montreal", name_1: "montreal", dist: 0 },
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return all points within a target distance (spheroid method)", async () => {
@@ -543,7 +543,7 @@ Deno.test("should return all points within a target distance (spheroid method)",
     { name: "montreal", name_1: "montreal", dist: 0 },
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table after a joinGeo", async () => {
   // Example from Code Like a Journalist geospatial lesson
@@ -568,5 +568,5 @@ Deno.test("should log a table after a joinGeo", async () => {
   // await firesInsideProvinces.log();
 
   await firesInsideProvinces.run();
-  await sdb.done();
+  await sdb.close();
 });

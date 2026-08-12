@@ -199,7 +199,7 @@ Deno.test("should remove specific rows", async () => {
       endOfYearBonus: "21,33%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove specific rows and accept arrays and single values", async () => {
@@ -400,7 +400,7 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
       endOfYearBonus: "21,33%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove specific rows even column names have spaces", async () => {
@@ -600,7 +600,7 @@ Deno.test("should remove specific rows even column names have spaces", async () 
       "End-of_year-BONUS?": "21,33%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove values typed as unknown", async () => {
@@ -612,7 +612,7 @@ Deno.test("should remove values typed as unknown", async () => {
   table.removeValues({ id: values });
 
   assertEquals(await table.getData(), [{ id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should retain nulls when removing a non-null value", async () => {
@@ -623,7 +623,7 @@ Deno.test("should retain nulls when removing a non-null value", async () => {
   table.removeValues({ id: 1 });
 
   assertEquals(await table.getData(), [{ id: null }, { id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove null values", async () => {
@@ -634,7 +634,7 @@ Deno.test("should remove null values", async () => {
   table.removeValues({ id: null });
 
   assertEquals(await table.getData(), [{ id: 1 }, { id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove null and non-null values together", async () => {
@@ -645,7 +645,7 @@ Deno.test("should remove null and non-null values together", async () => {
   table.removeValues({ id: [1, null] });
 
   assertEquals(await table.getData(), [{ id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove no rows for an empty values array", async () => {
@@ -656,5 +656,5 @@ Deno.test("should remove no rows for an empty values array", async () => {
   table.removeValues({ id: [] });
 
   assertEquals(await table.getData(), [{ id: 1 }, { id: null }, { id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });

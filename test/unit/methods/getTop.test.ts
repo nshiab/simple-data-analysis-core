@@ -32,7 +32,7 @@ Deno.test("should return the top 3", async () => {
       "End-of_year-BONUS?": "23,39%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the top 3 with a condition", async () => {
@@ -68,5 +68,5 @@ Deno.test("should return the top 3 with a condition", async () => {
       "End-of_year-BONUS?": "6,89%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

@@ -20,7 +20,7 @@ Deno.test("should create minLon, maxLon, minLat, maxLat columns", async () => {
   assertEquals(ontario.minLat, 41.981);
   assertEquals(ontario.maxLat, 56.851);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should create minLon, maxLon, minLat, maxLat columns for a specific column", async () => {
@@ -42,5 +42,5 @@ Deno.test("should create minLon, maxLon, minLat, maxLat columns for a specific c
   assertEquals(ontario.minLat, 42);
   assertEquals(ontario.maxLat, 56.9);
 
-  await sdb.done();
+  await sdb.close();
 });

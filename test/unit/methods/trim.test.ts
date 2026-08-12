@@ -16,7 +16,7 @@ Deno.test("should remove whitespace", async () => {
     { key1: "d", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace with column name containing spaces", async () => {
@@ -35,7 +35,7 @@ Deno.test("should remove whitespace with column name containing spaces", async (
     { "key 1": "d", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace from multiple columns", async () => {
@@ -54,7 +54,7 @@ Deno.test("should remove whitespace from multiple columns", async () => {
     { key1: "d", key2: "!@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace just on the left", async () => {
@@ -74,7 +74,7 @@ Deno.test("should remove whitespace just on the left", async () => {
     { key1: "d  ", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace just on the right", async () => {
@@ -94,7 +94,7 @@ Deno.test("should remove whitespace just on the right", async () => {
     { key1: "  d", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove specific characters", async () => {
@@ -115,7 +115,7 @@ Deno.test("should remove specific characters", async () => {
     { key1: "  d  ", key2: " !@d" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind trim characters containing an apostrophe", async () => {
@@ -126,5 +126,5 @@ Deno.test("should bind trim characters containing an apostrophe", async () => {
   table.trim("value", { character: "'" });
 
   assertEquals(await table.getData(), [{ value: "quoted" }]);
-  await sdb.done();
+  await sdb.close();
 });

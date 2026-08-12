@@ -45,7 +45,7 @@ Deno.test("should do an union of all geometries and overwrite the table", async 
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should do an union of all geometries from a specific column and overwrite the table", async () => {
@@ -83,7 +83,7 @@ Deno.test("should do an union of all geometries from a specific column and overw
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should do an union of all geometries and return the results in a new table", async () => {
@@ -123,7 +123,7 @@ Deno.test("should do an union of all geometries and return the results in a new 
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should do an union of all geometries and return the results in a new table with a specific name in the DB", async () => {
@@ -163,7 +163,7 @@ Deno.test("should do an union of all geometries and return the results in a new 
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should do an union of geometries based on categories", async () => {
@@ -216,7 +216,7 @@ Deno.test("should do an union of geometries based on categories", async () => {
       "properties": { "groups": "B" },
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should do an union of geometries based on categories and return the results in a new table", async () => {
@@ -271,7 +271,7 @@ Deno.test("should do an union of geometries based on categories and return the r
       "properties": { "groups": "B" },
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should do an intersection of geometries based on categories and return the results in a new table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -314,7 +314,7 @@ Deno.test("should do an intersection of geometries based on categories and retur
       "properties": { "groups": "B" },
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should do an intersection of geometries based on categories and return the results in a new table with a specific name in the DB", async () => {
@@ -358,7 +358,7 @@ Deno.test("should do an intersection of geometries based on categories and retur
       "properties": { "groups": "B" },
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("aggregateGeo() should handle null geometries", async () => {
@@ -456,5 +456,5 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
     null,
   ); // All nulls result in null
 
-  await sdb.done();
+  await sdb.close();
 });

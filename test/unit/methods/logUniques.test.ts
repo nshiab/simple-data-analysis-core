@@ -9,7 +9,7 @@ Deno.test("should log unique values in a column", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should log stringified unique values in a column", async () => {
@@ -20,5 +20,5 @@ Deno.test("should log stringified unique values in a column", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

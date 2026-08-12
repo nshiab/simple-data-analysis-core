@@ -21,7 +21,7 @@ Deno.test("should replace null values in one column", async () => {
     { keyA: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace null values in multiple columns", async () => {
@@ -44,7 +44,7 @@ Deno.test("should replace null values in multiple columns", async () => {
     { keyA: 0, keyB: 4 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace null values in all columns with the 'all' option", async () => {
@@ -67,7 +67,7 @@ Deno.test("should replace null values in all columns with the 'all' option", asy
     { keyA: 0, keyB: 4, keyC: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace nulls with a value typed as unknown", async () => {
@@ -79,5 +79,5 @@ Deno.test("should replace nulls with a value typed as unknown", async () => {
   table.replaceNulls("id", value);
 
   assertEquals(await table.getData(), [{ id: 1 }, { id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });

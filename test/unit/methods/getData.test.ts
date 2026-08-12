@@ -417,7 +417,7 @@ Deno.test("should return the whole data from a table", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return data from a table based on a condition", async () => {
@@ -470,7 +470,7 @@ Deno.test("should return data from a table based on a condition", async () => {
       "End-of_year-BONUS?": "13,17%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return data from a table based on a condition and column selection", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -496,7 +496,7 @@ Deno.test("should return data from a table based on a condition and column selec
       Job: "Programmer",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("file transport keeps duplicate selected columns", async () => {
@@ -508,5 +508,5 @@ Deno.test("file transport keeps duplicate selected columns", async () => {
     value: 7,
     "value:1": 7,
   }]);
-  await sdb.done();
+  await sdb.close();
 });

@@ -11,7 +11,7 @@ Deno.test("should calculate the length of geometries in meters", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ length: 70175 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the length of geometries from a specific column in meters", async () => {
@@ -24,7 +24,7 @@ Deno.test("should calculate the length of geometries from a specific column in m
   const data = await table.getData();
 
   assertEquals(data, [{ length: 70175 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the length of geometries in meters from an EPSG:4326 file", async () => {
@@ -37,7 +37,7 @@ Deno.test("should calculate the length of geometries in meters from an EPSG:4326
   const data = await table.getData();
 
   assertEquals(data, [{ length: 70175 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the length of geometries in kilometers", async () => {
@@ -50,5 +50,5 @@ Deno.test("should calculate the length of geometries in kilometers", async () =>
   const data = await table.getData();
 
   assertEquals(data, [{ length: 70 }]);
-  await sdb.done();
+  await sdb.close();
 });

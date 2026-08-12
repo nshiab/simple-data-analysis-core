@@ -11,7 +11,7 @@ Deno.test("should return a table without any missing values", async () => {
   const data = await table.getData();
 
   assertEquals(data, dataNoNulls);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a table without any missing values even if column names have special characters like spaces", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -22,7 +22,7 @@ Deno.test("should return a table without any missing values even if column names
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsSpacesInColumnNames);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a table without any missing values even if column names have special characters like spaces, with option invert", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -35,7 +35,7 @@ Deno.test("should return a table without any missing values even if column names
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsSpacesInColumnNamesInvert);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a table without any missing values even if there is a type JSON", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -47,7 +47,7 @@ Deno.test("should return a table without any missing values even if there is a t
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsJSON);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a table without any missing values even if there is a type associated with numbers", async () => {
@@ -62,7 +62,7 @@ Deno.test("should return a table without any missing values even if there is a t
   assertEquals(data, [
     { key1: 4, key2: "quatre", key3: 11545.12 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a table without any missing values even if there is a type associated with numbers and otherMissingValues as number", async () => {
@@ -80,7 +80,7 @@ Deno.test("should return a table without any missing values even if there is a t
     { key1: null, key2: "deux", key3: 12 },
     { key1: 4, key2: "quatre", key3: 11545.12 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a table without any missing values for a specific column", async () => {
@@ -95,7 +95,7 @@ Deno.test("should return a table without any missing values for a specific colum
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsName);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a table without any missing values for multiple specific columns", async () => {
@@ -111,7 +111,7 @@ Deno.test("should return a table without any missing values for multiple specifi
   const data = await table.getData();
 
   assertEquals(data, dataNoNullsMultipleColumns);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a table with null values in any columns", async () => {
@@ -128,7 +128,7 @@ Deno.test("should return a table with null values in any columns", async () => {
   const data = await table.getData();
 
   assertEquals(data, dataJustNulls);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a table with null values in a specific column", async () => {
@@ -145,7 +145,7 @@ Deno.test("should return a table with null values in a specific column", async (
   const data = await table.getData();
 
   assertEquals(data, dataNullsInName);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind custom missing values containing apostrophes", async () => {
@@ -159,7 +159,7 @@ Deno.test("should bind custom missing values containing apostrophes", async () =
   table.removeMissing({ missingValues: ["O'Brien"] });
 
   assertEquals(await table.getData(), [{ name: "Smith" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 const dataNoNulls = [

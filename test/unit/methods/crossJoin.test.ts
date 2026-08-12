@@ -37,7 +37,7 @@ Deno.test("should return all pairs of rows", async () => {
     { key1: 4, key2: "c" },
     { key1: 4, key2: "d" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return all pairs of rows in a new table", async () => {
@@ -78,7 +78,7 @@ Deno.test("should return all pairs of rows in a new table", async () => {
     { key1: 4, key2: "c" },
     { key1: 4, key2: "d" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return all pairs of rows in a new table with a specific name", async () => {
@@ -119,5 +119,5 @@ Deno.test("should return all pairs of rows in a new table with a specific name",
     { key1: 4, key2: "c" },
     { key1: 4, key2: "d" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

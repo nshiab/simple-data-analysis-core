@@ -28,7 +28,7 @@ Deno.test("should simplify the geometries", async () => {
       { encoding: "utf-8" },
     )),
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should simplify the geometries but keep the outer boundaries intact", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -54,7 +54,7 @@ Deno.test("should simplify the geometries but keep the outer boundaries intact",
       { encoding: "utf-8" },
     )),
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should simplify the geometries from a specific column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -80,5 +80,5 @@ Deno.test("should simplify the geometries from a specific column", async () => {
       { encoding: "utf-8" },
     )),
   );
-  await sdb.done();
+  await sdb.close();
 });

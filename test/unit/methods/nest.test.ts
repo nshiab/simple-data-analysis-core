@@ -32,7 +32,7 @@ Deno.test("should nest rows based on a single category", async () => {
     { city: "Vancouver", neighborhoods: "Coal Harbour / West end / Yaletown" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should nest with multiple category columns", async () => {
@@ -57,7 +57,7 @@ Deno.test("should nest with multiple category columns", async () => {
     { country: "USA", city: "New York", tags: "orange,purple" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should work as inverse of unnest (round-trip test)", async () => {
@@ -91,7 +91,7 @@ Deno.test("should work as inverse of unnest (round-trip test)", async () => {
   const nested = await table.getData();
   assertEquals(nested, originalData);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind a nesting separator containing an apostrophe", async () => {
@@ -104,5 +104,5 @@ Deno.test("should bind a nesting separator containing an apostrophe", async () =
   ]).nest("value", "'n'", "group");
 
   assertEquals(await table.getData(), [{ group: "a", value: "rock'n'roll" }]);
-  await sdb.done();
+  await sdb.close();
 });

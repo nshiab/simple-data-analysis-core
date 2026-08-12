@@ -32,7 +32,7 @@ Deno.test("should return the bottom 3", async () => {
       "End-of_year-BONUS?": null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the bottom 3 with the original order", async () => {
@@ -68,7 +68,7 @@ Deno.test("should return the bottom 3 with the original order", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the bottom 3 with a condition", async () => {
@@ -104,7 +104,7 @@ Deno.test("should return the bottom 3 with a condition", async () => {
       "End-of_year-BONUS?": "6,89%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the bottom 3 with a condition with original order", async () => {
@@ -142,5 +142,5 @@ Deno.test("should return the bottom 3 with a condition with original order", asy
       "End-of_year-BONUS?": "13,17%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

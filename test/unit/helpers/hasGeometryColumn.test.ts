@@ -11,7 +11,7 @@ Deno.test("hasGeometryColumn - returns false when no geometry columns", async ()
   const result = await hasGeometryColumn(table);
   assertEquals(result, false);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("hasGeometryColumn - returns true when geometry column exists", async () => {
@@ -22,7 +22,7 @@ Deno.test("hasGeometryColumn - returns true when geometry column exists", async 
   const result = await hasGeometryColumn(table);
   assertEquals(result, true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("getData() - throws when table has geometry columns", async () => {
@@ -36,7 +36,7 @@ Deno.test("getData() - throws when table has geometry columns", async () => {
     "Table contains geometry columns. Use getGeoData() instead.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("getData() - works normally when no geometry columns", async () => {
@@ -51,7 +51,7 @@ Deno.test("getData() - works normally when no geometry columns", async () => {
   assertEquals(data.length, 2);
   assertEquals(data[0].name, "Alice");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("getDataAsCSV() - throws when table has geometry columns", async () => {
@@ -65,7 +65,7 @@ Deno.test("getDataAsCSV() - throws when table has geometry columns", async () =>
     "Table contains geometry columns. Use getGeoData() instead.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("writeData() - throws when table has geometry columns", async () => {
@@ -79,7 +79,7 @@ Deno.test("writeData() - throws when table has geometry columns", async () => {
     "Table contains geometry columns. Use writeGeoData() instead.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("writeData() - works normally when no geometry columns", async () => {
@@ -100,5 +100,5 @@ Deno.test("writeData() - works normally when no geometry columns", async () => {
 
   // Cleanup
   Deno.remove(outputPath);
-  await sdb.done();
+  await sdb.close();
 });

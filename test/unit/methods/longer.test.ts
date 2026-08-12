@@ -165,7 +165,7 @@ Deno.test("should tidy data by stacking mutiple columns with spaces in their nam
       "employees full-time": 27,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should tidy data by stacking mutiple columns and by including null values", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -199,7 +199,7 @@ Deno.test("should tidy data by stacking mutiple columns and by including null va
     { Department: "sales", year: "2019", employees: 45 },
     { Department: "sales", year: "2020", employees: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should tidy data with columns with $ in their names", async () => {
@@ -575,7 +575,7 @@ Deno.test("should throw when namesTo/valuesTo collides with a remaining column, 
     'the column "Department" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should allow valuesTo to reuse the name of one of the pivoted columns", async () => {
@@ -593,5 +593,5 @@ Deno.test("should allow valuesTo to reuse the name of one of the pivoted columns
     { Department: "accounting", key: "c2", c1: 2 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

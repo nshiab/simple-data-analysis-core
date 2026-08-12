@@ -21,7 +21,7 @@ Deno.test("should unnest rows based on a specific column values", async () => {
     { city: "Vancouver", neighbourhoods: "Yaletown" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind an unnesting separator containing an apostrophe", async () => {
@@ -35,5 +35,5 @@ Deno.test("should bind an unnesting separator containing an apostrophe", async (
     { group: "a", value: "rock" },
     { group: "a", value: "roll" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

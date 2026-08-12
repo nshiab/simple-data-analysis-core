@@ -7,8 +7,8 @@ Deno.test("should return the total number of characters", async () => {
   table.loadData(["test/data/files/data.json"]);
   // key2 values: "un" (2), "deux" (4), "trois" (5), "quatre" (6)
   // Total: 2 + 4 + 5 + 6 = 17
-  assertEquals(await table.getNbCharacters("key2"), 17);
-  await sdb.done();
+  assertEquals(await table.getCharacterCount("key2"), 17);
+  await sdb.close();
 });
 
 Deno.test("should return the total number of characters even when there are spaces in the column name", async () => {
@@ -18,6 +18,6 @@ Deno.test("should return the total number of characters even when there are spac
   table.renameColumns({ key2: "key 2" });
   // key2 values: "un" (2), "deux" (4), "trois" (5), "quatre" (6)
   // Total: 2 + 4 + 5 + 6 = 17
-  assertEquals(await table.getNbCharacters("key 2"), 17);
-  await sdb.done();
+  assertEquals(await table.getCharacterCount("key 2"), 17);
+  await sdb.close();
 });

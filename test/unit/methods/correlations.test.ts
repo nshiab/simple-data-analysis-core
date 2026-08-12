@@ -16,7 +16,7 @@ Deno.test("should give all correlations between numeric columns in the table and
     { x: "key3", y: "key4", corr: -0.715142020143122 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give all correlations between numeric columns in the table and return a new table", async () => {
@@ -34,7 +34,7 @@ Deno.test("should give all correlations between numeric columns in the table and
     { x: "key3", y: "key4", corr: -0.715142020143122 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give all correlations between numeric columns in the table and return a new table with a specific name in the DB", async () => {
@@ -56,7 +56,7 @@ Deno.test("should give all correlations between numeric columns in the table and
     { x: "key3", y: "key4", corr: -0.715142020143122 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give all correlations between numeric columns in the table and overwrite the current table, with one decimal", async () => {
@@ -75,7 +75,7 @@ Deno.test("should give all correlations between numeric columns in the table and
     { x: "key3", y: "key4", corr: -0.7 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give all correlations between numeric columns in the table", async () => {
@@ -94,7 +94,7 @@ Deno.test("should give all correlations between numeric columns in the table", a
     { x: "key3", y: "key4", corr: -0.7 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give all correlations between numeric columns with a specific x column", async () => {
@@ -113,7 +113,7 @@ Deno.test("should give all correlations between numeric columns with a specific 
     { x: "key2", y: "key4", corr: -0.2 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give the correlation between two specific columns", async () => {
@@ -130,7 +130,7 @@ Deno.test("should give the correlation between two specific columns", async () =
 
   assertEquals(data, [{ x: "key2", y: "key3", corr: 0.4 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind result labels containing apostrophes", async () => {
@@ -147,7 +147,7 @@ Deno.test("should bind result labels containing apostrophes", async () => {
   });
 
   assertEquals(await result.getData(), [{ x: "x's", y: "y", corr: 1 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should give the correlation between two specific columns and with a category", async () => {
@@ -177,5 +177,5 @@ Deno.test("should give the correlation between two specific columns and with a c
     { id: 7024745, x: "decade", y: "mean", corr: 0.91 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

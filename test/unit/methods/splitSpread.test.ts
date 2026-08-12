@@ -17,7 +17,7 @@ Deno.test("should split and spread a string into multiple columns", async () => 
     { name: "Shiab, Nael", lastName: "Shiab", firstName: " Nael" },
     { name: "Bruce, Graeme", lastName: "Bruce", firstName: " Graeme" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should split and spread into three columns", async () => {
@@ -46,7 +46,7 @@ Deno.test("should split and spread into three columns", async () => {
       country: "Canada",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle rows with fewer parts than expected", async () => {
@@ -83,7 +83,7 @@ Deno.test("should handle rows with fewer parts than expected", async () => {
     { data: "D,E", part1: "D", part2: "E", part3: "" },
     { data: "F", part1: "F", part2: "", part3: "" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when rows have more parts than expected", async () => {
@@ -121,7 +121,7 @@ Deno.test("should throw error when rows have more parts than expected", async ()
   assertEquals(errorMessage.includes("F,G,H"), true);
   assertEquals(errorMessage.includes("I,J,K,L"), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should skip validation with strict: false when rows have more parts than expected", async () => {
@@ -145,7 +145,7 @@ Deno.test("should skip validation with strict: false when rows have more parts t
     { data: "I,J,K,L", first: "I", second: "J" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
@@ -161,7 +161,7 @@ Deno.test("should throw when a new column name already exists, instead of silent
     'the column "lastName" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind a spread separator containing an apostrophe", async () => {
@@ -176,5 +176,5 @@ Deno.test("should bind a spread separator containing an apostrophe", async () =>
     first: "rock",
     second: "roll",
   }]);
-  await sdb.done();
+  await sdb.close();
 });

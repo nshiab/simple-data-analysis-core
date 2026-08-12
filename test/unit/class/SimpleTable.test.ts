@@ -6,5 +6,5 @@ Deno.test("should create a new SimpleTable", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   assertEquals(table instanceof SimpleTable, true);
-  await sdb.done();
+  await sdb.close();
 });

@@ -9,5 +9,5 @@ Deno.test("should return the types of a table", async () => {
   const types = await table.getTypes();
 
   assertEquals(types, { key1: "VARCHAR", key2: "VARCHAR" });
-  await sdb.done();
+  await sdb.close();
 });

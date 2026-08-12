@@ -27,7 +27,7 @@ Deno.test("should bind replacement mapping values", async () => {
   assertEquals(mappingSQL.includes(marker), false);
   assertEquals(mappingValues.includes(marker), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should normalize strings in-place with mostCommon strategy", async () => {
@@ -57,7 +57,7 @@ Deno.test("should normalize strings in-place with mostCommon strategy", async ()
     { city: "Paris" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep the longest string in each cluster when strategy is 'longestString'", async () => {
@@ -81,7 +81,7 @@ Deno.test("should keep the longest string in each cluster when strategy is 'long
     { city: "Pariss" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep the shortest string in each cluster when strategy is 'shortestString'", async () => {
@@ -105,7 +105,7 @@ Deno.test("should keep the shortest string in each cluster when strategy is 'sho
     { city: "Paris" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep the most central string when strategy is 'mostCentral'", async () => {
@@ -131,7 +131,7 @@ Deno.test("should keep the most central string when strategy is 'mostCentral'", 
     { name: "Alice" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep the string with the highest single pairwise score when strategy is 'maxScore'", async () => {
@@ -159,7 +159,7 @@ Deno.test("should keep the string with the highest single pairwise score when st
     { name: "Alice" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write normalized values to a new column when newColumn is provided", async () => {
@@ -183,7 +183,7 @@ Deno.test("should write normalized values to a new column when newColumn is prov
     { city: "Paris", cityClean: "Paris" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not change any values when all strings are already unique and below threshold", async () => {
@@ -205,7 +205,7 @@ Deno.test("should not change any values when all strings are already unique and 
     { country: "Japan" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should ignore NULL values and leave them unchanged", async () => {
@@ -228,7 +228,7 @@ Deno.test("should ignore NULL values and leave them unchanged", async () => {
     { city: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should normalize multiple clusters across a larger dataset", async () => {
@@ -288,7 +288,7 @@ Deno.test("should normalize multiple clusters across a larger dataset", async ()
     { brand: "Soni" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties by score when strategy is 'mostCommon' and counts are equal", async () => {
@@ -313,7 +313,7 @@ Deno.test("should break ties by score when strategy is 'mostCommon' and counts a
     { word: "mouse" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties by score when strategy is 'longestString' and lengths are equal", async () => {
@@ -339,7 +339,7 @@ Deno.test("should break ties by score when strategy is 'longestString' and lengt
     { word: "mouse" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties by score when strategy is 'shortestString' and lengths are equal", async () => {
@@ -365,7 +365,7 @@ Deno.test("should break ties by score when strategy is 'shortestString' and leng
     { word: "mouse" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties alphabetically when strategy is 'mostCommon' and counts are equal", async () => {
@@ -386,7 +386,7 @@ Deno.test("should break ties alphabetically when strategy is 'mostCommon' and co
     { word: "color" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties alphabetically when strategy is 'longestString' and lengths are equal", async () => {
@@ -409,7 +409,7 @@ Deno.test("should break ties alphabetically when strategy is 'longestString' and
     { word: "color" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties alphabetically when strategy is 'shortestString' and lengths are equal", async () => {
@@ -432,7 +432,7 @@ Deno.test("should break ties alphabetically when strategy is 'shortestString' an
     { word: "color" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties alphabetically when strategy is 'mostCentral' and scores are equal", async () => {
@@ -456,7 +456,7 @@ Deno.test("should break ties alphabetically when strategy is 'mostCentral' and s
     { word: "color" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties by sum when strategy is 'maxScore' and max scores are equal", async () => {
@@ -483,7 +483,7 @@ Deno.test("should break ties by sum when strategy is 'maxScore' and max scores a
     { word: "mouse" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should break ties alphabetically when strategy is 'maxScore' and max and sum scores are equal", async () => {
@@ -507,7 +507,7 @@ Deno.test("should break ties alphabetically when strategy is 'maxScore' and max 
     { word: "color" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should respect a custom threshold and only normalize strings above it", async () => {
@@ -538,7 +538,7 @@ Deno.test("should respect a custom threshold and only normalize strings above it
     { text: "Bonjour" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should be lossless for all methods with justNames.csv", async () => {
@@ -582,5 +582,5 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
     }
   }
 
-  await sdb.done();
+  await sdb.close();
 });

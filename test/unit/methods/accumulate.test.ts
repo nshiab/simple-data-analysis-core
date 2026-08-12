@@ -16,7 +16,7 @@ Deno.test("should add the cumulative sum in a new column", async () => {
     { key1: 2, cumulative: 3 },
     { key1: 3, cumulative: 6 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add the cumulative sum in a new column without reordering the rows", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -33,7 +33,7 @@ Deno.test("should add the cumulative sum in a new column without reordering the 
     { key1: 1, cumulative: 4 },
     { key1: 2, cumulative: 6 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add the cumulative sum in a new column with categories", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -56,7 +56,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
     { key1: 3, key2: "a", cumulative: 6 },
     { key1: 5, key2: "b", cumulative: 15 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add the cumulative sum in a new column with multiple categories", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -81,7 +81,7 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
     { key1: 3, key2: "a", key3: "c", cumulative: 4 },
     { key1: 5, key2: "b", key3: "d", cumulative: 5 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -98,5 +98,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "cumulative" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

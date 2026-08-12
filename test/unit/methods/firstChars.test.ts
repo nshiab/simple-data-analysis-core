@@ -18,5 +18,5 @@ Deno.test("should return the first two strings", async () => {
     { firstName: "Gr", lastName: "Bruce" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

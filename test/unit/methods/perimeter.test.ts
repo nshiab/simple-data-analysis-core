@@ -28,7 +28,7 @@ Deno.test("should calculate the perimeter of geometries in meters", async () => 
     { nameEnglish: "Nunavut", perim: 33718590 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the perimeter of geometries from a specific column in meters", async () => {
@@ -58,7 +58,7 @@ Deno.test("should calculate the perimeter of geometries from a specific column i
     { nameEnglish: "Nunavut", perim: 33718590 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the perimeter of geometries in meters from an EPSG:4326 file", async () => {
@@ -88,7 +88,7 @@ Deno.test("should calculate the perimeter of geometries in meters from an EPSG:4
     { nameEnglish: "Nunavut", perim: 33718590 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the perimeter of geometries in kilometers", async () => {
@@ -118,5 +118,5 @@ Deno.test("should calculate the perimeter of geometries in kilometers", async ()
     { nameEnglish: "Nunavut", perim: 33719 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

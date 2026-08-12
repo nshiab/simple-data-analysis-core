@@ -37,7 +37,7 @@ Deno.test("should concatenate multiple columns with labels into a new column", a
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle null values when concatenating with labels", async () => {
@@ -75,7 +75,7 @@ Deno.test("should handle null values when concatenating with labels", async () =
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should concatenate a single column with label", async () => {
@@ -101,7 +101,7 @@ Deno.test("should concatenate a single column with label", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle columns with special characters in names", async () => {
@@ -131,7 +131,7 @@ Deno.test("should handle columns with special characters in names", async () => 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should concatenate after converting numeric columns to strings", async () => {
@@ -195,7 +195,7 @@ Deno.test("should concatenate after converting numeric columns to strings", asyn
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when trying to concatenate non-VARCHAR columns", async () => {
@@ -214,7 +214,7 @@ Deno.test("should throw error when trying to concatenate non-VARCHAR columns", a
     "The column age is of type DOUBLE. The rowToText() method only works with string columns. Please convert the column to string first with the .convert() method.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind labels derived from column names", async () => {
@@ -228,5 +228,5 @@ Deno.test("should bind labels derived from column names", async () => {
     "author's name": "Ada",
     profile: "author's name:\nAda",
   }]);
-  await sdb.done();
+  await sdb.close();
 });

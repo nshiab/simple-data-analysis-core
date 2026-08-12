@@ -27,5 +27,5 @@ Deno.test("should remove the small circle from the big circle", async () => {
       }),
     ),
   );
-  await sdb.done();
+  await sdb.close();
 });

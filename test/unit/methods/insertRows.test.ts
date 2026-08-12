@@ -18,7 +18,7 @@ Deno.test("add rows in an empty table", async () => {
     { key1: 6, key2: "six" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("add rows in a table", async () => {
@@ -43,7 +43,7 @@ Deno.test("add rows in a table", async () => {
     { key1: 6, key2: "six" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("insertRows binds data values separately from generated SQL", async () => {
@@ -97,5 +97,5 @@ Deno.test("insertRows binds data values separately from generated SQL", async ()
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

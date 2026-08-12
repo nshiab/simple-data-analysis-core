@@ -20,7 +20,7 @@ Deno.test("should add a column with the quantiles", async () => {
     { Name: "Isabella", Subject: "English", Mark: 90, quantiles: 4 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the quantiles after grouping", async () => {
@@ -50,7 +50,7 @@ Deno.test("should add a column with the quantiles after grouping", async () => {
     { Name: "Lily", Subject: "Science", Mark: 80, quantiles: 2 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -67,5 +67,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "existing" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

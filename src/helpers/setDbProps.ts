@@ -9,7 +9,7 @@ export default async function setDbProps(
     simpleDB.newTable(table);
   }
 
-  for (const table of await simpleDB.getTables()) {
+  for (const table of simpleDB.getTables()) {
     const types = await table.getTypes();
     if (
       Object.values(types).some((type) =>
@@ -22,7 +22,7 @@ export default async function setDbProps(
 
   if (existsSync(allIndexesFile)) {
     const indexes = JSON.parse(readFileSync(allIndexesFile, "utf-8"));
-    for (const table of simpleDB.tables) {
+    for (const table of simpleDB.getTables()) {
       if (indexes[table.name]) {
         table.indexes = indexes[table.name];
       }

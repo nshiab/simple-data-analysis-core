@@ -18,7 +18,7 @@ Deno.test("should change the name of one column", async () => {
     { A: 4, key2: "quatre" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should change the name of multiple columns", async () => {
@@ -39,7 +39,7 @@ Deno.test("should change the name of multiple columns", async () => {
     { A: 4, B: "quatre" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when a source column does not exist", async () => {
@@ -51,7 +51,7 @@ Deno.test("should throw when a source column does not exist", async () => {
 
   await assertRejects(() => table.getData());
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when only some source columns exist", async () => {
@@ -63,7 +63,7 @@ Deno.test("should throw when only some source columns exist", async () => {
 
   await assertRejects(() => table.getData());
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should skip the existence check when strict is false", async () => {
@@ -83,7 +83,7 @@ Deno.test("should skip the existence check when strict is false", async () => {
     { A: 4, key2: "quatre" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should change the name of a column with $ in its name", async () => {
@@ -101,5 +101,5 @@ Deno.test("should change the name of a column with $ in its name", async () => {
     { value: 20 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

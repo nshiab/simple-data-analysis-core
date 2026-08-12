@@ -12,7 +12,7 @@ Deno.test("should stream the same rows as getData", async () => {
   }
 
   assertEquals(streamed, await table.getData());
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should stream more rows than one DuckDB chunk", async () => {
@@ -32,7 +32,7 @@ Deno.test("should stream more rows than one DuckDB chunk", async () => {
   }
   assertEquals(count, 5000);
   assertEquals(idSum, (4999 * 5000) / 2);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should stream with columns and conditions", async () => {
@@ -51,7 +51,7 @@ Deno.test("should stream with columns and conditions", async () => {
     streamed.push(row);
   }
   assertEquals(streamed, [{ name: "b" }, { name: "c" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert values while streaming like getData", async () => {
@@ -79,7 +79,7 @@ Deno.test("should convert values while streaming like getData", async () => {
       nullInt: null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should allow breaking out of the stream early", async () => {
@@ -99,6 +99,6 @@ Deno.test("should allow breaking out of the stream early", async () => {
   assertEquals(count, 10);
 
   // The table is still usable after an early break.
-  assertEquals(await table.getNbRows(), 5000);
-  await sdb.done();
+  assertEquals(await table.getRowCount(), 5000);
+  await sdb.close();
 });

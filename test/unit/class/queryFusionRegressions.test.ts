@@ -21,7 +21,7 @@ Deno.test("concurrent observers each see fully flushed state", async () => {
   assertEquals(ra, [{ v: 20 }]);
   assertEquals(rb, [{ w: 2 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("a caught flush error keeps other tables' queued work", async () => {
@@ -43,7 +43,7 @@ Deno.test("a caught flush error keeps other tables' queued work", async () => {
   const rb = await b.getData();
   assertEquals(rb, [{ y: 10 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("the first failing operation in database-wide order stops the flush", async () => {
@@ -63,7 +63,7 @@ Deno.test("the first failing operation in database-wide order stops the flush", 
   await assertRejects(() => a.getData(), Error, "missing_a");
   assertEquals(await a.getData(), [{ x: 2 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("re-queuing on a removed table re-registers it for the flush", async () => {
@@ -79,7 +79,7 @@ Deno.test("re-queuing on a removed table re-registers it for the flush", async (
   const r = await t.getData();
   assertEquals(r, [{ a: 2 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("cloneColumn throws when the target column already exists", async () => {
@@ -94,7 +94,7 @@ Deno.test("cloneColumn throws when the target column already exists", async () =
     'the column "b" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("addColumn throws when the target column already exists", async () => {
@@ -109,7 +109,7 @@ Deno.test("addColumn throws when the target column already exists", async () => 
     'the column "b" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("replaceNulls fills a numeric constant into string and number columns", async () => {
@@ -130,7 +130,7 @@ Deno.test("replaceNulls fills a numeric constant into string and number columns"
     { name: "0", n: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("updateWithJS applies the update before resolving", async () => {
@@ -149,7 +149,7 @@ Deno.test("updateWithJS applies the update before resolving", async () => {
   const r = await t.getData();
   assertEquals(r, [{ v: 10 }, { v: 20 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("a fused filter with a subquery on its own table matches stepwise execution", async () => {
@@ -165,7 +165,7 @@ Deno.test("a fused filter with a subquery on its own table matches stepwise exec
   const r = await t.getData();
   assertEquals(r, [{ x: 5 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("self-referencing chains agree when SQL logging is enabled", async () => {
@@ -194,8 +194,8 @@ Deno.test("self-referencing chains agree when SQL logging is enabled", async () 
 
   assertEquals(fusedResult, loggedResult);
 
-  await fusedDB.done();
-  await loggedDB.done();
+  await fusedDB.close();
+  await loggedDB.close();
 });
 
 Deno.test("raw SQL strings are preserved when queued", async () => {
@@ -207,7 +207,7 @@ Deno.test("raw SQL strings are preserved when queued", async () => {
   table.filter(`value = '${marker}'`);
 
   assertEquals(await table.getData(), [{ value: marker }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("a flush-time validation error still applies the steps before it", async () => {
@@ -227,7 +227,7 @@ Deno.test("a flush-time validation error still applies the steps before it", asy
   const r = await t.getData();
   assertEquals(r, [{ v: 2 }, { v: 3 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("interleaved table operations execute as contiguous segments", async () => {
@@ -261,7 +261,7 @@ Deno.test("interleaved table operations execute as contiguous segments", async (
   assertEquals(statementsForA.length, 2);
   assertEquals(statementsForA.every((query) => !query.includes("WITH")), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("cloneTable() fuses with a subsequent op on the clone into one statement", async () => {
@@ -286,7 +286,7 @@ Deno.test("cloneTable() fuses with a subsequent op on the clone into one stateme
   );
   assertEquals(fused.length, 1);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("cloneTable() reads simpleTable's state at its call position, not later mutations", async () => {
@@ -305,7 +305,7 @@ Deno.test("cloneTable() reads simpleTable's state at its call position, not late
     { v: 3, doubled: 6 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("selectRows() with outputTable fuses with a subsequent op into one statement", async () => {
@@ -330,7 +330,7 @@ Deno.test("selectRows() with outputTable fuses with a subsequent op into one sta
   );
   assertEquals(fused.length, 1);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("selectRows() with outputTable reads simpleTable's state at its call position", async () => {
@@ -350,5 +350,5 @@ Deno.test("selectRows() with outputTable reads simpleTable's state at its call p
     { v: 3, doubled: 6 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -69,5 +69,5 @@ Deno.test("concurrent file-backed retrievals return independent rows", async () 
   ]);
   assertEquals(firstRows, [{ value: 1 }]);
   assertEquals(secondRows, [{ value: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });

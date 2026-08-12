@@ -6,7 +6,7 @@ Deno.test("should return the skew", async () => {
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
   assertEquals(await table.getSkew("key1"), 1.6460497551716866);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the skew rounded", async () => {
@@ -17,7 +17,7 @@ Deno.test("should return the skew rounded", async () => {
     await table.getSkew("key1", { decimals: 2 }),
     1.65,
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the skew even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -25,7 +25,7 @@ Deno.test("should return the skew even when there are spaces in the column name"
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
   table.renameColumns({ key1: "key 1" });
   assertEquals(await table.getSkew("key 1"), 1.6460497551716866);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the skew rounded even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -36,5 +36,5 @@ Deno.test("should return the skew rounded even when there are spaces in the colu
     await table.getSkew("key 1", { decimals: 2 }),
     1.65,
   );
-  await sdb.done();
+  await sdb.close();
 });

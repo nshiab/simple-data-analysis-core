@@ -76,7 +76,7 @@ Deno.test("should calculate the area of geometries in square meters", async () =
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the area of geometries in square meters from a specific column", async () => {
@@ -154,7 +154,7 @@ Deno.test("should calculate the area of geometries in square meters from a speci
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the area of geometries in square meters from an EPSG:4326 file", async () => {
@@ -232,7 +232,7 @@ Deno.test("should calculate the area of geometries in square meters from an EPSG
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the area of geometries in square kilometers", async () => {
@@ -290,5 +290,5 @@ Deno.test("should calculate the area of geometries in square kilometers", async 
     { nameEnglish: "Nunavut", nameFrench: "Nunavut", area: 2090913 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

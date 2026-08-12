@@ -412,7 +412,7 @@ Deno.test("should remove duplicates from a table", async () => {
       "End-of_year-BONUS?": "17,51%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove duplicates from a table based on a specific column", async () => {
@@ -532,7 +532,7 @@ Deno.test("should remove duplicates from a table based on a specific column", as
       "End-of_year-BONUS?": "17,51%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove duplicates from a table based on a specific column with special characters", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -659,5 +659,5 @@ Deno.test("should remove duplicates from a table based on a specific column with
       "End-of_year-BONUS?": "17,51%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

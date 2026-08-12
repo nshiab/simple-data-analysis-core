@@ -11,7 +11,7 @@ export default function bm25(
   text: string,
   idColumn: string,
   textColumn: string,
-  nbResults: number,
+  count: number,
   options: {
     stemmer?:
       | "arabic"
@@ -69,7 +69,7 @@ export default function bm25(
   queueOp(outputTable, {
     kind: "barrier",
     method: "bm25()",
-    parameters: { text, idColumn, textColumn, nbResults, options },
+    parameters: { text, idColumn, textColumn, count, options },
     execute: () =>
       executeBm25(
         simpleTable,
@@ -77,7 +77,7 @@ export default function bm25(
         text,
         idColumn,
         textColumn,
-        nbResults,
+        count,
         options,
       ),
   });
@@ -91,7 +91,7 @@ async function executeBm25(
   text: string,
   idColumn: string,
   textColumn: string,
-  nbResults: number,
+  count: number,
   options: {
     stemmer?: string;
     stopwords?: string;
@@ -140,7 +140,7 @@ async function executeBm25(
       options.conjunctive === true ? `, conjunctive := 1` : ""
     }) AS score FROM ${
       quoteIdentifier(simpleTable.name)
-    }) sq WHERE score NOT NULL${minScoreCondition} ORDER BY score DESC LIMIT ${nbResults};`,
+    }) sq WHERE score NOT NULL${minScoreCondition} ORDER BY score DESC LIMIT ${count};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "bm25",
@@ -148,7 +148,7 @@ async function executeBm25(
         text,
         idColumn,
         textColumn,
-        nbResults,
+        count,
         minScore: options.minScore,
         scoreColumn: options.scoreColumn,
         k: options.k,

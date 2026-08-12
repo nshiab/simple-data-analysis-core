@@ -9,7 +9,7 @@ had to be awaited. In v2, the library follows one rule:
   `loadArray`, `loadGeoData`, ...), filters, conversions, string updates, joins,
   geospatial operations, summaries, index creation... They queue their work and
   return the table, so they can be chained.
-- **Observer methods stay asynchronous.** `getData()`, `getNbRows()`,
+- **Observer methods stay asynchronous.** `getData()`, `getRowCount()`,
   `hasColumn()`, `log()`, `writeData()`, `stream()`, `customQuery()`, `cache()`,
   etc. Awaiting one executes everything queued so far, then produces its result.
 - At execution time, consecutive transformations are **fused into a single
@@ -67,10 +67,10 @@ await table
   .run();
 ```
 
-`sdb.done()` rejects if any table still has queued methods that never executed
+`sdb.close()` rejects if any table still has queued methods that never executed
 (the forgotten-`run()` safety net). It identifies every affected table and
 method, discards the work internally, and completes cleanup before throwing.
-This behavior is identical for in-memory and file-based databases; `done()`
+This behavior is identical for in-memory and file-based databases; `close()`
 never executes pending transformations automatically.
 
 ## Errors surface at the observation point
@@ -143,17 +143,34 @@ only the renamed methods and option keys below are breaking.
 
 ### Renamed methods
 
-| v1                        | v2                    | Why                                                                         |
-| :------------------------ | :-------------------- | :-------------------------------------------------------------------------- |
-| `keep()`                  | `keepValues()`        | Says it filters rows by value maps, distinct from `filter()`'s conditions.  |
-| `remove()`                | `removeValues()`      | Same, and no longer blends into the `remove*` family (`removeRows()`, ...). |
-| `left()`                  | `firstChars()`        | "Left/right" read as join sides in a join-heavy API.                        |
-| `right()`                 | `lastChars()`         | Same.                                                                       |
-| `concatenateRow()`        | `rowToText()`         | It doesn't concatenate rows — it turns each row into a labeled text block.  |
-| `loadDataFromDirectory()` | `loadDirectory()`     | Shorter; "data from" added nothing.                                         |
-| `proportionsHorizontal()` | `rowProportions()`    | Shorter and names the unit instead of a visual direction.                   |
-| `proportionsVertical()`   | `columnProportions()` | Same.                                                                       |
-| `logTable()`              | `log()`               | The table receiver already supplies the noun.                               |
+| v1                        | v2                     | Why                                                                         |
+| :------------------------ | :--------------------- | :-------------------------------------------------------------------------- |
+| `keep()`                  | `keepValues()`         | Says it filters rows by value maps, distinct from `filter()`'s conditions.  |
+| `remove()`                | `removeValues()`       | Same, and no longer blends into the `remove*` family (`removeRows()`, ...). |
+| `left()`                  | `firstChars()`         | "Left/right" read as join sides in a join-heavy API.                        |
+| `right()`                 | `lastChars()`          | Same.                                                                       |
+| `concatenateRow()`        | `rowToText()`          | It doesn't concatenate rows — it turns each row into a labeled text block.  |
+| `loadDataFromDirectory()` | `loadDirectory()`      | Shorter; "data from" added nothing.                                         |
+| `proportionsHorizontal()` | `rowProportions()`     | Shorter and names the unit instead of a visual direction.                   |
+| `proportionsVertical()`   | `columnProportions()`  | Same.                                                                       |
+| `logTable()`              | `log()`                | The table receiver already supplies the noun.                               |
+| `done()`                  | `close()`              | Uses the conventional lifecycle verb.                                       |
+| `getTableName()`          | `getName()`            | Matches the existing `table.name` property.                                 |
+| `getNbRows()`             | `getRowCount()`        | Uses the same `*Count` vocabulary as options and output columns.            |
+| `getNbColumns()`          | `getColumnCount()`     | Same.                                                                       |
+| `getNbValues()`           | `getValueCount()`      | Same.                                                                       |
+| `getNbCharacters()`       | `getCharacterCount()`  | Same.                                                                       |
+| `logNbRows()`             | `logRowCount()`        | Same.                                                                       |
+| `isValidGeo()`            | `addGeoValidity()`     | Makes it clear that the method adds a column.                               |
+| `isClosedGeo()`           | `addGeoClosedStatus()` | Makes it clear that the method adds a column.                               |
+| `typeGeo()`               | `addGeoType()`         | Makes it clear that the method adds a column.                               |
+| `nbVertices()`            | `addVertexCount()`     | Names both the mutation and the value being added.                          |
+
+`SimpleTable.name` remains available for reading, but assigning to it directly
+is no longer supported. Use `renameTable()` so the database and the table
+instance stay synchronized. `SimpleDB.getTables()` now returns a read-only
+snapshot of the table registry; direct registry mutation through `tables` or
+`pushTable()` is no longer supported.
 
 ### One `strict` option instead of five names
 
@@ -235,7 +252,8 @@ editor hints now use the new names:
 
 - `sample(quantity)` → `sample(count)`; `skip(nbRowsToSkip)` → `skip(count)`
 - `firstChars()` / `lastChars()` (formerly `left()` / `right()`):
-  `numberOfCharacters` → `nbCharacters`
+  `numberOfCharacters` → `count`
+- `bm25()`: `nbResults` → `count`; `quantiles()`: `nbQuantiles` → `count`
 - `ranks()`, `quantiles()`, `bins()`: `values` → `column`
 - `replace()`: `strings` → `replacements`
 - `reproject(to)` → `reproject(crs)`

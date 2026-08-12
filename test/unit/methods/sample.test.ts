@@ -11,7 +11,7 @@ Deno.test("should return 5 random rows", async () => {
   const data = await table.getData();
 
   assertEquals(data.length, 5);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return 20% random rows", async () => {
@@ -23,7 +23,7 @@ Deno.test("should return 20% random rows", async () => {
   const data = await table.getData();
 
   assertEquals(data.length, 10);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the 5 same random rows based on seed", async () => {
@@ -78,7 +78,7 @@ Deno.test("should return the 5 same random rows based on seed", async () => {
       "End-of_year-BONUS?": "19,07%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the same 20% random rows based on a seed", async () => {
@@ -174,5 +174,5 @@ Deno.test("should return the same 20% random rows based on a seed", async () => 
       "End-of_year-BONUS?": "11,26%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

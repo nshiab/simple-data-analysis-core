@@ -8,6 +8,7 @@ import extractTypes from "./extractTypes.ts";
 import mergeOptions from "./mergeOptions.ts";
 import queryDB from "./queryDB.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
+import { getRegisteredTables } from "./tableRegistry.ts";
 
 /**
  * The databases whose flush is executing on the current async call chain.
@@ -95,7 +96,7 @@ type CompiledCte = {
 async function flush(sdb: SimpleDB): Promise<void> {
   // Take ownership of every queue upfront, in program order.
   const entries: ({ table: SimpleTable; op: PendingOp } | null)[] = [];
-  for (const table of [...sdb.tables]) {
+  for (const table of getRegisteredTables(sdb)) {
     for (const op of table.pendingOps.splice(0, table.pendingOps.length)) {
       entries.push({ table, op });
     }
@@ -210,7 +211,7 @@ async function flush(sdb: SimpleDB): Promise<void> {
  */
 function referencedTables(rawSQL: string[], sdb: SimpleDB): SimpleTable[] {
   const referenced: SimpleTable[] = [];
-  for (const table of sdb.tables) {
+  for (const table of getRegisteredTables(sdb)) {
     const escaped = table.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const pattern = new RegExp(
       `(?<![\\w"])"?${escaped}"?(?![\\w"])`,

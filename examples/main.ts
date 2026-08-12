@@ -47,7 +47,7 @@ const firesInsideProvinces = fires
   })
   // We rename columns.
   .renameColumns({
-    count: "nbFires",
+    count: "fireCount",
     sum: "burntArea",
   })
   // We want the province with
@@ -61,4 +61,4 @@ const firesInsideProvinces = fires
 await firesInsideProvinces.log(12);
 
 // We close everything.
-await sdb.done();
+await sdb.close();

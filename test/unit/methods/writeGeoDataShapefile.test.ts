@@ -33,7 +33,7 @@ Deno.test("should write a shapefile", async () => {
     originalFeatures[0].geometry.type,
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error for incompatible options with shapefiles", async () => {
@@ -50,5 +50,5 @@ Deno.test("should throw error for incompatible options with shapefiles", async (
   );
   await assertRejects(() => table.writeGeoData(shp, { formatDates: true }));
 
-  await sdb.done();
+  await sdb.close();
 });

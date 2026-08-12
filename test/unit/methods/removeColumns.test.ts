@@ -10,7 +10,7 @@ Deno.test("should throw when a column to remove does not exist", async () => {
 
   await assertRejects(() => table.getData());
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove one column with spaces", async () => {
@@ -380,7 +380,7 @@ Deno.test("should remove one column with spaces", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove one column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -750,7 +750,7 @@ Deno.test("should remove one column", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove multiple columns", async () => {
@@ -1069,5 +1069,5 @@ Deno.test("should remove multiple columns", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

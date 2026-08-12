@@ -1133,7 +1133,7 @@ Deno.test("should unnest geometries", async () => {
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should unnest geometries from a specific column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -2263,5 +2263,5 @@ Deno.test("should unnest geometries from a specific column", async () => {
       },
     ],
   });
-  await sdb.done();
+  await sdb.close();
 });

@@ -12,7 +12,7 @@ Deno.test("should load the fires sample", async () => {
   const dataLocal = await tableLocal.getData();
 
   assertEquals(data, dataLocal);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load the recipes sample", async () => {
@@ -26,7 +26,7 @@ Deno.test("should load the recipes sample", async () => {
   const dataLocal = await tableLocal.getData();
 
   assertEquals(data, dataLocal);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load the temperatures sample", async () => {
@@ -40,7 +40,7 @@ Deno.test("should load the temperatures sample", async () => {
   const dataLocal = await tableLocal.getData();
 
   assertEquals(data, dataLocal);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load the temperaturesCities sample", async () => {
@@ -54,7 +54,7 @@ Deno.test("should load the temperaturesCities sample", async () => {
   const dataLocal = await tableLocal.getData();
 
   assertEquals(data, dataLocal);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load the canada sample", async () => {
@@ -70,7 +70,7 @@ Deno.test("should load the canada sample", async () => {
   const dataLocal = await tableLocal.getGeoData();
 
   assertEquals(data, dataLocal);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load the firesGeo sample", async () => {
@@ -84,5 +84,5 @@ Deno.test("should load the firesGeo sample", async () => {
   const dataLocal = await tableLocal.getGeoData();
 
   assertEquals(data, dataLocal);
-  await sdb.done();
+  await sdb.close();
 });

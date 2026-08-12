@@ -9,7 +9,7 @@ Deno.test("should return the values of a column", async () => {
   const values = await table.getValues("key1");
 
   assertEquals(values, ["1", "3", "8", "brioche"]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the values of a column even the name has a space in it", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -22,5 +22,5 @@ Deno.test("should return the values of a column even the name has a space in it"
   const values = await table.getValues("key 1");
 
   assertEquals(values, ["1", "3"]);
-  await sdb.done();
+  await sdb.close();
 });

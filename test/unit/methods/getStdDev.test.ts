@@ -9,7 +9,7 @@ Deno.test("should return the standard deviation", async () => {
     await table.getStdDev("key1"),
     1.2909944487358056,
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the standard deviation rounded", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -19,7 +19,7 @@ Deno.test("should return the standard deviation rounded", async () => {
     await table.getStdDev("key1", { decimals: 3 }),
     1.291,
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the standard deviation even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -30,7 +30,7 @@ Deno.test("should return the standard deviation even when there are spaces in th
     await table.getStdDev("key 1"),
     1.2909944487358056,
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the standard deviation rounded even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -41,5 +41,5 @@ Deno.test("should return the standard deviation rounded even when there are spac
     await table.getStdDev("key 1", { decimals: 3 }),
     1.291,
   );
-  await sdb.done();
+  await sdb.close();
 });

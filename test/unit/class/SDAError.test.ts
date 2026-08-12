@@ -31,7 +31,7 @@ Deno.test("should throw an SDAError carrying method, parameters, query and cause
   );
   assertEquals(sdaError.message.includes("selectColumns()"), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw an SDAError from a failing custom query", async () => {
@@ -49,5 +49,5 @@ Deno.test("should throw an SDAError from a failing custom query", async () => {
   assertEquals(sdaError.method, "customQuery()");
   assertEquals(sdaError.query, "SELECT * FROM aTableThatDoesNotExist");
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -19,7 +19,7 @@ Deno.test("should write a json file", async () => {
   );
 
   assertEquals(writtenData, originalData);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a json file with metadata", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -38,7 +38,7 @@ Deno.test("should write a json file with metadata", async () => {
   );
 
   assertEquals(writtenData, originalData);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a json file with dates properties", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -72,7 +72,7 @@ Deno.test("should write a json file with dates properties", async () => {
       },
     ],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a json file with dates properties and keep the original table unchanged", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -90,7 +90,7 @@ Deno.test("should write a json file with dates properties and keep the original 
   });
   table.selectColumns(["time", "lat", "lon"]);
   assertEquals(await table.getData(), originalData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a geojson file", async () => {
@@ -107,7 +107,7 @@ Deno.test("should write a geojson file", async () => {
   );
 
   assertEquals(writtenData, originalData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a geojson file and create the path if it doesn't exist", async () => {
@@ -124,7 +124,7 @@ Deno.test("should write a geojson file and create the path if it doesn't exist",
   );
 
   assertEquals(writtenData, originalData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a GeoJSON file that has been converted to EPSG:4326", async () => {
@@ -145,7 +145,7 @@ Deno.test("should write a GeoJSON file that has been converted to EPSG:4326", as
   );
 
   assertEquals(writtenData, canada);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a GeoJSON file that has been manually converted to EPSG:4326", async () => {
@@ -168,7 +168,7 @@ Deno.test("should write a GeoJSON file that has been manually converted to EPSG:
   );
 
   assertEquals(writtenData, canada);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write geojson file with coordinates rounded to 3 decimals", async () => {
@@ -225,7 +225,7 @@ Deno.test("should write geojson file with coordinates rounded to 3 decimals", as
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a geojson without rewinding the file", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -275,7 +275,7 @@ Deno.test("should write a geoparquet file", async () => {
   writtenData.loadGeoData(`${output}data.geoparquet`);
 
   assertEquals(await writtenData.getGeoData(), await originalData.getGeoData());
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a compressed geoparquet file", async () => {
@@ -292,7 +292,7 @@ Deno.test("should write a compressed geoparquet file", async () => {
   writtenData.loadGeoData(`${output}data-compressed.geoparquet`);
 
   assertEquals(await writtenData.getGeoData(), await originalData.getGeoData());
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a geoparquet file with multiple geo columns", async () => {
@@ -303,17 +303,17 @@ Deno.test("should write a geoparquet file with multiple geo columns", async () =
   originalData.loadGeoData(originalFile);
   originalData.cloneColumn("geom", "anotherGeom");
   const originalColumns = await originalData.getColumns();
-  const originalNbRows = await originalData.getNbRows();
+  const originalNbRows = await originalData.getRowCount();
   await originalData.writeGeoData(`${output}data-multiple-columns.geoparquet`);
 
   const writtenData = sdb.newTable();
   writtenData.loadGeoData(`${output}data-multiple-columns.geoparquet`);
   const writtenColumns = await writtenData.getColumns();
-  const writtenNbRows = await writtenData.getNbRows();
+  const writtenNbRows = await writtenData.getRowCount();
 
   assertEquals(writtenColumns, originalColumns);
   assertEquals(writtenNbRows, originalNbRows);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("writeGeoData should throw an error when there is no geometry column and suggest using writeData", async () => {
@@ -329,5 +329,5 @@ Deno.test("writeGeoData should throw an error when there is no geometry column a
     "Table contains no geometry columns. Use writeData() instead.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -7,7 +7,7 @@ Deno.test("should find that geometries are valid", async () => {
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  table.isValidGeo("isValid");
+  table.addGeoValidity("isValid");
   table.selectColumns(["nameEnglish", "nameFrench", "isValid"]);
   const data = await table.getData();
 
@@ -55,7 +55,7 @@ Deno.test("should find that geometries are valid", async () => {
     { nameEnglish: "Nunavut", nameFrench: "Nunavut", isValid: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should find that geometries are valid when checking a specific column", async () => {
@@ -64,7 +64,7 @@ Deno.test("should find that geometries are valid when checking a specific column
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  table.isValidGeo("isValid", { column: "geom" });
+  table.addGeoValidity("isValid", { column: "geom" });
   table.selectColumns(["nameEnglish", "nameFrench", "isValid"]);
   const data = await table.getData();
 
@@ -112,7 +112,7 @@ Deno.test("should find that geometries are valid when checking a specific column
     { nameEnglish: "Nunavut", nameFrench: "Nunavut", isValid: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should find that geometries are not valid", async () => {
@@ -120,11 +120,11 @@ Deno.test("should find that geometries are not valid", async () => {
   // From https://github.com/chrieke/geojson-invalid-geometry
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/invalid.geojson");
-  table.isValidGeo("isValid");
+  table.addGeoValidity("isValid");
   table.selectColumns("isValid");
   const data = await table.getData();
 
   assertEquals(data, [{ isValid: false }]);
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -50,7 +50,7 @@ Deno.test("should find the column with geometries and return geospatial data as 
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return geospatial data as a geojson with a specific geometry column", async () => {
@@ -100,7 +100,7 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should quote unusual geometry column names", async () => {
@@ -114,7 +114,7 @@ Deno.test("should quote unusual geometry column names", async () => {
 
   assertEquals(geoData.features.length, 2);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return geospatial data not rewinded", async () => {
@@ -129,7 +129,7 @@ Deno.test("should return geospatial data not rewinded", async () => {
 
   assertEquals(geoData, originalData);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return geospatial data rewinded", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -146,7 +146,7 @@ Deno.test("should return geospatial data rewinded", async () => {
 
   assertEquals(geoData, rewindedData);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("file transport converts date-valued GeoJSON properties", async () => {
@@ -161,7 +161,7 @@ Deno.test("file transport converts date-valued GeoJSON properties", async () => 
       .observed,
     new Date("2020-01-15T00:00:00.000Z"),
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("file transport preserves multiple geometry-column selection", async () => {
@@ -182,5 +182,5 @@ Deno.test("file transport preserves multiple geometry-column selection", async (
       .properties.otherGeom,
     "string",
   );
-  await sdb.done();
+  await sdb.close();
 });

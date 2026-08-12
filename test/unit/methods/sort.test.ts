@@ -18,7 +18,7 @@ Deno.test("should sort one number column ascendingly", async () => {
     { key1: 900, key2: "Zéphir", key3: "A" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sort one column with spaces in its name", async () => {
@@ -31,7 +31,7 @@ Deno.test("should sort one column with spaces in its name", async () => {
 
   assertEquals(data, [{ "column 1": 1 }, { "column 1": 2 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sort one number column descendingly", async () => {
@@ -50,7 +50,7 @@ Deno.test("should sort one number column descendingly", async () => {
     { key1: 1, key2: "Roi", key3: "A" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sort one text column ascendingly with a specific language", async () => {
@@ -73,7 +73,7 @@ Deno.test("should sort one text column ascendingly with a specific language", as
     { key1: 900, key2: "Zéphir", key3: "A" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sort one text column descendingly with a specific language", async () => {
@@ -97,7 +97,7 @@ Deno.test("should sort one text column descendingly with a specific language", a
     { key1: 5, key2: "À l'ouest", key3: "A" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sort mutiple columns ascendingly or descendingly with a specific language", async () => {
@@ -121,7 +121,7 @@ Deno.test("should sort mutiple columns ascendingly or descendingly with a specif
     { key1: 2, key2: "Alambic", key3: "B" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should sort all columns by defaut, from left to right, in ascending order", async () => {
@@ -140,7 +140,7 @@ Deno.test("should sort all columns by defaut, from left to right, in ascending o
     { key1: 900, key2: "Zéphir", key3: "A" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("sort captures mutable arguments when queued", async () => {
@@ -156,7 +156,7 @@ Deno.test("sort captures mutable arguments when queued", async () => {
 
   assertEquals(await table.getData(), [{ value: 1 }, { value: 2 }]);
   assertEquals(options, { lang: { value: "fr" } });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("order-preserving fused methods retain an earlier sort", async () => {
@@ -179,7 +179,7 @@ Deno.test("order-preserving fused methods retain an earlier sort", async () => {
     { name: "c", value: 3 },
     { name: "b", value: 2 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("grouped results can be sorted deterministically afterward", async () => {
@@ -199,7 +199,7 @@ Deno.test("grouped results can be sorted deterministically afterward", async () 
     { group: "a", sum: 3 },
     { group: "b", sum: 6 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("aggregated results can be sorted deterministically afterward", async () => {
@@ -215,7 +215,7 @@ Deno.test("aggregated results can be sorted deterministically afterward", async 
     { value: "y", sum: 30 },
     { value: "x", sum: 3 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("sampled results can be sorted deterministically afterward", async () => {
@@ -229,5 +229,5 @@ Deno.test("sampled results can be sorted deterministically afterward", async () 
 
   const values = (await table.getData()).map((row) => row.value as number);
   assertEquals(values, [...values].sort((a, b) => a - b));
-  await sdb.done();
+  await sdb.close();
 });

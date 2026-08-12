@@ -32,5 +32,5 @@ Deno.test("should check if geometries are inside other geometries", async () => 
     { points: "pointD", polygon: "container", isInside: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

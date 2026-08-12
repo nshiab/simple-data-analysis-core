@@ -10,7 +10,7 @@ Deno.test("should log the projections of the table, even if there is none", asyn
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log the projections of the table (Lambert conformal conic)", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -21,7 +21,7 @@ Deno.test("should log the projections of the table (Lambert conformal conic)", a
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log the projections of the table (Lambert conformal conic converted to EPSG:4326)", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -34,7 +34,7 @@ Deno.test("should log the projections of the table (Lambert conformal conic conv
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log the projections of the table (GeoJSON EPSG:4326)", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -47,5 +47,5 @@ Deno.test("should log the projections of the table (GeoJSON EPSG:4326)", async (
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

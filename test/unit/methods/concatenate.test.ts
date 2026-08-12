@@ -468,7 +468,7 @@ Deno.test("should concatenate multiple columns in a new one", async () => {
       concatenated: "Patel, JoshuaClerk",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should concatenate multiple columns in a new one with a separator", async () => {
@@ -941,7 +941,7 @@ Deno.test("should concatenate multiple columns in a new one with a separator", a
       concatenatedWithSeparator: "Patel, Joshua-Clerk",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should concatenate multiple columns in a new one with a separator and special characters in column names", async () => {
@@ -986,7 +986,7 @@ Deno.test("should concatenate multiple columns in a new one with a separator and
       "concat with sep": "50-23,39%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind separators containing apostrophes", async () => {
@@ -1002,5 +1002,5 @@ Deno.test("should bind separators containing apostrophes", async () => {
     second: "roll",
     combined: "rock'n'roll",
   }]);
-  await sdb.done();
+  await sdb.close();
 });

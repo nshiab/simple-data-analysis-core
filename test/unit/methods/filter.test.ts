@@ -171,7 +171,7 @@ Deno.test("should filter the rows based on one condition", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should filter the rows based on multiple conditions", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -230,7 +230,7 @@ Deno.test("should filter the rows based on multiple conditions", async () => {
       "End-of_year-BONUS?": "24,17%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should filter the rows based on booleans", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -243,7 +243,7 @@ Deno.test("should filter the rows based on booleans", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ name: "Nael", value: true }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not throw an error when all data has been filtered out", async () => {
@@ -254,5 +254,5 @@ Deno.test("should not throw an error when all data has been filtered out", async
   const data = await table.getData();
 
   assertEquals(data, []);
-  await sdb.done();
+  await sdb.close();
 });

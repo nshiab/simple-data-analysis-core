@@ -23,7 +23,7 @@ await table.loadData("path/to/your/data.csv");
 
 // You can now perform various data analysis operations on the table.
 
-await sdb.done(); // Ensure to call done when you're finished.
+await sdb.close(); // Ensure to close the database when you're finished.
 ```
 
 ## class SDAError
@@ -84,7 +84,7 @@ Creates a new SimpleDB instance.
 - **`options.tempDir`**: The path to the directory used for temporary files when
   data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp`
   for in-memory databases or `<file>.tmp` for file-based databases.
-  Automatically removed when calling `done()`.
+  Automatically removed when calling `close()`.
 - **`options.dataTransport`**: The result transport for methods that materialize
   query rows. `"direct"` is the default; `"file"` is a temporary Deno
   compatibility workaround that requires filesystem read/write permissions.
@@ -250,7 +250,7 @@ const tableNames = await sdb.getTableNames();
 console.log(tableNames); // Output: ["employees", "customers"]
 ```
 
-#### `logNames`
+#### `logTableNames`
 
 Logs the names of all tables in the database to the console, sorted
 alphabetically.
@@ -258,7 +258,7 @@ alphabetically.
 ##### Signature
 
 ```typescript
-async logNames(): Promise<this>;
+async logTableNames(): Promise<this>;
 ```
 
 ##### Returns
@@ -269,7 +269,7 @@ A promise that resolves to the database, so methods can be chained.
 
 ```ts
 // Log all table names to the console
-await sdb.logNames();
+await sdb.logTableNames();
 // Example output: SimpleDB - Tables:  ["employees","customers"]
 ```
 
@@ -277,21 +277,24 @@ await sdb.logNames();
 
 Returns an array of all SimpleTable instances in the database.
 
+The returned array is a snapshot and cannot mutate the database's internal table
+registry.
+
 ##### Signature
 
 ```typescript
-async getTables(): Promise<Table[]>;
+getTables(): readonly Table[];
 ```
 
 ##### Returns
 
-A promise that resolves to an array of SimpleTable instances.
+A read-only array of SimpleTable instances.
 
 ##### Examples
 
 ```ts
 // Get all SimpleTable instances
-const tables = await sdb.getTables();
+const tables = sdb.getTables();
 ```
 
 #### `hasTable`
@@ -518,7 +521,7 @@ table2.loadData("data2.csv").filter(`price > 0`);
 await sdb.run();
 ```
 
-#### `done`
+#### `close`
 
 Frees up memory by closing the database connection and instance, and cleans up
 the cache. If the database is file-based, it also compacts the database file to
@@ -529,7 +532,7 @@ names.
 ##### Signature
 
 ```typescript
-async done(): Promise<SimpleDB>;
+async close(): Promise<SimpleDB>;
 ```
 
 ##### Returns
@@ -546,7 +549,7 @@ A promise that resolves to the SimpleDB instance after cleanup.
 ```ts
 // Close the database and clean up resources
 await sdb.run();
-await sdb.done();
+await sdb.close();
 ```
 
 ### Examples
@@ -561,7 +564,7 @@ employees.loadData("./employees.csv");
 // Log the first few rows of the "employees" table to the console
 await employees.log();
 // Close the database connection and clean up resources
-await sdb.done();
+await sdb.close();
 ```
 
 ```ts
@@ -570,7 +573,7 @@ await sdb.done();
 const sdb = new SimpleDB({ file: "./my_database.db" });
 // Perform database operations...
 // Close the database connection, which saves changes to the specified file
-await sdb.done();
+await sdb.close();
 ```
 
 ```ts
@@ -608,6 +611,22 @@ Creates an instance of SimpleTable.
   when logging a table.
 
 ### Methods
+
+#### `name`
+
+Name of the table in the database.
+
+##### Signature
+
+```typescript
+name(): string;
+```
+
+##### Examples
+
+```ts
+console.log(table.name); // e.g., "employees"
+```
 
 #### `run`
 
@@ -1151,7 +1170,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-bm25(text: string, idColumn: string, textColumn: string, nbResults: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): this;
+bm25(text: string, idColumn: string, textColumn: string, count: number, options?: { outputTable?: string; verbose?: boolean; k?: number; b?: number; stemmer?: "arabic" | "basque" | "catalan" | "danish" | "dutch" | "english" | "finnish" | "french" | "german" | "greek" | "hindi" | "hungarian" | "indonesian" | "irish" | "italian" | "lithuanian" | "nepali" | "norwegian" | "porter" | "portuguese" | "romanian" | "russian" | "serbian" | "spanish" | "swedish" | "tamil" | "turkish" | "none"; stopwords?: string; ignore?: string; stripAccents?: boolean; lower?: boolean; overwriteIndex?: boolean; conjunctive?: boolean; minScore?: number; scoreColumn?: string }): this;
 ```
 
 ##### Parameters
@@ -1160,7 +1179,7 @@ bm25(text: string, idColumn: string, textColumn: string, nbResults: number, opti
 - **`idColumn`**: The name of the column containing unique identifiers for each
   row.
 - **`textColumn`**: The name of the column containing the text to search.
-- **`nbResults`**: The number of top-ranked results to return.
+- **`count`**: The number of top-ranked results to return.
 - **`options`**: An optional object with configuration options:
 - **`options.outputTable`**: The name of a new table where the results will be
   stored. If not provided, the current table will be replaced with the search
@@ -3209,14 +3228,14 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-firstChars(column: string, nbCharacters: number): this;
+firstChars(column: string, count: number): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The name of the column containing the strings to be modified.
-- **`nbCharacters`**: The number of characters to extract from the left side of
-  each string.
+- **`count`**: The number of characters to extract from the left side of each
+  string.
 
 ##### Returns
 
@@ -3241,14 +3260,14 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-lastChars(column: string, nbCharacters: number): this;
+lastChars(column: string, count: number): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The name of the column containing the strings to be modified.
-- **`nbCharacters`**: The number of characters to extract from the right side of
-  each string.
+- **`count`**: The number of characters to extract from the right side of each
+  string.
 
 ##### Returns
 
@@ -3711,15 +3730,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-quantiles(column: string, nbQuantiles: number, newColumn: string, options?: { categories?: string | string[] }): this;
+quantiles(column: string, count: number, newColumn: string, options?: { categories?: string | string[] }): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The column containing values from which quantiles will be
   assigned.
-- **`nbQuantiles`**: The number of quantiles to divide the data into (e.g., `4`
-  for quartiles, `10` for deciles).
+- **`count`**: The number of quantiles to divide the data into (e.g., `4` for
+  quartiles, `10` for deciles).
 - **`newColumn`**: The name of the new column where the assigned quantiles will
   be stored.
 - **`options`**: An optional object with configuration options:
@@ -4523,14 +4542,14 @@ const description = await table.getDescription();
 console.table(description);
 ```
 
-#### `getTableName`
+#### `getName`
 
 Returns the name of the table.
 
 ##### Signature
 
 ```typescript
-getTableName(): string;
+getName(): string;
 ```
 
 ##### Returns
@@ -4541,7 +4560,7 @@ The name of the table as a string.
 
 ```ts
 // Get the table name
-const tableName = table.getTableName();
+const tableName = table.getName();
 console.log(tableName); // e.g., "employees"
 ```
 
@@ -4618,14 +4637,14 @@ table.normalizeString("url", "urlNormalized", { stripPunctuation: false });
 // "https://Example.com/path" → "https://example.com/path"
 ```
 
-#### `getNbColumns`
+#### `getColumnCount`
 
 Returns the number of columns in the table.
 
 ##### Signature
 
 ```typescript
-async getNbColumns(): Promise<number>;
+async getColumnCount(): Promise<number>;
 ```
 
 ##### Returns
@@ -4636,18 +4655,18 @@ A promise that resolves to a number representing the total count of columns.
 
 ```ts
 // Get the number of columns in the table
-const nbColumns = await table.getNbColumns();
-console.log(nbColumns); // e.g., 3
+const columnCount = await table.getColumnCount();
+console.log(columnCount); // e.g., 3
 ```
 
-#### `getNbCharacters`
+#### `getCharacterCount`
 
 Returns the total number of characters in a column storing strings.
 
 ##### Signature
 
 ```typescript
-async getNbCharacters(column: string): Promise<number>;
+async getCharacterCount(column: string): Promise<number>;
 ```
 
 ##### Parameters
@@ -4663,18 +4682,18 @@ specified column.
 
 ```ts
 // Get the total number of characters in the 'name' column
-const totalChars = await table.getNbCharacters("name");
+const totalChars = await table.getCharacterCount("name");
 console.log(totalChars); // e.g., 523
 ```
 
-#### `getNbRows`
+#### `getRowCount`
 
 Returns the number of rows in the table.
 
 ##### Signature
 
 ```typescript
-async getNbRows(options?: { conditions?: string }): Promise<number>;
+async getRowCount(options?: { conditions?: string }): Promise<number>;
 ```
 
 ##### Parameters
@@ -4691,17 +4710,17 @@ A promise that resolves to a number representing the total count of rows.
 
 ```ts
 // Get the number of rows in the table
-const nbRows = await table.getNbRows();
-console.log(nbRows); // e.g., 100
+const rowCount = await table.getRowCount();
+console.log(rowCount); // e.g., 100
 ```
 
 ```ts
 // Get the number of rows where 'category' is 'Book'
-const nbBooks = await table.getNbRows({ conditions: "category = 'Book'" });
-console.log(nbBooks);
+const bookCount = await table.getRowCount({ conditions: "category = 'Book'" });
+console.log(bookCount);
 ```
 
-#### `getNbValues`
+#### `getValueCount`
 
 Returns the total number of values in the table (number of columns multiplied by
 the number of rows).
@@ -4709,7 +4728,7 @@ the number of rows).
 ##### Signature
 
 ```typescript
-async getNbValues(): Promise<number>;
+async getValueCount(): Promise<number>;
 ```
 
 ##### Returns
@@ -4720,8 +4739,8 @@ A promise that resolves to a number representing the total count of values.
 
 ```ts
 // Get the total number of values in the table
-const nbValues = await table.getNbValues();
-console.log(nbValues); // e.g., 300 (if 3 columns and 100 rows)
+const valueCount = await table.getValueCount();
+console.log(valueCount); // e.g., 300 (if 3 columns and 100 rows)
 ```
 
 #### `getTypes`
@@ -5535,7 +5554,7 @@ table.points("lat", "lon", "geom");
 table.points("y", "x", "geom", { projection: "EPSG:3347" });
 ```
 
-#### `isValidGeo`
+#### `addGeoValidity`
 
 Adds a column with boolean values indicating the validity of geometries.
 
@@ -5545,7 +5564,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-isValidGeo(newColumn: string, options?: { column?: string }): this;
+addGeoValidity(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5566,15 +5585,15 @@ The table, so methods can be chained.
 ```ts
 // Check if geometries are valid and store results in a new 'isValid' column
 // The method will automatically detect the geometry column.
-table.isValidGeo("isValid");
+table.addGeoValidity("isValid");
 ```
 
 ```ts
 // Check validity of geometries in a specific column named 'myGeom'
-table.isValidGeo("isValidMyGeom", { column: "myGeom" });
+table.addGeoValidity("isValidMyGeom", { column: "myGeom" });
 ```
 
-#### `nbVertices`
+#### `addVertexCount`
 
 Adds a column with the number of vertices (points) in each geometry.
 
@@ -5584,7 +5603,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-nbVertices(newColumn: string, options?: { column?: string }): this;
+addVertexCount(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5604,12 +5623,12 @@ The table, so methods can be chained.
 ```ts
 // Add a new column 'vertexCount' with the number of vertices for each geometry
 // The method will automatically detect the geometry column.
-table.nbVertices("vertexCount");
+table.addVertexCount("vertexCount");
 ```
 
 ```ts
 // Add vertex counts for geometries in a specific column named 'myGeom'
-table.nbVertices("myGeomVertices", { column: "myGeom" });
+table.addVertexCount("myGeomVertices", { column: "myGeom" });
 ```
 
 #### `fixGeo`
@@ -5646,7 +5665,7 @@ table.fixGeo();
 table.fixGeo("myGeom");
 ```
 
-#### `isClosedGeo`
+#### `addGeoClosedStatus`
 
 Adds a column with boolean values indicating whether geometries are closed
 (e.g., polygons) or open (e.g., linestrings).
@@ -5657,7 +5676,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-isClosedGeo(newColumn: string, options?: { column?: string }): this;
+addGeoClosedStatus(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5676,15 +5695,15 @@ The table, so methods can be chained.
 
 ```ts
 // Check if geometries are closed and store results in a new 'isClosed' column
-table.isClosedGeo("isClosed");
+table.addGeoClosedStatus("isClosed");
 ```
 
 ```ts
 // Check closed status of geometries in a specific column named 'boundaryGeom'
-table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
+table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" });
 ```
 
-#### `typeGeo`
+#### `addGeoType`
 
 Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`,
 `"POLYGON"`) for each geometry.
@@ -5695,7 +5714,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-typeGeo(newColumn: string, options?: { column?: string }): this;
+addGeoType(newColumn: string, options?: { column?: string }): this;
 ```
 
 ##### Parameters
@@ -5714,12 +5733,12 @@ The table, so methods can be chained.
 
 ```ts
 // Add a new column 'geometryType' with the type of each geometry
-table.typeGeo("geometryType");
+table.addGeoType("geometryType");
 ```
 
 ```ts
 // Get the geometry type for geometries in a specific column named 'featureGeom'
-table.typeGeo("featureType", { column: "featureGeom" });
+table.addGeoType("featureType", { column: "featureGeom" });
 ```
 
 #### `flipCoordinates`
@@ -6947,9 +6966,9 @@ await table.cache(() => {
   });
 });
 
-// It's important to call done() on the SimpleDB instance to clean up the cache.
+// It's important to call close() on the SimpleDB instance to clean up the cache.
 // This prevents the cache from growing indefinitely.
-await sdb.done();
+await sdb.close();
 ```
 
 ```ts
@@ -6967,7 +6986,7 @@ await table.cache(() => {
   });
 }, { ttl: 60 });
 
-await sdb.done();
+await sdb.close();
 ```
 
 ```ts
@@ -6984,7 +7003,7 @@ await table.cache(() => {
   });
 });
 
-await sdb.done();
+await sdb.close();
 ```
 
 #### `log`
@@ -7206,14 +7225,14 @@ await table.logColumns();
 await table.logColumns({ types: true });
 ```
 
-#### `logNbRows`
+#### `logRowCount`
 
 Logs the total number of rows in the table to the console.
 
 ##### Signature
 
 ```typescript
-async logNbRows(): Promise<this>;
+async logRowCount(): Promise<this>;
 ```
 
 ##### Returns
@@ -7224,7 +7243,7 @@ A promise that resolves to the SimpleTable instance after logging the row count.
 
 ```ts
 // Log the total number of rows in the table
-await table.logNbRows();
+await table.logRowCount();
 ```
 
 #### `logBottom`
@@ -7309,7 +7328,7 @@ employees.loadData("./employees.csv");
 await employees.log();
 
 // Close the database connection and free up resources
-await sdb.done();
+await sdb.close();
 ```
 
 ```ts
@@ -7324,5 +7343,5 @@ const boundaries = sdb.newTable("boundaries");
 boundaries.loadGeoData("./boundaries.geojson");
 
 // Close the database connection
-await sdb.done();
+await sdb.close();
 ```

@@ -46,7 +46,7 @@ Deno.test("should return the vertical proportions in a new column", async () => 
       key2Perc: null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the vertical proportions in a new column and a specific number of decimals", async () => {
@@ -76,7 +76,7 @@ Deno.test("should return the vertical proportions in a new column and a specific
       key2Prop: null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the vertical proportions in a new column with a category", async () => {
@@ -130,7 +130,7 @@ Deno.test("should return the vertical proportions in a new column with a categor
       key2Perc: 0.6666666666666666,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the vertical proportions in a new column with multiple categories", async () => {
@@ -165,7 +165,7 @@ Deno.test("should return the vertical proportions in a new column with multiple 
     { key1: "Rubarbe", key2: 1, key3: 10.5, key3Perc: 1 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, key3Perc: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -182,5 +182,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "existing" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

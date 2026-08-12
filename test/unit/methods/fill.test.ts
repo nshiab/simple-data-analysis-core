@@ -29,7 +29,7 @@ Deno.test("should fill empty cells for one column", async () => {
     { first: "Graeme" },
     { first: "Andrew" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fill empty cells for multiple columns", async () => {
@@ -58,7 +58,7 @@ Deno.test("should fill empty cells for multiple columns", async () => {
     { first: "Graeme", job: "Super producer" },
     { first: "Andrew", job: "Senior dev" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fill empty cells with categories (single category)", async () => {
@@ -79,7 +79,7 @@ Deno.test("should fill empty cells with categories (single category)", async () 
     { group: "B", value: 2 },
     { group: "A", value: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fill empty cells with categories (multiple categories)", async () => {
@@ -100,7 +100,7 @@ Deno.test("should fill empty cells with categories (multiple categories)", async
     { group: "B", subgroup: "X", value: 20 },
     { group: "B", subgroup: "X", value: 20 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 // Linear interpolation
@@ -116,7 +116,7 @@ Deno.test("should linearly interpolate NULL values between non-NULL values", asy
   table.fill("val", { interpolate: true });
   const data = await table.getData();
   assertEquals(data, [{ val: 1 }, { val: 2 }, { val: 3 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should linearly interpolate NULL values independently within each category", async () => {
@@ -140,7 +140,7 @@ Deno.test("should linearly interpolate NULL values independently within each cat
     { group: "b", val: 20 },
     { group: "b", val: 30 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should linearly extrapolate NULL values at the end of the table", async () => {
@@ -154,7 +154,7 @@ Deno.test("should linearly extrapolate NULL values at the end of the table", asy
   table.fill("val", { interpolate: true });
   const data = await table.getData();
   assertEquals(data, [{ val: 2 }, { val: 4 }, { val: 6 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should interpolate proportionally to a non-equidistant x column", async () => {
@@ -169,7 +169,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column", asy
   table.fill("y", { interpolate: true, interpolateBy: "x" });
   const data = await table.getData();
   assertEquals(data, [{ x: 0, y: 0 }, { x: 1, y: 2 }, { x: 3, y: 6 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should interpolate proportionally to a non-equidistant x column within categories", async () => {
@@ -198,7 +198,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column withi
     { group: "b", x: 2, y: 18 },
     { group: "b", x: 10, y: 50 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should assume interpolate: true when only interpolateBy is set", async () => {
@@ -213,7 +213,7 @@ Deno.test("should assume interpolate: true when only interpolateBy is set", asyn
   table.fill("y", { interpolateBy: "x" });
   const data = await table.getData();
   assertEquals(data, [{ x: 0, y: 0 }, { x: 1, y: 2 }, { x: 3, y: 6 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when interpolateBy is set and interpolate is false", async () => {
@@ -235,7 +235,7 @@ Deno.test("should throw when interpolateBy is set and interpolate is false", asy
     "interpolate cannot be false when interpolateBy is set.",
   );
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 // Row order preservation tests
@@ -264,7 +264,7 @@ Deno.test("should preserve row order after fill() with categories and interpolat
     { id: 5, group: "a", val: 20 },
     { id: 6, group: "b", val: 200 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should preserve row order after simple fill() with no options", async () => {
@@ -289,7 +289,7 @@ Deno.test("should preserve row order after simple fill() with no options", async
     { id: 4, val: "B" },
     { id: 5, val: "B" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should preserve row order after fill() with categories and interpolateBy", async () => {
@@ -319,5 +319,5 @@ Deno.test("should preserve row order after fill() with categories and interpolat
     { id: 5, group: "a", x: 3, y: 6 },
     { id: 6, group: "b", x: 10, y: 50 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

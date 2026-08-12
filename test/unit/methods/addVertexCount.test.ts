@@ -5,23 +5,23 @@ Deno.test("should count the number of vertices and add the result in a new colum
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/triangle.json");
-  table.nbVertices("nbVertices");
-  table.selectColumns(["nbVertices"]);
+  table.addVertexCount("addVertexCount");
+  table.selectColumns(["addVertexCount"]);
 
   const data = await table.getData();
 
-  assertEquals(data, [{ nbVertices: 4 }]);
-  await sdb.done();
+  assertEquals(data, [{ addVertexCount: 4 }]);
+  await sdb.close();
 });
 
 Deno.test("should count the number of vertices when checking a specific column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/triangle.json");
-  table.nbVertices("nbVertices", { column: "geom" });
-  table.selectColumns(["nbVertices"]);
+  table.addVertexCount("addVertexCount", { column: "geom" });
+  table.selectColumns(["addVertexCount"]);
   const data = await table.getData();
 
-  assertEquals(data, [{ nbVertices: 4 }]);
-  await sdb.done();
+  assertEquals(data, [{ addVertexCount: 4 }]);
+  await sdb.close();
 });

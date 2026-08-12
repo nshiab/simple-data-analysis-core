@@ -34,7 +34,7 @@ Deno.test("should return the count of null values, non null values, and distinct
     { column: "Name", type: "VARCHAR", count: 51, unique: 46, null: 4 },
     { column: "Salary", type: "JSON", count: 51, unique: 33, null: 3 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should describe a table with a single column", async () => {
@@ -52,5 +52,5 @@ Deno.test("should describe a table with a single column", async () => {
   assertEquals(description, [
     { column: "name", type: "VARCHAR", count: 4, unique: 2, null: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

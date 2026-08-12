@@ -44,7 +44,7 @@ Deno.test("should fuse consecutive builder methods into a single statement", asy
   assert(createStatements[0].includes('WITH "s1" AS'));
   assert(createStatements[0].includes('"s3"'));
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fuse REPLACE-style column updates into the chain", async () => {
@@ -70,7 +70,7 @@ Deno.test("should fuse REPLACE-style column updates into the chain", async () =>
   assertEquals(createStatements.length, 1);
   assert(createStatements[0].includes('WITH "s1" AS'));
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should produce the same results in statement style", async () => {
@@ -88,7 +88,7 @@ Deno.test("should produce the same results in statement style", async () => {
     { name: "c", double: 6 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should resolve mid-chain schemas for schema-dependent methods", async () => {
@@ -105,7 +105,7 @@ Deno.test("should resolve mid-chain schemas for schema-dependent methods", async
 
   assertEquals(result, [{ value: 1, asString: 2000 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not let cleanSQL cross fragment boundaries", async () => {
@@ -122,7 +122,7 @@ Deno.test("should not let cleanSQL cross fragment boundaries", async () => {
 
   assertEquals(result, [{ a: "x", b: "y", n: 1, c: "xy" }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should attribute a fused failure to the culprit method", async () => {
@@ -140,7 +140,7 @@ Deno.test("should attribute a fused failure to the culprit method", async () => 
   assert(error instanceof SDAError);
   assertEquals(error.method, "filter()");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw at the observation point when convert() references a missing column", async () => {
@@ -158,7 +158,7 @@ Deno.test("should throw at the observation point when convert() references a mis
       ),
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should execute queued methods with run()", async () => {
@@ -171,10 +171,10 @@ Deno.test("should execute queued methods with run()", async () => {
     .run();
 
   assertEquals(table.pendingOps.length, 0);
-  const nbRows = await table.getNbRows();
-  assertEquals(nbRows, 2);
+  const rowCount = await table.getRowCount();
+  assertEquals(rowCount, 2);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should flush queued methods before an unconverted async method runs", async () => {
@@ -193,7 +193,7 @@ Deno.test("should flush queued methods before an unconverted async method runs",
     { name: "b", value: 2 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should flush a table's queued methods when another table observes", async () => {
@@ -209,7 +209,7 @@ Deno.test("should flush a table's queued methods when another table observes", a
   assertEquals(tableA.pendingOps.length, 0);
   assertEquals(await sdb.hasTable("flushAllA"), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replay interleaved operations across tables in program order", async () => {
@@ -253,7 +253,7 @@ Deno.test("should replay interleaved operations across tables in program order",
   assert(iFilter !== -1 && iAddColumn !== -1 && iSelect !== -1);
   assert(iFilter < iAddColumn && iAddColumn < iSelect);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should join with the other table's state at the join's position in program order", async () => {
@@ -281,7 +281,7 @@ Deno.test("should join with the other table's state at the join's position in pr
   assertEquals(result, [{ id: 2, city: "Toronto", pop: 200 }]);
   assertEquals(await right.getData(), []);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should chain sync builders off a sync join", async () => {
@@ -307,7 +307,7 @@ Deno.test("should chain sync builders off a sync join", async () => {
 
   assertEquals(result, [{ city: "Toronto", pop: 200 }]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should surface join validation errors at the observation point", async () => {
@@ -322,7 +322,7 @@ Deno.test("should surface join validation errors at the observation point", asyn
   const error = await assertRejects(() => left.getData());
   assert(error instanceof Error && error.message.includes("No common column"));
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fuse row filters, string updates and sort into one statement", async () => {
@@ -360,7 +360,7 @@ Deno.test("should fuse row filters, string updates and sort into one statement",
   assertEquals(createStatements.length, 1);
   assert(createStatements[0].includes("s8"));
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fuse geospatial operations with regular ones, loading spatial once", async () => {
@@ -389,7 +389,7 @@ Deno.test("should fuse geospatial operations with regular ones, loading spatial 
   assertEquals(createStatements.length, 1);
   assert(createStatements[0].includes("s5"));
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("logSQL observes one fused statement without changing execution", async () => {
@@ -424,7 +424,7 @@ Deno.test("logSQL observes one fused statement without changing execution", asyn
   assert(createStatements[0].includes('WITH "s1" AS'));
   assert(logs.includes(createStatements[0]));
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("explainSQL logs a plan for a fused statement without changing its result", async () => {
@@ -455,7 +455,7 @@ Deno.test("explainSQL logs a plan for a fused statement without changing its res
     ),
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", async () => {
@@ -484,10 +484,10 @@ Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", 
     { returnData: true },
   );
   assertEquals(secrets, [{ name: "issue86_secret" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("done() discards queued methods, cleans up, and rejects", async () => {
+Deno.test("close() discards queued methods, cleans up, and rejects", async () => {
   const tempDir = "./test/output/pending_memory.tmp";
   const sdb = new SimpleDB({ dataTransport: "file", tempDir });
   await sdb.start();
@@ -498,7 +498,7 @@ Deno.test("done() discards queued methods, cleans up, and rejects", async () => 
   table.filter(`value > 1`);
 
   await assertRejects(
-    () => sdb.done(),
+    () => sdb.close(),
     Error,
     'The table "neverExecuted" has queued methods that were not executed: loadArray(), filter()',
   );

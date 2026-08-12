@@ -9,7 +9,7 @@ Deno.test("should clone a table", async () => {
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone and log a table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -20,7 +20,7 @@ Deno.test("should clone and log a table", async () => {
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table and give it a different name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -30,7 +30,7 @@ Deno.test("should clone a table and give it a different name", async () => {
 
   assertEquals(table.name !== clone.name, true);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with a specific name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -40,7 +40,7 @@ Deno.test("should clone a table with a specific name", async () => {
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should find the table name in the DB", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -55,7 +55,7 @@ Deno.test("should find the table name in the DB", async () => {
     ["data", "clone"],
   );
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should keep the original table intact", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -70,7 +70,7 @@ Deno.test("should keep the original table intact", async () => {
 
   assertEquals(await table.getData(), originalData);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with a condition", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -89,7 +89,7 @@ Deno.test("should clone a table with a condition", async () => {
     originalData.filter((d) => d.Job === "Manager"),
   );
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with a specific name with spaces", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -99,7 +99,7 @@ Deno.test("should clone a table with a specific name with spaces", async () => {
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with a specific number of rows", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -110,7 +110,7 @@ Deno.test("should clone a table with a specific number of rows", async () => {
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(0, 2));
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with an offset", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -121,7 +121,7 @@ Deno.test("should clone a table with an offset", async () => {
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(2));
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with a specific number of rows and an offset", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -132,7 +132,7 @@ Deno.test("should clone a table with a specific number of rows and an offset", a
   const data = await table.getData();
   assertEquals(await clone.getData(), data.slice(2, 4));
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with conditions, limit and offset", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -150,7 +150,7 @@ Deno.test("should clone a table with conditions, limit and offset", async () => 
     data.filter((d) => d.Job === "Developer").slice(1, 3),
   );
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with a specific name with spaces and '", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -160,7 +160,7 @@ Deno.test("should clone a table with a specific name with spaces and '", async (
 
   assertEquals(await table.getData(), await clone.getData());
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with string parameter directly", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -175,7 +175,7 @@ Deno.test("should clone a table with string parameter directly", async () => {
   assertEquals(tables.includes("my_cloned_table"), true);
 
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should clone a table with specific columns", async () => {
@@ -208,7 +208,7 @@ Deno.test("should clone a table with specific columns", async () => {
   assertEquals(cloneData, expectedData);
 
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should clone a table with specific columns and conditions", async () => {
@@ -236,7 +236,7 @@ Deno.test("should clone a table with specific columns and conditions", async () 
   assertEquals(cloneData, expectedData);
 
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a table with geo data", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -249,9 +249,9 @@ Deno.test("should clone a table with geo data", async () => {
   const cloned = table.cloneTable();
 
   assertEquals(await table.getTypes(), await cloned.getTypes());
-  assertEquals(await table.getNbRows(), await cloned.getNbRows());
-  assertEquals(await table.getNbColumns(), await cloned.getNbColumns());
+  assertEquals(await table.getRowCount(), await cloned.getRowCount());
+  assertEquals(await table.getColumnCount(), await cloned.getColumnCount());
 
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });

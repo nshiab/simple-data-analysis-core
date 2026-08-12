@@ -38,7 +38,7 @@ Deno.test("should fix invalid geometries", async () => {
     }],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should fix invalid geometries in a specific column", async () => {
@@ -75,7 +75,7 @@ Deno.test("should fix invalid geometries in a specific column", async () => {
     }],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should flag fixed geo as valid", async () => {
@@ -84,11 +84,11 @@ Deno.test("should flag fixed geo as valid", async () => {
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/invalid.geojson");
   table.fixGeo();
-  table.isValidGeo("isValid");
+  table.addGeoValidity("isValid");
   table.selectColumns("isValid");
   const data = await table.getData();
 
   assertEquals(data, [{ isValid: true }]);
 
-  await sdb.done();
+  await sdb.close();
 });

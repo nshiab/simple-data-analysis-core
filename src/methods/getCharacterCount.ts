@@ -4,7 +4,7 @@ import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
-export default async function getNbCharacters(
+export default async function getCharacterCount(
   SimpleTable: SimpleTable,
   column: string,
 ) {
@@ -16,7 +16,7 @@ export default async function getNbCharacters(
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,
-      method: "getNbCharacters()",
+      method: "getCharacterCount()",
       parameters: { column },
     }),
   );

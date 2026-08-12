@@ -7,7 +7,7 @@ Deno.test("should create a new SimpleTable with types", async () => {
   table.setTypes({ name: "string", age: "number" });
   const types = await table.getTypes();
   assertEquals(types, { name: "VARCHAR", age: "DOUBLE" });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should create a new SimpleTable with geometry in types", async () => {
@@ -23,7 +23,7 @@ Deno.test("should create a new SimpleTable with geometry in types", async () => 
     { name: "VARCHAR", age: "DOUBLE", city: "GEOMETRY('EPSG:4326')" },
     types,
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should create a new SimpleTable with types and column names containing spaces", async () => {
@@ -32,7 +32,7 @@ Deno.test("should create a new SimpleTable with types and column names containin
   table.setTypes({ "first name": "string", age: "number" });
   const types = await table.getTypes();
   assertEquals(types, { "first name": "VARCHAR", age: "DOUBLE" });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should create a new SimpleTable with types and column names with special uses", async () => {
@@ -49,5 +49,5 @@ Deno.test("should create a new SimpleTable with types and column names with spec
     age: "DOUBLE",
     Group: "VARCHAR",
   });
-  await sdb.done();
+  await sdb.close();
 });

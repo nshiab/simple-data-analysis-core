@@ -34,7 +34,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following", a
     { value: 41, rollingAvg: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should compute a rolling average with 3 preceding and 3 following, and 4 decimals", async () => {
@@ -72,7 +72,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following, an
     { value: 41, rollingAvg: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should compute a rolling max with 0 preceding and 3 following", async () => {
@@ -108,7 +108,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following", async
     { value: 41, rollingMax: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should compute a rolling max with 0 preceding and 3 following, and a category", async () => {
@@ -146,7 +146,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
     { index: 10, groups: "b", value: 41, rollingMax: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -163,5 +163,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "existing" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

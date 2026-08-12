@@ -36,7 +36,7 @@ async function executeSplitSpread(
     strict?: boolean;
   },
 ): Promise<void> {
-  const nbParts = newColumns.length;
+  const partCount = newColumns.length;
   const strict = options.strict !== false;
 
   // A SELECT *, expr AS col colliding with an existing column would be
@@ -69,7 +69,7 @@ async function executeSplitSpread(
       const maxParts = partsResult[0].max_parts as number;
       const minParts = partsResult[0].min_parts as number;
 
-      if (maxParts > nbParts) {
+      if (maxParts > partCount) {
         // Get the first 5 rows with more parts than expected
         const problematicRows = await queryDB(
           simpleTable,
@@ -77,7 +77,7 @@ async function executeSplitSpread(
          FROM ${quoteIdentifier(simpleTable.name)}
          WHERE ARRAY_LENGTH(STRING_SPLIT(${
             quoteIdentifier(column)
-          }, ?)) > ${nbParts}
+          }, ?)) > ${partCount}
          LIMIT 5`,
           mergeOptions(simpleTable, {
             table: simpleTable.name,
@@ -93,8 +93,8 @@ async function executeSplitSpread(
           : "";
 
         throw new Error(
-          `Some rows contain more values after splitting (${maxParts}) than the number of new columns specified (${nbParts}).
-When splitting by '${separator}', each row must produce at most ${nbParts} value(s) to fit in the columns: ${
+          `Some rows contain more values after splitting (${maxParts}) than the number of new columns specified (${partCount}).
+When splitting by '${separator}', each row must produce at most ${partCount} value(s) to fit in the columns: ${
             newColumns.join(", ")
           }.
 
@@ -102,9 +102,9 @@ First 5 rows with too many values:\n  - ${exampleRows}`,
         );
       }
 
-      if (minParts < nbParts) {
+      if (minParts < partCount) {
         console.warn(
-          `splitSpread() warning: Some rows contain fewer values after splitting (${minParts}) than the number of new columns (${nbParts}). Empty strings will be used for missing values.`,
+          `splitSpread() warning: Some rows contain fewer values after splitting (${minParts}) than the number of new columns (${partCount}). Empty strings will be used for missing values.`,
         );
       }
     }

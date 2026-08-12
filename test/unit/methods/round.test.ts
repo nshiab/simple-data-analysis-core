@@ -18,7 +18,7 @@ Deno.test("should round to the nearest integer", async () => {
     { key1: 10 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should round to a specific number of decimals", async () => {
@@ -38,7 +38,7 @@ Deno.test("should round to a specific number of decimals", async () => {
     { key1: 10 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should floor", async () => {
@@ -59,7 +59,7 @@ Deno.test("should floor", async () => {
     { key1: 10 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should ceil", async () => {
@@ -79,7 +79,7 @@ Deno.test("should ceil", async () => {
     { key1: 10 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should round multiple columns", async () => {
@@ -98,7 +98,7 @@ Deno.test("should round multiple columns", async () => {
     { key1: 10, key2: 100 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should round using the numeric shorthand", async () => {
@@ -118,7 +118,7 @@ Deno.test("should round using the numeric shorthand", async () => {
     { key1: 10 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should round to 0 decimals using the numeric shorthand", async () => {
@@ -138,5 +138,5 @@ Deno.test("should round to 0 decimals using the numeric shorthand", async () => 
     { key1: 10 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

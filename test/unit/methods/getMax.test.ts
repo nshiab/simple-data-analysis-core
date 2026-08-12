@@ -6,7 +6,7 @@ Deno.test("should return the max value", async () => {
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   assertEquals(await table.getMax("key1"), 4);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the max value even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -14,7 +14,7 @@ Deno.test("should return the max value even when there are spaces in the column 
   table.loadData(["test/data/files/data.json"]);
   table.renameColumns({ key1: "key 1" });
   assertEquals(await table.getMax("key 1"), 4);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the max value with Dates", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -26,5 +26,5 @@ Deno.test("should return the max value with Dates", async () => {
     { key1: new Date("2023-01-01") },
   ]);
   assertEquals(await table.getMax("key1"), new Date("2023-01-01"));
-  await sdb.done();
+  await sdb.close();
 });

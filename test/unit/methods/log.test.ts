@@ -9,7 +9,7 @@ Deno.test("should log a table", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with 100 rows", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -19,7 +19,7 @@ Deno.test("should log a table with 100 rows", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with 100 rows in options", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -39,7 +39,7 @@ Deno.test("should log a table with 100 rows in options", async () => {
   await table.log({ count: 100 });
 
   assertEquals(receivedCount, 100);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with types", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -49,7 +49,7 @@ Deno.test("should log a table with types", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should allow local types option to override the default", async () => {
   const sdb = new SimpleDB({ dataTransport: "file", typesToLog: true });
@@ -66,7 +66,7 @@ Deno.test("should allow local types option to override the default", async () =>
   await table.log({ types: false });
 
   assertEquals(getTypesCalled, false);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with 100 rows and types", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -76,7 +76,7 @@ Deno.test("should log a table with 100 rows and types", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should not throw an error when there is no table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -85,7 +85,7 @@ Deno.test("should not throw an error when there is no table", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should log '<Geometry>' for geospatial data", async () => {
@@ -98,7 +98,7 @@ Deno.test("should log '<Geometry>' for geospatial data", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should log types even if there is just one column in the table", async () => {
@@ -110,7 +110,7 @@ Deno.test("should log types even if there is just one column in the table", asyn
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with a condition", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -120,7 +120,7 @@ Deno.test("should log a table with a condition", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with 'all'", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -130,7 +130,7 @@ Deno.test("should log a table with 'all'", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with { count: 'all'}", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -140,7 +140,7 @@ Deno.test("should log a table with { count: 'all'}", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log a table with long strings and word wrap the columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -150,7 +150,7 @@ Deno.test("should log a table with long strings and word wrap the columns", asyn
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log different colors for different data types", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -178,5 +178,5 @@ Deno.test("should log different colors for different data types", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

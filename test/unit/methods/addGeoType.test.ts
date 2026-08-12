@@ -7,7 +7,7 @@ Deno.test("should return the geometry types in a new column", async () => {
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  table.typeGeo("type");
+  table.addGeoType("type");
   table.selectColumns(["nameEnglish", "type"]);
   const data = await table.getData();
 
@@ -27,7 +27,7 @@ Deno.test("should return the geometry types in a new column", async () => {
     { nameEnglish: "Nunavut", type: "MULTIPOLYGON" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the geometry types from a specific column in a new column", async () => {
@@ -36,7 +36,7 @@ Deno.test("should return the geometry types from a specific column in a new colu
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  table.typeGeo("type");
+  table.addGeoType("type");
   table.selectColumns(["nameEnglish", "type"]);
   const data = await table.getData();
 
@@ -56,5 +56,5 @@ Deno.test("should return the geometry types from a specific column in a new colu
     { nameEnglish: "Nunavut", type: "MULTIPOLYGON" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

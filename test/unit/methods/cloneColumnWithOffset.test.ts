@@ -26,7 +26,7 @@ Deno.test("should clone a column with an offset", async () => {
     { firstName: "andrew", lastName: "ryan", nextFirstName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with an offset of 2", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -55,7 +55,7 @@ Deno.test("should clone a column with an offset of 2", async () => {
     { firstName: "andrew", lastName: "ryan", nextFirstName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with a category", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -100,7 +100,7 @@ Deno.test("should clone a column with a category", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with a positive offset when working with many rows", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -1279,7 +1279,7 @@ Deno.test("should clone a column with geo data with an offset", async () => {
     null,
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -1296,5 +1296,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "nextFirstName" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

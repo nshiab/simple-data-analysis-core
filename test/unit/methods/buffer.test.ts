@@ -55,7 +55,7 @@ Deno.test("should create a buffer from points", async () => {
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should create a buffer from points in a specific column", async () => {
@@ -112,7 +112,7 @@ Deno.test("should create a buffer from points in a specific column", async () =>
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should create a buffer from polygons", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -2500,7 +2500,7 @@ Deno.test("should create a buffer from polygons", async () => {
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("buffer() should overwrite existing column", async () => {
@@ -2518,7 +2518,7 @@ Deno.test("buffer() should overwrite existing column", async () => {
   const types = await table.getTypes();
   assertEquals(types.buff, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("buffer() should overwrite the source geometry column", async () => {
@@ -2540,5 +2540,5 @@ Deno.test("buffer() should overwrite the source geometry column", async () => {
     "Polygon",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -15,10 +15,10 @@ Deno.test("should generate a random point in geometries and they should be rando
 
   // We repeat each row 10 times to check if the random points are different for each copy.
   await sdb.customQuery(
-    `ALTER TABLE ${table.name} ADD COLUMN nbIterations INTEGER DEFAULT 10`,
+    `ALTER TABLE ${table.name} ADD COLUMN iterationCount INTEGER DEFAULT 10`,
   );
-  await sdb.customQuery(`UPDATE ${table.name} SET nbIterations = 10`);
-  table.repeatRows("nbIterations");
+  await sdb.customQuery(`UPDATE ${table.name} SET iterationCount = 10`);
+  table.repeatRows("iterationCount");
 
   // We generate random points.
   table.randomPoint("randomPoint", 100);
@@ -65,7 +65,7 @@ Deno.test("should generate a random point in geometries and they should be rando
   const types = await table.getTypes();
   assertEquals(types.randomPoint, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("randomPoint should throw an error if no point is found", async () => {
@@ -86,7 +86,7 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
   );
 
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("randomPoint should not throw an error if no point is found and options.try is true", async () => {
@@ -99,12 +99,12 @@ Deno.test("randomPoint should not throw an error if no point is found and option
   // With 0 tries, no point should be found.
   table.randomPoint("randomPoint", 0, { strict: false });
 
-  const nbNulls = await table.getNbRows({
+  const nullCount = await table.getRowCount({
     conditions: '"randomPoint" IS NULL',
   });
-  assertEquals(nbNulls, 13);
+  assertEquals(nullCount, 13);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("randomPoint should throw an error if tries is less than 0", async () => {
@@ -125,7 +125,7 @@ Deno.test("randomPoint should throw an error if tries is less than 0", async () 
   );
 
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("randomPoint should have similar performance with many more tries if it exits early", async () => {
@@ -159,5 +159,5 @@ Deno.test("randomPoint should have similar performance with many more tries if i
   );
 
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });

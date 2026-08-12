@@ -20,7 +20,7 @@ Deno.test("should chain sync builder methods, with a single await at the observa
     { name: "c", value: 3, double: 6 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should chain async mutation methods with then", async () => {
@@ -44,7 +44,7 @@ Deno.test("should chain async mutation methods with then", async () => {
     { name: "c", amount: 3 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the same table instance from mutation methods", async () => {
@@ -54,5 +54,5 @@ Deno.test("should return the same table instance from mutation methods", async (
   assertEquals(returned === table, true);
   const returnedFromRun = await table.run();
   assertEquals(returnedFromRun === table, true);
-  await sdb.done();
+  await sdb.close();
 });

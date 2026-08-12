@@ -32,7 +32,7 @@ Deno.test("should put the result of an inner join into a new table", async () =>
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should put the result of a left join into a new table", async () => {
@@ -73,7 +73,7 @@ Deno.test("should put the result of a left join into a new table", async () => {
     { dishId: 5, name: "Mochi", country: "Japan", category: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should put the result of a right join into a new table", async () => {
@@ -110,7 +110,7 @@ Deno.test("should put the result of a right join into a new table", async () => 
     { dishId: 6, name: null, country: null, category: "Main" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should put the result of a full join into a new table", async () => {
@@ -149,7 +149,7 @@ Deno.test("should put the result of a full join into a new table", async () => {
     { dishId: 6, name: null, country: null, category: "Main" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should put the result of a full join into a new table with a specific name in the DB", async () => {
@@ -190,7 +190,7 @@ Deno.test("should put the result of a full join into a new table with a specific
     { dishId: 6, name: null, country: null, category: "Main" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should automatically find a common column, make left join and put the result into leftTable", async () => {
@@ -227,7 +227,7 @@ Deno.test("should automatically find a common column, make left join and put the
     { dishId: 5, name: "Mochi", country: "Japan", category: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should join on multiple columns", async () => {
@@ -239,7 +239,7 @@ Deno.test("should join on multiple columns", async () => {
   dishes.join(categories, { on: ["city", "season"] });
 
   await dishes.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("join captures options without mutating caller-owned objects", async () => {
@@ -265,7 +265,7 @@ Deno.test("join captures options without mutating caller-owned objects", async (
     outputTable: true,
   });
   assertEquals(await joined.getData(), [{ id: 1, left: "a", right: "b" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep the join keys of unmatched right rows in a right join", async () => {
@@ -290,7 +290,7 @@ Deno.test("should keep the join keys of unmatched right rows in a right join", a
     { key: "c", valueA: null, valueB: 30 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep the join keys of unmatched rows on both sides in a full join with multiple keys", async () => {
@@ -320,5 +320,5 @@ Deno.test("should keep the join keys of unmatched rows on both sides in a full j
     { year: 2026, city: "Vancouver", sales: null, visits: 300 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

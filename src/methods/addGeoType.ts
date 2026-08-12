@@ -4,7 +4,7 @@ import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function isValidGeo(
+export default function addGeoType(
   simpleTable: SimpleTable,
   newColumn: string,
   options: { column?: string } = {},
@@ -12,18 +12,18 @@ export default function isValidGeo(
   options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "isValidGeo()",
+    method: "addGeoType()",
     parameters: { newColumn, options },
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      assertNewColumns(types, [newColumn], "isValidGeo()");
+      assertNewColumns(types, [newColumn], "addGeoType()");
       const column = typeof options.column === "string"
         ? options.column
         : findGeoColumnFromSchema(types);
-      return `SELECT *, CAST(ST_IsValid(${
+      return `SELECT *, CAST(ST_GeometryType(${
         quoteIdentifier(column)
-      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      }) AS VARCHAR) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

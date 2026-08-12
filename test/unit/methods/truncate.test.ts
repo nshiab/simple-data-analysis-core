@@ -13,7 +13,7 @@ Deno.test("should truncate strings in one column to specified length", async () 
   const data = await table.getData();
 
   assertEquals(data, [{ description: "This is a " }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should truncate strings shorter than specified length unchanged", async () => {
@@ -28,7 +28,7 @@ Deno.test("should truncate strings shorter than specified length unchanged", asy
   const data = await table.getData();
 
   assertEquals(data, [{ name: "John" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should truncate strings to zero characters", async () => {
@@ -43,7 +43,7 @@ Deno.test("should truncate strings to zero characters", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ text: "" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should truncate multiple rows", async () => {
@@ -64,7 +64,7 @@ Deno.test("should truncate multiple rows", async () => {
     { firstName: "Eliza", lastName: "Montgomery" },
     { firstName: "Chris", lastName: "Anderson" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should truncate strings in column with spaces in name", async () => {
@@ -81,5 +81,5 @@ Deno.test("should truncate strings in column with spaces in name", async () => {
   assertEquals(data, [
     { "full name": "Alexander" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

@@ -58,7 +58,7 @@ const data = await table
   .addColumn("decade", "integer", "FLOOR(YEAR(time) / 10)*10")
   .getData();
 
-await sdb.done();
+await sdb.close();
 ```
 
 If a chain ends with transformations and nothing observes it, call `run()` to

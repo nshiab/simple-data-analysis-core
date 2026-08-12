@@ -19,7 +19,7 @@ Deno.test("direct transport remains the default and converts values", async () =
     observed: new Date("2020-01-15T00:00:00.000Z"),
     nested: ["4", "5"],
   }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("direct transport returns GeoJSON", async () => {
@@ -30,5 +30,5 @@ Deno.test("direct transport returns GeoJSON", async () => {
   const geoData = await table.getGeoData();
   assertEquals(geoData.type, "FeatureCollection");
   assertEquals(geoData.features.length, 2);
-  await sdb.done();
+  await sdb.close();
 });

@@ -10,7 +10,7 @@ Deno.test("should bind datetime formats containing apostrophes", async () => {
   assertEquals(await table.getData(), [{
     date: new Date("2010-01-02T00:00:00.000Z"),
   }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert numbers to string", async () => {
@@ -27,7 +27,7 @@ Deno.test("should convert numbers to string", async () => {
     { key1: "8.5", key2: 10 },
     { key1: "1.0", key2: 154 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should convert strings with comma as thousand separator to number", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -48,7 +48,7 @@ Deno.test("should convert strings with comma as thousand separator to number", a
     { key1: 8.5, key2: 10 },
     { key1: 1.0, key2: 154 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should try to convert string to number", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -66,7 +66,7 @@ Deno.test("should try to convert string to number", async () => {
     { key1: 8, key2: "10" },
     { key1: null, key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert string to float", async () => {
@@ -84,7 +84,7 @@ Deno.test("should convert string to float", async () => {
     { key1: 8.5, key2: 10 },
     { key1: 1, key2: 154 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert string to integer", async () => {
@@ -102,7 +102,7 @@ Deno.test("should convert string to integer", async () => {
     { key1: 8.5, key2: 10 },
     { key1: 1, key2: 154 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert multiple columns in multiple types", async () => {
@@ -123,7 +123,7 @@ Deno.test("should convert multiple columns in multiple types", async () => {
     { key1: 8.5, key2: "10" },
     { key1: 1, key2: "154" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert date string to date", async () => {
@@ -175,7 +175,7 @@ Deno.test("should convert date string to date", async () => {
       weirdDatetime: "2010/01/04_23h_25min_15sec",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert date and time strings to dates", async () => {
@@ -203,7 +203,7 @@ Deno.test("should convert date and time strings to dates", async () => {
     timeMs: "TIME",
     weirdDatetime: "VARCHAR",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert date and time from string to date with a specific format", async () => {
@@ -236,7 +236,7 @@ Deno.test("should convert date and time from string to date with a specific form
       weirdDatetime: new Date("2010-01-04T23:25:15.000Z"),
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert dates to strings", async () => {
@@ -304,7 +304,7 @@ Deno.test("should convert dates to strings", async () => {
       weirdDatetime: "2010-01-04 23:25:15",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert dates to strings with a specific format", async () => {
@@ -358,7 +358,7 @@ Deno.test("should convert dates to strings with a specific format", async () => 
       weirdDatetime: "2010/01/04_23h_25min_15sec",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert numbers to booleans", async () => {
@@ -370,7 +370,7 @@ Deno.test("should convert numbers to booleans", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ key1: false }, { key1: true }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert booleans to numbers", async () => {
@@ -382,7 +382,7 @@ Deno.test("should convert booleans to numbers", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ key1: 0 }, { key1: 1 }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should convert dates and times to numbers (ms)", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -440,7 +440,7 @@ Deno.test("should convert dates and times to numbers (ms)", async () => {
       timeMs: 43275123,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should convert numbers (ms) to dates and time", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -506,7 +506,7 @@ Deno.test("should convert numbers (ms) to dates and time", async () => {
       timeMs: "12:01:15.123",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert a column with $ in its name", async () => {
@@ -524,5 +524,5 @@ Deno.test("should convert a column with $ in its name", async () => {
     { "$ value": "20.0" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

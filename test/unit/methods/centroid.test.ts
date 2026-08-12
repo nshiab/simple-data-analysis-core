@@ -189,7 +189,7 @@ Deno.test("should compute the centroids", async () => {
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should compute the centroids from a specific column", async () => {
@@ -380,7 +380,7 @@ Deno.test("should compute the centroids from a specific column", async () => {
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("centroid() should overwrite existing column", async () => {
@@ -398,7 +398,7 @@ Deno.test("centroid() should overwrite existing column", async () => {
   const types = await table.getTypes();
   assertEquals(types.cent, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("centroid() should overwrite the source geometry column", async () => {
@@ -420,5 +420,5 @@ Deno.test("centroid() should overwrite the source geometry column", async () => 
     "Point",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

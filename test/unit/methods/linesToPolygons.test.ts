@@ -774,7 +774,7 @@ Deno.test("should transform lines to polygons", async () => {
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should transform lines to polygons from a specific column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -1549,5 +1549,5 @@ Deno.test("should transform lines to polygons from a specific column", async () 
   const types2 = await table.getTypes();
   assertEquals(types2.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });

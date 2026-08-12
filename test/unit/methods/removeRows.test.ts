@@ -252,7 +252,7 @@ Deno.test("should remove rows based on one condition", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove rows based on multiple conditions", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -562,7 +562,7 @@ Deno.test("should remove rows based on multiple conditions", async () => {
       "End-of_year-BONUS?": "17,86%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove the rows based on booleans", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -575,5 +575,5 @@ Deno.test("should remove the rows based on booleans", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ name: "Graeme", value: false }]);
-  await sdb.done();
+  await sdb.close();
 });

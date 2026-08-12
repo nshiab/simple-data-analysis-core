@@ -13,7 +13,7 @@ Deno.test("should throw when the source column does not exist", async () => {
 
   await assertRejects(() => table.getData());
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should extract a substring based on a separator and substring", async () => {
@@ -32,7 +32,7 @@ Deno.test("should extract a substring based on a separator and substring", async
     name: "Bruce, Graeme",
     lastName: "Bruce",
   }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should extract a substring based on a separator and substring, and overwrite the original column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -47,7 +47,7 @@ Deno.test("should extract a substring based on a separator and substring, and ov
   const data = await table.getData();
 
   assertEquals(data, [{ name: "Shiab" }, { name: "Bruce" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind an extraction separator containing an apostrophe", async () => {
@@ -58,5 +58,5 @@ Deno.test("should bind an extraction separator containing an apostrophe", async 
   table.splitExtract("value", "'n'", 1, "part");
 
   assertEquals(await table.getData(), [{ value: "rock'n'roll", part: "roll" }]);
-  await sdb.done();
+  await sdb.close();
 });

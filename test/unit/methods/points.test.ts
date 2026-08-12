@@ -39,7 +39,7 @@ Deno.test("should create points", async () => {
     geom: "GEOMETRY('EPSG:4326')",
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("points() should overwrite existing column", async () => {
@@ -59,7 +59,7 @@ Deno.test("points() should overwrite existing column", async () => {
     geom: "GEOMETRY('EPSG:4326')",
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("points() should use the specified projection", async () => {
@@ -76,5 +76,5 @@ Deno.test("points() should use the specified projection", async () => {
     geom: "GEOMETRY('EPSG:3347')",
   });
 
-  await sdb.done();
+  await sdb.close();
 });

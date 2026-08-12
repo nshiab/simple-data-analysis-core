@@ -11,7 +11,7 @@ Deno.test("should lowercase strings in one column", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ firstName: "nael", lastName: "SHIAB" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should lowercase strings in two columns", async () => {
@@ -24,7 +24,7 @@ Deno.test("should lowercase strings in two columns", async () => {
   const data = await table.getData();
 
   assertEquals(data, [{ firstName: "nael", lastName: "shiab" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should lowercase strings in two columns with column names containing spaces", async () => {
@@ -39,5 +39,5 @@ Deno.test("should lowercase strings in two columns with column names containing 
   assertEquals(data, [
     { "first Name": "nael", "last Name": "shiab" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

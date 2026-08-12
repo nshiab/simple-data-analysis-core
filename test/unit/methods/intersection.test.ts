@@ -94,7 +94,7 @@ Deno.test("should compute the intersection of geometries", async () => {
     { nameEnglish: "Nunavut", name: "polygonB", intersecPerc: 0.0366 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("intersection() should overwrite existing column", async () => {
@@ -112,7 +112,7 @@ Deno.test("intersection() should overwrite existing column", async () => {
   const types = await table.getTypes();
   assertEquals(types.inter, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("intersection() should overwrite one of the source geometry columns", async () => {
@@ -136,7 +136,7 @@ Deno.test("intersection() should overwrite one of the source geometry columns", 
     "Point",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("intersection() should return null if one of the geometries is null", async () => {
@@ -178,5 +178,5 @@ Deno.test("intersection() should return null if one of the geometries is null", 
     null,
   );
 
-  await sdb.done();
+  await sdb.close();
 });

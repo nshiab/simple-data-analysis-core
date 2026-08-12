@@ -10,5 +10,5 @@ Deno.test("should log the extent", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

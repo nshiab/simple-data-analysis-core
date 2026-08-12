@@ -224,7 +224,7 @@ Deno.test("should successfully run a search with conjunctive option", async () =
     outputTable: "disjunctive",
   });
   const disjunctive = await sdb.getTable("disjunctive");
-  const disjunctiveCount = await disjunctive.getNbRows();
+  const disjunctiveCount = await disjunctive.getRowCount();
 
   // With conjunctive, it should only match rows having BOTH tokens
   table.bm25("fennel garlic", "Dish", "Recipe", 30, {
@@ -232,7 +232,7 @@ Deno.test("should successfully run a search with conjunctive option", async () =
     outputTable: "conjunctive",
   });
   const conjunctive = await sdb.getTable("conjunctive");
-  const conjunctiveCount = await conjunctive.getNbRows();
+  const conjunctiveCount = await conjunctive.getRowCount();
 
   // We expect fewer results with conjunctive for "fennel garlic"
   // console.log({ disjunctiveCount, conjunctiveCount });

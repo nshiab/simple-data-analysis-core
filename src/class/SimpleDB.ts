@@ -20,6 +20,11 @@ import flushAllTables, {
   runExemptFromFlush,
 } from "../helpers/flushAllTables.ts";
 import { discardAllPending } from "../helpers/queueOp.ts";
+import {
+  initializeTableRegistry,
+  listRegisteredTables,
+  registerTable,
+} from "../helpers/tableRegistry.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -35,7 +40,7 @@ import { discardAllPending } from "../helpers/queueOp.ts";
  * // Log the first few rows of the "employees" table to the console
  * await employees.log();
  * // Close the database connection and clean up resources
- * await sdb.done();
+ * await sdb.close();
  * ```
  *
  * @example
@@ -45,7 +50,7 @@ import { discardAllPending } from "../helpers/queueOp.ts";
  * const sdb = new SimpleDB({ file: "./my_database.db" });
  * // Perform database operations...
  * // Close the database connection, which saves changes to the specified file
- * await sdb.done();
+ * await sdb.close();
  * ```
  *
  * @example
@@ -110,13 +115,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @category Properties
    */
   logDuration: boolean;
-  /**
-   * An array of table instances associated with this database.
-   *
-   * @defaultValue `[]`
-   * @category Properties
-   */
-  tables: Table[];
   /**
    * A flag indicating whether to log verbose cache-related messages.
    *
@@ -195,7 +193,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   memoryLimit: string | undefined;
   /**
-   * The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Temporary directories are automatically removed when calling `done()`.
+   * The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Temporary directories are automatically removed when calling `close()`.
    *
    * @defaultValue `undefined`
    * @category Properties
@@ -296,7 +294,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
    * @param options.progressBar - A flag indicating whether to display a progress bar for long-running operations.
    * @param options.memoryLimit - The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
-   * @param options.tempDir - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `done()`.
+   * @param options.tempDir - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `close()`.
    * @param options.dataTransport - The result transport for methods that materialize query rows. `"direct"` is the default; `"file"` is a temporary Deno compatibility workaround that requires filesystem read/write permissions.
    * @category Constructor
    *
@@ -334,7 +332,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.overwrite = options.overwrite ?? false;
     this.logDuration = options.logDuration ?? false;
     this.tableIncrement = 1;
-    this.tables = [];
+    initializeTableRegistry(this);
     this.cacheSourcesUsed = [];
     this.cacheVerbose = options.cacheVerbose ?? false;
     this.cacheTimeSaved = 0;
@@ -423,27 +421,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   }
 
   /**
-   * Adds a SimpleTable instance to the internal list of tables.
-   *
-   * @param table - The SimpleTable instance to add.
-   * @internal
-   * @category Table Management
-   */
-  pushTable(table: Table): void {
-    const TableClass = this.tableClass;
-    if (!(table instanceof TableClass)) {
-      throw new Error(
-        `The table must be an instance of ${TableClass.name}.`,
-      );
-    }
-    if (this.tables.map((t) => t.name).includes(table.name)) {
-      throw new Error(`Table ${table.name} already exists.`);
-    }
-
-    this.tables.push(table);
-  }
-
-  /**
    * Creates a new SimpleTable instance within the database.
    *
    * @param name - The name of the new table. If not provided, a default name is generated (e.g., "table1").
@@ -486,7 +463,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       this.tableIncrement += 1;
     }
 
-    this.pushTable(table);
+    registerTable(this, table);
 
     return table;
   }
@@ -505,7 +482,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```
    */
   async getTable(name: string): Promise<Table> {
-    const table = this.tables.find((t) => t.name === name);
+    const table = this.getTables().find((t) => t.name === name);
     if (table) {
       return await table;
     } else {
@@ -613,11 +590,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @example
    * ```ts
    * // Log all table names to the console
-   * await sdb.logNames();
+   * await sdb.logTableNames();
    * // Example output: SimpleDB - Tables:  ["employees","customers"]
    * ```
    */
-  async logNames(): Promise<this> {
+  async logTableNames(): Promise<this> {
     const tables = await this.getTableNames();
     if (tables.length > 0) {
       console.log(
@@ -632,17 +609,20 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Returns an array of all SimpleTable instances in the database.
    *
-   * @returns A promise that resolves to an array of SimpleTable instances.
+   * The returned array is a snapshot and cannot mutate the database's internal
+   * table registry.
+   *
+   * @returns A read-only array of SimpleTable instances.
    * @category Table Management
    *
    * @example
    * ```ts
    * // Get all SimpleTable instances
-   * const tables = await sdb.getTables();
+   * const tables = sdb.getTables();
    * ```
    */
-  async getTables(): Promise<Table[]> {
-    return await this.tables;
+  getTables(): readonly Table[] {
+    return listRegisteredTables(this);
   }
 
   /**
@@ -878,10 +858,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```ts
    * // Close the database and clean up resources
    * await sdb.run();
-   * await sdb.done();
+   * await sdb.close();
    * ```
    */
-  async done(): Promise<SimpleDB> {
+  async close(): Promise<SimpleDB> {
     const discarded = discardAllPending(this);
     let cleanupError: unknown;
     try {
@@ -917,7 +897,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         } has queued methods that were not executed: ${methods.join(", ")}.`
       ).join(" ");
       throw new Error(
-        `${details} Call run() or await an observer method before done() to execute them.`,
+        `${details} Call run() or await an observer method before close() to execute them.`,
       );
     }
     if (cleanupError !== undefined) {
@@ -926,7 +906,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
     if (typeof this.durationStart === "number") {
       let string = prettyDuration(this.durationStart, {
-        prefix: "\n\nSimpleDB - Done in ",
+        prefix: "\n\nSimpleDB - Closed in ",
       });
 
       if (this.cacheTimeSaved > 0) {

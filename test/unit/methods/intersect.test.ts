@@ -81,7 +81,7 @@ Deno.test("should check if geometries intersect", async () => {
     { nameEnglish: "Nunavut", name: "polygonB", intersec: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should check if geometries intersect and the returned booleans could be used to filter", async () => {
@@ -122,5 +122,5 @@ Deno.test("should check if geometries intersect and the returned booleans could 
     { nameEnglish: "Nunavut", name: "polygonB", intersec: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

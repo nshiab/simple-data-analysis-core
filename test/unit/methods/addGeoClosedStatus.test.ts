@@ -6,7 +6,7 @@ Deno.test("should add a new column with TRUE when geometries are closed", async 
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo("geom");
-  table.isClosedGeo("closed");
+  table.addGeoClosedStatus("closed");
   table.selectColumns(["value", "closed"]);
   const data = await table.getData();
 
@@ -39,7 +39,7 @@ Deno.test("should add a new column with TRUE when geometries are closed", async 
     { value: 8, closed: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a new column with TRUE when geometries in a specific column are closed", async () => {
@@ -47,7 +47,7 @@ Deno.test("should add a new column with TRUE when geometries in a specific colum
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo("geom");
-  table.isClosedGeo("closed", { column: "geom" });
+  table.addGeoClosedStatus("closed", { column: "geom" });
   table.selectColumns(["value", "closed"]);
   const data = await table.getData();
 
@@ -80,5 +80,5 @@ Deno.test("should add a new column with TRUE when geometries in a specific colum
     { value: 8, closed: true },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

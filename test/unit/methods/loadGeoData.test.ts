@@ -12,7 +12,7 @@ Deno.test("should escape geospatial file paths containing apostrophes", async ()
   table.loadGeoData(file);
 
   assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a geojson file and return the table", async () => {
@@ -25,7 +25,7 @@ Deno.test("should load a geojson file and return the table", async () => {
 
   assertEquals(table instanceof SimpleTable, true);
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a geojson file", async () => {
@@ -42,7 +42,7 @@ Deno.test("should load a geojson file", async () => {
     nameFrench: "VARCHAR",
     geom: "GEOMETRY('EPSG:4326')",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a geojson file from a URL", async () => {
@@ -59,7 +59,7 @@ Deno.test("should load a geojson file from a URL", async () => {
     nameFrench: "VARCHAR",
     geom: "GEOMETRY('EPSG:4326')",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a shapefile file (not zipped)", async () => {
@@ -76,7 +76,7 @@ Deno.test("should load a shapefile file (not zipped)", async () => {
     nameFrench: "VARCHAR",
     geom: "GEOMETRY('EPSG:4326')",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a shapefile file (zipped)", async () => {
@@ -93,7 +93,7 @@ Deno.test("should load a shapefile file (zipped)", async () => {
     nameFrench: "VARCHAR",
     geom: "GEOMETRY('EPSG:4326')",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a GeoJSON file in EPSG:4326", async () => {
@@ -108,7 +108,7 @@ Deno.test("should load a GeoJSON file in EPSG:4326", async () => {
   assertEquals(data, [
     { lat: 45.51412791316409, lon: -73.62315106245389 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a geoparquet file", async () => {
@@ -151,7 +151,7 @@ Deno.test("should load a geoparquet file", async () => {
       "properties": { "name": "polygonB" },
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load a compressed geoparquet file", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -193,7 +193,7 @@ Deno.test("should load a compressed geoparquet file", async () => {
       "properties": { "name": "polygonB" },
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load a geoparquet file with multiple columns", async () => {
@@ -209,7 +209,7 @@ Deno.test("should load a geoparquet file with multiple columns", async () => {
     geom: "GEOMETRY('OGC:CRS84')",
     anotherGeom: "GEOMETRY('OGC:CRS84')",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should skip reprojection when the data is already in EPSG:4326", async () => {
@@ -227,5 +227,5 @@ Deno.test("should skip reprojection when the data is already in EPSG:4326", asyn
 
   assertEquals(await table.getGeoData(), await withoutOption.getGeoData());
 
-  await sdb.done();
+  await sdb.close();
 });

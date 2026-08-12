@@ -23,7 +23,7 @@ Deno.test("should repeat rows based on a specific column values", async () => {
     { id: 2, count: 3, category: "B" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should repeat rows based on a specific column values and add an index column", async () => {
@@ -45,7 +45,7 @@ Deno.test("should repeat rows based on a specific column values and add an index
     { id: 2, count: 3, category: "B", copyId: 2 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the index column name already exists, instead of silently renaming it", async () => {
@@ -59,5 +59,5 @@ Deno.test("should throw when the index column name already exists, instead of si
     'the column "copyId" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

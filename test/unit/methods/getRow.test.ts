@@ -15,7 +15,7 @@ Deno.test("should return a specific row", async () => {
     "Department or unit": "50",
     "End-of_year-BONUS?": "23,39%",
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when no row matches", async () => {
@@ -28,7 +28,7 @@ Deno.test("should throw when no row matches", async () => {
     Error,
     "No row found",
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when more than one row matches", async () => {
@@ -41,7 +41,7 @@ Deno.test("should throw when more than one row matches", async () => {
     Error,
     "More than one row found",
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not throw when no row matches and strict is false", async () => {
@@ -51,7 +51,7 @@ Deno.test("should not throw when no row matches and strict is false", async () =
   const data = await table.getRow(`Name === 'Nobody'`, { strict: false });
 
   assertEquals(data, null);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first row when more than one row matches and strict is false", async () => {
@@ -62,5 +62,5 @@ Deno.test("should return the first row when more than one row matches and strict
 
   assertEquals(typeof data, "object");
   assertEquals(data?.Job, "Clerk");
-  await sdb.done();
+  await sdb.close();
 });

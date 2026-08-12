@@ -17,7 +17,7 @@ Deno.test("should return a column with new computed values", async () => {
     { key1: "Banane", key2: null, key3: null, multiply: null },
     { key1: "Banane", key2: null, key3: null, multiply: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a column with booleans", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -66,7 +66,7 @@ Deno.test("should return a column with booleans", async () => {
       key2GreaterThanTen: null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a column with geometry", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -100,7 +100,7 @@ Deno.test("should return a column with geometry", async () => {
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a column with a space in its name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -118,7 +118,7 @@ Deno.test("should return a column with a space in its name", async () => {
     { key1: "Banane", key2: null, key3: null, "key 4": null },
     { key1: "Banane", key2: null, key3: null, "key 4": null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a column with a $ in its name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -136,7 +136,7 @@ Deno.test("should return a column with a $ in its name", async () => {
     { key1: "Banane", key2: null, key3: null, "$key4": null },
     { key1: "Banane", key2: null, key3: null, "$key4": null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return a column with null values", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -149,7 +149,7 @@ Deno.test("should return a column with null values", async () => {
     key1: "Graeme",
     age: null,
   }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add a column with a case statement and null", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -170,5 +170,5 @@ Deno.test("should add a column with a case statement and null", async () => {
     { votes: 10, winnerMax: 10, party: "LIB", winner: "LIB" },
     { votes: 5, winnerMax: 10, party: "CON", winner: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

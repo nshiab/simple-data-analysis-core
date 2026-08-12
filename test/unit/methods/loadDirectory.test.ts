@@ -12,7 +12,7 @@ Deno.test("should load data from a directory and return the table", async () => 
 
   assertEquals(table instanceof SimpleTable, true);
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a directory", async () => {
@@ -44,7 +44,7 @@ Deno.test("should load data from a directory", async () => {
       { key1: 11, key2: "onze", key3: null },
     ],
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a directory even when the path doesn't have '/' at the end", async () => {
@@ -75,7 +75,7 @@ Deno.test("should load data from a directory even when the path doesn't have '/'
       { key1: 11, key2: "onze", key3: null },
     ],
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a directory with a limit option", async () => {
@@ -89,7 +89,7 @@ Deno.test("should load data from a directory with a limit option", async () => {
   const data = await table.getData();
 
   assertEquals(data.length, 3);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should include the filename when loading a directory", async () => {
@@ -109,7 +109,7 @@ Deno.test("should include the filename when loading a directory", async () => {
     "test/data/directory/data3.csv",
     "test/data/directory/data4ExtraColumn.csv",
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load only specific columns from directory", async () => {
@@ -139,5 +139,5 @@ Deno.test("should load only specific columns from directory", async () => {
     { key1: 11 },
     { key1: 11 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

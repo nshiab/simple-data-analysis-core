@@ -6,7 +6,7 @@ Deno.test("should return the variance", async () => {
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   assertEquals(await table.getVar("key1"), 1.6666666666666667);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the variance rounded", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -16,7 +16,7 @@ Deno.test("should return the variance rounded", async () => {
     await table.getVar("key1", { decimals: 6 }),
     1.666667,
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the variance even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -24,7 +24,7 @@ Deno.test("should return the variance even when there are spaces in the column n
   table.loadData(["test/data/files/data.json"]);
   table.renameColumns({ key1: "key 1" });
   assertEquals(await table.getVar("key 1"), 1.6666666666666667);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the variance rounded even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -35,5 +35,5 @@ Deno.test("should return the variance rounded even when there are spaces in the 
     await table.getVar("key 1", { decimals: 6 }),
     1.666667,
   );
-  await sdb.done();
+  await sdb.close();
 });

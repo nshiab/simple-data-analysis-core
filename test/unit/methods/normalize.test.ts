@@ -31,7 +31,7 @@ Deno.test("should normalize values in a column", async () => {
     { key1: "Banane", key2: null, key3: null, normalized: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should normalize values in a column with two decimals", async () => {
@@ -55,7 +55,7 @@ Deno.test("should normalize values in a column with two decimals", async () => {
     { key1: "Banane", key2: null, key3: null, normalized: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should normalize values in a column and keep 4 decimals", async () => {
@@ -79,7 +79,7 @@ Deno.test("should normalize values in a column and keep 4 decimals", async () =>
     { key1: "Banane", key2: null, key3: null, normalized: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should normalize values in a column with categories", async () => {
@@ -103,7 +103,7 @@ Deno.test("should normalize values in a column with categories", async () => {
     { key1: "Banane", key2: null, key3: null, normalized: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should normalize data with positive and negative values", async () => {
@@ -130,7 +130,7 @@ Deno.test("should normalize data with positive and negative values", async () =>
     { key1: 1, normalized: 1 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should report column and newColumn in a thrown SDAError's parameters", async () => {
@@ -156,7 +156,7 @@ Deno.test("should report column and newColumn in a thrown SDAError's parameters"
     options: {},
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -170,5 +170,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "normalized" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

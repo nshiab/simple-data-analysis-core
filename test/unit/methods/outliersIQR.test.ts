@@ -51,7 +51,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Claudia", age: 35, ageOutliers: false },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
@@ -106,7 +106,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Claudia", age: 35, ageOutliers: false },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows and with a category", async () => {
@@ -161,5 +161,5 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Claudia", age: 35, gender: "Woman", ageOutliers: false },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

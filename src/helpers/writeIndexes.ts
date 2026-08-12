@@ -7,7 +7,7 @@ export default function writeIndexes(
   file: string,
 ) {
   const allIndexes: { [key: string]: string[] } = {};
-  for (const table of simpleDB.tables) {
+  for (const table of simpleDB.getTables()) {
     if (table.indexes.length > 0) {
       allIndexes[table.name] = table.indexes;
     }

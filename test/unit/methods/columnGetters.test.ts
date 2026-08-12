@@ -24,7 +24,10 @@ Deno.test("column getters throw when a missing column matches the table name", a
       name: "getQuantile()",
       call: () => table.getQuantile("data", 0.5),
     },
-    { name: "getNbCharacters()", call: () => table.getNbCharacters("data") },
+    {
+      name: "getCharacterCount()",
+      call: () => table.getCharacterCount("data"),
+    },
     { name: "getUniques()", call: () => table.getUniques("data") },
   ];
 
@@ -37,5 +40,5 @@ Deno.test("column getters throw when a missing column matches the table name", a
     );
   }
 
-  await sdb.done();
+  await sdb.close();
 });

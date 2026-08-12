@@ -19,7 +19,7 @@ Deno.test("should left-pad strings to target length with default zero", async ()
     { id: "023" },
     { id: "456" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should right-pad strings to target length", async () => {
@@ -40,7 +40,7 @@ Deno.test("should right-pad strings to target length", async () => {
     { code: "45000" },
     { code: "60000" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should left-pad with custom character", async () => {
@@ -59,7 +59,7 @@ Deno.test("should left-pad with custom character", async () => {
     { id: "---1" },
     { id: "---2" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should right-pad with custom character", async () => {
@@ -78,7 +78,7 @@ Deno.test("should right-pad with custom character", async () => {
     { code: "AB***" },
     { code: "CD***" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle null values by leaving them as null", async () => {
@@ -99,7 +99,7 @@ Deno.test("should handle null values by leaving them as null", async () => {
     { id: null },
     { id: "003" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when column is not string type", async () => {
@@ -115,7 +115,7 @@ Deno.test("should throw error when column is not string type", async () => {
     Error,
     'The column "id" is of type DOUBLE',
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when strings exceed target length", async () => {
@@ -132,7 +132,7 @@ Deno.test("should throw error when strings exceed target length", async () => {
     Error,
     'The column "name" has 1 string(s) exceeding the target length of 3',
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle column names with spaces", async () => {
@@ -151,7 +151,7 @@ Deno.test("should handle column names with spaces", async () => {
     { "user id": "0001" },
     { "user id": "0023" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle empty strings", async () => {
@@ -170,7 +170,7 @@ Deno.test("should handle empty strings", async () => {
     { id: "000" },
     { id: "00a" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should pad to length 0 when all strings are empty", async () => {
@@ -189,7 +189,7 @@ Deno.test("should pad to length 0 when all strings are empty", async () => {
     { text: "" },
     { text: "" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle padding with multi-character fill string", async () => {
@@ -206,7 +206,7 @@ Deno.test("should handle padding with multi-character fill string", async () => 
   assertEquals(data, [
     { id: "abab1" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should pad with default method being left", async () => {
@@ -223,7 +223,7 @@ Deno.test("should pad with default method being left", async () => {
   assertEquals(data, [
     { code: "000ABC" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should pad with default char being zero", async () => {
@@ -240,7 +240,7 @@ Deno.test("should pad with default char being zero", async () => {
   assertEquals(data, [
     { value: "12300" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle multiple rows with null values", async () => {
@@ -265,7 +265,7 @@ Deno.test("should handle multiple rows with null values", async () => {
     { id: null },
     { id: "0045" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 // Multi-column tests
@@ -286,7 +286,7 @@ Deno.test("should pad multiple columns at once", async () => {
     { id: "---1", code: "--AB" },
     { id: "--23", code: "---C" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should pad multiple columns with right padding", async () => {
@@ -305,7 +305,7 @@ Deno.test("should pad multiple columns with right padding", async () => {
     { name: "A***", label: "X***" },
     { name: "BC**", label: "YZ**" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when one of multiple columns is not string type", async () => {
@@ -321,7 +321,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
     Error,
     'The column "age" is of type DOUBLE',
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when one column has overflow in multi-column pad", async () => {
@@ -338,7 +338,7 @@ Deno.test("should throw error when one column has overflow in multi-column pad",
     Error,
     'The column "long" has 1 string(s) exceeding the target length of 5',
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should pad all null column without error", async () => {
@@ -357,7 +357,7 @@ Deno.test("should pad all null column without error", async () => {
     { id: null },
     { id: null },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 // SQL injection guard
@@ -379,5 +379,5 @@ Deno.test("should safely handle single quote in padding character", async () => 
     { id: "''''1" },
     { id: "'''23" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

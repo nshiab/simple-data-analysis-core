@@ -18,6 +18,4 @@ export default async function renameTable(
       parameters: { name },
     }),
   );
-
-  simpleTable.name = name;
 }

@@ -35,7 +35,7 @@ Deno.test("should return the horizontal proportions in new columns", async () =>
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the horizontal proportions in new columns with a specific suffix", async () => {
@@ -74,7 +74,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the horizontal proportions in new columns with a specific suffix and 4 decimals", async () => {
@@ -114,7 +114,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
@@ -128,5 +128,5 @@ Deno.test("should throw when a new column name already exists, instead of silent
     'the column "aPerc" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

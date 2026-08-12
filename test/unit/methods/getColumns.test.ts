@@ -9,5 +9,5 @@ Deno.test("should return the columns of a table", async () => {
   const columns = await table.getColumns();
 
   assertEquals(columns, ["key1", "key2"]);
-  await sdb.done();
+  await sdb.close();
 });

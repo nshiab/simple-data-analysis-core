@@ -1,6 +1,7 @@
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { PendingOpInput } from "./pendingOps.ts";
+import { ensureTableRegistered, getRegisteredTables } from "./tableRegistry.ts";
 
 /**
  * Queues an operation on a table, stamping it with a database-wide sequence
@@ -33,9 +34,7 @@ export default function queueOp(
   // A table de-registered by removeTable()/removeTables()/selectTables() that
   // queues new work comes back under the flush's responsibility, like v1
   // methods recreating a removed table.
-  if (!sdb.tables.includes(simpleTable)) {
-    sdb.tables.push(simpleTable);
-  }
+  ensureTableRegistered(sdb, simpleTable);
   simpleTable.pendingOps.push({
     ...capturedOp,
     sequence: sdb.opSequence++,
@@ -45,13 +44,13 @@ export default function queueOp(
 
 /**
  * Empties every table's pending queue without executing it and returns what
- * was dropped, so done() can report forgotten work after cleaning up.
+ * was dropped, so close() can report forgotten work after cleaning up.
  */
 export function discardAllPending(
   sdb: SimpleDB,
 ): { table: SimpleTable; methods: string[] }[] {
   const discarded: { table: SimpleTable; methods: string[] }[] = [];
-  for (const table of sdb.tables) {
+  for (const table of getRegisteredTables(sdb)) {
     if (table.pendingOps.length > 0) {
       discarded.push({
         table,

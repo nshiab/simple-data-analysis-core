@@ -1,24 +1,30 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should return the name of the table before loading data", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("employees");
 
-  const tableName = table.getTableName();
+  const tableName = table.getName();
 
   assertEquals(tableName, "employees");
-  await sdb.done();
+  assertEquals(table.name, "employees");
+  assertEquals(
+    Object.getOwnPropertyDescriptor(SimpleTable.prototype, "name")?.set,
+    undefined,
+  );
+  await sdb.close();
 });
 Deno.test("should return the name of the table after loading data", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.csv");
-  const tableName = table.getTableName();
+  const tableName = table.getName();
 
   assertEquals(tableName, "data");
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the updated name after renaming the table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -26,8 +32,8 @@ Deno.test("should return the updated name after renaming the table", async () =>
   table.loadData("test/data/files/data.csv");
 
   await table.renameTable("newName");
-  const tableName = table.getTableName();
+  const tableName = table.getName();
 
   assertEquals(tableName, "newName");
-  await sdb.done();
+  await sdb.close();
 });

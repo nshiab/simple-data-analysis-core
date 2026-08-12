@@ -27,7 +27,7 @@ Deno.test("should calculate the distance between points with the SRS unit", asyn
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the SRS unit and round values", async () => {
@@ -55,7 +55,7 @@ Deno.test("should calculate the distance between points with the SRS unit and ro
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points and lines in the SRS unit", async () => {
@@ -79,7 +79,7 @@ Deno.test("should calculate the distance between points and lines in the SRS uni
     { name: "vancouver", dist: 47.237 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points and polygons in the SRS unit", async () => {
@@ -103,7 +103,7 @@ Deno.test("should calculate the distance between points and polygons in the SRS 
     { name: "vancouver", dist: 47.071 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the haversine method in meters", async () => {
@@ -134,7 +134,7 @@ Deno.test("should calculate the distance between points with the haversine metho
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the haversine method in meters and round values", async () => {
@@ -165,7 +165,7 @@ Deno.test("should calculate the distance between points with the haversine metho
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should calculate the distance between points with the haversine method in meters", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -195,7 +195,7 @@ Deno.test("should calculate the distance between points with the haversine metho
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the haversine method in km", async () => {
@@ -227,7 +227,7 @@ Deno.test("should calculate the distance between points with the haversine metho
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the spheroid method in m", async () => {
@@ -258,7 +258,7 @@ Deno.test("should calculate the distance between points with the spheroid method
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the spheroid method in m and round values", async () => {
@@ -289,7 +289,7 @@ Deno.test("should calculate the distance between points with the spheroid method
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the distance between points with the spheroid method in km", async () => {
@@ -321,5 +321,5 @@ Deno.test("should calculate the distance between points with the spheroid method
     { name: "vancouver", name_1: "vancouver", dist: 0 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

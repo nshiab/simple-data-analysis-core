@@ -170,7 +170,7 @@ Deno.test("should remove the small circle from the big circle", async () => {
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove the small circle from the big circle and overwrite the column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -340,7 +340,7 @@ Deno.test("should remove the small circle from the big circle and overwrite the 
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("removeIntersection() should overwrite one of the source geometry columns", async () => {
@@ -364,5 +364,5 @@ Deno.test("removeIntersection() should overwrite one of the source geometry colu
     "Point",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

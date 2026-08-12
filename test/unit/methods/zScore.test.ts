@@ -47,7 +47,7 @@ Deno.test("should add a column with the zScore", async () => {
     { name: "Frankie", age: 65, ageZ: 1.858922014048222 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the zScore rounded to 3 decimals", async () => {
@@ -98,7 +98,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals", async () 
     { name: "Frankie", age: 65, ageSigma: 1.859 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the zScore rounded to 3 decimals and with a category", async () => {
@@ -152,7 +152,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
     { name: "Frankie", age: 65, gender: "Woman", ageSigma: 2.202 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -166,5 +166,5 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "name" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });

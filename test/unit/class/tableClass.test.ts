@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
@@ -6,7 +6,7 @@ Deno.test("tableClass defaults to SimpleTable", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   assertEquals(sdb.tableClass, SimpleTable);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("newTable() respects tableClass", async () => {
@@ -30,7 +30,7 @@ Deno.test("newTable() respects tableClass", async () => {
   assertEquals(table instanceof MyTable, true);
   assertEquals(table.customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("getTable() returns correct generic type", async () => {
@@ -56,7 +56,7 @@ Deno.test("getTable() returns correct generic type", async () => {
   assertEquals(table instanceof MyTable, true);
   assertEquals(table.customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("getTables() returns correct generic type", async () => {
@@ -77,13 +77,13 @@ Deno.test("getTables() returns correct generic type", async () => {
   sdb.newTable("table1");
   sdb.newTable("table2");
 
-  // getTables() now correctly returns Promise<MyTable[]>
-  const tables = await sdb.getTables();
+  // getTables() preserves the custom table type.
+  const tables = sdb.getTables();
 
   assertEquals(tables.length, 2);
   assertEquals(tables.every((t) => t instanceof MyTable), true);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("cloneTable() returns correct generic type", async () => {
@@ -115,7 +115,7 @@ Deno.test("cloneTable() returns correct generic type", async () => {
   const data = await cloned.getData();
   assertEquals(data, [{ a: 1 }, { a: 2 }]);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("cloneTable() with default name returns correct generic type", async () => {
@@ -141,10 +141,10 @@ Deno.test("cloneTable() with default name returns correct generic type", async (
   assertEquals(cloned instanceof MyTable, true);
   assertEquals(cloned.defaultTableName, true);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("pushTable() respects tableClass", async () => {
+Deno.test("getTables() returns a snapshot of the table registry", async () => {
   class MyTable extends SimpleTable {}
 
   class MyDB extends SimpleDB<MyTable> {
@@ -155,46 +155,16 @@ Deno.test("pushTable() respects tableClass", async () => {
   }
 
   const sdb = new MyDB();
+  sdb.newTable("registered");
+  const tables = sdb.getTables();
 
-  // Should accept MyTable instances
-  const myTable = new MyTable("test", sdb);
-  sdb.pushTable(myTable);
+  (tables as MyTable[]).push(new MyTable("notRegistered", sdb));
 
-  // Should reject core SimpleTable instances
-  const coreTable = new SimpleTable("core", sdb);
-  assertThrows(
-    () => sdb.pushTable(coreTable),
-    Error,
-    "MyTable",
-  );
+  assertEquals(tables.length, 2);
+  assertEquals(sdb.getTables().map((table) => table.name), ["registered"]);
 
   await sdb.run();
-  await sdb.done();
-});
-
-Deno.test("pushTable() error message includes custom class name", async () => {
-  class MyTable extends SimpleTable {}
-
-  class MyDB extends SimpleDB<MyTable> {
-    constructor() {
-      super();
-      this.tableClass = MyTable;
-    }
-  }
-
-  const sdb = new MyDB();
-  const coreTable = new SimpleTable("core", sdb);
-
-  let errorMessage = "";
-  try {
-    sdb.pushTable(coreTable);
-  } catch (e) {
-    errorMessage = (e as Error).message;
-  }
-
-  assertEquals(errorMessage.includes("MyTable"), true);
-  await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("sdb.newTable() from table returns correct type", async () => {
@@ -221,7 +191,7 @@ Deno.test("sdb.newTable() from table returns correct type", async () => {
   // Type assertion needed because sdb is typed as SimpleDB (non-generic)
   assertEquals((newTable as MyTable).customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("crossJoin() returns correct generic type", async () => {
@@ -251,7 +221,7 @@ Deno.test("crossJoin() returns correct generic type", async () => {
   // No cast needed - TypeScript knows result is MyTable via Promise<this>
   assertEquals(result.customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("selectRows() returns correct generic type", async () => {
@@ -276,10 +246,10 @@ Deno.test("selectRows() returns correct generic type", async () => {
 
   assertEquals(result instanceof MyTable, true);
   assertEquals(result.customMethod(), "hello");
-  const nbRows = await result.getNbRows();
-  assertEquals(nbRows, 2);
+  const rowCount = await result.getRowCount();
+  assertEquals(rowCount, 2);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("summarize() returns correct generic type", async () => {
@@ -309,7 +279,7 @@ Deno.test("summarize() returns correct generic type", async () => {
   assertEquals(result instanceof MyTable, true);
   assertEquals(result.customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("join() returns correct generic type", async () => {
@@ -341,7 +311,7 @@ Deno.test("join() returns correct generic type", async () => {
   assertEquals(result instanceof MyTable, true);
   assertEquals(result.customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("removeTables() accepts generic table type", async () => {
@@ -363,11 +333,11 @@ Deno.test("removeTables() accepts generic table type", async () => {
   // removeTables() accepts MyTable instances (typed as Table)
   await sdb.removeTables(table1);
 
-  const remaining = await sdb.getTables();
+  const remaining = sdb.getTables();
   assertEquals(remaining.length, 1);
   assertEquals(remaining[0].name, "table2");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("hasTable() accepts generic table type", async () => {
@@ -388,7 +358,7 @@ Deno.test("hasTable() accepts generic table type", async () => {
   const exists = await sdb.hasTable(table);
   assertEquals(exists, true);
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("loadArray() returns this type for chaining", async () => {
@@ -415,5 +385,5 @@ Deno.test("loadArray() returns this type for chaining", async () => {
   // No cast needed - TypeScript knows loaded is MyTable
   assertEquals(loaded.customMethod(), "hello");
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });

@@ -10,7 +10,7 @@ Deno.test("should log a description of the table", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not throw an error when there is no table", async () => {
@@ -20,7 +20,7 @@ Deno.test("should not throw an error when there is no table", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should log a description of the table containing dates", async () => {
@@ -33,5 +33,5 @@ Deno.test("should log a description of the table containing dates", async () => 
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

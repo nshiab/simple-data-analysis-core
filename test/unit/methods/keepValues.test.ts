@@ -159,7 +159,7 @@ Deno.test("should keep only specific rows", async () => {
       "endOfYearBonus": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep only specific rows and accept arrays or single values", async () => {
@@ -320,7 +320,7 @@ Deno.test("should keep only specific rows and accept arrays or single values", a
       "endOfYearBonus": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should keep only specific rows with boolean values", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -338,7 +338,7 @@ Deno.test("should keep only specific rows with boolean values", async () => {
     { name: "Alice", latest: true },
     { name: "Charlie", latest: true },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep only specific rows even with spaces in column names", async () => {
@@ -498,7 +498,7 @@ Deno.test("should keep only specific rows even with spaces in column names", asy
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep values typed as unknown", async () => {
@@ -510,7 +510,7 @@ Deno.test("should keep values typed as unknown", async () => {
   table.keepValues({ id: value });
 
   assertEquals(await table.getData(), [{ id: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep null values", async () => {
@@ -521,7 +521,7 @@ Deno.test("should keep null values", async () => {
   table.keepValues({ id: null });
 
   assertEquals(await table.getData(), [{ id: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep null and non-null values together", async () => {
@@ -532,7 +532,7 @@ Deno.test("should keep null and non-null values together", async () => {
   table.keepValues({ id: [1, null] });
 
   assertEquals(await table.getData(), [{ id: 1 }, { id: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep no rows for an empty values array", async () => {
@@ -543,5 +543,5 @@ Deno.test("should keep no rows for an empty values array", async () => {
   table.keepValues({ id: [] });
 
   assertEquals(await table.getData(), []);
-  await sdb.done();
+  await sdb.close();
 });

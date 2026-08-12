@@ -69,7 +69,7 @@ Deno.test("should update the data from the table with a javascript function and 
     { Name: "Pate" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should update the data from the table with an async javascript function and reinsert it into the table", async () => {
@@ -140,7 +140,7 @@ Deno.test("should update the data from the table with an async javascript functi
     { Name: "Pate" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should produce the same result with and without batchSize", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -165,7 +165,7 @@ Deno.test("should produce the same result with and without batchSize", async () 
   await batched.updateWithJS(modifier, { batchSize: 4 });
 
   assertEquals(await batched.getData(), await plain.getData());
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should call the modifier once per batch", async () => {
@@ -180,8 +180,8 @@ Deno.test("should call the modifier once per batch", async () => {
   }, { batchSize: 4 });
 
   assertEquals(batchSizes, [4, 4, 2]);
-  assertEquals(await table.getNbRows(), 10);
-  await sdb.done();
+  assertEquals(await table.getRowCount(), 10);
+  await sdb.close();
 });
 
 Deno.test("should work with a batchSize larger than the table", async () => {
@@ -197,7 +197,7 @@ Deno.test("should work with a batchSize larger than the table", async () => {
 
   assertEquals(calls, 1);
   assertEquals(await table.getData(), [{ id: 100 }, { id: 200 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not leave temporary tables behind when batching", async () => {
@@ -209,7 +209,7 @@ Deno.test("should not leave temporary tables behind when batching", async () => 
 
   const tables = await sdb.getTableNames();
   assertEquals(tables, ["cleanup"]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw for an invalid batchSize", async () => {
@@ -227,7 +227,7 @@ Deno.test("should throw for an invalid batchSize", async () => {
     (error as Error).message,
     "batchSize must be a positive integer.",
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle batches for which the modifier returns no rows", async () => {
@@ -250,7 +250,7 @@ Deno.test("should handle batches for which the modifier returns no rows", async 
     { id: 8 },
     { id: 9 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw a clear error when the modifier returns no rows at all", async () => {
@@ -282,7 +282,7 @@ Deno.test("should throw a clear error when the modifier returns no rows at all",
   assertEquals(await plain.getData(), [{ id: 1 }, { id: 2 }]);
   assertEquals(await batched.getData(), [{ id: 1 }, { id: 2 }]);
   assertEquals(await sdb.getTableNames(), ["noRowsBatched", "noRowsPlain"]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not leave temporary tables behind when the modifier throws", async () => {
@@ -305,8 +305,8 @@ Deno.test("should not leave temporary tables behind when the modifier throws", a
   }
   assertEquals((error as Error).message, "Boom!");
   assertEquals(await sdb.getTableNames(), ["modifierThrows"]);
-  assertEquals(await table.getNbRows(), 10);
-  await sdb.done();
+  assertEquals(await table.getRowCount(), 10);
+  await sdb.close();
 });
 
 Deno.test("should throw a clear error when the table has a __sda_rowid column and batchSize is used", async () => {
@@ -324,7 +324,7 @@ Deno.test("should throw a clear error when the table has a __sda_rowid column an
     (error as Error).message,
     'The table has a column named "__sda_rowid", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.',
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should be a no-op on an empty table when the modifier returns no rows", async () => {
@@ -334,15 +334,15 @@ Deno.test("should be a no-op on an empty table when the modifier returns no rows
     `CREATE OR REPLACE TABLE "emptyPlain" AS SELECT 1 AS id WHERE false`,
   );
   await plain.updateWithJS((rows) => rows);
-  assertEquals(await plain.getNbRows(), 0);
+  assertEquals(await plain.getRowCount(), 0);
 
   const batched = sdb.newTable("emptyBatched");
   await sdb.customQuery(
     `CREATE OR REPLACE TABLE "emptyBatched" AS SELECT 1 AS id WHERE false`,
   );
   await batched.updateWithJS((rows) => rows, { batchSize: 2 });
-  assertEquals(await batched.getNbRows(), 0);
-  await sdb.done();
+  assertEquals(await batched.getRowCount(), 0);
+  await sdb.close();
 });
 
 Deno.test("should throw on a table containing a geometry column", async () => {
@@ -356,5 +356,5 @@ Deno.test("should throw on a table containing a geometry column", async () => {
     "updateWithJS doesn't work with tables containing geometries.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

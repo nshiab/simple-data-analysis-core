@@ -9,7 +9,7 @@ Deno.test("should log the last rows", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should log the default number of bottom rows", async () => {
@@ -20,5 +20,5 @@ Deno.test("should log the default number of bottom rows", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

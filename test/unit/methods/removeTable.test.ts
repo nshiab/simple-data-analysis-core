@@ -9,7 +9,7 @@ Deno.test("should remove a table and log no tables", async () => {
   const tables = await sdb.getTableNames();
 
   assertEquals(tables, []);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove a table and show no tables in sdb", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -17,8 +17,8 @@ Deno.test("should remove a table and show no tables in sdb", async () => {
   table.loadData(["test/data/files/cities.csv"]);
   await table.removeTable();
 
-  assertEquals(sdb.tables, []);
-  await sdb.done();
+  assertEquals(sdb.getTables(), []);
+  await sdb.close();
 });
 Deno.test("should remove a table and let create the same new table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -32,6 +32,6 @@ Deno.test("should remove a table and let create the same new table", async () =>
   const tables = await sdb.getTableNames();
 
   assertEquals(tables, ["data"]);
-  assertEquals(sdb.tables.map((d) => d.name), ["data"]);
-  await sdb.done();
+  assertEquals(sdb.getTables().map((d) => d.name), ["data"]);
+  await sdb.close();
 });

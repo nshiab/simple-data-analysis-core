@@ -54,7 +54,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and overwrite the current table with the results, with 2 decimals", async () => {
@@ -74,7 +74,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key4", y: "key2", slope: -0.63, yIntercept: 11.97, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and push the results to a new table, with 2 decimals", async () => {
@@ -97,7 +97,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key4", y: "key2", slope: -0.63, yIntercept: 11.97, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and push the results to a new table with a specific name, with 2 decimals", async () => {
@@ -120,7 +120,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key4", y: "key2", slope: -0.63, yIntercept: 11.97, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for specific columns with a specific category", async () => {
@@ -170,7 +170,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all combination of a column x and other numeric columns", async () => {
@@ -189,7 +189,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key2", y: "key4", slope: -0.1, yIntercept: 5.63, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns", async () => {
@@ -206,7 +206,7 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key2", y: "key3", slope: 0.17, yIntercept: 5.89, r2: 0.13 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should bind result labels containing apostrophes", async () => {
@@ -225,7 +225,7 @@ Deno.test("should bind result labels containing apostrophes", async () => {
     yIntercept: 1,
     r2: 1,
   }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns, with a specific number of decimals", async () => {
@@ -248,5 +248,5 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

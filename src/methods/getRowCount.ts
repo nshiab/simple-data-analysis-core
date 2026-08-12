@@ -3,19 +3,19 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function getNbRows(
+export default async function getRowCount(
   SimpleTable: SimpleTable,
   options: { conditions?: string } = {},
 ) {
   const queryResult = await queryDB(
     SimpleTable,
-    `SELECT CAST(COUNT(*) AS INTEGER) AS nbRows FROM ${
+    `SELECT CAST(COUNT(*) AS INTEGER) AS count FROM ${
       quoteIdentifier(SimpleTable.name)
     }${options.conditions ? ` WHERE ${options.conditions}` : ""}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,
-      method: "getNbRows()",
+      method: "getRowCount()",
       parameters: { options },
     }),
   );
@@ -23,7 +23,7 @@ export default async function getNbRows(
   if (!queryResult) {
     throw new Error("No result");
   }
-  const length = queryResult[0].nbRows as number;
+  const length = queryResult[0].count as number;
 
   return length;
 }

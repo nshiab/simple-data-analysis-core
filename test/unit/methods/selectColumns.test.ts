@@ -10,7 +10,7 @@ Deno.test("should throw when a column to select does not exist", async () => {
 
   await assertRejects(() => table.getData());
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return one column", async () => {
@@ -75,7 +75,7 @@ Deno.test("should return one column", async () => {
     { Name: "Patel, Joshua" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return one column with spaces in its name", async () => {
@@ -140,7 +140,7 @@ Deno.test("should return one column with spaces in its name", async () => {
     { "Department or unit": "50" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return multiple columns", async () => {
@@ -205,5 +205,5 @@ Deno.test("should return multiple columns", async () => {
     { Name: "Patel, Joshua", Salary: "2500" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

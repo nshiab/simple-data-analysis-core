@@ -18,7 +18,7 @@ Deno.test("should flip the coordinates", async () => {
   assertEquals(data, [
     { geomText: "POINT (45.51412791316409 -73.62315106245389)" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should flip the coordinates from a specific column", async () => {
@@ -34,5 +34,5 @@ Deno.test("should flip the coordinates from a specific column", async () => {
   assertEquals(data, [
     { geomText: "POINT (45.51412791316409 -73.62315106245389)" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

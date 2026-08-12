@@ -65,7 +65,7 @@ await firesInsideProvinces.cache(
         decimals: 0,
       })
       .renameColumns({
-        count: "nbFires",
+        count: "fireCount",
         sum: "burntArea",
       })
       .sort({ burntArea: "desc" });
@@ -75,7 +75,7 @@ await firesInsideProvinces.cache(
 
 await firesInsideProvinces.log(12);
 
-// It's important to call done() at the end.
+// It's important to call close() at the end.
 // This method will remove the unused files
 // in the cache.
-await sdb.done();
+await sdb.close();

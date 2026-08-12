@@ -26,5 +26,5 @@ Deno.test("should return the schema of a table", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

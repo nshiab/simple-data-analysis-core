@@ -173,7 +173,7 @@ Deno.test("should return the results of a custom query", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should use the database result transport", async () => {
@@ -190,7 +190,7 @@ Deno.test("should use the database result transport", async () => {
     [{ value: 42 }],
   );
   assertEquals(transports.at(-1), "file");
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should allow direct transport for non-relational results", async () => {
@@ -209,7 +209,7 @@ Deno.test("should allow direct transport for non-relational results", async () =
     }),
     [{ name: "listed" }],
   );
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with ==", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -231,7 +231,7 @@ Deno.test("should work with ==", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with ===", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -253,7 +253,7 @@ Deno.test("should work with ===", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with &&", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -275,7 +275,7 @@ Deno.test("should work with &&", async () => {
       "End-of_year-BONUS?": "15,8%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with ||", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -313,7 +313,7 @@ Deno.test("should work with ||", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with || as OR or concatenation", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -354,7 +354,7 @@ Deno.test("should work with || as OR or concatenation", async () => {
       JobName: "Clerk-Patel, Joshua",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with !==", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -432,7 +432,7 @@ Deno.test("should work with !==", async () => {
       "End-of_year-BONUS?": "12,64%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with === null", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -445,7 +445,7 @@ Deno.test("should work with === null", async () => {
   );
 
   assertEquals(data, [{ key1: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with = null", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -458,7 +458,7 @@ Deno.test("should work with = null", async () => {
   );
 
   assertEquals(data, [{ key1: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with === NULL", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -471,7 +471,7 @@ Deno.test("should work with === NULL", async () => {
   );
 
   assertEquals(data, [{ key1: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with == NULL", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -484,7 +484,7 @@ Deno.test("should work with == NULL", async () => {
   );
 
   assertEquals(data, [{ key1: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with = NULL", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -497,7 +497,7 @@ Deno.test("should work with = NULL", async () => {
   );
 
   assertEquals(data, [{ key1: null }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with !== null", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -510,7 +510,7 @@ Deno.test("should work with !== null", async () => {
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with != null", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -523,7 +523,7 @@ Deno.test("should work with != null", async () => {
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with !== NULL", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -536,7 +536,7 @@ Deno.test("should work with !== NULL", async () => {
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with != NULL", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -549,7 +549,7 @@ Deno.test("should work with != NULL", async () => {
   );
 
   assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with === null not at the end of query", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -562,5 +562,5 @@ Deno.test("should work with === null not at the end of query", async () => {
   );
 
   assertEquals(data, [{ key1: 2 }, { key1: null }]);
-  await sdb.done();
+  await sdb.close();
 });

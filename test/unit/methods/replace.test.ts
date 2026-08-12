@@ -421,7 +421,7 @@ Deno.test("should replace the text in one column", async () => {
       endOfYearBonus: "16,19",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace substings in one column", async () => {
@@ -845,7 +845,7 @@ Deno.test("should replace substings in one column", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace entire strings in one column", async () => {
@@ -1272,7 +1272,7 @@ Deno.test("should replace entire strings in one column", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace multiple texts in one column", async () => {
@@ -1695,7 +1695,7 @@ Deno.test("should replace multiple texts in one column", async () => {
       endOfYearBonus: "16.19",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace the text in multiple columns", async () => {
@@ -2118,7 +2118,7 @@ Deno.test("should replace the text in multiple columns", async () => {
       endOfYearBonus: "16 => 19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace multiple texts in multiple columns", async () => {
@@ -2544,7 +2544,7 @@ Deno.test("should replace multiple texts in multiple columns", async () => {
       endOfYearBonus: "16.19",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with ' without throwing an error", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -2969,7 +2969,7 @@ Deno.test("should work with ' without throwing an error", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should use a regular expression", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -3391,7 +3391,7 @@ Deno.test("should use a regular expression", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace text in all columns with the 'all' option", async () => {
@@ -3411,7 +3411,7 @@ Deno.test("should replace text in all columns with the 'all' option", async () =
     { name: "c_d", code: "z_w" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("replace captures arguments and leaves options unchanged", async () => {
@@ -3430,7 +3430,7 @@ Deno.test("replace captures arguments and leaves options unchanged", async () =>
 
   assertEquals(options, { regex: true });
   assertEquals(await table.getData(), [{ value: "new" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("entire-string replacement binds multiple sequential mappings", async () => {
@@ -3450,5 +3450,5 @@ Deno.test("entire-string replacement binds multiple sequential mappings", async 
     { value: "c" },
     { value: "D'Angelo" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

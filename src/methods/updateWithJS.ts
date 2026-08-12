@@ -1,6 +1,7 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
 
 export default async function updateWithJS(
   simpleTable: SimpleTable,
@@ -66,8 +67,8 @@ export default async function updateWithJS(
     );
   }
 
-  const nbRows = await simpleTable.getNbRows();
-  if (nbRows === 0) {
+  const rowCount = await simpleTable.getRowCount();
+  if (rowCount === 0) {
     // Same behavior as the non-batched path on an empty table.
     const newData = await dataModifier([]);
     if (newData.length === 0) {
@@ -143,8 +144,9 @@ export default async function updateWithJS(
       `DROP TABLE IF EXISTS ${quoteIdentifier(accumulator)};
 DROP TABLE IF EXISTS ${quoteIdentifier(scratch.name)};`,
     );
-    simpleTable.sdb.tables = simpleTable.sdb.tables.filter((t) =>
-      t !== scratch
+    retainRegisteredTables(
+      simpleTable.sdb,
+      (table) => table !== scratch,
     );
   }
 }

@@ -62,7 +62,7 @@ export default async function* stream(
     const converters = columnTypes.map((type, i) =>
       makeConverter(type, columnNames[i], simpleTable.name)
     );
-    const nbColumns = columnNames.length;
+    const columnCount = columnNames.length;
 
     while (true) {
       const chunk = await result.fetchChunk();
@@ -71,7 +71,7 @@ export default async function* stream(
       }
       for (const rawRow of chunk.getRows()) {
         const row: { [key: string]: unknown } = {};
-        for (let i = 0; i < nbColumns; i++) {
+        for (let i = 0; i < columnCount; i++) {
           row[columnNames[i]] = converters[i](rawRow[i]);
         }
         yield row;

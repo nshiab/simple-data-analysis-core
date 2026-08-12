@@ -15,5 +15,5 @@ Deno.test("should clean column names", async () => {
     "departmentOrUnit",
     "endOfYearBonus",
   ]);
-  await sdb.done();
+  await sdb.close();
 });

@@ -22,10 +22,10 @@ Deno.test("should return the number of a rows in a table", async () => {
     { name: "Sarah", age: 64 },
     { name: "Frankie", age: 65 },
   ]);
-  const length = await table.getNbRows();
+  const length = await table.getRowCount();
 
   assertEquals(length, 16);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the number of a rows in a table with nul values", async () => {
@@ -49,10 +49,10 @@ Deno.test("should return the number of a rows in a table with nul values", async
     { name: "Sarah", age: 64 },
     { name: "Frankie", age: 65 },
   ]);
-  const length = await table.getNbRows();
+  const length = await table.getRowCount();
 
   assertEquals(length, 16);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the number of a rows with conditions", async () => {
@@ -76,8 +76,8 @@ Deno.test("should return the number of a rows with conditions", async () => {
     { name: "Sarah", age: 64 },
     { name: "Frankie", age: 65 },
   ]);
-  const length = await table.getNbRows({ conditions: "age > 40" });
+  const length = await table.getRowCount({ conditions: "age > 40" });
 
   assertEquals(length, 4);
-  await sdb.done();
+  await sdb.close();
 });

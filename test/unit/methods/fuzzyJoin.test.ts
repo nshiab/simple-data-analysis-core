@@ -45,7 +45,7 @@ Deno.test("should perform a basic left fuzzy join and include all left table row
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should respect a custom threshold and only match exact strings at threshold 100", async () => {
@@ -71,7 +71,7 @@ Deno.test("should respect a custom threshold and only match exact strings at thr
     { id: 4, name: "David Jones", personId: null, standardName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should store result in a new table when outputTable is a string", async () => {
@@ -120,7 +120,7 @@ Deno.test("should store result in a new table when outputTable is a string", asy
     { personId: "W", standardName: "Emma Wilson" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should store result in a new auto-named table when outputTable is true", async () => {
@@ -154,7 +154,7 @@ Deno.test("should store result in a new auto-named table when outputTable is tru
     { id: 4, name: "David Jones" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should use a custom similarity column name", async () => {
@@ -199,7 +199,7 @@ Deno.test("should use a custom similarity column name", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should work with the token_sort_ratio method for reordered words", async () => {
@@ -228,7 +228,7 @@ Deno.test("should work with the token_sort_ratio method for reordered words", as
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should find matches with significant length differences when using ratio at lower thresholds", async () => {
@@ -264,7 +264,7 @@ Deno.test("should find matches with significant length differences when using ra
     "Ratio should find match 'New York City' / 'New York' (approx 76%) at threshold 60",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should be lossless for all methods with justNames.csv", async () => {
@@ -303,7 +303,7 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
     }
   }
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not include a similarity column when similarityColumn is not provided", async () => {
@@ -327,7 +327,7 @@ Deno.test("should not include a similarity column when similarityColumn is not p
     { id: 4, name: "David Jones", personId: null, standardName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw an error when tables have conflicting column names", async () => {
@@ -342,7 +342,7 @@ Deno.test("should throw an error when tables have conflicting column names", asy
   assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw an error when leftColumn and rightColumn have the same name", async () => {
@@ -355,5 +355,5 @@ Deno.test("should throw an error when leftColumn and rightColumn have the same n
   assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
   await sdb.run();
-  await sdb.done();
+  await sdb.close();
 });

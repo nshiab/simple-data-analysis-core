@@ -7,7 +7,7 @@ Deno.test("should return true when the column is in the data", async () => {
   table.loadData("test/data/files/data.csv");
   const boolean = await table.hasColumn("key1");
   assertEquals(boolean, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return false when the column is not in the data", async () => {
@@ -16,5 +16,5 @@ Deno.test("should return false when the column is not in the data", async () => 
   table.loadData("test/data/files/data.csv");
   const boolean = await table.hasColumn("keyX");
   assertEquals(boolean, false);
-  await sdb.done();
+  await sdb.close();
 });

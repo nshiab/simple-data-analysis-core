@@ -15,7 +15,7 @@ Deno.test("should update a column", async () => {
     { id: 7024745, city: "MON" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should update a column with a space in its name", async () => {
@@ -57,5 +57,5 @@ Deno.test("should update a column with a space in its name", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

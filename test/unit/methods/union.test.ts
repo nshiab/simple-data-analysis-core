@@ -234,7 +234,7 @@ Deno.test("should compute the union of geometries", async () => {
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("union() should overwrite existing column", async () => {
@@ -252,7 +252,7 @@ Deno.test("union() should overwrite existing column", async () => {
   const types = await table.getTypes();
   assertEquals(types.uni, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("union() should overwrite one of the source geometry columns", async () => {
@@ -276,5 +276,5 @@ Deno.test("union() should overwrite one of the source geometry columns", async (
     "MultiPoint",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

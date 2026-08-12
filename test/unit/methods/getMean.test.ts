@@ -6,7 +6,7 @@ Deno.test("should return the mean value", async () => {
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(await table.getMean("key1"), 2.5);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the mean value rounded", async () => {
@@ -14,7 +14,7 @@ Deno.test("should return the mean value rounded", async () => {
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(await table.getMean("key1", { decimals: 0 }), 3);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the mean value even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -22,7 +22,7 @@ Deno.test("should return the mean value even when there are spaces in the column
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
   assertEquals(await table.getMean("key 1"), 2.5);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the mean value rounded even when there are spaces in the column name", async () => {
@@ -31,5 +31,5 @@ Deno.test("should return the mean value rounded even when there are spaces in th
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
   assertEquals(await table.getMean("key 1", { decimals: 0 }), 3);
-  await sdb.done();
+  await sdb.close();
 });

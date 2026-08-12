@@ -21,7 +21,7 @@ Deno.test("should add a column with the bins and an interval of 10", async () =>
     { Name: "Olivia", Subject: "English", Mark: 89, bins: "[80-89]" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the bins and an interval of 10 and 45 as start value", async () => {
@@ -46,7 +46,7 @@ Deno.test("should add a column with the bins and an interval of 10 and 45 as sta
     { Name: "Olivia", Subject: "English", Mark: 89, bins: "[85-94]" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when startValue is greater than the minimum value", async () => {
@@ -61,7 +61,7 @@ Deno.test("should throw when startValue is greater than the minimum value", asyn
 
   await assertRejects(() => table.getData());
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
@@ -76,7 +76,7 @@ Deno.test("should throw when the new column name already exists, instead of sile
     'the column "Mark" already exists',
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the bins and an interval of 0.5", async () => {
@@ -109,5 +109,5 @@ Deno.test("should add a column with the bins and an interval of 0.5", async () =
     { Name: "Olivia", Subject: "English", Mark: 89, bins: "[89-89.4]" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

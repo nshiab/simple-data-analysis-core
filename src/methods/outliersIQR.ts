@@ -28,7 +28,7 @@ export default function outliersIQR(
           simpleTable.name,
           column,
           newColumn,
-          (await simpleTable.getNbRows()) % 2 === 0 ? "even" : "odd",
+          (await simpleTable.getRowCount()) % 2 === 0 ? "even" : "odd",
           options,
         ),
         mergeOptions(simpleTable, {

@@ -3,8 +3,8 @@ import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
 import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
-import getNbRows from "../methods/getNbRows.ts";
-import getNbCharacters from "../methods/getNbCharacters.ts";
+import getRowCount from "../methods/getRowCount.ts";
+import getCharacterCount from "../methods/getCharacterCount.ts";
 import getTypes from "../methods/getTypes.ts";
 import getValues from "../methods/getValues.ts";
 import getUniques from "../methods/getUniques.ts";
@@ -104,11 +104,11 @@ import area from "../methods/area.ts";
 import reproject from "../methods/reproject.ts";
 import reducePrecision from "../methods/reducePrecision.ts";
 import flipCoordinates from "../methods/flipCoordinates.ts";
-import typeGeo from "../methods/typeGeo.ts";
-import isClosedGeo from "../methods/isClosedGeo.ts";
+import addGeoType from "../methods/addGeoType.ts";
+import addGeoClosedStatus from "../methods/addGeoClosedStatus.ts";
 import fixGeo from "../methods/fixGeo.ts";
-import nbVertices from "../methods/nbVertices.ts";
-import isValidGeo from "../methods/isValidGeo.ts";
+import addVertexCount from "../methods/addVertexCount.ts";
+import addGeoValidity from "../methods/addGeoValidity.ts";
 import points from "../methods/points.ts";
 import getData from "../methods/getData.ts";
 import stream from "../methods/stream.ts";
@@ -166,7 +166,7 @@ import type { PendingOp } from "../helpers/pendingOps.ts";
  * await employees.log();
  *
  * // Close the database connection and free up resources
- * await sdb.done();
+ * await sdb.close();
  * ```
  *
  * @example
@@ -182,17 +182,26 @@ import type { PendingOp } from "../helpers/pendingOps.ts";
  * boundaries.loadGeoData("./boundaries.geojson");
  *
  * // Close the database connection
- * await sdb.done();
+ * await sdb.close();
  * ```
  */
 
 export default class SimpleTable extends Simple {
+  #name: string;
+
   /**
    * Name of the table in the database.
    *
    * @category Properties
+   *
+   * @example
+   * ```ts
+   * console.log(table.name); // e.g., "employees"
+   * ```
    */
-  name: string;
+  get name(): string {
+    return this.#name;
+  }
   /**
    * The indexes of the table, if any.
    *
@@ -236,7 +245,7 @@ export default class SimpleTable extends Simple {
     } = {},
   ) {
     super(options);
-    this.name = name;
+    this.#name = name;
     this.sdb = simpleDB;
     this.runQuery = runQuery;
     this.indexes = [];
@@ -287,6 +296,7 @@ export default class SimpleTable extends Simple {
    */
   async renameTable(name: string): Promise<this> {
     await renameTable(this, name);
+    this.#name = name;
     return this;
   }
 
@@ -760,7 +770,7 @@ export default class SimpleTable extends Simple {
    * @param text - The search query text to match against the text column.
    * @param idColumn - The name of the column containing unique identifiers for each row.
    * @param textColumn - The name of the column containing the text to search.
-   * @param nbResults - The number of top-ranked results to return.
+   * @param count - The number of top-ranked results to return.
    * @param options - An optional object with configuration options:
    * @param options.outputTable - The name of a new table where the results will be stored. If not provided, the current table will be replaced with the search results.
    * @param options.verbose - If `true`, logs additional debugging information, including FTS index creation status. Defaults to `false`.
@@ -858,7 +868,7 @@ export default class SimpleTable extends Simple {
     text: string,
     idColumn: string,
     textColumn: string,
-    nbResults: number,
+    count: number,
     options: {
       outputTable?: string;
       verbose?: boolean;
@@ -908,7 +918,7 @@ export default class SimpleTable extends Simple {
       text,
       idColumn,
       textColumn,
-      nbResults,
+      count,
       options,
     ) as this;
   }
@@ -2624,7 +2634,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be modified.
-   * @param nbCharacters - The number of characters to extract from the left side of each string.
+   * @param count - The number of characters to extract from the left side of each string.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2635,8 +2645,8 @@ export default class SimpleTable extends Simple {
    * table.firstChars("productCode", 2);
    * ```
    */
-  firstChars(column: string, nbCharacters: number): this {
-    firstChars(this, column, nbCharacters);
+  firstChars(column: string, count: number): this {
+    firstChars(this, column, count);
     return this;
   }
 
@@ -2646,7 +2656,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing the strings to be modified.
-   * @param nbCharacters - The number of characters to extract from the right side of each string.
+   * @param count - The number of characters to extract from the right side of each string.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2657,8 +2667,8 @@ export default class SimpleTable extends Simple {
    * table.lastChars("productCode", 2);
    * ```
    */
-  lastChars(column: string, nbCharacters: number): this {
-    lastChars(this, column, nbCharacters);
+  lastChars(column: string, count: number): this {
+    lastChars(this, column, count);
     return this;
   }
 
@@ -3055,7 +3065,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column containing values from which quantiles will be assigned.
-   * @param nbQuantiles - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
+   * @param count - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
    * @param newColumn - The name of the new column where the assigned quantiles will be stored.
    * @param options - An optional object with configuration options:
    * @param options.categories - The column name or an array of column names that define categories for computing quantiles. Quantiles will be assigned independently within each category.
@@ -3082,13 +3092,13 @@ export default class SimpleTable extends Simple {
    */
   quantiles(
     column: string,
-    nbQuantiles: number,
+    count: number,
     newColumn: string,
     options: {
       categories?: string | string[];
     } = {},
   ): this {
-    quantiles(this, column, nbQuantiles, newColumn, options);
+    quantiles(this, column, count, newColumn, options);
     return this;
   }
 
@@ -3832,11 +3842,11 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get the table name
-   * const tableName = table.getTableName();
+   * const tableName = table.getName();
    * console.log(tableName); // e.g., "employees"
    * ```
    */
-  getTableName(): string {
+  getName(): string {
     return this.name;
   }
 
@@ -3912,11 +3922,11 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get the number of columns in the table
-   * const nbColumns = await table.getNbColumns();
-   * console.log(nbColumns); // e.g., 3
+   * const columnCount = await table.getColumnCount();
+   * console.log(columnCount); // e.g., 3
    * ```
    */
-  async getNbColumns(): Promise<number> {
+  async getColumnCount(): Promise<number> {
     const result = (await getColumns(this)).length;
     return result;
   }
@@ -3931,12 +3941,12 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get the total number of characters in the 'name' column
-   * const totalChars = await table.getNbCharacters("name");
+   * const totalChars = await table.getCharacterCount("name");
    * console.log(totalChars); // e.g., 523
    * ```
    */
-  async getNbCharacters(column: string): Promise<number> {
-    return await getNbCharacters(this, column);
+  async getCharacterCount(column: string): Promise<number> {
+    return await getCharacterCount(this, column);
   }
 
   /**
@@ -3950,19 +3960,19 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get the number of rows in the table
-   * const nbRows = await table.getNbRows();
-   * console.log(nbRows); // e.g., 100
+   * const rowCount = await table.getRowCount();
+   * console.log(rowCount); // e.g., 100
    * ```
    *
    * @example
    * ```ts
    * // Get the number of rows where 'category' is 'Book'
-   * const nbBooks = await table.getNbRows({ conditions: "category = 'Book'" });
-   * console.log(nbBooks);
+   * const bookCount = await table.getRowCount({ conditions: "category = 'Book'" });
+   * console.log(bookCount);
    * ```
    */
-  async getNbRows(options: { conditions?: string } = {}): Promise<number> {
-    return await getNbRows(this, options);
+  async getRowCount(options: { conditions?: string } = {}): Promise<number> {
+    return await getRowCount(this, options);
   }
 
   /**
@@ -3974,12 +3984,12 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get the total number of values in the table
-   * const nbValues = await table.getNbValues();
-   * console.log(nbValues); // e.g., 300 (if 3 columns and 100 rows)
+   * const valueCount = await table.getValueCount();
+   * console.log(valueCount); // e.g., 300 (if 3 columns and 100 rows)
    * ```
    */
-  async getNbValues(): Promise<number> {
-    const result = (await this.getNbColumns()) * (await this.getNbRows());
+  async getValueCount(): Promise<number> {
+    const result = (await this.getColumnCount()) * (await this.getRowCount());
     return result;
   }
 
@@ -4704,20 +4714,20 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Check if geometries are valid and store results in a new 'isValid' column
    * // The method will automatically detect the geometry column.
-   * table.isValidGeo("isValid");
+   * table.addGeoValidity("isValid");
    * ```
    *
    * @example
    * ```ts
    * // Check validity of geometries in a specific column named 'myGeom'
-   * table.isValidGeo("isValidMyGeom", { column: "myGeom" });
+   * table.addGeoValidity("isValidMyGeom", { column: "myGeom" });
    * ```
    */
-  isValidGeo(
+  addGeoValidity(
     newColumn: string,
     options: { column?: string } = {},
   ): this {
-    isValidGeo(this, newColumn, options);
+    addGeoValidity(this, newColumn, options);
     return this;
   }
 
@@ -4736,20 +4746,20 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Add a new column 'vertexCount' with the number of vertices for each geometry
    * // The method will automatically detect the geometry column.
-   * table.nbVertices("vertexCount");
+   * table.addVertexCount("vertexCount");
    * ```
    *
    * @example
    * ```ts
    * // Add vertex counts for geometries in a specific column named 'myGeom'
-   * table.nbVertices("myGeomVertices", { column: "myGeom" });
+   * table.addVertexCount("myGeomVertices", { column: "myGeom" });
    * ```
    */
-  nbVertices(
+  addVertexCount(
     newColumn: string,
     options: { column?: string } = {},
   ): this {
-    nbVertices(this, newColumn, options);
+    addVertexCount(this, newColumn, options);
     return this;
   }
 
@@ -4793,20 +4803,20 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Check if geometries are closed and store results in a new 'isClosed' column
-   * table.isClosedGeo("isClosed");
+   * table.addGeoClosedStatus("isClosed");
    * ```
    *
    * @example
    * ```ts
    * // Check closed status of geometries in a specific column named 'boundaryGeom'
-   * table.isClosedGeo("boundaryClosed", { column: "boundaryGeom" });
+   * table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" });
    * ```
    */
-  isClosedGeo(
+  addGeoClosedStatus(
     newColumn: string,
     options: { column?: string } = {},
   ): this {
-    isClosedGeo(this, newColumn, options);
+    addGeoClosedStatus(this, newColumn, options);
     return this;
   }
 
@@ -4824,20 +4834,20 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Add a new column 'geometryType' with the type of each geometry
-   * table.typeGeo("geometryType");
+   * table.addGeoType("geometryType");
    * ```
    *
    * @example
    * ```ts
    * // Get the geometry type for geometries in a specific column named 'featureGeom'
-   * table.typeGeo("featureType", { column: "featureGeom" });
+   * table.addGeoType("featureType", { column: "featureGeom" });
    * ```
    */
-  typeGeo(
+  addGeoType(
     newColumn: string,
     options: { column?: string } = {},
   ): this {
-    typeGeo(this, newColumn, options);
+    addGeoType(this, newColumn, options);
     return this;
   }
 
@@ -5860,9 +5870,9 @@ export default class SimpleTable extends Simple {
    *   });
    * });
    *
-   * // It's important to call done() on the SimpleDB instance to clean up the cache.
+   * // It's important to call close() on the SimpleDB instance to clean up the cache.
    * // This prevents the cache from growing indefinitely.
-   * await sdb.done();
+   * await sdb.close();
    * ```
    *
    * @example
@@ -5881,7 +5891,7 @@ export default class SimpleTable extends Simple {
    *   });
    * }, { ttl: 60 });
    *
-   * await sdb.done();
+   * await sdb.close();
    * ```
    *
    * @example
@@ -5899,7 +5909,7 @@ export default class SimpleTable extends Simple {
    *   });
    * });
    *
-   * await sdb.done();
+   * await sdb.close();
    * ```
    */
   async cache(
@@ -5974,10 +5984,10 @@ export default class SimpleTable extends Simple {
     if (typeof options === "number") {
       count = options;
     } else if (options === "all") {
-      count = await this.getNbRows();
+      count = await this.getRowCount();
     } else if (typeof options === "object") {
       if (options.count === "all") {
-        count = await this.getNbRows();
+        count = await this.getRowCount();
       } else if (typeof options.count === "number") {
         count = options.count;
       } else {
@@ -6007,7 +6017,7 @@ export default class SimpleTable extends Simple {
         data,
         this.charsToLog,
       );
-      const nbRows = conditions
+      const rowCount = conditions
         ? parseInt(
           (await this.sdb.customQuery(
             `select count(*) as count from ${
@@ -6016,9 +6026,9 @@ export default class SimpleTable extends Simple {
             { returnData: true },
           ) as { count: string }[])[0].count,
         )
-        : await this.getNbRows();
+        : await this.getRowCount();
       console.log(
-        `${formatNumber(nbRows)} rows in total ${`(count: ${count}${
+        `${formatNumber(rowCount)} rows in total ${`(count: ${count}${
           typeof this.charsToLog === "number"
             ? `, charsToLog: ${this.charsToLog}`
             : ""
@@ -6232,12 +6242,12 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Log the total number of rows in the table
-   * await table.logNbRows();
+   * await table.logRowCount();
    * ```
    */
-  async logNbRows(): Promise<this> {
-    const nbRows = await this.getNbRows();
-    console.log(`\nTable ${this.name}: ${formatNumber(nbRows)} rows.`);
+  async logRowCount(): Promise<this> {
+    const rowCount = await this.getRowCount();
+    console.log(`\nTable ${this.name}: ${formatNumber(rowCount)} rows.`);
     return await this;
   }
 

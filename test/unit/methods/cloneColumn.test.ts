@@ -14,7 +14,7 @@ Deno.test("should clone a column", async () => {
     { firstName: "nael", lastName: "shiab", firstNameCloned: "nael" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with spaces in its name", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -29,7 +29,7 @@ Deno.test("should clone a column with spaces in its name", async () => {
     { "first name": "nael", "last name": "shiab", "first name cloned": "nael" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with geo data", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -48,5 +48,5 @@ Deno.test("should clone a column with geo data", async () => {
     nameFrench: "VARCHAR",
   });
 
-  await sdb.done();
+  await sdb.close();
 });

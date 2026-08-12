@@ -92,7 +92,7 @@ Deno.test("should convert all DuckDB types read from a table", async () => {
   );
   const rows = await table.getData();
   assertEquals(rows, [expectedAllTypesRow]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => {
@@ -116,7 +116,7 @@ Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => 
     new Date(`${match![1]}T${match![2]}${offset}`).getTime(),
     new Date("2020-01-15T14:30:45.000Z").getTime(),
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert dates and timestamps as UTC", async () => {
@@ -141,7 +141,7 @@ Deno.test("should convert dates and timestamps as UTC", async () => {
     rows[0].tsBeforeEpoch,
     new Date(Date.UTC(1969, 11, 31, 23, 59, 59, 999)),
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return an empty array for an empty result", async () => {
@@ -152,7 +152,7 @@ Deno.test("should return an empty array for an empty result", async () => {
   );
   const rows = await table.getData();
   assertEquals(rows, []);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert computed values from a SimpleDB custom query", async () => {
@@ -181,7 +181,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
       sumValue: 60,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert computed columns not present in any table schema", async () => {
@@ -199,7 +199,7 @@ Deno.test("should convert computed columns not present in any table schema", asy
     { exclaimed: "a!", cnt: 1 },
     { exclaimed: "b!", cnt: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should warn once per column for unsafe BIGINT values", async () => {
@@ -228,7 +228,7 @@ Deno.test("should warn once per column for unsafe BIGINT values", async () => {
       warnings.filter((w) => w.includes('"safe"')).length,
       0,
     );
-    await sdb.done();
+    await sdb.close();
   } finally {
     console.warn = originalWarn;
   }
@@ -243,7 +243,7 @@ Deno.test("should keep duplicate column names in results by suffixing them", asy
     { returnData: true },
   );
   assertEquals(data, [{ a: 1, "a:1": 2, b: 3 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should warn about unsafe BIGINT values separately for each table", async () => {
@@ -269,7 +269,7 @@ Deno.test("should warn about unsafe BIGINT values separately for each table", as
       warnings.filter((w) => w.includes('"unsafePerTableB"')).length,
       1,
     );
-    await sdb.done();
+    await sdb.close();
   } finally {
     console.warn = originalWarn;
   }

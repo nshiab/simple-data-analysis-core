@@ -6,5 +6,5 @@ Deno.test("should return the extent in [min, max] order", async () => {
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
   assertEquals(await table.getExtent("key1"), [1, 4]);
-  await sdb.done();
+  await sdb.close();
 });

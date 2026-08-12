@@ -10,5 +10,5 @@ Deno.test("should rename a table", async () => {
   const tables = await sdb.getTableNames();
 
   assertEquals(tables, ["canadianCities"]);
-  await sdb.done();
+  await sdb.close();
 });

@@ -51,7 +51,7 @@ Deno.test("should load an array of objects into a table", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load an array of objects into a table and return the table", async () => {
@@ -85,7 +85,7 @@ Deno.test("should load an array of objects into a table and return the table", a
 
   assertEquals(table instanceof SimpleTable, true);
   await table.run();
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load an array of objects into a table with spaces in column names", async () => {
@@ -131,7 +131,7 @@ Deno.test("should load an array of objects into a table with spaces in column na
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load an array of objects even if the first rows have null values", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -176,7 +176,7 @@ Deno.test("should load an array of objects even if the first rows have null valu
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load an array of objects even if the all values in a column are null", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -228,7 +228,7 @@ Deno.test("should load an array of objects even if the all values in a column ar
     "column 2": "VARCHAR",
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw a clear error for an empty array", async () => {
@@ -245,7 +245,7 @@ Deno.test("should throw a clear error for an empty array", async () => {
     (error as Error).message,
     "The array is empty. loadArray needs at least one object to infer the column types.",
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("loadArray captures row, Date, and array values when queued", async () => {
@@ -282,7 +282,7 @@ Deno.test("loadArray captures row, Date, and array values when queued", async ()
     { name: "empty", date: null, first: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("library SQL supports double quotes in table and column names", async () => {
@@ -295,5 +295,5 @@ Deno.test("library SQL supports double quotes in table and column names", async 
     .getData({ columns: 'full "name"' });
 
   assertEquals(result, [{ 'full "name"': "Ada" }]);
-  await sdb.done();
+  await sdb.close();
 });

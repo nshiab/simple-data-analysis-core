@@ -9,7 +9,7 @@ Deno.test("should log columns", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log columns with types", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -19,5 +19,5 @@ Deno.test("should log columns with types", async () => {
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

@@ -16,7 +16,7 @@ Deno.test("should return a column with the row number", async () => {
     { first: "Nael", last: "Shiab", rowNumber: 0 },
     { first: "Graeme", last: "Bruce", rowNumber: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return a column with the row number restarting for each category (starting at 0)", async () => {
@@ -38,5 +38,5 @@ Deno.test("should return a column with the row number restarting for each catego
     { first: "John", last: "Doe", city: "Toronto", rowNumber: 0 },
     { first: "Jane", last: "Doe", city: "Toronto", rowNumber: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

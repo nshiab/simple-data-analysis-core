@@ -26,7 +26,7 @@ Deno.test("should write a csv file", async () => {
   const data = await table.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a csv file and create the path if it doesn't exist", async () => {
@@ -41,7 +41,7 @@ Deno.test("should write a csv file and create the path if it doesn't exist", asy
   const data = await table.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a compressed csv file", async () => {
@@ -58,7 +58,7 @@ Deno.test("should write a compressed csv file", async () => {
   const data = await tableCheck.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a json file", async () => {
@@ -73,7 +73,7 @@ Deno.test("should write a json file", async () => {
   const data = await tableCheck.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a json file with dates", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -93,7 +93,7 @@ Deno.test("should write a json file with dates", async () => {
     { "key1": "2025-01-01T01:23:10.987Z" },
     { "key1": "2025-04-08T14:09:24.155Z" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a json file with dates and keep the original table unchanged", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -108,7 +108,7 @@ Deno.test("should write a json file with dates and keep the original table uncha
   const tableData = await table.getData();
 
   assertEquals(tableData, originalData);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write a compressed json file", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -124,7 +124,7 @@ Deno.test("should write a compressed json file", async () => {
   const data = await tableCheck.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a parquet file", async () => {
@@ -139,7 +139,7 @@ Deno.test("should write a parquet file", async () => {
   const data = await tableCheck.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a compressed parquet file", async () => {
@@ -156,7 +156,7 @@ Deno.test("should write a compressed parquet file", async () => {
   const data = await tableCheck.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write a file at the root", async () => {
@@ -171,7 +171,7 @@ Deno.test("should write a file at the root", async () => {
   const data = await tableCheck.getData();
 
   assertEquals(data, expectedData);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write data as arrays", async () => {
@@ -191,7 +191,7 @@ Deno.test("should write data as arrays", async () => {
     key1: ["1", "3", "8", "brioche"],
     key2: ["2", "coucou", "10", "croissant"],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should write data as a db", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -201,7 +201,7 @@ Deno.test("should write data as a db", async () => {
 
   // Just making sure it doesn't throw
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should write data as a SQLite db", async () => {
@@ -212,7 +212,7 @@ Deno.test("should write data as a SQLite db", async () => {
 
   // Just making sure it doesn't throw
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("writeData should throw an error when there is a geometry column and suggest using writeGeoData", async () => {
@@ -228,5 +228,5 @@ Deno.test("writeData should throw an error when there is a geometry column and s
     "Table contains geometry columns. Use writeGeoData() instead.",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

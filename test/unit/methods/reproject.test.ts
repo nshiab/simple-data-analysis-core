@@ -17,7 +17,7 @@ Deno.test("should convert from one projection to another one", async () => {
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should convert from one projection to another one from a specific column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -35,7 +35,7 @@ Deno.test("should convert from one projection to another one from a specific col
   const types2 = await table.getTypes();
   assertEquals(types2.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should be able to reproject multiples times by keeping track of the projection", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -51,7 +51,7 @@ Deno.test("should be able to reproject multiples times by keeping track of the p
   const data = await table.getGeoData();
 
   assertEquals(data, expectedGeo);
-  await sdb.done();
+  await sdb.close();
 });
 
 const expectedGeo = {

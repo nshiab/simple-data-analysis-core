@@ -119,7 +119,7 @@ export default async function runQuery(
       const converters = columnTypes.map((type, i) =>
         makeConverter(type, columnNames[i], options.table ?? null)
       );
-      const nbColumns = columnNames.length;
+      const columnCount = columnNames.length;
       // The result is converted chunk by chunk, so no intermediate row-major
       // copy of the whole result is materialized.
       const rows: { [key: string]: unknown }[] = [];
@@ -132,7 +132,7 @@ export default async function runQuery(
         for (let i = 0; i < chunk.rowCount; i++) {
           rows.push({});
         }
-        for (let j = 0; j < nbColumns; j++) {
+        for (let j = 0; j < columnCount; j++) {
           const columnName = columnNames[j];
           const converter = converters[j];
           chunk.visitColumnValues(j, (value, rowIndex) => {

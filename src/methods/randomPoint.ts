@@ -58,12 +58,12 @@ async function executeRandomPoint(
     }),
   );
 
-  const nbNulls = await simpleTable.getNbRows({
+  const nullCount = await simpleTable.getRowCount({
     conditions: `${quoteIdentifier(newColumn)} IS NULL`,
   });
-  if (nbNulls > 0 && options.strict !== false) {
+  if (nullCount > 0 && options.strict !== false) {
     throw new Error(
-      `${nbNulls} points could not be generated. Consider increasing tries or set options.strict to false.`,
+      `${nullCount} points could not be generated. Consider increasing tries or set options.strict to false.`,
     );
   }
 }
