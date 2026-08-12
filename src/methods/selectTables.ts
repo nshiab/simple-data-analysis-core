@@ -5,6 +5,7 @@ import SimpleTable from "../class/SimpleTable.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
 import assertSameDatabase from "../helpers/assertSameDatabase.ts";
+import formatMissingTables from "../helpers/formatMissingTables.ts";
 
 export default async function selectTables(
   simpleDB: SimpleDB,
@@ -23,10 +24,13 @@ export default async function selectTables(
   ) => t instanceof SimpleTable ? t.name : t);
 
   const existingTables = await simpleDB.getTableNames();
-  for (const table of tablesToBeSelected) {
-    if (!existingTables.includes(table)) {
-      throw new Error(`Table ${table} not found.`);
-    }
+  const missingTables = tablesToBeSelected.filter((table) =>
+    !existingTables.includes(table)
+  );
+  if (missingTables.length > 0) {
+    throw new Error(
+      formatMissingTables("selectTables()", missingTables, existingTables),
+    );
   }
 
   const tablesToBeRemoved = simpleDB.getTables().filter((t) =>

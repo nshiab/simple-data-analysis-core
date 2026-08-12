@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -230,6 +230,38 @@ Deno.test("should retrieve a SimpleTable instance", async () => {
       data: await tableJSON.getData(),
     },
   );
+  await sdb.close();
+});
+Deno.test("should list available tables when getTable cannot find one", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  sdb.newTable("votes");
+  sdb.newTable("districts");
+
+  const error = await assertRejects(() => sdb.getTable("missing"));
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `getTable() could not find table "missing". Available tables: "districts", "votes".`,
+  );
+
+  await sdb.close();
+});
+Deno.test("should list missing and available tables for selectTables", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const votes = sdb.newTable("votes");
+  votes.loadArray([{ id: 1 }]);
+  const districts = sdb.newTable("districts");
+  districts.loadArray([{ id: 1 }]);
+
+  const error = await assertRejects(() =>
+    sdb.selectTables(["missingVotes", "missingDistricts"])
+  );
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `selectTables() could not find tables "missingDistricts", "missingVotes". Available tables: "districts", "votes".`,
+  );
+
   await sdb.close();
 });
 Deno.test("should retrieve a SimpleTable instance with geo data", async () => {

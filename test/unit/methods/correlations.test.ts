@@ -1,5 +1,52 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should explain when there are not enough numeric columns", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("data");
+  table.loadArray([{ category: "A", label: "First" }]);
+
+  const error = await assertRejects(() => table.correlations().run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `correlations() requires at least 2 numeric columns in table "data", but found 0. Convert at least 2 columns to numeric types first.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should reject options.y without options.x", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("data");
+  table.loadArray([{ x: 1, y: 2 }]);
+
+  const error = await assertRejects(() => table.correlations({ y: "y" }).run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `correlations() options.y cannot be used without options.x. Provide options.x, or omit options.y to analyze every numeric column pair.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should identify explicitly selected non-numeric columns", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("data");
+  table.loadArray([{ category: "A", value: 1 }]);
+
+  const error = await assertRejects(() =>
+    table.correlations({ x: "category", y: "value" }).run()
+  );
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `correlations() requires numeric columns, but column "category" in table "data" has type VARCHAR. Convert "category" to a numeric type first.`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should give all correlations between numeric columns in the table and overwrite the current table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

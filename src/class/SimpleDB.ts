@@ -25,6 +25,7 @@ import {
   listRegisteredTables,
   registerTable,
 } from "../helpers/tableRegistry.ts";
+import formatMissingTables from "../helpers/formatMissingTables.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -496,11 +497,18 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```
    */
   async getTable(name: string): Promise<Table> {
-    const table = this.getTables().find((t) => t.name === name);
+    const tables = this.getTables();
+    const table = tables.find((t) => t.name === name);
     if (table) {
       return await table;
     } else {
-      throw new Error(`Table ${name} not found.`);
+      throw new Error(
+        formatMissingTables(
+          "getTable()",
+          [name],
+          tables.map((availableTable) => availableTable.name),
+        ),
+      );
     }
   }
 

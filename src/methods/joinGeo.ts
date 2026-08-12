@@ -25,6 +25,7 @@ export default function joinGeo(
 ): SimpleTable {
   assertSameDatabase(leftTable.sdb, [rightTable], "joinGeo()");
   options = structuredClone(options);
+  validateJoinGeoOptions(method, options);
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
   const outputTable = typeof options.outputTable === "string"
@@ -40,6 +41,57 @@ export default function joinGeo(
   });
 
   return outputTable;
+}
+
+function validateJoinGeoOptions(
+  method: "intersect" | "inside" | "withinDistance",
+  options: {
+    type?: "inner" | "left" | "right" | "full";
+    distance?: number;
+    distanceMethod?: "srs" | "haversine" | "spheroid";
+  },
+): void {
+  if (!["intersect", "inside", "withinDistance"].includes(method)) {
+    throw new Error(
+      `joinGeo() method must be "intersect", "inside", or "withinDistance". Received ${
+        formatReceivedValue(method)
+      }.`,
+    );
+  }
+  if (
+    options.type !== undefined &&
+    !["inner", "left", "right", "full"].includes(options.type)
+  ) {
+    throw new Error(
+      `joinGeo() options.type must be "inner", "left", "right", or "full". Received ${
+        formatReceivedValue(options.type)
+      }.`,
+    );
+  }
+  if (
+    options.distanceMethod !== undefined &&
+    !["srs", "haversine", "spheroid"].includes(options.distanceMethod)
+  ) {
+    throw new Error(
+      `joinGeo() options.distanceMethod must be "srs", "haversine", or "spheroid". Received ${
+        formatReceivedValue(options.distanceMethod)
+      }.`,
+    );
+  }
+  if (
+    method === "withinDistance" &&
+    (typeof options.distance !== "number" || !Number.isFinite(options.distance))
+  ) {
+    throw new Error(
+      `joinGeo() options.distance must be a finite number when method is "withinDistance". Received ${
+        formatReceivedValue(options.distance)
+      }.`,
+    );
+  }
+}
+
+function formatReceivedValue(value: unknown): string {
+  return JSON.stringify(value) ?? String(value);
 }
 
 async function executeJoinGeo(

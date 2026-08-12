@@ -173,7 +173,7 @@ Deno.test("file transport preserves multiple geometry-column selection", async (
   await assertRejects(
     () => table.getGeoData(),
     Error,
-    "More than one column storing geometries",
+    `getGeoData() found 2 geometry columns in table "multipleGeometries": "geom", "otherGeom". Specify one explicitly.`,
   );
   const geoData = await table.getGeoData("geom");
   assertEquals(geoData.features.length, 2);

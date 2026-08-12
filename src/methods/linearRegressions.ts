@@ -1,6 +1,5 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getCombinations from "../helpers/getCombinations.ts";
-import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -8,6 +7,7 @@ import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
+import validateNumericalAnalysis from "../helpers/validateNumericalAnalysis.ts";
 
 export default function linearRegressions(
   simpleTable: SimpleTable,
@@ -34,6 +34,7 @@ export default function linearRegressions(
         const permutations = getLinearRegressionsPermutations(
           await simpleTable.getTypes(),
           options,
+          simpleTable.name,
         );
         await queryDB(
           simpleTable,
@@ -66,12 +67,12 @@ export default function linearRegressions(
     needsSchema: true,
     values: (types) =>
       linearRegressionsValues(
-        getLinearRegressionsPermutations(types, options),
+        getLinearRegressionsPermutations(types, options, simpleTable.name),
       ),
     buildSelect: (input, types) =>
       linearRegressionsSelect(
         input,
-        getLinearRegressionsPermutations(types, options),
+        getLinearRegressionsPermutations(types, options, simpleTable.name),
         options,
       ),
   });
@@ -87,26 +88,29 @@ function linearRegressionsValues(
 function getLinearRegressionsPermutations(
   types: TableSchema,
   options: { x?: string; y?: string },
+  tableName: string,
 ): [string, string][] {
+  const columns = validateNumericalAnalysis(
+    types,
+    options,
+    "linearRegressions()",
+    tableName,
+  );
   const permutations: [string, string][] = [];
-  if (!options.x && !options.y) {
-    const columns = keepNumericalColumns(types);
+  if (options.x === undefined) {
     const combinations = getCombinations(columns, 2);
     for (const c of combinations) {
       permutations.push(c);
       permutations.push([c[1], c[0]]);
     }
-  } else if (options.x && !options.y) {
-    const columns = keepNumericalColumns(types);
+  } else if (options.y === undefined) {
     for (const col of columns) {
       if (col !== options.x) {
         permutations.push([options.x, col]);
       }
     }
-  } else if (options.x && options.y) {
-    permutations.push([options.x, options.y]);
   } else {
-    throw new Error("No combinations of x and y");
+    permutations.push([options.x, options.y]);
   }
   return permutations;
 }

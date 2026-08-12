@@ -1,5 +1,20 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should explain when only one numeric column is available", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("data");
+  table.loadArray([{ value: 1, category: "A" }]);
+
+  const error = await assertRejects(() => table.linearRegressions().run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `linearRegressions() requires at least 2 numeric columns in table "data", but found 1: "value". Convert at least 1 more column to a numeric type first.`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and overwrite the current table with the results", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

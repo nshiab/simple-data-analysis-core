@@ -1,5 +1,21 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should report valid trim sides", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+
+  assertThrows(
+    () =>
+      table.trim("value", {
+        side: "middle" as "left",
+      }),
+    Error,
+    `trim() options.side must be "left", "right", or "both". Received "middle".`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should remove whitespace", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

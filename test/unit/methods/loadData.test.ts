@@ -26,6 +26,17 @@ Deno.test("loadDataQuery escapes generated string literals", () => {
   assertStringIncludes(excelQuery, "sheet='Owner''s Data'");
 });
 
+Deno.test("loadDataQuery reports supported file types", () => {
+  assertThrows(
+    () =>
+      loadDataQuery("data", ["data.csv"], {
+        fileType: "xml" as "csv",
+      }),
+    Error,
+    `loadData() could not determine a supported file type for "data.csv". options.fileType: "xml". Detected extension: ".csv". Supported file types: "csv", "dsv", "json", "parquet", and "excel" (for .xlsx files).`,
+  );
+});
+
 Deno.test("should load data from a csv file and return the table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb

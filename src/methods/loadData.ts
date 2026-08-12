@@ -90,6 +90,16 @@ export function loadDataQuery(
   } = {},
 ) {
   const fileExtension = getExtension(files[0]);
+  if (
+    options.fileType !== undefined &&
+    !["csv", "dsv", "json", "parquet", "excel"].includes(options.fileType)
+  ) {
+    throw unsupportedFileTypeError(
+      files[0],
+      options.fileType,
+      fileExtension,
+    );
+  }
   const filesAsString = "[" +
     files.map((file) => parseValue(file)).join(", ") +
     "]";
@@ -200,8 +210,25 @@ export function loadDataQuery(
       options.sheet ? `, sheet=${parseValue(options.sheet)}` : ""
     }${header}${allText});`;
   } else {
-    throw new Error(
-      `Unknown options.fileType ${options.fileType} or fileExtension ${fileExtension}`,
+    throw unsupportedFileTypeError(
+      files[0],
+      options.fileType,
+      fileExtension,
     );
   }
+}
+
+function unsupportedFileTypeError(
+  file: string,
+  fileType: string | undefined,
+  fileExtension: string,
+): Error {
+  const receivedFileType = JSON.stringify(fileType) ?? String(fileType);
+  return new Error(
+    `loadData() could not determine a supported file type for ${
+      JSON.stringify(file)
+    }. options.fileType: ${receivedFileType}. Detected extension: ${
+      JSON.stringify(`.${fileExtension}`)
+    }. Supported file types: "csv", "dsv", "json", "parquet", and "excel" (for .xlsx files).`,
+  );
 }

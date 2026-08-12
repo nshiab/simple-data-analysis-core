@@ -21,7 +21,11 @@ export default function trim(
     ? "TRIM"
     : null;
   if (fn === null) {
-    throw new Error(`Unknown side ${options.side}`);
+    throw new Error(
+      `trim() options.side must be "left", "right", or "both". Received ${
+        JSON.stringify(options.side)
+      }.`,
+    );
   }
   const specialCharacter = typeof options.character === "string" ? ", ?" : "";
 

@@ -53,7 +53,13 @@ export default function loadSample(
 
   // This validation doesn't need the database, so it stays at call time.
   if (!sampleToLoad) {
-    throw new Error(`Unknown sample: ${sample}`);
+    throw new Error(
+      `loadSample() does not recognize sample ${
+        JSON.stringify(sample)
+      }. Available samples: ${
+        Object.keys(samples).map((name) => JSON.stringify(name)).join(", ")
+      }.`,
+    );
   }
 
   if (sampleToLoad.geo) {

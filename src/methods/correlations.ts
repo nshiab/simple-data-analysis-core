@@ -1,6 +1,5 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getCombinations from "../helpers/getCombinations.ts";
-import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -8,6 +7,7 @@ import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
+import validateNumericalAnalysis from "../helpers/validateNumericalAnalysis.ts";
 
 export default function correlations(
   simpleTable: SimpleTable,
@@ -34,6 +34,7 @@ export default function correlations(
         const combinations = getCorrelationsCombinations(
           await simpleTable.getTypes(),
           options,
+          simpleTable.name,
         );
         await queryDB(
           simpleTable,
@@ -65,11 +66,13 @@ export default function correlations(
     parameters: { options },
     needsSchema: true,
     values: (types) =>
-      correlationsValues(getCorrelationsCombinations(types, options)),
+      correlationsValues(
+        getCorrelationsCombinations(types, options, simpleTable.name),
+      ),
     buildSelect: (input, types) =>
       correlationsSelect(
         input,
-        getCorrelationsCombinations(types, options),
+        getCorrelationsCombinations(types, options, simpleTable.name),
         options,
       ),
   });
@@ -85,23 +88,26 @@ function correlationsValues(
 function getCorrelationsCombinations(
   types: TableSchema,
   options: { x?: string; y?: string },
+  tableName: string,
 ): [string, string][] {
+  const columns = validateNumericalAnalysis(
+    types,
+    options,
+    "correlations()",
+    tableName,
+  );
   let combinations: [string, string][] = [];
-  if (!options.x && !options.y) {
-    const columns = keepNumericalColumns(types);
+  if (options.x === undefined) {
     combinations = getCombinations(columns, 2);
-  } else if (options.x && !options.y) {
-    const columns = keepNumericalColumns(types);
+  } else if (options.y === undefined) {
     combinations = [];
     for (const col of columns) {
       if (col !== options.x) {
         combinations.push([options.x, col]);
       }
     }
-  } else if (options.x && options.y) {
-    combinations = [[options.x, options.y]];
   } else {
-    throw new Error("No combinations of x and y");
+    combinations = [[options.x, options.y]];
   }
   return combinations;
 }

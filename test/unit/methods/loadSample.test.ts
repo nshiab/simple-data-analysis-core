@@ -1,5 +1,18 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should list available samples for an unknown sample", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+
+  assertThrows(
+    () => table.loadSample("unknown" as "fires"),
+    Error,
+    `loadSample() does not recognize sample "unknown". Available samples: "fires", "recipes", "temperatures", "temperaturesCities", "canada", "firesGeo".`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should load the fires sample", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

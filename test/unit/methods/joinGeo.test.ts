@@ -1,5 +1,38 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should report valid spatial join options at call time", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const left = sdb.newTable("left");
+  const right = sdb.newTable("right");
+
+  assertThrows(
+    () => left.joinGeo(right, "touches" as "intersect"),
+    Error,
+    `joinGeo() method must be "intersect", "inside", or "withinDistance". Received "touches".`,
+  );
+  assertThrows(
+    () => left.joinGeo(right, "intersect", { type: "sideways" as "left" }),
+    Error,
+    `joinGeo() options.type must be "inner", "left", "right", or "full". Received "sideways".`,
+  );
+  assertThrows(
+    () =>
+      left.joinGeo(right, "withinDistance", {
+        distance: 10,
+        distanceMethod: "planar" as "srs",
+      }),
+    Error,
+    `joinGeo() options.distanceMethod must be "srs", "haversine", or "spheroid". Received "planar".`,
+  );
+  assertThrows(
+    () => left.joinGeo(right, "withinDistance"),
+    Error,
+    `joinGeo() options.distance must be a finite number when method is "withinDistance". Received undefined.`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should do a left spatial join the intersect method", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

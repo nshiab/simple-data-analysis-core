@@ -3502,7 +3502,7 @@ export default class SimpleTable extends Simple {
    *
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
-   * @param options.y - The name of the column for the y-values. If omitted, correlations will be computed for all numeric columns.
+   * @param options.y - The name of the column for the y-values. It can be provided only when `options.x` is also set. If both are omitted, correlations will be computed for all numeric column pairs.
    * @param options.categories - The column name or an array of column names that define categories. Correlation calculations will be performed independently for each category.
    * @param options.decimals - The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
@@ -3560,7 +3560,7 @@ export default class SimpleTable extends Simple {
    *
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
-   * @param options.y - The name of the column for the dependent variable (y-values). If omitted, linear regressions will be computed for all numeric columns as y.
+   * @param options.y - The name of the column for the dependent variable (y-values). It can be provided only when `options.x` is also set. If both are omitted, linear regressions will be computed for all numeric column permutations.
    * @param options.categories - The column name or an array of column names that define categories. Linear regression analysis will be performed independently for each category.
    * @param options.decimals - The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
