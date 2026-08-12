@@ -25,7 +25,7 @@ export default async function getLastRow(
     }),
   );
   if (!queryResult) {
-    throw new Error("No queryResult");
+    throw new Error("The query did not return a result.");
   }
   const result = queryResult[0];
   if (result === undefined) {

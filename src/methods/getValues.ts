@@ -21,7 +21,7 @@ export default async function getValues(
     }),
   );
   if (!queryResult) {
-    throw new Error("No result");
+    throw new Error("The query did not return a result.");
   }
 
   const values = queryResult.map((d) => d[column]);

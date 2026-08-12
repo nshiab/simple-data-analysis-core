@@ -28,7 +28,7 @@ export default async function getBottom(
   );
 
   if (!queryResult) {
-    throw new Error("No queryResult");
+    throw new Error("The query did not return a result.");
   }
 
   const rowsRaw = queryResult.map((d) => {

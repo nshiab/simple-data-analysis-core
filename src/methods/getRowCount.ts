@@ -21,7 +21,7 @@ export default async function getRowCount(
   );
 
   if (!queryResult) {
-    throw new Error("No result");
+    throw new Error("The query did not return a result.");
   }
   const length = queryResult[0].count as number;
 

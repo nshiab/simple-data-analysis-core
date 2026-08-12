@@ -22,7 +22,7 @@ export default async function getFirstRow(
     }),
   );
   if (!queryResult) {
-    throw new Error("No queryResult");
+    throw new Error("The query did not return a result.");
   }
 
   const result = queryResult[0];

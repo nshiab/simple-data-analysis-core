@@ -23,7 +23,7 @@ export default async function getUniques(
   );
 
   if (!queryResult) {
-    throw new Error("No result.");
+    throw new Error("The query did not return a result.");
   }
 
   const uniques = queryResult.map((d) => d[column]);

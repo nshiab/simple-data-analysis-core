@@ -20,7 +20,7 @@ export default async function getTableNames(simpleDB: SimpleDB) {
   );
 
   if (!queryResult) {
-    throw new Error("No result");
+    throw new Error("The query did not return a result.");
   }
 
   const tables = queryResult.map((d) => d.name) as string[];

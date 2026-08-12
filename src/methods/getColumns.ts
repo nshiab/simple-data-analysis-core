@@ -20,7 +20,7 @@ export default async function getColumns(simpleTable: SimpleTable) {
   );
 
   if (!queryResult) {
-    throw new Error("No result");
+    throw new Error("The query did not return a result.");
   }
 
   const columns = queryResult.map((d) => d.column_name) as string[];

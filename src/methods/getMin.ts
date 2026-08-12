@@ -23,7 +23,7 @@ export default async function getMin(
   );
 
   if (!queryResult) {
-    throw new Error("No queryResults");
+    throw new Error("The query did not return a result.");
   }
   const result = queryResult[0][column];
 

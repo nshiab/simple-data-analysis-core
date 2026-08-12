@@ -22,7 +22,7 @@ export default async function getCharacterCount(
   );
 
   if (!queryResult) {
-    throw new Error("No queryResults");
+    throw new Error("The query did not return a result.");
   }
 
   const result = Number(queryResult[0].total_chars);

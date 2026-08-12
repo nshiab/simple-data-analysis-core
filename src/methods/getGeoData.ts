@@ -30,7 +30,7 @@ export default async function getGeoData(
   );
 
   if (!queryResult) {
-    throw new Error("No queryResults");
+    throw new Error("The query did not return a result.");
   }
 
   const features = queryResult.map((d) => {
