@@ -57,6 +57,9 @@ import rolling from "../methods/rolling.ts";
 import accumulate from "../methods/accumulate.ts";
 import columnProportions from "../methods/columnProportions.ts";
 import rowProportions from "../methods/rowProportions.ts";
+import extremeColumn, {
+  type ExtremeColumnOptions,
+} from "../methods/extremeColumn.ts";
 import quantiles from "../methods/quantiles.ts";
 import ranks from "../methods/ranks.ts";
 import updateColumn from "../methods/updateColumn.ts";
@@ -3201,6 +3204,91 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     rowProportions(this, columns, options);
+    return this;
+  }
+
+  /**
+   * Adds the name of the column containing the highest value on each row.
+   *
+   * Null values are ignored. If every selected value on a row is null, the
+   * new column is null. By default, a tie throws an error. Set
+   * `options.ties` to `"first"` to use the first tied column in the supplied
+   * order, or to `"all"` to produce one row for each tied column. The `"all"`
+   * option can therefore increase the table's row count.
+   *
+   * This method queues the operation; it runs when an async observer method
+   * (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param columns - The numeric columns to compare on each row.
+   * @param newColumn - The name of the new column that will contain the selected column name.
+   * @param options - Optional tie-handling configuration.
+   * @param options.ties - How to handle equal highest values: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
+   *
+   * @example
+   * ```ts
+   * // Adds winner: "CAQ" when CAQ has the highest value on a row.
+   * table.highestColumn(["CAQ", "PLQ", "PQ"], "winner");
+   * ```
+   *
+   * @example
+   * ```ts
+   * table.loadArray([{ district: "Example", CAQ: 100, PLQ: 100, PQ: 40 }]);
+   * table.highestColumn(["CAQ", "PLQ", "PQ"], "winner", { ties: "all" });
+   * await table.getData();
+   * // [
+   * //   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "CAQ" },
+   * //   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "PLQ" },
+   * // ]
+   * ```
+   */
+  highestColumn(
+    columns: string[],
+    newColumn: string,
+    options: ExtremeColumnOptions = {},
+  ): this {
+    extremeColumn(this, columns, newColumn, "highest", options);
+    return this;
+  }
+
+  /**
+   * Adds the name of the column containing the lowest value on each row.
+   *
+   * Null values are ignored. If every selected value on a row is null, the
+   * new column is null. By default, a tie throws an error. Set
+   * `options.ties` to `"first"` to use the first tied column in the supplied
+   * order, or to `"all"` to produce one row for each tied column. The `"all"`
+   * option can therefore increase the table's row count.
+   *
+   * This method queues the operation; it runs when an async observer method
+   * (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param columns - The numeric columns to compare on each row.
+   * @param newColumn - The name of the new column that will contain the selected column name.
+   * @param options - Optional tie-handling configuration.
+   * @param options.ties - How to handle equal lowest values: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
+   *
+   * @example
+   * ```ts
+   * // Adds smallestParty: "PQ" when PQ has the lowest value on a row.
+   * table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Selects the first supplied column when multiple columns share the minimum.
+   * table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty", { ties: "first" });
+   * ```
+   */
+  lowestColumn(
+    columns: string[],
+    newColumn: string,
+    options: ExtremeColumnOptions = {},
+  ): this {
+    extremeColumn(this, columns, newColumn, "lowest", options);
     return this;
   }
 
