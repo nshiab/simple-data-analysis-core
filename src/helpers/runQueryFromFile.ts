@@ -585,7 +585,7 @@ async function prepareFileQuery(
     )
   ) {
     throw new Error(
-      "Table contains geometry columns. Use getGeoData() instead.",
+      "The query returns geometry columns. Use getGeoData() instead.",
     );
   }
   return {

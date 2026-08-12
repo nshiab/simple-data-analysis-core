@@ -1,5 +1,18 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should reject an empty newColumns array at call time", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+
+  assertThrows(
+    () => table.splitSpread("value", ",", []),
+    Error,
+    "splitSpread() newColumns must contain at least one column.",
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should split and spread a string into multiple columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

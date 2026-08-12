@@ -73,7 +73,7 @@ function distanceExpression(
     }::GEOMETRY) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else {
     throw new Error(
-      `Uknown method ${options.method}. Choose between 'srs', 'haversine' and 'spheroid'.`,
+      `distance() received an unknown method: ${options.method}. Choose "srs", "haversine", or "spheroid".`,
     );
   }
 

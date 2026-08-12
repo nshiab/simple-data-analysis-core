@@ -1,5 +1,21 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should reject tables from different databases", async () => {
+  const leftDB = new SimpleDB();
+  const rightDB = new SimpleDB();
+  const left = leftDB.newTable("left");
+  const right = rightDB.newTable("right");
+
+  assertThrows(
+    () => left.join(right),
+    Error,
+    "join() all tables must belong to the same SimpleDB instance.",
+  );
+
+  await leftDB.close();
+  await rightDB.close();
+});
 
 Deno.test("should put the result of an inner join into a new table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

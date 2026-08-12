@@ -152,6 +152,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @internal
    */
   flushPromise: Promise<void> | null;
+  #closePromise: Promise<SimpleDB> | null = null;
+  /** The database lifecycle state. This is for internal use only. */
+  lifecycleState: "open" | "closing" | "closed";
   /**
    * The number of queued operations across all tables, so query execution
    * points skip the flush entirely when nothing is pending. This is for
@@ -345,6 +348,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.tempDir = options.tempDir;
     this.dataTransport = options.dataTransport ?? "direct";
     this.flushPromise = null;
+    this.lifecycleState = "open";
     this.pendingCount = 0;
     this.opSequence = 0;
     this.spatialLoaded = false;
@@ -362,6 +366,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @category Lifecycle
    */
   async start(): Promise<SimpleDB> {
+    if (this.lifecycleState === "closed") {
+      throw new Error(
+        `start() cannot use a SimpleDB that is ${this.lifecycleState}.`,
+      );
+    }
     if (this.db === undefined || this.connection === undefined) {
       // The setup queries below must run before any queued operation, so
       // they must not trigger a flush.
@@ -442,6 +451,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   newTable(
     name?: string,
   ): Table {
+    if (this.lifecycleState !== "open") {
+      throw new Error(
+        `newTable() cannot use a SimpleDB that is ${this.lifecycleState}.`,
+      );
+    }
     const TableClass = this.tableClass;
 
     // SHOULD MATCH cloneTable
@@ -840,6 +854,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```
    */
   async run(): Promise<SimpleDB> {
+    if (this.lifecycleState !== "open") {
+      throw new Error(
+        `run() cannot use a SimpleDB that is ${this.lifecycleState}.`,
+      );
+    }
     await flushAllTables(this);
     return this;
   }
@@ -847,24 +866,33 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Frees up memory by closing the database connection and instance, and cleans up the cache.
    * If the database is file-based, it also compacts the database file to optimize storage.
-   * Pending transformations are discarded after being recorded; cleanup completes and the
-   * method then rejects with the affected table and method names.
+   * Pending transformations are executed before cleanup.
    *
    * @returns A promise that resolves to the SimpleDB instance after cleanup.
-   * @throws An error after cleanup when one or more tables still have queued methods.
+   * @throws An error after cleanup when pending execution or cleanup fails.
    * @category Lifecycle
    *
    * @example
    * ```ts
-   * // Close the database and clean up resources
-   * await sdb.run();
+   * // close() executes queued transformations before cleaning up resources.
+   * table.loadData("data.csv").convert({ price: "number" });
    * await sdb.close();
    * ```
    */
   async close(): Promise<SimpleDB> {
-    const discarded = discardAllPending(this);
-    let cleanupError: unknown;
+    if (this.#closePromise !== null) {
+      return await this.#closePromise;
+    }
+    this.lifecycleState = "closing";
+    const closePromise = this.#close();
+    this.#closePromise = closePromise;
+    return await closePromise;
+  }
+
+  async #close(): Promise<SimpleDB> {
+    let operationError: unknown;
     try {
+      await flushAllTables(this);
       if (this.file !== ":memory:" && this.db instanceof DuckDBInstance) {
         await this.customQuery("CHECKPOINT;");
         // To make sure the files will have the proper names.
@@ -876,32 +904,56 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         renameSync(this.file.replace(".db", "_compacted.db"), this.file);
       }
     } catch (error) {
-      cleanupError = error;
-    } finally {
-      if (this.db instanceof DuckDBInstance) {
+      operationError = error;
+      // A failed flush can requeue work belonging to other tables. The
+      // connection is about to close, so release those captured values.
+      discardAllPending(this);
+    }
+
+    const cleanupErrors: unknown[] = [];
+    if (this.db instanceof DuckDBInstance) {
+      try {
         this.connection.closeSync();
-        this.db.closeSync();
+      } catch (error) {
+        cleanupErrors.push(error);
       }
+      try {
+        this.db.closeSync();
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    }
+    try {
       const tmpDir = this.tempDir ??
         (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
       if (existsSync(tmpDir)) {
         rmSync(tmpDir, { recursive: true });
       }
       cleanCache(this);
+    } catch (error) {
+      cleanupErrors.push(error);
     }
+    this.lifecycleState = "closed";
 
-    if (discarded.length > 0) {
-      const details = discarded.map(({ table, methods }) =>
-        `The table ${
-          quoteIdentifier(table.name)
-        } has queued methods that were not executed: ${methods.join(", ")}.`
-      ).join(" ");
-      throw new Error(
-        `${details} Call run() or await an observer method before close() to execute them.`,
+    if (operationError !== undefined && cleanupErrors.length > 0) {
+      throw new AggregateError(
+        [operationError, ...cleanupErrors],
+        "Pending execution and database cleanup both failed.",
+        { cause: operationError },
       );
     }
-    if (cleanupError !== undefined) {
-      throw cleanupError;
+    if (operationError !== undefined) {
+      throw operationError;
+    }
+    if (cleanupErrors.length === 1) {
+      throw cleanupErrors[0];
+    }
+    if (cleanupErrors.length > 1) {
+      throw new AggregateError(
+        cleanupErrors,
+        "Multiple errors occurred while cleaning up the database.",
+        { cause: cleanupErrors[0] },
+      );
     }
 
     if (typeof this.durationStart === "number") {

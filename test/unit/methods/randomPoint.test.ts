@@ -84,6 +84,7 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
     Error,
     "13 points could not be generated. Consider increasing tries or set options.strict to false.",
   );
+  assertEquals((await table.getColumns()).includes("randomPoint"), false);
 
   await table.run();
   await sdb.close();
@@ -121,10 +122,23 @@ Deno.test("randomPoint should throw an error if tries is less than 0", async () 
       table.randomPoint("randomPoint", -1);
     },
     Error,
-    "tries must be a number greater than or equal to 0",
+    "randomPoint() tries must be a finite integer greater than or equal to 0.",
   );
 
   await table.run();
+  await sdb.close();
+});
+
+Deno.test("randomPoint should reject non-integer tries", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+
+  assertThrows(
+    () => table.randomPoint("randomPoint", 1.5),
+    Error,
+    "randomPoint() tries must be a finite integer greater than or equal to 0.",
+  );
+
   await sdb.close();
 });
 

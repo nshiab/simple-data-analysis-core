@@ -6,6 +6,7 @@ import queueOp from "../helpers/queueOp.ts";
 import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import unifyColumns from "../helpers/unifyColumns.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
 export default function insertTables(
   simpleTable: SimpleTable,
@@ -13,6 +14,7 @@ export default function insertTables(
   options: { unifyColumns?: boolean } = {},
 ) {
   const array = Array.isArray(tables) ? [...tables] : [tables];
+  assertSameDatabase(simpleTable.sdb, array, "insertTables()");
   options = structuredClone(options);
 
   queueOp(simpleTable, {

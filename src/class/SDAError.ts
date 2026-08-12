@@ -41,14 +41,10 @@ export default class SDAError extends Error {
     const causeMessage = options.cause instanceof Error
       ? options.cause.message
       : String(options.cause);
-    let parameters;
-    try {
-      parameters = JSON.stringify(options.parameters);
-    } catch {
-      parameters = String(options.parameters);
-    }
     super(
-      `${causeMessage}\nSDA method: ${options.method}\nparameters: ${parameters}\nquery: ${options.query}`,
+      options.method === null
+        ? causeMessage
+        : `${causeMessage}\nSDA method: ${options.method}`,
       { cause: options.cause },
     );
     this.name = "SDAError";

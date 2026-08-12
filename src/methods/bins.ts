@@ -14,6 +14,12 @@ export default function bins(
     startValue?: number;
   } = {},
 ) {
+  // This validation does not need the database, so it stays at call time.
+  if (!Number.isFinite(interval) || interval <= 0) {
+    throw new Error(
+      "bins() interval must be a finite number greater than 0.",
+    );
+  }
   // The intervals depend on the minimum and maximum values of the data, so
   // bins can't be expressed as a single SELECT over its input: it executes
   // as a barrier.

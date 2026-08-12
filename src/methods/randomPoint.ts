@@ -4,6 +4,7 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import ensureSpatial from "../helpers/ensureSpatial.ts";
 
 export default function randomPoint(
   simpleTable: SimpleTable,
@@ -13,9 +14,9 @@ export default function randomPoint(
 ) {
   options = structuredClone(options);
   // This validation doesn't need the database, so it stays at call time.
-  if (typeof tries !== "number" || tries < 0) {
+  if (!Number.isFinite(tries) || !Number.isInteger(tries) || tries < 0) {
     throw new Error(
-      "tries must be a number greater than or equal to 0",
+      "randomPoint() tries must be a finite integer greater than or equal to 0.",
     );
   }
 
@@ -36,6 +37,7 @@ async function executeRandomPoint(
   tries: number,
   options: { column?: string; strict?: boolean },
 ): Promise<void> {
+  await ensureSpatial(simpleTable);
   const column = typeof options.column === "string"
     ? options.column
     : await findGeoColumn(simpleTable);
@@ -50,6 +52,7 @@ async function executeRandomPoint(
       newColumn,
       tries,
       geoType,
+      options.strict !== false,
     ),
     mergeOptions(simpleTable, {
       table: simpleTable.name,
@@ -57,15 +60,6 @@ async function executeRandomPoint(
       parameters: { column, newColumn, tries, options, geoType },
     }),
   );
-
-  const nullCount = await simpleTable.getRowCount({
-    conditions: `${quoteIdentifier(newColumn)} IS NULL`,
-  });
-  if (nullCount > 0 && options.strict !== false) {
-    throw new Error(
-      `${nullCount} points could not be generated. Consider increasing tries or set options.strict to false.`,
-    );
-  }
 }
 
 function randomPointQuery(
@@ -74,13 +68,8 @@ function randomPointQuery(
   newColumn: string,
   tries: number,
   geoType: string,
+  strict: boolean,
 ) {
-  const addColumn = newColumn === column
-    ? ""
-    : `ALTER TABLE ${quoteIdentifier(table)} ADD COLUMN ${
-      quoteIdentifier(newColumn)
-    } ${geoType};`;
-
   // Recursive CTE approach: each iteration only carries forward the rows that
   // have NOT yet found a valid interior point, so DuckDB stops per-row as soon
   // as ST_Within is satisfied — giving O(1) behaviour for easy polygons instead
@@ -94,9 +83,14 @@ function randomPointQuery(
   // Volatility guard: `CASE WHEN (rid + n) IS NOT NULL THEN random() END`
   // prevents the planner from constant-folding random() across iterations while
   // still evaluating to random() for every non-null row.
-  return `INSTALL spatial;
-LOAD spatial;
-${addColumn}
+  const failedExpression = strict
+    ? `CASE WHEN v.failed_count > 0 THEN error(CONCAT(CAST(v.failed_count AS VARCHAR), ' points could not be generated. Consider increasing tries or set options.strict to false.')) ELSE v.pt::${geoType} END`
+    : `v.pt::${geoType}`;
+  const select = newColumn === column
+    ? `t.* REPLACE (${failedExpression} AS ${quoteIdentifier(newColumn)})`
+    : `t.*, ${failedExpression} AS ${quoteIdentifier(newColumn)}`;
+
+  return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS
 WITH RECURSIVE
 base AS (
     SELECT
@@ -132,18 +126,22 @@ attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (
         n + 1
     FROM attempts
     WHERE NOT ST_Within(pt, geom) AND n < ${tries}
-)
-UPDATE ${quoteIdentifier(table)} AS t
-SET ${quoteIdentifier(newColumn)} = v.pt::${geoType}
-FROM (
-    SELECT b.rid, vp.pt
+),
+valid_points AS (
+    SELECT rid, pt
+    FROM attempts
+    WHERE ST_Within(pt, geom)
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY rid ORDER BY n) = 1
+),
+generated AS (
+    SELECT
+        b.rid,
+        vp.pt,
+        COUNT(*) FILTER (WHERE vp.pt IS NULL) OVER () AS failed_count
     FROM (SELECT rowid AS rid FROM ${quoteIdentifier(table)}) b
-    LEFT JOIN (
-        SELECT rid, pt
-        FROM attempts
-        WHERE ST_Within(pt, geom)
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY rid ORDER BY n) = 1
-    ) vp ON b.rid = vp.rid
-) v
-WHERE t.rowid = v.rid;`;
+    LEFT JOIN valid_points vp ON b.rid = vp.rid
+)
+SELECT ${select}
+FROM ${quoteIdentifier(table)} t
+JOIN generated v ON t.rowid = v.rid;`;
 }

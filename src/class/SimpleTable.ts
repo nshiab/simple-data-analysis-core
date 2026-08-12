@@ -4521,7 +4521,7 @@ export default class SimpleTable extends Simple {
       [key: string]: unknown;
     } | null
   > {
-    const data = await this.getData({ conditions });
+    const data = await this.getData({ conditions, limit: 2 });
     if (options.strict !== false) {
       if (data.length === 0) {
         throw new Error(`No row found with condition \`${conditions}\`.`);
@@ -4542,6 +4542,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.columns - An array of column names to include in the result. If omitted, all columns will be included.
    * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+   * @param options.limit - The maximum number of rows to return. Must be an integer greater than or equal to `0`.
    * @returns A promise that resolves to an array of objects, where each object represents a row in the table.
    * @category Getting Data
    *
@@ -4565,11 +4566,18 @@ export default class SimpleTable extends Simple {
    * const booksData = await table.getData({ columns: ["title", "author"], conditions: `category === 'Book'` });
    * console.log(booksData);
    * ```
+   *
+   * @example
+   * ```ts
+   * // Return at most two rows.
+   * const preview = await table.getData({ limit: 2 });
+   * ```
    */
   async getData(
     options: {
       columns?: string | string[];
       conditions?: string;
+      limit?: number;
     } = {},
   ): Promise<
     {

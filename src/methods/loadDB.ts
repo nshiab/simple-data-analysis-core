@@ -25,6 +25,11 @@ export default async function loadDB(
     throw new Error(`The file ${file} does not exist.`);
   }
   const extension = getExtension(file);
+  if (extension !== "db" && extension !== "sqlite") {
+    throw new Error(
+      `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
+    );
+  }
 
   const allIndexesFile = `${file.replace(`.${extension}`, "")}_indexes.json`;
   const vssIndex = checkVssIndexes(allIndexesFile);
@@ -88,10 +93,6 @@ DETACH ${quotedName};`,
         }),
       );
     }
-  } else {
-    throw new Error(
-      `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
-    );
   }
 
   await setDbProps(simpleDB, allIndexesFile);

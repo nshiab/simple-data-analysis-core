@@ -14,6 +14,11 @@ export default function queueOp(
   op: PendingOpInput,
 ): void {
   const sdb = simpleTable.sdb;
+  if (sdb.lifecycleState !== "open") {
+    throw new Error(
+      `${op.method} cannot queue work because its SimpleDB is ${sdb.lifecycleState}.`,
+    );
+  }
   let capturedOp: PendingOpInput = {
     ...op,
     parameters: op.parameters === null ? null : structuredClone(op.parameters),

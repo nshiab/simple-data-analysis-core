@@ -24,6 +24,12 @@ export default async function updateWithJS(
     }[]),
   options: { batchSize?: number } = {},
 ) {
+  if (
+    options.batchSize !== undefined &&
+    (!Number.isInteger(options.batchSize) || options.batchSize < 1)
+  ) {
+    throw new Error("updateWithJS() batchSize must be a positive integer.");
+  }
   const types = await simpleTable.getTypes();
   // Geometry columns are typed as GEOMETRY('<crs>'), not a bare "GEOMETRY".
   if (
@@ -58,9 +64,6 @@ export default async function updateWithJS(
   }
 
   const batchSize = options.batchSize;
-  if (!Number.isInteger(batchSize) || batchSize < 1) {
-    throw new Error("batchSize must be a positive integer.");
-  }
   if (Object.keys(types).includes("__sda_rowid")) {
     throw new Error(
       'The table has a column named "__sda_rowid", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.',

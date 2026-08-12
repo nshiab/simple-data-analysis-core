@@ -10,6 +10,6 @@ export default function parseValue(value: unknown): string | boolean | number {
   } else if (typeof value === "number") {
     return value;
   } else {
-    throw new Error(`Unkown type ${typeof value} of ${value}`);
+    throw new Error(`Unknown type ${typeof value} of ${value}.`);
   }
 }

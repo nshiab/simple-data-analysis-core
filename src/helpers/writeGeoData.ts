@@ -24,15 +24,18 @@ export default async function writeGeoData(
     formatDates?: boolean;
   } = {},
 ): Promise<void> {
-  createDirectory(file);
+  const fileExtension = getExtension(file);
+  assertWriteGeoDataOptions(fileExtension, options);
+
   if (!(await hasGeometryColumn(table))) {
     throw new Error(
       "Table contains no geometry columns. Use writeData() instead.",
     );
   }
-  const fileExtension = getExtension(file);
+  createDirectory(file);
   if (fileExtension === "geojson" || fileExtension === "json") {
     let types;
+    let datesConverted = false;
     if (options.formatDates === true) {
       types = await table.getTypes();
       if (
@@ -40,58 +43,41 @@ export default async function writeGeoData(
         Object.values(types).includes("TIMESTAMP")
       ) {
         await stringifyDates(table, types);
+        datesConverted = true;
       }
     }
 
-    if (typeof options.compression === "boolean") {
-      throw new Error(
-        "The compression option is not supported for writing GeoJSON files.",
+    try {
+      await queryDB(
+        table,
+        writeGeoDataQuery(table.name, file, fileExtension, options),
+        mergeOptions(table, {
+          table: table.name,
+          method: "writeGeoData()",
+          parameters: { file, options },
+        }),
       );
-    }
 
-    await queryDB(
-      table,
-      writeGeoDataQuery(table.name, file, fileExtension, options),
-      mergeOptions(table, {
-        table: table.name,
-        method: "writeGeoData()",
-        parameters: { file, options },
-      }),
-    );
-
-    if (options.metadata) {
-      const fileData = JSON.parse(readFileSync(file, "utf-8"));
-      fileData.metadata = options.metadata;
-      writeFileSync(file, JSON.stringify(fileData));
-    }
-    if (options.rewind) {
-      const fileData = JSON.parse(readFileSync(file, "utf-8"));
-      const fileRewinded = rewind(fileData);
-      writeFileSync(file, JSON.stringify(fileRewinded));
-    }
-    if (
-      types && (Object.values(types).includes("DATE") ||
-        Object.values(types).includes("TIMESTAMP"))
-    ) {
-      await stringifyDatesInvert(table, types);
-      // stringifyDatesInvert queues sync builder operations restoring the
-      // date columns. writeGeoData is an observer, so it must leave no
-      // queued work behind.
-      await flushAllTables(table.sdb);
+      if (options.metadata) {
+        const fileData = JSON.parse(readFileSync(file, "utf-8"));
+        fileData.metadata = options.metadata;
+        writeFileSync(file, JSON.stringify(fileData));
+      }
+      if (options.rewind) {
+        const fileData = JSON.parse(readFileSync(file, "utf-8"));
+        const fileRewinded = rewind(fileData);
+        writeFileSync(file, JSON.stringify(fileRewinded));
+      }
+    } finally {
+      if (datesConverted && types) {
+        await stringifyDatesInvert(table, types);
+        // stringifyDatesInvert queues sync builder operations restoring the
+        // date columns. writeGeoData is an observer, so it must leave no
+        // queued work behind.
+        await flushAllTables(table.sdb);
+      }
     }
   } else if (fileExtension === "shp") {
-    if (
-      typeof options.precision === "number" ||
-      typeof options.compression === "boolean" ||
-      typeof options.rewind === "boolean" ||
-      options.metadata ||
-      options.formatDates === true
-    ) {
-      throw new Error(
-        "The following options are not supported for writing SHAPEFILE files: precision, compression, rewind, metadata, and formatDates.",
-      );
-    }
-
     await queryDB(
       table,
       writeGeoDataQuery(table.name, file, fileExtension, options),
@@ -102,16 +88,6 @@ export default async function writeGeoData(
       }),
     );
   } else if (fileExtension === "geoparquet") {
-    if (typeof options.precision === "number") {
-      throw new Error(
-        "The precision option is not supported for writing PARQUET files. Use the .reducePrecision() method.",
-      );
-    }
-    if (typeof options.rewind === "boolean") {
-      throw new Error(
-        "The rewind option is not supported for writing PARQUET files.",
-      );
-    }
     await queryDB(
       table,
       `COPY ${quoteIdentifier(table.name)} TO '${
@@ -125,8 +101,55 @@ export default async function writeGeoData(
         parameters: { file, options },
       }),
     );
-  } else {
-    throw new Error(`Unknown extension ${fileExtension}`);
+  }
+}
+
+function assertWriteGeoDataOptions(
+  fileExtension: string,
+  options: {
+    precision?: number;
+    compression?: boolean;
+    rewind?: boolean;
+    metadata?: unknown;
+    formatDates?: boolean;
+  },
+): void {
+  if (!["geojson", "json", "shp", "geoparquet"].includes(fileExtension)) {
+    throw new Error(
+      `writeGeoData() does not support the extension ${
+        JSON.stringify(fileExtension)
+      }. Use .geojson, .json, .shp, or .geoparquet.`,
+    );
+  }
+  if (
+    (fileExtension === "geojson" || fileExtension === "json") &&
+    typeof options.compression === "boolean"
+  ) {
+    throw new Error(
+      "writeGeoData() compression is not supported for GeoJSON files.",
+    );
+  }
+  if (
+    fileExtension === "shp" &&
+    (typeof options.precision === "number" ||
+      typeof options.compression === "boolean" ||
+      typeof options.rewind === "boolean" ||
+      options.metadata !== undefined ||
+      options.formatDates === true)
+  ) {
+    throw new Error(
+      "writeGeoData() precision, compression, rewind, metadata, and formatDates are not supported for Shapefiles.",
+    );
+  }
+  if (fileExtension === "geoparquet" && typeof options.precision === "number") {
+    throw new Error(
+      "writeGeoData() precision is not supported for GeoParquet files. Use reducePrecision() first.",
+    );
+  }
+  if (fileExtension === "geoparquet" && typeof options.rewind === "boolean") {
+    throw new Error(
+      "writeGeoData() rewind is not supported for GeoParquet files.",
+    );
   }
 }
 

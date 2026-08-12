@@ -4,6 +4,7 @@ import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
 export default function fuzzyJoin(
   leftTable: SimpleTable,
@@ -22,6 +23,7 @@ export default function fuzzyJoin(
     preFilterPrefixLen?: number;
   } = {},
 ): SimpleTable {
+  assertSameDatabase(leftTable.sdb, [rightTable], "fuzzyJoin()");
   options = structuredClone(options);
   // This validation doesn't need the database, so it stays at call time.
   if (leftColumn === rightColumn) {

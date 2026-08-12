@@ -67,11 +67,13 @@ await table
   .run();
 ```
 
-`sdb.close()` rejects if any table still has queued methods that never executed
-(the forgotten-`run()` safety net). It identifies every affected table and
-method, discards the work internally, and completes cleanup before throwing.
-This behavior is identical for in-memory and file-based databases; `close()`
-never executes pending transformations automatically.
+`sdb.close()` executes any queued transformations before it compacts file-based
+databases and cleans up resources. You only need to call `run()` explicitly when
+the transformations must finish before shutdown—for example, before an external
+tool reads the database.
+
+If a queued transformation fails during `close()`, cleanup still completes and
+`close()` rejects with the execution error.
 
 ## Errors surface at the observation point
 

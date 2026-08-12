@@ -61,8 +61,9 @@ const data = await table
 await sdb.close();
 ```
 
-If a chain ends with transformations and nothing observes it, call `run()` to
-execute it. If you are migrating from v1, see the
+If a chain ends with transformations and you need them executed before shutdown,
+call `run()`. Otherwise, `close()` executes any remaining queued transformations
+before cleaning up resources. If you are migrating from v1, see the
 [migration guide](https://github.com/nshiab/simple-data-analysis-core/blob/main/MIGRATION.md).
 
 ### Temporary Deno result-transport workaround

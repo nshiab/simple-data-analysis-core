@@ -303,7 +303,7 @@ Deno.test("should close the db", async () => {
   // How to test?
 });
 
-Deno.test("file-backed close discards all pending work, cleans up, then rejects", async () => {
+Deno.test("file-backed close executes all pending work before cleanup", async () => {
   const file = `${output}pending_done.db`;
   const tempDir = `${output}pending_done.tmp`;
   const sdb = new SimpleDB({
@@ -319,14 +319,8 @@ Deno.test("file-backed close discards all pending work, cleans up, then rejects"
   first.loadArray([{ value: 1 }]).filter("value > 0");
   second.loadArray([{ value: 2 }]);
 
-  const error = await assertRejects(() => sdb.close());
+  await sdb.close();
 
-  if (!(error instanceof Error)) {
-    throw new Error("Expected close() to reject with an Error.");
-  }
-  assertEquals(error.message.includes('"first pending"'), true);
-  assertEquals(error.message.includes("loadArray(), filter()"), true);
-  assertEquals(error.message.includes('"second pending"'), true);
   assertEquals(first.pendingOps.length, 0);
   assertEquals(second.pendingOps.length, 0);
   assertEquals(existsSync(tempDir), false);

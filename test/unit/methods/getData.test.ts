@@ -1,6 +1,39 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("direct getData does not run a schema preflight query", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("queryCount");
+  table.loadArray([{ value: 1 }]);
+  const queries: string[] = [];
+  const original = table.runQuery;
+  table.runQuery = async (query, connection, returnData, options) => {
+    queries.push(query);
+    return await original(query, connection, returnData, options);
+  };
+
+  await table.getData();
+
+  assertEquals(
+    queries.filter((query) => query.startsWith("DESCRIBE")).length,
+    0,
+  );
+  await sdb.close();
+});
+
+Deno.test("should limit returned rows", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("limited");
+  table.loadArray([{ value: 1 }, { value: 2 }, { value: 3 }]);
+
+  assertEquals(await table.getData({ limit: 2 }), [
+    { value: 1 },
+    { value: 2 },
+  ]);
+
+  await sdb.close();
+});
+
 Deno.test("should return the whole data from a table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");

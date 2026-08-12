@@ -1,8 +1,7 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function pad(
@@ -11,105 +10,81 @@ export default function pad(
   length: number,
   options: { side?: "left" | "right"; character?: string } = {},
 ) {
-  // The overflow pre-validation queries the data, so pad can't be expressed
-  // as a single SELECT over its input: it executes as a barrier.
+  if (!Number.isFinite(length) || !Number.isInteger(length) || length < 0) {
+    throw new Error(
+      "pad() length must be a finite integer greater than or equal to 0.",
+    );
+  }
+
   columns = Array.isArray(columns) ? [...columns] : columns;
   options = structuredClone(options);
+  const columnList = stringToArray(columns);
   queueOp(simpleTable, {
-    kind: "barrier",
+    kind: "fusable",
     method: "pad()",
     parameters: { columns, length, options },
-    execute: () => executePad(simpleTable, columns, length, options),
+    needsSchema: true,
+    preservesSchema: true,
+    values: padValues(columnList, length, options),
+    buildSelect: (input, schema) =>
+      padSelect(input, schema, columnList, length, options),
   });
 }
 
-async function executePad(
-  simpleTable: SimpleTable,
-  columns: string | string[],
+function padSelect(
+  input: string,
+  schema: TableSchema,
+  columns: string[],
   length: number,
   options: { side?: "left" | "right"; character?: string },
-) {
-  const columnList = stringToArray(columns);
-
-  // Validate all columns are string type
-  const allTypes = await simpleTable.getTypes();
-  for (const column of columnList) {
-    if (allTypes[column] !== "VARCHAR") {
+): string {
+  for (const column of columns) {
+    if (schema[column] !== "VARCHAR") {
       throw new Error(
         `The column ${quoteIdentifier(column)} is of type ${
-          allTypes[column]
+          schema[column]
         }. The pad() method only works with string (VARCHAR) columns. Please convert the column to string first with the .convert() method.`,
       );
     }
   }
 
-  // Pre-validation: check for strings exceeding the target length, for all
-  // columns in one scan.
-  const overflowResult = await queryDB(
-    simpleTable,
-    `SELECT ${
-      columnList
-        .map(
-          (column) =>
-            `COUNT(*) FILTER (WHERE LENGTH(${
-              quoteIdentifier(column)
-            }) > ${length}) AS ${quoteIdentifier(column)}`,
-        )
-        .join(", ")
-    } FROM ${quoteIdentifier(simpleTable.name)};`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "pad()",
-      parameters: { columns, length, options },
-      returnData: true,
-    }),
-  );
-  for (const column of columnList) {
-    const overflowCount = Number(overflowResult![0][column]);
-    if (overflowCount > 0) {
-      throw new Error(
-        `The column ${
-          quoteIdentifier(column)
-        } has ${overflowCount} string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
-      );
+  const usedNames = new Set(Object.keys(schema));
+  const overflowAliases = columns.map((_, index) => {
+    let alias = `__sda_pad_overflow_${index}`;
+    while (usedNames.has(alias)) {
+      alias += "_";
     }
-  }
-
-  const padded = padQuery(simpleTable.name, columnList, length, options);
-  await queryDB(
-    simpleTable,
-    padded.query,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "pad()",
-      parameters: { columns, length, options },
-      values: padded.values,
-    }),
-  );
+    usedNames.add(alias);
+    return alias;
+  });
+  const func = options.side === "right" ? "RPAD" : "LPAD";
+  const counts = columns.map((column, index) =>
+    `COUNT(*) FILTER (WHERE LENGTH(${
+      quoteIdentifier(column)
+    }) > ${length}) OVER () AS ${quoteIdentifier(overflowAliases[index])}`
+  ).join(", ");
+  const replacements = columns.map((column, index) => {
+    const alias = quoteIdentifier(overflowAliases[index]);
+    return `CASE WHEN ${alias} > 0 THEN error(CONCAT(?, CAST(${alias} AS VARCHAR), ?)) ELSE ${func}(${
+      quoteIdentifier(column)
+    }, ${length}, ?) END AS ${quoteIdentifier(column)}`;
+  }).join(", ");
+  const excluded = overflowAliases.map(quoteIdentifier).join(", ");
+  return `SELECT * EXCLUDE (${excluded}) REPLACE (${replacements})
+FROM (
+  SELECT *, ${counts} FROM ${input}
+) AS ${quoteIdentifier("__sda_pad_source")}`;
 }
 
-function padQuery(
-  table: string,
+function padValues(
   columns: string[],
   length: number,
-  options: { side?: "left" | "right"; character?: string },
-): { query: string; values: string[] } {
-  const side = options.side ?? "left";
+  options: { character?: string },
+): string[] {
   const character = options.character ?? "0";
-
-  const func = side === "left" ? "LPAD" : "RPAD";
-
-  // All columns are padded in a single UPDATE, so the table is rewritten
-  // once instead of once per column.
-  const query = `UPDATE ${quoteIdentifier(table)} SET ${
-    columns
-      .map(
-        (column) =>
-          `${quoteIdentifier(column)} = ${func}(${
-            quoteIdentifier(column)
-          }, ${length}, ?)`,
-      )
-      .join(", ")
-  };`;
-  return { query, values: columns.map(() => character) };
+  return columns.flatMap((column) => [
+    `The column ${quoteIdentifier(column)} has `,
+    ` string(s) exceeding the target length of ${length}. The pad() method does not truncate. Shorten the strings first or use a larger target length.`,
+    character,
+  ]);
 }

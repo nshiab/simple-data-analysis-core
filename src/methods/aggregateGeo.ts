@@ -97,7 +97,7 @@ function aggregateGeoSelect(
       quoteIdentifier(column)
     }`;
   } else {
-    throw new Error(`Unkown method ${method}`);
+    throw new Error(`aggregateGeo() received an unknown method: ${method}.`);
   }
 
   query += `\nFROM ${input}`;

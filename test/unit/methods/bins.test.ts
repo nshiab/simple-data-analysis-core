@@ -1,5 +1,18 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should reject a non-positive interval at call time", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+
+  assertThrows(
+    () => table.bins("value", 0, "bin"),
+    Error,
+    "bins() interval must be a finite number greater than 0.",
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should add a column with the bins and an interval of 10", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

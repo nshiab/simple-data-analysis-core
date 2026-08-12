@@ -25,6 +25,14 @@ export default async function queryDB(
   }[]
   | null
 > {
+  const sdb = simple instanceof SimpleTable ? simple.sdb : simple;
+  if (sdb.lifecycleState === "closed") {
+    throw new Error(
+      `${
+        options.method ?? "The query"
+      } cannot run because its SimpleDB is closed.`,
+    );
+  }
   if (simple instanceof SimpleDB && simple.connection === undefined) {
     await simple.start();
   } else if (
@@ -47,7 +55,6 @@ export default async function queryDB(
     query = cleanSQL(query);
   }
 
-  const sdb = simple instanceof SimpleTable ? simple.sdb : simple;
   const executionOptions = {
     ...options,
     logSQL: sdb.logSQL,

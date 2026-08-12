@@ -33,7 +33,7 @@ Deno.test("getData() - throws when table has geometry columns", async () => {
   await assertRejects(
     async () => await table.getData(),
     Error,
-    "Table contains geometry columns. Use getGeoData() instead.",
+    "The query returns geometry columns. Use getGeoData() instead.",
   );
 
   await sdb.close();
@@ -62,7 +62,7 @@ Deno.test("getDataAsCSV() - throws when table has geometry columns", async () =>
   await assertRejects(
     async () => await table.getDataAsCSV(),
     Error,
-    "Table contains geometry columns. Use getGeoData() instead.",
+    "The query returns geometry columns. Use getGeoData() instead.",
   );
 
   await sdb.close();

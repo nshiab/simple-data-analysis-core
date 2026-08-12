@@ -4,6 +4,7 @@ import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
 export default function join(
   leftTable: SimpleTable,
@@ -14,6 +15,7 @@ export default function join(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  assertSameDatabase(leftTable.sdb, [rightTable], "join()");
   options = structuredClone(options);
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.

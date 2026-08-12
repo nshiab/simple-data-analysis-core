@@ -5,6 +5,7 @@ import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
 export default function crossJoin(
   simpleTable: SimpleTable,
@@ -13,6 +14,7 @@ export default function crossJoin(
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
+  assertSameDatabase(simpleTable.sdb, [rightTable], "crossJoin()");
   options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
 

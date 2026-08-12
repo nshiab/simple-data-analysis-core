@@ -1,4 +1,3 @@
-import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -10,17 +9,17 @@ export default async function getData(
   options: {
     columns?: string | string[];
     conditions?: string;
+    limit?: number;
   } = {},
 ) {
   if (
-    simpleTable.sdb.dataTransport === "direct" &&
-    await hasGeometryColumn(simpleTable)
+    options.limit !== undefined &&
+    (!Number.isInteger(options.limit) || options.limit < 0)
   ) {
     throw new Error(
-      "Table contains geometry columns. Use getGeoData() instead.",
+      "getData() limit must be an integer greater than or equal to 0.",
     );
   }
-
   const columns = options.columns
     ? (typeof options.columns === "string"
       ? [options.columns]
@@ -36,7 +35,7 @@ export default async function getData(
         : "*"
     } from ${quoteIdentifier(simpleTable.name)}${
       options.conditions ? ` WHERE ${options.conditions}` : ""
-    }`,
+    }${options.limit === undefined ? "" : ` LIMIT ${options.limit}`}`,
     mergeOptions(simpleTable, {
       returnData: true,
       table: simpleTable.name,

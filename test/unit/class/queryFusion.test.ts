@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import SDAError from "../../../src/class/SDAError.ts";
@@ -487,7 +487,7 @@ Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", 
   await sdb.close();
 });
 
-Deno.test("close() discards queued methods, cleans up, and rejects", async () => {
+Deno.test("close() executes queued methods before cleaning up", async () => {
   const tempDir = "./test/output/pending_memory.tmp";
   const sdb = new SimpleDB({ dataTransport: "file", tempDir });
   await sdb.start();
@@ -497,12 +497,32 @@ Deno.test("close() discards queued methods, cleans up, and rejects", async () =>
   table.loadArray(data);
   table.filter(`value > 1`);
 
-  await assertRejects(
-    () => sdb.close(),
-    Error,
-    'The table "neverExecuted" has queued methods that were not executed: loadArray(), filter()',
+  const queries = spyOnQueries(table);
+  await sdb.close();
+
+  assert(
+    queries.some((query) =>
+      query.includes('CREATE OR REPLACE TABLE "neverExecuted"')
+    ),
   );
   assertEquals(table.pendingOps.length, 0);
   assertEquals(existsSync(tempDir), false);
   await assertRejects(() => sdb.connection.run("SELECT 1"));
+});
+
+Deno.test("methods reject clearly after close()", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("closed");
+  await sdb.close();
+
+  assertThrows(
+    () => table.filter("value > 0"),
+    Error,
+    "filter() cannot queue work because its SimpleDB is closed.",
+  );
+  await assertRejects(
+    () => table.getData(),
+    Error,
+    "getData() cannot run because its SimpleDB is closed.",
+  );
 });

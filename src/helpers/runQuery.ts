@@ -116,6 +116,16 @@ export default async function runQuery(
       const result = await connection.run(query, values);
       const columnNames = result.deduplicatedColumnNames();
       const columnTypes = result.columnTypes();
+      if (
+        options.rejectGeometry === true &&
+        columnTypes.some((type) =>
+          type.toString().toLowerCase().includes("geometry")
+        )
+      ) {
+        throw new Error(
+          "The query returns geometry columns. Use getGeoData() instead.",
+        );
+      }
       const converters = columnTypes.map((type, i) =>
         makeConverter(type, columnNames[i], options.table ?? null)
       );

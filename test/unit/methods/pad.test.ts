@@ -1,5 +1,18 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should reject an invalid length at call time", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+
+  assertThrows(
+    () => table.pad("value", -1),
+    Error,
+    "pad() length must be a finite integer greater than or equal to 0.",
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should left-pad strings to target length with default zero", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -132,6 +145,11 @@ Deno.test("should throw error when strings exceed target length", async () => {
     Error,
     'The column "name" has 1 string(s) exceeding the target length of 3',
   );
+  assertEquals(await table.getData(), [
+    { name: "Hi" },
+    { name: "World!!" },
+    { name: "OK" },
+  ]);
   await sdb.close();
 });
 

@@ -1,5 +1,4 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
 import { makeConverter } from "../helpers/runQuery.ts";
 import SDAError from "../class/SDAError.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
@@ -23,12 +22,6 @@ export default async function* stream(
   // stream() reads directly from the connection instead of going through
   // queryDB, so it must flush the pending chains itself before yielding.
   await flushAllTables(simpleTable.sdb);
-
-  if (await hasGeometryColumn(simpleTable)) {
-    throw new Error(
-      "Table contains geometry columns. Use getGeoData() instead.",
-    );
-  }
 
   const columns = options.columns
     ? (typeof options.columns === "string"
@@ -59,6 +52,15 @@ export default async function* stream(
     const result = await simpleTable.connection.stream(query);
     const columnNames = result.deduplicatedColumnNames();
     const columnTypes = result.columnTypes();
+    if (
+      columnTypes.some((type) =>
+        type.toString().toLowerCase().includes("geometry")
+      )
+    ) {
+      throw new Error(
+        "The query returns geometry columns. Use getGeoData() instead.",
+      );
+    }
     const converters = columnTypes.map((type, i) =>
       makeConverter(type, columnNames[i], simpleTable.name)
     );

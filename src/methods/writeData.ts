@@ -18,6 +18,9 @@ export default async function writeData(
     formatDates?: boolean;
   } = {},
 ) {
+  const extension = getExtension(file);
+  assertWriteDataOptions(extension, options);
+
   if (await hasGeometryColumn(simpleTable)) {
     throw new Error(
       "Table contains geometry columns. Use writeGeoData() instead.",
@@ -25,8 +28,6 @@ export default async function writeData(
   }
 
   createDirectory(file);
-
-  const extension = getExtension(file);
 
   if (options.dataAsArrays) {
     await writeDataAsArrays(simpleTable, file);
@@ -39,6 +40,25 @@ export default async function writeData(
         method: "writeData()",
         parameters: { file, options },
       }),
+    );
+  }
+}
+
+function assertWriteDataOptions(
+  extension: string,
+  options: { dataAsArrays?: boolean },
+): void {
+  const supported = ["csv", "json", "parquet", "db", "sqlite"];
+  if (!supported.includes(extension)) {
+    throw new Error(
+      `writeData() does not support the extension ${
+        JSON.stringify(extension)
+      }. Use .csv, .json, .parquet, .db, or .sqlite.`,
+    );
+  }
+  if (options.dataAsArrays === true && extension !== "json") {
+    throw new Error(
+      "writeData() dataAsArrays works only with JSON files.",
     );
   }
 }
@@ -103,6 +123,10 @@ DETACH ${database};`;
     };
     DETACH ${database};`;
   } else {
-    throw new Error(`Unknown extension ${fileExtension}`);
+    throw new Error(
+      `writeData() does not support the extension ${
+        JSON.stringify(fileExtension)
+      }.`,
+    );
   }
 }

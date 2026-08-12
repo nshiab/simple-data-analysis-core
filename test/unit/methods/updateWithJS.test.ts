@@ -225,7 +225,7 @@ Deno.test("should throw for an invalid batchSize", async () => {
   }
   assertEquals(
     (error as Error).message,
-    "batchSize must be a positive integer.",
+    "updateWithJS() batchSize must be a positive integer.",
   );
   await sdb.close();
 });

@@ -4,6 +4,7 @@ import queryDB from "../helpers/queryDB.ts";
 import SimpleTable from "../class/SimpleTable.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
 export default async function removeTables(
   simpleDB: SimpleDB,
@@ -14,6 +15,13 @@ export default async function removeTables(
     : Array.isArray(tables)
     ? tables
     : [tables];
+  assertSameDatabase(
+    simpleDB,
+    tablesToBeRemoved.filter((table): table is SimpleTable =>
+      table instanceof SimpleTable
+    ),
+    "removeTables()",
+  );
 
   await queryDB(
     simpleDB,

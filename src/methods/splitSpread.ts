@@ -15,6 +15,11 @@ export default function splitSpread(
   } = {},
 ) {
   newColumns = [...newColumns];
+  if (newColumns.length === 0) {
+    throw new Error(
+      "splitSpread() newColumns must contain at least one column.",
+    );
+  }
   options = structuredClone(options);
   // The pre-validation queries the data, so splitSpread can't be expressed
   // as a single SELECT over its input: it executes as a barrier.
