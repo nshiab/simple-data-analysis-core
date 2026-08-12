@@ -320,7 +320,11 @@ Deno.test("should surface join validation errors at the observation point", asyn
   left.join(right);
 
   const error = await assertRejects(() => left.getData());
-  assert(error instanceof Error && error.message.includes("No common column"));
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `join() cannot infer a join column because tables "joinErrLeft" and "joinErrRight" have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
+  );
 
   await sdb.close();
 });

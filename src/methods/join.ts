@@ -56,12 +56,22 @@ async function executeJoin(
     on = options.on;
   } else {
     if (identicalColumns.length === 0) {
-      throw new Error("No common column");
+      throw new Error(
+        `join() cannot infer a join column because tables ${
+          quoteIdentifier(leftTable.name)
+        } and ${
+          quoteIdentifier(rightTable.name)
+        } have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
+      );
     } else if (identicalColumns.length === 1) {
       on = identicalColumns;
     } else {
       throw new Error(
-        "Multiple columns with identical names in the tables. You need to pick the ones you want.",
+        `join() found ${identicalColumns.length} possible join columns shared by tables ${
+          quoteIdentifier(leftTable.name)
+        } and ${quoteIdentifier(rightTable.name)}: ${
+          identicalColumns.map(quoteIdentifier).join(", ")
+        }. Pass { on: "column" } or { on: ["column1", "column2"] } to choose.`,
       );
     }
   }

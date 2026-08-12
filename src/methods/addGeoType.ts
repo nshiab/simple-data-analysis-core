@@ -20,7 +20,7 @@ export default function addGeoType(
       assertNewColumns(types, [newColumn], "addGeoType()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "addGeoType()", simpleTable.name);
       return `SELECT *, CAST(ST_GeometryType(${
         quoteIdentifier(column)
       }) AS VARCHAR) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

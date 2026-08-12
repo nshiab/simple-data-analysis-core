@@ -19,7 +19,7 @@ export default function buffer(
     buildSelect: (input, types) => {
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "buffer()", simpleTable.name);
       // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
       // so the cast keeps it on the new geometries.
       const expression = `ST_Buffer(${quoteIdentifier(column)}, ${distance})::${

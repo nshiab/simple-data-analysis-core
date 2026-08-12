@@ -23,7 +23,7 @@ export default function reproject(
     buildSelect: (input, types) => {
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "reproject()", simpleTable.name);
       return `SELECT * REPLACE (ST_Transform(${quoteIdentifier(column)}, ${
         parseValue(crs)
       })::${targetGeoType} AS ${quoteIdentifier(column)}) FROM ${input}`;

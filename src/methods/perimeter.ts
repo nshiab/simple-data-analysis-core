@@ -20,7 +20,7 @@ export default function perimeter(
       assertNewColumns(types, [newColumn], "perimeter()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "perimeter()", simpleTable.name);
       return `SELECT *, CAST(ST_Perimeter_Spheroid(${
         quoteIdentifier(column)
       }) ${options.unit === "km" ? "/ 1000" : ""} AS DOUBLE) AS ${

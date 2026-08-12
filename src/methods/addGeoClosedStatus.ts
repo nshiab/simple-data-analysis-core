@@ -20,7 +20,11 @@ export default function addGeoClosedStatus(
       assertNewColumns(types, [newColumn], "addGeoClosedStatus()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(
+          types,
+          "addGeoClosedStatus()",
+          simpleTable.name,
+        );
       return `SELECT *, CAST(ST_IsClosed(${
         quoteIdentifier(column)
       }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

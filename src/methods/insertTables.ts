@@ -61,27 +61,67 @@ async function executeInsertTables(
 
   // Checking columns, types
   if (!options.unifyColumns) {
-    const thisColumns = (await simpleTable.getColumns()).sort().join(",");
+    const thisColumns = (await simpleTable.getColumns()).sort();
+    const thisColumnSet = new Set(thisColumns);
     for (const table of array) {
-      const tableColumns = (await table.getColumns()).sort().join(",");
-      if (thisColumns !== tableColumns) {
+      const tableColumns = (await table.getColumns()).sort();
+      const tableColumnSet = new Set(tableColumns);
+      const missingFromTable = thisColumns.filter((column) =>
+        !tableColumnSet.has(column)
+      );
+      const missingFromSimpleTable = tableColumns.filter((column) =>
+        !thisColumnSet.has(column)
+      );
+      if (missingFromTable.length > 0 || missingFromSimpleTable.length > 0) {
+        const differences: string[] = [];
+        if (missingFromTable.length > 0) {
+          differences.push(
+            `${missingFromTable.length} column${
+              missingFromTable.length === 1 ? "" : "s"
+            } missing from ${quoteIdentifier(table.name)}: ${
+              missingFromTable.map(quoteIdentifier).join(", ")
+            }.`,
+          );
+        }
+        if (missingFromSimpleTable.length > 0) {
+          differences.push(
+            `${missingFromSimpleTable.length} column${
+              missingFromSimpleTable.length === 1 ? "" : "s"
+            } missing from ${quoteIdentifier(simpleTable.name)}: ${
+              missingFromSimpleTable.map(quoteIdentifier).join(", ")
+            }.`,
+          );
+        }
         throw new Error(
-          `Tables ${simpleTable.name} and ${table.name} don't have the same columns: ${thisColumns} vs ${tableColumns}`,
+          `Tables ${quoteIdentifier(simpleTable.name)} and ${
+            quoteIdentifier(table.name)
+          } do not have the same columns.\n${
+            differences.join("\n")
+          }\nPass { unifyColumns: true } to fill missing columns with NULL values.`,
         );
       }
     }
   }
   const allTables = [simpleTable, ...array];
   const allTypes: { [key: string]: string } = {};
+  const typeSourceTables: { [key: string]: SimpleTable } = {};
   for (const table of allTables) {
     const types = await table.getTypes();
     for (const key in types) {
       if (!allTypes[key]) {
         allTypes[key] = types[key];
+        typeSourceTables[key] = table;
       } else {
         if (allTypes[key] !== types[key]) {
+          const sourceTable = typeSourceTables[key];
           throw new Error(
-            `The column ${key} has different types in the tables.`,
+            `Column ${quoteIdentifier(key)} has different types:\n${
+              quoteIdentifier(sourceTable.name)
+            }: ${allTypes[key]}\n${quoteIdentifier(table.name)}: ${
+              types[key]
+            }\nConvert ${
+              quoteIdentifier(key)
+            } to the same type in both tables before inserting.`,
           );
         }
       }

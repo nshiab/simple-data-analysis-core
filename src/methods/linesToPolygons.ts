@@ -14,7 +14,8 @@ export default function linesToPolygons(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const col = column ?? findGeoColumnFromSchema(types);
+      const col = column ??
+        findGeoColumnFromSchema(types, "linesToPolygons()", simpleTable.name);
       return `SELECT * EXCLUDE(${quoteIdentifier(col)}), ST_MakePolygon(${
         quoteIdentifier(col)
       }) as ${quoteIdentifier(col)} FROM ${input}`;

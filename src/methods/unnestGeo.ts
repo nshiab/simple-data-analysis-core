@@ -14,7 +14,8 @@ export default function unnestGeo(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const col = column ?? findGeoColumnFromSchema(types);
+      const col = column ??
+        findGeoColumnFromSchema(types, "unnestGeo()", simpleTable.name);
       // The recursive UNNEST adds a path column, removed by the outer SELECT.
       return `SELECT * EXCLUDE(path) FROM (SELECT * EXCLUDE(${
         quoteIdentifier(col)

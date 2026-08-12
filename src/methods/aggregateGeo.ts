@@ -31,7 +31,7 @@ export default function aggregateGeo(
       execute: async () => {
         const column = typeof options.column === "string"
           ? options.column
-          : await findGeoColumn(simpleTable);
+          : await findGeoColumn(simpleTable, "aggregateGeo()");
         await queryDB(
           simpleTable,
           `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
@@ -62,7 +62,7 @@ export default function aggregateGeo(
     buildSelect: (input, types) => {
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "aggregateGeo()", simpleTable.name);
       return aggregateGeoSelect(input, column, method, options);
     },
   });

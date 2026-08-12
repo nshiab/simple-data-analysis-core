@@ -1,5 +1,36 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should explain when a table has no geometry column", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("measurements");
+  table.loadArray([{ value: 1 }]);
+
+  const error = await assertRejects(() => table.area("area").run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `area() could not find a geometry column in table "measurements". Specify a geometry column explicitly, or add one to the table first.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should list geometry columns when a table has multiple", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("geodata");
+  table.loadGeoData("test/geodata/files/point.json");
+  table.cloneColumn("geom", "other geometry");
+
+  const error = await assertRejects(() => table.area("area").run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `area() found 2 geometry columns in table "geodata": "geom", "other geometry". Specify one explicitly.`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should calculate the area of geometries in square meters", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });

@@ -40,7 +40,7 @@ async function executeRandomPoint(
   await ensureSpatial(simpleTable);
   const column = typeof options.column === "string"
     ? options.column
-    : await findGeoColumn(simpleTable);
+    : await findGeoColumn(simpleTable, "randomPoint()");
 
   const geoType = await simpleTable.getProjection(column);
 

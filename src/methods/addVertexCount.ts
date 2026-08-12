@@ -20,7 +20,7 @@ export default function addVertexCount(
       assertNewColumns(types, [newColumn], "addVertexCount()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "addVertexCount()", simpleTable.name);
       return `SELECT *, CAST(ST_NPoints(${
         quoteIdentifier(column)
       }) AS BIGINT) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

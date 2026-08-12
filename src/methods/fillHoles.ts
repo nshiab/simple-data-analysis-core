@@ -14,7 +14,8 @@ export default function fillHoles(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const col = column ?? findGeoColumnFromSchema(types);
+      const col = column ??
+        findGeoColumnFromSchema(types, "fillHoles()", simpleTable.name);
       // Like the previous UPDATE-based implementation, the result is always
       // stored in the "geom" column, and the assignment cast keeps its type.
       return `SELECT * REPLACE (ST_MakePolygon(ST_ExteriorRing(${

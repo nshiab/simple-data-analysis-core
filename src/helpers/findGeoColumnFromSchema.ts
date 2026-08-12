@@ -1,26 +1,45 @@
+import quoteIdentifier from "./quoteIdentifier.ts";
 import type { TableSchema } from "./pendingOps.ts";
 
 /**
- * Returns the only geometry column of a schema. Same behavior as
- * findGeoColumn, but working from a schema instead of querying the table, so
- * it can be used inside fusable fragments at flush time.
+ * Returns the only geometry column in a table schema.
+ *
+ * @param types - The table schema to inspect.
+ * @param method - The SDA method requesting a geometry column.
+ * @param tableName - The name of the table represented by the schema.
+ * @returns The name of the only geometry column.
+ *
+ * @example
+ * ```ts
+ * const column = findGeoColumnFromSchema(
+ *   { geom: "GEOMETRY('EPSG:4326')" },
+ *   "area()",
+ *   "places",
+ * );
+ * ```
  */
-export default function findGeoColumnFromSchema(types: TableSchema): string {
-  const geometries = Object.values(types).filter(
-    (d) => d.toLowerCase().includes("geometry"),
-  );
-  if (geometries.length === 0) {
-    throw new Error("Table contains no geometry columns.");
-  } else if (geometries.length > 1) {
+export default function findGeoColumnFromSchema(
+  types: TableSchema,
+  method: string,
+  tableName: string,
+): string {
+  const geometryColumns = Object.keys(types).filter((column) =>
+    types[column].toLowerCase().includes("geometry")
+  ).sort();
+  if (geometryColumns.length === 0) {
     throw new Error(
-      "More than one column storing geometries. If the method allows to specify one, do it. Otherwise, use the selectColumns methods beforehand.",
+      `${method} could not find a geometry column in table ${
+        quoteIdentifier(tableName)
+      }. Specify a geometry column explicitly, or add one to the table first.`,
+    );
+  } else if (geometryColumns.length > 1) {
+    throw new Error(
+      `${method} found ${geometryColumns.length} geometry columns in table ${
+        quoteIdentifier(tableName)
+      }: ${
+        geometryColumns.map(quoteIdentifier).join(", ")
+      }. Specify one explicitly.`,
     );
   }
-  const column = Object.keys(types).find(
-    (d) => types[d].toLowerCase().includes("geometry"),
-  );
-  if (typeof column !== "string") {
-    throw new Error("No column");
-  }
-  return column;
+  return geometryColumns[0];
 }

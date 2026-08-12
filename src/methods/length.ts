@@ -20,7 +20,7 @@ export default function length(
       assertNewColumns(types, [newColumn], "length()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "length()", simpleTable.name);
       return `SELECT *, CAST(ST_Length_Spheroid(${quoteIdentifier(column)}) ${
         options.unit === "km" ? "/ 1000" : ""
       } AS DOUBLE) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

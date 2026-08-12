@@ -8,7 +8,7 @@ export default async function getBoundingBox(
   simpleTable: SimpleTable,
   column?: string,
 ): Promise<[number, number, number, number]> {
-  const col = column ?? (await findGeoColumn(simpleTable));
+  const col = column ?? (await findGeoColumn(simpleTable, "getBoundingBox()"));
   const result = (await queryDB(
     simpleTable,
     `SELECT

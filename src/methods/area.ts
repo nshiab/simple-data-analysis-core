@@ -20,7 +20,7 @@ export default function area(
       assertNewColumns(types, [newColumn], "area()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "area()", simpleTable.name);
       return `SELECT *, CAST(ST_Area_Spheroid(${quoteIdentifier(column)}) ${
         options.unit === "km2" ? "/ 1000000" : ""
       } AS DOUBLE) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

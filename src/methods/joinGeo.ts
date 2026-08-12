@@ -58,9 +58,9 @@ async function executeJoinGeo(
   },
 ): Promise<void> {
   const leftColumn = options.leftColumn ??
-    (await findGeoColumn(leftTable));
+    (await findGeoColumn(leftTable, "joinGeo()"));
   const rightColumn = options.rightColumn ??
-    (await findGeoColumn(rightTable));
+    (await findGeoColumn(rightTable, "joinGeo()"));
 
   const leftTableColumns = await leftTable.getColumns();
   const rightTableColumns = await rightTable.getColumns();

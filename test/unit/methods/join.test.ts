@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should reject tables from different databases", async () => {
@@ -242,6 +242,40 @@ Deno.test("should automatically find a common column, make left join and put the
     },
     { dishId: 5, name: "Mochi", country: "Japan", category: null },
   ]);
+
+  await sdb.close();
+});
+
+Deno.test("should explain when tables have no common join column", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const votes = sdb.newTable("votes");
+  votes.loadArray([{ voteId: 1 }]);
+  const districts = sdb.newTable("districts");
+  districts.loadArray([{ districtId: 1 }]);
+
+  const error = await assertRejects(() => votes.join(districts).run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `join() cannot infer a join column because tables "votes" and "districts" have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should list possible columns when a join is ambiguous", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const votes = sdb.newTable("votes");
+  votes.loadArray([{ districtId: 1, year: 2026, votes: 10 }]);
+  const districts = sdb.newTable("districts");
+  districts.loadArray([{ districtId: 1, year: 2026, name: "Example" }]);
+
+  const error = await assertRejects(() => votes.join(districts).run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `join() found 2 possible join columns shared by tables "votes" and "districts": "districtId", "year". Pass { on: "column" } or { on: ["column1", "column2"] } to choose.`,
+  );
 
   await sdb.close();
 });

@@ -5731,7 +5731,7 @@ export default class SimpleTable extends Simple {
     features: unknown[];
   }> {
     if (column === undefined) {
-      column = await findGeoColumn(this);
+      column = await findGeoColumn(this, "getGeoData()");
     }
 
     return await getGeoData(this, column, options);

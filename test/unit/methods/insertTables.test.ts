@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
@@ -59,6 +59,59 @@ Deno.test("should throw an error if the tables have different columns", async ()
 
   // insertTables() queues the operation; run() executes it.
   await assertRejects(() => table1.insertTables(table2).run());
+
+  await sdb.close();
+});
+
+Deno.test("should explain which columns differ when inserting tables", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const redistributedVotes = sdb.newTable("redistributedVotes");
+  redistributedVotes.loadArray([{
+    "shared": 1,
+    "B.R.": "value",
+    "Date scrutin": "2026-08-12",
+  }]);
+
+  const votesWithoutMatch = sdb.newTable("votesWithoutMatch");
+  votesWithoutMatch.loadArray([{
+    "shared": 1,
+    "unmatched reason": "missing district",
+  }]);
+
+  const error = await assertRejects(() =>
+    redistributedVotes.insertTables(votesWithoutMatch).run()
+  );
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `Tables "redistributedVotes" and "votesWithoutMatch" do not have the same columns.
+2 columns missing from "votesWithoutMatch": "B.R.", "Date scrutin".
+1 column missing from "redistributedVotes": "unmatched reason".
+Pass { unifyColumns: true } to fill missing columns with NULL values.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should explain which column types differ when inserting tables", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const redistributedVotes = sdb.newTable("redistributedVotes");
+  redistributedVotes.loadArray([{ votes: 10 }]);
+
+  const votesWithoutMatch = sdb.newTable("votesWithoutMatch");
+  votesWithoutMatch.loadArray([{ votes: "10" }]);
+
+  const error = await assertRejects(() =>
+    redistributedVotes.insertTables(votesWithoutMatch).run()
+  );
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `Column "votes" has different types:
+"redistributedVotes": DOUBLE
+"votesWithoutMatch": VARCHAR
+Convert "votes" to the same type in both tables before inserting.`,
+  );
 
   await sdb.close();
 });

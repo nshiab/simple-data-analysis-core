@@ -31,7 +31,7 @@ async function executeSimplify(
 
   const column = typeof options.column === "string"
     ? options.column
-    : await findGeoColumn(simpleTable);
+    : await findGeoColumn(simpleTable, "simplify()");
 
   const geoType = await simpleTable.getProjection(column);
 

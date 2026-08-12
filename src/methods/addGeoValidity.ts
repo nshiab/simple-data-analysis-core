@@ -20,7 +20,7 @@ export default function addGeoValidity(
       assertNewColumns(types, [newColumn], "addGeoValidity()");
       const column = typeof options.column === "string"
         ? options.column
-        : findGeoColumnFromSchema(types);
+        : findGeoColumnFromSchema(types, "addGeoValidity()", simpleTable.name);
       return `SELECT *, CAST(ST_IsValid(${
         quoteIdentifier(column)
       }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

@@ -17,7 +17,8 @@ export default function flipCoordinates(
     // schema is unchanged.
     preservesSchema: true,
     buildSelect: (input, types) => {
-      const col = column ?? findGeoColumnFromSchema(types);
+      const col = column ??
+        findGeoColumnFromSchema(types, "flipCoordinates()", simpleTable.name);
       // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
       // so the cast keeps it on the new geometries.
       return `SELECT * REPLACE (ST_FlipCoordinates(${quoteIdentifier(col)})::${
