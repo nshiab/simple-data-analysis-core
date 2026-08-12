@@ -6087,7 +6087,11 @@ export default class SimpleTable extends Simple {
       console.log(`\nTable ${this.name}: no data`);
     } else {
       console.log(`\nTable ${this.name}:`);
-      console.table(await getDescription(this));
+      logData(
+        null,
+        await getDescription(this),
+        this.charsToLog,
+      );
     }
     return this;
   }

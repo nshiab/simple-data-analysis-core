@@ -1,16 +1,31 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should log a description of the table", async () => {
+Deno.test("should log a description of the table with logData", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
-  await table.logDescription();
+  const logs: string[] = [];
+  let consoleTableCalls = 0;
+  const originalLog = console.log;
+  const originalTable = console.table;
+  console.log = (...args: unknown[]) => logs.push(String(args[0]));
+  console.table = () => consoleTableCalls++;
 
-  // How to test?
-  assertEquals(true, true);
-  await sdb.close();
+  try {
+    await table.logDescription();
+  } finally {
+    console.log = originalLog;
+    console.table = originalTable;
+    await sdb.close();
+  }
+
+  const output = logs.join("\n");
+  assertEquals(consoleTableCalls, 0);
+  assertEquals(output.includes("┌"), true);
+  assertEquals(output.includes("column"), true);
+  assertEquals(output.includes("unique"), true);
 });
 
 Deno.test("should not throw an error when there is no table", async () => {
