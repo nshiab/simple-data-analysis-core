@@ -2929,7 +2929,7 @@ export default class SimpleTable extends Simple {
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The column name or an array of column names containing numeric values to be rounded.
-   * @param options - An optional object with configuration options:
+   * @param options - An optional integer specifying the number of decimal places, or an object with configuration options:
    * @param options.decimals - The number of decimal places to round to. Defaults to `0` (rounds to the nearest integer).
    * @param options.method - The rounding method to use: `"round"` (rounds to the nearest integer, with halves rounding up), `"ceiling"` (rounds up to the nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults to `"round"`.
    * @returns The table, so methods can be chained.
