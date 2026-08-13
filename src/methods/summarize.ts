@@ -1,6 +1,7 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getSummaryExpression, {
   allSummaries,
+  isTemporalSummaryType,
   type Summary,
 } from "../helpers/getSummaryExpression.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -84,14 +85,6 @@ function getSummarizeValues(options: SummarizeOptions): string[] {
   ];
 }
 
-const timeTypes = [
-  "DATE",
-  "TIME",
-  "TIMESTAMP",
-  "TIMESTAMP_MS",
-  "TIMESTAMP WITH TIME ZONE",
-];
-
 function summarizeSelect(
   input: string,
   types: TableSchema,
@@ -148,7 +141,7 @@ function summarizeSelect(
 
   const typesOfValues = values.map((d) => effectiveTypes[d]);
   const doubleAndDate = typesOfValues.includes("DOUBLE") &&
-    typesOfValues.filter((d) => timeTypes.includes(d)).length >= 1;
+    typesOfValues.some(isTemporalSummaryType);
   if (doubleAndDate) {
     throw new Error(
       "You are trying to summarize numbers and timestamps/dates/times. You can specify values in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { datesToMs: true }.",

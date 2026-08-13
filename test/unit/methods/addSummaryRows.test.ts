@@ -128,9 +128,13 @@ Deno.test("addSummaryRows() binds custom labels", async () => {
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() composes with preceding queued methods", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+Deno.test("addSummaryRows() fuses with preceding queued methods", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file", logSQL: true });
   const table = sdb.newTable("filteredSummary");
+  const logs: unknown[][] = [];
+  const warnings: unknown[][] = [];
+  const originalLog = console.log;
+  const originalWarn = console.warn;
 
   table
     .loadArray([
@@ -141,11 +145,32 @@ Deno.test("addSummaryRows() composes with preceding queued methods", async () =>
     .filter("value >= 2")
     .addSummaryRows("all", "statistic", "sum");
 
-  assertEquals(await table.getData(), [
+  let data: { [key: string]: unknown }[] = [];
+  try {
+    console.log = (...args: unknown[]) => logs.push(args);
+    console.warn = (...args: unknown[]) => warnings.push(args);
+    data = await table.getData();
+  } finally {
+    console.log = originalLog;
+    console.warn = originalWarn;
+  }
+
+  assertEquals(data, [
     { statistic: "b", value: 2 },
     { statistic: "c", value: 3 },
     { statistic: "sum", value: 5 },
   ]);
+  const fusedStatements = logs.filter(([message]) =>
+    typeof message === "string" &&
+    message.includes('CREATE OR REPLACE TABLE "filteredSummary" AS WITH')
+  );
+  assertEquals(fusedStatements.length, 1);
+  assertEquals(
+    typeof fusedStatements[0][0] === "string" &&
+      fusedStatements[0][0].includes('SELECT * FROM "s2"'),
+    true,
+  );
+  assertEquals(warnings, []);
 
   await sdb.close();
 });

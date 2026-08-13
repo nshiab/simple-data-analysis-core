@@ -36,13 +36,20 @@ const aggregateFunctions: Partial<Record<Summary, string>> = {
   var: "VARIANCE",
 };
 
-const timeTypes = [
+const temporalSummaryTypes: readonly string[] = [
   "DATE",
   "TIME",
   "TIMESTAMP",
   "TIMESTAMP_MS",
   "TIMESTAMP WITH TIME ZONE",
 ];
+
+/** Returns whether a DuckDB type is temporal for summary compatibility. */
+export function isTemporalSummaryType(
+  type: string | undefined,
+): boolean {
+  return typeof type === "string" && temporalSummaryTypes.includes(type);
+}
 
 /**
  * Returns the aggregate expression for one summary of one column, or `null`
@@ -70,8 +77,7 @@ export default function getSummaryExpression(
     return null;
   }
   if (
-    typeof type === "string" &&
-    timeTypes.includes(type) &&
+    isTemporalSummaryType(type) &&
     ["mean", "sum", "skew", "stdDev", "var"].includes(summary)
   ) {
     return null;
