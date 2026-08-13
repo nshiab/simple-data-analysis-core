@@ -134,7 +134,7 @@ import renameColumns from "../methods/renameColumns.ts";
 import trim from "../methods/trim.ts";
 import selectRows from "../methods/selectRows.ts";
 import cloneColumnWithOffset from "../methods/cloneColumnWithOffset.ts";
-import cloneTable from "../methods/cloneTable.ts";
+import clone from "../methods/clone.ts";
 import insertTables from "../methods/insertTables.ts";
 import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
@@ -1043,49 +1043,49 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Clone tableA to a new table with a default generated name (e.g., "table1")
-   * const tableB = tableA.cloneTable();
+   * const tableB = tableA.clone();
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA to a new table named "my_cloned_table" using string parameter
-   * const tableB = tableA.cloneTable("my_cloned_table");
+   * const tableB = tableA.clone("my_cloned_table");
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA to a new table named "my_cloned_table" using options object
-   * const tableB = tableA.cloneTable({ name: "my_cloned_table" });
+   * const tableB = tableA.clone({ name: "my_cloned_table" });
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA, including only rows where 'column1' is greater than 10
-   * const tableB = tableA.cloneTable({ conditions: `column1 > 10` });
+   * const tableB = tableA.clone({ conditions: `column1 > 10` });
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA with only specific columns
-   * const tableB = tableA.cloneTable({ columns: ["name", "age", "city"] });
+   * const tableB = tableA.clone({ columns: ["name", "age", "city"] });
    * ```
    *
    * @example
    * ```ts
    * // Clone only the first 10 rows of tableA
-   * const tableB = tableA.cloneTable({ limit: 10 });
+   * const tableB = tableA.clone({ limit: 10 });
    * ```
    *
    * @example
    * ```ts
    * // Clone 10 rows after skipping the first 5 rows
-   * const tableB = tableA.cloneTable({ limit: 10, offset: 5 });
+   * const tableB = tableA.clone({ limit: 10, offset: 5 });
    * ```
    *
    * @example
    * ```ts
    * // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
-   * const tableB = tableA.cloneTable({
+   * const tableB = tableA.clone({
    *   name: "filtered_data",
    *   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
    *   columns: ["name", "status", "created_date"],
@@ -1093,7 +1093,7 @@ export default class SimpleTable extends Simple {
    * });
    * ```
    */
-  cloneTable(
+  clone(
     nameOrOptions: string | {
       name?: string;
       conditions?: string;
@@ -1102,7 +1102,7 @@ export default class SimpleTable extends Simple {
       offset?: number;
     } = {},
   ): this {
-    return cloneTable(this, nameOrOptions) as this;
+    return clone(this, nameOrOptions) as this;
   }
 
   /**

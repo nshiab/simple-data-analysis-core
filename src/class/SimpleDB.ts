@@ -240,7 +240,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * The class used to create table instances. Defaults to `SimpleTable`.
    * Override this property when subclassing to ensure all table-creating
-   * methods (e.g., `newTable()`, `cloneTable()`) return instances of your
+   * methods (e.g., `newTable()`, `clone()`) return instances of your
    * custom table class.
    *
    * @defaultValue `SimpleTable`
@@ -459,7 +459,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     }
     const TableClass = this.tableClass;
 
-    // SHOULD MATCH cloneTable
+    // SHOULD MATCH clone
     let table;
     if (typeof name === "string") {
       table = new TableClass(name, this, {

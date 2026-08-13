@@ -86,7 +86,7 @@ Deno.test("getTables() returns correct generic type", async () => {
   await sdb.close();
 });
 
-Deno.test("cloneTable() returns correct generic type", async () => {
+Deno.test("clone() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -104,8 +104,8 @@ Deno.test("cloneTable() returns correct generic type", async () => {
   const original = sdb.newTable("original");
   original.loadArray([{ a: 1 }, { a: 2 }]);
 
-  // cloneTable() now correctly returns Promise<this>, inferred as MyTable
-  const cloned = original.cloneTable("cloned");
+  // clone() returns this, inferred as MyTable.
+  const cloned = original.clone("cloned");
 
   assertEquals(cloned instanceof MyTable, true);
   // No cast needed - TypeScript knows cloned is MyTable
@@ -118,7 +118,7 @@ Deno.test("cloneTable() returns correct generic type", async () => {
   await sdb.close();
 });
 
-Deno.test("cloneTable() with default name returns correct generic type", async () => {
+Deno.test("clone() with default name returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -136,7 +136,7 @@ Deno.test("cloneTable() with default name returns correct generic type", async (
   const original = sdb.newTable("original");
   original.loadArray([{ a: 1 }]);
 
-  const cloned = original.cloneTable();
+  const cloned = original.clone();
 
   assertEquals(cloned instanceof MyTable, true);
   assertEquals(cloned.defaultTableName, true);

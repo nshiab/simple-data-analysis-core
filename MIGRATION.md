@@ -45,8 +45,8 @@ await table.log(); // executes everything, then prints
 ```
 
 Methods that create an output table—through `outputTable` (`join()`,
-`joinGeo()`, `summarize()`, ...) or `name` (`cloneTable()`)—return the output
-table instance synchronously, so you can keep chaining on it:
+`joinGeo()`, `summarize()`, ...) or `name` (`clone()`)—return the output table
+instance synchronously, so you can keep chaining on it:
 
 ```ts
 const joined = tableA
@@ -156,6 +156,7 @@ only the renamed methods and option keys below are breaking.
 | `proportionsHorizontal()` | `rowProportions()`     | Shorter and names the unit instead of a visual direction.                   |
 | `proportionsVertical()`   | `columnProportions()`  | Same.                                                                       |
 | `logTable()`              | `log()`                | The table receiver already supplies the noun.                               |
+| `cloneTable()`            | `clone()`              | The table receiver already supplies the noun.                               |
 | `done()`                  | `close()`              | Uses the conventional lifecycle verb.                                       |
 | `getTableName()`          | `getName()`            | Matches the existing `table.name` property.                                 |
 | `getNbRows()`             | `getRowCount()`        | Uses the same `*Count` vocabulary as options and output columns.            |
@@ -195,7 +196,7 @@ Methods that could skip validations or error-throwing now all use
 | `loadData()` / `loadDirectory()` | `{ fileName: true }`                              | `{ filename: true }`                     |
 | `loadGeoData()`                  | `{ toWGS84: true }`                               | `{ toEPSG4326: true }`                   |
 | `joinGeo()`                      | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
-| `cloneTable()`                   | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
+| `clone()`                        | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
 | `summarize()`                    | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
 | `ranks()`                        | `{ noGaps: true }`                                | `{ dense: true }`                        |
 | `writeDB()`                      | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
@@ -209,7 +210,7 @@ Methods that could skip validations or error-throwing now all use
 | `log()`                          | `{ nbRowsToLog: 20 }`                             | `{ count: 20 }`                          |
 | `new SimpleDB()` / `newTable()`  | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
 | `new SimpleDB()`                 | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
-| `cloneTable()`                   | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
+| `clone()`                        | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
 
 ### `summarize()`: the `value` column is now automatic
 

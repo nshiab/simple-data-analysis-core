@@ -3,7 +3,7 @@ import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function cloneTable(
+export default function clone(
   simpleTable: SimpleTable,
   nameOrOptions: string | {
     name?: string;
@@ -36,7 +36,7 @@ export default function cloneTable(
 
   queueOp(clonedTable, {
     kind: "fusable",
-    method: "cloneTable()",
+    method: "clone()",
     parameters: { options },
     // The clone has no prior state of its own to describe; its SELECT reads
     // simpleTable directly instead.

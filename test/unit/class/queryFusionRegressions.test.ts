@@ -264,12 +264,12 @@ Deno.test("interleaved table operations execute as contiguous segments", async (
   await sdb.close();
 });
 
-Deno.test("cloneTable() fuses with a subsequent op on the clone into one statement", async () => {
+Deno.test("clone() fuses with a subsequent op on the clone into one statement", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("cloneFuseSrc");
   table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
 
-  const clone = table.cloneTable("cloneFuseDst");
+  const clone = table.clone("cloneFuseDst");
   const queries: string[] = [];
   const original = clone.runQuery;
   clone.runQuery = (query, connection, returnData, options) => {
@@ -289,14 +289,14 @@ Deno.test("cloneTable() fuses with a subsequent op on the clone into one stateme
   await sdb.close();
 });
 
-Deno.test("cloneTable() reads simpleTable's state at its call position, not later mutations", async () => {
+Deno.test("clone() reads simpleTable's state at its call position, not later mutations", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("clonePosition");
   table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
   table.filter("v > 1");
 
-  const clone = table.cloneTable();
-  // Queued after cloneTable(): the clone must not see this later mutation.
+  const clone = table.clone();
+  // Queued after clone(): the clone must not see this later mutation.
   table.addColumn("doubled", "integer", "v * 2");
 
   assertEquals(await clone.getData(), [{ v: 2 }, { v: 3 }]);

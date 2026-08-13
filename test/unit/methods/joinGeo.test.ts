@@ -427,12 +427,12 @@ Deno.test("should return all intersections and all rows from leftTable when doin
     "test/geodata/files/polygonsWithinPolygons.json",
   );
 
-  const polygonsWithinNotNull = polygonsWithin.cloneTable({
+  const polygonsWithinNotNull = polygonsWithin.clone({
     conditions: `name NOT NULL`,
   });
   polygonsWithinNotNull.removeColumns("container");
 
-  const containers = polygonsWithin.cloneTable({
+  const containers = polygonsWithin.clone({
     conditions: `container NOT NULL`,
   });
   containers.removeColumns("name");
@@ -466,12 +466,12 @@ Deno.test("should return all intersections - and just intersections - when doing
     "test/geodata/files/polygonsWithinPolygons.json",
   );
 
-  const polygonsWithinNotNull = polygonsWithin.cloneTable({
+  const polygonsWithinNotNull = polygonsWithin.clone({
     conditions: `name NOT NULL`,
   });
   polygonsWithinNotNull.removeColumns("container");
 
-  const containers = polygonsWithin.cloneTable({
+  const containers = polygonsWithin.clone({
     conditions: `container NOT NULL`,
   });
   containers.removeColumns("name");
@@ -502,7 +502,7 @@ Deno.test("should return all points within a target distance (srs method)", asyn
   const sdb = new SimpleDB({ dataTransport: "file" });
   const cities = sdb.newTable();
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
-  const cloned = cities.cloneTable();
+  const cloned = cities.clone();
   cloned.renameColumns({ name: "name_1" });
   cities.joinGeo(cloned, "withinDistance", { distance: 10 });
   cities.distance("geom", "geomTable2", "dist", { decimals: 2 });
@@ -524,7 +524,7 @@ Deno.test("should return all points within a target distance (haversine method)"
   const sdb = new SimpleDB({ dataTransport: "file" });
   const cities = sdb.newTable();
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
-  const cloned = cities.cloneTable();
+  const cloned = cities.clone();
   cloned.renameColumns({ name: "name_1" });
 
   cities.joinGeo(cloned, "withinDistance", {
@@ -553,7 +553,7 @@ Deno.test("should return all points within a target distance (spheroid method)",
   const sdb = new SimpleDB({ dataTransport: "file" });
   const cities = sdb.newTable();
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
-  const cloned = cities.cloneTable();
+  const cloned = cities.clone();
   cloned.renameColumns({ name: "name_1" });
 
   cities.joinGeo(cloned, "withinDistance", {

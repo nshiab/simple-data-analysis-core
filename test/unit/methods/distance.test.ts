@@ -5,7 +5,7 @@ Deno.test("should calculate the distance between points with the SRS unit", asyn
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadGeoData("test/geodata/files/coordinates.geojson");
-  const clone = table.cloneTable();
+  const clone = table.clone();
   clone.renameColumns({ geom: "geom_1", name: "name_1" });
 
   table.crossJoin(clone);
@@ -34,7 +34,7 @@ Deno.test("should calculate the distance between points with the SRS unit and ro
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadGeoData("test/geodata/files/coordinates.geojson");
-  const clone = table.cloneTable();
+  const clone = table.clone();
   clone.renameColumns({ geom: "geom_1", name: "name_1" });
 
   table.crossJoin(clone);
@@ -110,7 +110,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
@@ -141,7 +141,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
@@ -171,7 +171,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
@@ -202,7 +202,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
@@ -234,7 +234,7 @@ Deno.test("should calculate the distance between points with the spheroid method
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
@@ -265,7 +265,7 @@ Deno.test("should calculate the distance between points with the spheroid method
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
@@ -296,7 +296,7 @@ Deno.test("should calculate the distance between points with the spheroid method
   const sdb = new SimpleDB({ dataTransport: "file" });
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.cloneTable();
+  const pointsCloned = points.clone();
   pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
 
   points.crossJoin(pointsCloned);
