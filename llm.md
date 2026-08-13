@@ -1399,7 +1399,7 @@ loadSample(sample: "fires" | "recipes" | "temperatures" | "temperaturesCities" |
 table.loadSample("fires");
 ```
 
-#### `cloneTable`
+#### `clone`
 
 Returns a new table with the same structure and data as this table. The data can
 be optionally filtered, limited to a specific number of rows, and offset.
@@ -1416,7 +1416,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-cloneTable(nameOrOptions?: string | { name?: string; conditions?: string; columns?: string | string[]; limit?: number; offset?: number }): this;
+clone(nameOrOptions?: string | { name?: string; conditions?: string; columns?: string | string[]; limit?: number; offset?: number }): this;
 ```
 
 ##### Parameters
@@ -1445,42 +1445,42 @@ A new table instance containing the cloned data, so methods can be chained.
 
 ```ts
 // Clone tableA to a new table with a default generated name (e.g., "table1")
-const tableB = tableA.cloneTable();
+const tableB = tableA.clone();
 ```
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using string parameter
-const tableB = tableA.cloneTable("my_cloned_table");
+const tableB = tableA.clone("my_cloned_table");
 ```
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using options object
-const tableB = tableA.cloneTable({ name: "my_cloned_table" });
+const tableB = tableA.clone({ name: "my_cloned_table" });
 ```
 
 ```ts
 // Clone tableA, including only rows where 'column1' is greater than 10
-const tableB = tableA.cloneTable({ conditions: `column1 > 10` });
+const tableB = tableA.clone({ conditions: `column1 > 10` });
 ```
 
 ```ts
 // Clone tableA with only specific columns
-const tableB = tableA.cloneTable({ columns: ["name", "age", "city"] });
+const tableB = tableA.clone({ columns: ["name", "age", "city"] });
 ```
 
 ```ts
 // Clone only the first 10 rows of tableA
-const tableB = tableA.cloneTable({ limit: 10 });
+const tableB = tableA.clone({ limit: 10 });
 ```
 
 ```ts
 // Clone 10 rows after skipping the first 5 rows
-const tableB = tableA.cloneTable({ limit: 10, offset: 5 });
+const tableB = tableA.clone({ limit: 10, offset: 5 });
 ```
 
 ```ts
 // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
-const tableB = tableA.cloneTable({
+const tableB = tableA.clone({
   name: "filtered_data",
   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
   columns: ["name", "status", "created_date"],
@@ -1534,7 +1534,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-cloneColumnWithOffset(column: string, newColumn: string, options?: { offset?: number; categories?: string | string[] }): this;
+cloneColumnWithOffset(column: string, newColumn: string, options?: { offset?: number; by?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -1545,9 +1545,8 @@ cloneColumnWithOffset(column: string, newColumn: string, options?: { offset?: nu
 - **`options.offset`**: The number of rows to offset the values. A positive
   number shifts values downwards (later rows), a negative number shifts values
   upwards (earlier rows). Defaults to `1`.
-- **`options.categories`**: A string or an array of strings representing columns
-  to partition the data by. The offset will be applied independently within each
-  category.
+- **`options.by`**: A column name or an array of column names to partition by.
+  The offset is applied independently within each group.
 
 ##### Returns
 
@@ -1569,7 +1568,7 @@ table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 });
 // Clone 'temperature' as 'prev_temp_by_city', offsetting by 1 row within each 'city' category
 table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
   offset: 1,
-  categories: "city",
+  by: "city",
 });
 ```
 
@@ -1577,7 +1576,7 @@ table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
 // Clone 'stock_price' as 'prev_price_by_stock_and_exchange', offsetting by 1 row within each 'stock_symbol' and 'exchange' category
 table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
   offset: 1,
-  categories: ["stock_symbol", "exchange"],
+  by: ["stock_symbol", "exchange"],
 });
 ```
 
@@ -1597,16 +1596,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-fill(columns: string | string[], options?: { categories?: string | string[]; interpolate?: boolean; interpolateBy?: string }): this;
+fill(columns: string | string[], options?: { by?: string | string[]; interpolate?: boolean; interpolateBy?: string }): this;
 ```
 
 ##### Parameters
 
 - **`columns`**: The column(s) for which to fill `NULL` values.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: A string or an array of strings representing columns
-  to partition the data by. The fill will be applied independently within each
-  category.
+- **`options.by`**: A column name or an array of column names to partition by.
+  The fill is applied independently within each group.
 - **`options.interpolate`**: If `true`, replaces `NULL` values with linearly
   interpolated values using DuckDB's `fill()` window function. When
   `interpolateBy` is not set, row positions are used as the X-axis, treating
@@ -1639,7 +1637,7 @@ table.fill(["columnA", "columnB"]);
 
 ```ts
 // Fill NULL values in 'value' independently within each 'group'
-table.fill("value", { categories: "group" });
+table.fill("value", { by: "group" });
 ```
 
 ```ts
@@ -1649,7 +1647,7 @@ table.fill("value", { interpolate: true });
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation, independently within each 'group'
-table.fill("value", { categories: "group", interpolate: true });
+table.fill("value", { by: "group", interpolate: true });
 ```
 
 ```ts
@@ -2358,7 +2356,7 @@ employee counts as values.
 ##### Signature
 
 ```typescript
-wider(namesFrom: string, valuesFrom: string, options?: { aggregation?: "sum" | "count" | "min" | "max" | "avg" | "median" | "first" }): this;
+wider(namesFrom: string, valuesFrom: string, options?: { stat?: "sum" | "count" | "min" | "max" | "mean" | "median" | "first" }): this;
 ```
 
 ##### Parameters
@@ -2368,9 +2366,9 @@ wider(namesFrom: string, valuesFrom: string, options?: { aggregation?: "sum" | "
 - **`valuesFrom`**: The name of the column containing the values to be spread
   across the new columns (e.g., "Employees").
 - **`options`**: An optional object with configuration options:
-- **`options.aggregation`**: The aggregation function applied when multiple rows
-  share the same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`,
-  `"max"`, `"avg"`, `"median"`, or `"first"`. Defaults to `"sum"`.
+- **`options.stat`**: The stat function applied when multiple rows share the
+  same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`, `"max"`,
+  `"mean"`, `"median"`, or `"first"`. Defaults to `"sum"`.
 
 ##### Returns
 
@@ -2391,8 +2389,8 @@ The table will then look like this:
 | Sales      | 52   | 75   | 98   |
 
 When multiple rows share the same `namesFrom`/grouping combination, their
-`valuesFrom` values are combined with the `options.aggregation` function
-(`"sum"` by default).
+`valuesFrom` values are combined with the `options.stat` function (`"sum"` by
+default).
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -2569,16 +2567,15 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-addRowNumber(newColumn: string, options?: { categories?: string | string[] }): this;
+addRowNumber(newColumn: string, options?: { by?: string | string[] }): this;
 ```
 
 ##### Parameters
 
 - **`newColumn`**: The name of the new column that will store the row number.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: A string or an array of strings representing columns
-  to partition the data by. The row number will restart at 0 for each unique
-  combination of values in these columns.
+- **`options.by`**: A column name or an array of column names to partition by.
+  The row number restarts at 0 within each group.
 
 ##### Returns
 
@@ -2593,7 +2590,7 @@ table.addRowNumber("rowNumber");
 
 ```ts
 // Add a new column named 'rowNumber' with the row number for each 'category'
-table.addRowNumber("rowNumber", { categories: "category" });
+table.addRowNumber("rowNumber", { by: "category" });
 ```
 
 #### `crossJoin`
@@ -3532,7 +3529,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-nest(column: string, separator: string, categories: string | string[]): this;
+nest(column: string, separator: string, by: string | string[]): this;
 ```
 
 ##### Parameters
@@ -3540,7 +3537,7 @@ nest(column: string, separator: string, categories: string | string[]): this;
 - **`column`**: The name of the column whose values will be aggregated and
   concatenated.
 - **`separator`**: The delimiter string used to join the column values.
-- **`categories`**: The column name or an array of column names to group by.
+- **`by`**: The column name or an array of column names to group by.
 
 ##### Returns
 
@@ -3582,7 +3579,8 @@ round(columns: string | string[], options?: number | { decimals?: number; method
 
 - **`columns`**: The column name or an array of column names containing numeric
   values to be rounded.
-- **`options`**: An optional object with configuration options:
+- **`options`**: An optional integer specifying the number of decimal places, or
+  an object with configuration options:
 - **`options.decimals`**: The number of decimal places to round to. Defaults to
   `0` (rounds to the nearest integer).
 - **`options.method`**: The rounding method to use: `"round"` (rounds to the
@@ -3674,7 +3672,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-ranks(column: string, newColumn: string, options?: { order?: "asc" | "desc"; categories?: string | string[]; dense?: boolean }): this;
+ranks(column: string, newColumn: string, options?: { order?: "asc" | "desc"; by?: string | string[]; dense?: boolean }): this;
 ```
 
 ##### Parameters
@@ -3684,9 +3682,8 @@ ranks(column: string, newColumn: string, options?: { order?: "asc" | "desc"; cat
 - **`options`**: An optional object with configuration options:
 - **`options.order`**: The order of values for ranking: `"asc"` for ascending
   (default) or `"desc"` for descending.
-- **`options.categories`**: The column name or an array of column names that
-  define categories for ranking. Ranks will be assigned independently within
-  each category.
+- **`options.by`**: The column name or an array of column names to rank by.
+  Ranks are assigned independently within each group.
 - **`options.dense`**: A boolean indicating whether to use dense ranking (no
   gaps). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If
   `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
@@ -3708,13 +3705,13 @@ table.ranks("score", "descRank", { order: "desc" });
 ```
 
 ```ts
-// Compute ranks within 'department' categories, based on 'salary' values, without gaps
-table.ranks("salary", "salaryRank", { categories: "department", dense: true });
+// Compute ranks by 'department', based on 'salary' values, without gaps
+table.ranks("salary", "salaryRank", { by: "department", dense: true });
 ```
 
 ```ts
-// Compute ranks within multiple categories ('department' and 'city')
-table.ranks("sales", "salesRank", { categories: ["department", "city"] });
+// Compute ranks by both 'department' and 'city'
+table.ranks("sales", "salesRank", { by: ["department", "city"] });
 ```
 
 #### `quantiles`
@@ -3727,7 +3724,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-quantiles(column: string, count: number, newColumn: string, options?: { categories?: string | string[] }): this;
+quantiles(column: string, count: number, newColumn: string, options?: { by?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -3739,9 +3736,8 @@ quantiles(column: string, count: number, newColumn: string, options?: { categori
 - **`newColumn`**: The name of the new column where the assigned quantiles will
   be stored.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories for computing quantiles. Quantiles will be assigned
-  independently within each category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Quantiles are assigned independently within each group.
 
 ##### Returns
 
@@ -3755,8 +3751,8 @@ table.quantiles("column1", 10, "quantiles");
 ```
 
 ```ts
-// Assigns quantiles within 'column2' categories, based on 'column1' values.
-table.quantiles("column1", 10, "quantiles", { categories: "column2" });
+// Assign quantiles by 'column2', based on 'column1' values.
+table.quantiles("column1", 10, "quantiles", { by: "column2" });
 ```
 
 ```ts
@@ -3975,7 +3971,7 @@ table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty", { ties: "first" });
 #### `columnProportions`
 
 Computes proportions vertically over a column's values, relative to the sum of
-all values in that column (or within specified categories).
+all values in that column or group.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -3983,7 +3979,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-columnProportions(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
+columnProportions(column: string, newColumn: string, options?: { by?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -3994,9 +3990,8 @@ columnProportions(column: string, newColumn: string, options?: { categories?: st
 - **`newColumn`**: The name of the new column where the proportions will be
   stored.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories for computing proportions. Proportions will be calculated
-  independently within each category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Proportions are calculated independently within each group.
 - **`options.decimals`**: The number of decimal places to round the computed
   proportions. Defaults to `undefined` (no rounding).
 
@@ -4012,25 +4007,22 @@ table.columnProportions("column1", "perc");
 ```
 
 ```ts
-// Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-table.columnProportions("column1", "perc", {
-  categories: "column2",
-  decimals: 2,
-});
+// Compute proportions for 'column1' by 'column2', rounded to two decimal places
+table.columnProportions("column1", "perc", { by: "column2", decimals: 2 });
 ```
 
 ```ts
-// Compute proportions for 'sales' within 'region' and 'product_type' categories
+// Compute proportions for 'sales' by 'region' and 'product_type'
 table.columnProportions("sales", "sales_proportion", {
-  categories: ["region", "product_type"],
+  by: ["region", "product_type"],
 });
 ```
 
 #### `summarize`
 
-Creates a summary table based on specified values, categories, and summary
-operations. This method allows you to aggregate data, calculate statistics
-(e.g., count, mean, sum), and group results by categorical columns.
+Creates a summary table from selected columns, optionally grouped by other
+columns. This method allows you to aggregate data, calculate statistics (e.g.,
+count, mean, sum), and group results by categorical columns.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -4038,130 +4030,120 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-summarize(options?: { values?: string | string[]; categories?: string | string[]; summaries?: ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var") | ("count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var")[] | Record<string, "count" | "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var">; decimals?: number; outputTable?: string | boolean; datesToMs?: boolean }): this;
+summarize(options?: { columns?: string | string[]; by?: string | string[]; stats?: ("count" | "countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance") | ("count" | "countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance")[] | Record<string, "count" | "countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance">; decimals?: number; outputTable?: string | boolean; datesToMs?: boolean }): this;
 ```
 
 ##### Parameters
 
 - **`options`**: An object with configuration options for summarization:
-- **`options.values`**: The column name or an array of column names whose values
-  will be summarized. If omitted, all columns will be summarized.
-- **`options.categories`**: The column name or an array of column names that
-  define categories for the summarization. Results will be grouped by these
-  categories.
-- **`options.summaries`**: The summary operations to be performed. Can be a
-  single operation (e.g., `"mean"`), an array of operations (e.g.,
-  `["min", "max"]`), or an object mapping new column names to operations (e.g.,
-  `{ avgSalary: "mean" }`). Supported operations include: `"count"`,
-  `"countUnique"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`,
-  `"sum"`, `"skew"`, `"stdDev"`, `"var"`.
+- **`options.columns`**: The column name or an array of column names to
+  summarize. If omitted, only the row count is returned.
+- **`options.by`**: The column name or an array of column names to group by.
+- **`options.stats`**: The statistics to compute. Can be a single statistic
+  (e.g., `"mean"`), an array (e.g., `["min", "max"]`), or an object mapping
+  output column names to statistics (e.g., `{ avgSalary: "mean" }`). Supported
+  statistics are `"count"`, `"countDistinct"`, `"countNull"`, `"min"`, `"max"`,
+  `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`.
 - **`options.decimals`**: The number of decimal places to round the summarized
-  values. Defaults to `undefined` (no rounding).
+  columns. Defaults to `undefined` (no rounding).
 - **`options.outputTable`**: If `true`, the results will be stored in a new
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
   Defaults to `false`.
 - **`options.datesToMs`**: If `true`, timestamps, dates, and times will be
   converted to milliseconds before summarizing. This is useful when summarizing
-  mixed data types (numbers and dates) as values must be of the same type for
+  mixed data types (numbers and dates) as columns must be of the same type for
   aggregation.
 
 ##### Returns
 
 A table instance containing the summarized data (either the current table or a
 new table), so methods can be chained. When summarizing more than one column, a
-`value` column identifies which column each row summarizes.
+`column` column identifies which input column each row summarizes.
 
 ##### Examples
 
 ```ts
-// Summarize all columns with all available summary operations, overwriting the current table
+// Summarize all columns with all available statistics, overwriting the current table
 const columns = await table.getColumns();
-table.summarize({ values: columns });
+table.summarize({ columns });
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table with a generated name
 const columns = await table.getColumns();
-const summaryTable = table.summarize({ values: columns, outputTable: true });
+const summaryTable = table.summarize({ columns, outputTable: true });
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table named 'mySummary'
 const columns = await table.getColumns();
-const mySummaryTable = table.summarize({
-  values: columns,
-  outputTable: "mySummary",
-});
+const mySummaryTable = table.summarize({ columns, outputTable: "mySummary" });
 ```
 
 ```ts
-// Summarize a single column ('sales') with all available summary operations
-table.summarize({ values: "sales" });
+// Summarize a single column ('sales') with all available statistics
+table.summarize({ columns: "sales" });
 ```
 
 ```ts
-// Summarize multiple columns ('sales' and 'profit') with all available summary operations
-table.summarize({ values: ["sales", "profit"] });
+// Summarize multiple columns ('sales' and 'profit') with all available statistics
+table.summarize({ columns: ["sales", "profit"] });
 ```
 
 ```ts
 // Summarize 'sales' by 'region' (single category)
-table.summarize({ values: "sales", categories: "region" });
+table.summarize({ columns: "sales", by: "region" });
 ```
 
 ```ts
-// Summarize 'sales' by 'region' and 'product_type' (multiple categories)
-table.summarize({ values: "sales", categories: ["region", "product_type"] });
+// Summarize 'sales' by 'region' and 'product_type'
+table.summarize({ columns: "sales", by: ["region", "product_type"] });
 ```
 
 ```ts
-// Summarize 'sales' by 'region' with a specific summary operation (mean)
-table.summarize({ values: "sales", categories: "region", summaries: "mean" });
+// Summarize 'sales' by 'region' with a specific statistic (mean)
+table.summarize({ columns: "sales", by: "region", stats: "mean" });
 ```
 
 ```ts
-// Summarize 'sales' by 'region' with specific summary operations (mean and sum)
+// Summarize 'sales' by 'region' with specific statistics (mean and sum)
+table.summarize({ columns: "sales", by: "region", stats: ["mean", "sum"] });
+```
+
+```ts
+// Summarize 'sales' by 'region' with custom named statistics
 table.summarize({
-  values: "sales",
-  categories: "region",
-  summaries: ["mean", "sum"],
+  columns: "sales",
+  by: "region",
+  stats: { averageSales: "mean", totalSales: "sum" },
 });
 ```
 
 ```ts
-// Summarize 'sales' by 'region' with custom named summary operations
-table.summarize({
-  values: "sales",
-  categories: "region",
-  summaries: { averageSales: "mean", totalSales: "sum" },
-});
-```
-
-```ts
-// Summarize 'price' and 'cost', rounding aggregated values to 2 decimal places
-table.summarize({ values: ["price", "cost"], decimals: 2 });
+// Summarize 'price' and 'cost', rounding aggregated columns to 2 decimal places
+table.summarize({ columns: ["price", "cost"], decimals: 2 });
 ```
 
 ```ts
 // Summarize 'timestamp_column' by converting to milliseconds first
 table.summarize({
-  values: "timestamp_column",
+  columns: "timestamp_column",
   datesToMs: true,
-  summaries: "mean",
+  stats: "mean",
 });
 ```
 
 #### `addSummaryRows`
 
 Appends one or more summary rows to the table. Each row is calculated from the
-original rows before any summaries are appended. This is useful for preparing
+original rows before any summary rows are appended. This is useful for preparing
 totals and other statistics before exporting tabular data.
 
 Passing `"all"` selects every numeric column. Columns that are neither
-summarized nor used for labels contain `NULL` in the appended rows. A summary
+summarized nor used for labels contain `NULL` in the appended rows. A stat
 string is also used as its row label; pass an object to customize that label. If
-`summaries` is omitted, every supported summary is added.
+`stats` is omitted, every supported stat is added.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -4169,20 +4151,19 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-addSummaryRows(columns: "all" | string | string[], labelColumn: string, summaries?: "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var" | { summary: "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var"; label?: string } | ("countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var" | { summary: "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var"; label?: string })[]): this;
+addSummaryRows(columns: "all" | string | string[], labelColumn: string, stats?: "countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance" | { stat: "countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance"; label?: string } | ("countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance" | { stat: "countDistinct" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "variance"; label?: string })[]): this;
 ```
 
 ##### Parameters
 
 - **`columns`**: The numeric column name, an array of numeric column names, or
   `"all"` to summarize every numeric column.
-- **`labelColumn`**: The existing string column in which summary row labels will
-  be written.
-- **`summaries`**: A summary, summary configuration, or array of either.
-  Supported summaries are `"countUnique"`, `"countNull"`, `"min"`, `"max"`,
-  `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"var"`. An object's
-  `label` defaults to its `summary`. If omitted, all supported summaries are
-  added.
+- **`labelColumn`**: The existing string column in which stat row labels will be
+  written.
+- **`stats`**: A stat, stat configuration, or array of either. Supported stats
+  are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`,
+  `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults
+  to its `stat`. If omitted, all supported stats are added.
 
 ##### Returns
 
@@ -4203,8 +4184,8 @@ table.addSummaryRows(["sales", "expenses"], "region", ["sum", "mean"]);
 ```ts
 // Customize the labels written to the label column.
 table.addSummaryRows("all", "region", [
-  { summary: "sum", label: "Total" },
-  { summary: "mean", label: "Average" },
+  { stat: "sum", label: "Total" },
+  { stat: "mean", label: "Average" },
 ]);
 ```
 
@@ -4219,7 +4200,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-accumulate(column: string, newColumn: string, options?: { categories?: string | string[] }): this;
+accumulate(column: string, newColumn: string, options?: { by?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -4228,9 +4209,8 @@ accumulate(column: string, newColumn: string, options?: { categories?: string | 
 - **`newColumn`**: The name of the new column in which the computed cumulative
   values will be stored.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories for the accumulation. Accumulation will be performed
-  independently within each category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Accumulation is performed independently within each group.
 
 ##### Returns
 
@@ -4245,15 +4225,15 @@ table.accumulate("sales", "cumulativeSales");
 ```
 
 ```ts
-// Compute the cumulative sum of 'orders' within 'customer_id' categories
+// Compute the cumulative sum of 'orders' by 'customer_id'
 // Ensure the table is sorted by 'customer_id' and then by a relevant order column (e.g., order_date).
-table.accumulate("orders", "cumulativeOrders", { categories: "customer_id" });
+table.accumulate("orders", "cumulativeOrders", { by: "customer_id" });
 ```
 
 ```ts
-// Compute the cumulative sum of 'revenue' within 'region' and 'product_category' categories
+// Compute the cumulative sum of 'revenue' by 'region' and 'product_category'
 table.accumulate("revenue", "cumulativeRevenue", {
-  categories: ["region", "product_category"],
+  by: ["region", "product_category"],
 });
 ```
 
@@ -4270,7 +4250,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { categories?: string | string[]; decimals?: number }): this;
+rolling(column: string, newColumn: string, stat: "min" | "max" | "mean" | "median" | "sum", preceding: number, following: number, options?: { by?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4278,16 +4258,15 @@ rolling(column: string, newColumn: string, summary: "min" | "max" | "mean" | "me
 - **`column`**: The name of the column storing the values to be aggregated.
 - **`newColumn`**: The name of the new column in which the computed rolling
   values will be stored.
-- **`summary`**: The aggregation function to apply: `"min"`, `"max"`, `"mean"`,
+- **`stat`**: The aggregation function to apply: `"min"`, `"max"`, `"mean"`,
   `"median"`, or `"sum"`.
 - **`preceding`**: The number of preceding rows to include in the rolling
   window.
 - **`following`**: The number of following rows to include in the rolling
   window.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories for the aggregation. Rolling aggregations will be computed
-  independently within each category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Rolling statistics are computed independently within each group.
 - **`options.decimals`**: The number of decimal places to round the aggregated
   values. Defaults to `undefined` (no rounding).
 
@@ -4304,9 +4283,9 @@ table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
 ```
 
 ```ts
-// Compute a rolling sum of 'transactions' within 'customer_id' categories
+// Compute a rolling sum of 'transactions' by 'customer_id'
 table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, {
-  categories: "customer_id",
+  by: "customer_id",
 });
 ```
 
@@ -4328,7 +4307,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-correlations(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): this;
+correlations(options?: { x?: string; y?: string; by?: string | string[]; decimals?: number; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -4339,9 +4318,8 @@ correlations(options?: { x?: string; y?: string; categories?: string | string[];
 - **`options.y`**: The name of the column for the y-values. It can be provided
   only when `options.x` is also set. If both are omitted, correlations will be
   computed for all numeric column pairs.
-- **`options.categories`**: The column name or an array of column names that
-  define categories. Correlation calculations will be performed independently
-  for each category.
+- **`options.by`**: The column name or an array of column names to group by.
+  Correlations are calculated independently within each group.
 - **`options.decimals`**: The number of decimal places to round the correlation
   values. Defaults to `undefined` (no rounding).
 - **`options.outputTable`**: If `true`, the results will be stored in a new
@@ -4374,7 +4352,7 @@ table.correlations({ x: "column1", y: "column2" });
 ```ts
 // Compute correlations within 'categoryColumn' and store results in a new table
 const correlationTable = table.correlations({
-  categories: "categoryColumn",
+  by: "categoryColumn",
   outputTable: true,
 });
 ```
@@ -4398,7 +4376,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-linearRegressions(options?: { x?: string; y?: string; categories?: string | string[]; decimals?: number; outputTable?: string | boolean }): this;
+linearRegressions(options?: { x?: string; y?: string; by?: string | string[]; decimals?: number; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -4410,9 +4388,8 @@ linearRegressions(options?: { x?: string; y?: string; categories?: string | stri
 - **`options.y`**: The name of the column for the dependent variable (y-values).
   It can be provided only when `options.x` is also set. If both are omitted,
   linear regressions will be computed for all numeric column permutations.
-- **`options.categories`**: The column name or an array of column names that
-  define categories. Linear regression analysis will be performed independently
-  for each category.
+- **`options.by`**: The column name or an array of column names to group by.
+  Linear regressions are calculated independently within each group.
 - **`options.decimals`**: The number of decimal places to round the regression
   values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
 - **`options.outputTable`**: If `true`, the results will be stored in a new
@@ -4443,9 +4420,9 @@ table.linearRegressions({ x: "advertising", y: "sales" });
 ```
 
 ```ts
-// Compute linear regressions within 'region' categories and store results in a new table
+// Compute linear regressions by 'region' and store results in a new table
 const regressionTable = table.linearRegressions({
-  categories: "region",
+  by: "region",
   outputTable: true,
 });
 ```
@@ -4466,7 +4443,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-outliersIQR(column: string, newColumn: string, options?: { categories?: string | string[] }): this;
+outliersIQR(column: string, newColumn: string, options?: { by?: string | string[] }): this;
 ```
 
 ##### Parameters
@@ -4475,9 +4452,8 @@ outliersIQR(column: string, newColumn: string, options?: { categories?: string |
 - **`newColumn`**: The name of the new column where the boolean results (`TRUE`
   for outlier, `FALSE` otherwise) will be stored.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories. Outlier detection will be performed independently within
-  each category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Outliers are detected independently within each group.
 
 ##### Returns
 
@@ -4491,8 +4467,8 @@ table.outliersIQR("age", "isOutlier");
 ```
 
 ```ts
-// Look for outliers in 'salary' within 'gender' categories
-table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
+// Look for outliers in 'salary' by 'gender'
+table.outliersIQR("salary", "salaryOutlier", { by: "gender" });
 ```
 
 #### `zScore`
@@ -4505,7 +4481,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-zScore(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
+zScore(column: string, newColumn: string, options?: { by?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4514,9 +4490,8 @@ zScore(column: string, newColumn: string, options?: { categories?: string | stri
 - **`newColumn`**: The name of the new column where the computed Z-scores will
   be stored.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories. Z-scores will be calculated independently within each
-  category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Z-scores are calculated independently within each group.
 - **`options.decimals`**: The number of decimal places to round the Z-score
   values. Defaults to `undefined` (no rounding).
 
@@ -4532,8 +4507,8 @@ table.zScore("age", "ageZScore");
 ```
 
 ```ts
-// Calculate Z-scores for 'salary' within 'department' categories
-table.zScore("salary", "salaryZScore", { categories: "department" });
+// Calculate Z-scores for 'salary' by 'department'
+table.zScore("salary", "salaryZScore", { by: "department" });
 ```
 
 ```ts
@@ -4551,7 +4526,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-normalize(column: string, newColumn: string, options?: { categories?: string | string[]; decimals?: number }): this;
+normalize(column: string, newColumn: string, options?: { by?: string | string[]; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4560,9 +4535,8 @@ normalize(column: string, newColumn: string, options?: { categories?: string | s
 - **`newColumn`**: The name of the new column where normalized values will be
   stored.
 - **`options`**: An optional object with configuration options:
-- **`options.categories`**: The column name or an array of column names that
-  define categories for the normalization. Normalization will be performed
-  independently within each category.
+- **`options.by`**: The column name or an array of column names to partition by.
+  Normalization is performed independently within each group.
 - **`options.decimals`**: The number of decimal places to round the normalized
   values. Defaults to `undefined` (no rounding).
 
@@ -4578,8 +4552,8 @@ table.normalize("column1", "normalizedColumn1");
 ```
 
 ```ts
-// Normalize 'value' within 'group' categories
-table.normalize("value", "normalizedValue", { categories: "group" });
+// Normalize 'value' by 'group'
+table.normalize("value", "normalizedValue", { by: "group" });
 ```
 
 ```ts
@@ -6798,7 +6772,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-aggregateGeo(method: "union" | "intersection", options?: { column?: string; categories?: string | string[]; outputTable?: string | boolean }): this;
+aggregateGeo(method: "union" | "intersection", options?: { column?: string; by?: string | string[]; outputTable?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -6810,9 +6784,8 @@ aggregateGeo(method: "union" | "intersection", options?: { column?: string; cate
 - **`options.column`**: The name of the column storing the geometries to be
   aggregated. If omitted, the method will automatically attempt to find a
   geometry column.
-- **`options.categories`**: The column name or an array of column names that
-  define categories for the aggregation. Aggregation will be performed
-  independently within each category.
+- **`options.by`**: The column name or an array of column names to group by.
+  Geometries are aggregated independently within each group.
 - **`options.outputTable`**: If `true`, the results will be stored in a new
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
@@ -6832,7 +6805,7 @@ table.aggregateGeo("union");
 
 ```ts
 // Aggregate geometries by 'country' and compute their union
-table.aggregateGeo("union", { categories: "country" });
+table.aggregateGeo("union", { by: "country" });
 ```
 
 ```ts
@@ -7117,9 +7090,9 @@ const table = sdb.newTable();
 await table.cache(() => {
   table.loadData("items.csv");
   table.summarize({
-    values: "price",
-    categories: "department",
-    summaries: ["min", "max", "mean"],
+    columns: "price",
+    by: "department",
+    stats: ["min", "max", "mean"],
   });
 });
 
@@ -7137,9 +7110,9 @@ const table = sdb.newTable();
 await table.cache(() => {
   table.loadData("items.csv");
   table.summarize({
-    values: "price",
-    categories: "department",
-    summaries: ["min", "max", "mean"],
+    columns: "price",
+    by: "department",
+    stats: ["min", "max", "mean"],
   });
 }, { ttl: 60 });
 
@@ -7154,9 +7127,9 @@ const table = sdb.newTable();
 await table.cache(() => {
   table.loadData("items.csv");
   table.summarize({
-    values: "price",
-    categories: "department",
-    summaries: ["min", "max", "mean"],
+    columns: "price",
+    by: "department",
+    stats: ["min", "max", "mean"],
   });
 });
 

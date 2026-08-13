@@ -28,7 +28,7 @@ Deno.test("should add a column with the quantiles after grouping", async () => {
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.quantiles("Mark", 2, "quantiles", {
-    categories: "Subject",
+    by: "Subject",
   });
 
   table.sort({

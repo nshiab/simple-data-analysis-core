@@ -192,7 +192,7 @@ Deno.test("grouped results can be sorted deterministically afterward", async () 
       { group: "a", value: 3 },
       { group: "b", value: 4 },
     ])
-    .summarize({ values: "value", categories: "group", summaries: "sum" })
+    .summarize({ columns: "value", by: "group", stats: "sum" })
     .sort({ group: "asc" });
 
   assertEquals(await table.getData(), [
@@ -208,7 +208,7 @@ Deno.test("aggregated results can be sorted deterministically afterward", async 
 
   table
     .loadArray([{ x: 1, y: 10 }, { x: 2, y: 20 }])
-    .summarize({ values: ["x", "y"], summaries: "sum" })
+    .summarize({ columns: ["x", "y"], stats: "sum" })
     .sort({ value: "desc" });
 
   assertEquals(await table.getData(), [

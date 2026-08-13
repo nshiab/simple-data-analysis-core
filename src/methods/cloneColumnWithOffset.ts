@@ -12,7 +12,7 @@ export default function cloneColumnWithOffset(
   newColumn: string,
   options: {
     offset?: number;
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
   // The offset is based on rowid, which only exists on the materialized
@@ -32,17 +32,13 @@ export default function cloneColumnWithOffset(
       );
 
       const offset = options.offset ?? 1;
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
-      const partition = categories.length > 0
-        ? `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-        }`
+      const by = options.by ? stringToArray(options.by) : [];
+      const partition = by.length > 0
+        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
         : "";
 
-      // When categories are specified, also sort the final result by
-      // categories.
+      // When by are specified, also sort the final result by
+      // by.
       await queryDB(
         simpleTable,
         `CREATE OR REPLACE TABLE ${
@@ -52,9 +48,9 @@ export default function cloneColumnWithOffset(
         }, ${offset}) OVER(${partition} ORDER BY rowid) AS ${
           quoteIdentifier(newColumn)
         } FROM ${quoteIdentifier(simpleTable.name)}${
-          categories.length > 0
+          by.length > 0
             ? ` ORDER BY ${
-              categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+              by.map((d) => `${quoteIdentifier(d)}`).join(", ")
             }, rowid`
             : ` ORDER BY rowid`
         };`,

@@ -14,7 +14,7 @@ export default function linearRegressions(
   options: {
     x?: string;
     y?: string;
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
     outputTable?: string | boolean;
   } = {},
@@ -119,20 +119,18 @@ function linearRegressionsSelect(
   input: string,
   permutations: [string, string][],
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   },
 ) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+  const by = options.by ? stringToArray(options.by) : [];
 
-  const groupBy = categories.length === 0
+  const groupBy = by.length === 0
     ? ""
-    : ` GROUP BY ${categories.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
+    : ` GROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
 
-  const catSelect = categories.length > 0
-    ? `${categories.map((d) => `${quoteIdentifier(d)}`).join(",")}, `
+  const catSelect = by.length > 0
+    ? `${by.map((d) => `${quoteIdentifier(d)}`).join(",")}, `
     : "";
 
   // One UNION ALL branch per permutation (each with a distinct pair of

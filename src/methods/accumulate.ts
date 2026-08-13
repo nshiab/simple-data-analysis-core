@@ -11,7 +11,7 @@ export default function accumulate(
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
   // The accumulation order is based on rowid, which only exists on the
@@ -49,16 +49,12 @@ function accumulateQuery(
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  const partition = categories.length > 0
-    ? `PARTITION BY ${
-      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-    } `
+  const by = options.by ? stringToArray(options.by) : [];
+  const partition = by.length > 0
+    ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")} `
     : "";
 
   const query = `CREATE OR REPLACE TABLE ${

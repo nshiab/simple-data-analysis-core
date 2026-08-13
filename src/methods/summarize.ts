@@ -1,9 +1,9 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import getSummaryExpression, {
-  allSummaries,
-  isTemporalSummaryType,
-  type Summary,
-} from "../helpers/getSummaryExpression.ts";
+import getStatExpression, {
+  allStats,
+  isTemporalStatType,
+  type Stat,
+} from "../helpers/getStatExpression.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -15,9 +15,9 @@ import type { TableSchema } from "../helpers/pendingOps.ts";
 
 type SummarizeOptions = {
   outputTable?: string | boolean;
-  values?: string | string[];
-  categories?: string | string[];
-  summaries?: Summary | Summary[] | { [key: string]: Summary };
+  columns?: string | string[];
+  by?: string | string[];
+  stats?: Stat | Stat[] | { [key: string]: Stat };
   decimals?: number;
   datesToMs?: boolean;
 };
@@ -28,8 +28,8 @@ export default function summarize(
 ): SimpleTable {
   options = structuredClone(options);
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
-  const values = getSummarizeValues(options);
-  const boundValues = values.length > 1 ? values : [];
+  const columns = getSummarizeColumns(options);
+  const boundColumns = columns.length > 1 ? columns : [];
 
   if (typeof options.outputTable === "string") {
     // The output table instance is created at call time so it can be
@@ -53,7 +53,7 @@ export default function summarize(
             table: outputTable.name,
             method: "summarize()",
             parameters: { options },
-            values: boundValues,
+            values: boundColumns,
           }),
         );
       },
@@ -66,20 +66,18 @@ export default function summarize(
     method: "summarize()",
     parameters: { options },
     needsSchema: true,
-    values: boundValues,
+    values: boundColumns,
     buildSelect: (input, types) => summarizeSelect(input, types, options),
   });
   return simpleTable;
 }
 
-function getSummarizeValues(options: SummarizeOptions): string[] {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+function getSummarizeColumns(options: SummarizeOptions): string[] {
+  const by = options.by ? stringToArray(options.by) : [];
   return [
     ...new Set(
-      (options.values ? stringToArray(options.values) : []).filter(
-        (value) => !categories.includes(value),
+      (options.columns ? stringToArray(options.columns) : []).filter(
+        (column) => !by.includes(column),
       ),
     ),
   ];
@@ -90,101 +88,95 @@ function summarizeSelect(
   types: TableSchema,
   options: SummarizeOptions,
 ): string {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  // Duplicated values would duplicate rows now that the branches are combined
+  const by = options.by ? stringToArray(options.by) : [];
+  // Duplicated columns would duplicate rows now that the branches are combined
   // with UNION ALL instead of a deduplicating UNION.
-  const values = getSummarizeValues(options);
+  const columns = getSummarizeColumns(options);
 
-  let summaries: Summary[];
-  let columns: string[] | undefined;
-  if (options.summaries === undefined) {
-    summaries = values.length === 0 ? ["count"] : [...allSummaries];
-  } else if (typeof options.summaries === "string") {
-    summaries = [options.summaries];
-  } else if (Array.isArray(options.summaries)) {
-    summaries = options.summaries.length === 0
-      ? [...allSummaries]
-      : options.summaries;
+  let stats: Stat[];
+  let outputColumns: string[] | undefined;
+  if (options.stats === undefined) {
+    stats = columns.length === 0 ? ["count"] : [...allStats];
+  } else if (typeof options.stats === "string") {
+    stats = [options.stats];
+  } else if (Array.isArray(options.stats)) {
+    stats = options.stats.length === 0 ? [...allStats] : options.stats;
   } else {
-    const entries = Object.entries(options.summaries);
-    columns = entries.map((d) => d[0]);
-    summaries = entries.map((d) => d[1]);
+    const entries = Object.entries(options.stats);
+    outputColumns = entries.map((d) => d[0]);
+    stats = entries.map((d) => d[1]);
   }
 
-  // The value column is a row key: it distinguishes the rows of different
-  // value columns, so it appears only when there is more than one.
-  const valueColumn = values.length > 1;
+  // The `column` output column is a row key that distinguishes rows for
+  // different input columns, so it appears only when there is more than one.
+  const columnColumn = columns.length > 1;
 
   // With datesToMs, dates are converted to milliseconds inside the aggregate
   // expressions (same conversions as convert()), so the input table is left
   // untouched instead of being rewritten.
   const references: { [column: string]: string } = {};
   const effectiveTypes: TableSchema = {};
-  for (const value of values) {
-    const type = types[value];
+  for (const column of columns) {
+    const type = types[column];
     if (
       options.datesToMs === true &&
       typeof type === "string" &&
       (type.includes("TIME") || type.includes("DATE"))
     ) {
-      references[value] = type.includes("TIME")
-        ? `(date_part('epoch', ${quoteIdentifier(value)}) * 1000)`
-        : `(epoch(${quoteIdentifier(value)}) * 1000)`;
-      effectiveTypes[value] = "BIGINT";
+      references[column] = type.includes("TIME")
+        ? `(date_part('epoch', ${quoteIdentifier(column)}) * 1000)`
+        : `(epoch(${quoteIdentifier(column)}) * 1000)`;
+      effectiveTypes[column] = "BIGINT";
     } else {
-      references[value] = `${quoteIdentifier(value)}`;
-      effectiveTypes[value] = type;
+      references[column] = `${quoteIdentifier(column)}`;
+      effectiveTypes[column] = type;
     }
   }
 
-  const typesOfValues = values.map((d) => effectiveTypes[d]);
-  const doubleAndDate = typesOfValues.includes("DOUBLE") &&
-    typesOfValues.some(isTemporalSummaryType);
+  const columnTypes = columns.map((d) => effectiveTypes[d]);
+  const doubleAndDate = columnTypes.includes("DOUBLE") &&
+    columnTypes.some(isTemporalStatType);
   if (doubleAndDate) {
     throw new Error(
-      "You are trying to summarize numbers and timestamps/dates/times. You can specify values in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { datesToMs: true }.",
+      "You are trying to summarize numbers and timestamps/dates/times. You can specify columns in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { datesToMs: true }.",
     );
   }
 
-  const catSelect = categories.map((d) => `${quoteIdentifier(d)}`).join(", ");
-  const groupBy = categories.length > 0 ? `\nGROUP BY ${catSelect}` : "";
+  const bySelect = by.map((d) => `${quoteIdentifier(d)}`).join(", ");
+  const groupBy = by.length > 0 ? `\nGROUP BY ${bySelect}` : "";
 
-  // With no values, the only meaningful summary is the row count, which
-  // doesn't need a value column (or any temporary column) at all.
-  if (values.length === 0) {
-    const summaryColumns = summaries.map((summary, i) => {
-      const name = columns ? columns[i] : summary;
-      return summary === "count"
+  // With no columns, the only meaningful statistic is the row count, which
+  // doesn't need an input-column label (or any temporary column) at all.
+  if (columns.length === 0) {
+    const statColumns = stats.map((stat, i) => {
+      const name = outputColumns ? outputColumns[i] : stat;
+      return stat === "count"
         ? `CAST(COUNT(*) AS INTEGER) AS ${quoteIdentifier(name)}`
         : `NULL AS ${quoteIdentifier(name)}`;
     });
-    const orderBy = categories.length > 0
-      ? `\nORDER BY ${
-        categories.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
-      }`
+    const orderBy = by.length > 0
+      ? `\nORDER BY ${by.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")}`
       : "";
     return `SELECT ${
       [
-        ...categories.map((d) => `${quoteIdentifier(d)}`),
-        ...summaryColumns,
+        ...by.map((d) => `${quoteIdentifier(d)}`),
+        ...statColumns,
       ].join(", ")
     }\nFROM ${input}${groupBy}${orderBy}`;
   }
 
-  // One UNION ALL branch per value column. DuckDB runs the branches as
+  // One UNION ALL branch per input column. DuckDB runs the branches as
   // concurrent pipelines, which parallelizes the expensive aggregates
   // (medians, distinct counts) better than computing them all in one scan.
   const branches: string[] = [];
-  for (const value of values) {
+  for (const column of columns) {
     let hasAggregate = false;
-    const projections = summaries.map((summary, j) => {
-      const name = columns ? columns[j] : summary;
-      const expression = getSummaryExpression(
-        summary,
-        effectiveTypes[value],
-        references[value],
+    const projections = stats.map((stat, j) => {
+      const name = outputColumns ? outputColumns[j] : stat;
+      const expression = getStatExpression(
+        stat,
+        effectiveTypes[column],
+        references[column],
         options.decimals,
       );
       if (expression === null) {
@@ -194,10 +186,10 @@ function summarizeSelect(
       return `${expression} AS ${quoteIdentifier(name)}`;
     });
     const select = `SELECT ${
-      valueColumn ? `? AS ${quoteIdentifier("value")}, ` : ""
-    }${catSelect === "" ? "" : `${catSelect}, `}${projections.join(", ")}`;
-    if (categories.length === 0 && !hasAggregate) {
-      // Every summary is NULL and there is nothing to group by: the branch
+      columnColumn ? `? AS ${quoteIdentifier("column")}, ` : ""
+    }${bySelect === "" ? "" : `${bySelect}, `}${projections.join(", ")}`;
+    if (by.length === 0 && !hasAggregate) {
+      // Every statistic is NULL and there is nothing to group by: the branch
       // is a single constant row, so the input is not even scanned.
       branches.push(select);
     } else {
@@ -205,7 +197,7 @@ function summarizeSelect(
     }
   }
 
-  const orderByColumns = valueColumn ? ["value", ...categories] : categories;
+  const orderByColumns = columnColumn ? ["column", ...by] : by;
   const orderBy = orderByColumns.length > 0
     ? `\nORDER BY ${
       orderByColumns.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")

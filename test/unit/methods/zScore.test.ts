@@ -123,7 +123,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
     { name: "Jane", age: 32, gender: "Woman" },
   ]);
   table.zScore("age", "ageSigma", {
-    categories: "gender",
+    by: "gender",
     decimals: 3,
   });
 

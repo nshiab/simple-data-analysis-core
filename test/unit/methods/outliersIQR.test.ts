@@ -132,7 +132,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Jane", age: 32, gender: "Woman" },
   ]);
   table.outliersIQR("age", "ageOutliers", {
-    categories: "gender",
+    by: "gender",
   });
   table.sort({
     gender: "asc",

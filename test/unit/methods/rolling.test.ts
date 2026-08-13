@@ -128,7 +128,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
   ]);
 
   table.rolling("value", "rollingMax", "max", 0, 3, {
-    categories: "groups",
+    by: "groups",
   });
   table.sort({ index: "asc" });
   const data = await table.getData();

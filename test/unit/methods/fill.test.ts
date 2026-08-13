@@ -61,7 +61,7 @@ Deno.test("should fill empty cells for multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should fill empty cells with categories (single category)", async () => {
+Deno.test("should fill empty cells by one grouping column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb.newTable().loadArray([
     { group: "A", value: 1 },
@@ -70,7 +70,7 @@ Deno.test("should fill empty cells with categories (single category)", async () 
     { group: "B", value: 2 },
     { group: "A", value: null },
   ]);
-  table.fill("value", { categories: "group" });
+  table.fill("value", { by: "group" });
   const data = await table.getData();
   assertEquals(data, [
     { group: "A", value: 1 },
@@ -82,7 +82,7 @@ Deno.test("should fill empty cells with categories (single category)", async () 
   await sdb.close();
 });
 
-Deno.test("should fill empty cells with categories (multiple categories)", async () => {
+Deno.test("should fill empty cells by multiple columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = await sdb.newTable().loadArray([
     { group: "A", subgroup: "X", value: 10 },
@@ -91,7 +91,7 @@ Deno.test("should fill empty cells with categories (multiple categories)", async
     { group: "B", subgroup: "X", value: 20 },
     { group: "B", subgroup: "X", value: null },
   ]);
-  table.fill("value", { categories: ["group", "subgroup"] });
+  table.fill("value", { by: ["group", "subgroup"] });
   const data = await table.getData();
   assertEquals(data, [
     { group: "A", subgroup: "X", value: 10 },
@@ -130,7 +130,7 @@ Deno.test("should linearly interpolate NULL values independently within each cat
     { group: "b", val: null },
     { group: "b", val: 30 },
   ]);
-  table.fill("val", { categories: "group", interpolate: true });
+  table.fill("val", { by: "group", interpolate: true });
   const data = await table.getData();
   assertEquals(data, [
     { group: "a", val: 1 },
@@ -172,7 +172,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column", asy
   await sdb.close();
 });
 
-Deno.test("should interpolate proportionally to a non-equidistant x column within categories", async () => {
+Deno.test("should interpolate proportionally to a non-equidistant x column within by", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
@@ -186,7 +186,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column withi
   table.fill("y", {
     interpolate: true,
     interpolateBy: "x",
-    categories: "group",
+    by: "group",
   });
   const data = await table.getData();
   // Row order is preserved (not reordered by group)
@@ -240,7 +240,7 @@ Deno.test("should throw when interpolateBy is set and interpolate is false", asy
 
 // Row order preservation tests
 
-Deno.test("should preserve row order after fill() with categories and interpolation", async () => {
+Deno.test("should preserve row order after grouped fill() with interpolation", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   const input = [
@@ -252,7 +252,7 @@ Deno.test("should preserve row order after fill() with categories and interpolat
     { id: 6, group: "b", val: 200 },
   ];
   table.loadArray(input);
-  table.fill("val", { categories: "group", interpolate: true });
+  table.fill("val", { by: "group", interpolate: true });
   const data = await table.getData();
   // Row order must match input order (by id)
   assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5, 6]);
@@ -292,7 +292,7 @@ Deno.test("should preserve row order after simple fill() with no options", async
   await sdb.close();
 });
 
-Deno.test("should preserve row order after fill() with categories and interpolateBy", async () => {
+Deno.test("should preserve row order after grouped fill() with interpolateBy", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   const input = [
@@ -305,7 +305,7 @@ Deno.test("should preserve row order after fill() with categories and interpolat
   ];
   table.loadArray(input);
   table.fill("y", {
-    categories: "group",
+    by: "group",
     interpolateBy: "x",
   });
   const data = await table.getData();

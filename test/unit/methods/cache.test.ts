@@ -37,7 +37,7 @@ Deno.test("should cache computed values for tabular data", async () => {
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
     table.summarize({
-      values: "key2",
+      columns: "key2",
       decimals: 4,
     });
   });
@@ -45,7 +45,7 @@ Deno.test("should cache computed values for tabular data", async () => {
   assertEquals(data, [
     {
       count: 6,
-      countUnique: 4,
+      countDistinct: 4,
       countNull: 2,
       min: 1,
       max: 22,
@@ -54,7 +54,7 @@ Deno.test("should cache computed values for tabular data", async () => {
       sum: 36,
       skew: 0.9669,
       stdDev: 9.7639,
-      var: 95.3333,
+      variance: 95.3333,
     },
   ]);
   await sdb.close();
@@ -65,7 +65,7 @@ Deno.test("should load data from the cache instead of running computations", asy
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
     table.summarize({
-      values: "key2",
+      columns: "key2",
       decimals: 4,
     });
   });
@@ -73,7 +73,7 @@ Deno.test("should load data from the cache instead of running computations", asy
   assertEquals(data, [
     {
       count: 6,
-      countUnique: 4,
+      countDistinct: 4,
       countNull: 2,
       min: 1,
       max: 22,
@@ -82,7 +82,7 @@ Deno.test("should load data from the cache instead of running computations", asy
       sum: 36,
       skew: 0.9669,
       stdDev: 9.7639,
-      var: 95.3333,
+      variance: 95.3333,
     },
   ]);
   await sdb.close();
@@ -136,7 +136,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
     () => {
       table.loadData("test/data/files/dataSummarize.json");
       table.summarize({
-        values: "key2",
+        columns: "key2",
         decimals: 4,
       });
     },
@@ -146,7 +146,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
   assertEquals(data, [
     {
       count: 6,
-      countUnique: 4,
+      countDistinct: 4,
       countNull: 2,
       min: 1,
       max: 22,
@@ -155,7 +155,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
       sum: 36,
       skew: 0.9669,
       stdDev: 9.7639,
-      var: 95.3333,
+      variance: 95.3333,
     },
   ]);
   await sdb.close();
@@ -167,7 +167,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
     () => {
       table.loadData("test/data/files/dataSummarize.json");
       table.summarize({
-        values: "key2",
+        columns: "key2",
         decimals: 4,
       });
     },
@@ -177,7 +177,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   assertEquals(data, [
     {
       count: 6,
-      countUnique: 4,
+      countDistinct: 4,
       countNull: 2,
       min: 1,
       max: 22,
@@ -186,7 +186,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
       sum: 36,
       skew: 0.9669,
       stdDev: 9.7639,
-      var: 95.3333,
+      variance: 95.3333,
     },
   ]);
   await sdb.close();
@@ -316,7 +316,7 @@ Deno.test("should clean the cache when calling close", async () => {
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
     table.summarize({
-      values: "key2",
+      columns: "key2",
       decimals: 4,
     });
   });
@@ -346,11 +346,11 @@ Deno.test("should clean the cache when calling close", async () => {
     { cacheSourcesIdsUpdated, files },
     {
       cacheSourcesIdsUpdated: [
-        "table1.6ab14dfaa5a442a445453499424bfa92a69af566e1d3fd164794d7c7df8996d2",
+        "table1.7585b96900b173c77cca3419d14a1dd5e622bf4ee986adc72847a896d429de8a",
       ],
       files: [
         "sources.json",
-        "table1.6ab14dfaa5a442a445453499424bfa92a69af566e1d3fd164794d7c7df8996d2.parquet",
+        "table1.7585b96900b173c77cca3419d14a1dd5e622bf4ee986adc72847a896d429de8a.parquet",
       ],
     },
   );

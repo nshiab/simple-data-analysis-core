@@ -144,14 +144,14 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
   temp.loadData("./test/data/files/dailyTemperatures.csv");
   temp.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
   temp.summarize({
-    values: "t",
-    categories: ["decade", "id"],
-    summaries: "mean",
+    columns: "t",
+    by: ["decade", "id"],
+    stats: "mean",
   });
   temp.linearRegressions({
     x: "decade",
     y: "mean",
-    categories: "id",
+    by: "id",
     decimals: 2,
   });
 

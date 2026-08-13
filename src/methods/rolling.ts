@@ -9,11 +9,11 @@ export default function rolling(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
-  summary: "min" | "max" | "mean" | "median" | "sum",
+  stat: "min" | "max" | "mean" | "median" | "sum",
   preceding: number,
   following: number,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
@@ -21,7 +21,7 @@ export default function rolling(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "rolling()",
-    parameters: { column, newColumn, summary, preceding, following, options },
+    parameters: { column, newColumn, stat, preceding, following, options },
     needsSchema: true,
     buildSelect: (input, schema) =>
       rollingSelect(
@@ -29,7 +29,7 @@ export default function rolling(
         schema,
         column,
         newColumn,
-        summary,
+        stat,
         preceding,
         following,
         options,
@@ -42,11 +42,11 @@ function rollingSelect(
   schema: TableSchema,
   column: string,
   newColumn: string,
-  summary: "count" | "min" | "max" | "mean" | "median" | "sum",
+  stat: "count" | "min" | "max" | "mean" | "median" | "sum",
   preceding: number,
   following: number,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
@@ -61,21 +61,15 @@ function rollingSelect(
     sum: "SUM",
   };
 
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  const partition = categories.length > 0
-    ? `PARTITION BY ${
-      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-    }`
+  const by = options.by ? stringToArray(options.by) : [];
+  const partition = by.length > 0
+    ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
     : "";
 
   const window = `OVER (${partition}
                 ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING)`;
 
-  const tempQuery = `${aggregates[summary]}(${
-    quoteIdentifier(column)
-  }) ${window}`;
+  const tempQuery = `${aggregates[stat]}(${quoteIdentifier(column)}) ${window}`;
 
   // Windows touching the edges of the frame (or of their category) have
   // fewer values than requested, so their result is NULL.

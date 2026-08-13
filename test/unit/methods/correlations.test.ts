@@ -203,14 +203,14 @@ Deno.test("should give the correlation between two specific columns and with a c
   table.loadData("./test/data/files/dailyTemperatures.csv");
   table.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
   table.summarize({
-    values: "t",
-    categories: ["decade", "id"],
-    summaries: "mean",
+    columns: "t",
+    by: ["decade", "id"],
+    stats: "mean",
   });
   table.correlations({
     x: "decade",
     y: "mean",
-    categories: "id",
+    by: "id",
     decimals: 2,
   });
 

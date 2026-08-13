@@ -8,7 +8,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function addRowNumber(
   simpleTable: SimpleTable,
   newColumn: string,
-  options: { categories?: string | string[] } = {},
+  options: { by?: string | string[] } = {},
 ) {
   // The row number is based on rowid, which only exists on the materialized
   // table, not on the output of a fused step: it executes as a barrier.
@@ -18,13 +18,9 @@ export default function addRowNumber(
     method: "addRowNumber()",
     parameters: { newColumn, options },
     execute: async () => {
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
-      const partition = categories.length > 0
-        ? `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-        }`
+      const by = options.by ? stringToArray(options.by) : [];
+      const partition = by.length > 0
+        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
         : "";
 
       await queryDB(

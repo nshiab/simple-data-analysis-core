@@ -211,22 +211,45 @@ Methods that could skip validations or error-throwing now all use
 | `new SimpleDB()` / `newTable()`  | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
 | `new SimpleDB()`                 | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
 | `clone()`                        | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
+| Methods that group or partition  | `{ categories: "region" }`                        | `{ by: "region" }`                       |
+| `summarize()`                    | `{ values: "sales" }`                             | `{ columns: "sales" }`                   |
+| `summarize()`                    | `{ summaries: ["mean", "sum"] }`                  | `{ stats: ["mean", "sum"] }`             |
+| `wider()`                        | `{ aggregation: "max" }`                          | `{ stat: "max" }`                        |
 
-### `summarize()`: the `value` column is now automatic
+The `categories` → `by` rename applies to `cloneColumnWithOffset()`, `fill()`,
+`addRowNumber()`, `nest()`, `ranks()`, `quantiles()`, `columnProportions()`,
+`summarize()`, `accumulate()`, `rolling()`, `correlations()`,
+`linearRegressions()`, `outliersIQR()`, `zScore()`, `normalize()`, and
+`aggregateGeo()`.
 
-The `value` column identifies which column each row summarizes, so it only
-carries information when more than one column is summarized. `summarize()` now
-adds it exactly in that case: summarizing several columns produces a `value`
-column, summarizing a single column (or none) does not. The v1 `noColumnValue`
-option is gone — there is nothing left to configure.
+Statistic names are standardized too:
+
+| v1                | v2              |
+| :---------------- | :-------------- |
+| `countUnique`     | `countDistinct` |
+| `var`             | `variance`      |
+| `wider()`'s `avg` | `mean`          |
+
+In `addSummaryRows()`, the third parameter is now called `stats`, and custom row
+configurations use `{ stat: "sum", label: "Total" }` instead of a `summary`
+property. In `rolling()`, the statistic parameter is now called `stat`.
+
+### `summarize()`: the `column` output column is now automatic
+
+The `column` output column identifies which input column each row summarizes, so
+it only carries information when more than one column is summarized.
+`summarize()` now adds it exactly in that case: summarizing several columns
+produces a `column` column, summarizing a single column (or none) does not. The
+v1 `noColumnValue` option is gone — there is nothing left to configure.
 
 ```ts
-table.summarize({ values: "salary" }); // no value column
-table.summarize({ values: ["salary", "age"] }); // value column
+table.summarize({ columns: "salary" }); // no `column` output column
+table.summarize({ columns: ["salary", "age"] }); // `column` output column
 ```
 
 If you summarized a single column in v1 without `noColumnValue: true`, the
-output loses its constant `value` column in v2.
+output loses its constant `value` column in v2. Multi-column output renames that
+discriminator from `value` to `column`.
 
 ### `join()`: right and full joins keep their join keys
 

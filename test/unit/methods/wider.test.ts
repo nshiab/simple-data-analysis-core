@@ -192,18 +192,18 @@ Deno.test("should sum values by default when namesFrom/grouping has duplicate co
   await sdb.close();
 });
 
-Deno.test("should use the aggregation option instead of the default sum", async () => {
+Deno.test("should use the stat option instead of the default sum", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
     { Department: "accounting", year: "2015", employees: 10 },
     { Department: "accounting", year: "2015", employees: 5 },
   ]);
-  table.wider("year", "employees", { aggregation: "max" });
+  table.wider("year", "employees", { stat: "mean" });
 
   const data = await table.getData();
 
-  assertEquals(data, [{ Department: "accounting", "2015": 10 }]);
+  assertEquals(data, [{ Department: "accounting", "2015": 7.5 }]);
 
   await sdb.close();
 });

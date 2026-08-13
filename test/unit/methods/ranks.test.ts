@@ -71,7 +71,7 @@ Deno.test("should add a column with the rank after grouping with one category", 
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", {
-    categories: "Subject",
+    by: "Subject",
   });
   table.sort({
     Subject: "asc",
@@ -92,12 +92,12 @@ Deno.test("should add a column with the rank after grouping with one category", 
   await sdb.close();
 });
 
-Deno.test("should add a column with the rank after grouping with multiple categories", async () => {
+Deno.test("should add a column with the rank after grouping by multiple columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", {
-    categories: ["Name", "Subject"],
+    by: ["Name", "Subject"],
   });
 
   table.sort({

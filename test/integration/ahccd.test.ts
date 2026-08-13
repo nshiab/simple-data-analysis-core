@@ -59,9 +59,9 @@ if (existsSync("test/data/files/ahccd.csv")) {
     // Summarizing
     // const startSummarizing = Date.now();
     table.summarize({
-      values: "tas",
-      categories: ["station", "station_name", "decade"],
-      summaries: "mean",
+      columns: "tas",
+      by: ["station", "station_name", "decade"],
+      stats: "mean",
     });
     // const endSummarizing = Date.now();
     // console.log(

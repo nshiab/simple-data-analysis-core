@@ -10,7 +10,7 @@ export default function outliersIQR(
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
   // The quantile function depends on the parity of the number of rows, so
@@ -47,17 +47,15 @@ function outliersIQRQuery(
   newColumn: string,
   parity: "even" | "odd",
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  const categories = options.categories
-    ? stringToArray(options.categories).map((d) => `${quoteIdentifier(d)}`)
+  const by = options.by
+    ? stringToArray(options.by).map((d) => `${quoteIdentifier(d)}`)
     : [];
 
   const quantileFunc = parity === "even" ? "quantile_disc" : "quantile_cont";
-  const partition = categories.length > 0
-    ? `PARTITION BY ${categories.join(", ")}`
-    : "";
+  const partition = by.length > 0 ? `PARTITION BY ${by.join(", ")}` : "";
 
   // q1/q3 are computed as window values (one pass) instead of a per-category
   // CTE joined back through a correlated subquery per row.

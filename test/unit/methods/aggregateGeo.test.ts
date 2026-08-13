@@ -166,12 +166,12 @@ Deno.test("should do an union of all geometries and return the results in a new 
   await sdb.close();
 });
 
-Deno.test("should do an union of geometries based on categories", async () => {
+Deno.test("should do an union of geometries based on by", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geoCategories");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   table.aggregateGeo("union", {
-    categories: "groups",
+    by: "groups",
   });
   const data = await table.getGeoData("geom");
 
@@ -219,12 +219,12 @@ Deno.test("should do an union of geometries based on categories", async () => {
   await sdb.close();
 });
 
-Deno.test("should do an union of geometries based on categories and return the results in a new table", async () => {
+Deno.test("should do an union of geometries based on by and return the results in a new table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geoCategoriesAndNewTable");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("union", {
-    categories: "groups",
+    by: "groups",
     outputTable: true,
   });
 
@@ -273,12 +273,12 @@ Deno.test("should do an union of geometries based on categories and return the r
   });
   await sdb.close();
 });
-Deno.test("should do an intersection of geometries based on categories and return the results in a new table", async () => {
+Deno.test("should do an intersection of geometries based on by and return the results in a new table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geoCategoriesAndNewTableIntersection");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("intersection", {
-    categories: "groups",
+    by: "groups",
     outputTable: true,
   });
 
@@ -317,12 +317,12 @@ Deno.test("should do an intersection of geometries based on categories and retur
   await sdb.close();
 });
 
-Deno.test("should do an intersection of geometries based on categories and return the results in a new table with a specific name in the DB", async () => {
+Deno.test("should do an intersection of geometries based on by and return the results in a new table with a specific name in the DB", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("geoCategoriesAndNewTableIntersection");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("intersection", {
-    categories: "groups",
+    by: "groups",
     outputTable: "specificTable",
   });
 
@@ -384,7 +384,7 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
 
   // Union
   const unionTable = table.aggregateGeo("union", {
-    categories: "category",
+    by: "category",
     outputTable: "unionResult",
   });
   const unionData = await unionTable.getGeoData("geom");
@@ -421,7 +421,7 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
 
   // Intersection
   const interTable = table.aggregateGeo("intersection", {
-    categories: "category",
+    by: "category",
     outputTable: "interResult",
   });
   const interData = await interTable.getGeoData("geom");

@@ -271,8 +271,8 @@ Deno.test("summarize() returns correct generic type", async () => {
   table.loadArray([{ a: 1 }, { a: 2 }, { a: 3 }]);
 
   const result = table.summarize({
-    values: "a",
-    summaries: "mean",
+    columns: "a",
+    stats: "mean",
     outputTable: "summary",
   });
 

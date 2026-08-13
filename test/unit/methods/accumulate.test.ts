@@ -35,7 +35,7 @@ Deno.test("should add the cumulative sum in a new column without reordering the 
   ]);
   await sdb.close();
 });
-Deno.test("should add the cumulative sum in a new column with categories", async () => {
+Deno.test("should add the cumulative sum by a grouping column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
@@ -46,7 +46,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
     { key1: 3, key2: "a" },
     { key1: 5, key2: "b" },
   ]);
-  table.accumulate("key1", "cumulative", { categories: "key2" });
+  table.accumulate("key1", "cumulative", { by: "key2" });
   const data = await table.getData();
   assertEquals(data, [
     { key1: 6, key2: "b", cumulative: 6 },
@@ -58,7 +58,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
   ]);
   await sdb.close();
 });
-Deno.test("should add the cumulative sum in a new column with multiple categories", async () => {
+Deno.test("should add the cumulative sum in a new column by multiple columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("data");
   table.loadArray([
@@ -70,7 +70,7 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
     { key1: 5, key2: "b", key3: "d" },
   ]);
   table.accumulate("key1", "cumulative", {
-    categories: ["key2", "key3"],
+    by: ["key2", "key3"],
   });
   const data = await table.getData();
   assertEquals(data, [

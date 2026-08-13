@@ -28,7 +28,7 @@ Deno.test("should return a column with the row number restarting for each catego
     { first: "John", last: "Doe", city: "Toronto" },
     { first: "Jane", last: "Doe", city: "Toronto" },
   ]);
-  table.addRowNumber("rowNumber", { categories: "city" });
+  table.addRowNumber("rowNumber", { by: "city" });
 
   const data = await table.getData();
 

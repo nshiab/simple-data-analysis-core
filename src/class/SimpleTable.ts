@@ -1138,7 +1138,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column to be created with offset values.
    * @param options - An optional object with configuration options:
    * @param options.offset - The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
-   * @param options.categories - A string or an array of strings representing columns to partition the data by. The offset will be applied independently within each category.
+   * @param options.by - A column name or an array of column names to partition by. The offset is applied independently within each group.
    * @returns The table, so methods can be chained.
    * @category Column Operations
    *
@@ -1159,7 +1159,7 @@ export default class SimpleTable extends Simple {
    * // Clone 'temperature' as 'prev_temp_by_city', offsetting by 1 row within each 'city' category
    * table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
    *   offset: 1,
-   *   categories: "city",
+   *   by: "city",
    * });
    * ```
    *
@@ -1168,7 +1168,7 @@ export default class SimpleTable extends Simple {
    * // Clone 'stock_price' as 'prev_price_by_stock_and_exchange', offsetting by 1 row within each 'stock_symbol' and 'exchange' category
    * table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
    *   offset: 1,
-   *   categories: ["stock_symbol", "exchange"],
+   *   by: ["stock_symbol", "exchange"],
    * });
    * ```
    */
@@ -1177,7 +1177,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: {
       offset?: number;
-      categories?: string | string[];
+      by?: string | string[];
     } = {},
   ): this {
     cloneColumnWithOffset(this, column, newColumn, options);
@@ -1191,7 +1191,7 @@ export default class SimpleTable extends Simple {
    *
    * @param columns - The column(s) for which to fill `NULL` values.
    * @param options - An optional object with configuration options:
-   * @param options.categories - A string or an array of strings representing columns to partition the data by. The fill will be applied independently within each category.
+   * @param options.by - A column name or an array of column names to partition by. The fill is applied independently within each group.
    * @param options.interpolate - If `true`, replaces `NULL` values with linearly interpolated values using DuckDB's `fill()` window function. When `interpolateBy` is not set, row positions are used as the X-axis, treating rows as equidistant. For `NULL` values at the ends, linear extrapolation is used. Both the column values and the X-axis values must support arithmetic. If `false` or omitted, the previous non-`NULL` value is used instead. Automatically assumed `true` when `interpolateBy` is set.
    * @param options.interpolateBy - A column name to use as the X-axis for interpolation instead of equidistant row positions. When provided, `interpolate` is automatically assumed `true`. Use this when rows are not evenly spaced (e.g., timestamps or non-uniform numeric indices) so that interpolated values are proportional to the actual distance between X-axis values.
    * @returns The table, so methods can be chained.
@@ -1212,7 +1212,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Fill NULL values in 'value' independently within each 'group'
-   * table.fill("value", { categories: "group" });
+   * table.fill("value", { by: "group" });
    * ```
    *
    * @example
@@ -1224,7 +1224,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Fill NULL values in 'value' using linear interpolation, independently within each 'group'
-   * table.fill("value", { categories: "group", interpolate: true });
+   * table.fill("value", { by: "group", interpolate: true });
    * ```
    *
    * @example
@@ -1242,7 +1242,7 @@ export default class SimpleTable extends Simple {
   fill(
     columns: string | string[],
     options: {
-      categories?: string | string[];
+      by?: string | string[];
       interpolate?: boolean;
       interpolateBy?: string;
     } = {},
@@ -1858,14 +1858,14 @@ export default class SimpleTable extends Simple {
    * | Accounting | 10   | 9    | 15   |
    * | Sales      | 52   | 75   | 98   |
    *
-   * When multiple rows share the same `namesFrom`/grouping combination, their `valuesFrom` values are combined with the `options.aggregation` function (`"sum"` by default).
+   * When multiple rows share the same `namesFrom`/grouping combination, their `valuesFrom` values are combined with the `options.stat` function (`"sum"` by default).
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param namesFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
    * @param options - An optional object with configuration options:
-   * @param options.aggregation - The aggregation function applied when multiple rows share the same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`, `"max"`, `"avg"`, `"median"`, or `"first"`. Defaults to `"sum"`.
+   * @param options.stat - The stat function applied when multiple rows share the same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`, `"max"`, `"mean"`, `"median"`, or `"first"`. Defaults to `"sum"`.
    * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
@@ -1873,12 +1873,12 @@ export default class SimpleTable extends Simple {
     namesFrom: string,
     valuesFrom: string,
     options: {
-      aggregation?:
+      stat?:
         | "sum"
         | "count"
         | "min"
         | "max"
-        | "avg"
+        | "mean"
         | "median"
         | "first";
     } = {},
@@ -2056,7 +2056,7 @@ export default class SimpleTable extends Simple {
    *
    * @param newColumn - The name of the new column that will store the row number.
    * @param options - An optional object with configuration options:
-   * @param options.categories - A string or an array of strings representing columns to partition the data by. The row number will restart at 0 for each unique combination of values in these columns.
+   * @param options.by - A column name or an array of column names to partition by. The row number restarts at 0 within each group.
    * @returns The table, so methods can be chained.
    * @category Column Operations
    *
@@ -2069,12 +2069,12 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Add a new column named 'rowNumber' with the row number for each 'category'
-   * table.addRowNumber("rowNumber", { categories: "category" });
+   * table.addRowNumber("rowNumber", { by: "category" });
    * ```
    */
   addRowNumber(
     newColumn: string,
-    options: { categories?: string | string[] } = {},
+    options: { by?: string | string[] } = {},
   ): this {
     addRowNumber(this, newColumn, options);
     return this;
@@ -2891,7 +2891,7 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column whose values will be aggregated and concatenated.
    * @param separator - The delimiter string used to join the column values.
-   * @param categories - The column name or an array of column names to group by.
+   * @param by - The column name or an array of column names to group by.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2917,9 +2917,9 @@ export default class SimpleTable extends Simple {
   nest(
     column: string,
     separator: string,
-    categories: string | string[],
+    by: string | string[],
   ): this {
-    nest(this, column, separator, categories);
+    nest(this, column, separator, by);
     return this;
   }
 
@@ -3020,7 +3020,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the ranks will be stored.
    * @param options - An optional object with configuration options:
    * @param options.order - The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
-   * @param options.categories - The column name or an array of column names that define categories for ranking. Ranks will be assigned independently within each category.
+   * @param options.by - The column name or an array of column names to rank by. Ranks are assigned independently within each group.
    * @param options.dense - A boolean indicating whether to use dense ranking (no gaps). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3039,14 +3039,14 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Compute ranks within 'department' categories, based on 'salary' values, without gaps
-   * table.ranks("salary", "salaryRank", { categories: "department", dense: true });
+   * // Compute ranks by 'department', based on 'salary' values, without gaps
+   * table.ranks("salary", "salaryRank", { by: "department", dense: true });
    * ```
    *
    * @example
    * ```ts
-   * // Compute ranks within multiple categories ('department' and 'city')
-   * table.ranks("sales", "salesRank", { categories: ["department", "city"] });
+   * // Compute ranks by both 'department' and 'city'
+   * table.ranks("sales", "salesRank", { by: ["department", "city"] });
    * ```
    */
   ranks(
@@ -3054,7 +3054,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: {
       order?: "asc" | "desc";
-      categories?: string | string[];
+      by?: string | string[];
       dense?: boolean;
     } = {},
   ): this {
@@ -3071,7 +3071,7 @@ export default class SimpleTable extends Simple {
    * @param count - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
    * @param newColumn - The name of the new column where the assigned quantiles will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories for computing quantiles. Quantiles will be assigned independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Quantiles are assigned independently within each group.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -3083,8 +3083,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Assigns quantiles within 'column2' categories, based on 'column1' values.
-   * table.quantiles("column1", 10, "quantiles", { categories: "column2" });
+   * // Assign quantiles by 'column2', based on 'column1' values.
+   * table.quantiles("column1", 10, "quantiles", { by: "column2" });
    * ```
    *
    * @example
@@ -3098,7 +3098,7 @@ export default class SimpleTable extends Simple {
     count: number,
     newColumn: string,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
     } = {},
   ): this {
     quantiles(this, column, count, newColumn, options);
@@ -3313,14 +3313,14 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Computes proportions vertically over a column's values, relative to the sum of all values in that column (or within specified categories).
+   * Computes proportions vertically over a column's values, relative to the sum of all values in that column or group.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The column containing values for which proportions will be computed. The proportions are calculated based on the sum of values in the specified column.
    * @param newColumn - The name of the new column where the proportions will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories for computing proportions. Proportions will be calculated independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Proportions are calculated independently within each group.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3333,21 +3333,21 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Compute proportions for 'column1' within 'column2' categories, rounded to two decimal places
-   * table.columnProportions("column1", "perc", { categories: "column2", decimals: 2 });
+   * // Compute proportions for 'column1' by 'column2', rounded to two decimal places
+   * table.columnProportions("column1", "perc", { by: "column2", decimals: 2 });
    * ```
    *
    * @example
    * ```ts
-   * // Compute proportions for 'sales' within 'region' and 'product_type' categories
-   * table.columnProportions("sales", "sales_proportion", { categories: ["region", "product_type"] });
+   * // Compute proportions for 'sales' by 'region' and 'product_type'
+   * table.columnProportions("sales", "sales_proportion", { by: ["region", "product_type"] });
    * ```
    */
   columnProportions(
     column: string,
     newColumn: string,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
       decimals?: number;
     } = {},
   ): this {
@@ -3356,104 +3356,104 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Creates a summary table based on specified values, categories, and summary operations.
+   * Creates a summary table from selected columns, optionally grouped by other columns.
    * This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param options - An object with configuration options for summarization:
-   * @param options.values - The column name or an array of column names whose values will be summarized. If omitted, all columns will be summarized.
-   * @param options.categories - The column name or an array of column names that define categories for the summarization. Results will be grouped by these categories.
-   * @param options.summaries - The summary operations to be performed. Can be a single operation (e.g., `"mean"`), an array of operations (e.g., `["min", "max"]`), or an object mapping new column names to operations (e.g., `{ avgSalary: "mean" }`). Supported operations include: `"count"`, `"countUnique"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, `"var"`.
-   * @param options.decimals - The number of decimal places to round the summarized values. Defaults to `undefined` (no rounding).
+   * @param options.columns - The column name or an array of column names to summarize. If omitted, only the row count is returned.
+   * @param options.by - The column name or an array of column names to group by.
+   * @param options.stats - The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array (e.g., `["min", "max"]`), or an object mapping output column names to statistics (e.g., `{ avgSalary: "mean" }`). Supported statistics are `"count"`, `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`.
+   * @param options.decimals - The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as values must be of the same type for aggregation.
-   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `value` column identifies which column each row summarizes.
+   * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as columns must be of the same type for aggregation.
+   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
    * @category Analyzing Data
    *
    * @example
    * ```ts
-   * // Summarize all columns with all available summary operations, overwriting the current table
+   * // Summarize all columns with all available statistics, overwriting the current table
    * const columns = await table.getColumns();
-   * table.summarize({ values: columns });
+   * table.summarize({ columns });
    * ```
    *
    * @example
    * ```ts
    * // Summarize all columns and store the results in a new table with a generated name
    * const columns = await table.getColumns();
-   * const summaryTable = table.summarize({ values: columns, outputTable: true });
+   * const summaryTable = table.summarize({ columns, outputTable: true });
    * ```
    *
    * @example
    * ```ts
    * // Summarize all columns and store the results in a new table named 'mySummary'
    * const columns = await table.getColumns();
-   * const mySummaryTable = table.summarize({ values: columns, outputTable: "mySummary" });
+   * const mySummaryTable = table.summarize({ columns, outputTable: "mySummary" });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize a single column ('sales') with all available summary operations
-   * table.summarize({ values: "sales" });
+   * // Summarize a single column ('sales') with all available statistics
+   * table.summarize({ columns: "sales" });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize multiple columns ('sales' and 'profit') with all available summary operations
-   * table.summarize({ values: ["sales", "profit"] });
+   * // Summarize multiple columns ('sales' and 'profit') with all available statistics
+   * table.summarize({ columns: ["sales", "profit"] });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'sales' by 'region' (single category)
-   * table.summarize({ values: "sales", categories: "region" });
+   * table.summarize({ columns: "sales", by: "region" });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize 'sales' by 'region' and 'product_type' (multiple categories)
-   * table.summarize({ values: "sales", categories: ["region", "product_type"] });
+   * // Summarize 'sales' by 'region' and 'product_type'
+   * table.summarize({ columns: "sales", by: ["region", "product_type"] });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize 'sales' by 'region' with a specific summary operation (mean)
-   * table.summarize({ values: "sales", categories: "region", summaries: "mean" });
+   * // Summarize 'sales' by 'region' with a specific statistic (mean)
+   * table.summarize({ columns: "sales", by: "region", stats: "mean" });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize 'sales' by 'region' with specific summary operations (mean and sum)
-   * table.summarize({ values: "sales", categories: "region", summaries: ["mean", "sum"] });
+   * // Summarize 'sales' by 'region' with specific statistics (mean and sum)
+   * table.summarize({ columns: "sales", by: "region", stats: ["mean", "sum"] });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize 'sales' by 'region' with custom named summary operations
-   * table.summarize({ values: "sales", categories: "region", summaries: { averageSales: "mean", totalSales: "sum" } });
+   * // Summarize 'sales' by 'region' with custom named statistics
+   * table.summarize({ columns: "sales", by: "region", stats: { averageSales: "mean", totalSales: "sum" } });
    * ```
    *
    * @example
    * ```ts
-   * // Summarize 'price' and 'cost', rounding aggregated values to 2 decimal places
-   * table.summarize({ values: ["price", "cost"], decimals: 2 });
+   * // Summarize 'price' and 'cost', rounding aggregated columns to 2 decimal places
+   * table.summarize({ columns: ["price", "cost"], decimals: 2 });
    * ```
    *
    * @example
    * ```ts
    * // Summarize 'timestamp_column' by converting to milliseconds first
-   * table.summarize({ values: "timestamp_column", datesToMs: true, summaries: "mean" });
+   * table.summarize({ columns: "timestamp_column", datesToMs: true, stats: "mean" });
    * ```
    */
   summarize(
     options: {
-      values?: string | string[];
-      categories?: string | string[];
-      summaries?:
+      columns?: string | string[];
+      by?: string | string[];
+      stats?:
         | (
           | "count"
-          | "countUnique"
+          | "countDistinct"
           | "countNull"
           | "min"
           | "max"
@@ -3462,11 +3462,11 @@ export default class SimpleTable extends Simple {
           | "sum"
           | "skew"
           | "stdDev"
-          | "var"
+          | "variance"
         )
         | (
           | "count"
-          | "countUnique"
+          | "countDistinct"
           | "countNull"
           | "min"
           | "max"
@@ -3475,12 +3475,12 @@ export default class SimpleTable extends Simple {
           | "sum"
           | "skew"
           | "stdDev"
-          | "var"
+          | "variance"
         )[]
         | {
           [key: string]:
             | "count"
-            | "countUnique"
+            | "countDistinct"
             | "countNull"
             | "min"
             | "max"
@@ -3489,7 +3489,7 @@ export default class SimpleTable extends Simple {
             | "sum"
             | "skew"
             | "stdDev"
-            | "var";
+            | "variance";
         };
       decimals?: number;
       outputTable?: string | boolean;
@@ -3501,20 +3501,20 @@ export default class SimpleTable extends Simple {
 
   /**
    * Appends one or more summary rows to the table. Each row is calculated from
-   * the original rows before any summaries are appended. This is useful for
+   * the original rows before any summary rows are appended. This is useful for
    * preparing totals and other statistics before exporting tabular data.
    *
    * Passing `"all"` selects every numeric column. Columns that are neither
    * summarized nor used for labels contain `NULL` in the appended rows. A
-   * summary string is also used as its row label; pass an object to customize
-   * that label. If `summaries` is omitted, every supported summary is added.
+   * stat string is also used as its row label; pass an object to customize
+   * that label. If `stats` is omitted, every supported stat is added.
    *
    * This method queues the operation; it runs when an async observer method
    * (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The numeric column name, an array of numeric column names, or `"all"` to summarize every numeric column.
-   * @param labelColumn - The existing string column in which summary row labels will be written.
-   * @param summaries - A summary, summary configuration, or array of either. Supported summaries are `"countUnique"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"var"`. An object's `label` defaults to its `summary`. If omitted, all supported summaries are added.
+   * @param labelColumn - The existing string column in which stat row labels will be written.
+   * @param stats - A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -3534,16 +3534,16 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Customize the labels written to the label column.
    * table.addSummaryRows("all", "region", [
-   *   { summary: "sum", label: "Total" },
-   *   { summary: "mean", label: "Average" },
+   *   { stat: "sum", label: "Total" },
+   *   { stat: "mean", label: "Average" },
    * ]);
    * ```
    */
   addSummaryRows(
     columns: "all" | string | string[],
     labelColumn: string,
-    summaries?:
-      | "countUnique"
+    stats?:
+      | "countDistinct"
       | "countNull"
       | "min"
       | "max"
@@ -3552,10 +3552,10 @@ export default class SimpleTable extends Simple {
       | "sum"
       | "skew"
       | "stdDev"
-      | "var"
+      | "variance"
       | {
-        summary:
-          | "countUnique"
+        stat:
+          | "countDistinct"
           | "countNull"
           | "min"
           | "max"
@@ -3564,11 +3564,11 @@ export default class SimpleTable extends Simple {
           | "sum"
           | "skew"
           | "stdDev"
-          | "var";
+          | "variance";
         label?: string;
       }
       | (
-        | "countUnique"
+        | "countDistinct"
         | "countNull"
         | "min"
         | "max"
@@ -3577,10 +3577,10 @@ export default class SimpleTable extends Simple {
         | "sum"
         | "skew"
         | "stdDev"
-        | "var"
+        | "variance"
         | {
-          summary:
-            | "countUnique"
+          stat:
+            | "countDistinct"
             | "countNull"
             | "min"
             | "max"
@@ -3589,12 +3589,12 @@ export default class SimpleTable extends Simple {
             | "sum"
             | "skew"
             | "stdDev"
-            | "var";
+            | "variance";
           label?: string;
         }
       )[],
   ): this {
-    addSummaryRows(this, columns, labelColumn, summaries);
+    addSummaryRows(this, columns, labelColumn, stats);
     return this;
   }
 
@@ -3606,7 +3606,7 @@ export default class SimpleTable extends Simple {
    * @param column - The name of the column storing the values to be accumulated.
    * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories for the accumulation. Accumulation will be performed independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Accumulation is performed independently within each group.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -3619,22 +3619,22 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Compute the cumulative sum of 'orders' within 'customer_id' categories
+   * // Compute the cumulative sum of 'orders' by 'customer_id'
    * // Ensure the table is sorted by 'customer_id' and then by a relevant order column (e.g., order_date).
-   * table.accumulate("orders", "cumulativeOrders", { categories: "customer_id" });
+   * table.accumulate("orders", "cumulativeOrders", { by: "customer_id" });
    * ```
    *
    * @example
    * ```ts
-   * // Compute the cumulative sum of 'revenue' within 'region' and 'product_category' categories
-   * table.accumulate("revenue", "cumulativeRevenue", { categories: ["region", "product_category"] });
+   * // Compute the cumulative sum of 'revenue' by 'region' and 'product_category'
+   * table.accumulate("revenue", "cumulativeRevenue", { by: ["region", "product_category"] });
    * ```
    */
   accumulate(
     column: string,
     newColumn: string,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
     } = {},
   ): this {
     accumulate(this, column, newColumn, options);
@@ -3650,11 +3650,11 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The name of the column storing the values to be aggregated.
    * @param newColumn - The name of the new column in which the computed rolling values will be stored.
-   * @param summary - The aggregation function to apply: `"min"`, `"max"`, `"mean"`, `"median"`, or `"sum"`.
+   * @param stat - The aggregation function to apply: `"min"`, `"max"`, `"mean"`, `"median"`, or `"sum"`.
    * @param preceding - The number of preceding rows to include in the rolling window.
    * @param following - The number of following rows to include in the rolling window.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories for the aggregation. Rolling aggregations will be computed independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Rolling statistics are computed independently within each group.
    * @param options.decimals - The number of decimal places to round the aggregated values. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3668,8 +3668,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Compute a rolling sum of 'transactions' within 'customer_id' categories
-   * table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, { categories: "customer_id" });
+   * // Compute a rolling sum of 'transactions' by 'customer_id'
+   * table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, { by: "customer_id" });
    * ```
    *
    * @example
@@ -3681,11 +3681,11 @@ export default class SimpleTable extends Simple {
   rolling(
     column: string,
     newColumn: string,
-    summary: "min" | "max" | "mean" | "median" | "sum",
+    stat: "min" | "max" | "mean" | "median" | "sum",
     preceding: number,
     following: number,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
       decimals?: number;
     } = {},
   ): this {
@@ -3693,7 +3693,7 @@ export default class SimpleTable extends Simple {
       this,
       column,
       newColumn,
-      summary,
+      stat,
       preceding,
       following,
       options,
@@ -3710,7 +3710,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
    * @param options.y - The name of the column for the y-values. It can be provided only when `options.x` is also set. If both are omitted, correlations will be computed for all numeric column pairs.
-   * @param options.categories - The column name or an array of column names that define categories. Correlation calculations will be performed independently for each category.
+   * @param options.by - The column name or an array of column names to group by. Correlations are calculated independently within each group.
    * @param options.decimals - The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the correlation results (either the current table or a new table), so methods can be chained.
@@ -3737,7 +3737,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute correlations within 'categoryColumn' and store results in a new table
-   * const correlationTable = table.correlations({ categories: "categoryColumn", outputTable: true });
+   * const correlationTable = table.correlations({ by: "categoryColumn", outputTable: true });
    * ```
    *
    * @example
@@ -3750,7 +3750,7 @@ export default class SimpleTable extends Simple {
     options: {
       x?: string;
       y?: string;
-      categories?: string | string[];
+      by?: string | string[];
       decimals?: number;
       outputTable?: string | boolean;
     } = {},
@@ -3768,7 +3768,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.x - The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
    * @param options.y - The name of the column for the dependent variable (y-values). It can be provided only when `options.x` is also set. If both are omitted, linear regressions will be computed for all numeric column permutations.
-   * @param options.categories - The column name or an array of column names that define categories. Linear regression analysis will be performed independently for each category.
+   * @param options.by - The column name or an array of column names to group by. Linear regressions are calculated independently within each group.
    * @param options.decimals - The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the linear regression results (either the current table or a new table), so methods can be chained.
@@ -3794,8 +3794,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Compute linear regressions within 'region' categories and store results in a new table
-   * const regressionTable = table.linearRegressions({ categories: "region", outputTable: true });
+   * // Compute linear regressions by 'region' and store results in a new table
+   * const regressionTable = table.linearRegressions({ by: "region", outputTable: true });
    * ```
    *
    * @example
@@ -3808,7 +3808,7 @@ export default class SimpleTable extends Simple {
     options: {
       x?: string;
       y?: string;
-      categories?: string | string[];
+      by?: string | string[];
       decimals?: number;
       outputTable?: string | boolean;
     } = {},
@@ -3824,7 +3824,7 @@ export default class SimpleTable extends Simple {
    * @param column - The name of the column in which outliers will be identified.
    * @param newColumn - The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories. Outlier detection will be performed independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Outliers are detected independently within each group.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -3836,15 +3836,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Look for outliers in 'salary' within 'gender' categories
-   * table.outliersIQR("salary", "salaryOutlier", { categories: "gender" });
+   * // Look for outliers in 'salary' by 'gender'
+   * table.outliersIQR("salary", "salaryOutlier", { by: "gender" });
    * ```
    */
   outliersIQR(
     column: string,
     newColumn: string,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
     } = {},
   ): this {
     outliersIQR(this, column, newColumn, options);
@@ -3859,7 +3859,7 @@ export default class SimpleTable extends Simple {
    * @param column - The name of the column for which Z-scores will be calculated.
    * @param newColumn - The name of the new column where the computed Z-scores will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories. Z-scores will be calculated independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Z-scores are calculated independently within each group.
    * @param options.decimals - The number of decimal places to round the Z-score values. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3872,8 +3872,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Calculate Z-scores for 'salary' within 'department' categories
-   * table.zScore("salary", "salaryZScore", { categories: "department" });
+   * // Calculate Z-scores for 'salary' by 'department'
+   * table.zScore("salary", "salaryZScore", { by: "department" });
    * ```
    *
    * @example
@@ -3886,7 +3886,7 @@ export default class SimpleTable extends Simple {
     column: string,
     newColumn: string,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
       decimals?: number;
     } = {},
   ): this {
@@ -3902,7 +3902,7 @@ export default class SimpleTable extends Simple {
    * @param column - The name of the column in which values will be normalized.
    * @param newColumn - The name of the new column where normalized values will be stored.
    * @param options - An optional object with configuration options:
-   * @param options.categories - The column name or an array of column names that define categories for the normalization. Normalization will be performed independently within each category.
+   * @param options.by - The column name or an array of column names to partition by. Normalization is performed independently within each group.
    * @param options.decimals - The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3915,8 +3915,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Normalize 'value' within 'group' categories
-   * table.normalize("value", "normalizedValue", { categories: "group" });
+   * // Normalize 'value' by 'group'
+   * table.normalize("value", "normalizedValue", { by: "group" });
    * ```
    *
    * @example
@@ -3929,7 +3929,7 @@ export default class SimpleTable extends Simple {
     column: string,
     newColumn: string,
     options: {
-      categories?: string | string[];
+      by?: string | string[];
       decimals?: number;
     } = {},
   ): this {
@@ -5811,7 +5811,7 @@ export default class SimpleTable extends Simple {
    * @param method - The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the column storing the geometries to be aggregated. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.categories - The column name or an array of column names that define categories for the aggregation. Aggregation will be performed independently within each category.
+   * @param options.by - The column name or an array of column names to group by. Geometries are aggregated independently within each group.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @returns A table instance containing the aggregated geometries (either the current table or a new table), so methods can be chained.
    * @category Geospatial
@@ -5825,7 +5825,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Aggregate geometries by 'country' and compute their union
-   * table.aggregateGeo("union", { categories: "country" });
+   * table.aggregateGeo("union", { by: "country" });
    * ```
    *
    * @example
@@ -5838,7 +5838,7 @@ export default class SimpleTable extends Simple {
     method: "union" | "intersection",
     options: {
       column?: string;
-      categories?: string | string[];
+      by?: string | string[];
       outputTable?: string | boolean;
     } = {},
   ): this {
@@ -6079,9 +6079,9 @@ export default class SimpleTable extends Simple {
    * await table.cache(() => {
    *   table.loadData("items.csv");
    *   table.summarize({
-   *     values: "price",
-   *     categories: "department",
-   *     summaries: ["min", "max", "mean"],
+   *     columns: "price",
+   *     by: "department",
+   *     stats: ["min", "max", "mean"],
    *   });
    * });
    *
@@ -6100,9 +6100,9 @@ export default class SimpleTable extends Simple {
    * await table.cache(() => {
    *   table.loadData("items.csv");
    *   table.summarize({
-   *     values: "price",
-   *     categories: "department",
-   *     summaries: ["min", "max", "mean"],
+   *     columns: "price",
+   *     by: "department",
+   *     stats: ["min", "max", "mean"],
    *   });
    * }, { ttl: 60 });
    *
@@ -6118,9 +6118,9 @@ export default class SimpleTable extends Simple {
    * await table.cache(() => {
    *   table.loadData("items.csv");
    *   table.summarize({
-   *     values: "price",
-   *     categories: "department",
-   *     summaries: ["min", "max", "mean"],
+   *     columns: "price",
+   *     by: "department",
+   *     stats: ["min", "max", "mean"],
    *   });
    * });
    *

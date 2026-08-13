@@ -82,13 +82,13 @@ Deno.test("should normalize values in a column and keep 4 decimals", async () =>
   await sdb.close();
 });
 
-Deno.test("should normalize values in a column with categories", async () => {
+Deno.test("should normalize values by a grouping column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
 
   table.normalize("key2", "normalized", {
-    categories: "key1",
+    by: "key1",
   });
   table.sort({ key3: "asc" });
 

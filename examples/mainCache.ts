@@ -59,9 +59,9 @@ await firesInsideProvinces.cache(
       })
       .removeMissing()
       .summarize({
-        values: "hectares",
-        categories: "nameEnglish",
-        summaries: ["count", "sum"],
+        columns: "hectares",
+        by: "nameEnglish",
+        stats: ["count", "sum"],
         decimals: 0,
       })
       .renameColumns({

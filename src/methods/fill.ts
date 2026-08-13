@@ -9,7 +9,7 @@ export default function fill(
   simpleTable: SimpleTable,
   columns: string | string[],
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     interpolate?: boolean;
     interpolateBy?: string;
   } = {},
@@ -37,14 +37,12 @@ async function executeFill(
   simpleTable: SimpleTable,
   columns: string | string[],
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     interpolate?: boolean;
     interpolateBy?: string;
   },
 ): Promise<void> {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+  const by = options.by ? stringToArray(options.by) : [];
 
   const cols = stringToArray(columns);
   const excludeList = cols.map((col) => `${quoteIdentifier(col)}`).join(", ");
@@ -57,10 +55,8 @@ async function executeFill(
     const windowOrder = options.interpolateBy
       ? `${quoteIdentifier(options.interpolateBy)}`
       : "rowid";
-    const overClause = categories.length > 0
-      ? `(PARTITION BY ${
-        categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-      })`
+    const overClause = by.length > 0
+      ? `(PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")})`
       : `()`;
     selectList = cols
       .map(
@@ -72,9 +68,9 @@ async function executeFill(
           }`,
       )
       .join(", ");
-  } else if (categories.length > 0) {
+  } else if (by.length > 0) {
     const partition = `PARTITION BY ${
-      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
+      by.map((d) => `${quoteIdentifier(d)}`).join(", ")
     }`;
     selectList = cols
       .map(

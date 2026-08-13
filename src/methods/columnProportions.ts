@@ -9,7 +9,7 @@ export default function columnProportions(
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
@@ -22,15 +22,11 @@ export default function columnProportions(
     buildSelect: (input, schema) => {
       assertNewColumns(schema, [newColumn], "columnProportions()");
 
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
+      const by = options.by ? stringToArray(options.by) : [];
 
-      const partition = categories.length === 0
+      const partition = by.length === 0
         ? ""
-        : `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(",")
-        }`;
+        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
 
       return typeof options.decimals === "number"
         ? `SELECT *, ROUND(${quoteIdentifier(column)} / sum(${

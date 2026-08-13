@@ -84,7 +84,7 @@ Deno.test("should return the vertical proportions in a new column with a categor
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key2", "key2Perc", {
-    categories: "key1",
+    by: "key1",
   });
   table.sort({
     key1: "asc",
@@ -133,12 +133,12 @@ Deno.test("should return the vertical proportions in a new column with a categor
   await sdb.close();
 });
 
-Deno.test("should return the vertical proportions in a new column with multiple categories", async () => {
+Deno.test("should return the vertical proportions in a new column by multiple columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key3", "key3Perc", {
-    categories: ["key1", "key2"],
+    by: ["key1", "key2"],
   });
   table.sort({
     key1: "asc",

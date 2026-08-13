@@ -9,10 +9,11 @@ export default function wider(
   namesFrom: string,
   valuesFrom: string,
   options: {
-    aggregation?: "sum" | "count" | "min" | "max" | "avg" | "median" | "first";
+    stat?: "sum" | "count" | "min" | "max" | "mean" | "median" | "first";
   } = {},
 ) {
-  const aggregation = options.aggregation ?? "sum";
+  const stat = options.stat ?? "sum";
+  const aggregateFunction = stat === "mean" ? "avg" : stat;
 
   // DuckDB rewrites PIVOT into multiple statements internally, so it can't
   // be part of a fused chain: it executes as a barrier.
@@ -28,7 +29,7 @@ export default function wider(
           quoteIdentifier(simpleTable.name)
         } AS SELECT * FROM (PIVOT ${quoteIdentifier(simpleTable.name)} ON ${
           quoteIdentifier(namesFrom)
-        } USING ${aggregation}(${quoteIdentifier(valuesFrom)}));`,
+        } USING ${aggregateFunction}(${quoteIdentifier(valuesFrom)}));`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "wider()",

@@ -20,7 +20,7 @@ Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () =>
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() accepts mixed summary strings and objects", async () => {
+Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("selectedSales");
 
@@ -30,7 +30,7 @@ Deno.test("addSummaryRows() accepts mixed summary strings and objects", async ()
   ]);
   table.addSummaryRows(["sales"], "region", [
     "sum",
-    { summary: "mean", label: "Average" },
+    { stat: "mean", label: "Average" },
   ]);
 
   assertEquals(await table.getData(), [
@@ -43,7 +43,7 @@ Deno.test("addSummaryRows() accepts mixed summary strings and objects", async ()
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() adds every supported column summary when summaries are omitted", async () => {
+Deno.test("addSummaryRows() adds every supported column stat when stats are omitted", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("allSummaries");
 
@@ -56,7 +56,7 @@ Deno.test("addSummaryRows() adds every supported column summary when summaries a
 
   const data = await table.getData();
   assertEquals(data.slice(3).map((row) => row.statistic), [
-    "countUnique",
+    "countDistinct",
     "countNull",
     "min",
     "max",
@@ -65,7 +65,7 @@ Deno.test("addSummaryRows() adds every supported column summary when summaries a
     "sum",
     "skew",
     "stdDev",
-    "var",
+    "variance",
   ]);
   assertEquals(data.find((row) => row.statistic === "countNull")?.value, 1);
 
@@ -103,7 +103,7 @@ Deno.test("addSummaryRows() binds custom labels", async () => {
     table.loadArray([{ statistic: "a", value: 2 }]);
     await table.run();
     table.addSummaryRows("all", "statistic", {
-      summary: "sum",
+      stat: "sum",
       label: "Owner's total",
     });
     await table.run();
@@ -175,7 +175,7 @@ Deno.test("addSummaryRows() fuses with preceding queued methods", async () => {
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() rejects empty column and summary arrays", async () => {
+Deno.test("addSummaryRows() rejects empty column and stat arrays", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("emptyOptions");
 
@@ -187,13 +187,13 @@ Deno.test("addSummaryRows() rejects empty column and summary arrays", async () =
   assertThrows(
     () => table.addSummaryRows("all", "statistic", []),
     Error,
-    "addSummaryRows() summaries cannot be an empty array. Omit summaries to add every supported summary.",
+    "addSummaryRows() stats cannot be an empty array. Omit stats to add every supported stat.",
   );
   assertThrows(
     // @ts-expect-error Verify that untyped JavaScript callers get a clear error.
     () => table.addSummaryRows("all", "statistic", "count"),
     Error,
-    'addSummaryRows() summary "count" is not supported.',
+    'addSummaryRows() stat "count" is not supported.',
   );
 
   await sdb.close();

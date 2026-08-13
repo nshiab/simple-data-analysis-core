@@ -68,7 +68,7 @@ Deno.test("should clone a column with a category", async () => {
   ]);
 
   table.cloneColumnWithOffset("firstName", "nextFirstName", {
-    categories: "group",
+    by: "group",
   });
 
   const data = await table.getData();
@@ -108,7 +108,7 @@ Deno.test("should clone a column with a positive offset when working with many r
   table.loadData("test/data/files/rents.csv");
   table.cloneColumnWithOffset("rent", "previousYearRent", {
     offset: -1,
-    categories: "bedroomType",
+    by: "bedroomType",
   });
 
   const data = await table.getData();
@@ -685,7 +685,7 @@ Deno.test("should clone a column with a negative offset when working with many r
   table.loadData("test/data/files/rents.csv");
   table.cloneColumnWithOffset("rent", "nextYearRent", {
     offset: 1,
-    categories: "bedroomType",
+    by: "bedroomType",
   });
 
   const data = await table.getData();

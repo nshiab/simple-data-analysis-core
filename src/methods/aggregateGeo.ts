@@ -13,7 +13,7 @@ export default function aggregateGeo(
   method: "union" | "intersection",
   options: {
     column?: string;
-    categories?: string | string[];
+    by?: string | string[];
     outputTable?: string | boolean;
   } = {},
 ): SimpleTable {
@@ -74,15 +74,15 @@ function aggregateGeoSelect(
   column: string,
   method: "union" | "intersection",
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  const categoriesOptions = options.categories ?? [];
-  const categories = stringToArray(categoriesOptions);
+  const categoriesOptions = options.by ?? [];
+  const by = stringToArray(categoriesOptions);
 
   let query = `SELECT${
-    categories.length > 0
-      ? ` ${categories.map((d) => `${quoteIdentifier(d)}`).join(", ")},`
+    by.length > 0
+      ? ` ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")},`
       : ""
   }`;
 
@@ -102,12 +102,10 @@ function aggregateGeoSelect(
 
   query += `\nFROM ${input}`;
 
-  if (categories.length > 0) {
-    query += `\nGROUP BY ${
-      categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-    }`;
+  if (by.length > 0) {
+    query += `\nGROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`;
     query += `\nORDER BY ${
-      categories.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
+      by.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
     }`;
   }
 

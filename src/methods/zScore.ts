@@ -9,7 +9,7 @@ export default function zScore(
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
@@ -22,13 +22,9 @@ export default function zScore(
     buildSelect: (input, schema) => {
       assertNewColumns(schema, [newColumn], "zScore()");
 
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
-      const partition = categories.length > 0
-        ? `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-        }`
+      const by = options.by ? stringToArray(options.by) : [];
+      const partition = by.length > 0
+        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
         : "";
 
       const tempQuery = `(${quoteIdentifier(column)}-AVG(${

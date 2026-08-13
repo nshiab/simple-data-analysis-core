@@ -9,7 +9,7 @@ export default function normalize(
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
@@ -22,13 +22,9 @@ export default function normalize(
     buildSelect: (input, schema) => {
       assertNewColumns(schema, [newColumn], "normalize()");
 
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
-      const partition = categories.length > 0
-        ? `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(", ")
-        }`
+      const by = options.by ? stringToArray(options.by) : [];
+      const partition = by.length > 0
+        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
         : "";
 
       const tempQuery = `(${quoteIdentifier(column)} - MIN(${

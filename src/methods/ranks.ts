@@ -10,7 +10,7 @@ export default function ranks(
   newColumn: string,
   options: {
     order?: "asc" | "desc";
-    categories?: string | string[];
+    by?: string | string[];
     dense?: boolean;
   } = {},
 ) {
@@ -23,15 +23,11 @@ export default function ranks(
     buildSelect: (input, schema) => {
       assertNewColumns(schema, [newColumn], "ranks()");
 
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
+      const by = options.by ? stringToArray(options.by) : [];
 
-      const partition = categories.length === 0
+      const partition = by.length === 0
         ? ""
-        : `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(",")
-        } `;
+        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
 
       return `SELECT *, ${
         options.dense ? "dense_rank()" : "rank()"

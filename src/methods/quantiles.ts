@@ -10,7 +10,7 @@ export default function quantiles(
   count: number,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
   options = structuredClone(options);
@@ -22,15 +22,11 @@ export default function quantiles(
     buildSelect: (input, schema) => {
       assertNewColumns(schema, [newColumn], "quantiles()");
 
-      const categories = options.categories
-        ? stringToArray(options.categories)
-        : [];
+      const by = options.by ? stringToArray(options.by) : [];
 
-      const partition = categories.length === 0
+      const partition = by.length === 0
         ? ""
-        : `PARTITION BY ${
-          categories.map((d) => `${quoteIdentifier(d)}`).join(",")
-        } `;
+        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
 
       return `SELECT *, ntile(${count}) OVER (${partition}ORDER BY ${
         quoteIdentifier(column)

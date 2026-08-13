@@ -7,17 +7,17 @@ export default function nest(
   simpleTable: SimpleTable,
   column: string,
   separator: string,
-  categories: string | string[],
+  by: string | string[],
 ) {
-  categories = Array.isArray(categories) ? [...categories] : categories;
+  by = Array.isArray(by) ? [...by] : by;
   queueOp(simpleTable, {
     kind: "fusable",
     method: "nest()",
-    parameters: { column, separator, categories },
+    parameters: { column, separator, by },
     values: [separator],
     needsSchema: false,
     buildSelect: (input) => {
-      const cats = stringToArray(categories);
+      const cats = stringToArray(by);
       const groupBy = cats.map((d) => `${quoteIdentifier(d)}`).join(", ");
       const selectColumns = `${groupBy}, `;
       const orderBy = `\nORDER BY ${

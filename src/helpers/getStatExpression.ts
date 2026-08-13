@@ -1,6 +1,6 @@
-export type Summary =
+export type Stat =
   | "count"
-  | "countUnique"
+  | "countDistinct"
   | "countNull"
   | "min"
   | "max"
@@ -9,11 +9,11 @@ export type Summary =
   | "sum"
   | "skew"
   | "stdDev"
-  | "var";
+  | "variance";
 
-export const allSummaries: readonly Summary[] = [
+export const allStats: readonly Stat[] = [
   "count",
-  "countUnique",
+  "countDistinct",
   "countNull",
   "min",
   "max",
@@ -22,10 +22,10 @@ export const allSummaries: readonly Summary[] = [
   "sum",
   "skew",
   "stdDev",
-  "var",
+  "variance",
 ];
 
-const aggregateFunctions: Partial<Record<Summary, string>> = {
+const aggregateFunctions: Partial<Record<Stat, string>> = {
   min: "MIN",
   max: "MAX",
   mean: "AVG",
@@ -33,10 +33,10 @@ const aggregateFunctions: Partial<Record<Summary, string>> = {
   sum: "SUM",
   skew: "SKEWNESS",
   stdDev: "STDDEV",
-  var: "VARIANCE",
+  variance: "VARIANCE",
 };
 
-const temporalSummaryTypes: readonly string[] = [
+const temporalStatTypes: readonly string[] = [
   "DATE",
   "TIME",
   "TIMESTAMP",
@@ -44,19 +44,19 @@ const temporalSummaryTypes: readonly string[] = [
   "TIMESTAMP WITH TIME ZONE",
 ];
 
-/** Returns whether a DuckDB type is temporal for summary compatibility. */
-export function isTemporalSummaryType(
+/** Returns whether a DuckDB type is temporal for statistic compatibility. */
+export function isTemporalStatType(
   type: string | undefined,
 ): boolean {
-  return typeof type === "string" && temporalSummaryTypes.includes(type);
+  return typeof type === "string" && temporalStatTypes.includes(type);
 }
 
 /**
- * Returns the aggregate expression for one summary of one column, or `null`
- * when the summary is not supported for the column type.
+ * Returns the aggregate expression for one statistic of one column, or `null`
+ * when the statistic is not supported for the column type.
  */
-export default function getSummaryExpression(
-  summary: Summary,
+export default function getStatExpression(
+  stat: Stat,
   type: string | undefined,
   reference: string,
   decimals: number | undefined,
@@ -64,25 +64,25 @@ export default function getSummaryExpression(
   if (typeof type === "string" && type.toLowerCase().includes("geometry")) {
     return null;
   }
-  if (summary === "count") {
+  if (stat === "count") {
     return `CAST(COUNT(*) AS INTEGER)`;
   }
-  if (summary === "countUnique") {
+  if (stat === "countDistinct") {
     return `CAST(COUNT(DISTINCT ${reference}) AS INTEGER)`;
   }
-  if (summary === "countNull") {
+  if (stat === "countNull") {
     return `CAST(COUNT(CASE WHEN ${reference} IS NULL THEN 1 END) AS INTEGER)`;
   }
   if (type === "VARCHAR") {
     return null;
   }
   if (
-    isTemporalSummaryType(type) &&
-    ["mean", "sum", "skew", "stdDev", "var"].includes(summary)
+    isTemporalStatType(type) &&
+    ["mean", "sum", "skew", "stdDev", "variance"].includes(stat)
   ) {
     return null;
   }
-  const aggregateFunction = aggregateFunctions[summary];
+  const aggregateFunction = aggregateFunctions[stat];
   if (aggregateFunction === undefined) {
     return null;
   }

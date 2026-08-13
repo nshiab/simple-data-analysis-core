@@ -40,9 +40,9 @@ const firesInsideProvinces = fires
   // We summarize to count the number of fires
   // and sum up the area burnt in each province.
   .summarize({
-    values: "hectares",
-    categories: "nameEnglish",
-    summaries: ["count", "sum"],
+    columns: "hectares",
+    by: "nameEnglish",
+    stats: ["count", "sum"],
     decimals: 0,
   })
   // We rename columns.
