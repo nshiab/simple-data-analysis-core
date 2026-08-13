@@ -6,6 +6,7 @@ import getColumns from "../methods/getColumns.ts";
 import getRowCount from "../methods/getRowCount.ts";
 import getCharacterCount from "../methods/getCharacterCount.ts";
 import getTypes from "../methods/getTypes.ts";
+import getHash from "../methods/getHash.ts";
 import getValues from "../methods/getValues.ts";
 import getUniques from "../methods/getUniques.ts";
 import getFirstRow from "../methods/getFirstRow.ts";
@@ -4220,6 +4221,25 @@ export default class SimpleTable extends Simple {
   }
 
   /**
+   * Returns a deterministic hash of the table's ordered schema and contents.
+   * Pending operations are executed before the hash is calculated. Computing
+   * the hash scans the complete table inside DuckDB without transferring its
+   * rows to JavaScript.
+   *
+   * @returns A promise that resolves to a SHA-256 hash string.
+   * @category Getting Data
+   *
+   * @example
+   * ```ts
+   * const hash = await table.getHash();
+   * console.log(hash); // e.g., "8f14e45fceea..."
+   * ```
+   */
+  async getHash(): Promise<string> {
+    return await getHash(this);
+  }
+
+  /**
    * Returns all values from a specific column.
    *
    * @param column - The name of the column from which to retrieve values.
@@ -6066,6 +6086,7 @@ export default class SimpleTable extends Simple {
    *
    * @param compute - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
+   * @param options.inputs - An ordered array of values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` inputs are compared by their cached generation without scanning their rows; pass `await table.getHash()` instead to compare full table contents. Cyclic values, symbols, and unsupported class instances throw a `TypeError`. Omit this option, or pass an empty array, to preserve the legacy function-only cache behavior.
    * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `run` function will be executed again to refresh the cache. By default, there is no TTL, meaning the cache is only invalidated if the `run` function's content changes.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Caching
@@ -6126,10 +6147,33 @@ export default class SimpleTable extends Simple {
    *
    * await sdb.close();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Captured values and input-table generations invalidate the cached result when they change.
+   * const year = 2026;
+   * await summary.cache(() => {
+   *   fires.filter(`year = ${year}`);
+   *   fires.clone("summary");
+   * }, { inputs: [fires, year] });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Compare complete table contents instead of the table's generation.
+   * // getHash() scans the full table, but an identical refreshed table can reuse this cache.
+   * const firesHash = await fires.getHash();
+   * await summary.cache(() => {
+   *   fires.clone("summary");
+   * }, { inputs: [firesHash] });
+   * ```
    */
   async cache(
     compute: () => void | Promise<void>,
-    options: { ttl?: number } = {},
+    options: {
+      inputs?: readonly unknown[];
+      ttl?: number;
+    } = {},
   ): Promise<this> {
     await cache(this, compute, { ...options, verbose: this.sdb.cacheVerbose });
     return this;

@@ -4,6 +4,8 @@ import crypto from "node:crypto";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import formatDate from "../helpers/formatDate.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
+import serializeCacheInputs from "../helpers/serializeCacheInputs.ts";
+import { restoreTableGeneration } from "../helpers/tableGeneration.ts";
 
 type cacheSources = {
   [key: string]: {
@@ -11,13 +13,18 @@ type cacheSources = {
     creation: number;
     duration: number;
     geo: boolean;
+    generationId?: string;
   };
 };
 
 export default async function cache(
   table: SimpleTable,
   compute: () => void | Promise<void>,
-  options: { ttl?: number; verbose?: boolean } = {},
+  options: {
+    ttl?: number;
+    inputs?: readonly unknown[];
+    verbose?: boolean;
+  } = {},
 ) {
   options.verbose &&
     console.log(`\ncache() for ${table.name}`);
@@ -33,9 +40,22 @@ export default async function cache(
   }
 
   const functionBody = compute.toString();
+  const serializedInputs = options.inputs === undefined
+    ? undefined
+    : serializeCacheInputs(options.inputs, table);
+  const hasInputs = options.inputs !== undefined && options.inputs.length > 0;
   const hash = crypto
     .createHash("sha256")
-    .update(table.name + options.toString() + functionBody)
+    .update(
+      hasInputs
+        ? JSON.stringify([
+          "sda-cache-inputs-v2",
+          table.name,
+          functionBody,
+          serializedInputs,
+        ])
+        : table.name + options.toString() + functionBody,
+    )
     .digest("hex");
   const id = `${table.name}.${hash}`;
 
@@ -143,6 +163,12 @@ export default async function cache(
         table.sdb.cacheTimeSaved += cache.duration - duration;
       }
     }
+    restoreCachedGeneration(
+      table,
+      cache,
+      cacheSources,
+      cacheSourcesPath,
+    );
   }
 }
 
@@ -162,6 +188,7 @@ async function runAndWrite(
   await flushAllTables(table.sdb);
   const end = Date.now();
   const duration = end - start;
+  const generationId = crypto.randomUUID();
   table.sdb.cacheVerbose &&
     console.log(
       `Computations done in ${prettyDuration(start, { end })}.`,
@@ -173,6 +200,7 @@ async function runAndWrite(
       duration,
       file: null,
       geo: false,
+      generationId,
     };
   } else {
     const types = await table.getTypes();
@@ -188,6 +216,7 @@ async function runAndWrite(
         duration,
         file,
         geo: true,
+        generationId,
       };
       const writeEnd = Date.now();
       table.sdb.cacheVerbose &&
@@ -217,6 +246,7 @@ async function runAndWrite(
         duration,
         file,
         geo: false,
+        generationId,
       };
       if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
         table.sdb.cacheSourcesUsed.push(id);
@@ -225,4 +255,18 @@ async function runAndWrite(
   }
 
   writeFileSync(cacheSourcesPath, JSON.stringify(cacheSources));
+  restoreTableGeneration(table, generationId);
+}
+
+function restoreCachedGeneration(
+  table: SimpleTable,
+  cache: cacheSources[string],
+  cacheSources: cacheSources,
+  cacheSourcesPath: string,
+): void {
+  if (cache.generationId === undefined) {
+    cache.generationId = crypto.randomUUID();
+    writeFileSync(cacheSourcesPath, JSON.stringify(cacheSources));
+  }
+  restoreTableGeneration(table, cache.generationId);
 }

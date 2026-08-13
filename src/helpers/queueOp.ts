@@ -2,6 +2,7 @@ import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { PendingOpInput } from "./pendingOps.ts";
 import { ensureTableRegistered, getRegisteredTables } from "./tableRegistry.ts";
+import { markTableChanged } from "./tableGeneration.ts";
 
 /**
  * Queues an operation on a table, stamping it with a database-wide sequence
@@ -40,6 +41,7 @@ export default function queueOp(
   // queues new work comes back under the flush's responsibility, like v1
   // methods recreating a removed table.
   ensureTableRegistered(sdb, simpleTable);
+  markTableChanged(simpleTable);
   simpleTable.pendingOps.push({
     ...capturedOp,
     sequence: sdb.opSequence++,

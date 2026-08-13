@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import {
@@ -128,6 +128,320 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
   assertEquals(secondTable.pendingOps.map((op) => op.method), []);
 
   await secondSdb.close();
+});
+Deno.test("should invalidate the cache when a captured input changes", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable, value: number) => () => {
+    computationRuns++;
+    table.loadArray([{ value }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheCapturedInput");
+  await firstTable.cache(createCompute(firstTable, 1), {
+    inputs: [1],
+  });
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheCapturedInput");
+  await secondTable.cache(createCompute(secondTable, 2), {
+    inputs: [2],
+  });
+
+  assertEquals(computationRuns, 2);
+  assertEquals(await secondTable.getData(), [{ value: 2 }]);
+
+  await secondSdb.close();
+});
+Deno.test("should compare cache inputs structurally", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheStructuralInputs");
+  await firstTable.cache(createCompute(firstTable), {
+    inputs: [{ threshold: 2, nested: { enabled: true } }],
+  });
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheStructuralInputs");
+  await secondTable.cache(createCompute(secondTable), {
+    inputs: [{ nested: { enabled: true }, threshold: 2 }],
+  });
+
+  assertEquals(computationRuns, 1);
+
+  await secondSdb.close();
+});
+Deno.test("should compare cache inputs by array position", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: computationRuns }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheInputPositions");
+  await firstTable.cache(createCompute(firstTable), { inputs: [10, 20] });
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheInputPositions");
+  await secondTable.cache(createCompute(secondTable), { inputs: [20, 10] });
+
+  assertEquals(computationRuns, 2);
+
+  await secondSdb.close();
+});
+Deno.test("should preserve legacy identity for empty inputs", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheEmptyInputs");
+  await firstTable.cache(createCompute(firstTable));
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheEmptyInputs");
+  await secondTable.cache(createCompute(secondTable), { inputs: [] });
+
+  assertEquals(computationRuns, 1);
+
+  await secondSdb.close();
+});
+Deno.test("should exclude ttl from cache identity with inputs", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheInputsTtl");
+  await firstTable.cache(createCompute(firstTable), {
+    inputs: [1],
+    ttl: 10,
+  });
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheInputsTtl");
+  await secondTable.cache(createCompute(secondTable), {
+    inputs: [1],
+    ttl: 20,
+  });
+
+  assertEquals(computationRuns, 1);
+
+  await secondSdb.close();
+});
+Deno.test("should hash function and class inputs by source", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+  const transformA = (value: number) => value + 1;
+  const transformB = (value: number) => value + 2;
+  class StrategyA {
+    run(value: number) {
+      return value + 1;
+    }
+  }
+  class StrategyB {
+    run(value: number) {
+      return value + 2;
+    }
+  }
+
+  const run = async (
+    transform: (value: number) => number,
+    Strategy: typeof StrategyA | typeof StrategyB,
+  ) => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const table = sdb.newTable("cacheCodeInputs");
+    await table.cache(createCompute(table), {
+      inputs: [transform, Strategy],
+    });
+    await sdb.close();
+  };
+
+  await run(transformA, StrategyA);
+  await run(transformA, StrategyA);
+  await run(transformB, StrategyB);
+
+  assertEquals(computationRuns, 2);
+});
+Deno.test("should compare SimpleTable inputs by generation", async () => {
+  let sourceRuns = 0;
+  let outputRuns = 0;
+  const createSourceCompute = (
+    source: SimpleTable,
+    rows: { value: number }[],
+  ) =>
+  () => {
+    sourceRuns++;
+    source.loadArray(rows);
+  };
+  const createCompute =
+    (source: SimpleTable, output: SimpleTable) => async () => {
+      outputRuns++;
+      output.loadArray(await source.getData());
+    };
+  const run = async (rows: { value: number }[]) => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const source = sdb.newTable("cacheTableInputSource");
+    const output = sdb.newTable("cacheTableInputOutput");
+    await source.cache(createSourceCompute(source, rows), { inputs: [rows] });
+    await output.cache(createCompute(source, output), { inputs: [source] });
+    const data = await output.getData();
+    await sdb.close();
+    return data;
+  };
+
+  assertEquals(await run([{ value: 1 }]), [{ value: 1 }]);
+  assertEquals(await run([{ value: 1 }]), [{ value: 1 }]);
+  assertEquals(await run([{ value: 2 }]), [{ value: 2 }]);
+  assertEquals(sourceRuns, 2);
+  assertEquals(outputRuns, 2);
+});
+Deno.test("should restore SimpleTable generations on cache hits", async () => {
+  let sourceRuns = 0;
+  let outputRuns = 0;
+  const createSourceCompute = (source: SimpleTable) => () => {
+    sourceRuns++;
+    source.loadArray([{ value: 1 }]);
+  };
+  const createOutputCompute =
+    (source: SimpleTable, output: SimpleTable) => async () => {
+      outputRuns++;
+      output.loadArray(await source.getData());
+    };
+  const run = async () => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const source = sdb.newTable("cacheGenerationSource");
+    const output = sdb.newTable("cacheGenerationOutput");
+    await source.cache(createSourceCompute(source));
+    await output.cache(createOutputCompute(source, output), {
+      inputs: [source],
+    });
+    await sdb.close();
+  };
+
+  await run();
+  await run();
+
+  assertEquals(sourceRuns, 1);
+  assertEquals(outputRuns, 1);
+});
+Deno.test("should invalidate SimpleTable generations after a mutation", async () => {
+  let outputRuns = 0;
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const source = sdb.newTable("cacheGenerationMutationSource");
+  const output = sdb.newTable("cacheGenerationMutationOutput");
+  source.loadArray([{ value: 1 }, { value: 2 }]);
+  const compute = async () => {
+    outputRuns++;
+    output.loadArray(await source.getData());
+  };
+
+  await output.cache(compute, { inputs: [source] });
+  source.filter("value = 1");
+  await output.cache(compute, { inputs: [source] });
+
+  assertEquals(outputRuns, 2);
+
+  await sdb.close();
+});
+Deno.test("should invalidate SimpleTable generations after a refresh", async () => {
+  let sourceRuns = 0;
+  let outputRuns = 0;
+  const createSourceCompute = (source: SimpleTable) => () => {
+    sourceRuns++;
+    source.loadArray([{ value: 1 }]);
+  };
+  const createOutputCompute =
+    (source: SimpleTable, output: SimpleTable) => async () => {
+      outputRuns++;
+      output.loadArray(await source.getData());
+    };
+  const run = async () => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const source = sdb.newTable("cacheGenerationRefreshSource");
+    const output = sdb.newTable("cacheGenerationRefreshOutput");
+    await source.cache(createSourceCompute(source), { ttl: 0 });
+    await output.cache(createOutputCompute(source, output), {
+      inputs: [source],
+    });
+    await sdb.close();
+  };
+
+  await run();
+  await run();
+
+  assertEquals(sourceRuns, 2);
+  assertEquals(outputRuns, 2);
+});
+Deno.test("should allow content hashes as explicit cache inputs", async () => {
+  let sourceRuns = 0;
+  let outputRuns = 0;
+  const createSourceCompute = (source: SimpleTable) => () => {
+    sourceRuns++;
+    source.loadArray([{ value: 1 }]);
+  };
+  const createOutputCompute =
+    (source: SimpleTable, output: SimpleTable) => async () => {
+      outputRuns++;
+      output.loadArray(await source.getData());
+    };
+  const run = async () => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const source = sdb.newTable("cacheContentHashSource");
+    const output = sdb.newTable("cacheContentHashOutput");
+    await source.cache(createSourceCompute(source), { ttl: 0 });
+    await output.cache(createOutputCompute(source, output), {
+      inputs: [await source.getHash()],
+    });
+    await sdb.close();
+  };
+
+  await run();
+  await run();
+
+  assertEquals(sourceRuns, 2);
+  assertEquals(outputRuns, 1);
+});
+Deno.test("should reject cyclic cache inputs before computing", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("cacheCyclicInputs");
+  const cyclic: { self?: unknown } = {};
+  cyclic.self = cyclic;
+  let computationRuns = 0;
+
+  await assertRejects(
+    () =>
+      table.cache(
+        () => {
+          computationRuns++;
+          table.loadArray([{ value: 1 }]);
+        },
+        { inputs: [cyclic] },
+      ),
+    TypeError,
+    "cache() inputs[0].self is cyclic",
+  );
+  assertEquals(computationRuns, 0);
+
+  await sdb.close();
 });
 Deno.test("should load data from the cache if ttl has not expired", async () => {
   const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });

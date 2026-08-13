@@ -2,6 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import { markTableChanged } from "../helpers/tableGeneration.ts";
 
 export default async function renameTable(
   simpleTable: SimpleTable,
@@ -18,4 +19,5 @@ export default async function renameTable(
       parameters: { name },
     }),
   );
+  markTableChanged(simpleTable);
 }

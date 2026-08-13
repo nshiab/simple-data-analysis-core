@@ -2,6 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
+import { markTableChanged } from "../helpers/tableGeneration.ts";
 
 export default async function updateWithJS(
   simpleTable: SimpleTable,
@@ -142,6 +143,7 @@ export default async function updateWithJS(
         quoteIdentifier(simpleTable.name)
       } AS SELECT * FROM ${quoteIdentifier(accumulator)}`,
     );
+    markTableChanged(simpleTable);
   } finally {
     await simpleTable.sdb.customQuery(
       `DROP TABLE IF EXISTS ${quoteIdentifier(accumulator)};
