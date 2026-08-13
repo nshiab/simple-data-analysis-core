@@ -1,4 +1,8 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import getSummaryExpression, {
+  allSummaries,
+  type Summary,
+} from "../helpers/getSummaryExpression.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -7,19 +11,6 @@ import stringToArray from "../helpers/stringToArray.ts";
 
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
-
-type Summary =
-  | "count"
-  | "countUnique"
-  | "countNull"
-  | "min"
-  | "max"
-  | "mean"
-  | "median"
-  | "sum"
-  | "skew"
-  | "stdDev"
-  | "var";
 
 type SummarizeOptions = {
   outputTable?: string | boolean;
@@ -93,31 +84,6 @@ function getSummarizeValues(options: SummarizeOptions): string[] {
   ];
 }
 
-const allSummaries: Summary[] = [
-  "count",
-  "countUnique",
-  "countNull",
-  "min",
-  "max",
-  "mean",
-  "median",
-  "sum",
-  "skew",
-  "stdDev",
-  "var",
-];
-
-const aggregateFunctions: { [key: string]: string } = {
-  min: "MIN",
-  max: "MAX",
-  mean: "AVG",
-  median: "MEDIAN",
-  sum: "SUM",
-  skew: "SKEWNESS",
-  stdDev: "STDDEV",
-  var: "VARIANCE",
-};
-
 const timeTypes = [
   "DATE",
   "TIME",
@@ -141,12 +107,12 @@ function summarizeSelect(
   let summaries: Summary[];
   let columns: string[] | undefined;
   if (options.summaries === undefined) {
-    summaries = values.length === 0 ? ["count"] : allSummaries;
+    summaries = values.length === 0 ? ["count"] : [...allSummaries];
   } else if (typeof options.summaries === "string") {
     summaries = [options.summaries];
   } else if (Array.isArray(options.summaries)) {
     summaries = options.summaries.length === 0
-      ? allSummaries
+      ? [...allSummaries]
       : options.summaries;
   } else {
     const entries = Object.entries(options.summaries);
@@ -222,7 +188,7 @@ function summarizeSelect(
     let hasAggregate = false;
     const projections = summaries.map((summary, j) => {
       const name = columns ? columns[j] : summary;
-      const expression = aggregateExpression(
+      const expression = getSummaryExpression(
         summary,
         effectiveTypes[value],
         references[value],
@@ -254,51 +220,4 @@ function summarizeSelect(
     : "";
 
   return `${branches.join("\nUNION ALL\n")}${orderBy}`;
-}
-
-/**
- * Returns the aggregate expression for one summary of one value column, or
- * `null` when the combination of summary and column type is not supported
- * (the output column is NULL for that value column).
- */
-function aggregateExpression(
-  summary: Summary,
-  type: string | undefined,
-  reference: string,
-  decimals: number | undefined,
-): string | null {
-  if (typeof type === "string" && type.toLowerCase().includes("geometry")) {
-    return null;
-  }
-  if (summary === "count") {
-    return `CAST(COUNT(*) AS INTEGER)`;
-  }
-  if (summary === "countUnique") {
-    return `CAST(COUNT(DISTINCT ${reference}) AS INTEGER)`;
-  }
-  if (summary === "countNull") {
-    return `CAST(COUNT(CASE WHEN ${reference} IS NULL THEN 1 END) AS INTEGER)`;
-  }
-  if (type === "VARCHAR") {
-    return null;
-  }
-  if (
-    typeof type === "string" &&
-    timeTypes.includes(type) &&
-    ["mean", "sum", "skew", "stdDev", "var"].includes(summary)
-  ) {
-    return null;
-  }
-  const aggregate = `${aggregateFunctions[summary]}(${reference})`;
-  return typeof decimals === "number" &&
-      typeof type === "string" &&
-      ![
-        "VARCHAR",
-        "DATE",
-        "TIME",
-        "TIMESTAMP",
-        "TIMESTAMP WITH TIME ZONE",
-      ].includes(type)
-    ? `ROUND(${aggregate}, ${decimals})`
-    : aggregate;
 }

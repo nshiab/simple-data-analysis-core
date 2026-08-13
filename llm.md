@@ -4152,6 +4152,62 @@ table.summarize({
 });
 ```
 
+#### `addSummaryRows`
+
+Appends one or more summary rows to the table. Each row is calculated from the
+original rows before any summaries are appended. This is useful for preparing
+totals and other statistics before exporting tabular data.
+
+Passing `"all"` selects every numeric column. Columns that are neither
+summarized nor used for labels contain `NULL` in the appended rows. A summary
+string is also used as its row label; pass an object to customize that label. If
+`summaries` is omitted, every supported summary is added.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+addSummaryRows(columns: "all" | string | string[], labelColumn: string, summaries?: "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var" | { summary: "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var"; label?: string } | ("countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var" | { summary: "countUnique" | "countNull" | "min" | "max" | "mean" | "median" | "sum" | "skew" | "stdDev" | "var"; label?: string })[]): this;
+```
+
+##### Parameters
+
+- **`columns`**: The numeric column name, an array of numeric column names, or
+  `"all"` to summarize every numeric column.
+- **`labelColumn`**: The existing string column in which summary row labels will
+  be written.
+- **`summaries`**: A summary, summary configuration, or array of either.
+  Supported summaries are `"countUnique"`, `"countNull"`, `"min"`, `"max"`,
+  `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"var"`. An object's
+  `label` defaults to its `summary`. If omitted, all supported summaries are
+  added.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Add a total row for every numeric column, labelled "sum" in "region".
+table.addSummaryRows("all", "region", "sum");
+```
+
+```ts
+// Add two summary rows with default labels.
+table.addSummaryRows(["sales", "expenses"], "region", ["sum", "mean"]);
+```
+
+```ts
+// Customize the labels written to the label column.
+table.addSummaryRows("all", "region", [
+  { summary: "sum", label: "Total" },
+  { summary: "mean", label: "Average" },
+]);
+```
+
 #### `accumulate`
 
 Computes the cumulative sum of values in a column. For this method to work
