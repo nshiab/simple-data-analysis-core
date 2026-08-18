@@ -1,10 +1,10 @@
-import type SimpleTable from "../class/SimpleTable.ts";
 import assertColumnsExist from "../helpers/assertColumnsExist.ts";
 import assertNewColumns from "../helpers/assertNewColumns.ts";
 import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function rowRanks(
   simpleTable: SimpleTable,
@@ -14,12 +14,14 @@ export default function rowRanks(
     valueColumn?: string;
     rank?: number;
     order?: "asc" | "desc";
+    ties?: "strict" | "first" | "all";
   },
 ) {
   columns = [...columns];
   options = structuredClone(options);
   const rank = options.rank ?? 1;
   const order = options.order ?? "desc";
+  const ties = options.ties ?? "strict";
 
   if (columns.length === 0) {
     throw new Error("rowRanks() requires at least one column.");
@@ -58,8 +60,22 @@ export default function rowRanks(
     throw new Error("rowRanks() options.rank must be a positive integer.");
   }
 
+  if (rank > columns.length) {
+    throw new Error(
+      `rowRanks() options.rank is ${rank}, but only ${columns.length} column${
+        columns.length === 1 ? " was" : "s were"
+      } provided. Use a rank between 1 and ${columns.length}.`,
+    );
+  }
+
   if (order !== "asc" && order !== "desc") {
     throw new Error('rowRanks() options.order must be "asc" or "desc".');
+  }
+
+  if (ties !== "strict" && ties !== "first" && ties !== "all") {
+    throw new Error(
+      'rowRanks() options.ties must be "strict", "first", or "all".',
+    );
   }
 
   queueOp(simpleTable, {
@@ -69,7 +85,7 @@ export default function rowRanks(
     needsSchema: true,
     values: columns,
     buildSelect: (input, schema) =>
-      rowRanksSelect(input, schema, columns, options, rank, order),
+      rowRanksSelect(input, schema, columns, options, rank, order, ties),
   });
 }
 
@@ -83,6 +99,7 @@ function rowRanksSelect(
   },
   rank: number,
   order: "asc" | "desc",
+  ties: "strict" | "first" | "all",
 ): string {
   assertColumnsExist(schema, columns, "rowRanks()");
 
@@ -122,13 +139,52 @@ function rowRanksSelect(
     );
   }
 
+  const tied = `WITH candidates(name, value, position) AS (
+    VALUES ${candidates}
+  ),
+  selected_value AS (
+    SELECT value
+    FROM candidates
+    WHERE value IS NOT NULL
+    ORDER BY value ${order.toUpperCase()}, position
+    LIMIT 1 OFFSET ${rank - 1}
+  ),
+  tied AS (
+    SELECT name, value, position
+    FROM candidates
+    WHERE value = (SELECT value FROM selected_value)
+  )`;
+
+  let selection: string;
+  if (ties === "all") {
+    selection = `${tied}
+  SELECT name AS selected_name, value AS selected_value
+  FROM tied
+  ORDER BY position`;
+  } else if (ties === "strict") {
+    selection = `${tied}
+  SELECT FIRST(name ORDER BY position) AS selected_name,
+  FIRST(value ORDER BY position) AS selected_value
+  FROM tied
+  HAVING CASE
+    WHEN COUNT(*) > 1 THEN error(CONCAT(
+      'rowRanks() found a tie at rank ${rank} between columns ',
+      STRING_AGG(CONCAT('"', REPLACE(name, '"', '""'), '"'), ', ' ORDER BY position),
+      '. Use { ties: "first" } to select the first tied column, or { ties: "all" } to produce one row for each tied column.'
+    ))
+    ELSE TRUE
+  END`;
+  } else {
+    selection = `${tied}
+  SELECT name AS selected_name, value AS selected_value
+  FROM tied
+  ORDER BY position
+  LIMIT 1`;
+  }
+
   return `SELECT source.*, ${selections.join(", ")}
 FROM ${input} AS source
 LEFT JOIN LATERAL (
-  SELECT name AS selected_name, value AS selected_value
-  FROM (VALUES ${candidates}) AS candidates(name, value, position)
-  WHERE value IS NOT NULL
-  ORDER BY value ${order.toUpperCase()}, position
-  LIMIT 1 OFFSET ${rank - 1}
+  ${selection}
 ) AS selected ON TRUE`;
 }

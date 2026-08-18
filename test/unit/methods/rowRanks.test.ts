@@ -45,7 +45,7 @@ Deno.test("should select an ascending row rank", async () => {
   await sdb.close();
 });
 
-Deno.test("should resolve ties by supplied column order without adding rows", async () => {
+Deno.test("should select the first tied column in supplied order", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ id: 1, a: 10, b: 10, c: 5 }]);
@@ -53,11 +53,13 @@ Deno.test("should resolve ties by supplied column order without adding rows", as
   table.rowRanks(["b", "a", "c"], {
     nameColumn: "first",
     valueColumn: "firstValue",
+    ties: "first",
   });
   table.rowRanks(["b", "a", "c"], {
     nameColumn: "second",
     valueColumn: "secondValue",
     rank: 2,
+    ties: "first",
   });
 
   assertEquals(await table.getData(), [{
@@ -67,9 +69,40 @@ Deno.test("should resolve ties by supplied column order without adding rows", as
     c: 5,
     first: "b",
     firstValue: 10,
-    second: "a",
+    second: "b",
     secondValue: 10,
   }]);
+
+  await sdb.close();
+});
+
+Deno.test("should reject or expand ties at the requested rank", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+
+  const strictTable = sdb.newTable();
+  strictTable.loadArray([{ id: 1, a: 10, b: 10, c: 5 }]);
+  strictTable.rowRanks(["a", "b", "c"], {
+    valueColumn: "secondValue",
+    rank: 2,
+  });
+  await assertRejects(
+    () => strictTable.run(),
+    Error,
+    'rowRanks() found a tie at rank 2 between columns "a", "b"',
+  );
+
+  const allTable = sdb.newTable();
+  allTable.loadArray([{ id: 1, a: 10, b: 10, c: 5 }]);
+  allTable.rowRanks(["b", "a", "c"], {
+    nameColumn: "second",
+    valueColumn: "secondValue",
+    rank: 2,
+    ties: "all",
+  });
+  assertEquals(await allTable.getData(), [
+    { id: 1, a: 10, b: 10, c: 5, second: "b", secondValue: 10 },
+    { id: 1, a: 10, b: 10, c: 5, second: "a", secondValue: 10 },
+  ]);
 
   await sdb.close();
 });
@@ -153,6 +186,11 @@ Deno.test("should reject invalid row rank arguments", async () => {
     "rowRanks() options.rank must be a positive integer",
   );
   assertThrows(
+    () => table.rowRanks(["numeric"], { nameColumn: "winner", rank: 2 }),
+    Error,
+    "rowRanks() options.rank is 2, but only 1 column was provided. Use a rank between 1 and 1",
+  );
+  assertThrows(
     () =>
       table.rowRanks(["numeric"], {
         nameColumn: "winner",
@@ -160,6 +198,34 @@ Deno.test("should reject invalid row rank arguments", async () => {
       }),
     Error,
     'rowRanks() options.order must be "asc" or "desc"',
+  );
+  assertThrows(
+    () =>
+      table.rowRanks(["numeric"], {
+        nameColumn: "winner",
+        ties: "invalid" as "first",
+      }),
+    Error,
+    'rowRanks() options.ties must be "strict", "first", or "all"',
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should reject ranks greater than the supplied column count", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+  table.loadArray([{ a: 1 }]);
+
+  assertThrows(
+    () =>
+      table.rowRanks(["a"], {
+        nameColumn: "name",
+        valueColumn: "value",
+        rank: Number.MAX_VALUE,
+      }),
+    Error,
+    `rowRanks() options.rank is ${Number.MAX_VALUE}, but only 1 column was provided. Use a rank between 1 and 1`,
   );
 
   await sdb.close();

@@ -3212,9 +3212,11 @@ export default class SimpleTable extends Simple {
    * name, its value, or both as new columns.
    *
    * Values are ranked from highest to lowest by default. Null values are
-   * ignored, and ties are resolved using the order of `columns`. If a row does
-   * not contain the requested rank, the new columns contain null. This method
-   * always preserves the number of rows in the table.
+   * ignored. By default, a tie at the requested rank throws an error. Set
+   * `options.ties` to `"first"` to select the first tied column in the supplied
+   * order, or to `"all"` to produce one row for each tied column. The `"all"`
+   * option can therefore increase the table's row count. If null values leave
+   * a row without the requested rank, the new columns contain null.
    *
    * This method queues the operation; it runs when an async observer method
    * (like `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -3223,8 +3225,9 @@ export default class SimpleTable extends Simple {
    * @param options - The output columns and ranking configuration. At least one of `nameColumn` or `valueColumn` is required.
    * @param options.nameColumn - The name of a new column containing the selected source column's name.
    * @param options.valueColumn - The name of a new column containing the selected source column's value.
-   * @param options.rank - The one-based rank to select. Defaults to `1`.
+   * @param options.rank - The one-based rank to select. Must not exceed the number of supplied columns. Defaults to `1`.
    * @param options.order - The ranking order: `"desc"` ranks the highest value first and `"asc"` ranks the lowest value first. Defaults to `"desc"`.
+   * @param options.ties - How to handle a tie at the requested rank: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -3294,7 +3297,8 @@ export default class SimpleTable extends Simple {
       )
       & {
         /**
-         * The one-based rank to select. Defaults to `1`.
+         * The one-based rank to select. Must not exceed the number of supplied
+         * columns. Defaults to `1`.
          *
          * @example
          * ```ts
@@ -3311,6 +3315,15 @@ export default class SimpleTable extends Simple {
          * ```
          */
         order?: "asc" | "desc";
+        /**
+         * How to handle a tie at the requested rank. Defaults to `"strict"`.
+         *
+         * @example
+         * ```ts
+         * { ties: "all" }
+         * ```
+         */
+        ties?: "strict" | "first" | "all";
       },
   ): this {
     rowRanks(this, columns, options);
