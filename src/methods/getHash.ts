@@ -16,7 +16,6 @@ export default async function getHash(simpleTable: SimpleTable) {
       FROM ${quoteIdentifier(simpleTable.name)} AS source
     )
     SELECT
-      VERSION() AS duckdb_version,
       CAST(COUNT(*) AS VARCHAR) AS row_count,
       CAST(
         COALESCE(BIT_XOR(MD5_NUMBER(numbered::VARCHAR)), 0)
@@ -35,17 +34,15 @@ export default async function getHash(simpleTable: SimpleTable) {
   if (result === null || result.length !== 1) {
     throw new Error("getHash() could not compute the table hash.");
   }
-  const { duckdb_version, row_count, checksum } = result[0];
+  const { row_count, checksum } = result[0];
   if (
-    typeof duckdb_version !== "string" || typeof row_count !== "string" ||
-    typeof checksum !== "string"
+    typeof row_count !== "string" || typeof checksum !== "string"
   ) {
     throw new Error("getHash() received an unexpected result from DuckDB.");
   }
 
   return crypto.createHash("sha256").update(JSON.stringify([
     "sda-table-hash-v1",
-    duckdb_version,
     Object.entries(types),
     row_count,
     checksum,

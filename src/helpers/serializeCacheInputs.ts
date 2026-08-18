@@ -7,7 +7,6 @@ import { getTableGeneration } from "./tableGeneration.ts";
  */
 export default function serializeCacheInputs(
   inputs: readonly unknown[],
-  cachedTable: SimpleTable,
 ): string {
   if (!Array.isArray(inputs)) {
     throw new TypeError("cache() options.inputs must be an array.");
@@ -15,7 +14,6 @@ export default function serializeCacheInputs(
   return serializeValue(
     inputs,
     "inputs",
-    cachedTable,
     new Set<object>(),
   );
 }
@@ -23,7 +21,6 @@ export default function serializeCacheInputs(
 function serializeValue(
   value: unknown,
   path: string,
-  cachedTable: SimpleTable,
   ancestors: Set<object>,
 ): string {
   if (value === null) {
@@ -50,11 +47,6 @@ function serializeValue(
       throw new TypeError(`cache() ${path} cannot be a symbol.`);
   }
 
-  if (value === cachedTable) {
-    throw new TypeError(
-      `cache() ${path} cannot be the table whose result is being cached.`,
-    );
-  }
   if (value instanceof SimpleTable) {
     return JSON.stringify([
       "SimpleTable",
@@ -81,7 +73,6 @@ function serializeValue(
           serializeValue(
             value[i],
             `${path}[${i}]`,
-            cachedTable,
             ancestors,
           ),
         );
@@ -106,7 +97,6 @@ function serializeValue(
         serializeValue(
           value[key],
           propertyPath(path, key),
-          cachedTable,
           ancestors,
         ),
       ]);

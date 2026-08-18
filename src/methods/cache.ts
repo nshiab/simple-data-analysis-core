@@ -5,7 +5,11 @@ import flushAllTables from "../helpers/flushAllTables.ts";
 import formatDate from "../helpers/formatDate.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
 import serializeCacheInputs from "../helpers/serializeCacheInputs.ts";
-import { restoreTableGeneration } from "../helpers/tableGeneration.ts";
+import {
+  createTableGenerationId,
+  restoreTableGeneration,
+  type TableGenerationId,
+} from "../helpers/tableGeneration.ts";
 
 type cacheSources = {
   [key: string]: {
@@ -13,7 +17,7 @@ type cacheSources = {
     creation: number;
     duration: number;
     geo: boolean;
-    generationId?: string;
+    generationId?: TableGenerationId;
   };
 };
 
@@ -42,7 +46,7 @@ export default async function cache(
   const functionBody = compute.toString();
   const serializedInputs = options.inputs === undefined
     ? undefined
-    : serializeCacheInputs(options.inputs, table);
+    : serializeCacheInputs(options.inputs);
   const hasInputs = options.inputs !== undefined && options.inputs.length > 0;
   const hash = crypto
     .createHash("sha256")
@@ -188,7 +192,7 @@ async function runAndWrite(
   await flushAllTables(table.sdb);
   const end = Date.now();
   const duration = end - start;
-  const generationId = crypto.randomUUID();
+  const generationId = createTableGenerationId();
   table.sdb.cacheVerbose &&
     console.log(
       `Computations done in ${prettyDuration(start, { end })}.`,
@@ -265,7 +269,7 @@ function restoreCachedGeneration(
   cacheSourcesPath: string,
 ): void {
   if (cache.generationId === undefined) {
-    cache.generationId = crypto.randomUUID();
+    cache.generationId = createTableGenerationId();
     writeFileSync(cacheSourcesPath, JSON.stringify(cacheSources));
   }
   restoreTableGeneration(table, cache.generationId);

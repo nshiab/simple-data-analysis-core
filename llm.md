@@ -4890,6 +4890,29 @@ const dataTypes = await table.getTypes();
 console.log(dataTypes);
 ```
 
+#### `getHash`
+
+Returns a deterministic hash of the table's ordered schema and contents. Pending
+operations are executed before the hash is calculated. Computing the hash scans
+the complete table inside DuckDB without transferring its rows to JavaScript.
+
+##### Signature
+
+```typescript
+async getHash(): Promise<string>;
+```
+
+##### Returns
+
+A promise that resolves to a SHA-256 hash string.
+
+##### Examples
+
+```ts
+const hash = await table.getHash();
+console.log(hash); // e.g., "8f14e45fceea..."
+```
+
 #### `getValues`
 
 Returns all values from a specific column.
@@ -7062,7 +7085,7 @@ Caches the results of computations in `./.sda-cache`. You should add
 ##### Signature
 
 ```typescript
-async cache(compute: () => void | Promise<void>, options?: { ttl?: number }): Promise<this>;
+async cache(compute: () => void | Promise<void>, options?: { inputs?: readonly unknown[]; ttl?: number }): Promise<this>;
 ```
 
 ##### Parameters
@@ -7071,6 +7094,17 @@ async cache(compute: () => void | Promise<void>, options?: { ttl?: number }): Pr
   function will be executed on the first run or if the cached data is
   invalid/expired.
 - **`options`**: An optional object with configuration options:
+- **`options.inputs`**: An ordered array of values captured by `compute` that
+  affect its result. Each position is compared structurally across runs, so
+  adding, removing, moving, or changing an input invalidates the cache.
+  Functions and class constructors are compared by source. `SimpleTable` inputs,
+  including the table being cached, are compared by their cached generation
+  without scanning their rows; pass `await table.getHash()` instead to compare
+  full table contents. Treat inputs other than the table being cached as
+  read-only dependencies: mutating them inside `compute` can make cache hits and
+  misses have different side effects. Cyclic values, symbols, and unsupported
+  class instances throw a `TypeError`. Omit this option, or pass an empty array,
+  to preserve the legacy function-only cache behavior.
 - **`options.ttl`**: Time to live (in seconds). If the data in the cache is
   older than this duration, the `run` function will be executed again to refresh
   the cache. By default, there is no TTL, meaning the cache is only invalidated
@@ -7134,6 +7168,26 @@ await table.cache(() => {
 });
 
 await sdb.close();
+```
+
+```ts
+// Captured values and read-only input tables invalidate the cached result when they change.
+const year = 2026;
+const summary = sdb.newTable("summary");
+await summary.cache(async () => {
+  summary.loadArray(
+    await fires.getData({ conditions: `year = ${year}` }),
+  );
+}, { inputs: [fires, year] });
+```
+
+```ts
+// Compare complete table contents instead of the table's generation.
+// getHash() scans the full table, but an identical refreshed table can reuse this cache.
+const firesHash = await fires.getHash();
+await summary.cache(async () => {
+  summary.loadArray(await fires.getData());
+}, { inputs: [firesHash] });
 ```
 
 #### `log`

@@ -1,4 +1,5 @@
 import { assertEquals, assertMatch, assertNotEquals } from "@std/assert";
+import crypto from "node:crypto";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should hash table contents, schema, and row order", async () => {
@@ -17,7 +18,31 @@ Deno.test("should hash table contents, schema, and row order", async () => {
 
   const firstHash = await first.getHash();
 
+  const summary = (await sdb.customQuery(
+    `WITH numbered AS (
+      SELECT
+        ROW_NUMBER() OVER () AS __sda_position,
+        source AS __sda_row
+      FROM hashFirst AS source
+    )
+    SELECT
+      CAST(COUNT(*) AS VARCHAR) AS row_count,
+      CAST(
+        COALESCE(BIT_XOR(MD5_NUMBER(numbered::VARCHAR)), 0)
+        AS VARCHAR
+      ) AS checksum
+    FROM numbered`,
+    { returnData: true, dataTransport: "direct" },
+  )) as { row_count: string; checksum: string }[];
+  const expectedHash = crypto.createHash("sha256").update(JSON.stringify([
+    "sda-table-hash-v1",
+    Object.entries(await first.getTypes()),
+    summary[0].row_count,
+    summary[0].checksum,
+  ])).digest("hex");
+
   assertMatch(firstHash, /^[a-f0-9]{64}$/);
+  assertEquals(firstHash, expectedHash);
   assertEquals(await identical.getHash(), firstHash);
   assertNotEquals(await reordered.getHash(), firstHash);
   assertNotEquals(await integerSchema.getHash(), await bigintSchema.getHash());

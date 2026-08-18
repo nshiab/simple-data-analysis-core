@@ -1,5 +1,6 @@
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import { markTableChanged } from "./tableGeneration.ts";
 
 const registries = new WeakMap<object, SimpleTable[]>();
 
@@ -65,5 +66,11 @@ export function retainRegisteredTables<Table extends SimpleTable>(
 ): void {
   const tables = getMutableTables(simpleDB);
   const retained = tables.filter(predicate);
+  const retainedSet = new Set(retained);
+  for (const table of tables) {
+    if (!retainedSet.has(table)) {
+      markTableChanged(table);
+    }
+  }
   tables.splice(0, tables.length, ...retained);
 }

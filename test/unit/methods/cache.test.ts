@@ -314,6 +314,73 @@ Deno.test("should compare SimpleTable inputs by generation", async () => {
   assertEquals(sourceRuns, 2);
   assertEquals(outputRuns, 2);
 });
+Deno.test("should cache computations that read without mutating table inputs", async () => {
+  let computationRuns = 0;
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const source = sdb.newTable("cacheReadOnlyInputSource");
+  const output = sdb.newTable("cacheReadOnlyInputOutput");
+  source.loadArray([{ year: 2025 }, { year: 2026 }]);
+  const compute = async () => {
+    computationRuns++;
+    output.loadArray(
+      await source.getData({ conditions: "year = 2026" }),
+    );
+  };
+
+  await output.cache(compute, { inputs: [source, 2026] });
+  await output.cache(compute, { inputs: [source, 2026] });
+
+  assertEquals(computationRuns, 1);
+  assertEquals(await output.getData(), [{ year: 2026 }]);
+
+  await sdb.close();
+});
+Deno.test("should invalidate SimpleTable generations when removed", async () => {
+  let computationRuns = 0;
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const source = sdb.newTable("cacheRemovedInputSource");
+  const output = sdb.newTable("cacheRemovedInputOutput");
+  source.loadArray([{ value: 1 }]);
+  const compute = () => {
+    computationRuns++;
+    output.loadArray([{ value: computationRuns }]);
+  };
+
+  await output.cache(compute, { inputs: [source] });
+  await source.removeTable();
+  await output.cache(compute, { inputs: [source] });
+
+  assertEquals(computationRuns, 2);
+  assertEquals(await output.getData(), [{ value: 2 }]);
+
+  await sdb.close();
+});
+Deno.test("should allow the cached table as an explicit input", async () => {
+  let sourceRuns = 0;
+  let transformRuns = 0;
+  const createSourceCompute = (table: SimpleTable) => () => {
+    sourceRuns++;
+    table.loadArray([{ value: 1 }, { value: 2 }]);
+  };
+  const createTransformCompute = (table: SimpleTable) => () => {
+    transformRuns++;
+    table.filter("value = 2");
+  };
+  const run = async () => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const table = sdb.newTable("cacheResultTableInput");
+    await table.cache(createSourceCompute(table), { inputs: ["source-v1"] });
+    await table.cache(createTransformCompute(table), { inputs: [table] });
+    const data = await table.getData();
+    await sdb.close();
+    return data;
+  };
+
+  assertEquals(await run(), [{ value: 2 }]);
+  assertEquals(await run(), [{ value: 2 }]);
+  assertEquals(sourceRuns, 1);
+  assertEquals(transformRuns, 1);
+});
 Deno.test("should restore SimpleTable generations on cache hits", async () => {
   let sourceRuns = 0;
   let outputRuns = 0;

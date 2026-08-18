@@ -6086,7 +6086,7 @@ export default class SimpleTable extends Simple {
    *
    * @param compute - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
-   * @param options.inputs - An ordered array of values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` inputs are compared by their cached generation without scanning their rows; pass `await table.getHash()` instead to compare full table contents. Cyclic values, symbols, and unsupported class instances throw a `TypeError`. Omit this option, or pass an empty array, to preserve the legacy function-only cache behavior.
+   * @param options.inputs - An ordered array of values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` inputs, including the table being cached, are compared by their cached generation without scanning their rows; pass `await table.getHash()` instead to compare full table contents. Treat inputs other than the table being cached as read-only dependencies: mutating them inside `compute` can make cache hits and misses have different side effects. Cyclic values, symbols, and unsupported class instances throw a `TypeError`. Omit this option, or pass an empty array, to preserve the legacy function-only cache behavior.
    * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `run` function will be executed again to refresh the cache. By default, there is no TTL, meaning the cache is only invalidated if the `run` function's content changes.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Caching
@@ -6150,11 +6150,13 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Captured values and input-table generations invalidate the cached result when they change.
+   * // Captured values and read-only input tables invalidate the cached result when they change.
    * const year = 2026;
-   * await summary.cache(() => {
-   *   fires.filter(`year = ${year}`);
-   *   fires.clone("summary");
+   * const summary = sdb.newTable("summary");
+   * await summary.cache(async () => {
+   *   summary.loadArray(
+   *     await fires.getData({ conditions: `year = ${year}` }),
+   *   );
    * }, { inputs: [fires, year] });
    * ```
    *
@@ -6163,8 +6165,8 @@ export default class SimpleTable extends Simple {
    * // Compare complete table contents instead of the table's generation.
    * // getHash() scans the full table, but an identical refreshed table can reuse this cache.
    * const firesHash = await fires.getHash();
-   * await summary.cache(() => {
-   *   fires.clone("summary");
+   * await summary.cache(async () => {
+   *   summary.loadArray(await fires.getData());
    * }, { inputs: [firesHash] });
    * ```
    */
