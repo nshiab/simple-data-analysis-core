@@ -59,8 +59,7 @@ import rolling from "../methods/rolling.ts";
 import accumulate from "../methods/accumulate.ts";
 import columnProportions from "../methods/columnProportions.ts";
 import rowProportions from "../methods/rowProportions.ts";
-import highestColumn from "../methods/highestColumn.ts";
-import lowestColumn from "../methods/lowestColumn.ts";
+import rowRanks from "../methods/rowRanks.ts";
 import quantiles from "../methods/quantiles.ts";
 import ranks from "../methods/ranks.ts";
 import updateColumn from "../methods/updateColumn.ts";
@@ -3209,107 +3208,112 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Adds the name of the column containing the highest value on each row.
+   * Selects a ranked numeric value within each row and adds its source column
+   * name, its value, or both as new columns.
    *
-   * Null values are ignored. If every selected value on a row is null, the
-   * new column is null. By default, a tie throws an error. Set
-   * `options.ties` to `"first"` to use the first tied column in the supplied
-   * order, or to `"all"` to produce one row for each tied column. The `"all"`
-   * option can therefore increase the table's row count.
+   * Values are ranked from highest to lowest by default. Null values are
+   * ignored, and ties are resolved using the order of `columns`. If a row does
+   * not contain the requested rank, the new columns contain null. This method
+   * always preserves the number of rows in the table.
    *
    * This method queues the operation; it runs when an async observer method
    * (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
-   * @param columns - The numeric columns to compare on each row.
-   * @param newColumn - The name of the new column that will contain the selected column name.
-   * @param options - Optional tie-handling configuration.
-   * @param options.ties - How to handle equal highest values: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
+   * @param columns - The numeric columns to rank within each row.
+   * @param options - The output columns and ranking configuration. At least one of `nameColumn` or `valueColumn` is required.
+   * @param options.nameColumn - The name of a new column containing the selected source column's name.
+   * @param options.valueColumn - The name of a new column containing the selected source column's value.
+   * @param options.rank - The one-based rank to select. Defaults to `1`.
+   * @param options.order - The ranking order: `"desc"` ranks the highest value first and `"asc"` ranks the lowest value first. Defaults to `"desc"`.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
-   * // Adds winner: "CAQ" when CAQ has the highest value on a row.
-   * table.highestColumn(["CAQ", "PLQ", "PQ"], "winner");
+   * // Add the name and value of the highest-scoring party on each row.
+   * table.rowRanks(["CAQ", "PLQ", "PQ"], {
+   *   nameColumn: "winner",
+   *   valueColumn: "winningVotes",
+   * });
    * ```
    *
    * @example
    * ```ts
-   * table.loadArray([{ district: "Example", CAQ: 100, PLQ: 100, PQ: 40 }]);
-   * table.highestColumn(["CAQ", "PLQ", "PQ"], "winner", { ties: "all" });
-   * await table.getData();
-   * // [
-   * //   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "CAQ" },
-   * //   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "PLQ" },
-   * // ]
+   * // Add only the second-lowest value on each row.
+   * table.rowRanks(["CAQ", "PLQ", "PQ"], {
+   *   valueColumn: "secondLowestVotes",
+   *   rank: 2,
+   *   order: "asc",
+   * });
    * ```
    */
-  highestColumn(
+  rowRanks(
     columns: string[],
-    newColumn: string,
-    options: {
-      /**
-       * How to handle equal highest values.
-       *
-       * @example
-       * ```ts
-       * { ties: "first" }
-       * ```
-       */
-      ties?: "strict" | "first" | "all";
-    } = {},
+    options:
+      & (
+        | {
+          /**
+           * The name of a new column containing the selected source column's name.
+           *
+           * @example
+           * ```ts
+           * { nameColumn: "winner" }
+           * ```
+           */
+          nameColumn: string;
+          /**
+           * The name of a new column containing the selected source column's value.
+           *
+           * @example
+           * ```ts
+           * { valueColumn: "winningVotes" }
+           * ```
+           */
+          valueColumn?: string;
+        }
+        | {
+          /**
+           * The name of a new column containing the selected source column's name.
+           *
+           * @example
+           * ```ts
+           * { nameColumn: "winner" }
+           * ```
+           */
+          nameColumn?: string;
+          /**
+           * The name of a new column containing the selected source column's value.
+           *
+           * @example
+           * ```ts
+           * { valueColumn: "winningVotes" }
+           * ```
+           */
+          valueColumn: string;
+        }
+      )
+      & {
+        /**
+         * The one-based rank to select. Defaults to `1`.
+         *
+         * @example
+         * ```ts
+         * { rank: 2 }
+         * ```
+         */
+        rank?: number;
+        /**
+         * The ranking order. Defaults to `"desc"`.
+         *
+         * @example
+         * ```ts
+         * { order: "asc" }
+         * ```
+         */
+        order?: "asc" | "desc";
+      },
   ): this {
-    highestColumn(this, columns, newColumn, options);
-    return this;
-  }
-
-  /**
-   * Adds the name of the column containing the lowest value on each row.
-   *
-   * Null values are ignored. If every selected value on a row is null, the
-   * new column is null. By default, a tie throws an error. Set
-   * `options.ties` to `"first"` to use the first tied column in the supplied
-   * order, or to `"all"` to produce one row for each tied column. The `"all"`
-   * option can therefore increase the table's row count.
-   *
-   * This method queues the operation; it runs when an async observer method
-   * (like `getData()` or `log()`) is awaited, or when `run()` is called.
-   *
-   * @param columns - The numeric columns to compare on each row.
-   * @param newColumn - The name of the new column that will contain the selected column name.
-   * @param options - Optional tie-handling configuration.
-   * @param options.ties - How to handle equal lowest values: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
-   * @example
-   * ```ts
-   * // Adds smallestParty: "PQ" when PQ has the lowest value on a row.
-   * table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty");
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Selects the first supplied column when multiple columns share the minimum.
-   * table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty", { ties: "first" });
-   * ```
-   */
-  lowestColumn(
-    columns: string[],
-    newColumn: string,
-    options: {
-      /**
-       * How to handle equal lowest values.
-       *
-       * @example
-       * ```ts
-       * { ties: "all" }
-       * ```
-       */
-      ties?: "strict" | "first" | "all";
-    } = {},
-  ): this {
-    lowestColumn(this, columns, newColumn, options);
+    rowRanks(this, columns, options);
     return this;
   }
 
