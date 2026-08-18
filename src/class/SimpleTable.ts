@@ -3501,74 +3501,57 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Appends one or more summary rows to the table. Each row is calculated from
-   * the original rows before any summary rows are appended. This is useful for
+   * Adds one or more summary rows to the table. Each row is calculated from
+   * the original rows before any summary rows are added. This is useful for
    * preparing totals and other statistics before exporting tabular data.
    *
    * Passing `"all"` selects every numeric column. Columns that are neither
-   * summarized nor used for labels contain `NULL` in the appended rows. A
-   * stat string is also used as its row label; pass an object to customize
-   * that label. If `stats` is omitted, every supported stat is added.
+   * summarized nor used for labels contain `NULL` in the added rows. A stat
+   * string is also used as its row label; pass an object to customize that
+   * label. If `options.stats` is omitted, every supported stat is added.
    *
    * This method queues the operation; it runs when an async observer method
    * (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - The numeric column name, an array of numeric column names, or `"all"` to summarize every numeric column.
    * @param labelColumn - The existing string column in which stat row labels will be written.
-   * @param stats - A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
+   * @param options - An optional object with configuration options:
+   * @param options.stats - A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
+   * @param options.position - Whether to add the summary rows at the `"top"` or `"bottom"` of the table. Defaults to `"bottom"`.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
    * // Add a total row for every numeric column, labelled "sum" in "region".
-   * table.addSummaryRows("all", "region", "sum");
+   * table.addSummaryRows("all", "region", { stats: "sum" });
    * ```
    *
    * @example
    * ```ts
    * // Add two summary rows with default labels.
-   * table.addSummaryRows(["sales", "expenses"], "region", ["sum", "mean"]);
+   * table.addSummaryRows(["sales", "expenses"], "region", {
+   *   stats: ["sum", "mean"],
+   *   position: "top",
+   * });
    * ```
    *
    * @example
    * ```ts
    * // Customize the labels written to the label column.
-   * table.addSummaryRows("all", "region", [
-   *   { stat: "sum", label: "Total" },
-   *   { stat: "mean", label: "Average" },
-   * ]);
+   * table.addSummaryRows("all", "region", {
+   *   stats: [
+   *     { stat: "sum", label: "Total" },
+   *     { stat: "mean", label: "Average" },
+   *   ],
+   * });
    * ```
    */
   addSummaryRows(
     columns: "all" | string | string[],
     labelColumn: string,
-    stats?:
-      | "countDistinct"
-      | "countNull"
-      | "min"
-      | "max"
-      | "mean"
-      | "median"
-      | "sum"
-      | "skew"
-      | "stdDev"
-      | "variance"
-      | {
-        stat:
-          | "countDistinct"
-          | "countNull"
-          | "min"
-          | "max"
-          | "mean"
-          | "median"
-          | "sum"
-          | "skew"
-          | "stdDev"
-          | "variance";
-        label?: string;
-      }
-      | (
+    options: {
+      stats?:
         | "countDistinct"
         | "countNull"
         | "min"
@@ -3593,9 +3576,36 @@ export default class SimpleTable extends Simple {
             | "variance";
           label?: string;
         }
-      )[],
+        | (
+          | "countDistinct"
+          | "countNull"
+          | "min"
+          | "max"
+          | "mean"
+          | "median"
+          | "sum"
+          | "skew"
+          | "stdDev"
+          | "variance"
+          | {
+            stat:
+              | "countDistinct"
+              | "countNull"
+              | "min"
+              | "max"
+              | "mean"
+              | "median"
+              | "sum"
+              | "skew"
+              | "stdDev"
+              | "variance";
+            label?: string;
+          }
+        )[];
+      position?: "top" | "bottom";
+    } = {},
   ): this {
-    addSummaryRows(this, columns, labelColumn, stats);
+    addSummaryRows(this, columns, labelColumn, options);
     return this;
   }
 

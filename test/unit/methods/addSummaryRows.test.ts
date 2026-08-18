@@ -9,7 +9,7 @@ Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () =>
     { region: "North", sales: 10, expenses: 4, note: "first" },
     { region: "South", sales: 20, expenses: 6, note: "second" },
   ]);
-  table.addSummaryRows("all", "region", "sum");
+  table.addSummaryRows("all", "region", { stats: "sum" });
 
   assertEquals(await table.getData(), [
     { region: "North", sales: 10, expenses: 4, note: "first" },
@@ -28,10 +28,9 @@ Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () =>
     { region: "North", sales: 10, expenses: 4 },
     { region: "South", sales: 20, expenses: 6 },
   ]);
-  table.addSummaryRows(["sales"], "region", [
-    "sum",
-    { stat: "mean", label: "Average" },
-  ]);
+  table.addSummaryRows(["sales"], "region", {
+    stats: ["sum", { stat: "mean", label: "Average" }],
+  });
 
   assertEquals(await table.getData(), [
     { region: "North", sales: 10, expenses: 4 },
@@ -72,6 +71,29 @@ Deno.test("addSummaryRows() adds every supported column stat when stats are omit
   await sdb.close();
 });
 
+Deno.test("addSummaryRows() can add summary rows at the top", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("topSummaries");
+
+  table.loadArray([
+    { statistic: "a", value: 10 },
+    { statistic: "b", value: 20 },
+  ]);
+  table.addSummaryRows("value", "statistic", {
+    stats: ["sum", "mean"],
+    position: "top",
+  });
+
+  assertEquals(await table.getData(), [
+    { statistic: "sum", value: 30 },
+    { statistic: "mean", value: 15 },
+    { statistic: "a", value: 10 },
+    { statistic: "b", value: 20 },
+  ]);
+
+  await sdb.close();
+});
+
 Deno.test("addSummaryRows() computes every row from the original input", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("originalInput");
@@ -80,7 +102,9 @@ Deno.test("addSummaryRows() computes every row from the original input", async (
     { statistic: "a", value: 10 },
     { statistic: "b", value: 20 },
   ]);
-  table.addSummaryRows("value", "statistic", ["sum", "mean"]);
+  table.addSummaryRows("value", "statistic", {
+    stats: ["sum", "mean"],
+  });
 
   const data = await table.getData();
   assertEquals(data.slice(2), [
@@ -103,8 +127,10 @@ Deno.test("addSummaryRows() binds custom labels", async () => {
     table.loadArray([{ statistic: "a", value: 2 }]);
     await table.run();
     table.addSummaryRows("all", "statistic", {
-      stat: "sum",
-      label: "Owner's total",
+      stats: {
+        stat: "sum",
+        label: "Owner's total",
+      },
     });
     await table.run();
     data = await table.getData();
@@ -143,7 +169,7 @@ Deno.test("addSummaryRows() fuses with preceding queued methods", async () => {
       { statistic: "c", value: 3 },
     ])
     .filter("value >= 2")
-    .addSummaryRows("all", "statistic", "sum");
+    .addSummaryRows("all", "statistic", { stats: "sum" });
 
   let data: { [key: string]: unknown }[] = [];
   try {
@@ -180,20 +206,26 @@ Deno.test("addSummaryRows() rejects empty column and stat arrays", async () => {
   const table = sdb.newTable("emptyOptions");
 
   assertThrows(
-    () => table.addSummaryRows([], "statistic", "sum"),
+    () => table.addSummaryRows([], "statistic", { stats: "sum" }),
     Error,
     'addSummaryRows() requires at least one column or "all".',
   );
   assertThrows(
-    () => table.addSummaryRows("all", "statistic", []),
+    () => table.addSummaryRows("all", "statistic", { stats: [] }),
     Error,
     "addSummaryRows() stats cannot be an empty array. Omit stats to add every supported stat.",
   );
   assertThrows(
     // @ts-expect-error Verify that untyped JavaScript callers get a clear error.
-    () => table.addSummaryRows("all", "statistic", "count"),
+    () => table.addSummaryRows("all", "statistic", { stats: "count" }),
     Error,
     'addSummaryRows() stat "count" is not supported.',
+  );
+  assertThrows(
+    // @ts-expect-error Verify that untyped JavaScript callers get a clear error.
+    () => table.addSummaryRows("all", "statistic", { position: "middle" }),
+    Error,
+    'addSummaryRows() options.position must be "top" or "bottom". Received "middle".',
   );
 
   await sdb.close();
@@ -204,7 +236,7 @@ Deno.test("addSummaryRows() validates selected and label columns", async () => {
 
   const nonNumeric = sdb.newTable("nonNumericSummary");
   nonNumeric.loadArray([{ statistic: "a", note: "one", value: 1 }]);
-  nonNumeric.addSummaryRows("note", "statistic", "sum");
+  nonNumeric.addSummaryRows("note", "statistic", { stats: "sum" });
   await assertRejects(
     () => nonNumeric.run(),
     Error,
@@ -213,7 +245,7 @@ Deno.test("addSummaryRows() validates selected and label columns", async () => {
 
   const numericLabel = sdb.newTable("numericLabel");
   numericLabel.loadArray([{ statistic: 1, value: 2 }]);
-  numericLabel.addSummaryRows("value", "statistic", "sum");
+  numericLabel.addSummaryRows("value", "statistic", { stats: "sum" });
   await assertRejects(
     () => numericLabel.run(),
     Error,

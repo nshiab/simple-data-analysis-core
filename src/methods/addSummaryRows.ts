@@ -15,6 +15,10 @@ type StatRow =
   | StatRowOperation
   | { stat: StatRowOperation; label?: string };
 type NormalizedStatRow = { stat: StatRowOperation; label: string };
+type AddSummaryRowsOptions = {
+  stats?: StatRow | StatRow[];
+  position?: "top" | "bottom";
+};
 
 const allStatRowOperations = allStats.filter(
   (stat): stat is StatRowOperation => stat !== "count",
@@ -24,8 +28,20 @@ export default function addSummaryRows(
   simpleTable: SimpleTable,
   columns: "all" | string | string[],
   labelColumn: string,
-  stats?: StatRow | StatRow[],
+  options: AddSummaryRowsOptions = {},
 ) {
+  options = structuredClone(options);
+  if (
+    options.position !== undefined &&
+    options.position !== "top" &&
+    options.position !== "bottom"
+  ) {
+    throw new Error(
+      `addSummaryRows() options.position must be "top" or "bottom". Received ${
+        JSON.stringify(options.position)
+      }.`,
+    );
+  }
   const selectedColumns = columns === "all" ? "all" : stringToArray(columns);
   if (selectedColumns !== "all" && selectedColumns.length === 0) {
     throw new Error(
@@ -52,11 +68,11 @@ export default function addSummaryRows(
     }
   }
 
-  const statRows = normalizeStatRows(stats);
+  const statRows = normalizeStatRows(options.stats);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "addSummaryRows()",
-    parameters: { columns, labelColumn, stats },
+    parameters: { columns, labelColumn, options },
     needsSchema: true,
     values: statRows.map((row) => row.label),
     buildSelect: (input, schema) =>
@@ -66,6 +82,7 @@ export default function addSummaryRows(
         selectedColumns,
         labelColumn,
         statRows,
+        options.position ?? "bottom",
       ),
   });
 }
@@ -120,6 +137,7 @@ function addSummaryRowsSelect(
   columns: "all" | string[],
   labelColumn: string,
   statRows: NormalizedStatRow[],
+  position: "top" | "bottom",
 ): string {
   const method = "addSummaryRows()";
   const tableColumns = Object.keys(schema);
@@ -165,8 +183,10 @@ function addSummaryRowsSelect(
     "_sda_stat_order",
   );
   const projectedColumns = tableColumns.map(quoteIdentifier).join(", ");
+  const dataKind = position === "top" ? 1 : 0;
+  const statKind = position === "top" ? 0 : 1;
   const branches = [
-    `SELECT ${projectedColumns}, 0 AS ${
+    `SELECT ${projectedColumns}, ${dataKind} AS ${
       quoteIdentifier(kindColumn)
     }, ROW_NUMBER() OVER () AS ${quoteIdentifier(orderColumn)} FROM ${input}`,
     ...statRows.map((row, index) => {
@@ -194,7 +214,7 @@ function addSummaryRowsSelect(
         }
         return `${expression} AS ${quoteIdentifier(column)}`;
       });
-      return `SELECT ${projections.join(", ")}, 1 AS ${
+      return `SELECT ${projections.join(", ")}, ${statKind} AS ${
         quoteIdentifier(kindColumn)
       }, ${index} AS ${quoteIdentifier(orderColumn)} FROM ${input}`;
     }),

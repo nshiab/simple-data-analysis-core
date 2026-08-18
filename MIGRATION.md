@@ -230,9 +230,11 @@ Statistic names are standardized too:
 | `var`             | `variance`      |
 | `wider()`'s `avg` | `mean`          |
 
-In `addSummaryRows()`, the third parameter is now called `stats`, and custom row
-configurations use `{ stat: "sum", label: "Total" }` instead of a `summary`
-property. In `rolling()`, the statistic parameter is now called `stat`.
+In `addSummaryRows()`, statistics now belong to the third `options` parameter,
+and custom row configurations use `{ stat: "sum", label: "Total" }` instead of a
+`summary` property. For example, use
+`{ stats: ["sum", { stat: "mean", label: "Average" }] }`. In `rolling()`, the
+statistic parameter is now called `stat`.
 
 ### `summarize()`: the `column` output column is now automatic
 
