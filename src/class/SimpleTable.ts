@@ -54,6 +54,7 @@ import latLon from "../methods/latLon.ts";
 import inside from "../methods/inside.ts";
 import intersect from "../methods/intersect.ts";
 import normalize from "../methods/normalize.ts";
+import indexValues from "../methods/indexValues.ts";
 import zScore from "../methods/zScore.ts";
 import rolling from "../methods/rolling.ts";
 import accumulate from "../methods/accumulate.ts";
@@ -4030,6 +4031,97 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     normalize(this, column, newColumn, options);
+    return this;
+  }
+
+  /**
+   * Indexes a numeric column by dividing each value by a reference value and multiplying the result by a base value.
+   *
+   * The reference can be calculated from the indexed column with a statistic, read from exactly one row selected by another column's value, or read from the unique row where another column reaches its minimum or maximum. With `options.by`, references are calculated or selected independently within each group. Null values in the indexed column remain null.
+   *
+   * Exact temporal references are compared at their full DuckDB precision. JavaScript `Date` objects only have millisecond precision and always represent an instant. Construct them with an explicit timezone, such as `new Date("2001-01-01T00:00:00Z")`; date-time strings without `Z` or an offset use the user's local timezone.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param column - The numeric column containing the values to index.
+   * @param newColumn - The name of the new column where indexed values will be stored.
+   * @param reference - A statistic calculated from `column`, a column and exact non-null value selecting a row, or a column and `min` or `max` selecting its unique extreme row. The selected row's `column` value becomes the reference.
+   * @param reference.stat - The statistic used to calculate the reference directly, or `min` or `max` when selecting an extreme row from `reference.column`.
+   * @param reference.column - The column used to select an exact reference row or its unique minimum or maximum row.
+   * @param reference.value - The non-null value used to select an exact reference row. Date values should be constructed with an explicit timezone.
+   * @param options - An optional object with configuration options.
+   * @param options.by - A column name or an array of column names to partition by. The reference is calculated independently within each group.
+   * @param options.base - The finite positive value assigned to the reference. Defaults to `100`.
+   * @param options.decimals - A finite non-negative integer specifying the number of decimal places to retain. By default, values are not rounded.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
+   *
+   * @example
+   * ```ts
+   * // Index each country's average home price to its January 2001 value.
+   * table.indexValues(
+   *   "homePrice",
+   *   "homePriceIndexed",
+   *   {
+   *     column: "date",
+   *     value: new Date("2001-01-01T00:00:00Z"),
+   *   },
+   *   {
+   *     by: "country",
+   *     base: 100,
+   *     decimals: 1,
+   *   },
+   * );
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Index each value against the mean of its group.
+   * table.indexValues("homePrice", "homePriceIndexed", { stat: "mean" }, {
+   *   by: "country",
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Index each country's average home price to its earliest value.
+   * // This throws if multiple rows share the earliest date in a country.
+   * table.indexValues("homePrice", "homePriceIndexed", {
+   *   column: "date",
+   *   stat: "min",
+   * }, { by: "country" });
+   * ```
+   */
+  indexValues(
+    column: string,
+    newColumn: string,
+    reference:
+      | {
+        stat:
+          | "min"
+          | "max"
+          | "mean"
+          | "median";
+        column?: never;
+        value?: never;
+      }
+      | {
+        column: string;
+        value: string | number | bigint | boolean | Date;
+        stat?: never;
+      }
+      | {
+        column: string;
+        stat: "min" | "max";
+        value?: never;
+      },
+    options: {
+      by?: string | string[];
+      base?: number;
+      decimals?: number;
+    } = {},
+  ): this {
+    indexValues(this, column, newColumn, reference, options);
     return this;
   }
 
