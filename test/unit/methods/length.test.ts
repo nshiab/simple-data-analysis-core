@@ -52,3 +52,15 @@ Deno.test("should calculate the length of geometries in kilometers", async () =>
   assertEquals(data, [{ length: 70 }]);
   await sdb.close();
 });
+
+Deno.test("should round lengths after converting their unit", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+  table.loadGeoData("test/geodata/files/line.json");
+  table.length("length", { unit: "km", decimals: 2 });
+  table.selectColumns("length");
+
+  assertEquals(await table.getData(), [{ length: 70.18 }]);
+
+  await sdb.close();
+});

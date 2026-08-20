@@ -5376,6 +5376,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed area: `"m2"` (square meters) or `"km2"` (square kilometers). Defaults to `"m2"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the computed areas. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -5393,13 +5394,23 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Compute areas in square kilometers rounded to two decimal places
+   * table.area("area_km2", { unit: "km2", decimals: 2 });
+   * ```
+   *
+   * @example
+   * ```ts
    * // Compute the area of geometries in a specific column named 'myGeom'
    * table.area("myGeomArea", { column: "myGeom" });
    * ```
    */
   area(
     newColumn: string,
-    options: { unit?: "m2" | "km2"; column?: string } = {},
+    options: {
+      unit?: "m2" | "km2";
+      column?: string;
+      decimals?: number;
+    } = {},
   ): this {
     area(this, newColumn, options);
     return this;
@@ -5415,6 +5426,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed length: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the computed lengths. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -5432,13 +5444,23 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Compute lengths in kilometers rounded to two decimal places
+   * table.length("length_km", { unit: "km", decimals: 2 });
+   * ```
+   *
+   * @example
+   * ```ts
    * // Compute the length of geometries in a specific column named 'routeGeom'
    * table.length("routeLength", { column: "routeGeom" });
    * ```
    */
   length(
     newColumn: string,
-    options: { unit?: "m" | "km"; column?: string } = {},
+    options: {
+      unit?: "m" | "km";
+      column?: string;
+      decimals?: number;
+    } = {},
   ): this {
     length(this, newColumn, options);
     return this;
@@ -5454,6 +5476,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.unit - The unit for the computed perimeter: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
    * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the computed perimeters. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -5471,13 +5494,23 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Compute perimeters in kilometers rounded to two decimal places
+   * table.perimeter("perimeter_km", { unit: "km", decimals: 2 });
+   * ```
+   *
+   * @example
+   * ```ts
    * // Compute the perimeter of geometries in a specific column named 'landParcelGeom'
    * table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
    * ```
    */
   perimeter(
     newColumn: string,
-    options: { unit?: "m" | "km"; column?: string } = {},
+    options: {
+      unit?: "m" | "km";
+      column?: string;
+      decimals?: number;
+    } = {},
   ): this {
     perimeter(this, newColumn, options);
     return this;

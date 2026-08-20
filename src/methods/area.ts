@@ -7,7 +7,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function area(
   simpleTable: SimpleTable,
   newColumn: string,
-  options: { unit?: "m2" | "km2"; column?: string } = {},
+  options: { unit?: "m2" | "km2"; column?: string; decimals?: number } = {},
 ) {
   options = structuredClone(options);
   queueOp(simpleTable, {
@@ -21,9 +21,15 @@ export default function area(
       const column = typeof options.column === "string"
         ? options.column
         : findGeoColumnFromSchema(types, "area()", simpleTable.name);
-      return `SELECT *, CAST(ST_Area_Spheroid(${quoteIdentifier(column)}) ${
+      let expression = `ST_Area_Spheroid(${quoteIdentifier(column)}) ${
         options.unit === "km2" ? "/ 1000000" : ""
-      } AS DOUBLE) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      }`;
+      if (typeof options.decimals === "number") {
+        expression = `ROUND(${expression}, ${options.decimals})`;
+      }
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
     },
   });
 }

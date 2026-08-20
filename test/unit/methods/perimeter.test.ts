@@ -120,3 +120,17 @@ Deno.test("should calculate the perimeter of geometries in kilometers", async ()
 
   await sdb.close();
 });
+
+Deno.test("should round perimeters to zero decimals", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+  table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  table.perimeter("perim", { unit: "km", decimals: 0 });
+  table.selectColumns("perim");
+
+  assertEquals(await table.getData({ limit: 1 }), [{ perim: 6925 }]);
+
+  await sdb.close();
+});

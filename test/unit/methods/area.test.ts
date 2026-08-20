@@ -323,3 +323,17 @@ Deno.test("should calculate the area of geometries in square kilometers", async 
 
   await sdb.close();
 });
+
+Deno.test("should round areas after converting their unit", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("geodata");
+  table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  table.area("area", { unit: "km2", decimals: 2 });
+  table.selectColumns("area");
+
+  assertEquals(await table.getData({ limit: 1 }), [{ area: 407428.31 }]);
+
+  await sdb.close();
+});

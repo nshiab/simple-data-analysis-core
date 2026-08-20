@@ -7,7 +7,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 export default function length(
   simpleTable: SimpleTable,
   newColumn: string,
-  options: { unit?: "m" | "km"; column?: string } = {},
+  options: { unit?: "m" | "km"; column?: string; decimals?: number } = {},
 ) {
   options = structuredClone(options);
   queueOp(simpleTable, {
@@ -21,9 +21,15 @@ export default function length(
       const column = typeof options.column === "string"
         ? options.column
         : findGeoColumnFromSchema(types, "length()", simpleTable.name);
-      return `SELECT *, CAST(ST_Length_Spheroid(${quoteIdentifier(column)}) ${
+      let expression = `ST_Length_Spheroid(${quoteIdentifier(column)}) ${
         options.unit === "km" ? "/ 1000" : ""
-      } AS DOUBLE) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      }`;
+      if (typeof options.decimals === "number") {
+        expression = `ROUND(${expression}, ${options.decimals})`;
+      }
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
     },
   });
 }
