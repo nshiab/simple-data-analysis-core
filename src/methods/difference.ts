@@ -2,7 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function removeIntersection(
+export default function difference(
   simpleTable: SimpleTable,
   column1: string,
   column2: string,
@@ -10,7 +10,7 @@ export default function removeIntersection(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "removeIntersection()",
+    method: "difference()",
     parameters: { column1, column2, newColumn },
     needsSchema: true,
     needsSpatial: true,

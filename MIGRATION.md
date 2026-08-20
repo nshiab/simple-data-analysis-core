@@ -273,6 +273,16 @@ dishes.join(categories, { on: "dishId", type: "right" });
 values everywhere else (SQL `NULL` cells, `customQuery()`). In v1 they returned
 `undefined` — and `getLastRow()` threw a `TypeError` on an empty result.
 
+### Renamed methods
+
+Several methods have clearer names in v2:
+
+- `removeIntersection()` → `difference()`
+- `intersect()` → `intersects()`
+- `inside()` → `coveredBy()`
+- `boundingBox()` → `addBoundingBox()`
+- `getVar()` → `getVariance()`
+
 ### Renamed positional parameters
 
 These don't break any calls (arguments are positional), but documentation and
@@ -291,7 +301,8 @@ editor hints now use the new names:
   `textColumn`
 - `points()` and `latLon()`: `columnLat`, `columnLon` → `latColumn`, `lonColumn`
 - `longer()`: `columnsTo` → `namesTo`; `wider()`: `columnsFrom` → `namesFrom`
-- `inside()`: `column1`, `column2` → `column`, `containerColumn`
+- `coveredBy()` (formerly `inside()`): `column1`, `column2` → `column`,
+  `containerColumn`
 - `loadArray(arrayOfObjects)` → `loadArray(rows)`;
   `insertTables(tablesToInsert)` → `insertTables(tables)`; `cache(run)` →
   `cache(compute)`

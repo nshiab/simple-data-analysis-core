@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should check if geometries are inside other geometries", async () => {
+Deno.test("should check if geometries are covered by other geometries", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
 
   const points = sdb.newTable("points");
@@ -19,17 +19,17 @@ Deno.test("should check if geometries are inside other geometries", async () => 
   });
 
   points.crossJoin(polygon);
-  points.inside("geomPoints", "geomPolygon", "isInside");
-  points.selectColumns(["points", "polygon", "isInside"]);
+  points.coveredBy("geomPoints", "geomPolygon", "isCovered");
+  points.selectColumns(["points", "polygon", "isCovered"]);
   points.sort({ points: "asc" });
 
   const data = await points.getData();
 
   assertEquals(data, [
-    { points: "pointA", polygon: "container", isInside: false },
-    { points: "pointB", polygon: "container", isInside: false },
-    { points: "pointC", polygon: "container", isInside: true },
-    { points: "pointD", polygon: "container", isInside: true },
+    { points: "pointA", polygon: "container", isCovered: false },
+    { points: "pointB", polygon: "container", isCovered: false },
+    { points: "pointC", polygon: "container", isCovered: true },
+    { points: "pointD", polygon: "container", isCovered: true },
   ]);
 
   await sdb.close();

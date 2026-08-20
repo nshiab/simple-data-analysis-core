@@ -20,7 +20,7 @@ import getMedian from "../methods/getMedian.ts";
 import getSum from "../methods/getSum.ts";
 import getSkew from "../methods/getSkew.ts";
 import getStdDev from "../methods/getStdDev.ts";
-import getVar from "../methods/getVar.ts";
+import getVariance from "../methods/getVariance.ts";
 import getQuantile from "../methods/getQuantile.ts";
 import cloneColumn from "../methods/cloneColumn.ts";
 import getGeoData from "../methods/getGeoData.ts";
@@ -51,8 +51,8 @@ import loadSample from "../methods/loadSample.ts";
 import normalizeString from "../methods/normalizeString.ts";
 import distance from "../methods/distance.ts";
 import latLon from "../methods/latLon.ts";
-import inside from "../methods/inside.ts";
-import intersect from "../methods/intersect.ts";
+import coveredBy from "../methods/coveredBy.ts";
+import intersects from "../methods/intersects.ts";
 import normalize from "../methods/normalize.ts";
 import indexValues from "../methods/indexValues.ts";
 import zScore from "../methods/zScore.ts";
@@ -92,14 +92,14 @@ import writeData from "../methods/writeData.ts";
 import getBoundingBox from "../methods/getBoundingBox.ts";
 import linesToPolygons from "../methods/linesToPolygons.ts";
 import aggregateGeo from "../methods/aggregateGeo.ts";
-import boundingBox from "../methods/boundingBox.ts";
+import addBoundingBox from "../methods/addBoundingBox.ts";
 import unnestGeo from "../methods/unnestGeo.ts";
 import randomPoint from "../methods/randomPoint.ts";
 import centroid from "../methods/centroid.ts";
 import simplify from "../methods/simplify.ts";
 import union from "../methods/union.ts";
 import fillHoles from "../methods/fillHoles.ts";
-import removeIntersection from "../methods/removeIntersection.ts";
+import difference from "../methods/difference.ts";
 import intersection from "../methods/intersection.ts";
 import buffer from "../methods/buffer.ts";
 import perimeter from "../methods/perimeter.ts";
@@ -4673,24 +4673,24 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get the variance of the 'data' column
-   * const dataVariance = await table.getVar("data");
+   * const dataVariance = await table.getVariance("data");
    * console.log(dataVariance); // e.g., 25.5
    * ```
    *
    * @example
    * ```ts
    * // Get the variance of the 'values' column, rounded to 2 decimal places
-   * const valuesVariance = await table.getVar("values", { decimals: 2 });
+   * const valuesVariance = await table.getVariance("values", { decimals: 2 });
    * console.log(valuesVariance); // e.g., 10.23
    * ```
    */
-  async getVar(
+  async getVariance(
     column: string,
     options: {
       decimals?: number;
     } = {},
   ): Promise<number> {
-    return await getVar(this, column, options);
+    return await getVariance(this, column, options);
   }
 
   /**
@@ -5636,28 +5636,28 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Removes the intersection of two geometries from the first geometry, effectively computing the geometric difference.
+   * Computes the geometric difference between two geometries, returning the portion of the first geometry that does not intersect the second.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
-   * @param column1 - The name of the column storing the reference geometries. These geometries will have the intersection removed.
-   * @param column2 - The name of the column storing the geometries used to compute the intersection. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the resulting geometries (without the intersection) will be stored.
+   * @param column1 - The name of the column storing the geometries from which the second geometries will be subtracted.
+   * @param column2 - The name of the column storing the geometries to subtract. Both columns must have the same projection.
+   * @param newColumn - The name of the new column where the geometric differences will be stored.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
-   * // Remove the intersection of 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
-   * table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
+   * // Subtract 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
+   * table.difference("geomA", "geomB", "geomA_minus_geomB");
    * ```
    */
-  removeIntersection(
+  difference(
     column1: string,
     column2: string,
     newColumn: string,
   ): this {
-    removeIntersection(this, column1, column2, newColumn);
+    difference(this, column1, column2, newColumn);
     return this;
   }
 
@@ -5701,41 +5701,41 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Check if geometries in 'geomA' and 'geomB' intersect, storing results in 'doIntersect'
-   * table.intersect("geomA", "geomB", "doIntersect");
+   * table.intersects("geomA", "geomB", "doIntersect");
    * ```
    */
-  intersect(
+  intersects(
     column1: string,
     column2: string,
     newColumn: string,
   ): this {
-    intersect(this, column1, column2, newColumn);
+    intersects(this, column1, column2, newColumn);
     return this;
   }
 
   /**
-   * Returns `TRUE` if all points of a geometry in `column` lie inside a geometry in `containerColumn`, and `FALSE` otherwise.
+   * Returns `TRUE` if every point of a geometry in `column` is covered by a geometry in `containerColumn`, including their boundaries, and `FALSE` otherwise.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column storing the geometries to be tested for containment.
    * @param containerColumn - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the boolean results (`TRUE` for inside, `FALSE` otherwise) will be stored.
+   * @param newColumn - The name of the new column where the boolean results (`TRUE` when covered, `FALSE` otherwise) will be stored.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
    * @example
    * ```ts
-   * // Check if geometries in 'pointGeom' are inside 'polygonGeom', storing results in 'isInsidePolygon'
-   * table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
+   * // Check if geometries in 'pointGeom' are covered by 'polygonGeom', storing results in 'isCovered'
+   * table.coveredBy("pointGeom", "polygonGeom", "isCovered");
    * ```
    */
-  inside(
+  coveredBy(
     column: string,
     containerColumn: string,
     newColumn: string,
   ): this {
-    inside(this, column, containerColumn, newColumn);
+    coveredBy(this, column, containerColumn, newColumn);
     return this;
   }
 
@@ -5980,7 +5980,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Computes the bounding box of geometries in a specified column, creating four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
+   * Adds the bounding box coordinates of geometries in a specified column as four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -5993,24 +5993,24 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compute the bounding box for geometries in the default column
-   * table.boundingBox();
+   * table.addBoundingBox();
    * // The table now has minLon, minLat, maxLon, and maxLat columns.
    * ```
    *
    * @example
    * ```ts
    * // Compute the bounding box for geometries in 'geom' column and round coordinates to 2 decimal places
-   * table.boundingBox({ column: "geom", decimals: 2 });
+   * table.addBoundingBox({ column: "geom", decimals: 2 });
    * // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
    * ```
    */
-  boundingBox(
+  addBoundingBox(
     options: {
       column?: string;
       decimals?: number;
     } = {},
   ): this {
-    boundingBox(this, options);
+    addBoundingBox(this, options);
     return this;
   }
 

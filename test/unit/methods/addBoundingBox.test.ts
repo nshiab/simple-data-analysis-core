@@ -7,7 +7,7 @@ Deno.test("should create minLon, maxLon, minLat, maxLat columns", async () => {
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  table.boundingBox({ decimals: 3 });
+  table.addBoundingBox({ decimals: 3 });
   table.removeColumns("geom");
   const data = await table.getData();
 
@@ -29,7 +29,7 @@ Deno.test("should create minLon, maxLon, minLat, maxLat columns for a specific c
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  table.boundingBox({ column: "geom", decimals: 1 });
+  table.addBoundingBox({ column: "geom", decimals: 1 });
   table.removeColumns("geom");
   const data = await table.getData();
 

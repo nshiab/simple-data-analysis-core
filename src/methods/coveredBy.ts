@@ -3,7 +3,7 @@ import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function inside(
+export default function coveredBy(
   simpleTable: SimpleTable,
   column: string,
   containerColumn: string,
@@ -11,12 +11,12 @@ export default function inside(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "inside()",
+    method: "coveredBy()",
     parameters: { column, containerColumn, newColumn },
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      assertNewColumns(types, [newColumn], "inside()");
+      assertNewColumns(types, [newColumn], "coveredBy()");
       return `SELECT *, CAST(ST_Covers(${quoteIdentifier(containerColumn)}, ${
         quoteIdentifier(column)
       }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;

@@ -19,7 +19,7 @@ Deno.test("column getters throw when a missing column matches the table name", a
     { name: "getSum()", call: () => table.getSum("data") },
     { name: "getSkew()", call: () => table.getSkew("data") },
     { name: "getStdDev()", call: () => table.getStdDev("data") },
-    { name: "getVar()", call: () => table.getVar("data") },
+    { name: "getVariance()", call: () => table.getVariance("data") },
     {
       name: "getQuantile()",
       call: () => table.getQuantile("data", 0.5),

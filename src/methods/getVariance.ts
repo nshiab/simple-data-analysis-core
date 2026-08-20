@@ -4,7 +4,7 @@ import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
-export default async function getVar(
+export default async function getVariance(
   SimpleTable: SimpleTable,
   column: string,
   options: {
@@ -24,7 +24,7 @@ export default async function getVar(
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,
-      method: "getVar()",
+      method: "getVariance()",
       parameters: { column, options },
     }),
   );

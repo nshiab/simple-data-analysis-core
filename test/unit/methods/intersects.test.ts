@@ -14,7 +14,7 @@ Deno.test("should check if geometries intersect", async () => {
   poly.renameColumns({ geom: "pol" });
 
   const joined = prov.crossJoin(poly, { outputTable: "joined" });
-  joined.intersect("pol", "prov", "intersec");
+  joined.intersects("pol", "prov", "intersec");
 
   joined.selectColumns(["nameEnglish", "name", "intersec"]);
 
@@ -97,7 +97,7 @@ Deno.test("should check if geometries intersect and the returned booleans could 
   poly.renameColumns({ geom: "pol" });
 
   const joined = prov.crossJoin(poly, { outputTable: "joined" });
-  joined.intersect("pol", "prov", "intersec");
+  joined.intersects("pol", "prov", "intersec");
   joined.selectColumns(["nameEnglish", "name", "intersec"]);
   joined.filter("intersec = TRUE");
 

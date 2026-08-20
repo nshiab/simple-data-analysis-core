@@ -3,7 +3,7 @@ import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function boundingBox(
+export default function addBoundingBox(
   simpleTable: SimpleTable,
   options: {
     column?: string;
@@ -13,13 +13,13 @@ export default function boundingBox(
   options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "boundingBox()",
+    method: "addBoundingBox()",
     parameters: { options },
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
       const column = options.column ??
-        findGeoColumnFromSchema(types, "boundingBox()", simpleTable.name);
+        findGeoColumnFromSchema(types, "addBoundingBox()", simpleTable.name);
       const round = (expression: string) =>
         typeof options.decimals === "number"
           ? `ROUND(${expression}, ${options.decimals})`

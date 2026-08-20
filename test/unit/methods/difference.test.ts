@@ -14,7 +14,7 @@ Deno.test("should remove the small circle from the big circle", async () => {
 
   smallCircle.crossJoin(bigCircle);
 
-  smallCircle.removeIntersection(
+  smallCircle.difference(
     "geomBig",
     "geomSmall",
     "bigCircleWithHole",
@@ -185,7 +185,7 @@ Deno.test("should remove the small circle from the big circle and overwrite the 
 
   smallCircle.crossJoin(bigCircle);
 
-  smallCircle.removeIntersection(
+  smallCircle.difference(
     "geomBig",
     "geomSmall",
     "geomBig",
@@ -343,7 +343,7 @@ Deno.test("should remove the small circle from the big circle and overwrite the 
   await sdb.close();
 });
 
-Deno.test("removeIntersection() should overwrite one of the source geometry columns", async () => {
+Deno.test("difference() should overwrite one of the source geometry columns", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
@@ -352,7 +352,7 @@ Deno.test("removeIntersection() should overwrite one of the source geometry colu
   table.points("lat", "lon", "geom1");
   table.points("lat2", "lon2", "geom2");
 
-  table.removeIntersection("geom1", "geom2", "geom1");
+  table.difference("geom1", "geom2", "geom1");
 
   const types = await table.getTypes();
   assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
