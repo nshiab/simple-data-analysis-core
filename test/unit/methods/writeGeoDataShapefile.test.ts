@@ -36,6 +36,42 @@ Deno.test("should write a shapefile", async () => {
   await sdb.close();
 });
 
+Deno.test("should overwrite every file in a shapefile dataset", async () => {
+  const directory = await Deno.makeTempDir({
+    prefix: "sda-write-shapefile-",
+  });
+  const sdb = new SimpleDB({ dataTransport: "file" });
+
+  try {
+    const table = sdb.newTable();
+    table.loadGeoData("test/geodata/files/polygons.geojson");
+    const shp = `${directory}/data.shp`;
+
+    await table.writeGeoData(shp);
+    table.selectRows(1);
+    await table.writeGeoData(shp);
+
+    const files = [];
+    for await (const entry of Deno.readDir(directory)) {
+      files.push(entry.name);
+    }
+    assertEquals(
+      files.filter((file) => file.startsWith("tmp_data.")),
+      [],
+    );
+
+    const writtenTable = sdb.newTable();
+    writtenTable.loadGeoData(shp);
+    const writtenData = await writtenTable.getGeoData() as {
+      features: unknown[];
+    };
+    assertEquals(writtenData.features.length, 1);
+  } finally {
+    await sdb.close();
+    await Deno.remove(directory, { recursive: true });
+  }
+});
+
 Deno.test("should throw error for incompatible options with shapefiles", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();

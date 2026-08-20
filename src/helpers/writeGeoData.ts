@@ -176,11 +176,15 @@ function writeGeoDataQuery(
         : ""
     })`;
   } else if (fileExtension === "shp") {
+    // DuckDB only finalizes the main file when a GDAL driver creates a
+    // multi-file dataset, leaving Shapefile sidecars under the tmp_ prefix.
+    // Remove USE_TMP_FILE false once the upstream fix is released:
+    // https://github.com/duckdb/duckdb-spatial/issues/859
     return `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true; COPY ${
       quoteIdentifier(table)
     } TO '${
       cleanPath(file)
-    }' WITH (FORMAT GDAL, DRIVER 'ESRI Shapefile', LAYER_CREATION_OPTIONS 'ENCODING=UTF-8')`;
+    }' WITH (FORMAT GDAL, DRIVER 'ESRI Shapefile', LAYER_CREATION_OPTIONS 'ENCODING=UTF-8', USE_TMP_FILE false)`;
   } else {
     throw new Error(`Unknown extension ${fileExtension}`);
   }
