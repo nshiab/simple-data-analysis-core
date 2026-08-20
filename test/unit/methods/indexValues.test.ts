@@ -33,7 +33,7 @@ Deno.test("should index grouped values against an exact date reference", async (
     "cpiIndexed",
     {
       column: "date",
-      value: new Date("2001-01-01T00:00:00Z"),
+      equals: new Date("2001-01-01T00:00:00Z"),
     },
     { by: "country", base: 100, decimals: 1 },
   );
@@ -90,7 +90,7 @@ Deno.test("should require exactly one matching reference row in every group", as
   missingTable.indexValues(
     "value",
     "indexed",
-    { column: "period", value: 2 },
+    { column: "period", equals: 2 },
     { by: "group" },
   );
 
@@ -110,7 +110,7 @@ Deno.test("should require exactly one matching reference row in every group", as
   duplicateTable.indexValues(
     "value",
     "indexed",
-    { column: "period", value: 1 },
+    { column: "period", equals: 1 },
   );
 
   await assertRejects(
@@ -150,13 +150,13 @@ Deno.test("should support calculated reference statistics", async () => {
 
 Deno.test("should bind supported scalar reference values", async () => {
   const cases = [
-    { column: "text", value: "reference" },
-    { column: "number", value: 2 },
-    { column: "bigint", value: 2n },
-    { column: "boolean", value: true },
+    { column: "text", equals: "reference" },
+    { column: "number", equals: 2 },
+    { column: "bigint", equals: 2n },
+    { column: "boolean", equals: true },
     {
       column: "timestamp",
-      value: new Date("2001-01-01T12:34:56.789Z"),
+      equals: new Date("2001-01-01T12:34:56.789Z"),
     },
   ] as const;
 
@@ -184,7 +184,7 @@ Deno.test("should bind supported scalar reference values", async () => {
     table.indexValues(
       "value",
       "indexed",
-      { column: testCase.column, value: testCase.value },
+      { column: testCase.column, equals: testCase.equals },
     );
 
     assertEquals(
@@ -192,6 +192,33 @@ Deno.test("should bind supported scalar reference values", async () => {
       [50, 100],
       `Unexpected result for ${testCase.column}`,
     );
+    await sdb.close();
+  }
+});
+
+Deno.test("should reject cross-type exact reference values", async () => {
+  const cases = [
+    {
+      rows: [{ period: "01", value: 20 }],
+      reference: { column: "period", equals: 1 } as const,
+      message:
+        'indexValues() reference.equals must be a string for column "period" with type VARCHAR, but received number',
+    },
+    {
+      rows: [{ period: 1, value: 20 }],
+      reference: { column: "period", equals: "01" } as const,
+      message:
+        'indexValues() reference.equals must be a number or bigint for column "period" with type DOUBLE, but received string',
+    },
+  ];
+
+  for (const testCase of cases) {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const table = sdb.newTable();
+    table.loadArray(testCase.rows);
+    table.indexValues("value", "indexed", testCase.reference);
+
+    await assertRejects(() => table.run(), Error, testCase.message);
     await sdb.close();
   }
 });
@@ -215,15 +242,15 @@ Deno.test("should match DATE, TIMESTAMP, and TIMESTAMPTZ references", async () =
 
   table.indexValues("value", "indexedDate", {
     column: "date_reference",
-    value: new Date("2001-01-01T00:00:00Z"),
+    equals: new Date("2001-01-01T00:00:00Z"),
   });
   table.indexValues("value", "indexedTimestamp", {
     column: "timestamp_reference",
-    value: new Date("2001-01-01T12:34:56.789Z"),
+    equals: new Date("2001-01-01T12:34:56.789Z"),
   });
   table.indexValues("value", "indexedTimestampTz", {
     column: "timestamptz_reference",
-    value: new Date("2001-01-01T00:00:00Z"),
+    equals: new Date("2001-01-01T00:00:00Z"),
   });
 
   assertEquals(
@@ -248,7 +275,7 @@ Deno.test("should require an exact temporal reference", async () => {
     20 AS value`);
   table.indexValues("value", "indexed", {
     column: "timestamp_reference",
-    value: new Date("2001-01-01T00:00:00.000Z"),
+    equals: new Date("2001-01-01T00:00:00.000Z"),
   });
 
   await assertRejects(
@@ -270,10 +297,10 @@ Deno.test("should reject invalid references and options at call time", async () 
         "value",
         "indexed",
         // @ts-expect-error Null reference values are deliberately unsupported.
-        { column: "period", value: null },
+        { column: "period", equals: null },
       ),
     Error,
-    "indexValues() reference.value cannot be null or undefined",
+    "indexValues() reference.equals cannot be null or undefined",
   );
   assertThrows(
     () =>
@@ -326,7 +353,7 @@ Deno.test("should validate columns when the operation runs", async () => {
     {
       column: "value",
       newColumn: "indexed",
-      reference: { column: "missing", value: 1 } as const,
+      reference: { column: "missing", equals: 1 } as const,
       options: {},
       message: 'indexValues() the column "missing" does not exist',
     },
@@ -383,7 +410,7 @@ Deno.test("should index supported numeric column types and preserve nulls", asyn
   ) {
     table.indexValues(column, `${column}_indexed`, {
       column: "period",
-      value: 2,
+      equals: 2,
     });
   }
 
@@ -433,12 +460,12 @@ Deno.test("should reject null and zero calculated or selected reference values",
   const cases = [
     {
       rows: [{ period: 1, value: null }, { period: 2, value: 10 }],
-      reference: { column: "period", value: 1 } as const,
+      reference: { column: "period", equals: 1 } as const,
       message: "indexValues() found a NULL reference value",
     },
     {
       rows: [{ period: 1, value: 0 }, { period: 2, value: 10 }],
-      reference: { column: "period", value: 1 } as const,
+      reference: { column: "period", equals: 1 } as const,
       message: "indexValues() found a zero reference value",
     },
     {
@@ -485,7 +512,7 @@ Deno.test("should snapshot mutable reference and option inputs", async () => {
   table.indexValues(
     "value",
     "indexed",
-    { column: "date", value: date },
+    { column: "date", equals: date },
     { by },
   );
   date.setUTCFullYear(2002);
@@ -508,7 +535,7 @@ Deno.test("should apply a custom base", async () => {
   table.indexValues(
     "value",
     "indexed",
-    { column: "period", value: 2 },
+    { column: "period", equals: 2 },
     { base: 1_000 },
   );
 
@@ -532,13 +559,13 @@ Deno.test("should index against rows selected by column extrema", async () => {
   table.indexValues(
     "cpi",
     "indexedToFirst",
-    { column: "date", stat: "min" },
+    { column: "date", at: "min" },
     { by: "country", decimals: 2 },
   );
   table.indexValues(
     "cpi",
     "indexedToLast",
-    { column: "date", stat: "max" },
+    { column: "date", at: "max" },
     { by: "country", decimals: 2 },
   );
 
@@ -557,7 +584,7 @@ Deno.test("should index against rows selected by column extrema", async () => {
   await sdb.close();
 });
 
-Deno.test("should reject tied and invalid column-stat references", async () => {
+Deno.test("should reject tied and invalid column-at references", async () => {
   const invalidDb = new SimpleDB({ dataTransport: "file" });
   const invalidTable = invalidDb.newTable();
   invalidTable.loadArray([{ date: new Date("2001-01-01T00:00:00Z"), cpi: 10 }]);
@@ -566,11 +593,11 @@ Deno.test("should reject tied and invalid column-stat references", async () => {
       invalidTable.indexValues(
         "cpi",
         "indexed",
-        // @ts-expect-error Column-stat references only support extrema.
-        { column: "date", stat: "mean" },
+        // @ts-expect-error Column-at references only support extrema.
+        { column: "date", at: "mean" },
       ),
     Error,
-    'indexValues() reference.stat must be "min" or "max" when reference.column is provided',
+    'indexValues() reference.at must be "min" or "max"',
   );
   await invalidDb.close();
 
@@ -581,7 +608,7 @@ Deno.test("should reject tied and invalid column-stat references", async () => {
     { date: new Date("2001-01-01T00:00:00Z"), cpi: 20 },
     { date: new Date("2002-01-01T00:00:00Z"), cpi: 30 },
   ]);
-  tiedTable.indexValues("cpi", "indexed", { column: "date", stat: "min" });
+  tiedTable.indexValues("cpi", "indexed", { column: "date", at: "min" });
 
   await assertRejects(
     () => tiedTable.run(),

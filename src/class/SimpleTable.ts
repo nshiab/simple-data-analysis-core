@@ -4037,7 +4037,7 @@ export default class SimpleTable extends Simple {
   /**
    * Indexes a numeric column by dividing each value by a reference value and multiplying the result by a base value.
    *
-   * The reference can be calculated from the indexed column with a statistic, read from exactly one row selected by another column's value, or read from the unique row where another column reaches its minimum or maximum. With `options.by`, references are calculated or selected independently within each group. Null values in the indexed column remain null.
+   * The reference can be calculated from the indexed column with a statistic, read from exactly one row selected by another column's value, or read from the unique row where another column reaches its minimum or maximum. With `options.by`, references are calculated or selected independently within each group. Null values in the indexed column remain null when their group has a valid reference. The operation throws when a group has no unique selected row or its reference value is null or zero.
    *
    * Exact temporal references are compared at their full DuckDB precision. JavaScript `Date` objects only have millisecond precision and always represent an instant. Construct them with an explicit timezone, such as `new Date("2001-01-01T00:00:00Z")`; date-time strings without `Z` or an offset use the user's local timezone.
    *
@@ -4045,10 +4045,11 @@ export default class SimpleTable extends Simple {
    *
    * @param column - The numeric column containing the values to index.
    * @param newColumn - The name of the new column where indexed values will be stored.
-   * @param reference - A statistic calculated from `column`, a column and exact non-null value selecting a row, or a column and `min` or `max` selecting its unique extreme row. The selected row's `column` value becomes the reference.
-   * @param reference.stat - The statistic used to calculate the reference directly, or `min` or `max` when selecting an extreme row from `reference.column`.
+   * @param reference - A statistic calculated from `column`, a column and exact non-null `equals` value selecting a row, or a column and `at` set to `min` or `max` selecting its unique extreme row. The selected row's `column` value becomes the reference.
+   * @param reference.stat - The statistic used to calculate the reference directly from the indexed column.
    * @param reference.column - The column used to select an exact reference row or its unique minimum or maximum row.
-   * @param reference.value - The non-null value used to select an exact reference row. Date values should be constructed with an explicit timezone.
+   * @param reference.equals - The non-null value used to select an exact reference row. Its JavaScript type must be compatible with the reference column's DuckDB type; string, numeric, boolean, and temporal values are not coerced across type families. Date values should be constructed with an explicit timezone.
+   * @param reference.at - Selects the unique row where `reference.column` reaches its minimum or maximum.
    * @param options - An optional object with configuration options.
    * @param options.by - A column name or an array of column names to partition by. The reference is calculated independently within each group.
    * @param options.base - The finite positive value assigned to the reference. Defaults to `100`.
@@ -4064,7 +4065,7 @@ export default class SimpleTable extends Simple {
    *   "homePriceIndexed",
    *   {
    *     column: "date",
-   *     value: new Date("2001-01-01T00:00:00Z"),
+   *     equals: new Date("2001-01-01T00:00:00Z"),
    *   },
    *   {
    *     by: "country",
@@ -4088,7 +4089,7 @@ export default class SimpleTable extends Simple {
    * // This throws if multiple rows share the earliest date in a country.
    * table.indexValues("homePrice", "homePriceIndexed", {
    *   column: "date",
-   *   stat: "min",
+   *   at: "min",
    * }, { by: "country" });
    * ```
    */
@@ -4103,17 +4104,20 @@ export default class SimpleTable extends Simple {
           | "mean"
           | "median";
         column?: never;
-        value?: never;
+        equals?: never;
+        at?: never;
       }
       | {
         column: string;
-        value: string | number | bigint | boolean | Date;
+        equals: string | number | bigint | boolean | Date;
         stat?: never;
+        at?: never;
       }
       | {
         column: string;
-        stat: "min" | "max";
-        value?: never;
+        at: "min" | "max";
+        stat?: never;
+        equals?: never;
       },
     options: {
       by?: string | string[];

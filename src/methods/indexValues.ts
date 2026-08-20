@@ -19,28 +19,37 @@ const indexValueStats = [
 type IndexValueStat = (typeof indexValueStats)[number];
 
 type IndexValueReference =
-  | { stat: IndexValueStat; column?: never; value?: never }
   | {
-    column: string;
-    value: string | number | bigint | boolean | Date;
-    stat?: never;
+    stat: IndexValueStat;
+    column?: never;
+    equals?: never;
+    at?: never;
   }
   | {
     column: string;
-    stat: "min" | "max";
-    value?: never;
+    equals: string | number | bigint | boolean | Date;
+    stat?: never;
+    at?: never;
+  }
+  | {
+    column: string;
+    at: "min" | "max";
+    stat?: never;
+    equals?: never;
   };
+
+type IndexValueOptions = {
+  by?: string | string[];
+  base?: number;
+  decimals?: number;
+};
 
 export default function indexValues(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
   reference: IndexValueReference,
-  options: {
-    by?: string | string[];
-    base?: number;
-    decimals?: number;
-  } = {},
+  options: IndexValueOptions = {},
 ) {
   validateReference(reference);
   if (
@@ -65,11 +74,11 @@ export default function indexValues(
   const columnReference = typeof reference.column === "string"
     ? reference as Exclude<IndexValueReference, { column?: never }>
     : undefined;
-  const exactReference = columnReference?.value !== undefined
-    ? columnReference as Extract<IndexValueReference, { value: unknown }>
+  const exactReference = columnReference?.equals !== undefined
+    ? columnReference as Extract<IndexValueReference, { equals: unknown }>
     : undefined;
-  const columnStatReference = columnReference?.stat !== undefined
-    ? columnReference as Extract<IndexValueReference, { stat: "min" | "max" }>
+  const columnAtReference = columnReference?.at !== undefined
+    ? columnReference as Extract<IndexValueReference, { at: "min" | "max" }>
     : undefined;
   const statReference = columnReference === undefined
     ? reference as Extract<IndexValueReference, { column?: never }>
@@ -81,7 +90,7 @@ export default function indexValues(
     needsSchema: true,
     values: exactReference === undefined ? undefined : (schema) => [
       bindReferenceValue(
-        exactReference.value,
+        exactReference.equals,
         schema[exactReference.column],
       ),
     ],
@@ -106,11 +115,18 @@ export default function indexValues(
           } to a numeric type first.`,
         );
       }
+      if (exactReference !== undefined) {
+        validateExactReferenceValueType(
+          exactReference.equals,
+          exactReference.column,
+          schema[exactReference.column],
+        );
+      }
       const partition = by.length === 0
         ? ""
         : `PARTITION BY ${by.map(quoteIdentifier).join(", ")}`;
       const quotedColumn = quoteIdentifier(column);
-      if (columnStatReference !== undefined) {
+      if (columnAtReference !== undefined) {
         const rowOrderColumn = temporaryColumn(
           schema,
           "__sda_index_row_order",
@@ -137,7 +153,7 @@ export default function indexValues(
           referenceValueColumn,
         );
         const quotedReferenceColumn = quoteIdentifier(
-          columnStatReference.column,
+          columnAtReference.column,
         );
         const sourceAlias = quoteIdentifier("__sda_index_source");
         const extremaAlias = quoteIdentifier("__sda_index_extrema");
@@ -154,20 +170,13 @@ export default function indexValues(
           calculatedAlias,
           matchCountColumn,
         );
-        const indexedValue = `${sourceColumn} / ${calculatedReferenceValue} * ${
-          options.base ?? 100
-        }`;
-        const calculatedValue = options.decimals === undefined
-          ? indexedValue
-          : `ROUND(${indexedValue}, ${options.decimals})`;
-        const expression = `CASE
-          WHEN ${calculatedMatchCount} = 0 THEN error('indexValues() found no reference row for at least one group.')
-          WHEN ${calculatedMatchCount} > 1 THEN error('indexValues() found multiple reference rows for at least one group.')
-          WHEN ${calculatedReferenceValue} IS NULL THEN error('indexValues() found a null reference value for at least one group.')
-          WHEN ${calculatedReferenceValue} = 0 THEN error('indexValues() found a zero reference value for at least one group.')
-          WHEN ${sourceColumn} IS NULL THEN NULL
-          ELSE ${calculatedValue}
-        END`;
+        const expression = getIndexedExpression(
+          sourceColumn,
+          calculatedReferenceValue,
+          options.base ?? 100,
+          options.decimals,
+          calculatedMatchCount,
+        );
         const extremaBySelect = by.length === 0
           ? ""
           : `${by.map(quoteIdentifier).join(", ")}, `;
@@ -180,7 +189,7 @@ export default function indexValues(
               qualify(extremaAlias, byColumn)
             }`
           ),
-          `${qualify(referenceAlias, columnStatReference.column)} = ${
+          `${qualify(referenceAlias, columnAtReference.column)} = ${
             qualify(extremaAlias, extremeColumn)
           }`,
         ].join(" AND ");
@@ -196,13 +205,13 @@ export default function indexValues(
           }`;
         const calculatedSubquery = `(SELECT ${calculatedBySelect}
             COUNT(${
-          qualify(referenceAlias, columnStatReference.column)
+          qualify(referenceAlias, columnAtReference.column)
         }) AS ${quotedMatchCountColumn},
             MAX(${
           qualify(referenceAlias, column)
         }) AS ${quotedReferenceValueColumn}
           FROM (
-            SELECT ${extremaBySelect}${columnStatReference.stat.toUpperCase()}(${quotedReferenceColumn}) AS ${quotedExtremeColumn}
+            SELECT ${extremaBySelect}${columnAtReference.at.toUpperCase()}(${quotedReferenceColumn}) AS ${quotedExtremeColumn}
             FROM ${input}${extremaGroupBy}
           ) AS ${extremaAlias}
           LEFT JOIN ${input} AS ${referenceAlias} ON ${extremaJoin}${calculatedGroupBy}) AS ${calculatedAlias}`;
@@ -238,21 +247,13 @@ export default function indexValues(
         const quotedReferenceValueColumn = quoteIdentifier(
           referenceValueColumn,
         );
-        const indexedValue =
-          `${quotedColumn} / ${quotedReferenceValueColumn} * ${
-            options.base ?? 100
-          }`;
-        const calculatedValue = options.decimals === undefined
-          ? indexedValue
-          : `ROUND(${indexedValue}, ${options.decimals})`;
-        const expression = `CASE
-          WHEN ${quotedMatchCountColumn} = 0 THEN error('indexValues() found no reference row for at least one group.')
-          WHEN ${quotedMatchCountColumn} > 1 THEN error('indexValues() found multiple reference rows for at least one group.')
-          WHEN ${quotedReferenceValueColumn} IS NULL THEN error('indexValues() found a null reference value for at least one group.')
-          WHEN ${quotedReferenceValueColumn} = 0 THEN error('indexValues() found a zero reference value for at least one group.')
-          WHEN ${quotedColumn} IS NULL THEN NULL
-          ELSE ${calculatedValue}
-        END`;
+        const expression = getIndexedExpression(
+          quotedColumn,
+          quotedReferenceValueColumn,
+          options.base ?? 100,
+          options.decimals,
+          quotedMatchCountColumn,
+        );
         const quotedReferenceColumn = quoteIdentifier(exactReference.column);
         const matchInput =
           `SELECT *, ${quotedReferenceColumn} = ? AS ${quotedMatchColumn}
@@ -284,18 +285,12 @@ export default function indexValues(
         "__sda_index_reference_value",
       );
       const quotedReferenceValueColumn = quoteIdentifier(referenceValueColumn);
-      const indexedValue = `${quotedColumn} / ${quotedReferenceValueColumn} * ${
-        options.base ?? 100
-      }`;
-      const calculatedValue = options.decimals === undefined
-        ? indexedValue
-        : `ROUND(${indexedValue}, ${options.decimals})`;
-      const expression = `CASE
-        WHEN ${quotedReferenceValueColumn} IS NULL THEN error('indexValues() calculated a null reference value for at least one group.')
-        WHEN ${quotedReferenceValueColumn} = 0 THEN error('indexValues() calculated a zero reference value for at least one group.')
-        WHEN ${quotedColumn} IS NULL THEN NULL
-        ELSE ${calculatedValue}
-      END`;
+      const expression = getIndexedExpression(
+        quotedColumn,
+        quotedReferenceValueColumn,
+        options.base ?? 100,
+        options.decimals,
+      );
       return `SELECT * EXCLUDE (${quotedReferenceValueColumn}),
         ${expression} AS ${quoteIdentifier(newColumn)}
       FROM (
@@ -309,13 +304,16 @@ export default function indexValues(
 function validateReference(reference: IndexValueReference): void {
   if (reference === null || typeof reference !== "object") {
     throw new Error(
-      "indexValues() reference must contain either stat or column and value.",
+      "indexValues() reference must contain stat, column and equals, or column and at.",
     );
   }
   if (typeof reference.column !== "string") {
-    if (reference.stat === undefined || reference.value !== undefined) {
+    if (
+      reference.stat === undefined || reference.equals !== undefined ||
+      reference.at !== undefined
+    ) {
       throw new Error(
-        "indexValues() reference must contain stat, column and value, or column and stat.",
+        "indexValues() reference must contain stat, column and equals, or column and at.",
       );
     }
     if (!(indexValueStats as readonly string[]).includes(reference.stat)) {
@@ -327,46 +325,129 @@ function validateReference(reference: IndexValueReference): void {
     }
     return;
   }
-  const hasStat = reference.stat !== undefined;
-  const hasValue = reference.value !== undefined;
-  if (hasStat === hasValue) {
+  if (reference.stat !== undefined) {
     throw new Error(
-      hasStat
-        ? "indexValues() reference cannot contain both value and stat."
-        : "indexValues() reference must contain stat, column and value, or column and stat.",
+      "indexValues() reference.stat cannot be provided with reference.column. Use reference.at to select the minimum or maximum row.",
     );
   }
-  if (hasStat) {
-    if (!(reference.stat === "min" || reference.stat === "max")) {
+  const hasAt = reference.at !== undefined;
+  const hasEquals = reference.equals !== undefined;
+  if (hasAt === hasEquals) {
+    throw new Error(
+      hasAt
+        ? "indexValues() reference cannot contain both equals and at."
+        : "indexValues() reference must contain stat, column and equals, or column and at.",
+    );
+  }
+  if (hasAt) {
+    if (!(reference.at === "min" || reference.at === "max")) {
       throw new Error(
-        'indexValues() reference.stat must be "min" or "max" when reference.column is provided.',
+        'indexValues() reference.at must be "min" or "max".',
       );
     }
     return;
   }
-  if (reference.value === null || reference.value === undefined) {
+  if (reference.equals === null || reference.equals === undefined) {
     throw new Error(
-      "indexValues() reference.value cannot be null or undefined.",
+      "indexValues() reference.equals cannot be null or undefined.",
     );
   }
-  const valueType = typeof reference.value;
+  const valueType = typeof reference.equals;
   if (
-    !(reference.value instanceof Date) &&
+    !(reference.equals instanceof Date) &&
     !["string", "number", "bigint", "boolean"].includes(valueType)
   ) {
     throw new Error(
-      "indexValues() reference.value must be a string, number, bigint, boolean, or Date.",
+      "indexValues() reference.equals must be a string, number, bigint, boolean, or Date.",
     );
   }
-  if (typeof reference.value === "number" && Number.isNaN(reference.value)) {
-    throw new Error("indexValues() reference.value cannot be NaN.");
+  if (typeof reference.equals === "number" && Number.isNaN(reference.equals)) {
+    throw new Error("indexValues() reference.equals cannot be NaN.");
   }
   if (
-    reference.value instanceof Date &&
-    Number.isNaN(reference.value.getTime())
+    reference.equals instanceof Date &&
+    Number.isNaN(reference.equals.getTime())
   ) {
-    throw new Error("indexValues() reference.value must be a valid Date.");
+    throw new Error("indexValues() reference.equals must be a valid Date.");
   }
+}
+
+function validateExactReferenceValueType(
+  value: string | number | bigint | boolean | Date,
+  column: string,
+  columnType: string,
+): void {
+  const valueType = value instanceof Date ? "Date" : typeof value;
+  let expected: string | undefined;
+  let valid = true;
+
+  if (
+    columnType === "VARCHAR" || columnType === "UUID" ||
+    columnType.startsWith("ENUM(")
+  ) {
+    expected = "a string";
+    valid = typeof value === "string";
+  } else if (columnType === "BOOLEAN") {
+    expected = "a boolean";
+    valid = typeof value === "boolean";
+  } else if (
+    columnType === "BIGNUM" ||
+    keepNumericalColumns({ [column]: columnType }).includes(column)
+  ) {
+    expected = "a number or bigint";
+    valid = typeof value === "number" || typeof value === "bigint";
+  } else if (
+    [
+      "DATE",
+      "TIMESTAMP",
+      "TIMESTAMP_S",
+      "TIMESTAMP_MS",
+      "TIMESTAMP_NS",
+      "TIMESTAMP WITH TIME ZONE",
+    ].includes(columnType)
+  ) {
+    expected = "a string or Date";
+    valid = typeof value === "string" || value instanceof Date;
+  } else if (
+    ["TIME", "TIME WITH TIME ZONE", "INTERVAL"].includes(columnType)
+  ) {
+    expected = "a string";
+    valid = typeof value === "string";
+  }
+
+  if (!valid) {
+    throw new Error(
+      `indexValues() reference.equals must be ${expected} for column ${
+        quoteIdentifier(column)
+      } with type ${columnType}, but received ${valueType}.`,
+    );
+  }
+}
+
+function getIndexedExpression(
+  sourceValue: string,
+  referenceValue: string,
+  base: number,
+  decimals: number | undefined,
+  matchCount?: string,
+): string {
+  const indexedValue = `${sourceValue} / ${referenceValue} * ${base}`;
+  const calculatedValue = decimals === undefined
+    ? indexedValue
+    : `ROUND(${indexedValue}, ${decimals})`;
+  const referenceAction = matchCount === undefined ? "calculated" : "found";
+  const cardinalityChecks = matchCount === undefined
+    ? ""
+    : `WHEN ${matchCount} = 0 THEN error('indexValues() found no reference row for at least one group.')
+    WHEN ${matchCount} > 1 THEN error('indexValues() found multiple reference rows for at least one group.')
+    `;
+
+  return `CASE
+    ${cardinalityChecks}WHEN ${referenceValue} IS NULL THEN error('indexValues() ${referenceAction} a null reference value for at least one group.')
+    WHEN ${referenceValue} = 0 THEN error('indexValues() ${referenceAction} a zero reference value for at least one group.')
+    WHEN ${sourceValue} IS NULL THEN NULL
+    ELSE ${calculatedValue}
+  END`;
 }
 
 function getWindowStatExpression(
