@@ -38,9 +38,13 @@ export default class SDAError extends Error {
       cause: unknown;
     },
   ) {
-    const causeMessage = options.cause instanceof Error
+    let causeMessage = options.cause instanceof Error
       ? options.cause.message
       : String(options.cause);
+    if (causeMessage.includes("connection disconnected")) {
+      causeMessage =
+        "Database connection closed before all operations finished. Did you forget to add `await`?";
+    }
     super(
       options.method === null
         ? causeMessage

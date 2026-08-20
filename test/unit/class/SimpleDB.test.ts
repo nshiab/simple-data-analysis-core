@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+import SDAError from "../../../src/class/SDAError.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
@@ -333,6 +334,19 @@ Deno.test("should close the db", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   await sdb.close();
   // How to test?
+});
+
+Deno.test("should explain when the connection closes before an async method finishes", async () => {
+  const sdb = new SimpleDB();
+  const logPromise = sdb.newTable("test").loadArray([{ value: 1 }]).log();
+  const rejection = assertRejects(
+    () => logPromise,
+    SDAError,
+    "Database connection closed before all operations finished. Did you forget to add `await`?",
+  );
+
+  await sdb.close();
+  await rejection;
 });
 
 Deno.test("file-backed close executes all pending work before cleanup", async () => {
