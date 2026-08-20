@@ -2,6 +2,16 @@
 
 ### Phase 1: Exploration (BEFORE Modifying)
 
+- **Library Architecture:** SDA is split into two packages.
+  - **`simple-data-analysis-core`** (this repo) contains all core
+    DuckDB-dependent logic (loading, filtering, joining, geospatial, etc.).
+  - **[`simple-data-analysis`](https://github.com/nshiab/simple-data-analysis)**
+    is an extension adding AI, Google Sheets, and Dataviz features and more.
+- **Where to contribute:**
+  - Prefer `simple-data-analysis-core` for features that depend only on DuckDB
+    or have no external runtime dependencies.
+  - Prefer `simple-data-analysis` for features requiring a runtime library
+    beyond DuckDB, such as AI, Google Sheets, or charting integrations.
 - **Analyze Structure:** Review the directory tree to understand the module
   hierarchy.
 - **Check Capabilities:** Read `deno.json` to identify available `tasks` and
@@ -20,9 +30,12 @@
   implementation file at `src/methods/<methodName>.ts` and test file at
   `test/unit/methods/<methodName>.test.ts`. Shared internal logic may live in a
   separate module whose filename matches its exported function.
-- **Inline Option Types:** Define object-shaped parameter types inline in public
-  method signatures so editor hovers show the complete API. Keep reusable
-  implementation-only type aliases unexported.
+- **Inline Public Types:** Define the complete type of every object-shaped
+  public parameter inline in the public signature. Recursively inline nested
+  object-shaped types, aliases, and interfaces within options. Public option
+  signatures must not reference named application types. Built-in types such as
+  `Promise`, `Date`, and `URL` may remain named. Implementation-only functions
+  may use reusable named aliases.
 - **Strict Typing:** Avoid `any`. Use explicit interfaces and types.
 - **Documentation:** Every new public property, method, or parameter must have a
   JSDoc block.
