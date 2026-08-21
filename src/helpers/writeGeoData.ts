@@ -1,5 +1,13 @@
 import quoteIdentifier from "./quoteIdentifier.ts";
-import { readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, join } from "node:path";
 import createDirectory from "./createDirectory.ts";
 import getExtension from "./getExtension.ts";
 import hasGeometryColumn from "./hasGeometryColumn.ts";
@@ -12,6 +20,7 @@ import stringifyDates from "./stringifyDates.ts";
 import stringifyDatesInvert from "./stringifyDatesInvert.ts";
 import cleanPath from "./cleanPath.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import writeZip from "./writeZip.ts";
 
 export default async function writeGeoData(
   table: SimpleTable,
@@ -24,7 +33,10 @@ export default async function writeGeoData(
     formatDates?: boolean;
   } = {},
 ): Promise<void> {
-  const fileExtension = getExtension(file);
+  const compressedShapefileExtension = file.toLowerCase().endsWith(".shp.zip");
+  const fileExtension = compressedShapefileExtension
+    ? "shp"
+    : getExtension(file);
   assertWriteGeoDataOptions(fileExtension, options);
 
   if (!(await hasGeometryColumn(table))) {
@@ -78,15 +90,18 @@ export default async function writeGeoData(
       }
     }
   } else if (fileExtension === "shp") {
-    await queryDB(
-      table,
-      writeGeoDataQuery(table.name, file, fileExtension, options),
-      mergeOptions(table, {
-        table: table.name,
-        method: "writeGeoData()",
-        parameters: { file, options },
-      }),
-    );
+    if (compressedShapefileExtension) {
+      const shapefile = file.slice(0, -".zip".length);
+      await writeCompressedShapefile(
+        table,
+        shapefile,
+        file,
+        file,
+        options,
+      );
+    } else {
+      await writeShapefile(table, file, file, options);
+    }
   } else if (fileExtension === "geoparquet") {
     await queryDB(
       table,
@@ -118,7 +133,7 @@ function assertWriteGeoDataOptions(
     throw new Error(
       `writeGeoData() does not support the extension ${
         JSON.stringify(fileExtension)
-      }. Use .geojson, .json, .shp, or .geoparquet.`,
+      }. Use .geojson, .json, .shp, .shp.zip, or .geoparquet.`,
     );
   }
   if (
@@ -129,16 +144,20 @@ function assertWriteGeoDataOptions(
       "writeGeoData() compression is not supported for GeoJSON files.",
     );
   }
+  if (fileExtension === "shp" && typeof options.compression === "boolean") {
+    throw new Error(
+      "writeGeoData() compression is not supported for Shapefiles. Use a .shp.zip file extension instead.",
+    );
+  }
   if (
     fileExtension === "shp" &&
     (typeof options.precision === "number" ||
-      typeof options.compression === "boolean" ||
       typeof options.rewind === "boolean" ||
       options.metadata !== undefined ||
       options.formatDates === true)
   ) {
     throw new Error(
-      "writeGeoData() precision, compression, rewind, metadata, and formatDates are not supported for Shapefiles.",
+      "writeGeoData() precision, rewind, metadata, and formatDates are not supported for Shapefiles.",
     );
   }
   if (fileExtension === "geoparquet" && typeof options.precision === "number") {
@@ -151,6 +170,73 @@ function assertWriteGeoDataOptions(
       "writeGeoData() rewind is not supported for GeoParquet files.",
     );
   }
+}
+
+async function writeCompressedShapefile(
+  table: SimpleTable,
+  shapefile: string,
+  archive: string,
+  requestedFile: string,
+  options: { compression?: boolean },
+): Promise<void> {
+  const temporaryDirectory = mkdtempSync(
+    join(dirname(archive), `.${basename(shapefile)}-`),
+  );
+  const temporaryShapefile = join(temporaryDirectory, basename(shapefile));
+  const temporaryArchive = `${temporaryShapefile}.zip`;
+  let outcome:
+    | { success: true }
+    | { success: false; error: unknown };
+
+  try {
+    await writeShapefile(table, temporaryShapefile, requestedFile, options);
+    const inputs = readdirSync(temporaryDirectory, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((entry) => ({
+        file: join(temporaryDirectory, entry.name),
+        name: entry.name,
+      }));
+    await writeZip(temporaryArchive, inputs);
+    renameSync(temporaryArchive, archive);
+    outcome = { success: true };
+  } catch (error) {
+    outcome = { success: false, error };
+  }
+
+  try {
+    rmSync(temporaryDirectory, { recursive: true, force: true });
+  } catch (cleanupError) {
+    if (!outcome.success) {
+      throw new AggregateError(
+        [outcome.error, cleanupError],
+        "Writing and cleaning up the compressed Shapefile both failed.",
+        { cause: outcome.error },
+      );
+    }
+    throw cleanupError;
+  }
+
+  if (!outcome.success) {
+    throw outcome.error;
+  }
+}
+
+async function writeShapefile(
+  table: SimpleTable,
+  outputFile: string,
+  requestedFile: string,
+  options: { compression?: boolean },
+): Promise<void> {
+  await queryDB(
+    table,
+    writeGeoDataQuery(table.name, outputFile, "shp"),
+    mergeOptions(table, {
+      table: table.name,
+      method: "writeGeoData()",
+      parameters: { file: requestedFile, options },
+    }),
+  );
 }
 
 function writeGeoDataQuery(

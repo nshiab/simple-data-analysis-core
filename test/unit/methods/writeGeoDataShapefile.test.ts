@@ -1,4 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
+import { existsSync, readFileSync } from "node:fs";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 const output = "./test/output/";
@@ -72,6 +73,70 @@ Deno.test("should overwrite every file in a shapefile dataset", async () => {
   }
 });
 
+Deno.test("should write a compressed .shp.zip file", async () => {
+  const directory = await Deno.makeTempDir({
+    prefix: "sda-infer-compressed-shapefile-",
+  });
+  const sdb = new SimpleDB({ dataTransport: "file" });
+
+  try {
+    const table = sdb.newTable();
+    table.loadGeoData("test/geodata/files/polygons.geojson");
+    const archive = `${directory}/data.shp.zip`;
+
+    await table.writeGeoData(archive);
+
+    assertEquals(existsSync(archive), true);
+    assertEquals(existsSync(`${archive}.zip`), false);
+    assertEquals(readFileSync(archive)[8], 8);
+    const files = [];
+    for await (const entry of Deno.readDir(directory)) {
+      files.push(entry.name);
+    }
+    assertEquals(files, ["data.shp.zip"]);
+
+    const writtenTable = sdb.newTable();
+    writtenTable.loadGeoData(archive);
+    assertEquals(
+      await writtenTable.getRowCount(),
+      await table.getRowCount(),
+    );
+  } finally {
+    await sdb.close();
+    await Deno.remove(directory, { recursive: true });
+  }
+});
+
+Deno.test("should overwrite a compressed shapefile", async () => {
+  const directory = await Deno.makeTempDir({
+    prefix: "sda-overwrite-compressed-shapefile-",
+  });
+  const sdb = new SimpleDB({ dataTransport: "file" });
+
+  try {
+    const table = sdb.newTable();
+    table.loadGeoData("test/geodata/files/polygons.geojson");
+    const archive = `${directory}/data.shp.zip`;
+
+    await table.writeGeoData(archive);
+    table.selectRows(1);
+    await table.writeGeoData(archive);
+
+    const writtenTable = sdb.newTable();
+    writtenTable.loadGeoData(archive);
+    assertEquals(await writtenTable.getRowCount(), 1);
+
+    const files = [];
+    for await (const entry of Deno.readDir(directory)) {
+      files.push(entry.name);
+    }
+    assertEquals(files, ["data.shp.zip"]);
+  } finally {
+    await sdb.close();
+    await Deno.remove(directory, { recursive: true });
+  }
+});
+
 Deno.test("should throw error for incompatible options with shapefiles", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
@@ -79,7 +144,16 @@ Deno.test("should throw error for incompatible options with shapefiles", async (
   const shp = `${output}/shapefile/errors.shp`;
 
   await assertRejects(() => table.writeGeoData(shp, { precision: 3 }));
-  await assertRejects(() => table.writeGeoData(shp, { compression: true }));
+  await assertRejects(
+    () => table.writeGeoData(shp, { compression: true }),
+    Error,
+    "compression is not supported for Shapefiles",
+  );
+  await assertRejects(
+    () => table.writeGeoData(`${shp}.zip`, { compression: false }),
+    Error,
+    "compression is not supported for Shapefiles",
+  );
   await assertRejects(() => table.writeGeoData(shp, { rewind: true }));
   await assertRejects(() =>
     table.writeGeoData(shp, { metadata: { foo: "bar" } })

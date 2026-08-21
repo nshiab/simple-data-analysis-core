@@ -275,6 +275,13 @@ Deno.test("should write a geoparquet file", async () => {
   writtenData.loadGeoData(`${output}data.geoparquet`);
 
   assertEquals(await writtenData.getGeoData(), await originalData.getGeoData());
+  assertEquals(
+    await sdb.customQuery(
+      `SELECT DISTINCT compression FROM parquet_metadata('${output}data.geoparquet')`,
+      { returnData: true, dataTransport: "direct" },
+    ),
+    [{ compression: "SNAPPY" }],
+  );
   await sdb.close();
 });
 
@@ -292,6 +299,13 @@ Deno.test("should write a compressed geoparquet file", async () => {
   writtenData.loadGeoData(`${output}data-compressed.geoparquet`);
 
   assertEquals(await writtenData.getGeoData(), await originalData.getGeoData());
+  assertEquals(
+    await sdb.customQuery(
+      `SELECT DISTINCT compression FROM parquet_metadata('${output}data-compressed.geoparquet')`,
+      { returnData: true, dataTransport: "direct" },
+    ),
+    [{ compression: "ZSTD" }],
+  );
   await sdb.close();
 });
 

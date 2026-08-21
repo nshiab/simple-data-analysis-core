@@ -6253,10 +6253,10 @@ export default class SimpleTable extends Simple {
    * Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
    * If the specified path does not exist, it will be created.
    *
-   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`).
+   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`, `"./output.shp.zip"`). A `.shp.zip` extension writes a ZIP archive using fast DEFLATE compression. Creating the archive temporarily requires enough disk space for both the uncompressed Shapefile and the ZIP, and ZIP archives are limited to 4 GB.
    * @param options - An optional object with configuration options:
    * @param options.precision - For GeoJSON, the maximum number of figures after the decimal separator to write in coordinates. Defaults to `undefined` (full precision).
-   * @param options.compression - For GeoParquet, if `true`, the output will be ZSTD compressed. Defaults to `false`.
+   * @param options.compression - For GeoParquet, if `true`, uses ZSTD compression; otherwise, uses DuckDB's default SNAPPY compression. SNAPPY prioritizes faster compression, while ZSTD typically produces smaller files but takes longer to write. Read performance depends on the data and storage because smaller files can reduce I/O. This option is not supported for GeoJSON or Shapefiles. Defaults to `false`.
    * @param options.rewind - For GeoJSON, if `true`, rewinds the coordinates of polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
    * @param options.metadata - For GeoJSON, an object to be added as top-level metadata to the GeoJSON output.
    * @param options.formatDates - For GeoJSON, if `true`, formats date and timestamp columns to ISO 8601 strings. Defaults to `false`.
@@ -6271,7 +6271,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Write geospatial data to a compressed GeoParquet file
+   * // Write geospatial data to a ZSTD-compressed GeoParquet file
    * await table.writeGeoData("./output.geoparquet", { compression: true });
    * ```
    *
@@ -6279,6 +6279,12 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Write geospatial data to a Shapefile with all relevant files  in the same folder
    * await table.writeGeoData("./shapefile-folder/output.shp");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Write a Shapefile and its related files to output.shp.zip
+   * await table.writeGeoData("./output.shp.zip");
    * ```
    *
    * @example
