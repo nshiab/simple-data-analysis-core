@@ -3,6 +3,7 @@ import camelCase from "../helpers/camelCase.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { VssIndexDefinition } from "../helpers/indexDefinitions.ts";
+import buildCreateIndexQuery from "../helpers/indexQueries.ts";
 
 export default function createVssIndex(
   simpleTable: SimpleTable,
@@ -61,31 +62,6 @@ async function executeCreateVssIndex(
         `\nCreating VSS index on ${quoteIdentifier(column)} column...`,
       );
 
-    // Build the WITH clause with all options
-    const withOptions: string[] = ["metric = 'cosine'"];
-    if (options.efConstruction !== undefined) {
-      withOptions.push(`ef_construction = ${options.efConstruction}`);
-    }
-    if (options.efSearch !== undefined) {
-      withOptions.push(`ef_search = ${options.efSearch}`);
-    }
-    if (options.M !== undefined) {
-      withOptions.push(`M = ${options.M}`);
-    }
-
-    await simpleTable.sdb.customQuery(
-      `INSTALL vss; LOAD vss;${
-        simpleTable.sdb.file !== ":memory:"
-          ? "\nSET hnsw_enable_experimental_persistence=true;"
-          : ""
-      }
-    CREATE INDEX ${indexName} ON ${
-        quoteIdentifier(simpleTable.name)
-      } USING HNSW (${quoteIdentifier(column)}) WITH (${
-        withOptions.join(", ")
-      });`,
-    );
-
     const indexOptions: VssIndexDefinition["options"] = {};
     if (options.efConstruction !== undefined) {
       indexOptions.efConstruction = options.efConstruction;
@@ -102,6 +78,14 @@ async function executeCreateVssIndex(
       column,
       options: indexOptions,
     };
+    await simpleTable.sdb.customQuery(
+      `INSTALL vss; LOAD vss;${
+        simpleTable.sdb.file !== ":memory:"
+          ? "\nSET hnsw_enable_experimental_persistence=true;"
+          : ""
+      }
+      ${buildCreateIndexQuery(simpleTable.name, definition)}`,
+    );
     if (indexExists) {
       simpleTable.indexes[indexPosition] = definition;
     } else {

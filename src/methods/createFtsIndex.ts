@@ -1,9 +1,9 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import camelCase from "../helpers/camelCase.ts";
 import queueOp from "../helpers/queueOp.ts";
-import parseValue from "../helpers/parseValue.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { FtsIndexDefinition } from "../helpers/indexDefinitions.ts";
+import buildCreateIndexQuery from "../helpers/indexQueries.ts";
 
 export default function createFtsIndex(
   simpleTable: SimpleTable,
@@ -103,26 +103,6 @@ export async function executeCreateFtsIndex(
         `\nCreating FTS index on ${quoteIdentifier(textColumn)} column...`,
       );
 
-    await simpleTable.sdb.customQuery(
-      `PRAGMA create_fts_index(${quoteIdentifier(simpleTable.name)}, ${
-        quoteIdentifier(idColumn)
-      }, ${quoteIdentifier(textColumn)}${
-        options.stemmer ? `, stemmer = ${parseValue(options.stemmer)}` : ""
-      }${
-        options.stopwords
-          ? `, stopwords = ${parseValue(options.stopwords)}`
-          : ""
-      }${options.ignore ? `, ignore = ${parseValue(options.ignore)}` : ""}${
-        typeof options.stripAccents === "boolean"
-          ? `, strip_accents = ${options.stripAccents ? 1 : 0}`
-          : ""
-      }${
-        typeof options.lower === "boolean"
-          ? `, lower = ${options.lower ? 1 : 0}`
-          : ""
-      });`,
-    );
-
     const indexOptions: FtsIndexDefinition["options"] = {};
     if (options.stemmer !== undefined) {
       indexOptions.stemmer = options.stemmer;
@@ -146,6 +126,9 @@ export async function executeCreateFtsIndex(
       textColumn,
       options: indexOptions,
     };
+    await simpleTable.sdb.customQuery(
+      buildCreateIndexQuery(simpleTable.name, definition),
+    );
     if (indexExists) {
       simpleTable.indexes[indexPosition] = definition;
     } else {
