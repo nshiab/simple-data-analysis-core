@@ -209,9 +209,8 @@ export default class SimpleTable extends Simple {
     return this.#name;
   }
   /**
-   * The definitions of the indexes belonging to the table, if any. This is the
-   * source of truth used when databases and cache entries preserve or rebuild
-   * indexes. Do not mutate this array directly.
+   * The definitions of the indexes belonging to the table, if any. Do not
+   * mutate this array directly.
    *
    * @defaultValue `[]`
    * @category Properties
@@ -615,11 +614,10 @@ export default class SimpleTable extends Simple {
    * Creates a full-text search (FTS) index on a specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
    *
    * If an FTS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
-   * The index definition is recorded in {@link indexes}. When this operation
-   * runs inside {@link cache}, the cache artifact stores a physical copy of the
-   * FTS index for fast cache hits.
-   * The {@link bm25} method requires this FTS structure and creates it
-   * automatically when it is absent.
+   * The index definition is recorded in {@link indexes}. The {@link bm25}
+   * method requires an FTS index and creates one automatically when needed.
+   * DuckDB FTS indexes do not update automatically when the table changes; use
+   * `overwrite: true` to rebuild the index after modifying the table.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -632,7 +630,7 @@ export default class SimpleTable extends Simple {
    * @param options.stripAccents - A boolean indicating whether to remove accents. Defaults to true.
    * @param options.lower - A boolean indicating whether to convert all text to lowercase. Defaults to true.
    * @param options.overwrite - A boolean indicating whether to overwrite the existing FTS index. Defaults to false.
-   * @param options.verbose - A boolean indicating whether to log additional information. Defaults to false.
+   * @param options.verbose - If `true`, logs FTS index creation status. Defaults to `false`.
    * @returns The table, so methods can be chained.
    * @category Text Search
    *
@@ -666,7 +664,7 @@ export default class SimpleTable extends Simple {
    * table.createFtsIndex("Dish", "Recipe", {
    *   verbose: true,
    * });
-   * // Logs: "Creating FTS index on 'Recipe' column..."
+   * // Logs: 'Creating FTS index on "Recipe" column...'
    * // Logs: "FTS index created successfully."
    * ```
    */
@@ -719,17 +717,14 @@ export default class SimpleTable extends Simple {
    * Creates a vector similarity search (VSS) index on a specified column using DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
    *
    * If a VSS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
-   * The index definition is recorded in {@link indexes}. Cache artifacts store
-   * this definition but not the physical HNSW index, so {@link cache} rebuilds
-   * the index whenever it loads an entry. This keeps cache files smaller and
-   * avoids DuckDB's slower database-copy path for persisted HNSW indexes.
+   * The index definition is recorded in {@link indexes}.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param column - The name of the column containing vector embeddings (must be FLOAT array type).
    * @param options - An optional object with configuration options:
    * @param options.overwrite - If `true`, drops and recreates the index even if it already exists. Defaults to `false`.
-   * @param options.verbose - If `true`, logs additional debugging information, including index creation status. Defaults to `false`.
+   * @param options.verbose - If `true`, logs VSS index creation status. Defaults to `false`.
    * @param options.efConstruction - The number of candidate vertices to consider during index construction. Higher values result in more accurate indexes but increase build time. Defaults to 128.
    * @param options.efSearch - The number of candidate vertices to consider during search. Higher values result in more accurate searches but increase search time. Defaults to 64.
    * @param options.M - The maximum number of neighbors to keep for each vertex in the graph. Higher values result in more accurate indexes but increase build time and memory usage. Defaults to 16.
@@ -759,7 +754,7 @@ export default class SimpleTable extends Simple {
    * table.createVssIndex("embedding_column", {
    *   verbose: true,
    * });
-   * // Logs: "Creating VSS index on 'embedding_column' column..."
+   * // Logs: 'Creating VSS index on "embedding_column" column...'
    * // Logs: "VSS index created successfully."
    * ```
    *
@@ -788,12 +783,14 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Performs BM25 full-text search on a text column to find the most relevant results. BM25 (Best Matching 25) is a ranking function used in information retrieval that calculates relevance scores based on term frequency and document length normalization.
+   * Searches a text column using DuckDB's BM25 ranking function, which scores
+   * matches using factors including term frequency and document length.
    *
-   * This method creates a full-text search index on the specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search). If the index already exists, it will be reused unless the `overwriteIndex` option is set to `true`.
-   * FTS indexes produced by this method are recorded in {@link indexes}. If
-   * the source table is cached, {@link cache} stores the physical FTS index and
-   * restores it directly on cache hits instead of rebuilding it.
+   * This method creates the required index with DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
+   * It reuses the table's existing FTS index unless `overwriteIndex` is `true`.
+   * DuckDB FTS indexes do not update automatically when the source table
+   * changes; use `overwriteIndex: true` to rebuild the index after modifying
+   * the table.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -803,7 +800,7 @@ export default class SimpleTable extends Simple {
    * @param count - The number of top-ranked results to return.
    * @param options - An optional object with configuration options:
    * @param options.outputTable - The name of a new table where the results will be stored. If not provided, the current table will be replaced with the search results.
-   * @param options.verbose - If `true`, logs additional debugging information, including FTS index creation status. Defaults to `false`.
+   * @param options.verbose - If `true`, logs FTS index creation status. Defaults to `false`.
    * @param options.k - The BM25 k parameter controlling term frequency saturation. Defaults to 1.2.
    * @param options.b - The BM25 b parameter controlling document length normalization (0-1 range). Defaults to 0.75.
    * @param options.stemmer - The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
@@ -877,12 +874,13 @@ export default class SimpleTable extends Simple {
    *   outputTable: "french",
    * });
    * ```
-   * * @example
+   *
+   * @example
    * ```ts
    * // Filter results by a minimum BM25 score and include the score in the output
    * table.bm25("spicy noodles", "Dish", "Recipe", 10, {
    *   minScore: 5.5,
-   *   scoreColumn: "bm25_score"
+   *   scoreColumn: "bm25_score",
    * });
    * ```
    *
@@ -6371,19 +6369,12 @@ export default class SimpleTable extends Simple {
    * Caches the results of computations in `./.sda-cache`.
    * You should add `./.sda-cache` to your `.gitignore` file.
    *
-   * Cache entries are stored as DuckDB database files so exact column types
-   * survive cache hits. Index definitions from {@link indexes} are stored as
-   * metadata. Full-text search (FTS) indexes are also stored physically in the
-   * DuckDB artifact and restored directly. Vector similarity search (VSS/HNSW)
-   * indexes are not stored physically: they are rebuilt from their definitions
-   * on every cache hit to avoid the larger, slower-to-copy persisted
-   * representation. If an entry cannot be opened or its indexes cannot be
-   * restored, the computation runs again and replaces it.
-   *
-   * For repeated searches across scripts, prefer a persistent DuckDB database
-   * and reopen it with `loadDB(file, { detach: false })`. This queries its
-   * physical indexes in place instead of reconstructing an indexed table from
-   * the cache.
+   * Cache entries are stored as DuckDB database files. Full-text search (FTS)
+   * indexes are persisted in the cache file and restored directly on a cache
+   * hit. Vector similarity search (VSS/HNSW) indexes are not persisted in the
+   * cache file; their definitions are stored as metadata and used to rebuild
+   * the indexes on every cache hit. If loading the entry or restoring its
+   * indexes fails, the computation runs again and replaces the cache entry.
    *
    * @param compute - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
