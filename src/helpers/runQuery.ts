@@ -2,10 +2,13 @@ import quoteIdentifier from "./quoteIdentifier.ts";
 import {
   type DuckDBConnection,
   type DuckDBDateValue,
-  type DuckDBTimestampValue,
+  type DuckDBTimestampTZValue,
+  DuckDBTimestampValue,
   type DuckDBType,
   DuckDBTypeId,
   type DuckDBValue,
+  type DuckDBValueConverter,
+  type Json,
   JsonDuckDBValueConverter,
 } from "@duckdb/node-api";
 import SDAError from "../class/SDAError.ts";
@@ -53,6 +56,27 @@ function makeIntegerConverter(columnName: string, tableName: string | null) {
   };
 }
 
+function utcTimestampTzValue(value: DuckDBValue): string | null {
+  if (value === null) {
+    return null;
+  }
+  const timestamp = new DuckDBTimestampValue(
+    (value as DuckDBTimestampTZValue).micros,
+  ).toString();
+  return timestamp === "infinity" || timestamp === "-infinity"
+    ? timestamp
+    : `${timestamp}+00`;
+}
+
+const utcJsonValueConverter: DuckDBValueConverter<Json> = (
+  value,
+  type,
+  _converter,
+) =>
+  type.typeId === DuckDBTypeId.TIMESTAMP_TZ
+    ? utcTimestampTzValue(value)
+    : JsonDuckDBValueConverter(value, type, utcJsonValueConverter);
+
 export function makeConverter(
   type: DuckDBType,
   columnName: string,
@@ -86,12 +110,14 @@ export function makeConverter(
         const ms = micros >= 0n ? micros / 1000n : (micros - 999n) / 1000n;
         return new Date(Number(ms));
       };
+    case DuckDBTypeId.TIMESTAMP_TZ:
+      return utcTimestampTzValue;
     case DuckDBTypeId.BIGINT:
     case DuckDBTypeId.HUGEINT:
       return makeIntegerConverter(columnName, tableName);
     default:
       return (value) =>
-        JsonDuckDBValueConverter(value, type, JsonDuckDBValueConverter);
+        utcJsonValueConverter(value, type, utcJsonValueConverter);
   }
 }
 

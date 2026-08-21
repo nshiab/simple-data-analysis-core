@@ -360,6 +360,11 @@ export default class SimpleTable extends Simple {
   /**
    * Loads an array of JavaScript objects into the table. This method queues the load; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
+   * JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
+   * instant is preserved, but JavaScript `Date` does not retain the timezone or
+   * offset originally used to construct it. String values remain `VARCHAR`;
+   * use `convert()` to parse them as temporal values.
+   *
    * @param rows - An array of objects, where each object represents a row and its properties represent columns.
    * @returns The table, so methods can be chained.
    * @category Importing Data
@@ -372,6 +377,15 @@ export default class SimpleTable extends Simple {
    *   { letter: "b", number: 2 }
    * ];
    * table.loadArray(data);
+   * ```
+   *
+   * @example
+   * ```ts
+   * // The offset determines the instant; the loaded TIMESTAMP is returned as
+   * // the equivalent UTC JavaScript Date.
+   * table.loadArray([{
+   *   observedAt: new Date("2024-04-07T13:00:00-04:00"),
+   * }]);
    * ```
    */
   loadArray(
@@ -1903,7 +1917,11 @@ export default class SimpleTable extends Simple {
   /**
    * Converts data types of specified columns to target types (JavaScript or SQL types).
    *
-   * When converting timestamps, dates, or times to/from strings, you must provide a `datetimeFormat` option using [DuckDB's format specifiers](https://duckdb.org/docs/sql/functions/dateformat).
+   * When converting non-standard timestamp, date, or time strings, provide a `datetimeFormat` option using [DuckDB's format specifiers](https://duckdb.org/docs/sql/functions/dateformat).
+   * Strings converted to `datetimeTz` or `timestamp with time zone` use an
+   * explicit `Z` or numeric offset when present; strings without an offset are
+   * interpreted as UTC. Returned `TIMESTAMP WITH TIME ZONE` values are rendered
+   * as UTC strings.
    *
    * When converting timestamps, dates, or times to/from numbers, the numerical representation will be in milliseconds since the Unix epoch (1970-01-01 00:00:00 UTC).
    *
@@ -1934,6 +1952,16 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Convert strings in 'column3' to datetime using a specific format
    * table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Both values identify instants and are rendered in UTC.
+   * table.loadArray([
+   *   { observedAt: "2024-04-07T13:00:00-04:00" },
+   *   { observedAt: "2024-04-07T17:00:00Z" },
+   * ]);
+   * table.convert({ observedAt: "datetimeTz" });
    * ```
    *
    * @example
@@ -2073,7 +2101,8 @@ export default class SimpleTable extends Simple {
    * `TIMESTAMP`, and `TIMESTAMP WITH TIME ZONE` columns are supported when the
    * requested component applies to that type: date parts apply to dates and
    * timestamps, while time parts apply to times and timestamps. `NULL` input
-   * values produce `NULL` extracted values.
+   * values produce `NULL` extracted values. Parts extracted from
+   * `TIMESTAMP WITH TIME ZONE` values use UTC.
    *
    * This method queues the operation; it runs when an async observer method
    * (like `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -4443,6 +4472,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns all values from a specific column.
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param column - The name of the column from which to retrieve values.
    * @returns A promise that resolves to an array containing all values from the specified column.
@@ -4463,6 +4493,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the minimum value from a specific column.
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param column - The name of the column from which to retrieve the minimum value.
    * @returns A promise that resolves to the minimum value of the specified column.
@@ -4483,6 +4514,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the maximum value from a specific column.
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param column - The name of the column from which to retrieve the maximum value.
    * @returns A promise that resolves to the maximum value of the specified column.
@@ -4503,6 +4535,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the extent (minimum and maximum values) of a specific column as an array.
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param column - The name of the column from which to retrieve the extent.
    * @returns A promise that resolves to an array `[min, max]` containing the minimum and maximum values of the specified column.
@@ -4738,6 +4771,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns unique values from a specific column. The values are returned in ascending order.
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param column - The name of the column from which to retrieve unique values.
    * @returns A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
@@ -4759,6 +4793,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the first row of the table, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param options - An optional object with configuration options:
    * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
@@ -4794,6 +4829,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the last row of the table, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param options - An optional object with configuration options:
    * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
@@ -4829,6 +4865,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the top `n` rows of the table, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param count - The number of rows to return from the top of the table.
    * @param options - An optional object with configuration options:
@@ -4867,6 +4904,7 @@ export default class SimpleTable extends Simple {
    * Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
    * By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param count - The number of rows to return from the bottom of the table.
    * @param options - An optional object with configuration options:
@@ -4913,6 +4951,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns a single row that matches the specified conditions. If no row matches or if more than one row matches, an error is thrown by default.
    * You can also use JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
+   * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
    * @param options - Optional settings:
@@ -4967,6 +5006,11 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the data from the table as an array of objects, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   *
+   * Top-level DuckDB `DATE` and `TIMESTAMP` columns are returned as JavaScript
+   * `Date` objects interpreted in UTC. `TIMESTAMP WITH TIME ZONE` values are
+   * returned as UTC strings, preserving DuckDB's microsecond precision;
+   * JavaScript `Date` supports only milliseconds.
    *
    * @param options - An optional object with configuration options:
    * @param options.columns - An array of column names to include in the result. If omitted, all columns will be included.
@@ -5061,6 +5105,8 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the data from the table as a CSV string, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * Temporal values are first converted as they are in `getData()`, then
+   * serialized using UTC date and timestamp text.
    *
    * @param options - An optional object with configuration options:
    * @param options.columns - An array of column names to include in the CSV. If omitted, all columns will be included.

@@ -103,20 +103,39 @@ Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => 
     `CREATE OR REPLACE TABLE "tstz" AS SELECT TIMESTAMPTZ '2020-01-15 14:30:45' AS tstz`,
   );
   const rows = await table.getData();
-  const value = rows[0].tstz;
-  // The string offset depends on the process timezone, but the format is
-  // stable and the value must round-trip to the same instant.
-  assertEquals(typeof value, "string");
-  const match = (value as string).match(
-    /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})([+-]\d{2}(:\d{2})?)$/,
-  );
-  assertEquals(match !== null, true);
-  const offset = match![3].includes(":") ? match![3] : `${match![3]}:00`;
-  assertEquals(
-    new Date(`${match![1]}T${match![2]}${offset}`).getTime(),
-    new Date("2020-01-15T14:30:45.000Z").getTime(),
-  );
+  assertEquals(rows, [{ tstz: "2020-01-15 14:30:45+00" }]);
   await sdb.close();
+});
+
+Deno.test("should use UTC for TIMESTAMPTZ values with every data transport", async () => {
+  for (const dataTransport of ["direct", "file"] as const) {
+    const sdb = new SimpleDB({ dataTransport });
+    const rows = await sdb.customQuery(
+      `SELECT
+        current_setting('TimeZone') AS timezone,
+        TIMESTAMPTZ '2024-04-07 13:14:15.123456+00' AS timestamp,
+        [TIMESTAMPTZ '2024-04-07 13:14:15.123456+00'] AS timestamps`,
+      { returnData: true },
+    );
+    assertEquals(rows, [{
+      timezone: "UTC",
+      timestamp: "2024-04-07 13:14:15.123456+00",
+      timestamps: ["2024-04-07 13:14:15.123456+00"],
+    }]);
+
+    const stringTable = sdb.newTable();
+    stringTable.loadArray([{ timestamp: "2024-04-07 13:14:15.123456" }]);
+    stringTable.convert({ timestamp: "datetimeTz" });
+    assertEquals(await stringTable.getData(), [{
+      timestamp: "2024-04-07 13:14:15.123456+00",
+    }]);
+
+    const date = new Date("2024-04-07T13:14:15.123Z");
+    const dateTable = sdb.newTable();
+    dateTable.loadArray([{ timestamp: date }]);
+    assertEquals(await dateTable.getData(), [{ timestamp: date }]);
+    await sdb.close();
+  }
 });
 
 Deno.test("should convert dates and timestamps as UTC", async () => {

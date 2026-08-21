@@ -285,6 +285,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Creates a new SimpleDB instance.
    *
+   * DuckDB sessions use UTC so temporal parsing, extraction, and returned
+   * `TIMESTAMP WITH TIME ZONE` strings are consistent across environments.
+   *
    * @param options - Configuration options for the SimpleDB instance.
    * @param options.file - The path to the database file. If not provided, an in-memory database is used.
    * @param options.overwrite - A flag indicating whether to overwrite the database file if it already exists.
@@ -398,6 +401,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
     this.db = await DuckDBInstance.create(this.file);
     this.connection = await this.db.connect();
+
+    // Keep temporal parsing, extraction, and serialization deterministic
+    // across machines. DuckDB otherwise inherits the process timezone.
+    await this.customQuery("SET TimeZone = 'UTC';");
 
     // By default, DuckDB does not compress in-memory databases, so we enable it here.
     if (this.file === ":memory:") {
@@ -709,6 +716,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
   /**
    * Executes a custom SQL query directly against the DuckDB instance.
+   * Queries run in UTC. When data is returned, temporal values use the same
+   * JavaScript representations as `SimpleTable.getData()`.
    *
    * @param query - The SQL query string to execute.
    * @param options - Configuration options for the query.
