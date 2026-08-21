@@ -1,9 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
 import type SimpleDB from "../class/SimpleDB.ts";
+import type { IndexDefinition } from "./indexDefinitions.ts";
 
 export default async function setDbProps(
   simpleDB: SimpleDB,
-  allIndexesFile: string,
+  indexes: { [table: string]: IndexDefinition[] },
 ) {
   for (const table of await simpleDB.getTableNames()) {
     simpleDB.newTable(table);
@@ -20,12 +20,9 @@ export default async function setDbProps(
     }
   }
 
-  if (existsSync(allIndexesFile)) {
-    const indexes = JSON.parse(readFileSync(allIndexesFile, "utf-8"));
-    for (const table of simpleDB.getTables()) {
-      if (indexes[table.name]) {
-        table.indexes = indexes[table.name];
-      }
+  for (const table of simpleDB.getTables()) {
+    if (indexes[table.name]) {
+      table.indexes = structuredClone(indexes[table.name]);
     }
   }
 

@@ -3,6 +3,7 @@ import camelCase from "../helpers/camelCase.ts";
 import queueOp from "../helpers/queueOp.ts";
 import parseValue from "../helpers/parseValue.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { FtsIndexDefinition } from "../helpers/indexDefinitions.ts";
 
 export default function createFtsIndex(
   simpleTable: SimpleTable,
@@ -76,7 +77,10 @@ export async function executeCreateFtsIndex(
   },
 ): Promise<void> {
   const indexName = `fts_index_${camelCase(simpleTable.name)}`;
-  const indexExists = simpleTable.indexes.includes(indexName);
+  const indexPosition = simpleTable.indexes.findIndex(({ name }) =>
+    name === indexName
+  );
+  const indexExists = indexPosition >= 0;
 
   if (indexExists && options.overwrite) {
     options.verbose &&
@@ -119,8 +123,33 @@ export async function executeCreateFtsIndex(
       });`,
     );
 
-    if (!simpleTable.indexes.includes(indexName)) {
-      simpleTable.indexes.push(indexName);
+    const indexOptions: FtsIndexDefinition["options"] = {};
+    if (options.stemmer !== undefined) {
+      indexOptions.stemmer = options.stemmer;
+    }
+    if (options.stopwords !== undefined) {
+      indexOptions.stopwords = options.stopwords;
+    }
+    if (options.ignore !== undefined) {
+      indexOptions.ignore = options.ignore;
+    }
+    if (options.stripAccents !== undefined) {
+      indexOptions.stripAccents = options.stripAccents;
+    }
+    if (options.lower !== undefined) {
+      indexOptions.lower = options.lower;
+    }
+    const definition: FtsIndexDefinition = {
+      kind: "fts",
+      name: indexName,
+      idColumn,
+      textColumn,
+      options: indexOptions,
+    };
+    if (indexExists) {
+      simpleTable.indexes[indexPosition] = definition;
+    } else {
+      simpleTable.indexes.push(definition);
     }
 
     options.verbose && console.log("FTS index created successfully.");

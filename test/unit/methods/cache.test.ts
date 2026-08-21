@@ -129,6 +129,182 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
 
   await secondSdb.close();
 });
+Deno.test("should restore fixed array types and VSS indexes from cache", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([
+      { id: 1, embedding: [0.1, 0.2, 0.3] },
+      { id: 2, embedding: [0.4, 0.5, 0.6] },
+    ]);
+    table.createVssIndex("embedding", {
+      efConstruction: 64,
+      efSearch: 32,
+      M: 8,
+    });
+  };
+  const getIndexCount = async (sdb: SimpleDB) => {
+    const indexes = await sdb.customQuery(
+      "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'cacheVssIndex'",
+      { returnData: true },
+    ) as { index_name: string }[];
+    return indexes.length;
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheVssIndex");
+  await firstTable.cache(createCompute(firstTable));
+  assertEquals(await getIndexCount(firstSdb), 1);
+  assertEquals((await firstTable.getTypes()).embedding, "FLOAT[3]");
+  const cacheSources = JSON.parse(
+    readFileSync(".sda-cache/sources.json", "utf-8"),
+  ) as {
+    [key: string]: {
+      file: string | null;
+      indexes?: Array<{
+        kind: string;
+        name: string;
+        column?: string;
+        options: Record<string, unknown>;
+      }>;
+    };
+  };
+  const cacheSource = Object.values(cacheSources).find(({ indexes }) =>
+    indexes?.some(({ kind }) => kind === "vss")
+  );
+  assertEquals(cacheSource?.indexes?.[0], {
+    kind: "vss",
+    name: "vss_cosine_index_cachevssindex",
+    column: "embedding",
+    options: { efConstruction: 64, efSearch: 32, M: 8 },
+  });
+  if (cacheSource?.file === undefined || cacheSource.file === null) {
+    throw new Error("The VSS cache test did not create an artifact.");
+  }
+  await firstSdb.customQuery(
+    `ATTACH '${cacheSource.file}' AS cached_vss (READ_ONLY);`,
+  );
+  const cachedIndexes = await firstSdb.customQuery(
+    "SELECT index_name FROM duckdb_indexes() WHERE database_name = 'cached_vss' AND table_name = 'cacheVssIndex'",
+    { returnData: true },
+  ) as { index_name: string }[];
+  await firstSdb.customQuery("DETACH cached_vss;");
+  assertEquals(cachedIndexes.length, 0);
+
+  await firstTable.cache(createCompute(firstTable));
+  assertEquals(computationRuns, 1);
+  assertEquals(await getIndexCount(firstSdb), 1);
+  assertEquals(firstTable.indexes.length, 1);
+  assertEquals((await firstTable.getTypes()).embedding, "FLOAT[3]");
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheVssIndex");
+  await secondTable.cache(createCompute(secondTable));
+
+  assertEquals(computationRuns, 1);
+  assertEquals(await getIndexCount(secondSdb), 1);
+  assertEquals(secondTable.indexes.length, 1);
+  assertEquals((await secondTable.getTypes()).embedding, "FLOAT[3]");
+  await secondSdb.close();
+});
+Deno.test("should restore FTS indexes from cache", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([
+      { id: 1, text: "fresh tomato pasta" },
+      { id: 2, text: "chocolate cake" },
+    ]);
+    table.createFtsIndex("id", "text", {
+      stemmer: "english",
+      lower: true,
+      stripAccents: true,
+    });
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheFtsIndex");
+  await firstTable.cache(createCompute(firstTable));
+  const cacheSources = JSON.parse(
+    readFileSync(".sda-cache/sources.json", "utf-8"),
+  ) as { [key: string]: { file: string | null } };
+  const cacheFile = Object.values(cacheSources).find(({ file }) =>
+    file?.includes("cacheFtsIndex")
+  )?.file;
+  if (cacheFile === undefined || cacheFile === null) {
+    throw new Error("The FTS cache test did not create an artifact.");
+  }
+  await firstSdb.customQuery(
+    `ATTACH '${cacheFile}' AS cached_fts (READ_ONLY);`,
+  );
+  const cachedSchemas = await firstSdb.customQuery(
+    "SELECT schema_name FROM duckdb_schemas() WHERE database_name = 'cached_fts' AND schema_name = 'fts_main_cacheFtsIndex'",
+    { returnData: true },
+  ) as { schema_name: string }[];
+  await firstSdb.customQuery("DETACH cached_fts;");
+  assertEquals(cachedSchemas.length, 1);
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("cacheFtsIndex");
+  await secondTable.cache(createCompute(secondTable));
+  const schemas = await secondSdb.customQuery(
+    "SELECT schema_name FROM duckdb_schemas() WHERE schema_name = 'fts_main_cacheFtsIndex'",
+    { returnData: true },
+  ) as { schema_name: string }[];
+
+  assertEquals(computationRuns, 1);
+  assertEquals(schemas.length, 1);
+  assertEquals(secondTable.indexes, [{
+    kind: "fts",
+    name: "fts_index_cacheftsindex",
+    idColumn: "id",
+    textColumn: "text",
+    options: {
+      stemmer: "english",
+      lower: true,
+      stripAccents: true,
+    },
+  }]);
+
+  const results = secondTable.bm25("tomato", "id", "text", 1, {
+    outputTable: "cacheFtsResults",
+  });
+  assertEquals(await results.getValues("id"), [1]);
+  await secondSdb.close();
+});
+Deno.test("should recompute a corrupt DuckDB cache entry", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadArray([{ value: computationRuns }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("corruptCacheEntry");
+  await firstTable.cache(createCompute(firstTable));
+  await firstSdb.close();
+
+  const cacheSources = JSON.parse(
+    readFileSync(".sda-cache/sources.json", "utf-8"),
+  ) as { [key: string]: { file: string | null } };
+  const cacheFile = Object.values(cacheSources).find(({ file }) =>
+    file?.includes("corruptCacheEntry")
+  )?.file;
+  if (cacheFile === undefined || cacheFile === null) {
+    throw new Error("The corrupt cache test did not create an artifact.");
+  }
+  writeFileSync(cacheFile, "not a DuckDB database");
+
+  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondTable = secondSdb.newTable("corruptCacheEntry");
+  await secondTable.cache(createCompute(secondTable));
+
+  assertEquals(computationRuns, 2);
+  assertEquals(await secondTable.getValues("value"), [2]);
+  await secondSdb.close();
+});
 Deno.test("should invalidate the cache when a captured input changes", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable, value: number) => () => {
@@ -727,11 +903,11 @@ Deno.test("should clean the cache when calling close", async () => {
     { cacheSourcesIdsUpdated, files },
     {
       cacheSourcesIdsUpdated: [
-        "table1.7585b96900b173c77cca3419d14a1dd5e622bf4ee986adc72847a896d429de8a",
+        "table1.a43e2a5691696f552a99fee87b7d95db9bcc9993a80917c4d545dbe473621ca3",
       ],
       files: [
         "sources.json",
-        "table1.7585b96900b173c77cca3419d14a1dd5e622bf4ee986adc72847a896d429de8a.parquet",
+        "table1.a43e2a5691696f552a99fee87b7d95db9bcc9993a80917c4d545dbe473621ca3.db",
       ],
     },
   );

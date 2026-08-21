@@ -19,9 +19,12 @@ Deno.test("should successfully create a VSS index", async () => {
   assertEquals(result, table);
 
   // Index should be in the indexes array
-  assertExists(
-    table.indexes.find((idx) => idx.includes("vss_cosine_index")),
-  );
+  assertEquals(table.indexes, [{
+    kind: "vss",
+    name: "vss_cosine_index_table1",
+    column: "embedding",
+    options: {},
+  }]);
 });
 
 Deno.test("should not recreate index if already exists", async () => {
@@ -39,7 +42,7 @@ Deno.test("should not recreate index if already exists", async () => {
   }).run();
 
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("vss_cosine_index")).length;
 
   // Try to create the same index again
   await table.createVssIndex("embedding", {
@@ -47,7 +50,7 @@ Deno.test("should not recreate index if already exists", async () => {
   }).run();
 
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("vss_cosine_index")).length;
 
   // Should have the same number of indexes (no duplicate)
   assertEquals(indexCountBefore, indexCountAfter);
@@ -68,7 +71,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
 
   // Index should exist
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("vss_cosine_index")).length;
   assertEquals(indexCountBefore, 1);
 
   // Recreate index with overwrite=true
@@ -78,7 +81,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
 
   // Index should still exist (only one)
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("vss_cosine_index")).length;
   assertEquals(indexCountAfter, 1);
 });
 
@@ -98,7 +101,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
 
   // Index should be created
   assertExists(
-    table.indexes.find((idx) => idx.includes("vss_cosine_index")),
+    table.indexes.find((idx) => idx.name.includes("vss_cosine_index")),
   );
 });
 
@@ -117,7 +120,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   }).run();
 
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("vss_cosine_index")).length;
 
   // Recreate with overwrite
   await table.createVssIndex("embedding", {
@@ -126,7 +129,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   }).run();
 
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("vss_cosine_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("vss_cosine_index")).length;
 
   // Should still have exactly one index
   assertEquals(indexCountBefore, 1);
@@ -153,8 +156,10 @@ Deno.test("should create index with custom HNSW parameters", async () => {
   // Should return the table for chaining
   assertEquals(result, table);
 
-  // Index should be in the indexes array
-  assertExists(
-    table.indexes.find((idx) => idx.includes("vss_cosine_index")),
-  );
+  assertEquals(table.indexes, [{
+    kind: "vss",
+    name: "vss_cosine_index_table1",
+    column: "embedding",
+    options: { efConstruction: 256, efSearch: 128, M: 32 },
+  }]);
 });

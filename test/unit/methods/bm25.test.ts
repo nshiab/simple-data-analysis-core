@@ -140,7 +140,7 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
   }).run();
 
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
   assertEquals(indexCountBefore, 1);
 
   // Second search with overwriteIndex recreates the index
@@ -152,7 +152,7 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
   }).run();
 
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Should still have only one index
   assertEquals(indexCountAfter, 1);

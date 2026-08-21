@@ -145,6 +145,7 @@ import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type { PendingOp } from "../helpers/pendingOps.ts";
+import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
 
 /**
  * IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
@@ -208,12 +209,20 @@ export default class SimpleTable extends Simple {
     return this.#name;
   }
   /**
-   * The indexes of the table, if any.
+   * The definitions of the indexes belonging to the table, if any. This is the
+   * source of truth used when databases and cache entries preserve or rebuild
+   * indexes. Do not mutate this array directly.
    *
    * @defaultValue `[]`
    * @category Properties
+   *
+   * @example
+   * ```ts
+   * console.log(table.indexes);
+   * // [{ kind: "vss", name: "vss_cosine_index_articles", ... }]
+   * ```
    */
-  indexes: string[];
+  indexes: IndexDefinition[];
   /**
    * The operations queued by sync builder methods, waiting to be executed at
    * the next observation point. This is for internal use only.
@@ -592,27 +601,13 @@ export default class SimpleTable extends Simple {
    * Creates a full-text search (FTS) index on a specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
    *
    * If an FTS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
+   * The index definition is recorded in {@link indexes}. When this operation
+   * runs inside {@link cache}, the cache artifact stores a physical copy of the
+   * FTS index for fast cache hits.
+   * The {@link bm25} method requires this FTS structure and creates it
+   * automatically when it is absent.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
-   *
-   * @param idColumn - The name of the column containing unique identifiers for each row.
-   * @param textColumn - The name of the column containing the text to index.
-   * @param options - An optional object with configuration options:
-   * @param options.stemmer - The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
-   * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
-   * @param options.overwrite - If `true`, recreates the index even if it already exists. Defaults to `false`.
-   * @param options.verbose - If `true`, logs additional debugging information, including index creation status. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Text Search
-   *
-   * @example
-   * ```ts
-   * // Load a dataset and create an FTS index
-   * table.loadData("recipes.parquet");
-   *
-   * // Create FTS index for later searches
-   * table.createFtsIndex("Dish", "Recipe");
-   * ```
    *
    * @param idColumn - The column containing the document identifiers.
    * @param textColumn - The column containing the text to search.
@@ -624,6 +619,15 @@ export default class SimpleTable extends Simple {
    * @param options.lower - A boolean indicating whether to convert all text to lowercase. Defaults to true.
    * @param options.overwrite - A boolean indicating whether to overwrite the existing FTS index. Defaults to false.
    * @param options.verbose - A boolean indicating whether to log additional information. Defaults to false.
+   * @returns The table, so methods can be chained.
+   * @category Text Search
+   *
+   * @example
+   * ```ts
+   * // Load a dataset and create an FTS index for later searches
+   * table.loadData("recipes.parquet");
+   * table.createFtsIndex("Dish", "Recipe");
+   * ```
    *
    * @example
    * ```ts
@@ -701,6 +705,10 @@ export default class SimpleTable extends Simple {
    * Creates a vector similarity search (VSS) index on a specified column using DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
    *
    * If a VSS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
+   * The index definition is recorded in {@link indexes}. Cache artifacts store
+   * this definition but not the physical HNSW index, so {@link cache} rebuilds
+   * the index whenever it loads an entry. This keeps cache files smaller and
+   * avoids DuckDB's slower database-copy path for persisted HNSW indexes.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -769,6 +777,9 @@ export default class SimpleTable extends Simple {
    * Performs BM25 full-text search on a text column to find the most relevant results. BM25 (Best Matching 25) is a ranking function used in information retrieval that calculates relevance scores based on term frequency and document length normalization.
    *
    * This method creates a full-text search index on the specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search). If the index already exists, it will be reused unless the `overwriteIndex` option is set to `true`.
+   * FTS indexes produced by this method are recorded in {@link indexes}. If
+   * the source table is cached, {@link cache} stores the physical FTS index and
+   * restores it directly on cache hits instead of rebuilding it.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -6313,6 +6324,20 @@ export default class SimpleTable extends Simple {
   /**
    * Caches the results of computations in `./.sda-cache`.
    * You should add `./.sda-cache` to your `.gitignore` file.
+   *
+   * Cache entries are stored as DuckDB database files so exact column types
+   * survive cache hits. Index definitions from {@link indexes} are stored as
+   * metadata. Full-text search (FTS) indexes are also stored physically in the
+   * DuckDB artifact and restored directly. Vector similarity search (VSS/HNSW)
+   * indexes are not stored physically: they are rebuilt from their definitions
+   * on every cache hit to avoid the larger, slower-to-copy persisted
+   * representation. If an entry cannot be opened or its indexes cannot be
+   * restored, the computation runs again and replaces it.
+   *
+   * For repeated searches across scripts, prefer a persistent DuckDB database
+   * and reopen it with `loadDB(file, { detach: false })`. This queries its
+   * physical indexes in place instead of reconstructing an indexed table from
+   * the cache.
    *
    * @param compute - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:

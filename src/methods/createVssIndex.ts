@@ -2,6 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import camelCase from "../helpers/camelCase.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { VssIndexDefinition } from "../helpers/indexDefinitions.ts";
 
 export default function createVssIndex(
   simpleTable: SimpleTable,
@@ -36,7 +37,10 @@ async function executeCreateVssIndex(
   },
 ): Promise<void> {
   const indexName = `vss_cosine_index_${camelCase(simpleTable.name)}`;
-  const indexExists = simpleTable.indexes.includes(indexName);
+  const indexPosition = simpleTable.indexes.findIndex(({ name }) =>
+    name === indexName
+  );
+  const indexExists = indexPosition >= 0;
 
   if (indexExists && options.overwrite) {
     options.verbose &&
@@ -82,8 +86,26 @@ async function executeCreateVssIndex(
       });`,
     );
 
-    if (!simpleTable.indexes.includes(indexName)) {
-      simpleTable.indexes.push(indexName);
+    const indexOptions: VssIndexDefinition["options"] = {};
+    if (options.efConstruction !== undefined) {
+      indexOptions.efConstruction = options.efConstruction;
+    }
+    if (options.efSearch !== undefined) {
+      indexOptions.efSearch = options.efSearch;
+    }
+    if (options.M !== undefined) {
+      indexOptions.M = options.M;
+    }
+    const definition: VssIndexDefinition = {
+      kind: "vss",
+      name: indexName,
+      column,
+      options: indexOptions,
+    };
+    if (indexExists) {
+      simpleTable.indexes[indexPosition] = definition;
+    } else {
+      simpleTable.indexes.push(definition);
     }
 
     options.verbose && console.log("VSS index created successfully.");

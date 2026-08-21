@@ -774,11 +774,15 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Loads a database from a specified file into the current SimpleDB instance.
    * Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite).
+   * If a sibling `<database>_indexes.json` file exists, its definitions are
+   * restored to each table's `SimpleTable.indexes` property. The sidecar is
+   * logical SDA metadata; physical index objects, when supported, come from
+   * the database file itself.
    *
    * @param file - The absolute path to the database file (e.g., "./my_database.db").
    * @param options - Configuration options for loading the database.
    * @param options.name - The name to assign to the loaded database within the DuckDB instance. Defaults to the file name without extension.
-   * @param options.detach - If `true` (default), the database is detached after loading its contents into memory. If `false`, the database remains attached.
+   * @param options.detach - If `true` (default), the database is detached after loading its contents into memory. If `false`, the database remains attached and queries use its physical indexes in place, which is preferable for repeated searches across scripts.
    * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
@@ -811,6 +815,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   /**
    * Writes the current state of the database to a specified file.
    * Supported output file types are `.db` (DuckDB) and `.sqlite` (SQLite).
+   * By default, this also writes each table's `SimpleTable.indexes`
+   * definitions to a sibling `<database>_indexes.json` file. This metadata is
+   * the source of truth SDA restores with `loadDB()`; it is separate from any
+   * physical index objects DuckDB copies into the database file.
    *
    * @param file - The absolute path to the output file (e.g., "./my_exported_database.db").
    * @param options - Configuration options for writing the database.

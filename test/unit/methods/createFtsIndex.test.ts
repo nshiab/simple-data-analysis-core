@@ -13,10 +13,13 @@ Deno.test("should successfully create an FTS index", async () => {
   // Should return the table for chaining
   assertEquals(result, table);
 
-  // Index should be in the indexes array
-  assertExists(
-    table.indexes.find((idx) => idx.includes("fts_index")),
-  );
+  assertEquals(table.indexes, [{
+    kind: "fts",
+    name: "fts_index_table1",
+    idColumn: "Dish",
+    textColumn: "Recipe",
+    options: {},
+  }]);
 
   // Should be able to use bm25 after creating index
   table.bm25("italian food", "Dish", "Recipe", 5);
@@ -41,10 +44,13 @@ Deno.test("should successfully create an FTS index with a specific stemmer", asy
     stemmer: "french",
   }).run();
 
-  // Index should be in the indexes array
-  assertExists(
-    table.indexes.find((idx) => idx.includes("fts_index")),
-  );
+  assertEquals(table.indexes, [{
+    kind: "fts",
+    name: "fts_index_table1",
+    idColumn: "Dish",
+    textColumn: "Recipe",
+    options: { stemmer: "french" },
+  }]);
 
   // Should work with bm25
   table.bm25("french food", "Dish", "Recipe", 5, {
@@ -66,7 +72,7 @@ Deno.test("should not recreate index if already exists", async () => {
   }).run();
 
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Try to create the same index again
   await table.createFtsIndex("Dish", "Recipe", {
@@ -74,7 +80,7 @@ Deno.test("should not recreate index if already exists", async () => {
   }).run();
 
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Should have the same number of indexes (no duplicate)
   assertEquals(indexCountBefore, indexCountAfter);
@@ -94,7 +100,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
 
   // Index should exist
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
   assertEquals(indexCountBefore, 1);
 
   // Recreate index with overwrite=true
@@ -105,8 +111,9 @@ Deno.test("should recreate index when overwrite is true", async () => {
 
   // Index should still exist (only one)
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
   assertEquals(indexCountAfter, 1);
+  assertEquals(table.indexes[0].options, { stemmer: "english" });
 
   // Should work with bm25
   table.bm25("italian food", "Dish", "Recipe", 5);
@@ -127,7 +134,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
 
   // Index should be created
   assertExists(
-    table.indexes.find((idx) => idx.includes("fts_index")),
+    table.indexes.find((idx) => idx.name.includes("fts_index")),
   );
 
   // Should work with bm25
@@ -154,7 +161,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   }).run();
 
   const indexCountBefore =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Recreate with overwrite
   await table.createFtsIndex("Dish", "Recipe", {
@@ -163,7 +170,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   }).run();
 
   const indexCountAfter =
-    table.indexes.filter((idx) => idx.includes("fts_index")).length;
+    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Should still have exactly one index
   assertEquals(indexCountBefore, 1);
@@ -189,10 +196,17 @@ Deno.test("should successfully create an FTS index with custom parameters", asyn
     verbose: true,
   }).run();
 
-  // Index should be in the indexes array
-  assertExists(
-    table.indexes.find((idx) => idx.includes("fts_index")),
-  );
+  assertEquals(table.indexes, [{
+    kind: "fts",
+    name: "fts_index_table1",
+    idColumn: "Dish",
+    textColumn: "Recipe",
+    options: {
+      stemmer: "none",
+      lower: false,
+      stripAccents: false,
+    },
+  }]);
 
   // Verifying the search still works with these parameters
   table.bm25("italian food", "Dish", "Recipe", 5, {

@@ -1,5 +1,4 @@
-import { existsSync } from "node:fs";
-import checkVssIndexes from "../helpers/checkVssIndexes.ts";
+import { existsSync, readFileSync } from "node:fs";
 import cleanPath from "../helpers/cleanPath.ts";
 import getExtension from "../helpers/getExtension.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -7,6 +6,7 @@ import queryDB from "../helpers/queryDB.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import setDbProps from "../helpers/setDbProps.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
+import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
 
 export default async function loadDB(
   simpleDB: SimpleDB,
@@ -32,8 +32,15 @@ export default async function loadDB(
   }
 
   const allIndexesFile = `${file.replace(`.${extension}`, "")}_indexes.json`;
-  const vssIndex = checkVssIndexes(allIndexesFile);
-  if (vssIndex) {
+  const indexes = existsSync(allIndexesFile)
+    ? JSON.parse(readFileSync(allIndexesFile, "utf-8")) as {
+      [table: string]: IndexDefinition[];
+    }
+    : {};
+  const hasVssIndex = Object.values(indexes).some((definitions) =>
+    definitions.some(({ kind }) => kind === "vss")
+  );
+  if (hasVssIndex) {
     await simpleDB.customQuery(`INSTALL vss; LOAD vss;`);
   }
 
@@ -95,5 +102,5 @@ DETACH ${quotedName};`,
     }
   }
 
-  await setDbProps(simpleDB, allIndexesFile);
+  await setDbProps(simpleDB, indexes);
 }

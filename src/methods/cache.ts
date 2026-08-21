@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import type SimpleTable from "../class/SimpleTable.ts";
 import crypto from "node:crypto";
 import flushAllTables from "../helpers/flushAllTables.ts";
@@ -10,6 +16,13 @@ import {
   restoreTableGeneration,
   type TableGenerationId,
 } from "../helpers/tableGeneration.ts";
+import {
+  loadCacheDatabase,
+  writeCacheDatabase,
+} from "../helpers/cacheDatabase.ts";
+import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
+
+const CACHE_FORMAT_VERSION = "duckdb-v2";
 
 type cacheSources = {
   [key: string]: {
@@ -18,6 +31,7 @@ type cacheSources = {
     duration: number;
     geo: boolean;
     generationId?: TableGenerationId;
+    indexes?: IndexDefinition[];
   };
 };
 
@@ -53,12 +67,17 @@ export default async function cache(
     .update(
       hasInputs
         ? JSON.stringify([
-          "sda-cache-inputs-v2",
+          CACHE_FORMAT_VERSION,
           table.name,
           functionBody,
           serializedInputs,
         ])
-        : table.name + options.toString() + functionBody,
+        : JSON.stringify([
+          CACHE_FORMAT_VERSION,
+          table.name,
+          options.toString(),
+          functionBody,
+        ]),
     )
     .digest("hex");
   const id = `${table.name}.${hash}`;
@@ -120,35 +139,34 @@ export default async function cache(
           }.\nThere are ${prettyDuration(now, { end: ttlLimit })} left.`,
         );
     }
-    // Cached-file loaders are sync builders, so cache() must flush their
-    // queued work before it resolves.
     if (cache.file === null) {
       console.log("No data in cache. Nothing to load.");
-    } else if (cache.geo) {
-      const start = Date.now();
-      table.loadGeoData(cache.file);
-      await flushAllTables(table.sdb);
-      if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
-        table.sdb.cacheSourcesUsed.push(id);
-      }
-      const end = Date.now();
-      const duration = end - start;
-      if (options.verbose) {
-        console.log(
-          `Data loaded in ${
-            prettyDuration(start, { end })
-          }.\nRunning computations previously took ${
-            prettyDuration(0, { end: cache.duration })
-          }.\nYou saved ${
-            prettyDuration(duration, { end: cache.duration })
-          }.\n`,
-        );
-        table.sdb.cacheTimeSaved += cache.duration - duration;
-      }
     } else {
       const start = Date.now();
-      table.loadData(cache.file);
-      await flushAllTables(table.sdb);
+      try {
+        await loadCacheDatabase(
+          table,
+          cache.file,
+          cache.indexes ?? [],
+          cache.geo,
+        );
+      } catch {
+        options.verbose &&
+          console.log("Could not load cached data. Recomputing...");
+        if (existsSync(cache.file)) {
+          rmSync(cache.file);
+        }
+        delete cacheSources[id];
+        await runAndWrite(
+          table,
+          compute,
+          cacheSources,
+          cacheSourcesPath,
+          cachePath,
+          id,
+        );
+        return;
+      }
       if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
         table.sdb.cacheSourcesUsed.push(id);
       }
@@ -205,56 +223,33 @@ async function runAndWrite(
       file: null,
       geo: false,
       generationId,
+      indexes: [],
     };
   } else {
     const types = await table.getTypes();
     const geometriesColumns = Object.values(types).filter(
       (d) => d.toLowerCase().includes("geometry"),
     ).length;
-    if (geometriesColumns > 0) {
-      const file = `${cachePath}/${id}.geoparquet`;
-      const writeStart = Date.now();
-      await table.writeGeoData(file);
-      cacheSources[id] = {
-        creation: Date.now(),
-        duration,
-        file,
-        geo: true,
-        generationId,
-      };
-      const writeEnd = Date.now();
-      table.sdb.cacheVerbose &&
-        console.log(
-          `Wrote in cache in ${
-            prettyDuration(writeStart, { end: writeEnd })
-          }.\n`,
-        );
-      table.sdb.cacheTimeWriting += writeEnd - writeStart;
-      if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
-        table.sdb.cacheSourcesUsed.push(id);
-      }
-    } else {
-      const file = `${cachePath}/${id}.parquet`;
-      const writeStart = Date.now();
-      await table.writeData(file);
-      const writeEnd = Date.now();
-      table.sdb.cacheVerbose &&
-        console.log(
-          `Wrote in cache in ${
-            prettyDuration(writeStart, { end: writeEnd })
-          }.\n`,
-        );
-      table.sdb.cacheTimeWriting += writeEnd - writeStart;
-      cacheSources[id] = {
-        creation: Date.now(),
-        duration,
-        file,
-        geo: false,
-        generationId,
-      };
-      if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
-        table.sdb.cacheSourcesUsed.push(id);
-      }
+    const file = `${cachePath}/${id}.db`;
+    const indexes = structuredClone(table.indexes);
+    const writeStart = Date.now();
+    await writeCacheDatabase(table, file, indexes);
+    const writeEnd = Date.now();
+    table.sdb.cacheVerbose &&
+      console.log(
+        `Wrote in cache in ${prettyDuration(writeStart, { end: writeEnd })}.\n`,
+      );
+    table.sdb.cacheTimeWriting += writeEnd - writeStart;
+    cacheSources[id] = {
+      creation: Date.now(),
+      duration,
+      file,
+      geo: geometriesColumns > 0,
+      generationId,
+      indexes,
+    };
+    if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
+      table.sdb.cacheSourcesUsed.push(id);
     }
   }
 

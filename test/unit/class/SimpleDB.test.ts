@@ -2,7 +2,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const output = "./test/output/";
 if (!existsSync(output)) {
@@ -715,6 +715,34 @@ Deno.test("should load a DB instantiated with a file, with bm25 index", async ()
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
   await sdb.close();
+});
+Deno.test("should preserve complete index definitions when writing and loading a DB", async () => {
+  const file = `${output}database_index_definitions.db`;
+  const sourceSdb = new SimpleDB({ dataTransport: "file" });
+  const sourceTable = sourceSdb.newTable("articles");
+  sourceTable.loadArray([
+    { id: 1, text: "fresh tomato pasta" },
+    { id: 2, text: "chocolate cake" },
+  ]);
+  await sourceTable.createFtsIndex("id", "text", {
+    stemmer: "english",
+    lower: true,
+    stripAccents: false,
+  }).run();
+  const expectedIndexes = structuredClone(sourceTable.indexes);
+
+  await sourceSdb.writeDB(file);
+  const writtenIndexes = JSON.parse(
+    readFileSync(`${output}database_index_definitions_indexes.json`, "utf-8"),
+  );
+  assertEquals(writtenIndexes, { articles: expectedIndexes });
+  await sourceSdb.close();
+
+  const loadedSdb = new SimpleDB({ dataTransport: "file" });
+  await loadedSdb.loadDB(file);
+  const loadedTable = await loadedSdb.getTable("articles");
+  assertEquals(loadedTable.indexes, expectedIndexes);
+  await loadedSdb.close();
 });
 Deno.test("should start with memoryLimit option", async () => {
   const sdb = new SimpleDB({ dataTransport: "file", memoryLimit: "1GB" });
