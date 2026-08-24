@@ -18,6 +18,13 @@ export default function serializeCacheInputs(
   );
 }
 
+/** Returns a user-facing cache diagnostic label for supported input values. */
+export function getCacheInputLabel(value: unknown): string | undefined {
+  return value instanceof SimpleTable
+    ? `table ${JSON.stringify(value.name)}`
+    : undefined;
+}
+
 function serializeValue(
   value: unknown,
   path: string,

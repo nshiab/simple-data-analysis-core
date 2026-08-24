@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import {
@@ -329,6 +329,152 @@ Deno.test("should invalidate the cache when a captured input changes", async () 
   assertEquals(await secondTable.getData(), [{ value: 2 }]);
 
   await secondSdb.close();
+});
+Deno.test("should explain which cache input changed", async () => {
+  const createCompute = (table: SimpleTable, value: number) => () => {
+    table.loadArray([{ value }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheVerboseInputChange");
+  await firstTable.cache(createCompute(firstTable, 1), {
+    inputs: [1, "stable"],
+    ttl: 60,
+  });
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({
+    dataTransport: "file",
+    cacheVerbose: true,
+  });
+  const secondTable = secondSdb.newTable("cacheVerboseInputChange");
+  const logs = await captureConsoleLogs(() =>
+    secondTable.cache(createCompute(secondTable, 2), {
+      inputs: [2, "stable"],
+      ttl: 0,
+    })
+  );
+
+  assertStringIncludes(logs, "Cache miss.");
+  assertStringIncludes(logs, "Compute function unchanged.");
+  assertStringIncludes(logs, "Inputs changed: inputs[0] changed.");
+  assertEquals(logs.includes("TTL"), false);
+
+  await secondSdb.close();
+});
+Deno.test("should not infer a code change from another cache call on the same table", async () => {
+  const createFirstCompute = (table: SimpleTable) => () => {
+    table.loadArray([{ value: 1 }]);
+  };
+  const createSecondCompute = (table: SimpleTable) => () => {
+    table.loadArray([{ value: 2 }]);
+  };
+
+  const sdb = new SimpleDB({
+    dataTransport: "file",
+    cacheVerbose: true,
+  });
+  const table = sdb.newTable("cacheVerboseMultipleCalls");
+  const firstLogs = await captureConsoleLogs(() =>
+    table.cache(createFirstCompute(table), { inputs: [1] })
+  );
+  const secondLogs = await captureConsoleLogs(() =>
+    table.cache(createSecondCompute(table), { inputs: [1] })
+  );
+
+  assertStringIncludes(
+    firstLogs,
+    "No matching cache entry exists for this computation.",
+  );
+  assertStringIncludes(secondLogs, "Cache miss.");
+  assertStringIncludes(
+    secondLogs,
+    "No matching cache entry exists for this computation.",
+  );
+  assertEquals(secondLogs.includes("Compute function changed."), false);
+
+  await sdb.close();
+});
+Deno.test("should confirm unchanged inputs before reporting ttl status", async () => {
+  const createCompute = (table: SimpleTable) => () => {
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheVerboseHit");
+  await firstTable.cache(createCompute(firstTable), {
+    inputs: [1, "stable"],
+    ttl: 60,
+  });
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({
+    dataTransport: "file",
+    cacheVerbose: true,
+  });
+  const secondTable = secondSdb.newTable("cacheVerboseHit");
+  const logs = await captureConsoleLogs(() =>
+    secondTable.cache(createCompute(secondTable), {
+      inputs: [1, "stable"],
+      ttl: 60,
+    })
+  );
+
+  assertStringIncludes(logs, "Cache hit.");
+  assertStringIncludes(logs, "Compute function unchanged.");
+  assertStringIncludes(logs, "Inputs unchanged (2 checked).");
+  assertStringIncludes(logs, "has not expired.");
+
+  await secondSdb.close();
+});
+Deno.test("should omit input status when no explicit inputs were supplied", async () => {
+  const createCompute = (table: SimpleTable) => () => {
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstTable = firstSdb.newTable("cacheVerboseNoInputs");
+  await firstTable.cache(createCompute(firstTable));
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB({
+    dataTransport: "file",
+    cacheVerbose: true,
+  });
+  const secondTable = secondSdb.newTable("cacheVerboseNoInputs");
+  const logs = await captureConsoleLogs(() =>
+    secondTable.cache(createCompute(secondTable))
+  );
+
+  assertStringIncludes(logs, "Cache hit.\nCompute function unchanged.");
+  assertEquals(logs.includes("No explicit inputs to check."), false);
+
+  await secondSdb.close();
+});
+Deno.test("should identify a changed SimpleTable input by name", async () => {
+  const sdb = new SimpleDB({
+    dataTransport: "file",
+    cacheVerbose: true,
+  });
+  const source = sdb.newTable("cacheVerboseTableInput");
+  const output = sdb.newTable("cacheVerboseTableOutput");
+  source.loadArray([{ value: 1 }, { value: 2 }]);
+  const compute = async () => {
+    output.loadArray(await source.getData());
+  };
+
+  await output.cache(compute, { inputs: [source] });
+  source.filter("value = 1");
+  const logs = await captureConsoleLogs(() =>
+    output.cache(compute, { inputs: [source] })
+  );
+
+  assertStringIncludes(
+    logs,
+    'Inputs changed: table "cacheVerboseTableInput" changed.',
+  );
+
+  await sdb.close();
 });
 Deno.test("should compare cache inputs structurally", async () => {
   let computationRuns = 0;
@@ -947,3 +1093,17 @@ Deno.test("should cache dates and retrieve dates", async () => {
 
   assertEquals(firstPass, secondPass);
 });
+
+async function captureConsoleLogs(
+  run: () => Promise<unknown>,
+): Promise<string> {
+  const logs: string[] = [];
+  const originalLog = console.log;
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  try {
+    await run();
+  } finally {
+    console.log = originalLog;
+  }
+  return logs.join("\n");
+}

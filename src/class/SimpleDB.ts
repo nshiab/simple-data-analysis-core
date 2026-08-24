@@ -117,7 +117,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   logDuration: boolean;
   /**
-   * A flag indicating whether to log verbose cache-related messages.
+   * Whether to log cache hits and misses, code and input changes, TTL status,
+   * and cache read/write timing.
    *
    * @defaultValue `false`
    * @category Properties
@@ -295,7 +296,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.rowsToLog - The number of rows to display when logging a table.
    * @param options.charsToLog - The maximum number of characters to display for text-based cells.
    * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
-   * @param options.cacheVerbose - A flag indicating whether to log verbose cache-related messages.
+   * @param options.cacheVerbose - Whether to log cache hits and misses, code and input changes, TTL status, and cache read/write timing.
    * @param options.logSQL - A flag indicating whether to log SQL immediately before execution.
    * @param options.explainSQL - A flag indicating whether to log DuckDB query plans for supported statements.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
@@ -983,7 +984,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
     if (typeof this.durationStart === "number") {
       let string = prettyDuration(this.durationStart, {
-        prefix: "\n\nSimpleDB - Closed in ",
+        prefix: "\n\nSimpleDB ran for ",
       });
 
       if (this.cacheTimeSaved > 0) {
