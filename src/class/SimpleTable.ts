@@ -140,6 +140,7 @@ import clone from "../methods/clone.ts";
 import insertTables from "../methods/insertTables.ts";
 import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
+import loadOSM from "../methods/loadOSM.ts";
 import loadDirectory from "../methods/loadDirectory.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
@@ -568,7 +569,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Loads geospatial data from an external file or URL into the table.
+   * Loads geospatial data from an external file or URL into the table. OpenStreetMap `.osm` and `.osm.pbf` files are loaded through DuckDB's Osmium community extension.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -601,12 +602,90 @@ export default class SimpleTable extends Simple {
    * // Load geospatial data from a zipped shapefile and reproject to EPSG:4326 (WGS84)
    * table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Load OpenStreetMap XML or PBF data
+   * table.loadGeoData("./montreal.osm.pbf");
+   * ```
    */
   loadGeoData(
     file: string,
     options: { toEPSG4326?: boolean } = {},
   ): this {
     loadGeoData(this, file, options);
+    return this;
+  }
+
+  /**
+   * Downloads OpenStreetMap data and loads it as a geospatial table. The method queues the download and load; they run when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * DuckDB's [Osmium community extension](https://duckdb.org/community_extensions/extensions/osmium) reconstructs the geometries, which are stored with the EPSG:4326 projection.
+   *
+   * Filters use the standard [Overpass QL filter syntax](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#Filters). Equality filters are passed as `[key, value]` tuples and serialized by the method. A raw filter fragment string can be used for advanced Overpass filters.
+   *
+   * The default endpoint is a shared public service. Follow the [Overpass public-instance usage guidelines](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html), and configure another endpoint or run your own instance for high-volume usage.
+   *
+   * OpenStreetMap data is licensed under the [Open Data Commons Open Database License](https://www.openstreetmap.org/copyright). Public use requires [OpenStreetMap attribution](https://osmfoundation.org/wiki/Licence/Attribution_Guidelines), and distributing OSM or derivative databases can trigger the licence's share-alike requirements.
+   *
+   * @param bbox - The bounding box to query.
+   * @param bbox.west - The western longitude, between -180 and 180 and less than `east`.
+   * @param bbox.south - The southern latitude, between -90 and 90 and less than `north`.
+   * @param bbox.east - The eastern longitude, between -180 and 180 and greater than `west`.
+   * @param bbox.north - The northern latitude, between -90 and 90 and greater than `south`.
+   * @param options - Overpass request options.
+   * @param options.filters - One `[key, value]` tuple or an array of tuples. Array entries are combined as a union. A raw Overpass QL filter fragment string is also accepted.
+   * @param options.endpoint - The Overpass interpreter endpoint. Defaults to `https://overpass-api.de/api/interpreter`.
+   * @param options.timeout - A positive integer timeout in seconds, applied to both the Overpass query and HTTP request. If omitted, the endpoint's default query timeout applies and no HTTP request timeout is set.
+   * @param options.cache - If `true`, reads and writes the processed GeoParquet cache in `.sda-cache/osm`, which remains available until that directory is removed. If `false`, always requests fresh data and does not read or write the cache. Defaults to `true`.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
+   *
+   * @example
+   * ```ts
+   * // Load features matching one equality filter
+   * table.loadOSM(
+   *   { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+   *   { filters: ["amenity", "school"] },
+   * );
+   * const schools = await table.getGeoData();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load features matching either equality filter
+   * table.loadOSM(
+   *   { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+   *   {
+   *     filters: [["amenity", "school"], ["amenity", "college"]],
+   *   },
+   * );
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Use a raw Overpass filter fragment for an advanced filter
+   * table.loadOSM(
+   *   { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+   *   { filters: `["amenity"~"school|college"]` },
+   * );
+   * ```
+   */
+  loadOSM(
+    bbox: {
+      west: number;
+      south: number;
+      east: number;
+      north: number;
+    },
+    options: {
+      filters: string | [string, string] | [string, string][];
+      endpoint?: string;
+      timeout?: number;
+      cache?: boolean;
+    },
+  ): this {
+    loadOSM(this, bbox, options);
     return this;
   }
 

@@ -1,6 +1,97 @@
 import { assertEquals } from "@std/assert";
+import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
+
+Deno.test("should load an OSM XML file with geom geometries", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable("osmFixture");
+  table.loadGeoData("test/geodata/files/osm-fixture.osm");
+
+  assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+  assertEquals(
+    await sdb.customQuery(
+      `SELECT kind, type, id, ST_AsText(geom) AS wkt
+      FROM osmFixture WHERE id IN (1, 10, 20) ORDER BY id`,
+      { returnData: true },
+    ),
+    [
+      { kind: "node", type: "node", id: 1, wkt: "POINT (-73.599 45.501)" },
+      {
+        kind: "area",
+        type: "way",
+        id: 10,
+        wkt:
+          "POLYGON ((-73.598 45.502, -73.596 45.502, -73.596 45.504, -73.598 45.504, -73.598 45.502))",
+      },
+      {
+        kind: "area",
+        type: "relation",
+        id: 20,
+        wkt:
+          "MULTIPOLYGON (((-73.595 45.505, -73.593 45.505, -73.593 45.507, -73.595 45.507, -73.595 45.505)))",
+      },
+    ],
+  );
+  await sdb.close();
+});
+
+Deno.test("should load an OSM PBF file with geom geometries", async () => {
+  const file = join(tmpdir(), `${crypto.randomUUID()}.osm.pbf`);
+  // Base64-encoded osmium-tool test/formats/f1.osm.pbf fixture.
+  const fixture =
+    "AAAADQoJT1NNSGVhZGVyGC8QIxoreJxT4vMvzg1OzkjNTdQNM9AzU+JySc0rTvXLT0ktbmJkKUktLgEAv2ALIwAAAAsKB09TTURhdGEYchBvGm54nOPi52LgYilJLS4B0sxp+flCMUJRXCwiTExMWtpcLIxAICTY8OblZs4DH+fY3Gu/ZNnUfUZBioWJgYlJiYWJkY1ZiwWoltlJoOHWEc45b95xPjk+ixPE9uIFkR/2zGd6D8QMQSwMQAAAED0gQwAAAAsKB09TTURhdGEYYhBkGl54nONS5mLgYk7LzwdRFZVVXMyKDipczEmJRVzMWsr6XCwlqcUlQrZSyhwiQiyMTMwsUiysrExsSnwcjAITdkxayirBosCowe7ELMLEJCXGIYokwQiWYJJgAgAspg+lAAAACwoHT1NNRGF0YRhTEEgaT3ic45LjYuBirqis4mJOTErmYilJLS4BinAU5+emKpQnVgqpKalwyAkxMkoxMinxcTAKTNgxaSmrBKMCowazExMLqxeThEAQEwMjABQPDQo=";
+  writeFileSync(file, Buffer.from(fixture, "base64"));
+
+  try {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const table = sdb.newTable("osmPbfFixture");
+    table.loadGeoData(file);
+
+    assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    assertEquals(
+      await sdb.customQuery(
+        `SELECT kind, type, id, ST_AsText(geom) AS wkt
+        FROM osmPbfFixture WHERE id = 20`,
+        { returnData: true },
+      ),
+      [{
+        kind: "line",
+        type: "way",
+        id: 20,
+        wkt: "LINESTRING (1 1, 1.2355 2.034523, 1 3)",
+      }],
+    );
+    await sdb.close();
+  } finally {
+    rmSync(file, { force: true });
+  }
+});
+
+Deno.test("should stage and remove a remote OSM XML file", async () => {
+  rmSync(".sda-cache", { recursive: true, force: true });
+  const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
+  const server = Deno.serve(
+    { hostname: "127.0.0.1", port: 0 },
+    () => new Response(fixture),
+  );
+  const url =
+    `http://${server.addr.hostname}:${server.addr.port}/fixture.osm?download=1`;
+
+  try {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const table = sdb.newTable();
+    table.loadGeoData(url);
+    assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    await sdb.close();
+    assertEquals(readdirSync(".sda-cache/tmp"), []);
+  } finally {
+    await server.shutdown();
+    rmSync(".sda-cache", { recursive: true, force: true });
+  }
+});
 
 Deno.test("should escape geospatial file paths containing apostrophes", async () => {
   await Deno.mkdir("test/output", { recursive: true });

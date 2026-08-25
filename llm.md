@@ -55,6 +55,9 @@ database operations.
 
 Creates a new SimpleDB instance.
 
+DuckDB sessions use UTC so temporal parsing, extraction, and returned
+`TIMESTAMP WITH TIME ZONE` strings are consistent across environments.
+
 #### Parameters
 
 - **`options`**: Configuration options for the SimpleDB instance.
@@ -69,8 +72,8 @@ Creates a new SimpleDB instance.
   text-based cells.
 - **`options.typesToLog`**: A flag indicating whether to include data types when
   logging a table.
-- **`options.cacheVerbose`**: A flag indicating whether to log verbose
-  cache-related messages.
+- **`options.cacheVerbose`**: Whether to log cache hits and misses, code and
+  input changes, TTL status, and cache read/write timing.
 - **`options.logSQL`**: A flag indicating whether to log SQL immediately before
   execution.
 - **`options.explainSQL`**: A flag indicating whether to log DuckDB query plans
@@ -355,7 +358,9 @@ console.log(extensions); // Output: [{ extension_name: "spatial", loaded: true, 
 
 #### `customQuery`
 
-Executes a custom SQL query directly against the DuckDB instance.
+Executes a custom SQL query directly against the DuckDB instance. Queries run in
+UTC. When data is returned, temporal values use the same JavaScript
+representations as `SimpleTable.getData()`.
 
 ##### Signature
 
@@ -416,7 +421,10 @@ const tables = await sdb.customQuery("SHOW TABLES", {
 #### `loadDB`
 
 Loads a database from a specified file into the current SimpleDB instance.
-Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite).
+Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite). If a sibling
+`<database>_indexes.json` file exists, its definitions are restored to each
+table's `SimpleTable.indexes` property. The sidecar is logical SDA metadata;
+physical index objects, when supported, come from the database file itself.
 
 ##### Signature
 
@@ -431,7 +439,9 @@ async loadDB(file: string, options?: { name?: string; detach?: boolean }): Promi
 - **`options.name`**: The name to assign to the loaded database within the
   DuckDB instance. Defaults to the file name without extension.
 - **`options.detach`**: If `true` (default), the database is detached after
-  loading its contents into memory. If `false`, the database remains attached.
+  loading its contents into memory. If `false`, the database remains attached
+  and queries use its physical indexes in place, which is preferable for
+  repeated searches across scripts.
 
 ##### Returns
 
@@ -457,7 +467,11 @@ await sdb.loadDB("./archive.db", { name: "archive_db" });
 #### `writeDB`
 
 Writes the current state of the database to a specified file. Supported output
-file types are `.db` (DuckDB) and `.sqlite` (SQLite).
+file types are `.db` (DuckDB) and `.sqlite` (SQLite). By default, this also
+writes each table's `SimpleTable.indexes` definitions to a sibling
+`<database>_indexes.json` file. This metadata is the source of truth SDA
+restores with `loadDB()`; it is separate from any physical index objects DuckDB
+copies into the database file.
 
 ##### Signature
 
@@ -723,6 +737,11 @@ Loads an array of JavaScript objects into the table. This method queues the
 load; it runs when an async observer method (like `getData()` or `log()`) is
 awaited, or when `run()` is called.
 
+JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
+instant is preserved, but JavaScript `Date` does not retain the timezone or
+offset originally used to construct it. String values remain `VARCHAR`; use
+`convert()` to parse them as temporal values.
+
 ##### Signature
 
 ```typescript
@@ -747,6 +766,14 @@ const data = [
   { letter: "b", number: 2 },
 ];
 table.loadArray(data);
+```
+
+```ts
+// The offset determines the instant; the loaded TIMESTAMP is returned as
+// the equivalent UTC JavaScript Date.
+table.loadArray([{
+  observedAt: new Date("2024-04-07T13:00:00-04:00"),
+}]);
 ```
 
 #### `loadData`
@@ -936,7 +963,9 @@ table.loadDirectory("./data/", { columns: ["name", "salary"] });
 
 #### `loadGeoData`
 
-Loads geospatial data from an external file or URL into the table.
+Loads geospatial data from an external file or URL into the table. OpenStreetMap
+`.osm` and `.osm.pbf` files are loaded through DuckDB's Osmium community
+extension.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -981,6 +1010,101 @@ table.loadGeoData("./some-data/some-data.shp", { toEPSG4326: true });
 table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true });
 ```
 
+```ts
+// Load OpenStreetMap XML or PBF data
+table.loadGeoData("./montreal.osm.pbf");
+```
+
+#### `loadOSM`
+
+Downloads OpenStreetMap data and loads it as a geospatial table. The method
+queues the download and load; they run when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+DuckDB's
+[Osmium community extension](https://duckdb.org/community_extensions/extensions/osmium)
+reconstructs the geometries, which are stored with the EPSG:4326 projection.
+
+Filters use the standard
+[Overpass QL filter syntax](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL#Filters).
+Equality filters are passed as `[key, value]` tuples and serialized by the
+method. A raw filter fragment string can be used for advanced Overpass filters.
+
+The default endpoint is a shared public service. Follow the
+[Overpass public-instance usage guidelines](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html),
+and configure another endpoint or run your own instance for high-volume usage.
+
+OpenStreetMap data is licensed under the
+[Open Data Commons Open Database License](https://www.openstreetmap.org/copyright).
+Public use requires
+[OpenStreetMap attribution](https://osmfoundation.org/wiki/Licence/Attribution_Guidelines),
+and distributing OSM or derivative databases can trigger the licence's
+share-alike requirements.
+
+##### Signature
+
+```typescript
+loadOSM(bbox: { west: number; south: number; east: number; north: number }, options: { filters: string | [string, string] | [string, string][]; endpoint?: string; timeout?: number; cache?: boolean }): this;
+```
+
+##### Parameters
+
+- **`bbox`**: The bounding box to query.
+- **`bbox.west`**: The western longitude, between -180 and 180 and less than
+  `east`.
+- **`bbox.south`**: The southern latitude, between -90 and 90 and less than
+  `north`.
+- **`bbox.east`**: The eastern longitude, between -180 and 180 and greater than
+  `west`.
+- **`bbox.north`**: The northern latitude, between -90 and 90 and greater than
+  `south`.
+- **`options`**: Overpass request options.
+- **`options.filters`**: One `[key, value]` tuple or an array of tuples. Array
+  entries are combined as a union. A raw Overpass QL filter fragment string is
+  also accepted.
+- **`options.endpoint`**: The Overpass interpreter endpoint. Defaults to
+  `https://overpass-api.de/api/interpreter`.
+- **`options.timeout`**: A positive integer timeout in seconds, applied to both
+  the Overpass query and HTTP request. If omitted, the endpoint's default query
+  timeout applies and no HTTP request timeout is set.
+- **`options.cache`**: If `true`, reads and writes the processed GeoParquet
+  cache in `.sda-cache/osm`, which remains available until that directory is
+  removed. If `false`, always requests fresh data and does not read or write the
+  cache. Defaults to `true`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Load features matching one equality filter
+table.loadOSM(
+  { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+  { filters: ["amenity", "school"] },
+);
+const schools = await table.getGeoData();
+```
+
+```ts
+// Load features matching either equality filter
+table.loadOSM(
+  { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+  {
+    filters: [["amenity", "school"], ["amenity", "college"]],
+  },
+);
+```
+
+```ts
+// Use a raw Overpass filter fragment for an advanced filter
+table.loadOSM(
+  { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+  { filters: `["amenity"~"school|college"]` },
+);
+```
+
 #### `createFtsIndex`
 
 Creates a full-text search (FTS) index on a specified text column using DuckDB's
@@ -988,7 +1112,10 @@ Creates a full-text search (FTS) index on a specified text column using DuckDB's
 
 If an FTS index already exists on the table, this method will skip creation and
 log a message (when verbose is enabled), unless the `overwrite` option is set to
-`true`.
+`true`. The index definition is recorded in {@link indexes}. The {@link bm25}
+method requires an FTS index and creates one automatically when needed. DuckDB
+FTS indexes do not update automatically when the table changes; use
+`overwrite: true` to rebuild the index after modifying the table.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -1001,20 +1128,6 @@ createFtsIndex(idColumn: string, textColumn: string, options?: { stemmer?: "arab
 
 ##### Parameters
 
-- **`idColumn`**: The name of the column containing unique identifiers for each
-  row.
-- **`textColumn`**: The name of the column containing the text to index.
-- **`options`**: An optional object with configuration options:
-- **`options.stemmer`**: The language stemmer to apply for word normalization.
-  Supports multiple languages or "none" to disable stemming. Defaults to
-  'porter'.
-- **`options.stopwords`**: The table containing the stopwords to use for the FTS
-  index. Supports multiple languages or "none" to disable stopwords. Defaults to
-  "english".
-- **`options.overwrite`**: If `true`, recreates the index even if it already
-  exists. Defaults to `false`.
-- **`options.verbose`**: If `true`, logs additional debugging information,
-  including index creation status. Defaults to `false`.
 - **`idColumn`**: The column containing the document identifiers.
 - **`textColumn`**: The column containing the text to search.
 - **`options`**: An optional object with configuration options:
@@ -1031,8 +1144,8 @@ createFtsIndex(idColumn: string, textColumn: string, options?: { stemmer?: "arab
   lowercase. Defaults to true.
 - **`options.overwrite`**: A boolean indicating whether to overwrite the
   existing FTS index. Defaults to false.
-- **`options.verbose`**: A boolean indicating whether to log additional
-  information. Defaults to false.
+- **`options.verbose`**: If `true`, logs FTS index creation status. Defaults to
+  `false`.
 
 ##### Returns
 
@@ -1041,10 +1154,8 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Load a dataset and create an FTS index
+// Load a dataset and create an FTS index for later searches
 table.loadData("recipes.parquet");
-
-// Create FTS index for later searches
 table.createFtsIndex("Dish", "Recipe");
 ```
 
@@ -1068,7 +1179,7 @@ table.createFtsIndex("Dish", "Recipe", {
 table.createFtsIndex("Dish", "Recipe", {
   verbose: true,
 });
-// Logs: "Creating FTS index on 'Recipe' column..."
+// Logs: 'Creating FTS index on "Recipe" column...'
 // Logs: "FTS index created successfully."
 ```
 
@@ -1079,7 +1190,7 @@ DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
 
 If a VSS index already exists on the table, this method will skip creation and
 log a message (when verbose is enabled), unless the `overwrite` option is set to
-`true`.
+`true`. The index definition is recorded in {@link indexes}.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -1097,8 +1208,8 @@ createVssIndex(column: string, options?: { overwrite?: boolean; verbose?: boolea
 - **`options`**: An optional object with configuration options:
 - **`options.overwrite`**: If `true`, drops and recreates the index even if it
   already exists. Defaults to `false`.
-- **`options.verbose`**: If `true`, logs additional debugging information,
-  including index creation status. Defaults to `false`.
+- **`options.verbose`**: If `true`, logs VSS index creation status. Defaults to
+  `false`.
 - **`options.efConstruction`**: The number of candidate vertices to consider
   during index construction. Higher values result in more accurate indexes but
   increase build time. Defaults to 128.
@@ -1135,7 +1246,7 @@ table.createVssIndex("embedding_column", {
 table.createVssIndex("embedding_column", {
   verbose: true,
 });
-// Logs: "Creating VSS index on 'embedding_column' column..."
+// Logs: 'Creating VSS index on "embedding_column" column...'
 // Logs: "VSS index created successfully."
 ```
 
@@ -1150,16 +1261,14 @@ table.createVssIndex("embedding_column", {
 
 #### `bm25`
 
-Performs BM25 full-text search on a text column to find the most relevant
-results. BM25 (Best Matching 25) is a ranking function used in information
-retrieval that calculates relevance scores based on term frequency and document
-length normalization.
+Searches a text column using DuckDB's BM25 ranking function, which scores
+matches using factors including term frequency and document length.
 
-This method creates a full-text search index on the specified text column using
-DuckDB's
+This method creates the required index with DuckDB's
 [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
-If the index already exists, it will be reused unless the `overwriteIndex`
-option is set to `true`.
+It reuses the table's existing FTS index unless `overwriteIndex` is `true`.
+DuckDB FTS indexes do not update automatically when the source table changes;
+use `overwriteIndex: true` to rebuild the index after modifying the table.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -1181,8 +1290,8 @@ bm25(text: string, idColumn: string, textColumn: string, count: number, options?
 - **`options.outputTable`**: The name of a new table where the results will be
   stored. If not provided, the current table will be replaced with the search
   results.
-- **`options.verbose`**: If `true`, logs additional debugging information,
-  including FTS index creation status. Defaults to `false`.
+- **`options.verbose`**: If `true`, logs FTS index creation status. Defaults to
+  `false`.
 - **`options.k`**: The BM25 k parameter controlling term frequency saturation.
   Defaults to 1.2.
 - **`options.b`**: The BM25 b parameter controlling document length
@@ -1269,8 +1378,6 @@ const french = table.bm25("french food", "Dish", "Recipe", 5, {
   outputTable: "french",
 });
 ```
-
-- @example
 
 ```ts
 // Filter results by a minimum BM25 score and include the score in the output
@@ -2400,9 +2507,12 @@ This method queues the operation; it runs when an async observer method (like
 Converts data types of specified columns to target types (JavaScript or SQL
 types).
 
-When converting timestamps, dates, or times to/from strings, you must provide a
+When converting non-standard timestamp, date, or time strings, provide a
 `datetimeFormat` option using
 [DuckDB's format specifiers](https://duckdb.org/docs/sql/functions/dateformat).
+Strings converted to `datetimeTz` or `timestamp with time zone` use an explicit
+`Z` or numeric offset when present; strings without an offset are interpreted as
+UTC. Returned `TIMESTAMP WITH TIME ZONE` values are rendered as UTC strings.
 
 When converting timestamps, dates, or times to/from numbers, the numerical
 representation will be in milliseconds since the Unix epoch (1970-01-01 00:00:00
@@ -2452,6 +2562,15 @@ table.convert({ column1: "varchar", column2: "bigint" });
 ```ts
 // Convert strings in 'column3' to datetime using a specific format
 table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" });
+```
+
+```ts
+// Both values identify instants and are rendered in UTC.
+table.loadArray([
+  { observedAt: "2024-04-07T13:00:00-04:00" },
+  { observedAt: "2024-04-07T17:00:00Z" },
+]);
+table.convert({ observedAt: "datetimeTz" });
 ```
 
 ```ts
@@ -2554,6 +2673,54 @@ table.addColumn("total", "float", "column1 + column2");
 ```ts
 // Add a new geometry column 'centroid' using the centroid of an existing 'country' geometry column
 table.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid("country")`);
+```
+
+#### `extractDatePart`
+
+Extracts one or more components from a temporal column into new columns. Pass a
+single part to create a column with that part's name, or pass an object mapping
+custom new-column names to parts. Existing columns are not overwritten.
+
+`dayOfWeek` uses Sunday as `0` through Saturday as `6`. `week` follows ISO week
+numbering, and `dayOfYear` starts at `1`. DuckDB `DATE`, `TIME`, `TIMESTAMP`,
+and `TIMESTAMP WITH TIME ZONE` columns are supported when the requested
+component applies to that type: date parts apply to dates and timestamps, while
+time parts apply to times and timestamps. `NULL` input values produce `NULL`
+extracted values. Parts extracted from `TIMESTAMP WITH TIME ZONE` values use
+UTC.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+extractDatePart(column: string, parts: "year" | "quarter" | "month" | "week" | "day" | "dayOfWeek" | "dayOfYear" | "hour" | "minute" | "second" | Record<string, "year" | "quarter" | "month" | "week" | "day" | "dayOfWeek" | "dayOfYear" | "hour" | "minute" | "second">): this;
+```
+
+##### Parameters
+
+- **`column`**: The temporal column from which to extract components.
+- **`parts`**: A part to extract using its name as the new column, or an object
+  mapping each custom new-column name to the part it should contain.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Add a column named 'year' from the 'publishedAt' timestamp
+table.extractDatePart("publishedAt", "year");
+```
+
+```ts
+// Extract multiple components with custom column names
+table.extractDatePart("publishedAt", {
+  publicationYear: "year",
+  publicationMonth: "month",
+});
 ```
 
 #### `addRowNumber`
@@ -3873,15 +4040,17 @@ The table will then look like this:
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
 
-#### `highestColumn`
+#### `rowRanks`
 
-Adds the name of the column containing the highest value on each row.
+Selects a ranked numeric value within each row and adds its source column name,
+its value, or both as new columns.
 
-Null values are ignored. If every selected value on a row is null, the new
-column is null. By default, a tie throws an error. Set `options.ties` to
-`"first"` to use the first tied column in the supplied order, or to `"all"` to
-produce one row for each tied column. The `"all"` option can therefore increase
-the table's row count.
+Values are ranked from highest to lowest by default. Null values are ignored. By
+default, a tie at the requested rank throws an error. Set `options.ties` to
+`"first"` to select the first tied column in the supplied order, or to `"all"`
+to produce one row for each tied column. The `"all"` option can therefore
+increase the table's row count. If null values leave a row without the requested
+rank, the new columns contain null.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -3889,18 +4058,25 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-highestColumn(columns: string[], newColumn: string, options?: { ties?: "strict" | "first" | "all" }): this;
+rowRanks(columns: string[], options: ({ nameColumn: string; valueColumn?: string } | { nameColumn?: string; valueColumn: string }) & { rank?: number; order?: "asc" | "desc"; ties?: "strict" | "first" | "all" }): this;
 ```
 
 ##### Parameters
 
-- **`columns`**: The numeric columns to compare on each row.
-- **`newColumn`**: The name of the new column that will contain the selected
-  column name.
-- **`options`**: Optional tie-handling configuration.
-- **`options.ties`**: How to handle equal highest values: `"strict"` throws,
-  `"first"` selects the first supplied column, and `"all"` produces one row per
-  tied column. Defaults to `"strict"`.
+- **`columns`**: The numeric columns to rank within each row.
+- **`options`**: The output columns and ranking configuration. At least one of
+  `nameColumn` or `valueColumn` is required.
+- **`options.nameColumn`**: The name of a new column containing the selected
+  source column's name.
+- **`options.valueColumn`**: The name of a new column containing the selected
+  source column's value.
+- **`options.rank`**: The one-based rank to select. Must not exceed the number
+  of supplied columns. Defaults to `1`.
+- **`options.order`**: The ranking order: `"desc"` ranks the highest value first
+  and `"asc"` ranks the lowest value first. Defaults to `"desc"`.
+- **`options.ties`**: How to handle a tie at the requested rank: `"strict"`
+  throws, `"first"` selects the first supplied column, and `"all"` produces one
+  row per tied column. Defaults to `"strict"`.
 
 ##### Returns
 
@@ -3909,63 +4085,20 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Adds winner: "CAQ" when CAQ has the highest value on a row.
-table.highestColumn(["CAQ", "PLQ", "PQ"], "winner");
+// Add the name and value of the highest-scoring party on each row.
+table.rowRanks(["CAQ", "PLQ", "PQ"], {
+  nameColumn: "winner",
+  valueColumn: "winningVotes",
+});
 ```
 
 ```ts
-table.loadArray([{ district: "Example", CAQ: 100, PLQ: 100, PQ: 40 }]);
-table.highestColumn(["CAQ", "PLQ", "PQ"], "winner", { ties: "all" });
-await table.getData();
-// [
-//   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "CAQ" },
-//   { district: "Example", CAQ: 100, PLQ: 100, PQ: 40, winner: "PLQ" },
-// ]
-```
-
-#### `lowestColumn`
-
-Adds the name of the column containing the lowest value on each row.
-
-Null values are ignored. If every selected value on a row is null, the new
-column is null. By default, a tie throws an error. Set `options.ties` to
-`"first"` to use the first tied column in the supplied order, or to `"all"` to
-produce one row for each tied column. The `"all"` option can therefore increase
-the table's row count.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
-##### Signature
-
-```typescript
-lowestColumn(columns: string[], newColumn: string, options?: { ties?: "strict" | "first" | "all" }): this;
-```
-
-##### Parameters
-
-- **`columns`**: The numeric columns to compare on each row.
-- **`newColumn`**: The name of the new column that will contain the selected
-  column name.
-- **`options`**: Optional tie-handling configuration.
-- **`options.ties`**: How to handle equal lowest values: `"strict"` throws,
-  `"first"` selects the first supplied column, and `"all"` produces one row per
-  tied column. Defaults to `"strict"`.
-
-##### Returns
-
-The table, so methods can be chained.
-
-##### Examples
-
-```ts
-// Adds smallestParty: "PQ" when PQ has the lowest value on a row.
-table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty");
-```
-
-```ts
-// Selects the first supplied column when multiple columns share the minimum.
-table.lowestColumn(["CAQ", "PLQ", "PQ"], "smallestParty", { ties: "first" });
+// Add only the second-lowest value on each row.
+table.rowRanks(["CAQ", "PLQ", "PQ"], {
+  valueColumn: "secondLowestVotes",
+  rank: 2,
+  order: "asc",
+});
 ```
 
 #### `columnProportions`
@@ -4569,6 +4702,100 @@ table.normalize("value", "normalizedValue", { by: "group" });
 table.normalize("data", "normalizedData", { decimals: 2 });
 ```
 
+#### `indexValues`
+
+Indexes a numeric column by dividing each value by a reference value and
+multiplying the result by a base value.
+
+The reference can be calculated from the indexed column with a statistic, read
+from exactly one row selected by another column's value, or read from the unique
+row where another column reaches its minimum or maximum. With `options.by`,
+references are calculated or selected independently within each group. Null
+values in the indexed column remain null when their group has a valid reference.
+The operation throws when a group has no unique selected row or its reference
+value is null or zero.
+
+Exact temporal references are compared at their full DuckDB precision.
+JavaScript `Date` objects only have millisecond precision and always represent
+an instant. Construct them with an explicit timezone, such as
+`new Date("2001-01-01T00:00:00Z")`; date-time strings without `Z` or an offset
+use the user's local timezone.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+indexValues(column: string, newColumn: string, reference: { stat: "min" | "max" | "mean" | "median"; column?: never; equals?: never; at?: never } | { column: string; equals: string | number | bigint | boolean | Date; stat?: never; at?: never } | { column: string; at: "min" | "max"; stat?: never; equals?: never }, options?: { by?: string | string[]; base?: number; decimals?: number }): this;
+```
+
+##### Parameters
+
+- **`column`**: The numeric column containing the values to index.
+- **`newColumn`**: The name of the new column where indexed values will be
+  stored.
+- **`reference`**: A statistic calculated from `column`, a column and exact
+  non-null `equals` value selecting a row, or a column and `at` set to `min` or
+  `max` selecting its unique extreme row. The selected row's `column` value
+  becomes the reference.
+- **`reference.stat`**: The statistic used to calculate the reference directly
+  from the indexed column.
+- **`reference.column`**: The column used to select an exact reference row or
+  its unique minimum or maximum row.
+- **`reference.equals`**: The non-null value used to select an exact reference
+  row. Its JavaScript type must be compatible with the reference column's DuckDB
+  type; string, numeric, boolean, and temporal values are not coerced across
+  type families. Date values should be constructed with an explicit timezone.
+- **`reference.at`**: Selects the unique row where `reference.column` reaches
+  its minimum or maximum.
+- **`options`**: An optional object with configuration options.
+- **`options.by`**: A column name or an array of column names to partition by.
+  The reference is calculated independently within each group.
+- **`options.base`**: The finite positive value assigned to the reference.
+  Defaults to `100`.
+- **`options.decimals`**: A finite non-negative integer specifying the number of
+  decimal places to retain. By default, values are not rounded.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Index each country's average home price to its January 2001 value.
+table.indexValues(
+  "homePrice",
+  "homePriceIndexed",
+  {
+    column: "date",
+    equals: new Date("2001-01-01T00:00:00Z"),
+  },
+  {
+    by: "country",
+    base: 100,
+    decimals: 1,
+  },
+);
+```
+
+```ts
+// Index each value against the mean of its group.
+table.indexValues("homePrice", "homePriceIndexed", { stat: "mean" }, {
+  by: "country",
+});
+```
+
+```ts
+// Index each country's average home price to its earliest value.
+// This throws if multiple rows share the earliest date in a country.
+table.indexValues("homePrice", "homePriceIndexed", {
+  column: "date",
+  at: "min",
+}, { by: "country" });
+```
+
 #### `updateWithJS`
 
 Updates data in the table using a JavaScript function. The function receives the
@@ -4923,7 +5150,8 @@ console.log(hash); // e.g., "8f14e45fceea..."
 
 #### `getValues`
 
-Returns all values from a specific column.
+Returns all values from a specific column. Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -4950,7 +5178,8 @@ console.log(productNames); // e.g., ["Laptop", "Mouse", "Keyboard"]
 
 #### `getMin`
 
-Returns the minimum value from a specific column.
+Returns the minimum value from a specific column. Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -4976,7 +5205,8 @@ console.log(minPrice); // e.g., 10.50
 
 #### `getMax`
 
-Returns the maximum value from a specific column.
+Returns the maximum value from a specific column. Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5003,7 +5233,7 @@ console.log(maxPrice); // e.g., 99.99
 #### `getExtent`
 
 Returns the extent (minimum and maximum values) of a specific column as an
-array.
+array. Temporal values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5198,14 +5428,14 @@ const scoreStdDev = await table.getStdDev("score", { decimals: 3 });
 console.log(scoreStdDev); // e.g., 12.345
 ```
 
-#### `getVar`
+#### `getVariance`
 
 Returns the variance of values from a specific numeric column.
 
 ##### Signature
 
 ```typescript
-async getVar(column: string, options?: { decimals?: number }): Promise<number>;
+async getVariance(column: string, options?: { decimals?: number }): Promise<number>;
 ```
 
 ##### Parameters
@@ -5224,13 +5454,13 @@ A promise that resolves to the variance value of the specified column.
 
 ```ts
 // Get the variance of the 'data' column
-const dataVariance = await table.getVar("data");
+const dataVariance = await table.getVariance("data");
 console.log(dataVariance); // e.g., 25.5
 ```
 
 ```ts
 // Get the variance of the 'values' column, rounded to 2 decimal places
-const valuesVariance = await table.getVar("values", { decimals: 2 });
+const valuesVariance = await table.getVariance("values", { decimals: 2 });
 console.log(valuesVariance); // e.g., 10.23
 ```
 
@@ -5279,7 +5509,8 @@ console.log(ninetiethPercentile); // e.g., 88.55
 #### `getUniques`
 
 Returns unique values from a specific column. The values are returned in
-ascending order.
+ascending order. Temporal values use the same JavaScript representations as
+`getData()`.
 
 ##### Signature
 
@@ -5308,6 +5539,7 @@ console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
 
 Returns the first row of the table, optionally filtered by SQL conditions. You
 can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Temporal values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5346,6 +5578,7 @@ console.log(firstRowBooks);
 
 Returns the last row of the table, optionally filtered by SQL conditions. You
 can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+Temporal values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5384,7 +5617,7 @@ console.log(lastRowBooks);
 
 Returns the top `n` rows of the table, optionally filtered by SQL conditions.
 You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`,
-`!==`).
+`!==`). Temporal values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5422,7 +5655,8 @@ console.log(top5Books);
 Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
 By default, the last row will be returned first. To preserve the original order,
 use the `originalOrder` option. You can also use JavaScript syntax for
-conditions (e.g., `&&`, `||`, `===`, `!==`).
+conditions (e.g., `&&`, `||`, `===`, `!==`). Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5472,7 +5706,8 @@ console.log(bottom5Books);
 
 Returns a single row that matches the specified conditions. If no row matches or
 if more than one row matches, an error is thrown by default. You can also use
-JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
+JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`). Temporal
+values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5523,6 +5758,11 @@ console.log(flexibleRow);
 Returns the data from the table as an array of objects, optionally filtered by
 SQL conditions. You can also use JavaScript syntax for conditions (e.g., `&&`,
 `||`, `===`, `!==`).
+
+Top-level DuckDB `DATE` and `TIMESTAMP` columns are returned as JavaScript
+`Date` objects interpreted in UTC. `TIMESTAMP WITH TIME ZONE` values are
+returned as UTC strings, preserving DuckDB's microsecond precision; JavaScript
+`Date` supports only milliseconds.
 
 ##### Signature
 
@@ -5627,7 +5867,8 @@ for await (
 
 Returns the data from the table as a CSV string, optionally filtered by SQL
 conditions. You can also use JavaScript syntax for conditions (e.g., `&&`, `||`,
-`===`, `!==`).
+`===`, `!==`). Temporal values are first converted as they are in `getData()`,
+then serialized using UTC date and timestamp text.
 
 ##### Signature
 
@@ -6028,7 +6269,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): this;
+area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -6040,6 +6281,8 @@ area(newColumn: string, options?: { unit?: "m2" | "km2"; column?: string }): thi
   `"km2"` (square kilometers). Defaults to `"m2"`.
 - **`options.column`**: The name of the column storing the geometries. If
   omitted, the method will automatically attempt to find a geometry column.
+- **`options.decimals`**: The number of decimal places to round the computed
+  areas. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -6058,6 +6301,11 @@ table.area("area_km2", { unit: "km2" });
 ```
 
 ```ts
+// Compute areas in square kilometers rounded to two decimal places
+table.area("area_km2", { unit: "km2", decimals: 2 });
+```
+
+```ts
 // Compute the area of geometries in a specific column named 'myGeom'
 table.area("myGeomArea", { column: "myGeom" });
 ```
@@ -6073,7 +6321,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): this;
+length(newColumn: string, options?: { unit?: "m" | "km"; column?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -6085,6 +6333,8 @@ length(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): thi
   (kilometers). Defaults to `"m"`.
 - **`options.column`**: The name of the column storing the geometries. If
   omitted, the method will automatically attempt to find a geometry column.
+- **`options.decimals`**: The number of decimal places to round the computed
+  lengths. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -6103,6 +6353,11 @@ table.length("length_km", { unit: "km" });
 ```
 
 ```ts
+// Compute lengths in kilometers rounded to two decimal places
+table.length("length_km", { unit: "km", decimals: 2 });
+```
+
+```ts
 // Compute the length of geometries in a specific column named 'routeGeom'
 table.length("routeLength", { column: "routeGeom" });
 ```
@@ -6118,7 +6373,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): this;
+perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -6130,6 +6385,8 @@ perimeter(newColumn: string, options?: { unit?: "m" | "km"; column?: string }): 
   `"km"` (kilometers). Defaults to `"m"`.
 - **`options.column`**: The name of the column storing the geometries. If
   omitted, the method will automatically attempt to find a geometry column.
+- **`options.decimals`**: The number of decimal places to round the computed
+  perimeters. Defaults to `undefined` (no rounding).
 
 ##### Returns
 
@@ -6145,6 +6402,11 @@ table.perimeter("perimeter_m");
 ```ts
 // Compute the perimeter of polygon geometries in kilometers and store in 'perimeter_km'
 table.perimeter("perimeter_km", { unit: "km" });
+```
+
+```ts
+// Compute perimeters in kilometers rounded to two decimal places
+table.perimeter("perimeter_km", { unit: "km", decimals: 2 });
 ```
 
 ```ts
@@ -6323,10 +6585,10 @@ The table, so methods can be chained.
 table.intersection("geomA", "geomB", "intersectGeom");
 ```
 
-#### `removeIntersection`
+#### `difference`
 
-Removes the intersection of two geometries from the first geometry, effectively
-computing the geometric difference.
+Computes the geometric difference between two geometries, returning the portion
+of the first geometry that does not intersect the second.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -6334,17 +6596,17 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-removeIntersection(column1: string, column2: string, newColumn: string): this;
+difference(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
 
-- **`column1`**: The name of the column storing the reference geometries. These
-  geometries will have the intersection removed.
-- **`column2`**: The name of the column storing the geometries used to compute
-  the intersection. Both columns must have the same projection.
-- **`newColumn`**: The name of the new column where the resulting geometries
-  (without the intersection) will be stored.
+- **`column1`**: The name of the column storing the geometries from which the
+  second geometries will be subtracted.
+- **`column2`**: The name of the column storing the geometries to subtract. Both
+  columns must have the same projection.
+- **`newColumn`**: The name of the new column where the geometric differences
+  will be stored.
 
 ##### Returns
 
@@ -6353,8 +6615,8 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Remove the intersection of 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
-table.removeIntersection("geomA", "geomB", "geomA_minus_geomB");
+// Subtract 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
+table.difference("geomA", "geomB", "geomA_minus_geomB");
 ```
 
 #### `fillHoles`
@@ -6391,7 +6653,7 @@ table.fillHoles();
 table.fillHoles("polygonGeom");
 ```
 
-#### `intersect`
+#### `intersects`
 
 Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE`
 otherwise.
@@ -6402,7 +6664,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-intersect(column1: string, column2: string, newColumn: string): this;
+intersects(column1: string, column2: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -6421,13 +6683,13 @@ The table, so methods can be chained.
 
 ```ts
 // Check if geometries in 'geomA' and 'geomB' intersect, storing results in 'doIntersect'
-table.intersect("geomA", "geomB", "doIntersect");
+table.intersects("geomA", "geomB", "doIntersect");
 ```
 
-#### `inside`
+#### `coveredBy`
 
-Returns `TRUE` if all points of a geometry in `column` lie inside a geometry in
-`containerColumn`, and `FALSE` otherwise.
+Returns `TRUE` if every point of a geometry in `column` is covered by a geometry
+in `containerColumn`, including their boundaries, and `FALSE` otherwise.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -6435,7 +6697,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-inside(column: string, containerColumn: string, newColumn: string): this;
+coveredBy(column: string, containerColumn: string, newColumn: string): this;
 ```
 
 ##### Parameters
@@ -6445,7 +6707,7 @@ inside(column: string, containerColumn: string, newColumn: string): this;
 - **`containerColumn`**: The name of the column storing the geometries to be
   tested as containers. Both columns must have the same projection.
 - **`newColumn`**: The name of the new column where the boolean results (`TRUE`
-  for inside, `FALSE` otherwise) will be stored.
+  when covered, `FALSE` otherwise) will be stored.
 
 ##### Returns
 
@@ -6454,8 +6716,8 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Check if geometries in 'pointGeom' are inside 'polygonGeom', storing results in 'isInsidePolygon'
-table.inside("pointGeom", "polygonGeom", "isInsidePolygon");
+// Check if geometries in 'pointGeom' are covered by 'polygonGeom', storing results in 'isCovered'
+table.coveredBy("pointGeom", "polygonGeom", "isCovered");
 ```
 
 #### `union`
@@ -6751,10 +7013,10 @@ table.unnestGeo();
 table.unnestGeo("multiGeom");
 ```
 
-#### `boundingBox`
+#### `addBoundingBox`
 
-Computes the bounding box of geometries in a specified column, creating four new
-columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
+Adds the bounding box coordinates of geometries in a specified column as four
+new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -6762,7 +7024,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-boundingBox(options?: { column?: string; decimals?: number }): this;
+addBoundingBox(options?: { column?: string; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -6782,13 +7044,13 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the bounding box for geometries in the default column
-table.boundingBox();
+table.addBoundingBox();
 // The table now has minLon, minLat, maxLon, and maxLat columns.
 ```
 
 ```ts
 // Compute the bounding box for geometries in 'geom' column and round coordinates to 2 decimal places
-table.boundingBox({ column: "geom", decimals: 2 });
+table.addBoundingBox({ column: "geom", decimals: 2 });
 // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
 ```
 
@@ -7042,13 +7304,21 @@ async writeGeoData(file: string, options?: { precision?: number; compression?: b
 ##### Parameters
 
 - **`file`**: The absolute path to the output file (e.g., `"./output.geojson"`,
-  `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`).
+  `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`,
+  `"./output.shp.zip"`). A `.shp.zip` extension writes a ZIP archive using fast
+  DEFLATE compression. Creating the archive temporarily requires enough disk
+  space for both the uncompressed Shapefile and the ZIP, and ZIP archives are
+  limited to 4 GB.
 - **`options`**: An optional object with configuration options:
 - **`options.precision`**: For GeoJSON, the maximum number of figures after the
   decimal separator to write in coordinates. Defaults to `undefined` (full
   precision).
-- **`options.compression`**: For GeoParquet, if `true`, the output will be ZSTD
-  compressed. Defaults to `false`.
+- **`options.compression`**: For GeoParquet, if `true`, uses ZSTD compression;
+  otherwise, uses DuckDB's default SNAPPY compression. SNAPPY prioritizes faster
+  compression, while ZSTD typically produces smaller files but takes longer to
+  write. Read performance depends on the data and storage because smaller files
+  can reduce I/O. This option is not supported for GeoJSON or Shapefiles.
+  Defaults to `false`.
 - **`options.rewind`**: For GeoJSON, if `true`, rewinds the coordinates of
   polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
 - **`options.metadata`**: For GeoJSON, an object to be added as top-level
@@ -7068,13 +7338,18 @@ await table.writeGeoData("./output.geojson");
 ```
 
 ```ts
-// Write geospatial data to a compressed GeoParquet file
+// Write geospatial data to a ZSTD-compressed GeoParquet file
 await table.writeGeoData("./output.geoparquet", { compression: true });
 ```
 
 ```ts
 // Write geospatial data to a Shapefile with all relevant files  in the same folder
 await table.writeGeoData("./shapefile-folder/output.shp");
+```
+
+```ts
+// Write a Shapefile and its related files to output.shp.zip
+await table.writeGeoData("./output.shp.zip");
 ```
 
 ```ts
@@ -7089,6 +7364,13 @@ await table.writeGeoData("./output_high_precision.geojson", {
 
 Caches the results of computations in `./.sda-cache`. You should add
 `./.sda-cache` to your `.gitignore` file.
+
+Cache entries are stored as DuckDB database files. Full-text search (FTS)
+indexes are persisted in the cache file and restored directly on a cache hit.
+Vector similarity search (VSS/HNSW) indexes are not persisted in the cache file;
+their definitions are stored as metadata and used to rebuild the indexes on
+every cache hit. If loading the entry or restoring its indexes fails, the
+computation runs again and replaces the cache entry.
 
 ##### Signature
 

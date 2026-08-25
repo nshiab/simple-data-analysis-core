@@ -6,6 +6,14 @@ import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import { rmSync } from "node:fs";
+import SDAError from "../class/SDAError.ts";
+import loadOsmFile from "../helpers/loadOsmFile.ts";
+import {
+  downloadOsmToTemporaryFile,
+  getOsmFileSuffix,
+  isRemoteOsmUrl,
+} from "../helpers/osmFiles.ts";
 
 export default function loadGeoData(
   simpleTable: SimpleTable,
@@ -26,6 +34,38 @@ async function executeLoadGeoData(
   file: string,
   options: { toEPSG4326?: boolean },
 ): Promise<void> {
+  const osmSuffix = getOsmFileSuffix(file);
+  if (osmSuffix !== null) {
+    let temporaryFile: string | undefined;
+    try {
+      const localFile = isRemoteOsmUrl(file)
+        ? temporaryFile = await downloadOsmToTemporaryFile(file, {
+          suffix: osmSuffix,
+          request: { headers: { "accept-encoding": "gzip" } },
+        })
+        : file;
+      await loadOsmFile(simpleTable, localFile, {
+        method: "loadGeoData()",
+        parameters: { file, options },
+      });
+      return;
+    } catch (error) {
+      if (error instanceof SDAError) {
+        throw error;
+      }
+      throw new SDAError({
+        method: "loadGeoData()",
+        parameters: { file, options },
+        query: "",
+        cause: error,
+      });
+    } finally {
+      if (temporaryFile !== undefined) {
+        rmSync(temporaryFile, { force: true });
+      }
+    }
+  }
+
   const fileExtension = getExtension(file);
 
   if (fileExtension === "geoparquet" || fileExtension === "parquet") {
