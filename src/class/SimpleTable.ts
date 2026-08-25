@@ -6387,9 +6387,19 @@ export default class SimpleTable extends Simple {
    *
    * `cache()` automatically tracks whether earlier SDA operations changed the
    * table. It also records every other already registered `SimpleTable` read
-   * while `compute` runs and invalidates the cached step when any of their
-   * generations change. Tables created inside `compute` are part of the
-   * computation itself and are not dependencies.
+   * through `SimpleTable` methods while `compute` runs and invalidates the
+   * cached step when any of their generations change. Tables created inside
+   * `compute` are part of the computation itself and are not dependencies.
+   *
+   * `SimpleDB.customQuery()` bypasses this tracking. Reading or changing a
+   * table with `customQuery()` can therefore return stale cached data. Include
+   * a value that identifies the custom query's dependencies in `options.inputs`
+   * (such as a table content hash), or use tracked `SimpleTable` methods.
+   *
+   * `compute` may modify only the table being cached. Other tables that existed
+   * before `compute` must remain read-only. Temporary tables may be created and
+   * modified inside `compute`, but they must be removed before it finishes
+   * because a cache hit does not run `compute` again.
    *
    * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:

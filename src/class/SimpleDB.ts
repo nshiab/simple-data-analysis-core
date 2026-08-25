@@ -720,6 +720,12 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * Queries run in UTC. When data is returned, temporal values use the same
    * JavaScript representations as `SimpleTable.getData()`.
    *
+   * `customQuery()` bypasses the dependency and table-generation tracking used
+   * by `SimpleTable.cache()`. Reading or changing a table with `customQuery()`
+   * can therefore cause `cache()` to return stale data. Include a value that
+   * identifies the custom query's dependencies in the cache's `options.inputs`
+   * (such as a table content hash), or use tracked `SimpleTable` methods.
+   *
    * @param query - The SQL query string to execute.
    * @param options - Configuration options for the query.
    * @param options.returnData - If `true`, the query result is returned. Defaults to `false`.

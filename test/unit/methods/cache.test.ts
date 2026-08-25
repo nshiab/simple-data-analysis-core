@@ -25,9 +25,13 @@ Deno.test("should log a warning, not an error, when no data or table", async () 
 Deno.test("should log a warning, not an error, when loading cache when no data or table", async () => {
   const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
+  const pending = sdb.newTable("pendingBeforeEmptyCacheHit");
+  pending.loadArray([{ value: 1 }]);
   await table.cache(() => {
     // Nothing in cache
   });
+  assertEquals(pending.pendingOps.length, 0);
+  assertEquals(sdb.pendingCount, 0);
   await sdb.close();
   assertEquals(true, true);
 });
@@ -763,6 +767,40 @@ Deno.test("should not track tables created inside the computation", async () => 
 
   await sdb.close();
 });
+Deno.test("should reject tables created inside the computation that are not removed", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const output = sdb.newTable("cacheLeakedLocalTableOutput");
+
+  await assertRejects(
+    () =>
+      output.cache(() => {
+        sdb.newTable("cacheLeakedLocalTable").loadArray([{ value: 1 }]);
+      }),
+    Error,
+    'Call removeTable() on "cacheLeakedLocalTable" before the callback finishes to avoid downstream errors',
+  );
+
+  await sdb.close();
+});
+Deno.test("should reject mutations of tables that existed before the computation", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const source = sdb.newTable("cacheMutatedDependencySource");
+  const output = sdb.newTable("cacheMutatedDependencyOutput");
+  source.loadArray([{ value: 1 }, { value: 2 }]);
+  await source.run();
+
+  await assertRejects(
+    () =>
+      output.cache(async () => {
+        output.loadArray(await source.getData());
+        source.filter("value = 2");
+      }),
+    Error,
+    'cache() called on "cacheMutatedDependencyOutput" cannot modify pre-existing table "cacheMutatedDependencySource"',
+  );
+
+  await sdb.close();
+});
 Deno.test("should track SimpleTable dependencies in queued SQL", async () => {
   let computationRuns = 0;
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -1191,7 +1229,7 @@ Deno.test("should cache dates and retrieve dates", async () => {
 
   const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const temperatures = sdb.newTable("temperatures");
-  await temperatures.cache(() => {
+  await temperatures.cache(async () => {
     temperatures.loadData(
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
     );
@@ -1200,11 +1238,12 @@ Deno.test("should cache dates and retrieve dates", async () => {
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
     );
     temperatures.join(cities);
+    await cities.removeTable();
   });
   const firstPass = await temperatures.getTop(10);
   // await temperatures.log();
 
-  await temperatures.cache(() => {
+  await temperatures.cache(async () => {
     temperatures.loadData(
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
     );
@@ -1213,6 +1252,7 @@ Deno.test("should cache dates and retrieve dates", async () => {
       "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
     );
     temperatures.join(cities);
+    await cities.removeTable();
   });
   const secondPass = await temperatures.getTop(10);
   // await temperatures.log();

@@ -75,6 +75,10 @@ export default async function cache<Table extends SimpleTable>(
   options.verbose &&
     console.log(`\ncache() for ${table.name}`);
 
+  // cache() is an observation point even when a cache hit has no artifact to
+  // load, so all earlier database-wide work must complete before it returns.
+  await flushAllTables(table.sdb);
+
   const cachePath = "./.sda-cache";
   if (!existsSync(cachePath)) {
     mkdirSync(cachePath);

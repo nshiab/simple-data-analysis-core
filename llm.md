@@ -362,6 +362,12 @@ Executes a custom SQL query directly against the DuckDB instance. Queries run in
 UTC. When data is returned, temporal values use the same JavaScript
 representations as `SimpleTable.getData()`.
 
+`customQuery()` bypasses the dependency and table-generation tracking used by
+`SimpleTable.cache()`. Reading or changing a table with `customQuery()` can
+therefore cause `cache()` to return stale data. Include a value that identifies
+the custom query's dependencies in the cache's `options.inputs` (such as a table
+content hash), or use tracked `SimpleTable` methods.
+
 ##### Signature
 
 ```typescript
@@ -7296,10 +7302,20 @@ every cache hit. If loading the entry or restoring its indexes fails, the
 computation runs again and replaces the cache entry.
 
 `cache()` automatically tracks whether earlier SDA operations changed the table.
-It also records every other already registered `SimpleTable` read while
-`compute` runs and invalidates the cached step when any of their generations
-change. Tables created inside `compute` are part of the computation itself and
-are not dependencies.
+It also records every other already registered `SimpleTable` read through
+`SimpleTable` methods while `compute` runs and invalidates the cached step when
+any of their generations change. Tables created inside `compute` are part of the
+computation itself and are not dependencies.
+
+`SimpleDB.customQuery()` bypasses this tracking. Reading or changing a table
+with `customQuery()` can therefore return stale cached data. Include a value
+that identifies the custom query's dependencies in `options.inputs` (such as a
+table content hash), or use tracked `SimpleTable` methods.
+
+`compute` may modify only the table being cached. Other tables that existed
+before `compute` must remain read-only. Temporary tables may be created and
+modified inside `compute`, but they must be removed before it finishes because a
+cache hit does not run `compute` again.
 
 ##### Signature
 
