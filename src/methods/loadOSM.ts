@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { createReadStream, rmSync } from "node:fs";
 import SDAError from "../class/SDAError.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import loadOsmFile from "../helpers/loadOsmFile.ts";
@@ -96,6 +96,7 @@ async function executeLoadOSM(
     });
 
     try {
+      await assertSuccessfulOverpassResponse(temporaryFile);
       await loadOsmFile(table, temporaryFile, {
         method: "loadOSM()",
         parameters,
@@ -122,6 +123,50 @@ async function executeLoadOSM(
       cause: error,
     });
   }
+}
+
+async function assertSuccessfulOverpassResponse(file: string): Promise<void> {
+  const stream = createReadStream(file, { encoding: "utf-8" });
+  let buffer = "";
+  let errorTag: "remark" | "error" | undefined;
+
+  for await (const chunk of stream) {
+    buffer += String(chunk);
+    if (errorTag === undefined) {
+      const openingTag = /<(remark|error)\b[^>]*>/i.exec(buffer);
+      if (openingTag === null) {
+        buffer = buffer.slice(-4096);
+        continue;
+      }
+      errorTag = openingTag[1].toLowerCase() === "remark" ? "remark" : "error";
+      buffer = buffer.slice(openingTag.index + openingTag[0].length);
+    }
+
+    const closingTag = new RegExp(`</${errorTag}\\s*>`, "i").exec(buffer);
+    if (closingTag !== null) {
+      throwOverpassResponseError(buffer.slice(0, closingTag.index));
+    }
+    if (buffer.length >= 4096) {
+      throwOverpassResponseError(buffer.slice(0, 4096));
+    }
+  }
+
+  if (errorTag !== undefined) {
+    throwOverpassResponseError(buffer);
+  }
+}
+
+function throwOverpassResponseError(contents: string): never {
+  const message = contents
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 500);
+  throw new Error(
+    message.length === 0
+      ? "The Overpass endpoint returned an error response."
+      : `The Overpass endpoint returned an error response: ${message}`,
+  );
 }
 
 export function generateOverpassQuery(

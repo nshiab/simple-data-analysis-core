@@ -275,6 +275,53 @@ Deno.test("loadOSM does not cache failed or incomplete responses", async () => {
   }
 });
 
+Deno.test("loadOSM rejects well-formed Overpass error responses", async () => {
+  rmSync(".sda-cache", { recursive: true, force: true });
+  const responses = [
+    { tag: "remark", message: "runtime error: Query timed out" },
+    { tag: "error", message: "internal server error" },
+  ];
+  let responseIndex = 0;
+  const server = Deno.serve(
+    { hostname: "127.0.0.1", port: 0 },
+    () => {
+      const response = responses[responseIndex++];
+      return new Response(
+        `<?xml version="1.0" encoding="UTF-8"?>
+        <osm version="0.6" generator="Overpass API">
+          <${response.tag}>${response.message}</${response.tag}>
+        </osm>`,
+        { headers: { "content-type": "application/xml" } },
+      );
+    },
+  );
+  const endpoint =
+    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+
+  try {
+    for (const response of responses) {
+      const sdb = new SimpleDB({ dataTransport: "file" });
+      try {
+        const table = sdb.newTable();
+        table.loadOSM(bbox, {
+          filters: `[${response.tag}]`,
+          endpoint,
+        });
+        await assertRejects(() => table.run(), Error, response.message);
+      } finally {
+        await sdb.close();
+      }
+    }
+
+    assertEquals(responseIndex, responses.length);
+    assertEquals(existsSync(".sda-cache/osm/sources.json"), false);
+    assertEquals(readdirSync(".sda-cache/tmp"), []);
+  } finally {
+    await server.shutdown();
+    rmSync(".sda-cache", { recursive: true, force: true });
+  }
+});
+
 Deno.test("loadOSM works with the public Overpass endpoint", async () => {
   const sdb = new SimpleDB({ dataTransport: "direct" });
   const table = sdb.newTable("publicOverpassSchools");
