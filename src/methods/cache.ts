@@ -431,7 +431,7 @@ function logCacheMiss(
       );
       const tableMessage = sameCode.entryGeneration === entryGeneration
         ? ""
-        : "Current table changed.";
+        : "The current table has changed.";
       const changes = [tableMessage, inputsMessage].filter((message) =>
         message.length > 0
       );

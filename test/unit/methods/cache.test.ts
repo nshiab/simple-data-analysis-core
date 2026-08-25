@@ -379,6 +379,39 @@ Deno.test("should explain which cache input changed", async () => {
 
   await secondSdb.close();
 });
+Deno.test("should explain when the current table changed", async () => {
+  const createSourceCompute = (rows: { value: number }[]) => {
+    return (table: SimpleTable) => {
+      table.loadArray(rows);
+    };
+  };
+  const transform = (table: SimpleTable) => {
+    table.filter("value > 1");
+  };
+  const run = async (rows: { value: number }[], captureLogs = false) => {
+    const sdb = new SimpleDB({
+      dataTransport: "file",
+      cacheVerbose: true,
+    });
+    const table = sdb.newTable("cacheVerboseCurrentTableChange");
+    await table.cache(createSourceCompute(rows), { inputs: [rows] });
+    let logs = "";
+    if (captureLogs) {
+      logs = await captureConsoleLogs(() => table.cache(transform));
+    } else {
+      await table.cache(transform);
+    }
+    await sdb.close();
+    return logs;
+  };
+
+  await run([{ value: 1 }, { value: 2 }]);
+  const logs = await run([{ value: 1 }, { value: 3 }], true);
+
+  assertStringIncludes(logs, "Cache miss.");
+  assertStringIncludes(logs, "Compute function unchanged.");
+  assertStringIncludes(logs, "The current table has changed.");
+});
 Deno.test("should not infer a code change from another cache call on the same table", async () => {
   const createFirstCompute = (table: SimpleTable) => () => {
     table.loadArray([{ value: 1 }]);
