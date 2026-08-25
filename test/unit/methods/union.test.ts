@@ -243,8 +243,8 @@ Deno.test("union() should overwrite existing column", async () => {
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, uni: "old" },
   ]);
-  table.points("lat", "lon", "geom1");
-  table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
   // This should now succeed and overwrite "uni"
   table.union("geom1", "geom2", "uni");
@@ -261,8 +261,8 @@ Deno.test("union() should overwrite one of the source geometry columns", async (
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },
   ]);
-  table.points("lat", "lon", "geom1");
-  table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
   table.union("geom1", "geom2", "geom1");
 

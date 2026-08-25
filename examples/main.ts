@@ -23,7 +23,7 @@ fires
   .loadData(
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
   )
-  .points("lat", "lon", "geom");
+  .createPoints("lat", "lon", "geom");
 
 // We match fires with provinces
 // and we output the results into a new table.

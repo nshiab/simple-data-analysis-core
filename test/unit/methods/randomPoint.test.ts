@@ -28,7 +28,7 @@ Deno.test("should generate a random point in geometries and they should be rando
   await table.writeGeoData("test/output/randomPoint.geojson");
 
   // We extract lat and lon.
-  table.latLon("randomPoint", "lat", "lon");
+  table.extractLatLon("randomPoint", "lat", "lon");
 
   const lats = await table.getValues("lat") as number[];
   const lons = await table.getValues("lon") as number[];

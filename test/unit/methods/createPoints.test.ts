@@ -6,7 +6,7 @@ Deno.test("should create points", async () => {
   const table = sdb.newTable();
   table.loadData("test/geodata/files/coordinates.csv");
   table.convert({ lat: "double", lon: "double" });
-  table.points("lat", "lon", "geom");
+  table.createPoints("lat", "lon", "geom");
 
   const data = await table.getGeoData("geom");
 
@@ -42,7 +42,7 @@ Deno.test("should create points", async () => {
   await sdb.close();
 });
 
-Deno.test("points() should overwrite existing column", async () => {
+Deno.test("createPoints() should overwrite existing column", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([
@@ -50,7 +50,7 @@ Deno.test("points() should overwrite existing column", async () => {
     { lat: 3, lon: 4, geom: "old" },
   ]);
 
-  table.points("lat", "lon", "geom");
+  table.createPoints("lat", "lon", "geom");
 
   const types = await table.getTypes();
   assertEquals(types, {
@@ -62,12 +62,12 @@ Deno.test("points() should overwrite existing column", async () => {
   await sdb.close();
 });
 
-Deno.test("points() should use the specified projection", async () => {
+Deno.test("createPoints() should use the specified projection", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadArray([{ x: 1_234_567, y: 2_345_678 }]);
 
-  table.points("y", "x", "geom", { projection: "EPSG:3347" });
+  table.createPoints("y", "x", "geom", { projection: "EPSG:3347" });
 
   const types = await table.getTypes();
   assertEquals(types, {

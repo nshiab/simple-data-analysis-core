@@ -3,7 +3,7 @@ import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function points(
+export default function createPoints(
   simpleTable: SimpleTable,
   latColumn: string,
   lonColumn: string,
@@ -13,7 +13,7 @@ export default function points(
   options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "points()",
+    method: "createPoints()",
     parameters: { latColumn, lonColumn, newColumn, options },
     needsSchema: true,
     needsSpatial: true,

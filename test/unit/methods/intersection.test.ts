@@ -103,8 +103,8 @@ Deno.test("intersection() should overwrite existing column", async () => {
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, inter: "old" },
   ]);
-  table.points("lat", "lon", "geom1");
-  table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
   // This should now succeed and overwrite "inter"
   table.intersection("geom1", "geom2", "inter");
@@ -121,8 +121,8 @@ Deno.test("intersection() should overwrite one of the source geometry columns", 
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1, lon2: 2 },
   ]);
-  table.points("lat", "lon", "geom1");
-  table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
   table.intersection("geom1", "geom2", "geom1");
 

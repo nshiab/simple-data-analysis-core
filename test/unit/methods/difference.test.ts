@@ -349,8 +349,8 @@ Deno.test("difference() should overwrite one of the source geometry columns", as
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },
   ]);
-  table.points("lat", "lon", "geom1");
-  table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
   table.difference("geom1", "geom2", "geom1");
 

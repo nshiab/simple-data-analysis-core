@@ -3,7 +3,7 @@ import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function latLon(
+export default function extractLatLon(
   simpleTable: SimpleTable,
   column: string,
   latColumn: string,
@@ -11,12 +11,12 @@ export default function latLon(
 ) {
   queueOp(simpleTable, {
     kind: "fusable",
-    method: "latLon()",
+    method: "extractLatLon()",
     parameters: { column, latColumn, lonColumn },
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      assertNewColumns(types, [latColumn, lonColumn], "latLon()");
+      assertNewColumns(types, [latColumn, lonColumn], "extractLatLon()");
       return `SELECT *, CAST(ST_Y(${quoteIdentifier(column)}) AS DOUBLE) AS ${
         quoteIdentifier(latColumn)
       }, CAST(ST_X(${quoteIdentifier(column)}) AS DOUBLE) AS ${

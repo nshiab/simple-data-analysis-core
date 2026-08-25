@@ -24,7 +24,7 @@ await fires.cache(
       .loadData(
         "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
       )
-      .points("lat", "lon", "geom");
+      .createPoints("lat", "lon", "geom");
   },
   { ttl: 60 },
 );

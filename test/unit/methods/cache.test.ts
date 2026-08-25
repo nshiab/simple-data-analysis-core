@@ -900,7 +900,7 @@ Deno.test("should cache computed values for geospatial data", async () => {
   await tableGeo.cache(() => {
     tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
     tableGeo.renameColumns({ geom: "points" });
-    tableGeo.latLon("points", "lat", "lon");
+    tableGeo.extractLatLon("points", "lat", "lon");
   });
 
   tableGeo.removeColumns("points");
@@ -938,7 +938,7 @@ Deno.test("should load geospatial data from the cache instead of running computa
   await tableGeo.cache(() => {
     tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
     tableGeo.renameColumns({ geom: "points" });
-    tableGeo.latLon("points", "lat", "lon");
+    tableGeo.extractLatLon("points", "lat", "lon");
   });
 
   tableGeo.removeColumns("points");
@@ -977,7 +977,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
         "test/geodata/files/pointsInside.json",
       );
       tableGeo.renameColumns({ geom: "points" });
-      tableGeo.latLon("points", "lat", "lon");
+      tableGeo.extractLatLon("points", "lat", "lon");
     },
     { ttl: 0 },
   );

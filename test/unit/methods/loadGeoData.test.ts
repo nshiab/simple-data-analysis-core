@@ -191,7 +191,7 @@ Deno.test("should load a GeoJSON file in EPSG:4326", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/point.json");
-  table.latLon("geom", "lat", "lon");
+  table.extractLatLon("geom", "lat", "lon");
   table.selectColumns(["lat", "lon"]);
 
   const data = await table.getData();

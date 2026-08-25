@@ -230,7 +230,7 @@ Deno.test("should add rows from tables with geometries", async () => {
 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
 
   table1.insertTables(table2, { unifyColumns: true });
 
@@ -274,7 +274,7 @@ Deno.test("should throw an error if geometry projections are not the same, even 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
   table2.reproject("EPSG:3347");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
 
   await assertRejects(() =>
     table1.insertTables(table2, { unifyColumns: true }).run()
@@ -291,7 +291,7 @@ Deno.test("should add rows with geometries to a table without geometries", async
 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
 
   table1.insertTables(table2, { unifyColumns: true });
 
@@ -317,7 +317,7 @@ Deno.test("should add rows without geometries to a table with geometries", async
 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
 
   table2.insertTables(table1, { unifyColumns: true });
 
@@ -343,7 +343,7 @@ Deno.test("should add rows and unify columns when the second table has more colu
 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
 
   table1.insertTables(table2, { unifyColumns: true });
 
@@ -369,7 +369,7 @@ Deno.test("should add rows with tables with multiple geometry columns", async ()
 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
   table2.cloneColumn("geom", "geom2");
   table2.reproject("EPSG:3347", { column: "geom2" });
 
@@ -425,7 +425,7 @@ Deno.test("should add rows with geometries to an empty table", async () => {
 
   const table2 = sdb.newTable();
   table2.loadGeoData("test/geodata/files/point.json");
-  table2.latLon("geom", "lat", "lon");
+  table2.extractLatLon("geom", "lat", "lon");
 
   table1.insertTables(table2, { unifyColumns: true });
 

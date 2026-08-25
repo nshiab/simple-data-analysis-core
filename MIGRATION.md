@@ -151,6 +151,8 @@ only the renamed methods and option keys below are breaking.
 | `remove()`                | `removeValues()`       | Same, and no longer blends into the `remove*` family (`removeRows()`, ...). |
 | `left()`                  | `firstChars()`         | "Left/right" read as join sides in a join-heavy API.                        |
 | `right()`                 | `lastChars()`          | Same.                                                                       |
+| `points()`                | `createPoints()`       | Makes the point-construction operation explicit.                            |
+| `latLon()`                | `extractLatLon()`      | Makes it clear that coordinates are extracted into new columns.             |
 | `concatenateRow()`        | `rowToText()`          | It doesn't concatenate rows — it turns each row into a labeled text block.  |
 | `loadDataFromDirectory()` | `loadDirectory()`      | Shorter; "data from" added nothing.                                         |
 | `proportionsHorizontal()` | `rowProportions()`     | Shorter and names the unit instead of a visual direction.                   |
@@ -299,7 +301,8 @@ editor hints now use the new names:
 - `randomPoint()`: `nbPointsToTry` → `tries`
 - `createFtsIndex()` and `bm25()`: `columnId`, `columnText` → `idColumn`,
   `textColumn`
-- `points()` and `latLon()`: `columnLat`, `columnLon` → `latColumn`, `lonColumn`
+- `createPoints()` and `extractLatLon()`: `columnLat`, `columnLon` →
+  `latColumn`, `lonColumn`
 - `longer()`: `columnsTo` → `namesTo`; `wider()`: `columnsFrom` → `namesFrom`
 - `coveredBy()` (formerly `inside()`): `column1`, `column2` → `column`,
   `containerColumn`

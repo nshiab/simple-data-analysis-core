@@ -50,7 +50,7 @@ import bm25 from "../methods/bm25.ts";
 import loadSample from "../methods/loadSample.ts";
 import normalizeString from "../methods/normalizeString.ts";
 import distance from "../methods/distance.ts";
-import latLon from "../methods/latLon.ts";
+import extractLatLon from "../methods/extractLatLon.ts";
 import coveredBy from "../methods/coveredBy.ts";
 import intersects from "../methods/intersects.ts";
 import normalize from "../methods/normalize.ts";
@@ -113,7 +113,7 @@ import addGeoClosedStatus from "../methods/addGeoClosedStatus.ts";
 import fixGeo from "../methods/fixGeo.ts";
 import addVertexCount from "../methods/addVertexCount.ts";
 import addGeoValidity from "../methods/addGeoValidity.ts";
-import points from "../methods/points.ts";
+import createPoints from "../methods/createPoints.ts";
 import getData from "../methods/getData.ts";
 import stream from "../methods/stream.ts";
 import updateWithJS from "../methods/updateWithJS.ts";
@@ -5240,22 +5240,22 @@ export default class SimpleTable extends Simple {
    * // Create point geometries in a new 'geom' column using latitude (y) and longitude (x) columns.
    * // The resulting coordinates are ordered as [longitude, latitude], or [x, y].
    * // The projection is assumed to be EPSG:4326 (WGS84).
-   * table.points("lat", "lon", "geom");
+   * table.createPoints("lat", "lon", "geom");
    * ```
    *
    * @example
    * ```ts
    * // Create point geometries from coordinates in a projected coordinate system
-   * table.points("y", "x", "geom", { projection: "EPSG:3347" });
+   * table.createPoints("y", "x", "geom", { projection: "EPSG:3347" });
    * ```
    */
-  points(
+  createPoints(
     latColumn: string,
     lonColumn: string,
     newColumn: string,
     options: { projection?: string } = {},
   ): this {
-    points(this, latColumn, lonColumn, newColumn, options);
+    createPoints(this, latColumn, lonColumn, newColumn, options);
     return this;
   }
 
@@ -5947,15 +5947,15 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Extract latitude (y) and longitude (x) from 'geom' into new 'lat' and 'lon' columns.
-   * table.latLon("geom", "lat", "lon");
+   * table.extractLatLon("geom", "lat", "lon");
    * ```
    */
-  latLon(
+  extractLatLon(
     column: string,
     latColumn: string,
     lonColumn: string,
   ): this {
-    latLon(this, column, latColumn, lonColumn);
+    extractLatLon(this, column, latColumn, lonColumn);
     return this;
   }
 

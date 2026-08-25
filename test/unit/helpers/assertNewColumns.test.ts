@@ -9,7 +9,7 @@ Deno.test("assertNewColumns - passes when the column does not exist", () => {
 });
 
 Deno.test("assertNewColumns - passes for several new columns", () => {
-  assertNewColumns(schema, ["c", "d"], "latLon()");
+  assertNewColumns(schema, ["c", "d"], "extractLatLon()");
 });
 
 Deno.test("assertNewColumns - throws when the column already exists", () => {
@@ -22,7 +22,7 @@ Deno.test("assertNewColumns - throws when the column already exists", () => {
 
 Deno.test("assertNewColumns - throws if any one of several columns exists", () => {
   assertThrows(
-    () => assertNewColumns(schema, ["c", "a"], "latLon()"),
+    () => assertNewColumns(schema, ["c", "a"], "extractLatLon()"),
     Error,
     'the column "a" already exists',
   );

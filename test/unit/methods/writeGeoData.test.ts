@@ -50,7 +50,7 @@ Deno.test("should write a json file with dates properties", async () => {
     lon: 2,
   }];
   table.loadArray(originalData);
-  table.points("lat", "lon", "geom");
+  table.createPoints("lat", "lon", "geom");
   await table.writeGeoData(`${output}geodata-dates.json`, {
     formatDates: true,
   });
@@ -84,7 +84,7 @@ Deno.test("should write a json file with dates properties and keep the original 
     lon: 2,
   }];
   table.loadArray(originalData);
-  table.points("lat", "lon", "geom");
+  table.createPoints("lat", "lon", "geom");
   await table.writeGeoData(`${output}geodata-dates.json`, {
     formatDates: true,
   });
