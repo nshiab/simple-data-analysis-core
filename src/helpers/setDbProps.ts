@@ -1,12 +1,13 @@
 import type SimpleDB from "../class/SimpleDB.ts";
 import type { IndexDefinition } from "./indexDefinitions.ts";
+import { markTableChanged } from "./tableGeneration.ts";
 
 export default async function setDbProps(
   simpleDB: SimpleDB,
   indexes: { [table: string]: IndexDefinition[] },
 ) {
   for (const table of await simpleDB.getTableNames()) {
-    simpleDB.newTable(table);
+    markTableChanged(simpleDB.newTable(table));
   }
 
   for (const table of simpleDB.getTables()) {

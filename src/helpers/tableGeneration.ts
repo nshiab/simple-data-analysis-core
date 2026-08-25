@@ -10,6 +10,13 @@ export type TableGenerationId = string & {
 
 const generations = new WeakMap<SimpleTable, TableGenerationId>();
 
+/** Returns an established generation without creating one for a new table. */
+export function peekTableGeneration(
+  table: SimpleTable,
+): TableGenerationId | undefined {
+  return generations.get(table);
+}
+
 /** Creates a new table generation identifier. */
 export function createTableGenerationId(): TableGenerationId {
   return crypto.randomUUID() as TableGenerationId;

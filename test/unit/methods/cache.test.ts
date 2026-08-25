@@ -59,6 +59,23 @@ Deno.test("should cache computed values for tabular data", async () => {
   ]);
   await sdb.close();
 });
+Deno.test("should pass the table to the compute callback for chaining", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  let callbackTable: SimpleTable | undefined;
+
+  const items = await sdb.newTable("chainedCacheCallback").cache(
+    (table) => {
+      callbackTable = table;
+      table
+        .loadArray([{ value: 1 }, { value: 2 }])
+        .filter("value > 1");
+    },
+  );
+
+  assertEquals(callbackTable, items);
+  assertEquals(await items.getData(), [{ value: 2 }]);
+  await sdb.close();
+});
 Deno.test("should load data from the cache instead of running computations", async () => {
   const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
   const table = sdb.newTable();
@@ -703,6 +720,37 @@ Deno.test("should allow the cached table as an explicit input", async () => {
   assertEquals(sourceRuns, 1);
   assertEquals(transformRuns, 1);
 });
+Deno.test("should invalidate a cached pipeline stage when its entry generation changes", async () => {
+  let sourceRuns = 0;
+  let transformRuns = 0;
+  const createSourceCompute = (
+    rows: { value: number }[],
+  ) => {
+    return (table: SimpleTable) => {
+      sourceRuns++;
+      table.loadArray(rows);
+    };
+  };
+  const transform = (table: SimpleTable) => {
+    transformRuns++;
+    table.filter("value > 1");
+  };
+  const run = async (rows: { value: number }[]) => {
+    const sdb = new SimpleDB({ dataTransport: "file" });
+    const table = sdb.newTable("cacheImplicitTableGeneration");
+    await table.cache(createSourceCompute(rows), { inputs: [rows] });
+    await table.cache(transform);
+    const data = await table.getData();
+    await sdb.close();
+    return data;
+  };
+
+  assertEquals(await run([{ value: 1 }, { value: 2 }]), [{ value: 2 }]);
+  assertEquals(await run([{ value: 1 }, { value: 2 }]), [{ value: 2 }]);
+  assertEquals(await run([{ value: 1 }, { value: 3 }]), [{ value: 3 }]);
+  assertEquals(sourceRuns, 2);
+  assertEquals(transformRuns, 2);
+});
 Deno.test("should restore SimpleTable generations on cache hits", async () => {
   let sourceRuns = 0;
   let outputRuns = 0;
@@ -1049,11 +1097,11 @@ Deno.test("should clean the cache when calling close", async () => {
     { cacheSourcesIdsUpdated, files },
     {
       cacheSourcesIdsUpdated: [
-        "table1.a43e2a5691696f552a99fee87b7d95db9bcc9993a80917c4d545dbe473621ca3",
+        "table1.3a1a726e660aed894df7139014ada12a5a3c7063f8b4281a409eca03b890bd5e",
       ],
       files: [
         "sources.json",
-        "table1.a43e2a5691696f552a99fee87b7d95db9bcc9993a80917c4d545dbe473621ca3.db",
+        "table1.3a1a726e660aed894df7139014ada12a5a3c7063f8b4281a409eca03b890bd5e.db",
       ],
     },
   );

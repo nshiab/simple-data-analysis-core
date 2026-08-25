@@ -15,6 +15,7 @@ import serializeCacheInputs, {
 } from "../helpers/serializeCacheInputs.ts";
 import {
   createTableGenerationId,
+  peekTableGeneration,
   restoreTableGeneration,
   type TableGenerationId,
 } from "../helpers/tableGeneration.ts";
@@ -24,13 +25,14 @@ import {
 } from "../helpers/cacheDatabase.ts";
 import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
 
-const CACHE_FORMAT_VERSION = "duckdb-v2";
+const CACHE_FORMAT_VERSION = "duckdb-v3";
 
 type CacheSource = {
   file: string | null;
   creation: number;
   duration: number;
   geo: boolean;
+  entryGeneration?: TableGenerationId | null;
   generationId?: TableGenerationId;
   indexes?: IndexDefinition[];
   formatVersion?: string;
@@ -48,9 +50,9 @@ type CacheDiagnosticSource = CacheSource & {
   inputHashes: string[];
 };
 
-export default async function cache(
-  table: SimpleTable,
-  compute: () => void | Promise<void>,
+export default async function cache<Table extends SimpleTable>(
+  table: Table,
+  compute: (table: Table) => void | Promise<void>,
   options: {
     ttl?: number;
     inputs?: readonly unknown[];
@@ -71,33 +73,36 @@ export default async function cache(
   }
 
   const functionBody = compute.toString();
-  const serializedInputs = options.inputs === undefined
-    ? undefined
-    : serializeCacheInputs(options.inputs);
-  const hasInputs = options.inputs !== undefined && options.inputs.length > 0;
-  const inputs = hasInputs ? options.inputs ?? [] : [];
+  const entryGeneration = peekTableGeneration(table) ?? null;
+  const inputs = options.inputs?.filter((input) => input !== table) ?? [];
+  const hasInputs = inputs.length > 0;
+  const serializedInputs = hasInputs ? serializeCacheInputs(inputs) : null;
   const codeHash = createHash(functionBody);
   const inputHashes = hasInputs
     ? inputs.map((input) => createHash(serializeCacheInputs([input])))
     : [];
-  const hash = createHash(
-    hasInputs
-      ? JSON.stringify([
-        CACHE_FORMAT_VERSION,
-        table.name,
-        functionBody,
-        serializedInputs,
-      ])
-      : JSON.stringify([
-        CACHE_FORMAT_VERSION,
-        table.name,
-        options.toString(),
-        functionBody,
-      ]),
-  );
-  const id = `${table.name}.${hash}`;
-
-  const cache = cacheSources[id];
+  const hash = createHash(JSON.stringify([
+    CACHE_FORMAT_VERSION,
+    table.name,
+    entryGeneration,
+    functionBody,
+    serializedInputs,
+  ]));
+  const requestedId = `${table.name}.${hash}`;
+  let id = requestedId;
+  let cache = cacheSources[id];
+  if (cache === undefined) {
+    const alreadyApplied = findAlreadyAppliedCache(
+      table.name,
+      cacheSources,
+      entryGeneration,
+      codeHash,
+      inputHashes,
+    );
+    if (alreadyApplied !== undefined) {
+      [id, cache] = alreadyApplied;
+    }
+  }
   const now = Date.now();
 
   if (cache !== undefined) {
@@ -118,6 +123,7 @@ export default async function cache(
         codeHash,
         inputHashes,
         inputs,
+        entryGeneration,
       );
     }
     await runAndWrite(
@@ -129,12 +135,16 @@ export default async function cache(
       id,
       codeHash,
       inputHashes,
+      entryGeneration,
     );
   } else if (
     cache &&
     typeof options.ttl === "number" &&
     now - cache.creation > options.ttl * 1000
   ) {
+    const refreshId = cache.entryGeneration === entryGeneration
+      ? id
+      : requestedId;
     options.verbose &&
       console.log(
         `Cache entry is stale.\n${identityMatchMessage(inputHashes)}\nTTL of ${
@@ -154,9 +164,10 @@ export default async function cache(
       cacheSources,
       cacheSourcesPath,
       cachePath,
-      id,
+      refreshId,
       codeHash,
       inputHashes,
+      entryGeneration,
     );
   } else {
     options.verbose &&
@@ -199,9 +210,10 @@ export default async function cache(
           cacheSources,
           cacheSourcesPath,
           cachePath,
-          id,
+          requestedId,
           codeHash,
           inputHashes,
+          entryGeneration,
         );
         return;
       }
@@ -232,18 +244,19 @@ export default async function cache(
   }
 }
 
-async function runAndWrite(
-  table: SimpleTable,
-  compute: () => void | Promise<void>,
+async function runAndWrite<Table extends SimpleTable>(
+  table: Table,
+  compute: (table: Table) => void | Promise<void>,
   cacheSources: CacheSources,
   cacheSourcesPath: string,
   cachePath: string,
   id: string,
   codeHash: string,
   inputHashes: string[],
+  entryGeneration: TableGenerationId | null,
 ) {
   const start = Date.now();
-  await compute();
+  await compute(table);
   // run() only queues the sync builders in the user's callback; the actual
   // computation happens at the flush, so it must be included in the timing
   // that decides how much the cache saves on later hits.
@@ -262,6 +275,7 @@ async function runAndWrite(
       duration,
       file: null,
       geo: false,
+      entryGeneration,
       generationId,
       indexes: [],
       formatVersion: CACHE_FORMAT_VERSION,
@@ -288,6 +302,7 @@ async function runAndWrite(
       duration,
       file,
       geo: geometriesColumns > 0,
+      entryGeneration,
       generationId,
       indexes,
       formatVersion: CACHE_FORMAT_VERSION,
@@ -344,12 +359,48 @@ function identityMatchMessage(inputHashes: string[]): string {
     : `Compute function unchanged.\nInputs unchanged (${inputHashes.length} checked).`;
 }
 
+function findAlreadyAppliedCache(
+  tableName: string,
+  cacheSources: CacheSources,
+  entryGeneration: TableGenerationId | null,
+  codeHash: string,
+  inputHashes: string[],
+): [string, CacheSource] | undefined {
+  if (entryGeneration === null) {
+    return undefined;
+  }
+  return Object.entries(cacheSources)
+    .filter(([id, source]) =>
+      id.startsWith(`${tableName}.`) &&
+      source.formatVersion === CACHE_FORMAT_VERSION &&
+      source.generationId === entryGeneration &&
+      source.codeHash === codeHash &&
+      arraysEqual(source.inputHashes, inputHashes)
+    )
+    .reduce<[string, CacheSource] | undefined>(
+      (latest, candidate) =>
+        latest === undefined || candidate[1].creation > latest[1].creation
+          ? candidate
+          : latest,
+      undefined,
+    );
+}
+
+function arraysEqual(
+  left: readonly string[] | undefined,
+  right: readonly string[],
+): boolean {
+  return left !== undefined && left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
 function logCacheMiss(
   tableName: string,
   cacheSources: CacheSources,
   codeHash: string,
   inputHashes: string[],
   inputs: readonly unknown[],
+  entryGeneration: TableGenerationId | null,
 ): void {
   const candidates = Object.entries(cacheSources)
     .filter(([id]) => id.startsWith(`${tableName}.`))
@@ -378,9 +429,15 @@ function logCacheMiss(
         inputHashes,
         inputs,
       );
-      reason = inputsMessage.length === 0
+      const tableMessage = sameCode.entryGeneration === entryGeneration
+        ? ""
+        : "Current table changed.";
+      const changes = [tableMessage, inputsMessage].filter((message) =>
+        message.length > 0
+      );
+      reason = changes.length === 0
         ? "Compute function unchanged."
-        : `Compute function unchanged.\n${inputsMessage}`;
+        : `Compute function unchanged.\n${changes.join("\n")}`;
     } else if (sameFormat.length === 0) {
       reason = "The cache format changed.";
     } else {

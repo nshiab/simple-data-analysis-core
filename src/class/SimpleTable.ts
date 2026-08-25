@@ -6385,26 +6385,28 @@ export default class SimpleTable extends Simple {
    * the indexes on every cache hit. If loading the entry or restoring its
    * indexes fails, the computation runs again and replaces the cache entry.
    *
-   * @param compute - A function wrapping the computations to be cached. This function will be executed on the first run or if the cached data is invalid/expired.
+   * `cache()` automatically tracks whether earlier SDA operations changed the
+   * table. If they did, the cached step is recomputed.
+   *
+   * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
-   * @param options.inputs - An ordered array of values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` inputs, including the table being cached, are compared by their cached generation without scanning their rows; pass `await table.getHash()` instead to compare full table contents. Treat inputs other than the table being cached as read-only dependencies: mutating them inside `compute` can make cache hits and misses have different side effects. Cyclic values, symbols, and unsupported class instances throw a `TypeError`. Omit this option, or pass an empty array, to preserve the legacy function-only cache behavior.
-   * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `run` function will be executed again to refresh the cache. By default, there is no TTL, meaning the cache is only invalidated if the `run` function's content changes.
+   * @param options.inputs - An ordered array of additional values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` inputs use internal change identifiers restored from their caches, avoiding a scan of their rows; pass `await table.getHash()` instead to compare full table contents. The table being cached is already tracked automatically, so including it here has no additional effect.
+   * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `compute` function will be executed again to refresh the cache. By default, there is no TTL; the cache is invalidated when the `compute` function, the table, or an input changes.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Caching
    *
    * @example
    * ```ts
-   * // Basic usage: computations are cached and re-run only if the function content changes
+   * // Computations are re-run if the callback changes or earlier operations modify the table
    * const sdb = new SimpleDB();
-   * const table = sdb.newTable();
-   *
-   * await table.cache(() => {
-   *   table.loadData("items.csv");
-   *   table.summarize({
-   *     columns: "price",
-   *     by: "department",
-   *     stats: ["min", "max", "mean"],
-   *   });
+   * const items = await sdb.newTable("items").cache((table) => {
+   *   table
+   *     .loadData("items.csv")
+   *     .summarize({
+   *       columns: "price",
+   *       by: "department",
+   *       stats: ["min", "max", "mean"],
+   *     });
    * });
    *
    * // It's important to call close() on the SimpleDB instance to clean up the cache.
@@ -6415,7 +6417,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Cache with a Time-To-Live (TTL) of 60 seconds
-   * // The computations will be re-run if the cached data is older than 1 minute or if the function content changes.
+   * // The computations will be re-run if the cached data is older than 1 minute, the callback changes, or the table changes.
    * const sdb = new SimpleDB();
    * const table = sdb.newTable();
    *
@@ -6472,7 +6474,7 @@ export default class SimpleTable extends Simple {
    * ```
    */
   async cache(
-    compute: () => void | Promise<void>,
+    compute: (table: this) => void | Promise<void>,
     options: {
       inputs?: readonly unknown[];
       ttl?: number;
