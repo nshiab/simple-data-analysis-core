@@ -501,7 +501,7 @@ Deno.test("should omit input status when no explicit inputs were supplied", asyn
 
   await secondSdb.close();
 });
-Deno.test("should identify a changed SimpleTable input by name", async () => {
+Deno.test("should identify a changed SimpleTable dependency by name", async () => {
   const sdb = new SimpleDB({
     dataTransport: "file",
     cacheVerbose: true,
@@ -513,15 +513,51 @@ Deno.test("should identify a changed SimpleTable input by name", async () => {
     output.loadArray(await source.getData());
   };
 
-  await output.cache(compute, { inputs: [source] });
+  await output.cache(compute);
   source.filter("value = 1");
-  const logs = await captureConsoleLogs(() =>
-    output.cache(compute, { inputs: [source] })
-  );
+  const logs = await captureConsoleLogs(() => output.cache(compute));
 
   assertStringIncludes(
     logs,
-    'Inputs changed: table "cacheVerboseTableInput" changed.',
+    'Table dependencies changed: "cacheVerboseTableInput".',
+  );
+
+  await sdb.close();
+});
+Deno.test("should identify changed and unchanged table dependencies", async () => {
+  const sdb = new SimpleDB({
+    dataTransport: "file",
+    cacheVerbose: true,
+  });
+  const changed = sdb.newTable("cacheVerboseChangedDependency");
+  const unchanged = sdb.newTable("cacheVerboseUnchangedDependency");
+  const output = sdb.newTable("cacheVerboseMixedDependenciesOutput");
+  changed.loadArray([{ value: 1 }]);
+  unchanged.loadArray([{ value: 2 }]);
+  const compute = async () => {
+    output.loadArray([
+      ...await changed.getData(),
+      ...await unchanged.getData(),
+    ]);
+  };
+
+  await output.cache(compute);
+  changed.filter("value = 1");
+  const logs = await captureConsoleLogs(() => output.cache(compute));
+
+  assertStringIncludes(
+    logs,
+    'Table dependencies changed: "cacheVerboseChangedDependency".',
+  );
+  assertStringIncludes(
+    logs,
+    'Table dependencies unchanged: "cacheVerboseUnchangedDependency".',
+  );
+
+  const hitLogs = await captureConsoleLogs(() => output.cache(compute));
+  assertStringIncludes(
+    hitLogs,
+    'Table dependencies unchanged: "cacheVerboseChangedDependency", "cacheVerboseUnchangedDependency".',
   );
 
   await sdb.close();
@@ -653,7 +689,7 @@ Deno.test("should hash function and class inputs by source", async () => {
 
   assertEquals(computationRuns, 2);
 });
-Deno.test("should compare SimpleTable inputs by generation", async () => {
+Deno.test("should automatically track SimpleTable dependencies by generation", async () => {
   let sourceRuns = 0;
   let outputRuns = 0;
   const createSourceCompute = (
@@ -674,7 +710,7 @@ Deno.test("should compare SimpleTable inputs by generation", async () => {
     const source = sdb.newTable("cacheTableInputSource");
     const output = sdb.newTable("cacheTableInputOutput");
     await source.cache(createSourceCompute(source, rows), { inputs: [rows] });
-    await output.cache(createCompute(source, output), { inputs: [source] });
+    await output.cache(createCompute(source, output));
     const data = await output.getData();
     await sdb.close();
     return data;
@@ -699,11 +735,55 @@ Deno.test("should cache computations that read without mutating table inputs", a
     );
   };
 
-  await output.cache(compute, { inputs: [source, 2026] });
-  await output.cache(compute, { inputs: [source, 2026] });
+  await output.cache(compute, { inputs: [2026] });
+  await output.cache(compute, { inputs: [2026] });
 
   assertEquals(computationRuns, 1);
   assertEquals(await output.getData(), [{ year: 2026 }]);
+
+  await sdb.close();
+});
+Deno.test("should not track tables created inside the computation", async () => {
+  let computationRuns = 0;
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const output = sdb.newTable("cacheLocalTableOutput");
+  const compute = async () => {
+    computationRuns++;
+    const local = sdb.newTable(`cacheLocalTable${computationRuns}`);
+    local.loadArray([{ value: 1 }]);
+    output.loadArray(await local.getData());
+    await local.removeTable();
+  };
+
+  await output.cache(compute);
+  await output.cache(compute);
+
+  assertEquals(computationRuns, 1);
+  assertEquals(await output.getData(), [{ value: 1 }]);
+
+  await sdb.close();
+});
+Deno.test("should track SimpleTable dependencies in queued SQL", async () => {
+  let computationRuns = 0;
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const source = sdb.newTable("cacheQueuedSqlSource");
+  const output = sdb.newTable("cacheQueuedSqlOutput");
+  source.loadArray([{ value: 1 }, { value: 2 }]);
+  const compute = () => {
+    computationRuns++;
+    output
+      .loadArray([{ value: 1 }, { value: 2 }])
+      .filter(
+        `value IN (SELECT value FROM "${source.name}")`,
+      );
+  };
+
+  await output.cache(compute);
+  source.filter("value = 2");
+  await output.cache(compute);
+
+  assertEquals(computationRuns, 2);
+  assertEquals(await output.getData(), [{ value: 2 }]);
 
   await sdb.close();
 });
@@ -801,9 +881,7 @@ Deno.test("should restore SimpleTable generations on cache hits", async () => {
     const source = sdb.newTable("cacheGenerationSource");
     const output = sdb.newTable("cacheGenerationOutput");
     await source.cache(createSourceCompute(source));
-    await output.cache(createOutputCompute(source, output), {
-      inputs: [source],
-    });
+    await output.cache(createOutputCompute(source, output));
     await sdb.close();
   };
 
@@ -824,9 +902,9 @@ Deno.test("should invalidate SimpleTable generations after a mutation", async ()
     output.loadArray(await source.getData());
   };
 
-  await output.cache(compute, { inputs: [source] });
+  await output.cache(compute);
   source.filter("value = 1");
-  await output.cache(compute, { inputs: [source] });
+  await output.cache(compute);
 
   assertEquals(outputRuns, 2);
 
@@ -849,9 +927,7 @@ Deno.test("should invalidate SimpleTable generations after a refresh", async () 
     const source = sdb.newTable("cacheGenerationRefreshSource");
     const output = sdb.newTable("cacheGenerationRefreshOutput");
     await source.cache(createSourceCompute(source), { ttl: 0 });
-    await output.cache(createOutputCompute(source, output), {
-      inputs: [source],
-    });
+    await output.cache(createOutputCompute(source, output));
     await sdb.close();
   };
 
@@ -860,35 +936,6 @@ Deno.test("should invalidate SimpleTable generations after a refresh", async () 
 
   assertEquals(sourceRuns, 2);
   assertEquals(outputRuns, 2);
-});
-Deno.test("should allow content hashes as explicit cache inputs", async () => {
-  let sourceRuns = 0;
-  let outputRuns = 0;
-  const createSourceCompute = (source: SimpleTable) => () => {
-    sourceRuns++;
-    source.loadArray([{ value: 1 }]);
-  };
-  const createOutputCompute =
-    (source: SimpleTable, output: SimpleTable) => async () => {
-      outputRuns++;
-      output.loadArray(await source.getData());
-    };
-  const run = async () => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
-    const source = sdb.newTable("cacheContentHashSource");
-    const output = sdb.newTable("cacheContentHashOutput");
-    await source.cache(createSourceCompute(source), { ttl: 0 });
-    await output.cache(createOutputCompute(source, output), {
-      inputs: [await source.getHash()],
-    });
-    await sdb.close();
-  };
-
-  await run();
-  await run();
-
-  assertEquals(sourceRuns, 2);
-  assertEquals(outputRuns, 1);
 });
 Deno.test("should reject cyclic cache inputs before computing", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -1130,11 +1177,11 @@ Deno.test("should clean the cache when calling close", async () => {
     { cacheSourcesIdsUpdated, files },
     {
       cacheSourcesIdsUpdated: [
-        "table1.3a1a726e660aed894df7139014ada12a5a3c7063f8b4281a409eca03b890bd5e",
+        "table1.2c51401642fa11e673d3c0abcce28b1fa1a6b9c7333a852926fc416973053770",
       ],
       files: [
         "sources.json",
-        "table1.3a1a726e660aed894df7139014ada12a5a3c7063f8b4281a409eca03b890bd5e.db",
+        "table1.2c51401642fa11e673d3c0abcce28b1fa1a6b9c7333a852926fc416973053770.db",
       ],
     },
   );

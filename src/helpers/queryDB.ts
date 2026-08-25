@@ -3,6 +3,7 @@ import SimpleDB from "../class/SimpleDB.ts";
 import cleanSQL from "./cleanSQL.ts";
 import flushAllTables from "./flushAllTables.ts";
 import type { DuckDBValue } from "@duckdb/node-api";
+import { recordCacheTableAccess } from "./cacheTableDependencies.ts";
 
 export default async function queryDB(
   simple: SimpleTable | SimpleDB,
@@ -25,6 +26,9 @@ export default async function queryDB(
   }[]
   | null
 > {
+  if (simple instanceof SimpleTable) {
+    recordCacheTableAccess(simple);
+  }
   const sdb = simple instanceof SimpleTable ? simple.sdb : simple;
   if (sdb.lifecycleState === "closed") {
     throw new Error(

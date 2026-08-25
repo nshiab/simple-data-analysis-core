@@ -867,98 +867,13 @@ table.loadData([
 ```
 
 ```ts
-// Load data from multiple remote Parquet files with column unification
-table.loadData([
-  "https://some-website.com/some-data1.parquet",
-  "https://some-website.com/some-data2.parquet",
-  "https://some-website.com/some-data3.parquet",
-], { unifyColumns: true });
+// Load multiple CSV files and unify columns that differ between files
+table.loadData("./data/*.csv", { unifyColumns: true });
 ```
 
 ```ts
 // Load only specific columns from a CSV file
 table.loadData("./employees.csv", { columns: ["name", "salary"] });
-```
-
-#### `loadDirectory`
-
-Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local
-directory into the table.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
-##### Signature
-
-```typescript
-loadDirectory(directory: string, options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; filename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: "utf-8" | "utf-16" | "latin-1"; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
-```
-
-##### Parameters
-
-- **`directory`**: The absolute path to the directory containing the data files.
-- **`options`**: An optional object with configuration options:
-- **`options.fileType`**: The type of file to load ("csv", "dsv", "json",
-  "parquet", "excel"). Defaults to being inferred from the file extension.
-- **`options.autoDetect`**: A boolean indicating whether to automatically detect
-  the data format. Defaults to `true`.
-- **`options.limit`**: A number indicating the maximum number of rows to load.
-  Defaults to all rows.
-- **`options.filename`**: A boolean indicating whether to include the filename
-  as a new column in the loaded data. Defaults to `false`.
-- **`options.unifyColumns`**: A boolean indicating whether to unify columns
-  across multiple files when their structures differ. Missing columns will be
-  filled with `NULL` values. Defaults to `false`.
-- **`options.columnTypes`**: An object mapping column names to their expected
-  data types. By default, types are inferred.
-- **`options.columns`**: An array of column names to load. When provided, only
-  the specified columns are loaded, reducing memory usage and improving load
-  times. Not supported for Excel files — combining `columns` with Excel files
-  throws an error. If an invalid column name is provided, DuckDB will throw its
-  native error. An empty array behaves the same as omitting the option (loads
-  all columns). Defaults to loading all columns.
-- **`options.header`**: A boolean indicating whether the file has a header row.
-  Applicable to CSV files. Defaults to `true`.
-- **`options.allText`**: A boolean indicating whether all columns should be
-  treated as text. Applicable to CSV files. Defaults to `false`.
-- **`options.delim`**: The delimiter used in the file. Applicable to CSV and DSV
-  files. By default, the delimiter is inferred.
-- **`options.skip`**: The number of lines to skip at the beginning of the file.
-  Applicable to CSV files. Defaults to `0`.
-- **`options.nullPadding`**: If `true`, when a row has fewer columns than
-  expected, the remaining columns on the right will be padded with `NULL`
-  values. Defaults to `false`.
-- **`options.ignoreErrors`**: If `true`, parsing errors encountered will be
-  ignored, and rows with errors will be skipped. Defaults to `false`.
-- **`options.compression`**: The compression type of the file. Applicable to CSV
-  files. Defaults to `none`.
-- **`options.strict`**: If `true`, an error will be thrown when encountering any
-  issues. If `false`, structurally incorrect files will be parsed tentatively.
-  Defaults to `true`.
-- **`options.encoding`**: The encoding of the files. Applicable to CSV files.
-  Defaults to `utf-8`.
-- **`options.jsonFormat`**: The format of JSON files ("unstructured",
-  "newlineDelimited", "array"). By default, the format is inferred.
-- **`options.records`**: A boolean indicating whether each line in a
-  newline-delimited JSON file represents a record. Applicable to JSON files. By
-  default, it's inferred.
-- **`options.sheet`**: A string indicating a specific sheet to import from an
-  Excel file. By default, the first sheet is imported.
-
-##### Returns
-
-The table, so methods can be chained.
-
-##### Examples
-
-```ts
-// Load all supported data files from the "./data/" directory
-table.loadDirectory("./data/");
-```
-
-```ts
-// Load only specific columns from all CSV files in a directory
-table.loadDirectory("./data/", { columns: ["name", "salary"] });
 ```
 
 #### `loadGeoData`
@@ -4667,7 +4582,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-normalize(column: string, newColumn: string, options?: { by?: string | string[]; decimals?: number }): this;
+normalize(column: string, newColumn: string, options?: { by?: string | string[]; decimals?: number; range?: [number, number] }): this;
 ```
 
 ##### Parameters
@@ -4680,6 +4595,9 @@ normalize(column: string, newColumn: string, options?: { by?: string | string[];
   Normalization is performed independently within each group.
 - **`options.decimals`**: The number of decimal places to round the normalized
   values. Defaults to `undefined` (no rounding).
+- **`options.range`**: The inclusive range to scale normalized values to, as
+  `[minimum, maximum]`. Both values must be finite and the minimum must be less
+  than the maximum. Defaults to `[0, 1]`.
 
 ##### Returns
 
@@ -4700,6 +4618,11 @@ table.normalize("value", "normalizedValue", { by: "group" });
 ```ts
 // Normalize 'data' values, rounded to 2 decimal places
 table.normalize("data", "normalizedData", { decimals: 2 });
+```
+
+```ts
+// Normalize 'score' values to a range from 0 to 10
+table.normalize("score", "scaledScore", { range: [0, 10] });
 ```
 
 #### `indexValues`
@@ -5914,7 +5837,7 @@ const booksDataCSV = await table.getDataAsCSV({
 console.log(booksDataCSV);
 ```
 
-#### `points`
+#### `createPoints`
 
 Creates point geometries from latitude (y) and longitude (x) columns.
 
@@ -5924,7 +5847,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-points(latColumn: string, lonColumn: string, newColumn: string, options?: { projection?: string }): this;
+createPoints(latColumn: string, lonColumn: string, newColumn: string, options?: { projection?: string }): this;
 ```
 
 ##### Parameters
@@ -5949,12 +5872,12 @@ The table, so methods can be chained.
 // Create point geometries in a new 'geom' column using latitude (y) and longitude (x) columns.
 // The resulting coordinates are ordered as [longitude, latitude], or [x, y].
 // The projection is assumed to be EPSG:4326 (WGS84).
-table.points("lat", "lon", "geom");
+table.createPoints("lat", "lon", "geom");
 ```
 
 ```ts
 // Create point geometries from coordinates in a projected coordinate system
-table.points("y", "x", "geom", { projection: "EPSG:3347" });
+table.createPoints("y", "x", "geom", { projection: "EPSG:3347" });
 ```
 
 #### `addGeoValidity`
@@ -6753,7 +6676,7 @@ The table, so methods can be chained.
 table.union("geomA", "geomB", "unionGeom");
 ```
 
-#### `latLon`
+#### `extractLatLon`
 
 Extracts the latitude (y) and longitude (x) coordinates from point geometries.
 The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -6764,7 +6687,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-latLon(column: string, latColumn: string, lonColumn: string): this;
+extractLatLon(column: string, latColumn: string, lonColumn: string): this;
 ```
 
 ##### Parameters
@@ -6783,7 +6706,7 @@ The table, so methods can be chained.
 
 ```ts
 // Extract latitude (y) and longitude (x) from 'geom' into new 'lat' and 'lon' columns.
-table.latLon("geom", "lat", "lon");
+table.extractLatLon("geom", "lat", "lon");
 ```
 
 #### `simplify`
@@ -7372,33 +7295,34 @@ their definitions are stored as metadata and used to rebuild the indexes on
 every cache hit. If loading the entry or restoring its indexes fails, the
 computation runs again and replaces the cache entry.
 
+`cache()` automatically tracks whether earlier SDA operations changed the table.
+It also records every other already registered `SimpleTable` read while
+`compute` runs and invalidates the cached step when any of their generations
+change. Tables created inside `compute` are part of the computation itself and
+are not dependencies.
+
 ##### Signature
 
 ```typescript
-async cache(compute: () => void | Promise<void>, options?: { inputs?: readonly unknown[]; ttl?: number }): Promise<this>;
+async cache(compute: (table: this) => void | Promise<void>, options?: { inputs?: readonly unknown[]; ttl?: number }): Promise<this>;
 ```
 
 ##### Parameters
 
-- **`compute`**: A function wrapping the computations to be cached. This
-  function will be executed on the first run or if the cached data is
-  invalid/expired.
+- **`compute`**: A function wrapping the computations to be cached. It receives
+  the table on which `cache()` was called. This function will be executed on the
+  first run or if the cached data is invalid/expired.
 - **`options`**: An optional object with configuration options:
-- **`options.inputs`**: An ordered array of values captured by `compute` that
-  affect its result. Each position is compared structurally across runs, so
-  adding, removing, moving, or changing an input invalidates the cache.
-  Functions and class constructors are compared by source. `SimpleTable` inputs,
-  including the table being cached, are compared by their cached generation
-  without scanning their rows; pass `await table.getHash()` instead to compare
-  full table contents. Treat inputs other than the table being cached as
-  read-only dependencies: mutating them inside `compute` can make cache hits and
-  misses have different side effects. Cyclic values, symbols, and unsupported
-  class instances throw a `TypeError`. Omit this option, or pass an empty array,
-  to preserve the legacy function-only cache behavior.
+- **`options.inputs`**: An ordered array of additional values captured by
+  `compute` that affect its result. Each position is compared structurally
+  across runs, so adding, removing, moving, or changing an input invalidates the
+  cache. Functions and class constructors are compared by source. `SimpleTable`
+  dependencies read by `compute` are tracked automatically, and the table being
+  cached is already tracked, so neither needs to be included here.
 - **`options.ttl`**: Time to live (in seconds). If the data in the cache is
-  older than this duration, the `run` function will be executed again to refresh
-  the cache. By default, there is no TTL, meaning the cache is only invalidated
-  if the `run` function's content changes.
+  older than this duration, the `compute` function will be executed again to
+  refresh the cache. By default, there is no TTL; the cache is invalidated when
+  the `compute` function, the table, or an input changes.
 
 ##### Returns
 
@@ -7407,17 +7331,16 @@ A promise that resolves to the table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Basic usage: computations are cached and re-run only if the function content changes
+// Computations are re-run if the callback changes or earlier operations modify the table
 const sdb = new SimpleDB();
-const table = sdb.newTable();
-
-await table.cache(() => {
-  table.loadData("items.csv");
-  table.summarize({
-    columns: "price",
-    by: "department",
-    stats: ["min", "max", "mean"],
-  });
+const items = await sdb.newTable("items").cache((table) => {
+  table
+    .loadData("items.csv")
+    .summarize({
+      columns: "price",
+      by: "department",
+      stats: ["min", "max", "mean"],
+    });
 });
 
 // It's important to call close() on the SimpleDB instance to clean up the cache.
@@ -7427,7 +7350,7 @@ await sdb.close();
 
 ```ts
 // Cache with a Time-To-Live (TTL) of 60 seconds
-// The computations will be re-run if the cached data is older than 1 minute or if the function content changes.
+// The computations will be re-run if the cached data is older than 1 minute, the callback changes, or the table changes.
 const sdb = new SimpleDB();
 const table = sdb.newTable();
 
@@ -7461,23 +7384,14 @@ await sdb.close();
 ```
 
 ```ts
-// Captured values and read-only input tables invalidate the cached result when they change.
+// Read-only table dependencies are tracked automatically. Other captured values go in inputs.
 const year = 2026;
 const summary = sdb.newTable("summary");
 await summary.cache(async () => {
   summary.loadArray(
     await fires.getData({ conditions: `year = ${year}` }),
   );
-}, { inputs: [fires, year] });
-```
-
-```ts
-// Compare complete table contents instead of the table's generation.
-// getHash() scans the full table, but an identical refreshed table can reuse this cache.
-const firesHash = await fires.getHash();
-await summary.cache(async () => {
-  summary.loadArray(await fires.getData());
-}, { inputs: [firesHash] });
+}, { inputs: [year] });
 ```
 
 #### `log`

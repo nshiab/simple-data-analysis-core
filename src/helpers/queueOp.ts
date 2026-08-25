@@ -3,6 +3,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import type { PendingOpInput } from "./pendingOps.ts";
 import { ensureTableRegistered, getRegisteredTables } from "./tableRegistry.ts";
 import { markTableChanged } from "./tableGeneration.ts";
+import { recordCacheTableReferences } from "./cacheTableDependencies.ts";
 
 /**
  * Queues an operation on a table, stamping it with a database-wide sequence
@@ -36,6 +37,9 @@ export default function queueOp(
         ? capturedOp.values
         : [...capturedOp.values],
     };
+    if (capturedOp.rawSQL !== undefined) {
+      recordCacheTableReferences(simpleTable, capturedOp.rawSQL);
+    }
   }
   // A table de-registered by removeTable()/removeTables()/selectTables() that
   // queues new work comes back under the flush's responsibility, like v1

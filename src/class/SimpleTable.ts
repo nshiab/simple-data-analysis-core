@@ -6386,11 +6386,14 @@ export default class SimpleTable extends Simple {
    * indexes fails, the computation runs again and replaces the cache entry.
    *
    * `cache()` automatically tracks whether earlier SDA operations changed the
-   * table. If they did, the cached step is recomputed.
+   * table. It also records every other already registered `SimpleTable` read
+   * while `compute` runs and invalidates the cached step when any of their
+   * generations change. Tables created inside `compute` are part of the
+   * computation itself and are not dependencies.
    *
    * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
-   * @param options.inputs - An ordered array of additional values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` inputs use internal change identifiers restored from their caches, avoiding a scan of their rows; pass `await table.getHash()` instead to compare full table contents. The table being cached is already tracked automatically, so including it here has no additional effect.
+   * @param options.inputs - An ordered array of additional values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` dependencies read by `compute` are tracked automatically, and the table being cached is already tracked, so neither needs to be included here.
    * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `compute` function will be executed again to refresh the cache. By default, there is no TTL; the cache is invalidated when the `compute` function, the table, or an input changes.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Caching
@@ -6453,24 +6456,14 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Captured values and read-only input tables invalidate the cached result when they change.
+   * // Read-only table dependencies are tracked automatically. Other captured values go in inputs.
    * const year = 2026;
    * const summary = sdb.newTable("summary");
    * await summary.cache(async () => {
    *   summary.loadArray(
    *     await fires.getData({ conditions: `year = ${year}` }),
    *   );
-   * }, { inputs: [fires, year] });
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Compare complete table contents instead of the table's generation.
-   * // getHash() scans the full table, but an identical refreshed table can reuse this cache.
-   * const firesHash = await fires.getHash();
-   * await summary.cache(async () => {
-   *   summary.loadArray(await fires.getData());
-   * }, { inputs: [firesHash] });
+   * }, { inputs: [year] });
    * ```
    */
   async cache(

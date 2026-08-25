@@ -24,8 +24,16 @@ import {
   writeCacheDatabase,
 } from "../helpers/cacheDatabase.ts";
 import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
+import {
+  cacheTableDependenciesMatch,
+  type CacheTableDependency,
+  captureCacheTableDependencies,
+  changedCacheTableDependenciesMessage,
+  recordCacheTableAccess,
+  unchangedCacheTableDependenciesMessage,
+} from "../helpers/cacheTableDependencies.ts";
 
-const CACHE_FORMAT_VERSION = "duckdb-v3";
+const CACHE_FORMAT_VERSION = "duckdb-v4";
 
 type CacheSource = {
   file: string | null;
@@ -38,6 +46,7 @@ type CacheSource = {
   formatVersion?: string;
   codeHash?: string;
   inputHashes?: string[];
+  tableDependencies?: CacheTableDependency[];
 };
 
 type CacheSources = {
@@ -48,6 +57,7 @@ type CacheDiagnosticSource = CacheSource & {
   formatVersion: string;
   codeHash: string;
   inputHashes: string[];
+  tableDependencies: CacheTableDependency[];
 };
 
 export default async function cache<Table extends SimpleTable>(
@@ -59,6 +69,9 @@ export default async function cache<Table extends SimpleTable>(
     verbose?: boolean;
   } = {},
 ) {
+  // If cache() is itself called from another cache computation, the outer
+  // computation depends on the table produced here.
+  recordCacheTableAccess(table);
   options.verbose &&
     console.log(`\ncache() for ${table.name}`);
 
@@ -90,10 +103,10 @@ export default async function cache<Table extends SimpleTable>(
   ]));
   const requestedId = `${table.name}.${hash}`;
   let id = requestedId;
-  let cache = cacheSources[id];
+  let cache: CacheSource | undefined = cacheSources[id];
   if (cache === undefined) {
     const alreadyApplied = findAlreadyAppliedCache(
-      table.name,
+      table,
       cacheSources,
       entryGeneration,
       codeHash,
@@ -102,6 +115,12 @@ export default async function cache<Table extends SimpleTable>(
     if (alreadyApplied !== undefined) {
       [id, cache] = alreadyApplied;
     }
+  }
+  if (
+    cache !== undefined &&
+    !cacheTableDependenciesMatch(table, cache.tableDependencies)
+  ) {
+    cache = undefined;
   }
   const now = Date.now();
 
@@ -118,7 +137,7 @@ export default async function cache<Table extends SimpleTable>(
   if (cache === undefined) {
     if (options.verbose) {
       logCacheMiss(
-        table.name,
+        table,
         cacheSources,
         codeHash,
         inputHashes,
@@ -147,7 +166,12 @@ export default async function cache<Table extends SimpleTable>(
       : requestedId;
     options.verbose &&
       console.log(
-        `Cache entry is stale.\n${identityMatchMessage(inputHashes)}\nTTL of ${
+        `Cache entry is stale.\n${
+          identityMatchMessage(
+            inputHashes,
+            cache.tableDependencies ?? [],
+          )
+        }\nTTL of ${
           prettyDuration(0, { end: options.ttl * 1000 })
         } has expired.\nThe creation date is ${
           formatDate(
@@ -171,7 +195,14 @@ export default async function cache<Table extends SimpleTable>(
     );
   } else {
     options.verbose &&
-      console.log(`Cache hit.\n${identityMatchMessage(inputHashes)}`);
+      console.log(
+        `Cache hit.\n${
+          identityMatchMessage(
+            inputHashes,
+            cache.tableDependencies ?? [],
+          )
+        }`,
+      );
     if (typeof options.ttl === "number") {
       const ttlLimit = new Date(cache.creation + options.ttl * 1000);
       (options.verbose) &&
@@ -255,12 +286,20 @@ async function runAndWrite<Table extends SimpleTable>(
   inputHashes: string[],
   entryGeneration: TableGenerationId | null,
 ) {
-  const start = Date.now();
-  await compute(table);
-  // run() only queues the sync builders in the user's callback; the actual
-  // computation happens at the flush, so it must be included in the timing
-  // that decides how much the cache saves on later hits.
+  // Complete any work queued before cache() before dependency observation
+  // begins. Operations queued by compute are flushed inside the observation.
   await flushAllTables(table.sdb);
+  const start = Date.now();
+  const tableDependencies = await captureCacheTableDependencies(
+    table,
+    async () => {
+      await compute(table);
+      // run() only queues the sync builders in the user's callback; the actual
+      // computation happens at the flush, so it must be included in the timing
+      // that decides how much the cache saves on later hits.
+      await flushAllTables(table.sdb);
+    },
+  );
   const end = Date.now();
   const duration = end - start;
   const generationId = createTableGenerationId();
@@ -281,6 +320,7 @@ async function runAndWrite<Table extends SimpleTable>(
       formatVersion: CACHE_FORMAT_VERSION,
       codeHash,
       inputHashes,
+      tableDependencies,
     };
   } else {
     const types = await table.getTypes();
@@ -308,6 +348,7 @@ async function runAndWrite<Table extends SimpleTable>(
       formatVersion: CACHE_FORMAT_VERSION,
       codeHash,
       inputHashes,
+      tableDependencies,
     };
     if (table.sdb.cacheSourcesUsed.indexOf(id) < 0) {
       table.sdb.cacheSourcesUsed.push(id);
@@ -353,14 +394,21 @@ function createHash(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function identityMatchMessage(inputHashes: string[]): string {
-  return inputHashes.length === 0
+function identityMatchMessage(
+  inputHashes: string[],
+  tableDependencies: CacheTableDependency[],
+): string {
+  const inputsMessage = inputHashes.length === 0
     ? "Compute function unchanged."
     : `Compute function unchanged.\nInputs unchanged (${inputHashes.length} checked).`;
+  const dependenciesMessage = tableDependencies.length === 0
+    ? ""
+    : `\n${unchangedCacheTableDependenciesMessage(tableDependencies)}`;
+  return `${inputsMessage}${dependenciesMessage}`;
 }
 
 function findAlreadyAppliedCache(
-  tableName: string,
+  table: SimpleTable,
   cacheSources: CacheSources,
   entryGeneration: TableGenerationId | null,
   codeHash: string,
@@ -371,11 +419,12 @@ function findAlreadyAppliedCache(
   }
   return Object.entries(cacheSources)
     .filter(([id, source]) =>
-      id.startsWith(`${tableName}.`) &&
+      id.startsWith(`${table.name}.`) &&
       source.formatVersion === CACHE_FORMAT_VERSION &&
       source.generationId === entryGeneration &&
       source.codeHash === codeHash &&
-      arraysEqual(source.inputHashes, inputHashes)
+      arraysEqual(source.inputHashes, inputHashes) &&
+      cacheTableDependenciesMatch(table, source.tableDependencies)
     )
     .reduce<[string, CacheSource] | undefined>(
       (latest, candidate) =>
@@ -395,7 +444,7 @@ function arraysEqual(
 }
 
 function logCacheMiss(
-  tableName: string,
+  table: SimpleTable,
   cacheSources: CacheSources,
   codeHash: string,
   inputHashes: string[],
@@ -403,14 +452,14 @@ function logCacheMiss(
   entryGeneration: TableGenerationId | null,
 ): void {
   const candidates = Object.entries(cacheSources)
-    .filter(([id]) => id.startsWith(`${tableName}.`))
+    .filter(([id]) => id.startsWith(`${table.name}.`))
     .map(([, source]) => source)
     .filter(isCacheDiagnosticSource);
 
   let reason: string;
   if (candidates.length === 0) {
     const hasLegacyCandidate = Object.keys(cacheSources).some((id) =>
-      id.startsWith(`${tableName}.`)
+      id.startsWith(`${table.name}.`)
     );
     reason = hasLegacyCandidate
       ? "A previous entry exists, but it predates detailed cache diagnostics. Its code, inputs, or cache format changed."
@@ -432,9 +481,12 @@ function logCacheMiss(
       const tableMessage = sameCode.entryGeneration === entryGeneration
         ? ""
         : "The current table has changed.";
-      const changes = [tableMessage, inputsMessage].filter((message) =>
-        message.length > 0
+      const dependenciesMessage = changedCacheTableDependenciesMessage(
+        table,
+        sameCode.tableDependencies,
       );
+      const changes = [tableMessage, inputsMessage, dependenciesMessage]
+        .filter((message) => message.length > 0);
       reason = changes.length === 0
         ? "Compute function unchanged."
         : `Compute function unchanged.\n${changes.join("\n")}`;
@@ -466,7 +518,7 @@ function isCacheDiagnosticSource(
   source: CacheSource,
 ): source is CacheDiagnosticSource {
   return source.formatVersion !== undefined && source.codeHash !== undefined &&
-    source.inputHashes !== undefined;
+    source.inputHashes !== undefined && source.tableDependencies !== undefined;
 }
 
 function changedInputsMessage(
