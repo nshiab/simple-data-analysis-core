@@ -714,7 +714,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}')>): this;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): this;
 ```
 
 ##### Parameters
@@ -2568,7 +2568,7 @@ is called.
 ##### Signature
 
 ```typescript
-addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): this;
 ```
 
 ##### Parameters
