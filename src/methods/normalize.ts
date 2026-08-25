@@ -11,8 +11,21 @@ export default function normalize(
   options: {
     by?: string | string[];
     decimals?: number;
+    range?: [number, number];
   } = {},
 ) {
+  if (
+    options.range !== undefined &&
+    (!Array.isArray(options.range) ||
+      options.range.length !== 2 ||
+      !Number.isFinite(options.range[0]) ||
+      !Number.isFinite(options.range[1]) ||
+      options.range[0] >= options.range[1])
+  ) {
+    throw new Error(
+      "normalize() options.range must contain two finite numbers in ascending order.",
+    );
+  }
   options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
@@ -27,19 +40,23 @@ export default function normalize(
         ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
         : "";
 
-      const tempQuery = `(${quoteIdentifier(column)} - MIN(${
+      const normalizedQuery = `(${quoteIdentifier(column)} - MIN(${
         quoteIdentifier(column)
       }) OVER(${partition}))
     /
     (MAX(${quoteIdentifier(column)}) OVER(${partition}) - MIN(${
         quoteIdentifier(column)
       }) OVER(${partition}))`;
+      const [rangeMin, rangeMax] = options.range ?? [0, 1];
+      const scaledQuery = options.range === undefined
+        ? normalizedQuery
+        : `${rangeMin} + (${normalizedQuery}) * ${rangeMax - rangeMin}`;
 
       return `SELECT *, (
         ${
         typeof options.decimals === "number"
-          ? `ROUND(${tempQuery}, ${options.decimals})`
-          : tempQuery
+          ? `ROUND(${scaledQuery}, ${options.decimals})`
+          : scaledQuery
       }
         ) AS ${quoteIdentifier(newColumn)},
     FROM ${input}`;

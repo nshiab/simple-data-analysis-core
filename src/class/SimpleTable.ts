@@ -4040,6 +4040,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.by - The column name or an array of column names to partition by. Normalization is performed independently within each group.
    * @param options.decimals - The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
+   * @param options.range - The inclusive range to scale normalized values to, as `[minimum, maximum]`. Both values must be finite and the minimum must be less than the maximum. Defaults to `[0, 1]`.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
@@ -4060,6 +4061,12 @@ export default class SimpleTable extends Simple {
    * // Normalize 'data' values, rounded to 2 decimal places
    * table.normalize("data", "normalizedData", { decimals: 2 });
    * ```
+   *
+   * @example
+   * ```ts
+   * // Normalize 'score' values to a range from 0 to 10
+   * table.normalize("score", "scaledScore", { range: [0, 10] });
+   * ```
    */
   normalize(
     column: string,
@@ -4067,6 +4074,7 @@ export default class SimpleTable extends Simple {
     options: {
       by?: string | string[];
       decimals?: number;
+      range?: [number, number];
     } = {},
   ): this {
     normalize(this, column, newColumn, options);

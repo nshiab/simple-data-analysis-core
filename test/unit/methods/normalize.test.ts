@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 
@@ -129,6 +129,62 @@ Deno.test("should normalize data with positive and negative values", async () =>
     { key1: 0.5, normalized: 0.75 },
     { key1: 1, normalized: 1 },
   ]);
+
+  await sdb.close();
+});
+
+Deno.test("should normalize values to a custom range", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+  table.loadArray([
+    { value: 10 },
+    { value: 15 },
+    { value: 20 },
+    { value: null },
+  ]);
+
+  table.normalize("value", "normalized", { range: [0, 10] });
+
+  assertEquals(await table.getData(), [
+    { value: 10, normalized: 0 },
+    { value: 15, normalized: 5 },
+    { value: 20, normalized: 10 },
+    { value: null, normalized: null },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("should normalize values to a custom range with an offset and rounding", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+  table.loadArray([{ value: 0 }, { value: 1 }, { value: 3 }]);
+
+  table.normalize("value", "normalized", {
+    range: [-1, 1],
+    decimals: 2,
+  });
+
+  assertEquals(await table.getData(), [
+    { value: 0, normalized: -1 },
+    { value: 1, normalized: -0.33 },
+    { value: 3, normalized: 1 },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("should reject an invalid custom range", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const table = sdb.newTable();
+
+  for (const range of [[1, 1], [10, 0], [0, Infinity]] as const) {
+    assertThrows(
+      () => table.normalize("value", "normalized", { range: [...range] }),
+      Error,
+      "normalize() options.range must contain two finite numbers in ascending order.",
+    );
+  }
 
   await sdb.close();
 });
