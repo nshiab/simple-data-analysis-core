@@ -141,7 +141,6 @@ import insertTables from "../methods/insertTables.ts";
 import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
 import loadOSM from "../methods/loadOSM.ts";
-import loadDirectory from "../methods/loadDirectory.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -449,12 +448,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Load data from multiple remote Parquet files with column unification
-   * table.loadData([
-   *   "https://some-website.com/some-data1.parquet",
-   *   "https://some-website.com/some-data2.parquet",
-   *   "https://some-website.com/some-data3.parquet"
-   * ], { unifyColumns: true });
+   * // Load multiple CSV files and unify columns that differ between files
+   * table.loadData("./data/*.csv", { unifyColumns: true });
    * ```
    *
    * @example
@@ -492,79 +487,6 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     loadData(this, files, options);
-    return this;
-  }
-
-  /**
-   * Loads data from all supported files (CSV, JSON, Parquet, Excel) within a local directory into the table.
-   *
-   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
-   *
-   * @param directory - The absolute path to the directory containing the data files.
-   * @param options - An optional object with configuration options:
-   * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
-   * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-   * @param options.limit - A number indicating the maximum number of rows to load. Defaults to all rows.
-   * @param options.filename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
-   * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
-   * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
-   * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
-   * @param options.header - A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
-   * @param options.allText - A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
-   * @param options.delim - The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
-   * @param options.skip - The number of lines to skip at the beginning of the file. Applicable to CSV files. Defaults to `0`.
-   * @param options.nullPadding - If `true`, when a row has fewer columns than expected, the remaining columns on the right will be padded with `NULL` values. Defaults to `false`.
-   * @param options.ignoreErrors - If `true`, parsing errors encountered will be ignored, and rows with errors will be skipped. Defaults to `false`.
-   * @param options.compression - The compression type of the file. Applicable to CSV files. Defaults to `none`.
-   * @param options.strict - If `true`, an error will be thrown when encountering any issues. If `false`, structurally incorrect files will be parsed tentatively. Defaults to `true`.
-   * @param options.encoding - The encoding of the files. Applicable to CSV files. Defaults to `utf-8`.
-   * @param options.jsonFormat - The format of JSON files ("unstructured", "newlineDelimited", "array"). By default, the format is inferred.
-   * @param options.records - A boolean indicating whether each line in a newline-delimited JSON file represents a record. Applicable to JSON files. By default, it's inferred.
-   * @param options.sheet - A string indicating a specific sheet to import from an Excel file. By default, the first sheet is imported.
-   * @returns The table, so methods can be chained.
-   * @category Importing Data
-   *
-   * @example
-   * ```ts
-   * // Load all supported data files from the "./data/" directory
-   * table.loadDirectory("./data/");
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Load only specific columns from all CSV files in a directory
-   * table.loadDirectory("./data/", { columns: ["name", "salary"] });
-   * ```
-   */
-  loadDirectory(
-    directory: string,
-    options: {
-      fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
-      autoDetect?: boolean;
-      limit?: number;
-      filename?: boolean;
-      unifyColumns?: boolean;
-      columnTypes?: { [key: string]: string };
-      // column selection
-      columns?: string[];
-      // csv options
-      header?: boolean;
-      allText?: boolean;
-      delim?: string;
-      skip?: number;
-      nullPadding?: boolean;
-      ignoreErrors?: boolean;
-      compression?: "none" | "gzip" | "zstd";
-      encoding?: "utf-8" | "utf-16" | "latin-1";
-      strict?: boolean;
-      // json options
-      jsonFormat?: "unstructured" | "newlineDelimited" | "array";
-      records?: boolean;
-      // excel options
-      sheet?: string;
-    } = {},
-  ): this {
-    loadDirectory(this, directory, options);
     return this;
   }
 

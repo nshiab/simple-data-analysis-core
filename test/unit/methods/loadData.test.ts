@@ -559,18 +559,10 @@ Deno.test("should load data from multiple files and add a column with the file n
   await sdb.close();
 });
 
-Deno.test("should load data from multiple files and unify the columns.", async () => {
+Deno.test("should load and unify multiple files matching a glob", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable();
-  table.loadData(
-    [
-      "test/data/directory/data1.csv",
-      "test/data/directory/data2.csv",
-      "test/data/directory/data3.csv",
-      "test/data/directory/data4ExtraColumn.csv",
-    ],
-    { unifyColumns: true },
-  );
+  table.loadData("test/data/directory/*.csv", { unifyColumns: true });
 
   const data = await table.getData();
   assertEquals(data, [

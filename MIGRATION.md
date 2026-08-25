@@ -154,7 +154,6 @@ only the renamed methods and option keys below are breaking.
 | `points()`                | `createPoints()`       | Makes the point-construction operation explicit.                            |
 | `latLon()`                | `extractLatLon()`      | Makes it clear that coordinates are extracted into new columns.             |
 | `concatenateRow()`        | `rowToText()`          | It doesn't concatenate rows — it turns each row into a labeled text block.  |
-| `loadDataFromDirectory()` | `loadDirectory()`      | Shorter; "data from" added nothing.                                         |
 | `proportionsHorizontal()` | `rowProportions()`     | Shorter and names the unit instead of a visual direction.                   |
 | `proportionsVertical()`   | `columnProportions()`  | Same.                                                                       |
 | `logTable()`              | `log()`                | The table receiver already supplies the noun.                               |
@@ -177,6 +176,15 @@ instance stay synchronized. `SimpleDB.getTables()` now returns a read-only
 snapshot of the table registry; direct registry mutation through `tables` or
 `pushTable()` is no longer supported.
 
+### Removed methods
+
+`loadDataFromDirectory()` has been removed. Pass a file glob to `loadData()`
+instead. Set `unifyColumns: true` when the files have different columns:
+
+```ts
+table.loadData("./data/*.csv", { unifyColumns: true });
+```
+
 ### One `strict` option instead of five names
 
 Methods that could skip validations or error-throwing now all use
@@ -192,31 +200,31 @@ Methods that could skip validations or error-throwing now all use
 
 ### Renamed option keys
 
-| Method                           | v1                                                | v2                                       |
-| :------------------------------- | :------------------------------------------------ | :--------------------------------------- |
-| `join()`                         | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
-| `loadData()` / `loadDirectory()` | `{ fileName: true }`                              | `{ filename: true }`                     |
-| `loadGeoData()`                  | `{ toWGS84: true }`                               | `{ toEPSG4326: true }`                   |
-| `joinGeo()`                      | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
-| `clone()`                        | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
-| `summarize()`                    | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
-| `ranks()`                        | `{ noGaps: true }`                                | `{ dense: true }`                        |
-| `writeDB()`                      | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
-| `trim()`                         | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
-| `pad()`                          | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
-| `fuzzyClean()`                   | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
-| `joinGeo()`                      | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
-| `customQuery()`                  | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
-| `new SimpleDB()` / `newTable()`  | `{ types: true }`                                 | `{ typesToLog: true }`                   |
-| `new SimpleDB()` / `newTable()`  | `{ nbRowsToLog: 20 }`                             | `{ rowsToLog: 20 }`                      |
-| `log()`                          | `{ nbRowsToLog: 20 }`                             | `{ count: 20 }`                          |
-| `new SimpleDB()` / `newTable()`  | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
-| `new SimpleDB()`                 | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
-| `clone()`                        | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
-| Methods that group or partition  | `{ categories: "region" }`                        | `{ by: "region" }`                       |
-| `summarize()`                    | `{ values: "sales" }`                             | `{ columns: "sales" }`                   |
-| `summarize()`                    | `{ summaries: ["mean", "sum"] }`                  | `{ stats: ["mean", "sum"] }`             |
-| `wider()`                        | `{ aggregation: "max" }`                          | `{ stat: "max" }`                        |
+| Method                          | v1                                                | v2                                       |
+| :------------------------------ | :------------------------------------------------ | :--------------------------------------- |
+| `join()`                        | `{ commonColumn: "id" }`                          | `{ on: "id" }`                           |
+| `loadData()`                    | `{ fileName: true }`                              | `{ filename: true }`                     |
+| `loadGeoData()`                 | `{ toWGS84: true }`                               | `{ toEPSG4326: true }`                   |
+| `joinGeo()`                     | `joinGeo(tableB, "within", ...)`                  | `joinGeo(tableB, "withinDistance", ...)` |
+| `clone()`                       | `{ outputTable: "copy" }`                         | `{ name: "copy" }`                       |
+| `summarize()`                   | `{ toMs: true }`                                  | `{ datesToMs: true }`                    |
+| `ranks()`                       | `{ noGaps: true }`                                | `{ dense: true }`                        |
+| `writeDB()`                     | `{ noMetaData: true }`                            | `{ metadata: false }`                    |
+| `trim()`                        | `{ method: "leftTrim" \| "rightTrim" \| "trim" }` | `{ side: "left" \| "right" \| "both" }`  |
+| `pad()`                         | `{ method: "left", char: "0" }`                   | `{ side: "left", character: "0" }`       |
+| `fuzzyClean()`                  | `{ keep: "mostCommon" }`                          | `{ strategy: "mostCommon" }`             |
+| `joinGeo()`                     | `{ leftTableColumn, rightTableColumn }`           | `{ leftColumn, rightColumn }`            |
+| `customQuery()`                 | `{ returnDataFrom: "query" }`                     | `{ returnData: true }`                   |
+| `new SimpleDB()` / `newTable()` | `{ types: true }`                                 | `{ typesToLog: true }`                   |
+| `new SimpleDB()` / `newTable()` | `{ nbRowsToLog: 20 }`                             | `{ rowsToLog: 20 }`                      |
+| `log()`                         | `{ nbRowsToLog: 20 }`                             | `{ count: 20 }`                          |
+| `new SimpleDB()` / `newTable()` | `{ nbCharactersToLog: 50 }`                       | `{ charsToLog: 50 }`                     |
+| `new SimpleDB()`                | `{ tempDirectory: "./tmp" }`                      | `{ tempDir: "./tmp" }`                   |
+| `clone()`                       | `{ nbRows: 10 }`                                  | `{ limit: 10 }`                          |
+| Methods that group or partition | `{ categories: "region" }`                        | `{ by: "region" }`                       |
+| `summarize()`                   | `{ values: "sales" }`                             | `{ columns: "sales" }`                   |
+| `summarize()`                   | `{ summaries: ["mean", "sum"] }`                  | `{ stats: ["mean", "sum"] }`             |
+| `wider()`                       | `{ aggregation: "max" }`                          | `{ stat: "max" }`                        |
 
 The `categories` → `by` rename applies to `cloneColumnWithOffset()`, `fill()`,
 `addRowNumber()`, `nest()`, `ranks()`, `quantiles()`, `columnProportions()`,
