@@ -141,6 +141,7 @@ import insertTables from "../methods/insertTables.ts";
 import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
 import loadOSM from "../methods/loadOSM.ts";
+import loadStatCanData from "../methods/loadStatCanData.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -487,6 +488,54 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     loadData(this, files, options);
+    return this;
+  }
+
+  /**
+   * Downloads a complete Statistics Canada table and loads it into this table.
+   * The method queues the download and load; they run when an async observer
+   * method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * Results are cached as Parquet files in `.sda-cache/statcan` by default.
+   * Cached data does not expire unless a TTL is provided.
+   *
+   * @param pid - The Statistics Canada Product ID. Eight-digit PIDs, ten-digit view PIDs, and hyphenated table identifiers are accepted.
+   * @param options - Optional retrieval and cache settings.
+   * @param options.lang - The language of the table data. Defaults to `"en"`.
+   * @param options.cache - Whether to read and write the cache. Defaults to `true`.
+   * @param options.ttl - Cache time to live in seconds. By default, cached data does not expire. Use `0` to refresh and replace the cache entry.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
+   *
+   * @example
+   * ```ts
+   * await sdb
+   *   .newTable("population")
+   *   .loadStatCanData("17-10-0005-01")
+   *   .filter("GEO = 'Canada'")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Refresh French data when the cached table is at least one day old.
+   * await table
+   *   .loadStatCanData("17-10-0005", {
+   *     lang: "fr",
+   *     ttl: 24 * 60 * 60,
+   *   })
+   *   .run();
+   * ```
+   */
+  loadStatCanData(
+    pid: string,
+    options: {
+      lang?: "en" | "fr";
+      cache?: boolean;
+      ttl?: number;
+    } = {},
+  ): this {
+    loadStatCanData(this, pid, options);
     return this;
   }
 

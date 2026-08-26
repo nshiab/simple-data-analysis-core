@@ -714,7 +714,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}')>): this;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}')>): this;
 ```
 
 ##### Parameters
@@ -880,6 +880,55 @@ table.loadData("./data/*.csv", { unifyColumns: true });
 ```ts
 // Load only specific columns from a CSV file
 table.loadData("./employees.csv", { columns: ["name", "salary"] });
+```
+
+#### `loadStatCanData`
+
+Downloads a complete Statistics Canada table and loads it into this table. The
+method queues the download and load; they run when an async observer method
+(like `getData()` or `log()`) is awaited, or when `run()` is called.
+
+Results are cached as Parquet files in `.sda-cache/statcan` by default. Cached
+data does not expire unless a TTL is provided.
+
+##### Signature
+
+```typescript
+loadStatCanData(pid: string, options?: { lang?: "en" | "fr"; cache?: boolean; ttl?: number }): this;
+```
+
+##### Parameters
+
+- **`pid`**: The Statistics Canada Product ID. Eight-digit PIDs, ten-digit view
+  PIDs, and hyphenated table identifiers are accepted.
+- **`options`**: Optional retrieval and cache settings.
+- **`options.lang`**: The language of the table data. Defaults to `"en"`.
+- **`options.cache`**: Whether to read and write the cache. Defaults to `true`.
+- **`options.ttl`**: Cache time to live in seconds. By default, cached data does
+  not expire. Use `0` to refresh and replace the cache entry.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+await sdb
+  .newTable("population")
+  .loadStatCanData("17-10-0005-01")
+  .filter("GEO = 'Canada'")
+  .log();
+```
+
+```ts
+// Refresh French data when the cached table is at least one day old.
+await table
+  .loadStatCanData("17-10-0005", {
+    lang: "fr",
+    ttl: 24 * 60 * 60,
+  })
+  .run();
 ```
 
 #### `loadGeoData`
@@ -2568,7 +2617,7 @@ is called.
 ##### Signature
 
 ```typescript
-addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${[0m[36mstring[0m}') | GEOMETRY('${[0m[36mstring[0m}'), definition: string): this;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
 ```
 
 ##### Parameters
