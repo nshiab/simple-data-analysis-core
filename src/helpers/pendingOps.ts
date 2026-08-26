@@ -80,15 +80,33 @@ export type BarrierOp = {
 };
 
 /**
- * An operation queued by a sync builder method, executed when the pending
- * chains are flushed at an observation point.
+ * An asynchronous extension barrier whose callback can queue builder methods.
+ * Nested operations drain before the callback observes the database and before
+ * the original chain continues.
  */
-export type PendingOp = FusableOp | BarrierOp;
+export type AsyncBarrierOp = {
+  kind: "asyncBarrier";
+  /** The extension method that queued the operation. */
+  method: string;
+  /** The parameters passed to the extension method, for error reporting. */
+  parameters: { [key: string]: unknown } | null;
+  /** The operation's position in database-wide program order. */
+  sequence: number;
+  /** Executes the asynchronous extension operation. */
+  execute: () => Promise<void>;
+};
 
 /**
- * A pending operation as built by a sync builder method, before queueOp
- * stamps it with its program-order sequence.
+ * An operation queued by a sync builder or extension method, executed when
+ * the pending chains are flushed at an observation point.
+ */
+export type PendingOp = FusableOp | BarrierOp | AsyncBarrierOp;
+
+/**
+ * A pending operation as built by a sync builder or extension method, before
+ * queueOp stamps it with its program-order sequence.
  */
 export type PendingOpInput =
   | Omit<FusableOp, "sequence">
-  | Omit<BarrierOp, "sequence">;
+  | Omit<BarrierOp, "sequence">
+  | Omit<AsyncBarrierOp, "sequence">;

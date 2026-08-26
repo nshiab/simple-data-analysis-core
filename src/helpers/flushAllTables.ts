@@ -9,6 +9,14 @@ import mergeOptions from "./mergeOptions.ts";
 import queryDB from "./queryDB.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import { getRegisteredTables } from "./tableRegistry.ts";
+import {
+  type AsyncOperationFrame,
+  getAsyncOperationFrame,
+  isDrainingAsyncOperationFrame,
+  type PendingEntry,
+  runWhileDrainingAsyncOperationFrame,
+  runWithAsyncOperationFrame,
+} from "./asyncOperationContext.ts";
 
 /**
  * The databases whose flush is executing on the current async call chain.
@@ -20,10 +28,10 @@ import { getRegisteredTables } from "./tableRegistry.ts";
 const flushContext = new AsyncLocalStorage<Set<SimpleDB>>();
 
 /**
- * Runs `fn` with `sdb` exempt from flushing: queries it issues execute
- * directly, and operations queued during it wait for the next flush. Used by
- * the flush itself and by the connection setup, whose queries must run before
- * any queued operation.
+ * Runs `fn` with `sdb` exempt from the top-level flush. Queries issued by an
+ * asynchronous barrier can still drain operations queued inside that barrier.
+ * Used by the flush itself and by connection setup, whose queries must run
+ * before any queued operation.
  */
 export function runExemptFromFlush<T>(
   sdb: SimpleDB,
@@ -48,9 +56,15 @@ export function runExemptFromFlush<T>(
  * answers from fully executed state.
  */
 export default async function flushAllTables(sdb: SimpleDB): Promise<void> {
+  const frame = getAsyncOperationFrame(sdb);
+  if (frame !== undefined) {
+    if (!isDrainingAsyncOperationFrame(frame)) {
+      await drainAsyncOperationFrame(frame);
+    }
+    return;
+  }
   if (flushContext.getStore()?.has(sdb)) {
-    // A query issued by the flush itself. Operations queued while a flush is
-    // running (for example by a barrier's execute) wait for the next flush.
+    // A query issued by the top-level flush itself.
     return;
   }
   while (sdb.flushPromise !== null) {
@@ -95,14 +109,23 @@ type CompiledCte = {
 
 async function flush(sdb: SimpleDB): Promise<void> {
   // Take ownership of every queue upfront, in program order.
-  const entries: ({ table: SimpleTable; op: PendingOp } | null)[] = [];
+  const entries: PendingEntry[] = [];
   for (const table of getRegisteredTables(sdb)) {
     for (const op of table.pendingOps.splice(0, table.pendingOps.length)) {
       entries.push({ table, op });
     }
   }
   sdb.pendingCount = 0;
-  entries.sort((a, b) => a!.op.sequence - b!.op.sequence);
+  await replayEntries(sdb, entries);
+}
+
+async function replayEntries(
+  sdb: SimpleDB,
+  pendingEntries: PendingEntry[],
+): Promise<void> {
+  const entries: (PendingEntry | null)[] = [...pendingEntries].sort((a, b) =>
+    a.op.sequence - b.op.sequence
+  );
 
   let open: Segment | null = null;
   // The table whose operation is executing, for error attribution: on
@@ -145,6 +168,17 @@ async function flush(sdb: SimpleDB): Promise<void> {
         await runOpenSegment();
         executing = table;
         await op.execute();
+        executing = null;
+        current = null;
+        continue;
+      }
+
+      if (op.kind === "asyncBarrier") {
+        // An asynchronous extension barrier also captures and drains builder
+        // operations queued by its callback before replay continues.
+        await runOpenSegment();
+        executing = table;
+        await runAsyncBarrier(table, op);
         executing = null;
         current = null;
         continue;
@@ -200,6 +234,51 @@ async function flush(sdb: SimpleDB): Promise<void> {
       }
     }
     throw error;
+  }
+}
+
+async function runAsyncBarrier(
+  table: SimpleTable,
+  op: Extract<PendingOp, { kind: "asyncBarrier" }>,
+): Promise<void> {
+  await runWithAsyncOperationFrame(table.sdb, async (frame) => {
+    await op.execute();
+    await drainAsyncOperationFrame(frame);
+  });
+}
+
+async function drainAsyncOperationFrame(
+  frame: AsyncOperationFrame,
+): Promise<void> {
+  while (frame.drainPromise !== null) {
+    try {
+      await frame.drainPromise;
+    } catch {
+      // The observer that started the drain receives its failure. A concurrent
+      // observer waits for that drain to finish, then handles remaining work.
+    }
+  }
+  if (frame.entries.length === 0) {
+    return;
+  }
+
+  // Start on the next microtask so drainPromise is visible before replay can
+  // re-enter user code or another observer can attempt the same drain.
+  const promise = Promise.resolve().then(() =>
+    runWhileDrainingAsyncOperationFrame(frame, async () => {
+      while (frame.entries.length > 0) {
+        const entries = frame.entries.splice(0, frame.entries.length);
+        await replayEntries(frame.sdb, entries);
+      }
+    })
+  );
+  frame.drainPromise = promise;
+  try {
+    await promise;
+  } finally {
+    if (frame.drainPromise === promise) {
+      frame.drainPromise = null;
+    }
   }
 }
 

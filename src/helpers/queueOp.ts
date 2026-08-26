@@ -4,16 +4,76 @@ import type { PendingOpInput } from "./pendingOps.ts";
 import { ensureTableRegistered, getRegisteredTables } from "./tableRegistry.ts";
 import { markTableChanged } from "./tableGeneration.ts";
 import { recordCacheTableReferences } from "./cacheTableDependencies.ts";
+import { captureAsyncOperation } from "./asyncOperationContext.ts";
 
 /**
- * Queues an operation on a table, stamping it with a database-wide sequence
- * number. The flush replays operations across all tables in sequence order,
- * so interleaved operations on different tables execute exactly in the order
- * the user queued them, like immediate execution would.
+ * Queues a synchronous table-builder operation or a barrier.
+ * Operations execute lazily at the next observation point in database-wide
+ * program order. Builder operations queued by an `asyncBarrier` callback are
+ * drained before the callback's observer queries and before later chained
+ * operations.
+ *
+ * Asynchronous barrier callbacks must await all work that can queue table
+ * operations. Detached work is outside the barrier's program-order scope.
+ *
+ * @param simpleTable - The table whose chain owns the operation.
+ * @param op - The fusable operation or asynchronous barrier to queue.
+ * @returns Nothing. Public builder methods should return their target table.
+ *
+ * @example
+ * ```ts
+ * import type { SimpleTable } from "@nshiab/simple-data-analysis-core";
+ * import { queueOp } from "@nshiab/simple-data-analysis-core/helpers";
+ *
+ * function loadRemote(table: SimpleTable, url: string): void {
+ *   queueOp(table, {
+ *     kind: "asyncBarrier",
+ *     method: "loadRemote()",
+ *     parameters: { url },
+ *     execute: async () => {
+ *       const rows = await fetch(url).then((response) => response.json()) as
+ *         { [key: string]: unknown }[];
+ *       table.loadArray(rows);
+ *     },
+ *   });
+ * }
+ * ```
  */
 export default function queueOp(
   simpleTable: SimpleTable,
-  op: PendingOpInput,
+  op:
+    | {
+      kind: "fusable";
+      method: string;
+      parameters: { [key: string]: unknown } | null;
+      needsSchema: boolean;
+      needsSpatial?: boolean;
+      rawSQL?: string[];
+      values?:
+        | import("@duckdb/node-api").DuckDBValue[]
+        | (
+          (
+            schema: import("./pendingOps.ts").TableSchema,
+          ) => import("@duckdb/node-api").DuckDBValue[]
+        );
+      preservesSchema?: boolean;
+      buildSelect: (
+        input: string,
+        schema: import("./pendingOps.ts").TableSchema,
+      ) => string;
+    }
+    | {
+      kind: "barrier";
+      method: string;
+      parameters: { [key: string]: unknown } | null;
+      execute: () => Promise<void>;
+    }
+    | {
+      kind: "asyncBarrier";
+      method: string;
+      parameters: { [key: string]: unknown } | null;
+      execute: () => Promise<void>;
+    },
 ): void {
   const sdb = simpleTable.sdb;
   if (sdb.lifecycleState !== "open") {
@@ -46,10 +106,14 @@ export default function queueOp(
   // methods recreating a removed table.
   ensureTableRegistered(sdb, simpleTable);
   markTableChanged(simpleTable);
-  simpleTable.pendingOps.push({
+  const queuedOp = {
     ...capturedOp,
     sequence: sdb.opSequence++,
-  });
+  };
+  if (captureAsyncOperation(sdb, { table: simpleTable, op: queuedOp })) {
+    return;
+  }
+  simpleTable.pendingOps.push(queuedOp);
   sdb.pendingCount++;
 }
 

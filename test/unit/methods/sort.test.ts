@@ -209,11 +209,11 @@ Deno.test("aggregated results can be sorted deterministically afterward", async 
   table
     .loadArray([{ x: 1, y: 10 }, { x: 2, y: 20 }])
     .summarize({ columns: ["x", "y"], stats: "sum" })
-    .sort({ value: "desc" });
+    .sort({ column: "desc" });
 
   assertEquals(await table.getData(), [
-    { value: "y", sum: 30 },
-    { value: "x", sum: 3 },
+    { column: "y", sum: 30 },
+    { column: "x", sum: 3 },
   ]);
   await sdb.close();
 });
