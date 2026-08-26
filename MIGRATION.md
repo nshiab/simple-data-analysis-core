@@ -95,6 +95,26 @@ Use `logSQL: true` to log the exact fused statement immediately before it runs,
 or `explainSQL: true` to log supported DuckDB query plans. Observability does
 not disable fusion or change execution.
 
+## `updateWithJS()` is now a sync builder
+
+`updateWithJS()` now follows the same execution rule as other transformations.
+It queues synchronous or asynchronous modifier functions and returns the table
+immediately, so subsequent transformations can be chained:
+
+```ts
+const table = await sdb
+  .newTable()
+  .loadData("reviews.csv")
+  .updateWithJS(async (rows) => {
+    return await scoreReviews(rows);
+  }, { batchSize: 100 })
+  .filter("score >= 0.8")
+  .log();
+```
+
+Awaiting `updateWithJS()` itself is now a harmless no-op and does not execute
+the modifier. If no observer follows the update, call `run()` explicitly.
+
 ## Mutable arguments are captured
 
 Sync builders capture mutable options, arrays, and maps when called. Later
@@ -131,9 +151,6 @@ await tableA.getData();
 
 - **`renameTable()` and `removeTable()`** change the table's identity, so they
   execute immediately (after running any queued methods).
-- **`updateWithJS()`** runs your JavaScript function on the data, so it executes
-  immediately: your function runs when you await the call, not at a later
-  observation point.
 - **`cache()`** must read the cache to decide between running your function and
   restoring cached data.
 

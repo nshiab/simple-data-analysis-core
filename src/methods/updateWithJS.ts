@@ -1,36 +1,43 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
-import { markTableChanged } from "../helpers/tableGeneration.ts";
+import queueOp from "../helpers/queueOp.ts";
+import { executePreparedArray, prepareArray } from "./loadArray.ts";
 
-export default async function updateWithJS(
+type Row = { [key: string]: unknown };
+
+type DataModifier = (
+  rows: Row[],
+) => Row[] | Promise<Row[]>;
+
+type UpdateWithJSOptions = { batchSize?: number };
+
+export default function updateWithJS(
   simpleTable: SimpleTable,
-  dataModifier:
-    | ((
-      rows: {
-        [key: string]: unknown;
-      }[],
-    ) => Promise<
-      {
-        [key: string]: unknown;
-      }[]
-    >)
-    | ((
-      rows: {
-        [key: string]: unknown;
-      }[],
-    ) => {
-      [key: string]: unknown;
-    }[]),
-  options: { batchSize?: number } = {},
-) {
+  dataModifier: DataModifier,
+  options: UpdateWithJSOptions = {},
+): void {
   if (
     options.batchSize !== undefined &&
     (!Number.isInteger(options.batchSize) || options.batchSize < 1)
   ) {
     throw new Error("updateWithJS() batchSize must be a positive integer.");
   }
+
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "updateWithJS()",
+    parameters: { options },
+    execute: () => executeUpdateWithJS(simpleTable, dataModifier, options),
+  });
+}
+
+async function executeUpdateWithJS(
+  simpleTable: SimpleTable,
+  dataModifier: DataModifier,
+  options: UpdateWithJSOptions,
+): Promise<void> {
   const types = await simpleTable.getTypes();
   // Geometry columns are typed as GEOMETRY('<crs>'), not a bare "GEOMETRY".
   if (
@@ -56,11 +63,7 @@ export default async function updateWithJS(
         "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.",
       );
     }
-    // updateWithJS is an async-immediate exception: the update must be
-    // applied when the promise resolves, so the queued load executes now
-    // instead of waiting for a later observer.
-    simpleTable.loadArray(newData);
-    await flushAllTables(simpleTable.sdb);
+    await executePreparedArray(simpleTable, prepareArray(newData));
     return;
   }
 
@@ -78,8 +81,7 @@ export default async function updateWithJS(
     if (newData.length === 0) {
       return;
     }
-    simpleTable.loadArray(newData);
-    await flushAllTables(simpleTable.sdb);
+    await executePreparedArray(simpleTable, prepareArray(newData));
     return;
   }
 
@@ -115,7 +117,7 @@ export default async function updateWithJS(
       if (modified.length === 0) {
         continue;
       }
-      await scratch.loadArray(modified);
+      await executePreparedArray(scratch, prepareArray(modified));
       if (first) {
         await simpleTable.sdb.customQuery(
           `CREATE OR REPLACE TABLE ${
@@ -143,7 +145,6 @@ export default async function updateWithJS(
         quoteIdentifier(simpleTable.name)
       } AS SELECT * FROM ${quoteIdentifier(accumulator)}`,
     );
-    markTableChanged(simpleTable);
   } finally {
     await simpleTable.sdb.customQuery(
       `DROP TABLE IF EXISTS ${quoteIdentifier(accumulator)};

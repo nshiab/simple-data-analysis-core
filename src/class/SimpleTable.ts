@@ -4230,39 +4230,50 @@ export default class SimpleTable extends Simple {
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
    * This method does not work with tables containing geometries.
    *
-   * Unlike other transformation methods, this one is async and runs immediately (after executing any queued methods): your dataModifier function runs when you await the call, not at a later observation point.
+   * This method queues the update; the dataModifier function runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
    * @param options - An optional object with configuration options:
    * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. The modifier function is called once per batch.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns The table, so methods can be chained.
    * @category Updating Data
    *
    * @example
    * ```ts
-   * // Add 1 to values in 'column1'. If values are not numbers, they are replaced by null.
-   * await table.updateWithJS((rows) => {
-   *   const modifiedRows = rows.map(d => ({
-   *     ...d,
-   *     column1: typeof d.column1 === "number" ? d.column1 + 1 : null,
-   *   }));
-   *   return modifiedRows;
-   * });
+   * // Count words correctly across multilingual article text.
+   * const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+   * const table = await sdb
+   *   .newTable()
+   *   .loadData("articles.csv")
+   *   .updateWithJS((rows) => {
+   *     return rows.map((row) => ({
+   *       ...row,
+   *       wordCount: typeof row.text === "string"
+   *         ? [...segmenter.segment(row.text)].filter((part) => part.isWordLike)
+   *           .length
+   *         : null,
+   *     }));
+   *   })
+   *   .log();
    * ```
    *
    * @example
    * ```ts
-   * // Convert a date string to a Date object in 'dateColumn'
-   * await table.updateWithJS((rows) => {
-   *   const modifiedRows = rows.map(d => ({
-   *     ...d,
-   *     dateColumn: typeof d.dateColumn === "string" ? new Date(d.dateColumn) : d.dateColumn,
-   *   }));
-   *   return modifiedRows;
-   * });
+   * // Enrich reviews with scores from an external service, 100 at a time.
+   * const reviews = await table
+   *   .updateWithJS(async (rows) => {
+   *     const response = await fetch("https://api.example.com/score", {
+   *       method: "POST",
+   *       headers: { "content-type": "application/json" },
+   *       body: JSON.stringify(rows.map((row) => row.review)),
+   *     });
+   *     const scores = await response.json() as number[];
+   *     return rows.map((row, index) => ({ ...row, score: scores[index] }));
+   *   }, { batchSize: 100 })
+   *   .getData();
    * ```
    */
-  async updateWithJS(
+  updateWithJS(
     dataModifier:
       | ((
         rows: {
@@ -4281,8 +4292,8 @@ export default class SimpleTable extends Simple {
         [key: string]: unknown;
       }[]),
     options: { batchSize?: number } = {},
-  ): Promise<this> {
-    await updateWithJS(this, dataModifier, options);
+  ): this {
+    updateWithJS(this, dataModifier, options);
     return this;
   }
 

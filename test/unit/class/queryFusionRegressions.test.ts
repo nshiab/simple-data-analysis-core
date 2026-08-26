@@ -3,8 +3,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 // Regression tests for the bugs found reviewing the sync-builder/query-fusion
 // work: concurrency, cross-table error isolation, removed-table re-queuing,
-// duplicate-column errors, type-preserving replaceNulls, updateWithJS
-// immediacy, self-referencing fused SQL, and flush-time validation.
+// duplicate-column errors, type-preserving replaceNulls, queued updateWithJS,
+// self-referencing fused SQL, and flush-time validation.
 
 Deno.test("concurrent observers each see fully flushed state", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
@@ -133,21 +133,29 @@ Deno.test("replaceNulls fills a numeric constant into string and number columns"
   await sdb.close();
 });
 
-Deno.test("updateWithJS applies the update before resolving", async () => {
+Deno.test("updateWithJS queues its modifier until an observation point", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const t = sdb.newTable("ujs");
 
   t.loadArray([{ v: 1 }, { v: 2 }]);
-  await t.updateWithJS((rows) =>
-    rows.map((r) => ({ v: (r.v as number) * 10 }))
-  );
+  let calls = 0;
+  const returned = t.updateWithJS((rows) => {
+    calls++;
+    return rows.map((r) => ({ v: (r.v as number) * 10 }));
+  }).filter("v > 10");
 
-  // updateWithJS is async-immediate: nothing must be left queued when it
-  // resolves, regardless of the (non-batched) path taken.
-  assertEquals(t.pendingOps.length, 0);
+  assertEquals(returned, t);
+  assertEquals(calls, 0);
+  assertEquals(t.pendingOps.map((op) => op.method), [
+    "loadArray()",
+    "updateWithJS()",
+    "filter()",
+  ]);
 
   const r = await t.getData();
-  assertEquals(r, [{ v: 10 }, { v: 20 }]);
+  assertEquals(calls, 1);
+  assertEquals(t.pendingOps.length, 0);
+  assertEquals(r, [{ v: 20 }]);
 
   await sdb.close();
 });
