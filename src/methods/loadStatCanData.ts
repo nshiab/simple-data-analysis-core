@@ -11,8 +11,7 @@ import queryDB from "../helpers/queryDB.ts";
 import { loadDataQuery } from "./loadData.ts";
 import {
   createStatCanCacheId,
-  loadStatCanCache,
-  writeStatCanCache,
+  useStatCanCache,
 } from "../helpers/statCanCache.ts";
 
 type LoadStatCanOptions = {
@@ -61,39 +60,38 @@ async function executeLoadStatCanData(
   const cacheEnabled = options.cache ?? true;
   const cacheId = createStatCanCacheId(pid, lang);
   try {
-    if (
-      cacheEnabled &&
-      await loadStatCanCache(table, cacheId, options.ttl, parameters)
-    ) {
-      return;
-    }
+    await useStatCanCache(
+      table,
+      cacheId,
+      cacheEnabled,
+      options.ttl,
+      parameters,
+      async () => {
+        const downloadUrl = await getDownloadUrl(pid, lang);
+        const temporaryDirectory = ".sda-cache/tmp";
+        mkdirSync(temporaryDirectory, { recursive: true });
+        const prefix = `${cacheId}.${crypto.randomUUID()}`;
+        const archive = `${temporaryDirectory}/${prefix}.zip`;
+        const csv = `${temporaryDirectory}/${prefix}.csv`;
 
-    const downloadUrl = await getDownloadUrl(pid, lang);
-    const temporaryDirectory = ".sda-cache/tmp";
-    mkdirSync(temporaryDirectory, { recursive: true });
-    const prefix = `${cacheId}.${crypto.randomUUID()}`;
-    const archive = `${temporaryDirectory}/${prefix}.zip`;
-    const csv = `${temporaryDirectory}/${prefix}.csv`;
-
-    try {
-      await downloadToFile(downloadUrl, archive);
-      await extractZipEntryToFile(archive, `${pid}.csv`, csv);
-      await queryDB(
-        table,
-        loadDataQuery(table.name, [csv], { fileType: "csv" }),
-        mergeOptions(table, {
-          table: table.name,
-          method: "loadStatCanData()",
-          parameters,
-        }),
-      );
-      if (cacheEnabled) {
-        await writeStatCanCache(table, cacheId, parameters);
-      }
-    } finally {
-      rmSync(archive, { force: true });
-      rmSync(csv, { force: true });
-    }
+        try {
+          await downloadToFile(downloadUrl, archive);
+          await extractZipEntryToFile(archive, `${pid}.csv`, csv);
+          await queryDB(
+            table,
+            loadDataQuery(table.name, [csv], { fileType: "csv" }),
+            mergeOptions(table, {
+              table: table.name,
+              method: "loadStatCanData()",
+              parameters,
+            }),
+          );
+        } finally {
+          rmSync(archive, { force: true });
+          rmSync(csv, { force: true });
+        }
+      },
+    );
   } catch (error) {
     if (error instanceof SDAError) {
       throw error;

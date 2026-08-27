@@ -60,7 +60,10 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
   const restoreFetch = mockStatCanFetch(archive, requests);
 
   try {
-    const firstSdb = new SimpleDB({ dataTransport: "file" });
+    const firstSdb = new SimpleDB({
+      dataTransport: "file",
+      cacheVerbose: true,
+    });
     const first = firstSdb.newTable("statCanFirst");
     const returned = first
       .loadStatCanData("17-10-0005-01")
@@ -70,9 +73,15 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
       "loadStatCanData()",
       "filter()",
     ]);
-    assertEquals(await first.getData(), [
-      { REF_DATE: 2024, GEO: "Canada", VALUE: 42 },
-    ]);
+    const missLogs = await captureConsoleLogs(async () => {
+      assertEquals(await first.getData(), [
+        { REF_DATE: 2024, GEO: "Canada", VALUE: 42 },
+      ]);
+    });
+    assertStringIncludes(missLogs, "loadStatCanData() cache for statCanFirst");
+    assertStringIncludes(missLogs, "Cache miss.");
+    assertStringIncludes(missLogs, "Computations done in");
+    assertStringIncludes(missLogs, "Wrote in cache in");
     await firstSdb.close();
 
     assertEquals(requests.length, 2);
@@ -86,6 +95,27 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
     );
     assertEquals(readdirSync(".sda-cache/tmp"), []);
 
+    const secondSdb = new SimpleDB({
+      dataTransport: "file",
+      cacheVerbose: true,
+    });
+    const second = secondSdb.newTable("statCanSecond");
+    second.loadStatCanData(pid, { ttl: 60 });
+    const hitLogs = await captureConsoleLogs(async () => {
+      assertEquals(await second.getData(), [
+        { REF_DATE: 2023, GEO: "Canada", VALUE: 39 },
+        { REF_DATE: 2024, GEO: "Canada", VALUE: 42 },
+      ]);
+    });
+    assertStringIncludes(hitLogs, "loadStatCanData() cache for statCanSecond");
+    assertStringIncludes(hitLogs, "Cache hit.");
+    assertStringIncludes(hitLogs, "TTL of 1 min, 0 sec, 0 ms has not expired.");
+    assertStringIncludes(hitLogs, "Data loaded in");
+    assertStringIncludes(hitLogs, "Running computations previously took");
+    assertStringIncludes(hitLogs, "You saved");
+    await secondSdb.close();
+    assertEquals(requests.length, 2);
+
     const sourcesPath = ".sda-cache/statcan/sources.json";
     const sources = JSON.parse(readFileSync(sourcesPath, "utf-8")) as {
       [key: string]: { creation: number };
@@ -95,21 +125,24 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
     }
     writeFileSync(sourcesPath, JSON.stringify(sources));
 
-    const secondSdb = new SimpleDB({ dataTransport: "file" });
-    const second = secondSdb.newTable("statCanSecond");
-    second.loadStatCanData(pid);
-    assertEquals(await second.getData(), [
-      { REF_DATE: 2023, GEO: "Canada", VALUE: 39 },
-      { REF_DATE: 2024, GEO: "Canada", VALUE: 42 },
-    ]);
-    await secondSdb.close();
-    assertEquals(requests.length, 2);
-
     const thirdSdb = new SimpleDB({ dataTransport: "file" });
     const third = thirdSdb.newTable("statCanThird");
-    third.loadStatCanData(pid, { ttl: 0 });
+    third.loadStatCanData(pid);
     await third.run();
     await thirdSdb.close();
+    assertEquals(requests.length, 2);
+
+    const fourthSdb = new SimpleDB({
+      dataTransport: "file",
+      cacheVerbose: true,
+    });
+    const fourth = fourthSdb.newTable("statCanFourth");
+    fourth.loadStatCanData(pid, { ttl: 0 });
+    const staleLogs = await captureConsoleLogs(() => fourth.run());
+    assertStringIncludes(staleLogs, "Cache entry is stale.");
+    assertStringIncludes(staleLogs, "TTL of 0 ms has expired.");
+    assertStringIncludes(staleLogs, "refreshing the cache entry");
+    await fourthSdb.close();
     assertEquals(requests.length, 4);
   } finally {
     restoreFetch();
@@ -132,16 +165,29 @@ Deno.test("loadStatCanData with cache false always requests fresh data", async (
   const restoreFetch = mockStatCanFetch(archive, requests);
 
   try {
+    let uncachedLogs = "";
     for (let index = 0; index < 2; index++) {
-      const sdb = new SimpleDB({ dataTransport: "file" });
+      const sdb = new SimpleDB({
+        dataTransport: "file",
+        cacheVerbose: index === 0,
+      });
       const table = sdb.newTable(`statCanUncached${index}`);
       table.loadStatCanData(pid, {
         cache: false,
         lang: index === 0 ? "en" : "fr",
       });
-      assertEquals(await table.getRowCount(), 1);
+      const run = async () => {
+        assertEquals(await table.getRowCount(), 1);
+      };
+      if (index === 0) {
+        uncachedLogs = await captureConsoleLogs(run);
+      } else {
+        await run();
+      }
       await sdb.close();
     }
+    assertStringIncludes(uncachedLogs, "Cache disabled.");
+    assertStringIncludes(uncachedLogs, "without storing a cache entry");
     assertEquals(requests.length, 4);
     assertStringIncludes(requests[0], `/${pid}/en`);
     assertStringIncludes(requests[2], `/${pid}/fr`);
@@ -265,4 +311,18 @@ function mockStatCanFetch(
   return () => {
     globalThis.fetch = originalFetch;
   };
+}
+
+async function captureConsoleLogs(
+  run: () => Promise<unknown>,
+): Promise<string> {
+  const logs: string[] = [];
+  const originalLog = console.log;
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  try {
+    await run();
+  } finally {
+    console.log = originalLog;
+  }
+  return logs.join("\n");
 }

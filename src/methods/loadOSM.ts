@@ -2,11 +2,7 @@ import { createReadStream, rmSync } from "node:fs";
 import SDAError from "../class/SDAError.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import loadOsmFile from "../helpers/loadOsmFile.ts";
-import {
-  createOsmCacheId,
-  loadProcessedOsmCache,
-  writeProcessedOsmCache,
-} from "../helpers/osmCache.ts";
+import { createOsmCacheId, useProcessedOsmCache } from "../helpers/osmCache.ts";
 import { downloadOsmToTemporaryFile } from "../helpers/osmFiles.ts";
 import queueOp from "../helpers/queueOp.ts";
 
@@ -67,51 +63,43 @@ async function executeLoadOSM(
       query,
       queryGeneratorVersion: QUERY_GENERATOR_VERSION,
     });
-    if (
-      cacheEnabled &&
-      await loadProcessedOsmCache(table, cacheId, parameters)
-    ) {
-      return;
-    }
+    await useProcessedOsmCache(
+      table,
+      cacheId,
+      cacheEnabled,
+      parameters,
+      async () => {
+        const timeoutSignal = options.timeout === undefined
+          ? undefined
+          : AbortSignal.timeout(options.timeout * 1000);
+        const body = new URLSearchParams({ data: query });
+        const temporaryFile = await downloadOsmToTemporaryFile(endpoint, {
+          suffix: ".osm",
+          prefix: cacheId,
+          request: {
+            method: "POST",
+            headers: {
+              "accept-encoding": "gzip",
+              "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+              "user-agent":
+                "simple-data-analysis-core (https://github.com/nshiab/simple-data-analysis-core)",
+            },
+            body,
+            signal: timeoutSignal,
+          },
+        });
 
-    const timeoutSignal = options.timeout === undefined
-      ? undefined
-      : AbortSignal.timeout(options.timeout * 1000);
-    const body = new URLSearchParams({ data: query });
-    const start = Date.now();
-    const temporaryFile = await downloadOsmToTemporaryFile(endpoint, {
-      suffix: ".osm",
-      prefix: cacheId,
-      request: {
-        method: "POST",
-        headers: {
-          "accept-encoding": "gzip",
-          "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "user-agent":
-            "simple-data-analysis-core (https://github.com/nshiab/simple-data-analysis-core)",
-        },
-        body,
-        signal: timeoutSignal,
+        try {
+          await assertSuccessfulOverpassResponse(temporaryFile);
+          await loadOsmFile(table, temporaryFile, {
+            method: "loadOSM()",
+            parameters,
+          });
+        } finally {
+          rmSync(temporaryFile, { force: true });
+        }
       },
-    });
-
-    try {
-      await assertSuccessfulOverpassResponse(temporaryFile);
-      await loadOsmFile(table, temporaryFile, {
-        method: "loadOSM()",
-        parameters,
-      });
-      if (cacheEnabled) {
-        await writeProcessedOsmCache(
-          table,
-          cacheId,
-          parameters,
-          Date.now() - start,
-        );
-      }
-    } finally {
-      rmSync(temporaryFile, { force: true });
-    }
+    );
   } catch (error) {
     if (error instanceof SDAError) {
       throw error;

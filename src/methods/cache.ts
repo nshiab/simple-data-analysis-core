@@ -8,8 +8,12 @@ import {
 import type SimpleTable from "../class/SimpleTable.ts";
 import crypto from "node:crypto";
 import flushAllTables from "../helpers/flushAllTables.ts";
-import formatDate from "../helpers/formatDate.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
+import {
+  cacheEntryExpired,
+  cacheLoadMessage,
+  cacheTtlMessage,
+} from "../helpers/cacheDiagnostics.ts";
 import serializeCacheInputs, {
   getCacheInputLabel,
 } from "../helpers/serializeCacheInputs.ts";
@@ -161,9 +165,8 @@ export default async function cache<Table extends SimpleTable>(
       entryGeneration,
     );
   } else if (
-    cache &&
-    typeof options.ttl === "number" &&
-    now - cache.creation > options.ttl * 1000
+    options.ttl !== undefined &&
+    cacheEntryExpired(cache.creation, options.ttl, now)
   ) {
     const refreshId = cache.entryGeneration === entryGeneration
       ? id
@@ -175,16 +178,9 @@ export default async function cache<Table extends SimpleTable>(
             inputHashes,
             cache.tableDependencies ?? [],
           )
-        }\nTTL of ${
-          prettyDuration(0, { end: options.ttl * 1000 })
-        } has expired.\nThe creation date is ${
-          formatDate(
-            new Date(cache.creation),
-            "Month DD, YYYY, at HH:MM period",
-          )
-        }.\nIt was created ${
-          prettyDuration(cache.creation, { end: now })
-        } ago.\nRunning computations and refreshing the cache entry.`,
+        }\n${
+          cacheTtlMessage(cache.creation, options.ttl, now, true)
+        }\nRunning computations and refreshing the cache entry.`,
       );
     await runAndWrite(
       table,
@@ -208,18 +204,8 @@ export default async function cache<Table extends SimpleTable>(
         }`,
       );
     if (typeof options.ttl === "number") {
-      const ttlLimit = new Date(cache.creation + options.ttl * 1000);
       (options.verbose) &&
-        console.log(
-          `TTL of ${
-            prettyDuration(0, { end: options.ttl * 1000 })
-          } has not expired.\nThe creation date is ${
-            formatDate(
-              new Date(cache.creation),
-              "Month DD, YYYY, at HH:MM period",
-            )
-          }.\nThere are ${prettyDuration(now, { end: ttlLimit })} left.`,
-        );
+        console.log(cacheTtlMessage(cache.creation, options.ttl, now, false));
     }
     if (cache.file === null) {
       console.log("No data in cache. Nothing to load.");
@@ -258,15 +244,7 @@ export default async function cache<Table extends SimpleTable>(
       const end = Date.now();
       const duration = end - start;
       if (options.verbose) {
-        console.log(
-          `Data loaded in ${
-            prettyDuration(start, { end })
-          }.\nRunning computations previously took ${
-            prettyDuration(0, { end: cache.duration })
-          }.\nYou saved ${
-            prettyDuration(duration, { end: cache.duration })
-          }.\n`,
-        );
+        console.log(`${cacheLoadMessage(start, end, cache.duration)}\n`);
         table.sdb.cacheTimeSaved += cache.duration - duration;
       }
     }

@@ -93,14 +93,23 @@ Deno.test("loadOSM downloads, materializes, caches, and reuses OSM data", async 
     `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
 
   try {
-    const firstSdb = new SimpleDB({ dataTransport: "file" });
+    const firstSdb = new SimpleDB({
+      dataTransport: "file",
+      cacheVerbose: true,
+    });
     const first = firstSdb.newTable("firstOsmTable");
     first.loadOSM(bbox, {
       filters: ["amenity", "school"],
       endpoint,
       timeout: 60,
     });
-    assertEquals((await first.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    const missLogs = await captureConsoleLogs(async () => {
+      assertEquals((await first.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    });
+    assertStringIncludes(missLogs, "loadOSM() cache for firstOsmTable");
+    assertStringIncludes(missLogs, "Cache miss.");
+    assertStringIncludes(missLogs, "Computations done in");
+    assertStringIncludes(missLogs, "Wrote in cache in");
     await firstSdb.close();
 
     const cacheFiles = readdirSync(".sda-cache/osm");
@@ -115,18 +124,29 @@ Deno.test("loadOSM downloads, materializes, caches, and reuses OSM data", async 
     );
     assertEquals(existsSync(".sda-cache/sources.json"), false);
 
-    const secondSdb = new SimpleDB({ dataTransport: "file" });
+    const secondSdb = new SimpleDB({
+      dataTransport: "file",
+      cacheVerbose: true,
+    });
     const second = secondSdb.newTable("anotherOsmTable");
     second.loadOSM(bbox, {
       filters: ["amenity", "school"],
       endpoint,
       timeout: 60,
     });
-    const rows = await secondSdb.customQuery(
-      `SELECT kind, type, id, ST_AsText(geom) AS wkt
-      FROM anotherOsmTable WHERE id IN (1, 10, 20) ORDER BY id`,
-      { returnData: true },
-    );
+    let rows: { [key: string]: unknown }[] | null | undefined;
+    const hitLogs = await captureConsoleLogs(async () => {
+      rows = await secondSdb.customQuery(
+        `SELECT kind, type, id, ST_AsText(geom) AS wkt
+        FROM anotherOsmTable WHERE id IN (1, 10, 20) ORDER BY id`,
+        { returnData: true },
+      );
+    });
+    assertStringIncludes(hitLogs, "loadOSM() cache for anotherOsmTable");
+    assertStringIncludes(hitLogs, "Cache hit.");
+    assertStringIncludes(hitLogs, "Data loaded in");
+    assertStringIncludes(hitLogs, "Running computations previously took");
+    assertStringIncludes(hitLogs, "You saved");
     assertEquals(rows, [
       { kind: "node", type: "node", id: 1, wkt: "POINT (-73.599 45.501)" },
       {
@@ -196,17 +216,27 @@ Deno.test("loadOSM with cache false always requests fresh data", async () => {
     `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
 
   try {
+    let uncachedLogs = "";
     for (let index = 0; index < 2; index++) {
-      const sdb = new SimpleDB({ dataTransport: "file" });
+      const sdb = new SimpleDB({
+        dataTransport: "file",
+        cacheVerbose: index === 0,
+      });
       const table = sdb.newTable(`uncachedOsm${index}`);
       table.loadOSM(bbox, {
         filters: ["amenity", "school"],
         endpoint,
         cache: false,
       });
-      await table.run();
+      if (index === 0) {
+        uncachedLogs = await captureConsoleLogs(() => table.run());
+      } else {
+        await table.run();
+      }
       await sdb.close();
     }
+    assertStringIncludes(uncachedLogs, "Cache disabled.");
+    assertStringIncludes(uncachedLogs, "without storing a cache entry");
     assertEquals(requests, 2);
     assertEquals(existsSync(".sda-cache/osm/sources.json"), false);
     assertEquals(readdirSync(".sda-cache/tmp"), []);
@@ -369,3 +399,17 @@ Deno.test("loadOSM works with the public Overpass endpoint", async () => {
     await sdb.close();
   }
 });
+
+async function captureConsoleLogs(
+  run: () => Promise<unknown>,
+): Promise<string> {
+  const logs: string[] = [];
+  const originalLog = console.log;
+  console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
+  try {
+    await run();
+  } finally {
+    console.log = originalLog;
+  }
+  return logs.join("\n");
+}
