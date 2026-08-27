@@ -1,16 +1,15 @@
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
-import { queueOp } from "../../../src/helpers/index.ts";
+import { queueAsyncBarrier } from "../../../src/helpers/index.ts";
 import { peekTableGeneration } from "../../../src/helpers/tableGeneration.ts";
 
-Deno.test("queueOp drains builder operations queued by a barrier before later operations", async () => {
+Deno.test("queueAsyncBarrier drains nested builders before later operations", async () => {
   const sdb = new SimpleDB({ dataTransport: "file" });
   const table = sdb.newTable("remoteRows");
   let executed = false;
 
-  queueOp(table, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(table, {
     method: "loadRemote()",
     parameters: { source: "test" },
     execute: async () => {
@@ -33,8 +32,7 @@ Deno.test("an observer inside a queued barrier drains its earlier nested builder
   const table = sdb.newTable("observedInsideBarrier");
   let rowCountInside = 0;
 
-  queueOp(table, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(table, {
     method: "loadAndObserve()",
     parameters: {},
     execute: async () => {
@@ -55,8 +53,7 @@ Deno.test("concurrent observers inside a queued barrier share one nested drain",
   const table = sdb.newTable("concurrentInsideBarrier");
   let observations: [number, string[]] | undefined;
 
-  queueOp(table, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(table, {
     method: "loadAndObserveConcurrently()",
     parameters: {},
     execute: async () => {
@@ -89,8 +86,7 @@ Deno.test("operations queued concurrently outside a barrier stay in the top-leve
   });
   const calls: string[] = [];
 
-  queueOp(first, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(first, {
     method: "delayedExtension()",
     parameters: {},
     execute: async () => {
@@ -131,8 +127,7 @@ Deno.test("nested operations retain table-generation tracking", async () => {
   await data.run();
   const generationBefore = peekTableGeneration(data);
 
-  queueOp(control, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(control, {
     method: "nestedGenerationChange()",
     parameters: {},
     execute: async () => {
@@ -156,8 +151,7 @@ Deno.test("a nested failure keeps another table's nested work queued", async () 
   unaffected.loadArray([{ value: 1 }, { value: 2 }]);
   await sdb.run();
 
-  queueOp(failing, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(failing, {
     method: "nestedFailureExtension()",
     parameters: {},
     execute: async () => {
@@ -181,8 +175,7 @@ Deno.test("a queued output-table barrier reads its source at its call position",
   source.loadArray([{ value: 1 }, { value: 2 }]);
   const output = sdb.newTable("extensionOutput");
 
-  queueOp(output, {
-    kind: "asyncBarrier",
+  queueAsyncBarrier(output, {
     method: "copyRemote()",
     parameters: { outputTable: output.name },
     execute: async () => {
@@ -194,5 +187,57 @@ Deno.test("a queued output-table barrier reads its source at its call position",
 
   assertEquals(await output.getData(), [{ value: 2 }]);
   assertEquals(await source.getData(), []);
+  await sdb.close();
+});
+
+Deno.test("a rejected async barrier discards nested builders not yet drained", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const barrierTable = sdb.newTable("rejectedBarrier");
+  const nestedTable = sdb.newTable("discardedNestedWork");
+  barrierTable.loadArray([{ value: 1 }]);
+  nestedTable.loadArray([{ value: 1 }, { value: 2 }]);
+  await sdb.run();
+
+  queueAsyncBarrier(barrierTable, {
+    method: "rejectBeforeDrain()",
+    parameters: {},
+    execute: async () => {
+      await Promise.resolve();
+      nestedTable.filter("value > 1");
+      throw new Error("Barrier failed");
+    },
+  });
+
+  await assertRejects(() => barrierTable.run(), Error, "Barrier failed");
+  assertEquals(nestedTable.pendingOps, []);
+  assertEquals(sdb.pendingCount, 0);
+  assertEquals(await nestedTable.getData(), [{ value: 1 }, { value: 2 }]);
+  await sdb.close();
+});
+
+Deno.test("a rejected async barrier does not roll back nested builders already drained", async () => {
+  const sdb = new SimpleDB({ dataTransport: "file" });
+  const barrierTable = sdb.newTable("rejectedAfterDrain");
+  const nestedTable = sdb.newTable("appliedNestedWork");
+  barrierTable.loadArray([{ value: 1 }]);
+  nestedTable.loadArray([{ value: 1 }, { value: 2 }]);
+  await sdb.run();
+
+  queueAsyncBarrier(barrierTable, {
+    method: "rejectAfterDrain()",
+    parameters: {},
+    execute: async () => {
+      nestedTable.filter("value > 1");
+      await nestedTable.run();
+      throw new Error("Barrier failed after drain");
+    },
+  });
+
+  await assertRejects(
+    () => barrierTable.run(),
+    Error,
+    "Barrier failed after drain",
+  );
+  assertEquals(await nestedTable.getData(), [{ value: 2 }]);
   await sdb.close();
 });

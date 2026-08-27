@@ -66,6 +66,37 @@ call `run()`. Otherwise, `close()` executes any remaining queued transformations
 before cleaning up resources. If you are migrating from v1, see the
 [migration guide](https://github.com/nshiab/simple-data-analysis-core/blob/main/MIGRATION.md).
 
+### Building asynchronous extensions
+
+Extensions that perform asynchronous work before queuing table builders can use
+`queueAsyncBarrier()`. The callback runs at the barrier's position in
+database-wide program order, and builders it queues run before later chained
+operations:
+
+```ts
+import type { SimpleTable } from "@nshiab/simple-data-analysis-core";
+import { queueAsyncBarrier } from "@nshiab/simple-data-analysis-core/helpers";
+
+function loadRemote(table: SimpleTable, url: string): SimpleTable {
+  queueAsyncBarrier(table, {
+    method: "loadRemote()",
+    parameters: { url },
+    execute: async () => {
+      const rows = await fetch(url).then((response) => response.json()) as {
+        [key: string]: unknown;
+      }[];
+      table.loadArray(rows);
+    },
+  });
+  return table;
+}
+```
+
+The callback must await all asynchronous work that can queue builders. If it
+rejects, captured builders that have not already run are discarded. Builders
+already drained by an observer inside the callback remain applied;
+`queueAsyncBarrier()` does not provide database rollback.
+
 ### Temporary Deno result-transport workaround
 
 Deno can currently crash while finalizing DuckDB data chunks under garbage-
