@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should calculate the distance between points with the SRS unit", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadGeoData("test/geodata/files/coordinates.geojson");
   const clone = table.clone();
@@ -31,7 +31,7 @@ Deno.test("should calculate the distance between points with the SRS unit", asyn
 });
 
 Deno.test("should calculate the distance between points with the SRS unit and round values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadGeoData("test/geodata/files/coordinates.geojson");
   const clone = table.clone();
@@ -59,7 +59,7 @@ Deno.test("should calculate the distance between points with the SRS unit and ro
 });
 
 Deno.test("should calculate the distance between points and lines in the SRS unit", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const line = sdb.newTable("line");
@@ -83,7 +83,7 @@ Deno.test("should calculate the distance between points and lines in the SRS uni
 });
 
 Deno.test("should calculate the distance between points and polygons in the SRS unit", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const polygon = sdb.newTable("polygon");
@@ -107,7 +107,7 @@ Deno.test("should calculate the distance between points and polygons in the SRS 
 });
 
 Deno.test("should calculate the distance between points with the haversine method in meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();
@@ -138,7 +138,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 });
 
 Deno.test("should calculate the distance between points with the haversine method in meters and round values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();
@@ -168,7 +168,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   await sdb.close();
 });
 Deno.test("should calculate the distance between points with the haversine method in meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();
@@ -199,7 +199,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 });
 
 Deno.test("should calculate the distance between points with the haversine method in km", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();
@@ -231,7 +231,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 });
 
 Deno.test("should calculate the distance between points with the spheroid method in m", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();
@@ -262,7 +262,7 @@ Deno.test("should calculate the distance between points with the spheroid method
 });
 
 Deno.test("should calculate the distance between points with the spheroid method in m and round values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();
@@ -293,7 +293,7 @@ Deno.test("should calculate the distance between points with the spheroid method
 });
 
 Deno.test("should calculate the distance between points with the spheroid method in km", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
   const pointsCloned = points.clone();

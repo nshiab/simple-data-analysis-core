@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should rename a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/cities.csv"]);
   await table.renameTable("canadianCities");

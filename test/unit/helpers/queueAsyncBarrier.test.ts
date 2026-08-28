@@ -5,7 +5,7 @@ import { queueAsyncBarrier } from "../../../src/helpers/index.ts";
 import { peekTableGeneration } from "../../../src/helpers/tableGeneration.ts";
 
 Deno.test("queueAsyncBarrier drains nested builders before later operations", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("remoteRows");
   let executed = false;
 
@@ -28,7 +28,7 @@ Deno.test("queueAsyncBarrier drains nested builders before later operations", as
 });
 
 Deno.test("an observer inside a queued barrier drains its earlier nested builders", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("observedInsideBarrier");
   let rowCountInside = 0;
 
@@ -49,7 +49,7 @@ Deno.test("an observer inside a queued barrier drains its earlier nested builder
 });
 
 Deno.test("concurrent observers inside a queued barrier share one nested drain", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("concurrentInsideBarrier");
   let observations: [number, string[]] | undefined;
 
@@ -69,7 +69,7 @@ Deno.test("concurrent observers inside a queued barrier share one nested drain",
 });
 
 Deno.test("operations queued concurrently outside a barrier stay in the top-level queue", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const first = sdb.newTable("scopedFirst");
   const second = sdb.newTable("scopedSecond");
   first.loadArray([{ value: 1 }]);
@@ -120,7 +120,7 @@ Deno.test("operations queued concurrently outside a barrier stay in the top-leve
 });
 
 Deno.test("nested operations retain table-generation tracking", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const control = sdb.newTable("generationControl");
   const data = sdb.newTable("generationData");
   data.loadArray([{ value: 1 }, { value: 2 }]);
@@ -144,7 +144,7 @@ Deno.test("nested operations retain table-generation tracking", async () => {
 });
 
 Deno.test("a nested failure keeps another table's nested work queued", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const failing = sdb.newTable("nestedFailure");
   const unaffected = sdb.newTable("nestedUnaffected");
   failing.loadArray([{ value: 1 }]);
@@ -170,7 +170,7 @@ Deno.test("a nested failure keeps another table's nested work queued", async () 
 });
 
 Deno.test("a queued output-table barrier reads its source at its call position", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const source = sdb.newTable("extensionSource");
   source.loadArray([{ value: 1 }, { value: 2 }]);
   const output = sdb.newTable("extensionOutput");
@@ -191,7 +191,7 @@ Deno.test("a queued output-table barrier reads its source at its call position",
 });
 
 Deno.test("a rejected async barrier discards nested builders not yet drained", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const barrierTable = sdb.newTable("rejectedBarrier");
   const nestedTable = sdb.newTable("discardedNestedWork");
   barrierTable.loadArray([{ value: 1 }]);
@@ -216,7 +216,7 @@ Deno.test("a rejected async barrier discards nested builders not yet drained", a
 });
 
 Deno.test("a rejected async barrier does not roll back nested builders already drained", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const barrierTable = sdb.newTable("rejectedAfterDrain");
   const nestedTable = sdb.newTable("appliedNestedWork");
   barrierTable.loadArray([{ value: 1 }]);

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should round to the nearest integer", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.selectColumns(["key1"]);
@@ -22,7 +22,7 @@ Deno.test("should round to the nearest integer", async () => {
 });
 
 Deno.test("should round to a specific number of decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.selectColumns(["key1"]);
@@ -42,7 +42,7 @@ Deno.test("should round to a specific number of decimals", async () => {
 });
 
 Deno.test("should floor", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.selectColumns(["key1"]);
@@ -63,7 +63,7 @@ Deno.test("should floor", async () => {
 });
 
 Deno.test("should ceil", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.selectColumns(["key1"]);
@@ -83,7 +83,7 @@ Deno.test("should ceil", async () => {
 });
 
 Deno.test("should round multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.round(["key1", "key2"], {
@@ -102,7 +102,7 @@ Deno.test("should round multiple columns", async () => {
 });
 
 Deno.test("should round using the numeric shorthand", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.selectColumns(["key1"]);
@@ -122,7 +122,7 @@ Deno.test("should round using the numeric shorthand", async () => {
 });
 
 Deno.test("should round to 0 decimals using the numeric shorthand", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
   table.selectColumns(["key1"]);

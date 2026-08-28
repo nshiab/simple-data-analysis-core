@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should check if geometries are covered by other geometries", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/pointsInside.json");

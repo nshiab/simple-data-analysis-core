@@ -219,26 +219,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   overwrite: boolean;
   /**
-   * The transport used for materialized query results. `"direct"` uses
-   * DuckDB's Node-API result chunks.
-   * `"file"` is a temporary compatibility workaround for a Deno crash and
-   * requires filesystem read/write permissions.
-   *
-   * File transport adds serialization, disk I/O, and JSON parsing overhead.
-   * Methods returning arrays still materialize the final JavaScript result;
-   * `stream()` reads the exported scratch file incrementally. See
-   * https://github.com/denoland/deno/issues/36538.
-   *
-   * @defaultValue `"direct"`
-   * @category Properties
-   * @example
-   * ```ts
-   * const sdb = new SimpleDB({ dataTransport: "file" });
-   * const rows = await sdb.newTable("rows").loadData("rows.csv").getData();
-   * ```
-   */
-  dataTransport: "direct" | "file";
-  /**
    * The class used to create table instances. Defaults to `SimpleTable`.
    * Override this property when subclassing to ensure all table-creating
    * methods (e.g., `newTable()`, `clone()`) return instances of your
@@ -303,7 +283,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.progressBar - A flag indicating whether to display a progress bar for long-running operations.
    * @param options.memoryLimit - The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
    * @param options.tempDir - The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Automatically removed when calling `close()`.
-   * @param options.dataTransport - The result transport for methods that materialize query rows. `"direct"` is the default; `"file"` is a temporary Deno compatibility workaround that requires filesystem read/write permissions.
    * @category Constructor
    *
    * @example
@@ -311,7 +290,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * const sdb = new SimpleDB({
    *   logSQL: true,
    *   explainSQL: true,
-   *   dataTransport: "file",
    * });
    * ```
    */
@@ -330,7 +308,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       progressBar?: boolean;
       memoryLimit?: string;
       tempDir?: string;
-      dataTransport?: "direct" | "file";
     } = {},
   ) {
     super(options);
@@ -351,7 +328,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       : options.duckDbCache;
     this.memoryLimit = options.memoryLimit;
     this.tempDir = options.tempDir;
-    this.dataTransport = options.dataTransport ?? "direct";
     this.flushPromise = null;
     this.lifecycleState = "open";
     this.pendingCount = 0;
@@ -730,9 +706,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options - Configuration options for the query.
    * @param options.returnData - If `true`, the query result is returned. Defaults to `false`.
    * @param options.table - The name of the table associated with the query, primarily used for debugging and logging.
-   * @param options.dataTransport - Overrides the database result transport for this query. File transport supports relational queries such as `SELECT`, `FROM`, `WITH`, and `VALUES`; use `"direct"` for result-returning statements such as `SHOW`, `DESCRIBE`, `PRAGMA`, and `INSERT ... RETURNING`.
    * @returns A promise that resolves to the query result as an array of objects if `returnData` is `true`, otherwise `null`.
-   * @throws An error when file transport is used to return rows from a non-relational statement.
    * @category DuckDB
    *
    * @example
@@ -750,23 +724,12 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * );
    * console.log(youngEmployees);
    * ```
-   *
-   * @example
-   * ```ts
-   * // Override file transport for a result-returning statement that cannot
-   * // be exported as a relational query.
-   * const tables = await sdb.customQuery("SHOW TABLES", {
-   *   returnData: true,
-   *   dataTransport: "direct",
-   * });
-   * ```
    */
   async customQuery(
     query: string,
     options: {
       returnData?: boolean;
       table?: string;
-      dataTransport?: "direct" | "file";
     } = {},
   ): Promise<
     | {
@@ -780,7 +743,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       mergeOptions(this, {
         returnData: options.returnData ?? false,
         table: options.table ?? null,
-        dataTransport: options.dataTransport,
         method: "customQuery()",
         parameters: { query, options },
       }),

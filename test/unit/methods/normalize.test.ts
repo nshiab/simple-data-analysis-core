@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 
 Deno.test("should normalize values in a column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
 
@@ -35,7 +35,7 @@ Deno.test("should normalize values in a column", async () => {
 });
 
 Deno.test("should normalize values in a column with two decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
 
@@ -59,7 +59,7 @@ Deno.test("should normalize values in a column with two decimals", async () => {
 });
 
 Deno.test("should normalize values in a column and keep 4 decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
 
@@ -83,7 +83,7 @@ Deno.test("should normalize values in a column and keep 4 decimals", async () =>
 });
 
 Deno.test("should normalize values by a grouping column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
 
@@ -107,7 +107,7 @@ Deno.test("should normalize values by a grouping column", async () => {
 });
 
 Deno.test("should normalize data with positive and negative values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { key1: -1 },
@@ -134,7 +134,7 @@ Deno.test("should normalize data with positive and negative values", async () =>
 });
 
 Deno.test("should normalize values to a custom range", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 10 },
@@ -156,7 +156,7 @@ Deno.test("should normalize values to a custom range", async () => {
 });
 
 Deno.test("should normalize values to a custom range with an offset and rounding", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ value: 0 }, { value: 1 }, { value: 3 }]);
 
@@ -175,7 +175,7 @@ Deno.test("should normalize values to a custom range with an offset and rounding
 });
 
 Deno.test("should reject an invalid custom range", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   for (const range of [[1, 1], [10, 0], [0, Infinity]] as const) {
@@ -190,7 +190,7 @@ Deno.test("should reject an invalid custom range", async () => {
 });
 
 Deno.test("should report column and newColumn in a thrown SDAError's parameters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ key1: 1 }]);
 
@@ -216,7 +216,7 @@ Deno.test("should report column and newColumn in a thrown SDAError's parameters"
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ key1: 1, normalized: "already here" }]);
 

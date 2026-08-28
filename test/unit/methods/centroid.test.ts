@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should compute the centroids", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -193,7 +193,7 @@ Deno.test("should compute the centroids", async () => {
 });
 
 Deno.test("should compute the centroids from a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -384,7 +384,7 @@ Deno.test("should compute the centroids from a specific column", async () => {
 });
 
 Deno.test("centroid() should overwrite existing column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -402,7 +402,7 @@ Deno.test("centroid() should overwrite existing column", async () => {
 });
 
 Deno.test("centroid() should overwrite the source geometry column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

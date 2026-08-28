@@ -2,7 +2,7 @@ import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add the highest column name and value by default", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: 1, a: 1, b: 3, c: 2 },
@@ -23,7 +23,7 @@ Deno.test("should add the highest column name and value by default", async () =>
 });
 
 Deno.test("should select an ascending row rank", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: 1, a: 1, b: 3, c: 2 },
@@ -46,7 +46,7 @@ Deno.test("should select an ascending row rank", async () => {
 });
 
 Deno.test("should select the first tied column in supplied order", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1, a: 10, b: 10, c: 5 }]);
 
@@ -77,7 +77,7 @@ Deno.test("should select the first tied column in supplied order", async () => {
 });
 
 Deno.test("should reject or expand ties at the requested rank", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const strictTable = sdb.newTable();
   strictTable.loadArray([{ id: 1, a: 10, b: 10, c: 5 }]);
@@ -108,7 +108,7 @@ Deno.test("should reject or expand ties at the requested rank", async () => {
 });
 
 Deno.test("should ignore null values and return null when a rank is absent", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: 1, a: null, b: 2, c: 3 },
@@ -132,7 +132,7 @@ Deno.test("should ignore null values and return null when a rank is absent", asy
 });
 
 Deno.test("should support name-only, value-only, and quoted output columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "a name": 2, 'b"name': 3 }]);
 
@@ -150,7 +150,7 @@ Deno.test("should support name-only, value-only, and quoted output columns", asy
 });
 
 Deno.test("should reject invalid row rank arguments", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ numeric: 1, text: "two", existing: "value" }]);
 
@@ -213,7 +213,7 @@ Deno.test("should reject invalid row rank arguments", async () => {
 });
 
 Deno.test("should reject ranks greater than the supplied column count", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ a: 1 }]);
 
@@ -232,7 +232,7 @@ Deno.test("should reject ranks greater than the supplied column count", async ()
 });
 
 Deno.test("should reject invalid row rank columns when the operation runs", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const missingTable = sdb.newTable();
   missingTable.loadArray([{ numeric: 1 }]);

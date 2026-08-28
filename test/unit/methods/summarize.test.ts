@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should quote statistic aliases and bind column labels", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { "sales'net": 2, cost: 1 },
@@ -22,7 +22,7 @@ Deno.test("should quote statistic aliases and bind column labels", async () => {
 });
 
 Deno.test("should summarize all rows (no option columns)", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize();
@@ -31,7 +31,7 @@ Deno.test("should summarize all rows (no option columns)", async () => {
   await sdb.close();
 });
 Deno.test("should summarize all rows into a new table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   const summaryAllRows = table.summarize({
@@ -47,7 +47,7 @@ Deno.test("should summarize all rows into a new table", async () => {
   await sdb.close();
 });
 Deno.test("should summarize all rows into a new table, even if column names have spaces", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.renameColumns({
@@ -110,7 +110,7 @@ Deno.test("should summarize all rows into a new table, even if column names have
   await sdb.close();
 });
 Deno.test("should summarize all rows into a new table and the original table shouldn't be modified", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   const beforeData = await table.getData();
@@ -124,7 +124,7 @@ Deno.test("should summarize all rows into a new table and the original table sho
 });
 
 Deno.test("should summarize all columns in a table and overwrite the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({ columns: await table.getColumns() });
@@ -178,7 +178,7 @@ Deno.test("should summarize all columns in a table and overwrite the table", asy
 });
 
 Deno.test("should summarize with 2 decimals all columns in a table and overwrite the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({ columns: await table.getColumns(), decimals: 2 });
@@ -232,7 +232,7 @@ Deno.test("should summarize with 2 decimals all columns in a table and overwrite
 });
 
 Deno.test("should summarize all columns in a table and output the results in another table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   const newTable = table.summarize({
@@ -290,7 +290,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
 });
 
 Deno.test("should summarize all columns in a table and output the results in another table with a specific name in the DB", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -350,7 +350,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
 });
 
 Deno.test("should summarize specific columns in a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -378,7 +378,7 @@ Deno.test("should summarize specific columns in a table", async () => {
 });
 
 Deno.test("should summarize specific columns in a table with a specific number of decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -405,7 +405,7 @@ Deno.test("should summarize specific columns in a table with a specific number o
   await sdb.close();
 });
 Deno.test("should summarize a single column without adding a `column` output column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -432,7 +432,7 @@ Deno.test("should summarize a single column without adding a `column` output col
   await sdb.close();
 });
 Deno.test("should summarize a grouped single column without adding a `column` output column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -489,7 +489,7 @@ Deno.test("should summarize a grouped single column without adding a `column` ou
   await sdb.close();
 });
 Deno.test("should not add a `column` output column when summarizing a single column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -502,7 +502,7 @@ Deno.test("should not add a `column` output column when summarizing a single col
   await sdb.close();
 });
 Deno.test("should add a `column` output column when summarizing multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -515,7 +515,7 @@ Deno.test("should add a `column` output column when summarizing multiple columns
   await sdb.close();
 });
 Deno.test("should deduplicate input columns and omit the `column` output column when one remains", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -528,7 +528,7 @@ Deno.test("should deduplicate input columns and omit the `column` output column 
   await sdb.close();
 });
 Deno.test("should count rows when all selected columns are also grouping columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -546,7 +546,7 @@ Deno.test("should count rows when all selected columns are also grouping columns
 });
 
 Deno.test("should summarize all columns in a table with a non numeric category", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -652,7 +652,7 @@ Deno.test("should summarize all columns in a table with a non numeric category",
   await sdb.close();
 });
 Deno.test("should summarize all columns in a table with a numeric category", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -818,7 +818,7 @@ Deno.test("should summarize all columns in a table with a numeric category", asy
 });
 
 Deno.test("should summarize all columns in a table with specific stats", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -836,7 +836,7 @@ Deno.test("should summarize all columns in a table with specific stats", async (
   await sdb.close();
 });
 Deno.test("should summarize all columns in a table with specific stats in specific new columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -854,7 +854,7 @@ Deno.test("should summarize all columns in a table with specific stats in specif
   await sdb.close();
 });
 Deno.test("should summarize all columns in a table with specific stats and grouping", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -876,7 +876,7 @@ Deno.test("should summarize all columns in a table with specific stats and group
   await sdb.close();
 });
 Deno.test("should summarize all columns in a table with specific named stats and grouping", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -898,7 +898,7 @@ Deno.test("should summarize all columns in a table with specific named stats and
   await sdb.close();
 });
 Deno.test("should summarize specific columns in a table with specific stats and grouping", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -916,7 +916,7 @@ Deno.test("should summarize specific columns in a table with specific stats and 
   await sdb.close();
 });
 Deno.test("should summarize by multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
@@ -938,7 +938,7 @@ Deno.test("should summarize by multiple columns", async () => {
 });
 
 Deno.test("should summarize with dates", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { keyA: new Date("2023-01-01") },
@@ -970,7 +970,7 @@ Deno.test("should summarize with dates", async () => {
 });
 
 Deno.test("should summarize with dates converted to milliseconds", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { keyA: new Date("2023-01-01") },
@@ -1002,7 +1002,7 @@ Deno.test("should summarize with dates converted to milliseconds", async () => {
 });
 
 Deno.test("should summarize even with geometries", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const provinces = sdb.newTable();
   provinces.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

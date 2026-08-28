@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should truncate strings in one column to specified length", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { description: "This is a long description" },
@@ -17,7 +17,7 @@ Deno.test("should truncate strings in one column to specified length", async () 
 });
 
 Deno.test("should truncate strings shorter than specified length unchanged", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "John" },
@@ -32,7 +32,7 @@ Deno.test("should truncate strings shorter than specified length unchanged", asy
 });
 
 Deno.test("should truncate strings to zero characters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { text: "Hello World" },
@@ -47,7 +47,7 @@ Deno.test("should truncate strings to zero characters", async () => {
 });
 
 Deno.test("should truncate multiple rows", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { firstName: "Alexander", lastName: "Washington" },
@@ -68,7 +68,7 @@ Deno.test("should truncate multiple rows", async () => {
 });
 
 Deno.test("should truncate strings in column with spaces in name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { "full name": "Alexander Washington" },

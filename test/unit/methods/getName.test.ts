@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should return the name of the table before loading data", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
 
   const tableName = table.getName();
@@ -17,7 +17,7 @@ Deno.test("should return the name of the table before loading data", async () =>
   await sdb.close();
 });
 Deno.test("should return the name of the table after loading data", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.csv");
   const tableName = table.getName();
@@ -27,7 +27,7 @@ Deno.test("should return the name of the table after loading data", async () => 
   await sdb.close();
 });
 Deno.test("should return the updated name after renaming the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("oldName");
   table.loadData("test/data/files/data.csv");
 

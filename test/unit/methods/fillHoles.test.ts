@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import { readFileSync } from "node:fs";
 
 Deno.test("should remove the small circle from the big circle", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/bigCircleWithHole.json");

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the first 5 rows", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -57,7 +57,7 @@ Deno.test("should return the first 5 rows", async () => {
 });
 
 Deno.test("should return the first 5 rows, with an offset of 5", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -112,7 +112,7 @@ Deno.test("should return the first 5 rows, with an offset of 5", async () => {
 });
 
 Deno.test("should return the first 5 rows and output the results to a new table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -169,7 +169,7 @@ Deno.test("should return the first 5 rows and output the results to a new table"
 });
 
 Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -227,7 +227,7 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
 });
 
 Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table with a specific name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should remove duplicates from a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -416,7 +416,7 @@ Deno.test("should remove duplicates from a table", async () => {
 });
 
 Deno.test("should remove duplicates from a table based on a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -535,7 +535,7 @@ Deno.test("should remove duplicates from a table based on a specific column", as
   await sdb.close();
 });
 Deno.test("should remove duplicates from a table based on a specific column with special characters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 

@@ -35,7 +35,7 @@ Deno.test("should limit returned rows", async () => {
 });
 
 Deno.test("should return the whole data from a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getData();
@@ -454,7 +454,7 @@ Deno.test("should return the whole data from a table", async () => {
 });
 
 Deno.test("should return data from a table based on a condition", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getData({
@@ -506,7 +506,7 @@ Deno.test("should return data from a table based on a condition", async () => {
   await sdb.close();
 });
 Deno.test("should return data from a table based on a condition and column selection", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getData({
@@ -532,8 +532,8 @@ Deno.test("should return data from a table based on a condition and column selec
   await sdb.close();
 });
 
-Deno.test("file transport keeps duplicate selected columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+Deno.test("should keep duplicate selected columns", async () => {
+  const sdb = new SimpleDB();
   const table = sdb.newTable("duplicates");
   table.loadArray([{ value: 7 }]);
 

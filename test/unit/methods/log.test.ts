@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should log a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log();
@@ -12,7 +12,7 @@ Deno.test("should log a table", async () => {
   await sdb.close();
 });
 Deno.test("should log a table with 100 rows", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log(100);
@@ -22,7 +22,7 @@ Deno.test("should log a table with 100 rows", async () => {
   await sdb.close();
 });
 Deno.test("should log a table with 100 rows in options", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
@@ -42,7 +42,7 @@ Deno.test("should log a table with 100 rows in options", async () => {
   await sdb.close();
 });
 Deno.test("should log a table with types", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ types: true });
@@ -52,7 +52,7 @@ Deno.test("should log a table with types", async () => {
   await sdb.close();
 });
 Deno.test("should allow local types option to override the default", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", typesToLog: true });
+  const sdb = new SimpleDB({ typesToLog: true });
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
@@ -69,7 +69,7 @@ Deno.test("should allow local types option to override the default", async () =>
   await sdb.close();
 });
 Deno.test("should log a table with 100 rows and types", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ types: true, count: 100 });
@@ -79,7 +79,7 @@ Deno.test("should log a table with 100 rows and types", async () => {
   await sdb.close();
 });
 Deno.test("should not throw an error when there is no table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.log();
 
@@ -89,7 +89,7 @@ Deno.test("should not throw an error when there is no table", async () => {
 });
 
 Deno.test("should log '<Geometry>' for geospatial data", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -102,7 +102,7 @@ Deno.test("should log '<Geometry>' for geospatial data", async () => {
 });
 
 Deno.test("should log types even if there is just one column in the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   table.selectColumns("Name");
@@ -113,7 +113,7 @@ Deno.test("should log types even if there is just one column in the table", asyn
   await sdb.close();
 });
 Deno.test("should log a table with a condition", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ conditions: `Name === 'OConnell, Donald'` });
@@ -123,7 +123,7 @@ Deno.test("should log a table with a condition", async () => {
   await sdb.close();
 });
 Deno.test("should log a table with 'all'", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log("all");
@@ -133,7 +133,7 @@ Deno.test("should log a table with 'all'", async () => {
   await sdb.close();
 });
 Deno.test("should log a table with { count: 'all'}", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ count: "all" });
@@ -143,7 +143,7 @@ Deno.test("should log a table with { count: 'all'}", async () => {
   await sdb.close();
 });
 Deno.test("should log a table with long strings and word wrap the columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   await table.log();
@@ -153,7 +153,7 @@ Deno.test("should log a table with long strings and word wrap the columns", asyn
   await sdb.close();
 });
 Deno.test("should log different colors for different data types", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   const dataArray = [
     {

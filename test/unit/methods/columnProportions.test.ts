@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the vertical proportions in a new column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key2", "key2Perc");
@@ -50,7 +50,7 @@ Deno.test("should return the vertical proportions in a new column", async () => 
 });
 
 Deno.test("should return the vertical proportions in a new column and a specific number of decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key2", "key2Prop", {
@@ -80,7 +80,7 @@ Deno.test("should return the vertical proportions in a new column and a specific
 });
 
 Deno.test("should return the vertical proportions in a new column with a category", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key2", "key2Perc", {
@@ -134,7 +134,7 @@ Deno.test("should return the vertical proportions in a new column with a categor
 });
 
 Deno.test("should return the vertical proportions in a new column by multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key3", "key3Perc", {
@@ -169,7 +169,7 @@ Deno.test("should return the vertical proportions in a new column by multiple co
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 1, existing: "already here" },

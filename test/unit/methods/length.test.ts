@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should calculate the length of geometries in meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
   table.length("length");
@@ -15,7 +15,7 @@ Deno.test("should calculate the length of geometries in meters", async () => {
 });
 
 Deno.test("should calculate the length of geometries from a specific column in meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
   table.length("length", { column: "geom" });
@@ -28,7 +28,7 @@ Deno.test("should calculate the length of geometries from a specific column in m
 });
 
 Deno.test("should calculate the length of geometries in meters from an EPSG:4326 file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
   table.length("length");
@@ -41,7 +41,7 @@ Deno.test("should calculate the length of geometries in meters from an EPSG:4326
 });
 
 Deno.test("should calculate the length of geometries in kilometers", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
   table.length("length", { unit: "km" });
@@ -54,7 +54,7 @@ Deno.test("should calculate the length of geometries in kilometers", async () =>
 });
 
 Deno.test("should round lengths after converting their unit", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
   table.length("length", { unit: "km", decimals: 2 });

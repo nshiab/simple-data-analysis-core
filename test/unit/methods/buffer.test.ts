@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should create a buffer from points", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/point.json");
   table.buffer("buffer", 1);
@@ -59,7 +59,7 @@ Deno.test("should create a buffer from points", async () => {
 });
 
 Deno.test("should create a buffer from points in a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/point.json");
   table.buffer("buffer", 1, { column: "geom" });
@@ -115,7 +115,7 @@ Deno.test("should create a buffer from points in a specific column", async () =>
   await sdb.close();
 });
 Deno.test("should create a buffer from polygons", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
   table.buffer("buffer", 100_000);
@@ -2504,7 +2504,7 @@ Deno.test("should create a buffer from polygons", async () => {
 });
 
 Deno.test("buffer() should overwrite existing column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -2522,7 +2522,7 @@ Deno.test("buffer() should overwrite existing column", async () => {
 });
 
 Deno.test("buffer() should overwrite the source geometry column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

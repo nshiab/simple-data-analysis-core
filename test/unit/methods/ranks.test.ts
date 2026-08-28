@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 // Based on https://www.sqlshack.com/overview-of-sql-rank-functions/
 
 Deno.test("should add a column with the rank", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank");
@@ -24,7 +24,7 @@ Deno.test("should add a column with the rank", async () => {
 });
 
 Deno.test("should add a column with the rank in descending order", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", { order: "desc" });
@@ -44,7 +44,7 @@ Deno.test("should add a column with the rank in descending order", async () => {
 });
 
 Deno.test("should add a column with the rank and no gaps", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", {
@@ -67,7 +67,7 @@ Deno.test("should add a column with the rank and no gaps", async () => {
 });
 
 Deno.test("should add a column with the rank after grouping with one category", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", {
@@ -93,7 +93,7 @@ Deno.test("should add a column with the rank after grouping with one category", 
 });
 
 Deno.test("should add a column with the rank after grouping by multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.ranks("Mark", "rank", {
@@ -123,7 +123,7 @@ Deno.test("should add a column with the rank after grouping by multiple columns"
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 1, existing: "already here" },

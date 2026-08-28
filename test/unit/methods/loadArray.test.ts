@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should load an array of objects into a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -55,7 +55,7 @@ Deno.test("should load an array of objects into a table", async () => {
 });
 
 Deno.test("should load an array of objects into a table and return the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = await sdb.newTable().loadArray([
     {
       key1: 1,
@@ -89,7 +89,7 @@ Deno.test("should load an array of objects into a table and return the table", a
 });
 
 Deno.test("should load an array of objects into a table with spaces in column names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -134,7 +134,7 @@ Deno.test("should load an array of objects into a table with spaces in column na
   await sdb.close();
 });
 Deno.test("should load an array of objects even if the first rows have null values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -179,7 +179,7 @@ Deno.test("should load an array of objects even if the first rows have null valu
   await sdb.close();
 });
 Deno.test("should load an array of objects even if the all values in a column are null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -232,7 +232,7 @@ Deno.test("should load an array of objects even if the all values in a column ar
 });
 
 Deno.test("should throw a clear error for an empty array", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("emptyArray");
 
   let error: unknown;
@@ -249,7 +249,7 @@ Deno.test("should throw a clear error for an empty array", async () => {
 });
 
 Deno.test("loadArray captures row, Date, and array values when queued", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("capturedArray");
   const date = new Date("2020-01-02T03:04:05.000Z");
   const vector = [1, 2];
@@ -286,7 +286,7 @@ Deno.test("loadArray captures row, Date, and array values when queued", async ()
 });
 
 Deno.test("library SQL supports double quotes in table and column names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable('people "archive"');
 
   const result = await table

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should chain sync builder methods, with a single await at the observation point", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("chained");
 
   const data = await table
@@ -24,7 +24,7 @@ Deno.test("should chain sync builder methods, with a single await at the observa
 });
 
 Deno.test("should chain async mutation methods with then", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("chainedAsync");
 
   const data = await table
@@ -48,7 +48,7 @@ Deno.test("should chain async mutation methods with then", async () => {
 });
 
 Deno.test("should return the same table instance from mutation methods", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("sameInstance");
   const returned = table.loadArray([{ key1: 1 }]);
   assertEquals(returned === table, true);

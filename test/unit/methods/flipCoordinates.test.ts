@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should flip the coordinates", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/point.json");
   table.flipCoordinates();
@@ -22,7 +22,7 @@ Deno.test("should flip the coordinates", async () => {
 });
 
 Deno.test("should flip the coordinates from a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/point.json");
   table.flipCoordinates("geom");

@@ -88,9 +88,6 @@ DuckDB sessions use UTC so temporal parsing, extraction, and returned
   data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp`
   for in-memory databases or `<file>.tmp` for file-based databases.
   Automatically removed when calling `close()`.
-- **`options.dataTransport`**: The result transport for methods that materialize
-  query rows. `"direct"` is the default; `"file"` is a temporary Deno
-  compatibility workaround that requires filesystem read/write permissions.
 
 ### Methods
 
@@ -371,7 +368,7 @@ content hash), or use tracked `SimpleTable` methods.
 ##### Signature
 
 ```typescript
-async customQuery(query: string, options?: { returnData?: boolean; table?: string; dataTransport?: "direct" | "file" }): Promise<Record<string, unknown>[] | null>;
+async customQuery(query: string, options?: { returnData?: boolean; table?: string }): Promise<Record<string, unknown>[] | null>;
 ```
 
 ##### Parameters
@@ -382,20 +379,11 @@ async customQuery(query: string, options?: { returnData?: boolean; table?: strin
   `false`.
 - **`options.table`**: The name of the table associated with the query,
   primarily used for debugging and logging.
-- **`options.dataTransport`**: Overrides the database result transport for this
-  query. File transport supports relational queries such as `SELECT`, `FROM`,
-  `WITH`, and `VALUES`; use `"direct"` for result-returning statements such as
-  `SHOW`, `DESCRIBE`, `PRAGMA`, and `INSERT ... RETURNING`.
 
 ##### Returns
 
 A promise that resolves to the query result as an array of objects if
 `returnData` is `true`, otherwise `null`.
-
-##### Throws
-
-- **`Error`**: An error when file transport is used to return rows from a
-  non-relational statement.
 
 ##### Examples
 
@@ -413,15 +401,6 @@ const youngEmployees = await sdb.customQuery(
   { returnData: true },
 );
 console.log(youngEmployees);
-```
-
-```ts
-// Override file transport for a result-returning statement that cannot
-// be exported as a relational query.
-const tables = await sdb.customQuery("SHOW TABLES", {
-  returnData: true,
-  dataTransport: "direct",
-});
 ```
 
 #### `loadDB`
@@ -5825,9 +5804,7 @@ stream(options?: { columns?: string | string[]; conditions?: string }): AsyncGen
 
 ##### Returns
 
-An async generator yielding one row object at a time. When the database uses
-file transport, rows are exported to a temporary newline-delimited JSON file and
-read incrementally.
+An async generator yielding one row object at a time.
 
 ##### Examples
 

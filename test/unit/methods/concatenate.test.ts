@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should concatenate multiple columns in a new one", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.json"]);
   table.concatenate(["Name", "Job"], "concatenated");
@@ -472,7 +472,7 @@ Deno.test("should concatenate multiple columns in a new one", async () => {
 });
 
 Deno.test("should concatenate multiple columns in a new one with a separator", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.json"]);
   table.concatenate(["Name", "Job"], "concatenatedWithSeparator", {
@@ -945,7 +945,7 @@ Deno.test("should concatenate multiple columns in a new one with a separator", a
 });
 
 Deno.test("should concatenate multiple columns in a new one with a separator and special characters in column names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.json"]);
   table.concatenate(
@@ -990,7 +990,7 @@ Deno.test("should concatenate multiple columns in a new one with a separator and
 });
 
 Deno.test("should bind separators containing apostrophes", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("boundConcatenation");
 
   table

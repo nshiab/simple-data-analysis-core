@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should concatenate multiple columns with labels into a new column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     {
@@ -41,7 +41,7 @@ Deno.test("should concatenate multiple columns with labels into a new column", a
 });
 
 Deno.test("should handle null values when concatenating with labels", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     {
@@ -79,7 +79,7 @@ Deno.test("should handle null values when concatenating with labels", async () =
 });
 
 Deno.test("should concatenate a single column with label", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     { title: "First" },
@@ -105,7 +105,7 @@ Deno.test("should concatenate a single column with label", async () => {
 });
 
 Deno.test("should handle columns with special characters in names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     {
@@ -135,7 +135,7 @@ Deno.test("should handle columns with special characters in names", async () => 
 });
 
 Deno.test("should concatenate after converting numeric columns to strings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("mixed");
   table.loadArray([
     {
@@ -199,7 +199,7 @@ Deno.test("should concatenate after converting numeric columns to strings", asyn
 });
 
 Deno.test("should throw error when trying to concatenate non-VARCHAR columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     { name: "Alice", age: 30, salary: 50000 },
@@ -218,7 +218,7 @@ Deno.test("should throw error when trying to concatenate non-VARCHAR columns", a
 });
 
 Deno.test("should bind labels derived from column names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("boundRowToText");
 
   table.loadArray([{ "author's name": "Ada" }]);

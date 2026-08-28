@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should replace the text in one column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -425,7 +425,7 @@ Deno.test("should replace the text in one column", async () => {
 });
 
 Deno.test("should replace substings in one column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -849,7 +849,7 @@ Deno.test("should replace substings in one column", async () => {
 });
 
 Deno.test("should replace entire strings in one column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -1276,7 +1276,7 @@ Deno.test("should replace entire strings in one column", async () => {
 });
 
 Deno.test("should replace multiple texts in one column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -1699,7 +1699,7 @@ Deno.test("should replace multiple texts in one column", async () => {
 });
 
 Deno.test("should replace the text in multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -2122,7 +2122,7 @@ Deno.test("should replace the text in multiple columns", async () => {
 });
 
 Deno.test("should replace multiple texts in multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -2547,7 +2547,7 @@ Deno.test("should replace multiple texts in multiple columns", async () => {
   await sdb.close();
 });
 Deno.test("should work with ' without throwing an error", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -2972,7 +2972,7 @@ Deno.test("should work with ' without throwing an error", async () => {
   await sdb.close();
 });
 Deno.test("should use a regular expression", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -3395,7 +3395,7 @@ Deno.test("should use a regular expression", async () => {
 });
 
 Deno.test("should replace text in all columns with the 'all' option", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "a-b", code: "x-y" },
@@ -3415,7 +3415,7 @@ Deno.test("should replace text in all columns with the 'all' option", async () =
 });
 
 Deno.test("replace captures arguments and leaves options unchanged", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("capturedReplace");
   const replacements = { old: "new" };
   const options: { entireString?: boolean; regex?: boolean } = {};
@@ -3434,7 +3434,7 @@ Deno.test("replace captures arguments and leaves options unchanged", async () =>
 });
 
 Deno.test("entire-string replacement binds multiple sequential mappings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("boundEntireReplacement");
 
   table

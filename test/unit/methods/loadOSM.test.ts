@@ -94,7 +94,6 @@ Deno.test("loadOSM downloads, materializes, caches, and reuses OSM data", async 
 
   try {
     const firstSdb = new SimpleDB({
-      dataTransport: "file",
       cacheVerbose: true,
     });
     const first = firstSdb.newTable("firstOsmTable");
@@ -125,7 +124,6 @@ Deno.test("loadOSM downloads, materializes, caches, and reuses OSM data", async 
     assertEquals(existsSync(".sda-cache/sources.json"), false);
 
     const secondSdb = new SimpleDB({
-      dataTransport: "file",
       cacheVerbose: true,
     });
     const second = secondSdb.newTable("anotherOsmTable");
@@ -177,7 +175,7 @@ Deno.test("loadOSM downloads, materializes, caches, and reuses OSM data", async 
     assertEquals(existsSync(".sda-cache/tmp"), true);
     assertEquals(readdirSync(".sda-cache/tmp"), []);
 
-    const thirdSdb = new SimpleDB({ dataTransport: "file" });
+    const thirdSdb = new SimpleDB();
     const third = thirdSdb.newTable("differentOsmSource");
     third.loadOSM(bbox, {
       filters: ["amenity", "college"],
@@ -219,7 +217,6 @@ Deno.test("loadOSM with cache false always requests fresh data", async () => {
     let uncachedLogs = "";
     for (let index = 0; index < 2; index++) {
       const sdb = new SimpleDB({
-        dataTransport: "file",
         cacheVerbose: index === 0,
       });
       const table = sdb.newTable(`uncachedOsm${index}`);
@@ -261,7 +258,7 @@ Deno.test("loadOSM preserves a raw Overpass filter fragment", async () => {
     `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
 
   try {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable("rawFilterOsm");
     table.loadOSM(bbox, {
       filters: `["amenity"~"school|college"]`,
@@ -291,7 +288,7 @@ Deno.test("loadOSM does not cache failed or incomplete responses", async () => {
     `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
 
   try {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadOSM(bbox, { filters: "[amenity]", endpoint });
     await assertRejects(() => table.run(), Error, "loadOSM()");
@@ -330,7 +327,7 @@ Deno.test("loadOSM rejects well-formed Overpass error responses", async () => {
 
   try {
     for (const response of responses) {
-      const sdb = new SimpleDB({ dataTransport: "file" });
+      const sdb = new SimpleDB();
       try {
         const table = sdb.newTable();
         table.loadOSM(bbox, {
@@ -353,7 +350,7 @@ Deno.test("loadOSM rejects well-formed Overpass error responses", async () => {
 });
 
 Deno.test("loadOSM works with the public Overpass endpoint", async () => {
-  const sdb = new SimpleDB({ dataTransport: "direct" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("publicOverpassSchools");
 
   try {

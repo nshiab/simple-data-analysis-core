@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add a column with the quantiles", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.quantiles("Mark", 4, "quantiles");
@@ -24,7 +24,7 @@ Deno.test("should add a column with the quantiles", async () => {
 });
 
 Deno.test("should add a column with the quantiles after grouping", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.quantiles("Mark", 2, "quantiles", {
@@ -54,7 +54,7 @@ Deno.test("should add a column with the quantiles after grouping", async () => {
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 1, existing: "already here" },

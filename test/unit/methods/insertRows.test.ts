@@ -2,7 +2,7 @@ import { assert, assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("add rows in an empty table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const table = sdb.newTable("data");
 
@@ -22,7 +22,7 @@ Deno.test("add rows in an empty table", async () => {
 });
 
 Deno.test("add rows in a table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
@@ -47,7 +47,7 @@ Deno.test("add rows in a table", async () => {
 });
 
 Deno.test("insertRows binds data values separately from generated SQL", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", logSQL: true });
+  const sdb = new SimpleDB({ logSQL: true });
   const table = sdb.newTable('bound "rows"');
   table.loadArray([{
     text: "base",

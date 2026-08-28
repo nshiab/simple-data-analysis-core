@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should transform lines to polygons", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/closedLines.geojson");
   table.linesToPolygons();
@@ -777,7 +777,7 @@ Deno.test("should transform lines to polygons", async () => {
   await sdb.close();
 });
 Deno.test("should transform lines to polygons from a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/closedLines.geojson");
   table.linesToPolygons("geom");

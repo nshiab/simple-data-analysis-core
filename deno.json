@@ -9,7 +9,7 @@
     "./helpers": "./src/helpers/index.ts"
   },
   "tasks": {
-    "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast --ignore=test/unit/helpers/directDataTransport.test.ts && deno test -A --fail-fast test/unit/helpers/directDataTransport.test.ts && deno task llm",
+    "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task llm",
     "llm": "deno run -A jsr:@nshiab/deno-docs-to-md && deno fmt llm.md",
     "test-coverage": "deno test -A --env-file --fail-fast --coverage=cov_profile && deno coverage cov_profile",
     "patch-no-tests": "deno run -A jsr:@nshiab/bump-version patch",

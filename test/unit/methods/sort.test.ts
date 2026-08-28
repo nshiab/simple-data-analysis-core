@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should sort one number column ascendingly", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort({ key1: "asc" });
@@ -22,7 +22,7 @@ Deno.test("should sort one number column ascendingly", async () => {
 });
 
 Deno.test("should sort one column with spaces in its name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "column 1": 2 }, { "column 1": 1 }]);
   table.sort({ "column 1": "asc" });
@@ -35,7 +35,7 @@ Deno.test("should sort one column with spaces in its name", async () => {
 });
 
 Deno.test("should sort one number column descendingly", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort({ key1: "desc" });
@@ -54,7 +54,7 @@ Deno.test("should sort one number column descendingly", async () => {
 });
 
 Deno.test("should sort one text column ascendingly with a specific language", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort(
@@ -77,7 +77,7 @@ Deno.test("should sort one text column ascendingly with a specific language", as
 });
 
 Deno.test("should sort one text column descendingly with a specific language", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort(
@@ -101,7 +101,7 @@ Deno.test("should sort one text column descendingly with a specific language", a
 });
 
 Deno.test("should sort mutiple columns ascendingly or descendingly with a specific language", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort(
@@ -125,7 +125,7 @@ Deno.test("should sort mutiple columns ascendingly or descendingly with a specif
 });
 
 Deno.test("should sort all columns by defaut, from left to right, in ascending order", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort();
@@ -144,7 +144,7 @@ Deno.test("should sort all columns by defaut, from left to right, in ascending o
 });
 
 Deno.test("sort captures mutable arguments when queued", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("capturedSort");
   const order: { value: "asc" | "desc" } = { value: "asc" };
   const lang: Record<string, string> = {};
@@ -160,7 +160,7 @@ Deno.test("sort captures mutable arguments when queued", async () => {
 });
 
 Deno.test("order-preserving fused methods retain an earlier sort", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("sortBeforeTransforms");
 
   const result = await table
@@ -183,7 +183,7 @@ Deno.test("order-preserving fused methods retain an earlier sort", async () => {
 });
 
 Deno.test("grouped results can be sorted deterministically afterward", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("sortedGroups");
 
   table
@@ -203,7 +203,7 @@ Deno.test("grouped results can be sorted deterministically afterward", async () 
 });
 
 Deno.test("aggregated results can be sorted deterministically afterward", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("sortedAggregates");
 
   table
@@ -219,7 +219,7 @@ Deno.test("aggregated results can be sorted deterministically afterward", async 
 });
 
 Deno.test("sampled results can be sorted deterministically afterward", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("sortedSample");
 
   table

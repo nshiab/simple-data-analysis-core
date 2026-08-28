@@ -10,7 +10,6 @@ if (existsSync("test/data/files/ahccd.csv")) {
   Deno.test("should run the SDA performance benchmark", async () => {
     // const startTotal = Date.now();
     const sdb = new SimpleDB({
-      dataTransport: "file",
       progressBar: true,
       logSQL: true,
     });

@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("tableClass defaults to SimpleTable", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   assertEquals(sdb.tableClass, SimpleTable);
   await sdb.run();
   await sdb.close();

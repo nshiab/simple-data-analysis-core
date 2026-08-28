@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should clone a column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ firstName: "nael", lastName: "shiab" }]);
 
@@ -17,7 +17,7 @@ Deno.test("should clone a column", async () => {
   await sdb.close();
 });
 Deno.test("should clone a column with spaces in its name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ "first name": "nael", "last name": "shiab" }]);
 
@@ -32,7 +32,7 @@ Deno.test("should clone a column with spaces in its name", async () => {
   await sdb.close();
 });
 Deno.test("should clone a column with geo data", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = await sdb
     .newTable()
     .loadGeoData(

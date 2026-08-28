@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should unnest geometries", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo();
@@ -1136,7 +1136,7 @@ Deno.test("should unnest geometries", async () => {
   await sdb.close();
 });
 Deno.test("should unnest geometries from a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo("geom");

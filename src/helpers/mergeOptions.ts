@@ -10,7 +10,6 @@ export default function mergeOptions(
     returnData?: boolean;
     values?: import("@duckdb/node-api").DuckDBValue[];
     noClean?: boolean;
-    dataTransport?: "direct" | "file";
     rejectGeometry?: boolean;
   },
 ): {
@@ -22,7 +21,6 @@ export default function mergeOptions(
   returnData: boolean;
   values?: import("@duckdb/node-api").DuckDBValue[];
   noClean?: boolean;
-  dataTransport?: "direct" | "file";
   rejectGeometry?: boolean;
 } {
   return {
@@ -34,7 +32,6 @@ export default function mergeOptions(
     returnData: options.returnData ?? false,
     values: options.values,
     noClean: options.noClean,
-    dataTransport: options.dataTransport,
     rejectGeometry: options.rejectGeometry,
   };
 }

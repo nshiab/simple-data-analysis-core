@@ -8,7 +8,7 @@ if (!existsSync(output)) {
 }
 
 Deno.test("should do an union of all geometries and overwrite the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   table.aggregateGeo("union");
@@ -49,7 +49,7 @@ Deno.test("should do an union of all geometries and overwrite the table", async 
 });
 
 Deno.test("should do an union of all geometries from a specific column and overwrite the table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   table.aggregateGeo("union", { column: "geom" });
@@ -87,7 +87,7 @@ Deno.test("should do an union of all geometries from a specific column and overw
 });
 
 Deno.test("should do an union of all geometries and return the results in a new table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("union", {
@@ -127,7 +127,7 @@ Deno.test("should do an union of all geometries and return the results in a new 
 });
 
 Deno.test("should do an union of all geometries and return the results in a new table with a specific name in the DB", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("union", {
@@ -167,7 +167,7 @@ Deno.test("should do an union of all geometries and return the results in a new 
 });
 
 Deno.test("should do an union of geometries based on by", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategories");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   table.aggregateGeo("union", {
@@ -220,7 +220,7 @@ Deno.test("should do an union of geometries based on by", async () => {
 });
 
 Deno.test("should do an union of geometries based on by and return the results in a new table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategoriesAndNewTable");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("union", {
@@ -274,7 +274,7 @@ Deno.test("should do an union of geometries based on by and return the results i
   await sdb.close();
 });
 Deno.test("should do an intersection of geometries based on by and return the results in a new table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategoriesAndNewTableIntersection");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("intersection", {
@@ -318,7 +318,7 @@ Deno.test("should do an intersection of geometries based on by and return the re
 });
 
 Deno.test("should do an intersection of geometries based on by and return the results in a new table with a specific name in the DB", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategoriesAndNewTableIntersection");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   const newTable = table.aggregateGeo("intersection", {
@@ -362,7 +362,7 @@ Deno.test("should do an intersection of geometries based on by and return the re
 });
 
 Deno.test("aggregateGeo() should handle null geometries", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("testAggregateGeoNull");
 
   await sdb.customQuery(`

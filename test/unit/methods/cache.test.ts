@@ -14,7 +14,7 @@ if (existsSync("./.sda-cache")) {
 }
 
 Deno.test("should log a warning, not an error, when no data or table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     // Nothing in cache
@@ -23,7 +23,7 @@ Deno.test("should log a warning, not an error, when no data or table", async () 
   assertEquals(true, true);
 });
 Deno.test("should log a warning, not an error, when loading cache when no data or table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   const pending = sdb.newTable("pendingBeforeEmptyCacheHit");
   pending.loadArray([{ value: 1 }]);
@@ -36,7 +36,7 @@ Deno.test("should log a warning, not an error, when loading cache when no data o
   assertEquals(true, true);
 });
 Deno.test("should cache computed values for tabular data", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
@@ -64,7 +64,7 @@ Deno.test("should cache computed values for tabular data", async () => {
   await sdb.close();
 });
 Deno.test("should pass the table to the compute callback for chaining", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   let callbackTable: SimpleTable | undefined;
 
   const items = await sdb.newTable("chainedCacheCallback").cache(
@@ -81,7 +81,7 @@ Deno.test("should pass the table to the compute callback for chaining", async ()
   await sdb.close();
 });
 Deno.test("should load data from the cache instead of running computations", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
@@ -115,12 +115,12 @@ Deno.test("should execute a cached load before cache resolves", async () => {
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheHitExecution");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheHitExecution");
   await secondTable.cache(createCompute(secondTable));
 
@@ -136,12 +136,12 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
     table.loadGeoData("test/geodata/files/pointsInside.json");
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("geoCacheHitExecution");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("geoCacheHitExecution");
   await secondTable.cache(createCompute(secondTable));
 
@@ -172,7 +172,7 @@ Deno.test("should restore fixed array types and VSS indexes from cache", async (
     return indexes.length;
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheVssIndex");
   await firstTable.cache(createCompute(firstTable));
   assertEquals(await getIndexCount(firstSdb), 1);
@@ -219,7 +219,7 @@ Deno.test("should restore fixed array types and VSS indexes from cache", async (
   assertEquals((await firstTable.getTypes()).embedding, "FLOAT[3]");
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheVssIndex");
   await secondTable.cache(createCompute(secondTable));
 
@@ -244,7 +244,7 @@ Deno.test("should restore FTS indexes from cache", async () => {
     });
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheFtsIndex");
   await firstTable.cache(createCompute(firstTable));
   const cacheSources = JSON.parse(
@@ -267,7 +267,7 @@ Deno.test("should restore FTS indexes from cache", async () => {
   assertEquals(cachedSchemas.length, 1);
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheFtsIndex");
   await secondTable.cache(createCompute(secondTable));
   const schemas = await secondSdb.customQuery(
@@ -302,7 +302,7 @@ Deno.test("should recompute a corrupt DuckDB cache entry", async () => {
     table.loadArray([{ value: computationRuns }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("corruptCacheEntry");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.close();
@@ -318,7 +318,7 @@ Deno.test("should recompute a corrupt DuckDB cache entry", async () => {
   }
   writeFileSync(cacheFile, "not a DuckDB database");
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("corruptCacheEntry");
   await secondTable.cache(createCompute(secondTable));
 
@@ -333,14 +333,14 @@ Deno.test("should invalidate the cache when a captured input changes", async () 
     table.loadArray([{ value }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheCapturedInput");
   await firstTable.cache(createCompute(firstTable, 1), {
     inputs: [1],
   });
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheCapturedInput");
   await secondTable.cache(createCompute(secondTable, 2), {
     inputs: [2],
@@ -356,7 +356,7 @@ Deno.test("should explain which cache input changed", async () => {
     table.loadArray([{ value }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheVerboseInputChange");
   await firstTable.cache(createCompute(firstTable, 1), {
     inputs: [1, "stable"],
@@ -365,7 +365,6 @@ Deno.test("should explain which cache input changed", async () => {
   await firstSdb.close();
 
   const secondSdb = new SimpleDB({
-    dataTransport: "file",
     cacheVerbose: true,
   });
   const secondTable = secondSdb.newTable("cacheVerboseInputChange");
@@ -394,7 +393,6 @@ Deno.test("should explain when the current table changed", async () => {
   };
   const run = async (rows: { value: number }[], captureLogs = false) => {
     const sdb = new SimpleDB({
-      dataTransport: "file",
       cacheVerbose: true,
     });
     const table = sdb.newTable("cacheVerboseCurrentTableChange");
@@ -425,7 +423,6 @@ Deno.test("should not infer a code change from another cache call on the same ta
   };
 
   const sdb = new SimpleDB({
-    dataTransport: "file",
     cacheVerbose: true,
   });
   const table = sdb.newTable("cacheVerboseMultipleCalls");
@@ -454,7 +451,7 @@ Deno.test("should confirm unchanged inputs before reporting ttl status", async (
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheVerboseHit");
   await firstTable.cache(createCompute(firstTable), {
     inputs: [1, "stable"],
@@ -463,7 +460,6 @@ Deno.test("should confirm unchanged inputs before reporting ttl status", async (
   await firstSdb.close();
 
   const secondSdb = new SimpleDB({
-    dataTransport: "file",
     cacheVerbose: true,
   });
   const secondTable = secondSdb.newTable("cacheVerboseHit");
@@ -486,13 +482,12 @@ Deno.test("should omit input status when no explicit inputs were supplied", asyn
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheVerboseNoInputs");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.close();
 
   const secondSdb = new SimpleDB({
-    dataTransport: "file",
     cacheVerbose: true,
   });
   const secondTable = secondSdb.newTable("cacheVerboseNoInputs");
@@ -507,7 +502,6 @@ Deno.test("should omit input status when no explicit inputs were supplied", asyn
 });
 Deno.test("should identify a changed SimpleTable dependency by name", async () => {
   const sdb = new SimpleDB({
-    dataTransport: "file",
     cacheVerbose: true,
   });
   const source = sdb.newTable("cacheVerboseTableInput");
@@ -530,7 +524,6 @@ Deno.test("should identify a changed SimpleTable dependency by name", async () =
 });
 Deno.test("should identify changed and unchanged table dependencies", async () => {
   const sdb = new SimpleDB({
-    dataTransport: "file",
     cacheVerbose: true,
   });
   const changed = sdb.newTable("cacheVerboseChangedDependency");
@@ -573,14 +566,14 @@ Deno.test("should compare cache inputs structurally", async () => {
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheStructuralInputs");
   await firstTable.cache(createCompute(firstTable), {
     inputs: [{ threshold: 2, nested: { enabled: true } }],
   });
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheStructuralInputs");
   await secondTable.cache(createCompute(secondTable), {
     inputs: [{ nested: { enabled: true }, threshold: 2 }],
@@ -597,12 +590,12 @@ Deno.test("should compare cache inputs by array position", async () => {
     table.loadArray([{ value: computationRuns }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheInputPositions");
   await firstTable.cache(createCompute(firstTable), { inputs: [10, 20] });
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheInputPositions");
   await secondTable.cache(createCompute(secondTable), { inputs: [20, 10] });
 
@@ -617,12 +610,12 @@ Deno.test("should preserve legacy identity for empty inputs", async () => {
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheEmptyInputs");
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheEmptyInputs");
   await secondTable.cache(createCompute(secondTable), { inputs: [] });
 
@@ -637,7 +630,7 @@ Deno.test("should exclude ttl from cache identity with inputs", async () => {
     table.loadArray([{ value: 1 }]);
   };
 
-  const firstSdb = new SimpleDB({ dataTransport: "file" });
+  const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheInputsTtl");
   await firstTable.cache(createCompute(firstTable), {
     inputs: [1],
@@ -645,7 +638,7 @@ Deno.test("should exclude ttl from cache identity with inputs", async () => {
   });
   await firstSdb.close();
 
-  const secondSdb = new SimpleDB({ dataTransport: "file" });
+  const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheInputsTtl");
   await secondTable.cache(createCompute(secondTable), {
     inputs: [1],
@@ -679,7 +672,7 @@ Deno.test("should hash function and class inputs by source", async () => {
     transform: (value: number) => number,
     Strategy: typeof StrategyA | typeof StrategyB,
   ) => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable("cacheCodeInputs");
     await table.cache(createCompute(table), {
       inputs: [transform, Strategy],
@@ -710,7 +703,7 @@ Deno.test("should automatically track SimpleTable dependencies by generation", a
       output.loadArray(await source.getData());
     };
   const run = async (rows: { value: number }[]) => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const source = sdb.newTable("cacheTableInputSource");
     const output = sdb.newTable("cacheTableInputOutput");
     await source.cache(createSourceCompute(source, rows), { inputs: [rows] });
@@ -728,7 +721,7 @@ Deno.test("should automatically track SimpleTable dependencies by generation", a
 });
 Deno.test("should cache computations that read without mutating table inputs", async () => {
   let computationRuns = 0;
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const source = sdb.newTable("cacheReadOnlyInputSource");
   const output = sdb.newTable("cacheReadOnlyInputOutput");
   source.loadArray([{ year: 2025 }, { year: 2026 }]);
@@ -749,7 +742,7 @@ Deno.test("should cache computations that read without mutating table inputs", a
 });
 Deno.test("should not track tables created inside the computation", async () => {
   let computationRuns = 0;
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const output = sdb.newTable("cacheLocalTableOutput");
   const compute = async () => {
     computationRuns++;
@@ -768,7 +761,7 @@ Deno.test("should not track tables created inside the computation", async () => 
   await sdb.close();
 });
 Deno.test("should reject tables created inside the computation that are not removed", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const output = sdb.newTable("cacheLeakedLocalTableOutput");
 
   await assertRejects(
@@ -783,7 +776,7 @@ Deno.test("should reject tables created inside the computation that are not remo
   await sdb.close();
 });
 Deno.test("should reject mutations of tables that existed before the computation", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const source = sdb.newTable("cacheMutatedDependencySource");
   const output = sdb.newTable("cacheMutatedDependencyOutput");
   source.loadArray([{ value: 1 }, { value: 2 }]);
@@ -803,7 +796,7 @@ Deno.test("should reject mutations of tables that existed before the computation
 });
 Deno.test("should track SimpleTable dependencies in queued SQL", async () => {
   let computationRuns = 0;
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const source = sdb.newTable("cacheQueuedSqlSource");
   const output = sdb.newTable("cacheQueuedSqlOutput");
   source.loadArray([{ value: 1 }, { value: 2 }]);
@@ -827,7 +820,7 @@ Deno.test("should track SimpleTable dependencies in queued SQL", async () => {
 });
 Deno.test("should invalidate SimpleTable generations when removed", async () => {
   let computationRuns = 0;
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const source = sdb.newTable("cacheRemovedInputSource");
   const output = sdb.newTable("cacheRemovedInputOutput");
   source.loadArray([{ value: 1 }]);
@@ -857,7 +850,7 @@ Deno.test("should allow the cached table as an explicit input", async () => {
     table.filter("value = 2");
   };
   const run = async () => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable("cacheResultTableInput");
     await table.cache(createSourceCompute(table), { inputs: ["source-v1"] });
     await table.cache(createTransformCompute(table), { inputs: [table] });
@@ -887,7 +880,7 @@ Deno.test("should invalidate a cached pipeline stage when its entry generation c
     table.filter("value > 1");
   };
   const run = async (rows: { value: number }[]) => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable("cacheImplicitTableGeneration");
     await table.cache(createSourceCompute(rows), { inputs: [rows] });
     await table.cache(transform);
@@ -915,7 +908,7 @@ Deno.test("should restore SimpleTable generations on cache hits", async () => {
       output.loadArray(await source.getData());
     };
   const run = async () => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const source = sdb.newTable("cacheGenerationSource");
     const output = sdb.newTable("cacheGenerationOutput");
     await source.cache(createSourceCompute(source));
@@ -931,7 +924,7 @@ Deno.test("should restore SimpleTable generations on cache hits", async () => {
 });
 Deno.test("should invalidate SimpleTable generations after a mutation", async () => {
   let outputRuns = 0;
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const source = sdb.newTable("cacheGenerationMutationSource");
   const output = sdb.newTable("cacheGenerationMutationOutput");
   source.loadArray([{ value: 1 }, { value: 2 }]);
@@ -961,7 +954,7 @@ Deno.test("should invalidate SimpleTable generations after a refresh", async () 
       output.loadArray(await source.getData());
     };
   const run = async () => {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const source = sdb.newTable("cacheGenerationRefreshSource");
     const output = sdb.newTable("cacheGenerationRefreshOutput");
     await source.cache(createSourceCompute(source), { ttl: 0 });
@@ -976,7 +969,7 @@ Deno.test("should invalidate SimpleTable generations after a refresh", async () 
   assertEquals(outputRuns, 2);
 });
 Deno.test("should reject cyclic cache inputs before computing", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("cacheCyclicInputs");
   const cyclic: { self?: unknown } = {};
   cyclic.self = cyclic;
@@ -999,7 +992,7 @@ Deno.test("should reject cyclic cache inputs before computing", async () => {
   await sdb.close();
 });
 Deno.test("should load data from the cache if ttl has not expired", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
     () => {
@@ -1030,7 +1023,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
   await sdb.close();
 });
 Deno.test("should not load data from the cache if ttl has expired", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
     () => {
@@ -1061,7 +1054,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   await sdb.close();
 });
 Deno.test("should cache computed values for geospatial data", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(() => {
     tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
@@ -1098,7 +1091,7 @@ Deno.test("should cache computed values for geospatial data", async () => {
   await sdb.close();
 });
 Deno.test("should load geospatial data from the cache instead of running computations", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
 
   await tableGeo.cache(() => {
@@ -1135,7 +1128,7 @@ Deno.test("should load geospatial data from the cache instead of running computa
   await sdb.close();
 });
 Deno.test("should not load data from the cache if ttl has expired", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(
     () => {
@@ -1180,7 +1173,7 @@ Deno.test("should clean the cache when calling close", async () => {
     rmSync("./.sda-cache", { recursive: true });
   }
 
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(() => {
     table.loadData("test/data/files/dataSummarize.json");
@@ -1227,7 +1220,7 @@ Deno.test("should clean the cache when calling close", async () => {
 Deno.test("should cache dates and retrieve dates", async () => {
   // Example from Code Like a Journalist lesson about tabular data
 
-  const sdb = new SimpleDB({ dataTransport: "file", cacheVerbose: true });
+  const sdb = new SimpleDB({ cacheVerbose: true });
   const temperatures = sdb.newTable("temperatures");
   await temperatures.cache(async () => {
     temperatures.loadData(

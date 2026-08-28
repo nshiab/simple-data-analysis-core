@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should log a description of the table with logData", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
@@ -29,7 +29,7 @@ Deno.test("should log a description of the table with logData", async () => {
 });
 
 Deno.test("should not throw an error when there is no table", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.logDescription();
 
@@ -39,7 +39,7 @@ Deno.test("should not throw an error when there is no table", async () => {
 });
 
 Deno.test("should log a description of the table containing dates", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const temperatures = sdb.newTable("temperatures");
   temperatures.loadData(
     "test/data/files/dailyTemperatures.csv",

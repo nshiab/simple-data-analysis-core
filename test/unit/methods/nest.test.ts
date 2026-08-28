@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should nest rows based on a single category", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { city: "Montreal", neighborhoods: "Old Montreal" },
@@ -36,7 +36,7 @@ Deno.test("should nest rows based on a single category", async () => {
 });
 
 Deno.test("should nest with multiple category columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { country: "Canada", city: "Montreal", tags: "red" },
@@ -61,7 +61,7 @@ Deno.test("should nest with multiple category columns", async () => {
 });
 
 Deno.test("should work as inverse of unnest (round-trip test)", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   // Start with nested data
@@ -95,7 +95,7 @@ Deno.test("should work as inverse of unnest (round-trip test)", async () => {
 });
 
 Deno.test("should bind a nesting separator containing an apostrophe", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("boundNest");
 
   table.loadArray([

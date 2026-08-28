@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should remove specific rows", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -203,7 +203,7 @@ Deno.test("should remove specific rows", async () => {
 });
 
 Deno.test("should remove specific rows and accept arrays and single values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -404,7 +404,7 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
 });
 
 Deno.test("should remove specific rows even column names have spaces", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -604,7 +604,7 @@ Deno.test("should remove specific rows even column names have spaces", async () 
 });
 
 Deno.test("should remove values typed as unknown", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1n }, { id: 2n }, { id: 3n }]);
   const values: unknown = [1n, 3n];
@@ -616,7 +616,7 @@ Deno.test("should remove values typed as unknown", async () => {
 });
 
 Deno.test("should retain nulls when removing a non-null value", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
@@ -627,7 +627,7 @@ Deno.test("should retain nulls when removing a non-null value", async () => {
 });
 
 Deno.test("should remove null values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
@@ -638,7 +638,7 @@ Deno.test("should remove null values", async () => {
 });
 
 Deno.test("should remove null and non-null values together", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
@@ -649,7 +649,7 @@ Deno.test("should remove null and non-null values together", async () => {
 });
 
 Deno.test("should remove no rows for an empty values array", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 

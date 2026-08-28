@@ -32,7 +32,7 @@ Deno.test("should hash table contents, schema, and row order", async () => {
         AS VARCHAR
       ) AS checksum
     FROM numbered`,
-    { returnData: true, dataTransport: "direct" },
+    { returnData: true },
   )) as { row_count: string; checksum: string }[];
   const expectedHash = crypto.createHash("sha256").update(JSON.stringify([
     "sda-table-hash-v1",

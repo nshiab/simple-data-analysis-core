@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should compute a rolling average with 3 preceding and 3 following", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 52 },
@@ -38,7 +38,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following", a
 });
 
 Deno.test("should compute a rolling average with 3 preceding and 3 following, and 4 decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 52 },
@@ -76,7 +76,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following, an
 });
 
 Deno.test("should compute a rolling max with 0 preceding and 3 following", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 52 },
@@ -112,7 +112,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following", async
 });
 
 Deno.test("should compute a rolling max with 0 preceding and 3 following, and a category", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { index: 1, groups: "a", value: 52 },
@@ -150,7 +150,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: 1, existing: "already here" },

@@ -15,7 +15,7 @@ Deno.test("should reject an invalid length at call time", async () => {
 });
 
 Deno.test("should left-pad strings to target length with default zero", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1" },
@@ -36,7 +36,7 @@ Deno.test("should left-pad strings to target length with default zero", async ()
 });
 
 Deno.test("should right-pad strings to target length", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { code: "123" },
@@ -57,7 +57,7 @@ Deno.test("should right-pad strings to target length", async () => {
 });
 
 Deno.test("should left-pad with custom character", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1" },
@@ -76,7 +76,7 @@ Deno.test("should left-pad with custom character", async () => {
 });
 
 Deno.test("should right-pad with custom character", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { code: "AB" },
@@ -95,7 +95,7 @@ Deno.test("should right-pad with custom character", async () => {
 });
 
 Deno.test("should handle null values by leaving them as null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1" },
@@ -116,7 +116,7 @@ Deno.test("should handle null values by leaving them as null", async () => {
 });
 
 Deno.test("should throw error when column is not string type", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: 1 },
@@ -132,7 +132,7 @@ Deno.test("should throw error when column is not string type", async () => {
 });
 
 Deno.test("should throw error when strings exceed target length", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "Hi" },
@@ -154,7 +154,7 @@ Deno.test("should throw error when strings exceed target length", async () => {
 });
 
 Deno.test("should handle column names with spaces", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { "user id": "1" },
@@ -173,7 +173,7 @@ Deno.test("should handle column names with spaces", async () => {
 });
 
 Deno.test("should handle empty strings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "" },
@@ -192,7 +192,7 @@ Deno.test("should handle empty strings", async () => {
 });
 
 Deno.test("should pad to length 0 when all strings are empty", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { text: "" },
@@ -211,7 +211,7 @@ Deno.test("should pad to length 0 when all strings are empty", async () => {
 });
 
 Deno.test("should handle padding with multi-character fill string", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1" },
@@ -228,7 +228,7 @@ Deno.test("should handle padding with multi-character fill string", async () => 
 });
 
 Deno.test("should pad with default method being left", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { code: "ABC" },
@@ -245,7 +245,7 @@ Deno.test("should pad with default method being left", async () => {
 });
 
 Deno.test("should pad with default char being zero", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { value: "123" },
@@ -262,7 +262,7 @@ Deno.test("should pad with default char being zero", async () => {
 });
 
 Deno.test("should handle multiple rows with null values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1" },
@@ -289,7 +289,7 @@ Deno.test("should handle multiple rows with null values", async () => {
 // Multi-column tests
 
 Deno.test("should pad multiple columns at once", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1", code: "AB" },
@@ -308,7 +308,7 @@ Deno.test("should pad multiple columns at once", async () => {
 });
 
 Deno.test("should pad multiple columns with right padding", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "A", label: "X" },
@@ -327,7 +327,7 @@ Deno.test("should pad multiple columns with right padding", async () => {
 });
 
 Deno.test("should throw error when one of multiple columns is not string type", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "Alice", age: 30 },
@@ -343,7 +343,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
 });
 
 Deno.test("should throw error when one column has overflow in multi-column pad", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { short: "A", long: "ThisIsWayTooLong" },
@@ -360,7 +360,7 @@ Deno.test("should throw error when one column has overflow in multi-column pad",
 });
 
 Deno.test("should pad all null column without error", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: null },
@@ -381,7 +381,7 @@ Deno.test("should pad all null column without error", async () => {
 // SQL injection guard
 
 Deno.test("should safely handle single quote in padding character", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { id: "1" },

@@ -7,7 +7,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 // self-referencing fused SQL, and flush-time validation.
 
 Deno.test("concurrent observers each see fully flushed state", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const a = sdb.newTable("concA");
   const b = sdb.newTable("concB");
 
@@ -25,7 +25,7 @@ Deno.test("concurrent observers each see fully flushed state", async () => {
 });
 
 Deno.test("a caught flush error keeps other tables' queued work", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const a = sdb.newTable("errA");
   const b = sdb.newTable("errB");
 
@@ -47,7 +47,7 @@ Deno.test("a caught flush error keeps other tables' queued work", async () => {
 });
 
 Deno.test("the first failing operation in database-wide order stops the flush", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const a = sdb.newTable("orderedErrorA");
   const b = sdb.newTable("orderedErrorB");
 
@@ -67,7 +67,7 @@ Deno.test("the first failing operation in database-wide order stops the flush", 
 });
 
 Deno.test("re-queuing on a removed table re-registers it for the flush", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("gone");
 
   t.loadArray([{ a: 1 }]);
@@ -83,7 +83,7 @@ Deno.test("re-queuing on a removed table re-registers it for the flush", async (
 });
 
 Deno.test("cloneColumn throws when the target column already exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("dup");
 
   t.loadArray([{ a: 1, b: 2 }]).cloneColumn("a", "b");
@@ -98,7 +98,7 @@ Deno.test("cloneColumn throws when the target column already exists", async () =
 });
 
 Deno.test("addColumn throws when the target column already exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("dupAdd");
 
   t.loadArray([{ a: 1, b: 2 }]).addColumn("b", "integer", "a * 2");
@@ -113,7 +113,7 @@ Deno.test("addColumn throws when the target column already exists", async () => 
 });
 
 Deno.test("replaceNulls fills a numeric constant into string and number columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("mixedNulls");
 
   t.loadArray([
@@ -134,7 +134,7 @@ Deno.test("replaceNulls fills a numeric constant into string and number columns"
 });
 
 Deno.test("updateWithJS queues its modifier until an observation point", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("ujs");
 
   t.loadArray([{ v: 1 }, { v: 2 }]);
@@ -161,7 +161,7 @@ Deno.test("updateWithJS queues its modifier until an observation point", async (
 });
 
 Deno.test("a fused filter with a subquery on its own table matches stepwise execution", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("selfref");
 
   t.loadArray([{ x: 1 }, { x: 2 }, { x: 3 }, { x: 4 }, { x: 5 }]);
@@ -179,14 +179,14 @@ Deno.test("a fused filter with a subquery on its own table matches stepwise exec
 Deno.test("self-referencing chains agree when SQL logging is enabled", async () => {
   const rows = [{ x: 1 }, { x: 2 }, { x: 3 }, { x: 4 }, { x: 5 }];
 
-  const fusedDB = new SimpleDB({ dataTransport: "file" });
+  const fusedDB = new SimpleDB();
   const fused = fusedDB.newTable("f");
   fused.loadArray(rows).filter("x > 2").filter(
     `x > (SELECT AVG(x) FROM "f")`,
   );
   const fusedResult = await fused.getData();
 
-  const loggedDB = new SimpleDB({ dataTransport: "file", logSQL: true });
+  const loggedDB = new SimpleDB({ logSQL: true });
   const logged = loggedDB.newTable("f");
   logged.loadArray(rows).filter("x > 2").filter(
     `x > (SELECT AVG(x) FROM "f")`,
@@ -207,7 +207,7 @@ Deno.test("self-referencing chains agree when SQL logging is enabled", async () 
 });
 
 Deno.test("raw SQL strings are preserved when queued", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const marker = "__sda_captured_input_relation__";
   const table = sdb.newTable("rawSqlCapture");
 
@@ -219,7 +219,7 @@ Deno.test("raw SQL strings are preserved when queued", async () => {
 });
 
 Deno.test("a flush-time validation error still applies the steps before it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const t = sdb.newTable("prefix");
 
   t.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
@@ -239,7 +239,7 @@ Deno.test("a flush-time validation error still applies the steps before it", asy
 });
 
 Deno.test("interleaved table operations execute as contiguous segments", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const a = sdb.newTable("fuseA");
   const b = sdb.newTable("fuseB");
   const queries: string[] = [];
@@ -273,7 +273,7 @@ Deno.test("interleaved table operations execute as contiguous segments", async (
 });
 
 Deno.test("clone() fuses with a subsequent op on the clone into one statement", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("cloneFuseSrc");
   table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
 
@@ -298,7 +298,7 @@ Deno.test("clone() fuses with a subsequent op on the clone into one statement", 
 });
 
 Deno.test("clone() reads simpleTable's state at its call position, not later mutations", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("clonePosition");
   table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
   table.filter("v > 1");
@@ -317,7 +317,7 @@ Deno.test("clone() reads simpleTable's state at its call position, not later mut
 });
 
 Deno.test("selectRows() with outputTable fuses with a subsequent op into one statement", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("selectRowsFuseSrc");
   table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
 
@@ -342,7 +342,7 @@ Deno.test("selectRows() with outputTable fuses with a subsequent op into one sta
 });
 
 Deno.test("selectRows() with outputTable reads simpleTable's state at its call position", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("selectRowsPosition");
   table.loadArray([{ v: 1 }, { v: 2 }, { v: 3 }]);
   table.filter("v > 1");

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should unnest rows based on a specific column values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/nestedData.csv");
   table.unnest("neighbourhoods", " / ");
@@ -25,7 +25,7 @@ Deno.test("should unnest rows based on a specific column values", async () => {
 });
 
 Deno.test("should bind an unnesting separator containing an apostrophe", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("boundUnnest");
 
   table.loadArray([{ group: "a", value: "rock'n'roll" }]);

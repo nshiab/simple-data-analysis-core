@@ -15,7 +15,7 @@ Deno.test("should reject a non-positive interval at call time", async () => {
 });
 
 Deno.test("should add a column with the bins and an interval of 10", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
   table.convert({ Mark: "number" });
@@ -38,7 +38,7 @@ Deno.test("should add a column with the bins and an interval of 10", async () =>
 });
 
 Deno.test("should add a column with the bins and an interval of 10 and 45 as start value", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
   table.convert({ Mark: "number" });
@@ -63,7 +63,7 @@ Deno.test("should add a column with the bins and an interval of 10 and 45 as sta
 });
 
 Deno.test("should throw when startValue is greater than the minimum value", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
   table.convert({ Mark: "number" });
@@ -78,7 +78,7 @@ Deno.test("should throw when startValue is greater than the minimum value", asyn
 });
 
 Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
   table.convert({ Mark: "number" });
@@ -93,7 +93,7 @@ Deno.test("should throw when the new column name already exists, instead of sile
 });
 
 Deno.test("should add a column with the bins and an interval of 0.5", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
   table.convert({ Mark: "number" });

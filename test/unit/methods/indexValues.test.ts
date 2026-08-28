@@ -2,7 +2,7 @@ import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should index values against a calculated statistic", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ cpi: 10 }, { cpi: 20 }, { cpi: 30 }]);
 
@@ -17,7 +17,7 @@ Deno.test("should index values against a calculated statistic", async () => {
 });
 
 Deno.test("should index grouped values against an exact date reference", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { country: "B", date: new Date("2002-01-01T00:00:00Z"), cpi: 75 },
@@ -80,7 +80,7 @@ Deno.test("should index grouped values against an exact date reference", async (
 });
 
 Deno.test("should require exactly one matching reference row in every group", async () => {
-  const missingDb = new SimpleDB({ dataTransport: "file" });
+  const missingDb = new SimpleDB();
   const missingTable = missingDb.newTable();
   missingTable.loadArray([
     { group: "A", period: 1, value: 10 },
@@ -101,7 +101,7 @@ Deno.test("should require exactly one matching reference row in every group", as
   );
   await missingDb.close();
 
-  const duplicateDb = new SimpleDB({ dataTransport: "file" });
+  const duplicateDb = new SimpleDB();
   const duplicateTable = duplicateDb.newTable();
   duplicateTable.loadArray([
     { period: 1, value: 10 },
@@ -130,7 +130,7 @@ Deno.test("should support calculated reference statistics", async () => {
   ] as const;
 
   for (const testCase of cases) {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadArray([{ value: 1 }, { value: 2 }, { value: 4 }, {
       value: null,
@@ -161,7 +161,7 @@ Deno.test("should bind supported scalar reference values", async () => {
   ] as const;
 
   for (const testCase of cases) {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadArray([
       {
@@ -213,7 +213,7 @@ Deno.test("should reject cross-type exact reference values", async () => {
   ];
 
   for (const testCase of cases) {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadArray(testCase.rows);
     table.indexValues("value", "indexed", testCase.reference);
@@ -224,7 +224,7 @@ Deno.test("should reject cross-type exact reference values", async () => {
 });
 
 Deno.test("should match DATE, TIMESTAMP, and TIMESTAMPTZ references", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("temporalReferences");
   await sdb.customQuery(`CREATE TABLE "temporalReferences" AS
     SELECT
@@ -268,7 +268,7 @@ Deno.test("should match DATE, TIMESTAMP, and TIMESTAMPTZ references", async () =
 });
 
 Deno.test("should require an exact temporal reference", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("microsecondReference");
   await sdb.customQuery(`CREATE TABLE "microsecondReference" AS
     SELECT TIMESTAMP '2001-01-01 00:00:00.000500' AS timestamp_reference,
@@ -287,7 +287,7 @@ Deno.test("should require an exact temporal reference", async () => {
 });
 
 Deno.test("should reject invalid references and options at call time", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ period: 1, value: 10 }]);
 
@@ -374,7 +374,7 @@ Deno.test("should validate columns when the operation runs", async () => {
   ];
 
   for (const testCase of cases) {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadArray([{ label: "a", value: 10 }]);
     table.indexValues(
@@ -389,7 +389,7 @@ Deno.test("should validate columns when the operation runs", async () => {
 });
 
 Deno.test("should index supported numeric column types and preserve nulls", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("numericTypes");
   await sdb.customQuery(`CREATE TABLE "numericTypes" AS
     SELECT 1 AS period, 10::INTEGER AS integer_value,
@@ -433,7 +433,7 @@ Deno.test("should index supported numeric column types and preserve nulls", asyn
 });
 
 Deno.test("should calculate statistical references within multiple grouping columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { region: "A", year: 2020, value: 10 },
@@ -486,7 +486,7 @@ Deno.test("should reject null and zero calculated or selected reference values",
   ];
 
   for (const testCase of cases) {
-    const sdb = new SimpleDB({ dataTransport: "file" });
+    const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadArray(testCase.rows);
     table.indexValues(
@@ -501,7 +501,7 @@ Deno.test("should reject null and zero calculated or selected reference values",
 });
 
 Deno.test("should snapshot mutable reference and option inputs", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { group: "A", date: new Date("2001-01-01T00:00:00Z"), value: 10 },
@@ -526,7 +526,7 @@ Deno.test("should snapshot mutable reference and option inputs", async () => {
 });
 
 Deno.test("should apply a custom base", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { period: 1, value: 10 },
@@ -547,7 +547,7 @@ Deno.test("should apply a custom base", async () => {
 });
 
 Deno.test("should index against rows selected by column extrema", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { country: "A", date: new Date("2000-01-01T00:00:00Z"), cpi: 10 },
@@ -585,7 +585,7 @@ Deno.test("should index against rows selected by column extrema", async () => {
 });
 
 Deno.test("should reject tied and invalid column-at references", async () => {
-  const invalidDb = new SimpleDB({ dataTransport: "file" });
+  const invalidDb = new SimpleDB();
   const invalidTable = invalidDb.newTable();
   invalidTable.loadArray([{ date: new Date("2001-01-01T00:00:00Z"), cpi: 10 }]);
   assertThrows(
@@ -601,7 +601,7 @@ Deno.test("should reject tied and invalid column-at references", async () => {
   );
   await invalidDb.close();
 
-  const tiedDb = new SimpleDB({ dataTransport: "file" });
+  const tiedDb = new SimpleDB();
   const tiedTable = tiedDb.newTable();
   tiedTable.loadArray([
     { date: new Date("2001-01-01T00:00:00Z"), cpi: 10 },

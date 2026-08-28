@@ -1,8 +1,8 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the results of a custom query", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -176,43 +176,20 @@ Deno.test("should return the results of a custom query", async () => {
   await sdb.close();
 });
 
-Deno.test("should use the database result transport", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
-  const transports: ("direct" | "file" | undefined)[] = [];
-  const originalRunQuery = sdb.runQuery;
-  sdb.runQuery = (query, connection, returnData, options) => {
-    transports.push(options.dataTransport);
-    return originalRunQuery(query, connection, returnData, options);
-  };
-
-  assertEquals(
-    await sdb.customQuery("SELECT 42 AS value", { returnData: true }),
-    [{ value: 42 }],
-  );
-  assertEquals(transports.at(-1), "file");
-  await sdb.close();
-});
-
-Deno.test("should allow direct transport for non-relational results", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+Deno.test("should return non-relational results", async () => {
+  const sdb = new SimpleDB();
   await sdb.customQuery("CREATE TABLE listed(value INTEGER)");
 
-  await assertRejects(
-    () => sdb.customQuery("SHOW TABLES", { returnData: true }),
-    Error,
-    'cannot materialize rows from a SHOW statement. Use dataTransport: "direct"',
-  );
   assertEquals(
     await sdb.customQuery("SHOW TABLES", {
       returnData: true,
-      dataTransport: "direct",
     }),
     [{ name: "listed" }],
   );
   await sdb.close();
 });
 Deno.test("should work with ==", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
@@ -234,7 +211,7 @@ Deno.test("should work with ==", async () => {
   await sdb.close();
 });
 Deno.test("should work with ===", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
@@ -256,7 +233,7 @@ Deno.test("should work with ===", async () => {
   await sdb.close();
 });
 Deno.test("should work with &&", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
@@ -278,7 +255,7 @@ Deno.test("should work with &&", async () => {
   await sdb.close();
 });
 Deno.test("should work with ||", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
@@ -316,7 +293,7 @@ Deno.test("should work with ||", async () => {
   await sdb.close();
 });
 Deno.test("should work with || as OR or concatenation", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
@@ -357,7 +334,7 @@ Deno.test("should work with || as OR or concatenation", async () => {
   await sdb.close();
 });
 Deno.test("should work with !==", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
@@ -435,7 +412,7 @@ Deno.test("should work with !==", async () => {
   await sdb.close();
 });
 Deno.test("should work with === null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -448,7 +425,7 @@ Deno.test("should work with === null", async () => {
   await sdb.close();
 });
 Deno.test("should work with = null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -461,7 +438,7 @@ Deno.test("should work with = null", async () => {
   await sdb.close();
 });
 Deno.test("should work with === NULL", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -474,7 +451,7 @@ Deno.test("should work with === NULL", async () => {
   await sdb.close();
 });
 Deno.test("should work with == NULL", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -487,7 +464,7 @@ Deno.test("should work with == NULL", async () => {
   await sdb.close();
 });
 Deno.test("should work with = NULL", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -500,7 +477,7 @@ Deno.test("should work with = NULL", async () => {
   await sdb.close();
 });
 Deno.test("should work with !== null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -513,7 +490,7 @@ Deno.test("should work with !== null", async () => {
   await sdb.close();
 });
 Deno.test("should work with != null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -526,7 +503,7 @@ Deno.test("should work with != null", async () => {
   await sdb.close();
 });
 Deno.test("should work with !== NULL", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -539,7 +516,7 @@ Deno.test("should work with !== NULL", async () => {
   await sdb.close();
 });
 Deno.test("should work with != NULL", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
@@ -552,7 +529,7 @@ Deno.test("should work with != NULL", async () => {
   await sdb.close();
 });
 Deno.test("should work with === null not at the end of query", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 

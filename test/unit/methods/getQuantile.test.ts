@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return a quantile", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(await table.getQuantile("key1", 0.25), 1.75);
@@ -10,7 +10,7 @@ Deno.test("should return a quantile", async () => {
 });
 
 Deno.test("should return a quantile rounded", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(
@@ -22,7 +22,7 @@ Deno.test("should return a quantile rounded", async () => {
   await sdb.close();
 });
 Deno.test("should return a quantile even when there are spaces in the column name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
@@ -30,7 +30,7 @@ Deno.test("should return a quantile even when there are spaces in the column nam
   await sdb.close();
 });
 Deno.test("should return a quantile rounded even when there are spaces in the column name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
@@ -43,7 +43,7 @@ Deno.test("should return a quantile rounded even when there are spaces in the co
   await sdb.close();
 });
 Deno.test("should return the median with a quantile of 0.5", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   assertEquals(await table.getQuantile("key1", 0.5), 2.5);

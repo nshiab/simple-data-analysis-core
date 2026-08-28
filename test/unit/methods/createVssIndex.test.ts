@@ -2,7 +2,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should successfully create a VSS index", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   // Create a table with embedding data (FLOAT array)
@@ -28,7 +28,7 @@ Deno.test("should successfully create a VSS index", async () => {
 });
 
 Deno.test("should not recreate index if already exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   table.loadArray([
@@ -58,7 +58,7 @@ Deno.test("should not recreate index if already exists", async () => {
 });
 
 Deno.test("should recreate index when overwrite is true", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   table.loadArray([
@@ -86,7 +86,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
 });
 
 Deno.test("should create index when overwrite is true and no index exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   table.loadArray([
@@ -106,7 +106,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
 });
 
 Deno.test("should recreate index with verbose logging when overwrite is true", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   table.loadArray([
@@ -137,7 +137,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
 });
 
 Deno.test("should create index with custom HNSW parameters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   table.loadArray([

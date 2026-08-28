@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should round the coordinates to 3 decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/point.json");
   table.reducePrecision(3);
@@ -19,7 +19,7 @@ Deno.test("should round the coordinates to 3 decimals", async () => {
 });
 
 Deno.test("should round the coordinates to 3 decimals from a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/point.json");
   table.reducePrecision(3, { column: "geom" });

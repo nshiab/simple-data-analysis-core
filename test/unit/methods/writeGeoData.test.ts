@@ -6,7 +6,7 @@ import rewind from "../../../src/helpers/rewind.ts";
 const output = "./test/output/";
 
 Deno.test("should write a json file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
@@ -22,7 +22,7 @@ Deno.test("should write a json file", async () => {
   await sdb.close();
 });
 Deno.test("should write a json file with metadata", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
@@ -41,7 +41,7 @@ Deno.test("should write a json file with metadata", async () => {
   await sdb.close();
 });
 Deno.test("should write a json file with dates properties", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const table = sdb.newTable();
   const originalData = [{
@@ -75,7 +75,7 @@ Deno.test("should write a json file with dates properties", async () => {
   await sdb.close();
 });
 Deno.test("should write a json file with dates properties and keep the original table unchanged", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const table = sdb.newTable();
   const originalData = [{
@@ -94,7 +94,7 @@ Deno.test("should write a json file with dates properties and keep the original 
 });
 
 Deno.test("should write a geojson file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
@@ -111,7 +111,7 @@ Deno.test("should write a geojson file", async () => {
 });
 
 Deno.test("should write a geojson file and create the path if it doesn't exist", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
@@ -128,7 +128,7 @@ Deno.test("should write a geojson file and create the path if it doesn't exist",
 });
 
 Deno.test("should write a GeoJSON file that has been converted to EPSG:4326", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/canada-not-4326.shp.zip";
 
   const table = sdb.newTable();
@@ -149,7 +149,7 @@ Deno.test("should write a GeoJSON file that has been converted to EPSG:4326", as
 });
 
 Deno.test("should write a GeoJSON file that has been manually converted to EPSG:4326", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/canada-not-4326.shp.zip";
 
   const table = sdb.newTable();
@@ -174,7 +174,7 @@ Deno.test("should write a GeoJSON file that has been manually converted to EPSG:
 Deno.test("should write geojson file with coordinates rounded to 3 decimals", async () => {
   const originalFile = "test/geodata/files/polygons.geojson";
 
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(originalFile);
   await table.writeGeoData(`${output}dataPrecision.geojson`, {
@@ -228,7 +228,7 @@ Deno.test("should write geojson file with coordinates rounded to 3 decimals", as
   await sdb.close();
 });
 Deno.test("should write a geojson without rewinding the file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const data = sdb.newTable();
   data.loadGeoData(
@@ -246,7 +246,7 @@ Deno.test("should write a geojson without rewinding the file", async () => {
   assertEquals(writtenData, originalData);
 });
 Deno.test("should write a geojson and rewind the file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const data = sdb.newTable();
   data.loadGeoData(
@@ -264,7 +264,7 @@ Deno.test("should write a geojson and rewind the file", async () => {
   assertEquals(writtenData, rewindedData);
 });
 Deno.test("should write a geoparquet file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const originalData = sdb.newTable();
@@ -278,7 +278,7 @@ Deno.test("should write a geoparquet file", async () => {
   assertEquals(
     await sdb.customQuery(
       `SELECT DISTINCT compression FROM parquet_metadata('${output}data.geoparquet')`,
-      { returnData: true, dataTransport: "direct" },
+      { returnData: true },
     ),
     [{ compression: "SNAPPY" }],
   );
@@ -286,7 +286,7 @@ Deno.test("should write a geoparquet file", async () => {
 });
 
 Deno.test("should write a compressed geoparquet file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const originalData = sdb.newTable();
@@ -302,7 +302,7 @@ Deno.test("should write a compressed geoparquet file", async () => {
   assertEquals(
     await sdb.customQuery(
       `SELECT DISTINCT compression FROM parquet_metadata('${output}data-compressed.geoparquet')`,
-      { returnData: true, dataTransport: "direct" },
+      { returnData: true },
     ),
     [{ compression: "ZSTD" }],
   );
@@ -310,7 +310,7 @@ Deno.test("should write a compressed geoparquet file", async () => {
 });
 
 Deno.test("should write a geoparquet file with multiple geo columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const originalData = sdb.newTable();
@@ -331,7 +331,7 @@ Deno.test("should write a geoparquet file with multiple geo columns", async () =
 });
 
 Deno.test("should write a shapefile", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const originalFile = "test/geodata/files/polygons.geojson";
 
   const table = sdb.newTable();
@@ -363,7 +363,7 @@ Deno.test("should overwrite every file in a shapefile dataset", async () => {
   const directory = await Deno.makeTempDir({
     prefix: "sda-write-shapefile-",
   });
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   try {
     const table = sdb.newTable();
@@ -399,7 +399,7 @@ Deno.test("should write a compressed .shp.zip file", async () => {
   const directory = await Deno.makeTempDir({
     prefix: "sda-infer-compressed-shapefile-",
   });
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   try {
     const table = sdb.newTable();
@@ -433,7 +433,7 @@ Deno.test("should overwrite a compressed shapefile", async () => {
   const directory = await Deno.makeTempDir({
     prefix: "sda-overwrite-compressed-shapefile-",
   });
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   try {
     const table = sdb.newTable();
@@ -460,7 +460,7 @@ Deno.test("should overwrite a compressed shapefile", async () => {
 });
 
 Deno.test("should throw error for incompatible options with shapefiles", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/polygons.geojson");
   const shp = `${output}/shapefile/errors.shp`;
@@ -486,7 +486,7 @@ Deno.test("should throw error for incompatible options with shapefiles", async (
 });
 
 Deno.test("writeGeoData should throw an error when there is no geometry column and suggest using writeData", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
 

@@ -15,7 +15,7 @@ Deno.test("should reject an empty newColumns array at call time", async () => {
 });
 
 Deno.test("should split and spread a string into multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "Shiab, Nael" },
@@ -34,7 +34,7 @@ Deno.test("should split and spread a string into multiple columns", async () => 
 });
 
 Deno.test("should split and spread into three columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { address: "123 Main St,Anytown,USA" },
@@ -63,7 +63,7 @@ Deno.test("should split and spread into three columns", async () => {
 });
 
 Deno.test("should handle rows with fewer parts than expected", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { data: "A,B,C" },
@@ -100,7 +100,7 @@ Deno.test("should handle rows with fewer parts than expected", async () => {
 });
 
 Deno.test("should throw error when rows have more parts than expected", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { data: "A,B,C,D,E" },
@@ -138,7 +138,7 @@ Deno.test("should throw error when rows have more parts than expected", async ()
 });
 
 Deno.test("should skip validation with strict: false when rows have more parts than expected", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { data: "A,B,C,D,E" },
@@ -162,7 +162,7 @@ Deno.test("should skip validation with strict: false when rows have more parts t
 });
 
 Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "Shiab, Nael", lastName: "already here" },
@@ -178,7 +178,7 @@ Deno.test("should throw when a new column name already exists, instead of silent
 });
 
 Deno.test("should bind a spread separator containing an apostrophe", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("boundSplitSpread");
 
   table.loadArray([{ value: "rock'n'roll" }]);

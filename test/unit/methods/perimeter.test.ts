@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should calculate the perimeter of geometries in meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -32,7 +32,7 @@ Deno.test("should calculate the perimeter of geometries in meters", async () => 
 });
 
 Deno.test("should calculate the perimeter of geometries from a specific column in meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -62,7 +62,7 @@ Deno.test("should calculate the perimeter of geometries from a specific column i
 });
 
 Deno.test("should calculate the perimeter of geometries in meters from an EPSG:4326 file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -92,7 +92,7 @@ Deno.test("should calculate the perimeter of geometries in meters from an EPSG:4
 });
 
 Deno.test("should calculate the perimeter of geometries in kilometers", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -122,7 +122,7 @@ Deno.test("should calculate the perimeter of geometries in kilometers", async ()
 });
 
 Deno.test("should round perimeters to zero decimals", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

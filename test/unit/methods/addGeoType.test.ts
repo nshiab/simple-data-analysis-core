@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the geometry types in a new column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -31,7 +31,7 @@ Deno.test("should return the geometry types in a new column", async () => {
 });
 
 Deno.test("should return the geometry types from a specific column in a new column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

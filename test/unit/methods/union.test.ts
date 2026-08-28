@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should compute the union of geometries", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygonsGroups.json");
   poly.renameColumns({ geom: "polygons" });
@@ -238,7 +238,7 @@ Deno.test("should compute the union of geometries", async () => {
 });
 
 Deno.test("union() should overwrite existing column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, uni: "old" },
@@ -256,7 +256,7 @@ Deno.test("union() should overwrite existing column", async () => {
 });
 
 Deno.test("union() should overwrite one of the source geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },

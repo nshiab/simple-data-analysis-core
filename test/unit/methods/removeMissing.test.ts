@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return a table without any missing values", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -14,7 +14,7 @@ Deno.test("should return a table without any missing values", async () => {
   await sdb.close();
 });
 Deno.test("should return a table without any missing values even if column names have special characters like spaces", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -25,7 +25,7 @@ Deno.test("should return a table without any missing values even if column names
   await sdb.close();
 });
 Deno.test("should return a table without any missing values even if column names have special characters like spaces, with option invert", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -38,7 +38,7 @@ Deno.test("should return a table without any missing values even if column names
   await sdb.close();
 });
 Deno.test("should return a table without any missing values even if there is a type JSON", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.json"]);
   table.cleanColumnNames();
@@ -51,7 +51,7 @@ Deno.test("should return a table without any missing values even if there is a t
 });
 
 Deno.test("should return a table without any missing values even if there is a type associated with numbers", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataWithMissingValues.json"]);
 
@@ -66,7 +66,7 @@ Deno.test("should return a table without any missing values even if there is a t
 });
 
 Deno.test("should return a table without any missing values even if there is a type associated with numbers and otherMissingValues as number", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataWithMissingValues.json"]);
 
@@ -84,7 +84,7 @@ Deno.test("should return a table without any missing values even if there is a t
 });
 
 Deno.test("should return a table without any missing values for a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -99,7 +99,7 @@ Deno.test("should return a table without any missing values for a specific colum
 });
 
 Deno.test("should return a table without any missing values for multiple specific columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -115,7 +115,7 @@ Deno.test("should return a table without any missing values for multiple specifi
 });
 
 Deno.test("should return a table with null values in any columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -132,7 +132,7 @@ Deno.test("should return a table with null values in any columns", async () => {
 });
 
 Deno.test("should return a table with null values in a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
@@ -149,7 +149,7 @@ Deno.test("should return a table with null values in a specific column", async (
 });
 
 Deno.test("should bind custom missing values containing apostrophes", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "O'Brien" },

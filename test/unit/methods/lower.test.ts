@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should lowercase strings in one column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ firstName: "NAEL", lastName: "SHIAB" }]);
 
@@ -15,7 +15,7 @@ Deno.test("should lowercase strings in one column", async () => {
 });
 
 Deno.test("should lowercase strings in two columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ firstName: "NAEL", lastName: "SHIAB" }]);
 
@@ -28,7 +28,7 @@ Deno.test("should lowercase strings in two columns", async () => {
 });
 
 Deno.test("should lowercase strings in two columns with column names containing spaces", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "first Name": "NAEL", "last Name": "SHIAB" }]);
 

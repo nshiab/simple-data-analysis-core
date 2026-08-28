@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import rewind from "../../../src/helpers/rewind.ts";
 
 Deno.test("should find the column with geometries and return geospatial data as a geojson", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.renameColumns({ geom: "newGeom" });
@@ -54,7 +54,7 @@ Deno.test("should find the column with geometries and return geospatial data as 
 });
 
 Deno.test("should return geospatial data as a geojson with a specific geometry column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.renameColumns({ geom: "newGeom" });
@@ -104,7 +104,7 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
 });
 
 Deno.test("should quote unusual geometry column names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   const geometryColumn = 'geo "column';
 
@@ -118,7 +118,7 @@ Deno.test("should quote unusual geometry column names", async () => {
 });
 
 Deno.test("should return geospatial data not rewinded", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData();
@@ -132,7 +132,7 @@ Deno.test("should return geospatial data not rewinded", async () => {
   await sdb.close();
 });
 Deno.test("should return geospatial data rewinded", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData(undefined, { rewind: true });
@@ -149,8 +149,8 @@ Deno.test("should return geospatial data rewinded", async () => {
   await sdb.close();
 });
 
-Deno.test("file transport converts date-valued GeoJSON properties", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+Deno.test("should convert date-valued GeoJSON properties", async () => {
+  const sdb = new SimpleDB();
   const table = sdb.newTable("datedGeoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.addColumn("observed", "date", "'2020-01-15'");
@@ -164,8 +164,8 @@ Deno.test("file transport converts date-valued GeoJSON properties", async () => 
   await sdb.close();
 });
 
-Deno.test("file transport preserves multiple geometry-column selection", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+Deno.test("should preserve multiple geometry-column selection", async () => {
+  const sdb = new SimpleDB();
   const table = sdb.newTable("multipleGeometries");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.cloneColumn("geom", "otherGeom");

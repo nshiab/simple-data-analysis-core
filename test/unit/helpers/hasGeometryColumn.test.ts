@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import hasGeometryColumn from "../../../src/helpers/hasGeometryColumn.ts";
 
 Deno.test("hasGeometryColumn - returns false when no geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", age: "number" });
   table.insertRows([{ name: "Alice", age: 30 }]);
@@ -15,7 +15,7 @@ Deno.test("hasGeometryColumn - returns false when no geometry columns", async ()
 });
 
 Deno.test("hasGeometryColumn - returns true when geometry column exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
@@ -26,7 +26,7 @@ Deno.test("hasGeometryColumn - returns true when geometry column exists", async 
 });
 
 Deno.test("getData() - throws when table has geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
@@ -40,7 +40,7 @@ Deno.test("getData() - throws when table has geometry columns", async () => {
 });
 
 Deno.test("getData() - works normally when no geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     { name: "Alice", age: 30 },
@@ -55,7 +55,7 @@ Deno.test("getData() - works normally when no geometry columns", async () => {
 });
 
 Deno.test("getDataAsCSV() - throws when table has geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
@@ -69,7 +69,7 @@ Deno.test("getDataAsCSV() - throws when table has geometry columns", async () =>
 });
 
 Deno.test("writeData() - throws when table has geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
@@ -83,7 +83,7 @@ Deno.test("writeData() - throws when table has geometry columns", async () => {
 });
 
 Deno.test("writeData() - works normally when no geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     { name: "Alice", age: 30 },

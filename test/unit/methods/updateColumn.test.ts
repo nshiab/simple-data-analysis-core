@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should update a column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/cities.csv"]);
   table.updateColumn("city", `left("city", 3)`);
@@ -19,7 +19,7 @@ Deno.test("should update a column", async () => {
 });
 
 Deno.test("should update a column with a space in its name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   table.updateColumn(

@@ -61,7 +61,6 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
 
   try {
     const firstSdb = new SimpleDB({
-      dataTransport: "file",
       cacheVerbose: true,
     });
     const first = firstSdb.newTable("statCanFirst");
@@ -96,7 +95,6 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
     assertEquals(readdirSync(".sda-cache/tmp"), []);
 
     const secondSdb = new SimpleDB({
-      dataTransport: "file",
       cacheVerbose: true,
     });
     const second = secondSdb.newTable("statCanSecond");
@@ -125,7 +123,7 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
     }
     writeFileSync(sourcesPath, JSON.stringify(sources));
 
-    const thirdSdb = new SimpleDB({ dataTransport: "file" });
+    const thirdSdb = new SimpleDB();
     const third = thirdSdb.newTable("statCanThird");
     third.loadStatCanData(pid);
     await third.run();
@@ -133,7 +131,6 @@ Deno.test("loadStatCanData is chainable and caches without expiring by default",
     assertEquals(requests.length, 2);
 
     const fourthSdb = new SimpleDB({
-      dataTransport: "file",
       cacheVerbose: true,
     });
     const fourth = fourthSdb.newTable("statCanFourth");
@@ -168,7 +165,6 @@ Deno.test("loadStatCanData with cache false always requests fresh data", async (
     let uncachedLogs = "";
     for (let index = 0; index < 2; index++) {
       const sdb = new SimpleDB({
-        dataTransport: "file",
         cacheVerbose: index === 0,
       });
       const table = sdb.newTable(`statCanUncached${index}`);
@@ -208,7 +204,7 @@ Deno.test("loadStatCanData reports unsuccessful WDS responses", async () => {
       Response.json({ status: "FAILED", object: null }),
     )) as typeof fetch;
 
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("statCanFailure");
     table.loadStatCanData(pid, { cache: false });
@@ -227,7 +223,7 @@ Deno.test("loadStatCanData reports unsuccessful WDS responses", async () => {
 
 Deno.test("loadStatCanData loads live English Statistics Canada data", async () => {
   rmSync(cacheDirectory, { recursive: true, force: true });
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const populationColumn =
     "Population and dwelling counts (11): Population, 2021 [1]";
 
@@ -259,7 +255,7 @@ Deno.test("loadStatCanData loads live English Statistics Canada data", async () 
 
 Deno.test("loadStatCanData loads live French Statistics Canada data", async () => {
   rmSync(cacheDirectory, { recursive: true, force: true });
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const populationColumn =
     "Chiffres de population et des logements (11): Population, 2021 [1]";
 

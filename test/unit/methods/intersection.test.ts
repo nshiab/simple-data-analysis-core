@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should compute the intersection of geometries", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const prov = sdb.newTable("prov");
   prov.loadGeoData(
@@ -98,7 +98,7 @@ Deno.test("should compute the intersection of geometries", async () => {
 });
 
 Deno.test("intersection() should overwrite existing column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, inter: "old" },
@@ -116,7 +116,7 @@ Deno.test("intersection() should overwrite existing column", async () => {
 });
 
 Deno.test("intersection() should overwrite one of the source geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1, lon2: 2 },
@@ -140,7 +140,7 @@ Deno.test("intersection() should overwrite one of the source geometry columns", 
 });
 
 Deno.test("intersection() should return null if one of the geometries is null", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("testNull");
 
   await sdb.customQuery(`

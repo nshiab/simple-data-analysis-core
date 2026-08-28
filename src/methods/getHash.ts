@@ -27,7 +27,6 @@ export default async function getHash(simpleTable: SimpleTable) {
       returnData: true,
       method: "getHash()",
       parameters: {},
-      dataTransport: "direct",
     }),
   );
 

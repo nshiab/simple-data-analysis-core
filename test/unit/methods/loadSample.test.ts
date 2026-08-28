@@ -2,7 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should list available samples for an unknown sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   assertThrows(
@@ -15,7 +15,7 @@ Deno.test("should list available samples for an unknown sample", async () => {
 });
 
 Deno.test("should load the fires sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("fires");
   const data = await table.getData();
@@ -29,7 +29,7 @@ Deno.test("should load the fires sample", async () => {
 });
 
 Deno.test("should load the recipes sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("recipes");
   const data = await table.getData();
@@ -43,7 +43,7 @@ Deno.test("should load the recipes sample", async () => {
 });
 
 Deno.test("should load the temperatures sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("temperatures");
   const data = await table.getData();
@@ -57,7 +57,7 @@ Deno.test("should load the temperatures sample", async () => {
 });
 
 Deno.test("should load the temperaturesCities sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("temperaturesCities");
   const data = await table.getData();
@@ -71,7 +71,7 @@ Deno.test("should load the temperaturesCities sample", async () => {
 });
 
 Deno.test("should load the canada sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("canada");
   const data = await table.getGeoData();
@@ -87,7 +87,7 @@ Deno.test("should load the canada sample", async () => {
 });
 
 Deno.test("should load the firesGeo sample", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("firesGeo");
   const data = await table.getGeoData();

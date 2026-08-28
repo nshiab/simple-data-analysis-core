@@ -72,8 +72,8 @@ async function executeFuzzyClean(
       ` AND SUBSTR(a.value, 1, ${options.preFilterPrefixLen}) = SUBSTR(b.value, 1, ${options.preFilterPrefixLen})`;
   }
 
-  // Extension setup is kept separate so file result transport can export the
-  // relational statement below instead of receiving a multi-statement query.
+  // Load the extension before running the relational query so setup failures
+  // remain separate from fuzzy-pair computation failures.
   await queryDB(
     table,
     `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;`,

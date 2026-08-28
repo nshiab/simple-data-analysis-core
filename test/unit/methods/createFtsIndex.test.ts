@@ -2,7 +2,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should successfully create an FTS index", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -34,7 +34,7 @@ Deno.test("should successfully create an FTS index", async () => {
 });
 
 Deno.test("should successfully create an FTS index with a specific stemmer", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -61,7 +61,7 @@ Deno.test("should successfully create an FTS index with a specific stemmer", asy
 });
 
 Deno.test("should not recreate index if already exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -88,7 +88,7 @@ Deno.test("should not recreate index if already exists", async () => {
 });
 
 Deno.test("should recreate index when overwrite is true", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -122,7 +122,7 @@ Deno.test("should recreate index when overwrite is true", async () => {
 });
 
 Deno.test("should create index when overwrite is true and no index exists", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -150,7 +150,7 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
 });
 
 Deno.test("should recreate index with verbose logging when overwrite is true", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
@@ -183,7 +183,7 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
 });
 
 Deno.test("should successfully create an FTS index with custom parameters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });

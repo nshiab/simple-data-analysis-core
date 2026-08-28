@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should remove rows based on one condition", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -255,7 +255,7 @@ Deno.test("should remove rows based on one condition", async () => {
   await sdb.close();
 });
 Deno.test("should remove rows based on multiple conditions", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
@@ -565,7 +565,7 @@ Deno.test("should remove rows based on multiple conditions", async () => {
   await sdb.close();
 });
 Deno.test("should remove the rows based on booleans", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { name: "Nael", value: true },

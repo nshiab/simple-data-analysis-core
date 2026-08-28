@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import normalizeString from "../../../src/methods/normalizeString.ts";
 
 Deno.test("normalizeString - convert to lowercase and strip punctuation", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "Hello, World!" },
@@ -24,7 +24,7 @@ Deno.test("normalizeString - convert to lowercase and strip punctuation", async 
 });
 
 Deno.test("normalizeString - strip punctuation keeps alphanumeric", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "100%" },
@@ -45,7 +45,7 @@ Deno.test("normalizeString - strip punctuation keeps alphanumeric", async () => 
 });
 
 Deno.test("normalizeString - keep punctuation option", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "Hello, World!" },
@@ -66,7 +66,7 @@ Deno.test("normalizeString - keep punctuation option", async () => {
 });
 
 Deno.test("normalizeString - keep punctuation for emails and URLs", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "User@Example.com" },
@@ -87,7 +87,7 @@ Deno.test("normalizeString - keep punctuation for emails and URLs", async () => 
 });
 
 Deno.test("normalizeString - trim and normalize whitespace", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "  hello  " },
@@ -108,7 +108,7 @@ Deno.test("normalizeString - trim and normalize whitespace", async () => {
 });
 
 Deno.test("normalizeString - NULL handling", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "Hello" },
@@ -129,7 +129,7 @@ Deno.test("normalizeString - NULL handling", async () => {
 });
 
 Deno.test("normalizeString - empty and whitespace-only strings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "" },
@@ -148,7 +148,7 @@ Deno.test("normalizeString - empty and whitespace-only strings", async () => {
 });
 
 Deno.test("normalizeString - special patterns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "email@example.com" },
@@ -167,7 +167,7 @@ Deno.test("normalizeString - special patterns", async () => {
 });
 
 Deno.test("normalizeString - mixed string types", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "Hello" },
@@ -190,7 +190,7 @@ Deno.test("normalizeString - mixed string types", async () => {
 });
 
 Deno.test("normalizeString - long strings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   const longText = "Hello " + "World ".repeat(10000) + "!";
   table.loadArray([{ text: longText }]);
@@ -207,7 +207,7 @@ Deno.test("normalizeString - long strings", async () => {
 });
 
 Deno.test("normalizeString - matches journalism-format core tests", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     { text: "Évènement!", expected: "evenement" },
@@ -238,7 +238,7 @@ Deno.test("normalizeString - matches journalism-format core tests", async () => 
 });
 
 Deno.test("normalizeString - complex accented strings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
     {

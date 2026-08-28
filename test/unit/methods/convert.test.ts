@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should bind datetime formats containing apostrophes", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ date: "2010'-01-02" }]);
   table.convert({ date: "date" }, { datetimeFormat: "%Y'-%m-%d" });
@@ -14,7 +14,7 @@ Deno.test("should bind datetime formats containing apostrophes", async () => {
 });
 
 Deno.test("should convert numbers to string", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
 
@@ -30,7 +30,7 @@ Deno.test("should convert numbers to string", async () => {
   await sdb.close();
 });
 Deno.test("should convert strings with comma as thousand separator to number", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
     { key1: "1,000.3", key2: 2 },
@@ -51,7 +51,7 @@ Deno.test("should convert strings with comma as thousand separator to number", a
   await sdb.close();
 });
 Deno.test("should try to convert string to number", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.csv"], {
     allText: true,
@@ -70,7 +70,7 @@ Deno.test("should try to convert string to number", async () => {
 });
 
 Deno.test("should convert string to float", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
   table.convert({ key1: "string" }); // tested above
@@ -88,7 +88,7 @@ Deno.test("should convert string to float", async () => {
 });
 
 Deno.test("should convert string to integer", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
   table.convert({ key2: "string" }); // tested above
@@ -106,7 +106,7 @@ Deno.test("should convert string to integer", async () => {
 });
 
 Deno.test("should convert multiple columns in multiple types", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
   table.convert({ key1: "string" });
@@ -127,7 +127,7 @@ Deno.test("should convert multiple columns in multiple types", async () => {
 });
 
 Deno.test("should convert date string to date", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
     allText: true,
@@ -179,7 +179,7 @@ Deno.test("should convert date string to date", async () => {
 });
 
 Deno.test("should convert date and time strings to dates", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
     allText: true,
@@ -207,7 +207,7 @@ Deno.test("should convert date and time strings to dates", async () => {
 });
 
 Deno.test("should convert date and time from string to date with a specific format", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
     allText: true,
@@ -240,7 +240,7 @@ Deno.test("should convert date and time from string to date with a specific form
 });
 
 Deno.test("should convert dates to strings", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
     allText: true,
@@ -308,7 +308,7 @@ Deno.test("should convert dates to strings", async () => {
 });
 
 Deno.test("should convert dates to strings with a specific format", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv");
 
@@ -362,7 +362,7 @@ Deno.test("should convert dates to strings with a specific format", async () => 
 });
 
 Deno.test("should convert numbers to booleans", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ key1: 0 }, { key1: 1 }]);
 
@@ -374,7 +374,7 @@ Deno.test("should convert numbers to booleans", async () => {
 });
 
 Deno.test("should convert booleans to numbers", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ key1: false }, { key1: true }]);
 
@@ -385,7 +385,7 @@ Deno.test("should convert booleans to numbers", async () => {
   await sdb.close();
 });
 Deno.test("should convert dates and times to numbers (ms)", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv");
 
@@ -443,7 +443,7 @@ Deno.test("should convert dates and times to numbers (ms)", async () => {
   await sdb.close();
 });
 Deno.test("should convert numbers (ms) to dates and time", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv");
 
@@ -510,7 +510,7 @@ Deno.test("should convert numbers (ms) to dates and time", async () => {
 });
 
 Deno.test("should convert a column with $ in its name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
 

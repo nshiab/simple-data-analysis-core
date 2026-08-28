@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should throw when a column to remove does not exist", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
@@ -14,7 +14,7 @@ Deno.test("should throw when a column to remove does not exist", async () => {
 });
 
 Deno.test("should remove one column with spaces", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
 
@@ -383,7 +383,7 @@ Deno.test("should remove one column with spaces", async () => {
   await sdb.close();
 });
 Deno.test("should remove one column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   table.cleanColumnNames();
@@ -754,7 +754,7 @@ Deno.test("should remove one column", async () => {
 });
 
 Deno.test("should remove multiple columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   table.cleanColumnNames();

@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should remove the small circle from the big circle", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const smallCircle = sdb.newTable();
   smallCircle.loadGeoData("test/geodata/files/smallCircle.json");
@@ -173,7 +173,7 @@ Deno.test("should remove the small circle from the big circle", async () => {
   await sdb.close();
 });
 Deno.test("should remove the small circle from the big circle and overwrite the column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const smallCircle = sdb.newTable();
   smallCircle.loadGeoData("test/geodata/files/smallCircle.json");
@@ -344,7 +344,7 @@ Deno.test("should remove the small circle from the big circle and overwrite the 
 });
 
 Deno.test("difference() should overwrite one of the source geometry columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001 },

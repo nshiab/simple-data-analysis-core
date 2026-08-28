@@ -2,7 +2,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should explain when a table has no geometry column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("measurements");
   table.loadArray([{ value: 1 }]);
 
@@ -17,7 +17,7 @@ Deno.test("should explain when a table has no geometry column", async () => {
 });
 
 Deno.test("should list geometry columns when a table has multiple", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/point.json");
   table.cloneColumn("geom", "other geometry");
@@ -33,7 +33,7 @@ Deno.test("should list geometry columns when a table has multiple", async () => 
 });
 
 Deno.test("should calculate the area of geometries in square meters", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -111,7 +111,7 @@ Deno.test("should calculate the area of geometries in square meters", async () =
 });
 
 Deno.test("should calculate the area of geometries in square meters from a specific column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -189,7 +189,7 @@ Deno.test("should calculate the area of geometries in square meters from a speci
 });
 
 Deno.test("should calculate the area of geometries in square meters from an EPSG:4326 file", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -267,7 +267,7 @@ Deno.test("should calculate the area of geometries in square meters from an EPSG
 });
 
 Deno.test("should calculate the area of geometries in square kilometers", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
@@ -325,7 +325,7 @@ Deno.test("should calculate the area of geometries in square kilometers", async 
 });
 
 Deno.test("should round areas after converting their unit", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",

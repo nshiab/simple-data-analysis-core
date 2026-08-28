@@ -2,7 +2,7 @@ import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("sales");
 
   table.loadArray([
@@ -21,7 +21,7 @@ Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () =>
 });
 
 Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("selectedSales");
 
   table.loadArray([
@@ -43,7 +43,7 @@ Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () =>
 });
 
 Deno.test("addSummaryRows() adds every supported column stat when stats are omitted", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("allSummaries");
 
   table.loadArray([
@@ -72,7 +72,7 @@ Deno.test("addSummaryRows() adds every supported column stat when stats are omit
 });
 
 Deno.test("addSummaryRows() can add summary rows at the top", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("topSummaries");
 
   table.loadArray([
@@ -95,7 +95,7 @@ Deno.test("addSummaryRows() can add summary rows at the top", async () => {
 });
 
 Deno.test("addSummaryRows() computes every row from the original input", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("originalInput");
 
   table.loadArray([
@@ -116,7 +116,7 @@ Deno.test("addSummaryRows() computes every row from the original input", async (
 });
 
 Deno.test("addSummaryRows() binds custom labels", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", logSQL: true });
+  const sdb = new SimpleDB({ logSQL: true });
   const table = sdb.newTable("boundLabels");
 
   const logs: unknown[][] = [];
@@ -155,7 +155,7 @@ Deno.test("addSummaryRows() binds custom labels", async () => {
 });
 
 Deno.test("addSummaryRows() fuses with preceding queued methods", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file", logSQL: true });
+  const sdb = new SimpleDB({ logSQL: true });
   const table = sdb.newTable("filteredSummary");
   const logs: unknown[][] = [];
   const warnings: unknown[][] = [];
@@ -232,7 +232,7 @@ Deno.test("addSummaryRows() rejects empty column and stat arrays", async () => {
 });
 
 Deno.test("addSummaryRows() validates selected and label columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   const nonNumeric = sdb.newTable("nonNumericSummary");
   nonNumeric.loadArray([{ statistic: "a", note: "one", value: 1 }]);

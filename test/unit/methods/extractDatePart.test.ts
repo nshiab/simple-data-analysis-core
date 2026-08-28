@@ -2,7 +2,7 @@ import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should extract a single date part into a column with the part name", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ publishedAt: "2024-04-07 13:14:15.678" }]);
   table.convert({ publishedAt: "datetime" });
@@ -19,7 +19,7 @@ Deno.test("should extract a single date part into a column with the part name", 
 });
 
 Deno.test("should extract all supported parts with custom column names", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { publishedAt: "2024-04-07 13:14:15.678" },
@@ -71,7 +71,7 @@ Deno.test("should extract all supported parts with custom column names", async (
 });
 
 Deno.test("should use documented weekday, ISO week, and day-of-year numbering", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { date: "2021-01-01" },
@@ -116,7 +116,7 @@ Deno.test("should use documented weekday, ISO week, and day-of-year numbering", 
 });
 
 Deno.test("should support applicable parts and nulls for every documented temporal type", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     {
@@ -179,7 +179,7 @@ Deno.test("should support applicable parts and nulls for every documented tempor
 });
 
 Deno.test("should reject a date part that does not apply to a time column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ clockTime: "13:14:15" }]);
   table.convert({ clockTime: "time" });
@@ -194,7 +194,7 @@ Deno.test("should reject a date part that does not apply to a time column", asyn
 });
 
 Deno.test("should extract components from date and time columns", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{
     publicationDate: "2024-04-07",
@@ -217,7 +217,7 @@ Deno.test("should extract components from date and time columns", async () => {
 });
 
 Deno.test("should snapshot a mapped parts argument when queued", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ publishedAt: "2024-04-07" }]);
   table.convert({ publishedAt: "date" });
@@ -236,7 +236,7 @@ Deno.test("should snapshot a mapped parts argument when queued", async () => {
 });
 
 Deno.test("should reject an empty parts mapping", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
 
   assertThrows(
@@ -248,7 +248,7 @@ Deno.test("should reject an empty parts mapping", async () => {
 });
 
 Deno.test("should reject an existing output column", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{
     publishedAt: "2024-04-07",

@@ -4,7 +4,6 @@ import SDAError from "../class/SDAError.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import observeQuery from "../helpers/observeQuery.ts";
-import { streamQueryFromFile } from "../helpers/runQueryFromFile.ts";
 
 export default async function* stream(
   simpleTable: SimpleTable,
@@ -38,17 +37,6 @@ export default async function* stream(
       logSQL: simpleTable.sdb.logSQL,
       explainSQL: simpleTable.sdb.explainSQL,
     });
-    if (simpleTable.sdb.dataTransport === "file") {
-      for await (
-        const row of streamQueryFromFile(query, simpleTable.connection, {
-          table: simpleTable.name,
-          rejectGeometry: true,
-        })
-      ) {
-        yield row;
-      }
-      return;
-    }
     const result = await simpleTable.connection.stream(query);
     const columnNames = result.deduplicatedColumnNames();
     const columnTypes = result.columnTypes();

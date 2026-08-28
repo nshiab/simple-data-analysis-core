@@ -3,7 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 
 Deno.test("should throw an SDAError carrying method, parameters, query and cause", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
   const table = sdb.newTable("errorTable");
   table.loadArray([{ key1: 1 }]);
 
@@ -35,7 +35,7 @@ Deno.test("should throw an SDAError carrying method, parameters, query and cause
 });
 
 Deno.test("should throw an SDAError from a failing custom query", async () => {
-  const sdb = new SimpleDB({ dataTransport: "file" });
+  const sdb = new SimpleDB();
 
   let error: unknown;
   try {
