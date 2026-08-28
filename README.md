@@ -29,74 +29,6 @@ check the
 > [Code Like a Journalist](https://www.code-like-a-journalist.com/), a free and
 > open-source data analysis and data visualization course in TypeScript.
 
-## How it works
-
-Since v2, the library follows one rule: **sync methods build; async methods
-observe — and observing executes.**
-
-Methods that transform tables (loads, filters, conversions, joins, geospatial
-operations, etc.) are synchronous: they queue their work and return the table,
-so they can be chained. Methods that produce a result (`getData()`, `log()`,
-`writeData()`, etc.) are asynchronous: awaiting one executes everything queued
-so far, fusing consecutive steps into a single DuckDB query when possible. On
-large tables, fused transformations typically run around 3x faster than
-step-by-step execution.
-
-```ts
-import { SimpleDB } from "@nshiab/simple-data-analysis-core";
-
-const sdb = new SimpleDB();
-
-// One await, at the observation point. Everything
-// before it is fused into a single query.
-const table = await sdb
-  .newTable()
-  .loadData("temperatures.csv")
-  .selectColumns(["city", "time", "tas"])
-  .removeMissing({ columns: "tas" })
-  .convert({ tas: "double", time: "date" })
-  .addColumn("decade", "integer", "FLOOR(YEAR(time) / 10)*10")
-  .log();
-
-await sdb.close();
-```
-
-If a chain ends with transformations and you need them executed before shutdown,
-call `run()`. Otherwise, `close()` executes any remaining queued transformations
-before cleaning up resources. If you are migrating from v1, see the
-[migration guide](https://github.com/nshiab/simple-data-analysis-core/blob/main/MIGRATION.md).
-
-### Building asynchronous extensions
-
-Extensions that perform asynchronous work before queuing table builders can use
-`queueAsyncBarrier()`. The callback runs at the barrier's position in
-database-wide program order, and builders it queues run before later chained
-operations:
-
-```ts
-import type { SimpleTable } from "@nshiab/simple-data-analysis-core";
-import { queueAsyncBarrier } from "@nshiab/simple-data-analysis-core/helpers";
-
-function loadRemote(table: SimpleTable, url: string): SimpleTable {
-  queueAsyncBarrier(table, {
-    method: "loadRemote()",
-    parameters: { url },
-    execute: async () => {
-      const rows = await fetch(url).then((response) => response.json()) as {
-        [key: string]: unknown;
-      }[];
-      table.loadArray(rows);
-    },
-  });
-  return table;
-}
-```
-
-The callback must await all asynchronous work that can queue builders. If it
-rejects, captured builders that have not already run are discarded. Builders
-already drained by an observer inside the callback remain applied;
-`queueAsyncBarrier()` does not provide database rollback.
-
 ## Installation
 
 The library is available on
@@ -130,3 +62,76 @@ npx @nshiab/setup-data-project
 # Bun
 bunx @nshiab/setup-data-project
 ```
+
+## Building extensions
+
+The full
+[simple-data-analysis library](https://github.com/nshiab/simple-data-analysis)
+is itself an extension of SDA-core. It subclasses `SimpleTable` to add AI,
+Google Sheets and charting methods, then subclasses `SimpleDB` so every table
+created by the database uses that extended table class.
+
+Follow the same pattern when building an extension. To make new table methods
+chainable, define them on a `SimpleTable` subclass, give them a return type of
+`this` and return `this` after queuing their work. Then extend
+`SimpleDB<YourTable>` and set its `tableClass` to your subclass. Methods that
+create tables should always use `this.sdb.newTable()` so they also return your
+extended table type.
+
+```ts
+import {
+  SimpleDB as CoreDB,
+  SimpleTable as CoreTable,
+} from "@nshiab/simple-data-analysis-core";
+
+class MyTable extends CoreTable {
+  selectForPublication(columns: string[]): this {
+    this.selectColumns(columns);
+    return this;
+  }
+}
+
+class MyDB extends CoreDB<MyTable> {
+  constructor() {
+    super();
+    this.tableClass = MyTable;
+  }
+}
+
+const sdb = new MyDB();
+await sdb
+  .newTable("articles")
+  .loadData("articles.csv")
+  .selectForPublication(["title", "author"])
+  .log();
+```
+
+If an extension must perform asynchronous work before queuing table builders,
+use `queueAsyncBarrier()`. The callback runs at the barrier's position in
+database-wide program order, and builders it queues run before later chained
+operations:
+
+```ts
+import { queueAsyncBarrier } from "@nshiab/simple-data-analysis-core/helpers";
+
+class RemoteTable extends CoreTable {
+  loadRemote(url: string): this {
+    queueAsyncBarrier(this, {
+      method: "loadRemote()",
+      parameters: { url },
+      execute: async () => {
+        const rows = await fetch(url).then((response) => response.json()) as {
+          [key: string]: unknown;
+        }[];
+        this.loadArray(rows);
+      },
+    });
+    return this;
+  }
+}
+```
+
+The callback must await all asynchronous work that can queue builders. If it
+rejects, captured builders that have not already run are discarded. Builders
+already drained by an observer inside the callback remain applied;
+`queueAsyncBarrier()` does not provide database rollback.
