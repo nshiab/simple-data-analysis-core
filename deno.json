@@ -10,6 +10,7 @@
   },
   "tasks": {
     "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task llm",
+    "benchmark": "deno run -A benchmarks/run.ts",
     "llm": "deno run -A jsr:@nshiab/deno-docs-to-md && deno fmt llm.md",
     "test-coverage": "deno test -A --env-file --fail-fast --coverage=cov_profile && deno coverage cov_profile",
     "patch-no-tests": "deno run -A jsr:@nshiab/bump-version patch",
@@ -24,6 +25,7 @@
   "publish": {
     "exclude": [
       "test",
+      "benchmarks",
       ".github",
       "npm"
     ]
@@ -36,6 +38,8 @@
   "fmt": {
     "exclude": [
       ".sda-cache",
+      "benchmarks/.work",
+      "benchmarks/data",
       "test/output",
       "src/helpers/rewind.ts",
       "src/helpers/csvFormat.ts"
