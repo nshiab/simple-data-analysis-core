@@ -932,7 +932,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-loadGeoData(file: string, options?: { toEPSG4326?: boolean }): this;
+loadGeoData(file: string, options?: { toEPSG4326?: boolean; columns?: string[] }): this;
 ```
 
 ##### Parameters
@@ -942,6 +942,9 @@ loadGeoData(file: string, options?: { toEPSG4326?: boolean }): this;
 - **`options`**: An optional object with configuration options:
 - **`options.toEPSG4326`**: If `true`, the method will attempt to reproject the
   data to EPSG:4326 (WGS84).
+- **`options.columns`**: The columns to load. Include the geometry column that
+  should remain in the resulting table, usually `"geom"`. By default, all
+  columns are loaded.
 
 ##### Returns
 
@@ -957,6 +960,15 @@ await table.loadGeoData("https://some-website.com/some-data.geojson").log();
 ```ts
 // Load geospatial data from a local file
 await table.loadGeoData("./some-data.geojson").log();
+```
+
+```ts
+// Load only the name and geometry columns
+await table
+  .loadGeoData("./boundaries.geojson", {
+    columns: ["name", "geom"],
+  })
+  .log();
 ```
 
 ```ts

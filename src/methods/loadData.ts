@@ -2,8 +2,6 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import parseValue from "../helpers/parseValue.ts";
 import queueOp from "../helpers/queueOp.ts";
 import getExtension from "../helpers/getExtension.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -38,56 +36,53 @@ export default function loadData(
 ) {
   files = Array.isArray(files) ? [...files] : files;
   options = structuredClone(options);
-  // Building the query doesn't need the database, so invalid arguments
+  // Building the SELECT doesn't need the database, so invalid arguments
   // (like the columns option with an Excel file) throw at call time.
-  const query = loadDataQuery(simpleTable.name, stringToArray(files), options);
+  const select = loadDataSelect(stringToArray(files), options);
 
   queueOp(simpleTable, {
-    kind: "barrier",
+    kind: "source",
     method: "loadData()",
     parameters: { files, options },
-    execute: async () => {
-      await queryDB(
-        simpleTable,
-        query,
-        mergeOptions(simpleTable, {
-          table: simpleTable.name,
-          method: "loadData()",
-          parameters: { files, options },
-        }),
-      );
-    },
+    buildSelect: () => select,
   });
 }
+
+type LoadDataOptions = {
+  fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
+  autoDetect?: boolean;
+  limit?: number;
+  filename?: boolean;
+  unifyColumns?: boolean;
+  columnTypes?: { [key: string]: string };
+  columns?: string[];
+  header?: boolean;
+  allText?: boolean;
+  delim?: string;
+  skip?: number;
+  nullPadding?: boolean;
+  ignoreErrors?: boolean;
+  compression?: "none" | "gzip" | "zstd";
+  encoding?: string;
+  strict?: boolean;
+  jsonFormat?: "unstructured" | "newlineDelimited" | "array";
+  records?: boolean;
+  sheet?: string;
+};
 
 export function loadDataQuery(
   table: string,
   files: string[],
-  options: {
-    fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
-    autoDetect?: boolean;
-    limit?: number;
-    filename?: boolean;
-    unifyColumns?: boolean;
-    columnTypes?: { [key: string]: string };
-    // column selection
-    columns?: string[];
-    // csv options
-    header?: boolean;
-    allText?: boolean;
-    delim?: string;
-    skip?: number;
-    nullPadding?: boolean;
-    ignoreErrors?: boolean;
-    compression?: "none" | "gzip" | "zstd";
-    encoding?: string;
-    strict?: boolean;
-    // json options
-    jsonFormat?: "unstructured" | "newlineDelimited" | "array";
-    records?: boolean;
-    // excel options
-    sheet?: string;
-  } = {},
+  options: LoadDataOptions = {},
+) {
+  return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS ${
+    loadDataSelect(files, options)
+  };`;
+}
+
+function loadDataSelect(
+  files: string[],
+  options: LoadDataOptions = {},
 ) {
   const fileExtension = getExtension(files[0]);
   if (
@@ -167,8 +162,7 @@ export function loadDataQuery(
       : "";
     const strict = options.strict === false ? `, strict_mode=FALSE` : "";
 
-    return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)}
-            AS SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit};`;
+    return `SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit}`;
   } else if (options.fileType === "json" || fileExtension === "json") {
     // DuckDB expects "newline_delimited" (snake_case), unlike the other two
     // format values, which already match the public camelCase option.
@@ -184,12 +178,9 @@ export function loadDataQuery(
     const records = typeof options.records === "boolean"
       ? `, records=${String(options.records).toUpperCase()}`
       : "";
-    return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)}
-            AS SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${jsonFormat}${records})${limit};`;
+    return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${jsonFormat}${records})${limit}`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
-    return `CREATE OR REPLACE TABLE ${
-      quoteIdentifier(table)
-    } AS SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${limit};`;
+    return `SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${limit}`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {
     if (files.length > 1) {
       throw new Error(
@@ -204,11 +195,9 @@ export function loadDataQuery(
       ? `, all_varchar=${String(options.allText).toUpperCase()}`
       : "";
 
-    return `CREATE OR REPLACE TABLE ${
-      quoteIdentifier(table)
-    } AS SELECT ${selectColumns} FROM read_xlsx(${parseValue(files[0])}${
+    return `SELECT ${selectColumns} FROM read_xlsx(${parseValue(files[0])}${
       options.sheet ? `, sheet=${parseValue(options.sheet)}` : ""
-    }${header}${allText});`;
+    }${header}${allText})`;
   } else {
     throw unsupportedFileTypeError(
       files[0],

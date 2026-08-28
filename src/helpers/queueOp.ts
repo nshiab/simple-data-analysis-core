@@ -40,6 +40,19 @@ export default function queueOp(
     if (capturedOp.rawSQL !== undefined) {
       recordCacheTableReferences(simpleTable, capturedOp.rawSQL);
     }
+  } else if (capturedOp.kind === "source") {
+    capturedOp = {
+      ...capturedOp,
+      rawSQL: capturedOp.rawSQL === undefined
+        ? undefined
+        : [...capturedOp.rawSQL],
+      values: capturedOp.values === undefined
+        ? undefined
+        : [...capturedOp.values],
+    };
+    if (capturedOp.rawSQL !== undefined) {
+      recordCacheTableReferences(simpleTable, capturedOp.rawSQL);
+    }
   }
   // A table de-registered by removeTable()/removeTables()/selectTables() that
   // queues new work comes back under the flush's responsibility, like v1

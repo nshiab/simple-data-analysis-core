@@ -43,6 +43,13 @@ export type FusableOp = {
    * one.
    */
   rawSQL?: string[];
+  /**
+   * Whether the operation's fused segment must be rooted in a materialized
+   * table rather than an external source. Used when DuckDB's source execution
+   * shape affects an observable result such as deterministic sampled-row
+   * order.
+   */
+  requiresMaterializedInput?: boolean;
   /** Data values bound to placeholders in this operation's SELECT. */
   values?: DuckDBValue[] | ((schema: TableSchema) => DuckDBValue[]);
   /**
@@ -58,6 +65,34 @@ export type FusableOp = {
    */
   buildSelect: (input: string, schema: TableSchema) => string;
 };
+
+/**
+ * A queued operation that starts a fused segment from an external relational
+ * source instead of consuming the target table's current contents.
+ */
+export type SourceOp = {
+  kind: "source";
+  /** The SDA method that queued the source (e.g., "loadData()"). */
+  method: string;
+  /** The parameters passed to the method, for error reporting. */
+  parameters: { [key: string]: unknown } | null;
+  /** The operation's position in database-wide program order. */
+  sequence: number;
+  /** Whether the source SELECT uses spatial functions. */
+  needsSpatial?: boolean;
+  /**
+   * User-supplied SQL fragments or table names read by the source. They close
+   * pending segments for those tables before the source executes.
+   */
+  rawSQL?: string[];
+  /** Data values bound to placeholders in the source SELECT. */
+  values?: DuckDBValue[];
+  /** Returns the source as a single composable SELECT statement. */
+  buildSelect: () => string;
+};
+
+/** A relational operation that can participate in a fused segment. */
+export type RelationalOp = SourceOp | FusableOp;
 
 /**
  * A queued operation that is multi-statement by nature (or otherwise cannot
@@ -100,7 +135,7 @@ export type AsyncBarrierOp = {
  * An operation queued by a sync builder or extension method, executed when
  * the pending chains are flushed at an observation point.
  */
-export type PendingOp = FusableOp | BarrierOp | AsyncBarrierOp;
+export type PendingOp = RelationalOp | BarrierOp | AsyncBarrierOp;
 
 /**
  * A pending operation as built by a sync builder or extension method, before
@@ -108,5 +143,6 @@ export type PendingOp = FusableOp | BarrierOp | AsyncBarrierOp;
  */
 export type PendingOpInput =
   | Omit<FusableOp, "sequence">
+  | Omit<SourceOp, "sequence">
   | Omit<BarrierOp, "sequence">
   | Omit<AsyncBarrierOp, "sequence">;

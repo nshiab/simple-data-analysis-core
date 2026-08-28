@@ -47,6 +47,133 @@ Deno.test("should fuse consecutive builder methods into a single statement", asy
   await sdb.close();
 });
 
+Deno.test("should fuse loadData with schema-dependent transforms", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sourceFused");
+  const queries = spyOnQueries(table);
+
+  const result = await table
+    .loadData("test/data/files/dataSummarize.json")
+    .removeMissing({ columns: "key2" })
+    .convert({ key2: "double" })
+    .addColumn("doubleKey2", "double", "key2 * 2")
+    .getData();
+
+  assertEquals(result, [
+    { key1: "Rubarbe", key2: 1, key3: 10.5, doubleKey2: 2 },
+    { key1: "Fraise", key2: 11, key3: 2.345, doubleKey2: 22 },
+    { key1: "Rubarbe", key2: 2, key3: 4.5657, doubleKey2: 4 },
+    { key1: "Fraise", key2: 22, key3: 12.3434, doubleKey2: 44 },
+  ]);
+
+  const createStatements = queries.filter((query) =>
+    query.includes('CREATE OR REPLACE TABLE "sourceFused"')
+  );
+  assertEquals(createStatements.length, 1);
+  assert(createStatements[0].includes("read_json_auto"));
+  assert(createStatements[0].includes('"s4"'));
+
+  await sdb.close();
+});
+
+Deno.test("should compose supported loadData table functions as sources", async () => {
+  const sdb = new SimpleDB();
+  const cases = [
+    {
+      name: "sourceCsv",
+      file: "test/data/files/data.csv",
+      column: "key1",
+      expected: [
+        { key1: "1" },
+        { key1: "3" },
+        { key1: "8" },
+        { key1: "brioche" },
+      ],
+    },
+    {
+      name: "sourceJson",
+      file: "test/data/files/data.json",
+      column: "key1",
+      expected: [{ key1: 1 }, { key1: 2 }, { key1: 3 }, { key1: 4 }],
+    },
+    {
+      name: "sourceParquet",
+      file: "test/data/files/data.parquet",
+      column: "key1",
+      expected: [{ key1: 1 }, { key1: 3 }, { key1: 8 }, { key1: 3 }],
+    },
+    {
+      name: "sourceExcel",
+      file: "test/data/files/populations-one-sheet.xlsx",
+      column: "Country",
+      expected: [
+        { Country: "Canada" },
+        { Country: "US" },
+        { Country: "France" },
+      ],
+    },
+  ];
+
+  for (const testCase of cases) {
+    const table = sdb.newTable(testCase.name);
+    const queries = spyOnQueries(table);
+    const result = await table
+      .loadData(testCase.file)
+      .selectColumns(testCase.column)
+      .getData();
+
+    assertEquals(result, testCase.expected);
+    assertEquals(
+      queries.filter((query) =>
+        query.includes(`CREATE OR REPLACE TABLE "${testCase.name}"`)
+      ).length,
+      1,
+    );
+  }
+
+  await sdb.close();
+});
+
+Deno.test("should close a source segment before a repeated load", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("repeatedSource");
+
+  table
+    .loadData("test/data/files/dataSummarize.json")
+    .filter("key2 > 10")
+    .loadData("test/data/files/does-not-exist.json")
+    .filter("key1 > 2");
+
+  const error = await assertRejects(() => table.getData());
+  assert(error instanceof SDAError);
+  assertEquals(error.method, "loadData()");
+  assertEquals(await table.getData(), [
+    { key1: "Fraise", key2: 11, key3: 2.345 },
+    { key1: "Fraise", key2: 22, key3: 12.3434 },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("should attribute a downstream source-fusion failure", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sourceAttribution");
+
+  const error = await assertRejects(() =>
+    table
+      .loadData("test/data/files/data.json")
+      .filter("missing_column > 1")
+      .addColumn("double", "number", "key1 * 2")
+      .getData()
+  );
+
+  assert(error instanceof SDAError);
+  assertEquals(error.method, "filter()");
+  assertEquals(await table.getRowCount(), 4);
+
+  await sdb.close();
+});
+
 Deno.test("should fuse REPLACE-style column updates into the chain", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("replaceFused");

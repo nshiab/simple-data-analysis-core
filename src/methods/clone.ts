@@ -35,12 +35,9 @@ export default function clone(
     : "*";
 
   queueOp(clonedTable, {
-    kind: "fusable",
+    kind: "source",
     method: "clone()",
     parameters: { options },
-    // The clone has no prior state of its own to describe; its SELECT reads
-    // simpleTable directly instead.
-    needsSchema: false,
     // The clone reads simpleTable by name rather than through clonedTable's
     // own (nonexistent) chain, so simpleTable's pending work must close and
     // execute before this SELECT runs, as it would at this call position.

@@ -20,10 +20,9 @@ export default function selectRows(
     // returned synchronously and chained on right away.
     const outputTable = simpleTable.sdb.newTable(options.outputTable);
     queueOp(outputTable, {
-      kind: "fusable",
+      kind: "source",
       method: "selectRows()",
       parameters: { count, options },
-      needsSchema: false,
       // The output table reads simpleTable by name rather than through its
       // own (nonexistent) chain, so simpleTable's pending work must close
       // and execute before this SELECT runs, as it would at this call

@@ -1,7 +1,12 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import type { FusableOp, PendingOp, TableSchema } from "./pendingOps.ts";
+import type {
+  FusableOp,
+  PendingOp,
+  RelationalOp,
+  TableSchema,
+} from "./pendingOps.ts";
 import cleanSQL from "./cleanSQL.ts";
 import ensureSpatial from "./ensureSpatial.ts";
 import extractTypes from "./extractTypes.ts";
@@ -98,7 +103,7 @@ export default async function flushAllTables(sdb: SimpleDB): Promise<void> {
  */
 type Segment = {
   table: SimpleTable;
-  ops: FusableOp[];
+  ops: RelationalOp[];
 };
 
 type CompiledCte = {
@@ -197,6 +202,30 @@ async function replayEntries(
         executing = table;
         await runStepwise(table, op);
         executing = null;
+        current = null;
+        continue;
+      }
+
+      if (
+        op.kind === "fusable" &&
+        op.requiresMaterializedInput &&
+        open?.ops[0]?.kind === "source"
+      ) {
+        // Materialize the source-rooted segment before this operation, then
+        // let the operation begin a fresh segment so later transforms can
+        // still fuse with it.
+        await runOpenSegment();
+        open = { table, ops: [op] };
+        current = null;
+        continue;
+      }
+
+      if (op.kind === "source") {
+        // A source replaces the target table from an external relation. It
+        // starts a new segment rather than consuming any segment already open
+        // on the same table.
+        await runOpenSegment();
+        open = { table, ops: [op] };
         current = null;
         continue;
       }
@@ -305,7 +334,7 @@ function referencedTables(rawSQL: string[], sdb: SimpleDB): SimpleTable[] {
 
 async function runSegment(
   table: SimpleTable,
-  ops: FusableOp[],
+  ops: RelationalOp[],
 ): Promise<void> {
   if (ops.length === 1) {
     await runStepwise(table, ops[0]);
@@ -325,15 +354,19 @@ async function runSegment(
   let schema: TableSchema | null = null;
   for (let i = 0; i < ops.length; i++) {
     const op = ops[i];
-    const input = ctes.length === 0
-      ? quoteIdentifier(table.name)
-      : quoteIdentifier(ctes[ctes.length - 1].alias);
     let select: string;
     try {
-      if (op.needsSchema && schema === null) {
-        schema = await describeChain(table, ctes);
+      if (op.kind === "source") {
+        select = cleanSQL(op.buildSelect());
+      } else {
+        const input = ctes.length === 0
+          ? quoteIdentifier(table.name)
+          : quoteIdentifier(ctes[ctes.length - 1].alias);
+        if (op.needsSchema && schema === null) {
+          schema = await describeChain(table, ctes);
+        }
+        select = cleanSQL(op.buildSelect(input, schema ?? {}));
       }
-      select = cleanSQL(op.buildSelect(input, schema ?? {}));
     } catch (error) {
       // Flush-time validation (or a broken earlier fragment surfacing at
       // DESCRIBE) fails the chain at this operation. The steps before it
@@ -347,9 +380,11 @@ async function runSegment(
     ctes.push({
       alias: `s${ctes.length + 1}`,
       select,
-      values: resolveValues(op, schema ?? {}),
+      values: op.kind === "source"
+        ? op.values ?? []
+        : resolveValues(op, schema ?? {}),
     });
-    if (op.preservesSchema !== true) {
+    if (op.kind === "source" || op.preservesSchema !== true) {
       schema = null;
     }
   }
@@ -358,7 +393,7 @@ async function runSegment(
 
 async function executeFused(
   table: SimpleTable,
-  ops: FusableOp[],
+  ops: RelationalOp[],
   ctes: CompiledCte[],
 ): Promise<void> {
   const query = `CREATE OR REPLACE TABLE ${
@@ -402,10 +437,25 @@ async function executeFused(
 
 async function runStepwise(
   table: SimpleTable,
-  op: FusableOp,
+  op: RelationalOp,
 ): Promise<void> {
   if (op.needsSpatial) {
     await ensureSpatial(table);
+  }
+  if (op.kind === "source") {
+    const select = cleanSQL(op.buildSelect());
+    await queryDB(
+      table,
+      `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS ${select}`,
+      mergeOptions(table, {
+        table: table.name,
+        method: op.method,
+        parameters: op.parameters,
+        values: op.values ?? [],
+        noClean: true,
+      }),
+    );
+    return;
   }
   const schema = op.needsSchema ? await describeChain(table, []) : {};
   // The fragment is cleaned exactly as it would be inside a fused statement,
