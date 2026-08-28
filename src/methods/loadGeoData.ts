@@ -15,10 +15,15 @@ import {
   isRemoteOsmUrl,
 } from "../helpers/osmFiles.ts";
 
+type LoadGeoDataOptions = {
+  toEPSG4326?: boolean;
+  columns?: string[];
+};
+
 export default function loadGeoData(
   simpleTable: SimpleTable,
   file: string,
-  options: { toEPSG4326?: boolean } = {},
+  options: LoadGeoDataOptions = {},
 ) {
   options = structuredClone(options);
   queueOp(simpleTable, {
@@ -32,7 +37,7 @@ export default function loadGeoData(
 async function executeLoadGeoData(
   simpleTable: SimpleTable,
   file: string,
-  options: { toEPSG4326?: boolean },
+  options: LoadGeoDataOptions,
 ): Promise<void> {
   const osmSuffix = getOsmFileSuffix(file);
   if (osmSuffix !== null) {
@@ -47,6 +52,7 @@ async function executeLoadGeoData(
       await loadOsmFile(simpleTable, localFile, {
         method: "loadGeoData()",
         parameters: { file, options },
+        columns: options.columns,
       });
       return;
     } catch (error) {
@@ -67,6 +73,10 @@ async function executeLoadGeoData(
   }
 
   const fileExtension = getExtension(file);
+  const selectColumns = options.columns !== undefined &&
+      options.columns.length > 0
+    ? options.columns.map(quoteIdentifier).join(", ")
+    : "*";
 
   if (fileExtension === "geoparquet" || fileExtension === "parquet") {
     await queryDB(
@@ -76,7 +86,7 @@ async function executeLoadGeoData(
       }
       CREATE OR REPLACE TABLE ${
         quoteIdentifier(simpleTable.name)
-      } AS SELECT * FROM read_parquet(${parseValue(file)});`,
+      } AS SELECT ${selectColumns} FROM read_parquet(${parseValue(file)});`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",
@@ -91,7 +101,7 @@ async function executeLoadGeoData(
       }
       CREATE OR REPLACE TABLE ${
         quoteIdentifier(simpleTable.name)
-      } AS SELECT * FROM ST_Read(${parseValue(file)});`,
+      } AS SELECT ${selectColumns} FROM ST_Read(${parseValue(file)});`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",

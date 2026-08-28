@@ -24,8 +24,11 @@ input_path = required_environment("BENCHMARK_INPUT")
 clean_output = required_environment("BENCHMARK_CLEAN_OUTPUT")
 result_output = required_environment("BENCHMARK_RESULT_OUTPUT")
 
-temperatures = pd.read_csv(input_path, dtype=str)
-temperatures = temperatures[["time", "station", "station_name", "tas"]]
+temperatures = pd.read_csv(
+    input_path,
+    dtype=str,
+    usecols=["time", "station", "station_name", "tas"],
+)
 temperatures = temperatures.dropna(subset=["tas"])
 temperatures["tas"] = pd.to_numeric(temperatures["tas"])
 temperatures["time"] = pd.to_datetime(temperatures["time"])

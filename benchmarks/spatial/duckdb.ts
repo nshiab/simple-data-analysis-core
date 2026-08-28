@@ -36,7 +36,7 @@ try {
     SELECT neighbourhoods.nom_qr, CAST(COUNT(*) AS INTEGER) AS count
     FROM trees
     INNER JOIN neighbourhoods
-      ON ST_Within(trees.geom, neighbourhoods.geom)
+      ON ST_Covers(neighbourhoods.geom, trees.geom)
     GROUP BY neighbourhoods.nom_qr
     ORDER BY neighbourhoods.nom_qr;
 

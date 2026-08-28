@@ -67,9 +67,16 @@ bunx @nshiab/setup-data-project
 
 The benchmark suite compares this checkout with common Python and R tools and
 with raw DuckDB. It runs equivalent tabular and spatial workloads in fresh
-processes, checks that every implementation produces the same result, and
-measures duration and peak memory. The tabular workload includes writing the
-cleaned 1.6 GB dataset to disk, reflecting a common SDA workflow.
+processes, checks every final result and the cleaned tabular warm-up outputs,
+and measures duration and peak memory. The tabular workload includes writing the
+cleaned 1.6 GB dataset to disk, reflecting a common SDA workflow. Measured
+implementation order rotates between iterations to reduce ordering bias.
+
+Each implementation projects only the columns needed by the workload at its
+data-reader boundary when the API supports it. Pandas and tidyverse still
+materialize intermediate data frames, and GeoPandas and sf materialize their
+spatial joins, while raw DuckDB can optimize and fuse relational operations
+across those boundaries.
 
 Run the complete suite and refresh the results below with one command:
 
@@ -80,8 +87,8 @@ deno task benchmark
 The task expects `ahccd.csv`, `arbres-publics.csv`, and
 `quartierreferencehabitation.geojson` in `benchmarks/data/`, Python with pandas
 and GeoPandas, and R with tidyverse and sf. By default, it runs each
-implementation three times after one warm-up and takes roughly 9–10 minutes on
-an Apple M4 Max.
+implementation three times after one warm-up and takes roughly 7 minutes on an
+Apple M4 Max.
 
 <!-- benchmark-results:start -->
 
@@ -89,19 +96,19 @@ an Apple M4 Max.
 
 | Library version                           | Runtime       |  Mean duration | Duration difference | Mean peak memory | Memory difference |
 | ----------------------------------------- | ------------- | -------------: | ------------------: | ---------------: | ----------------: |
-| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    |  1.18 ± 0.03 s |              -63.4% |         2,457 MB |            -58.4% |
-| SDA-core 2.0.0-rc.17                      | Deno 2.9.6    |  3.23 ± 0.11 s |            baseline |         5,903 MB |          baseline |
-| pandas 3.0.3                              | Python 3.14.5 | 41.01 ± 0.69 s |            +1170.9% |         8,319 MB |            +40.9% |
-| tidyverse 2.0.0                           | R 4.6.0       | 89.37 ± 0.74 s |            +2669.7% |         8,851 MB |            +49.9% |
+| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    |  1.21 ± 0.02 s |              -31.6% |         2,491 MB |            -16.1% |
+| SDA-core 2.0.0-rc.17                      | Deno 2.9.6    |  1.76 ± 0.04 s |            baseline |         2,970 MB |          baseline |
+| pandas 3.0.3                              | Python 3.14.5 | 28.41 ± 0.13 s |            +1510.1% |         4,698 MB |            +58.2% |
+| tidyverse 2.0.0                           | R 4.6.0       | 79.74 ± 0.09 s |            +4419.8% |         8,178 MB |           +175.4% |
 
 ### Spatial workload
 
 | Library version                           | Runtime       | Mean duration | Duration difference | Mean peak memory | Memory difference |
 | ----------------------------------------- | ------------- | ------------: | ------------------: | ---------------: | ----------------: |
-| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    | 0.75 ± 0.02 s |              -39.5% |           252 MB |            -89.0% |
-| SDA-core 2.0.0-rc.17                      | Deno 2.9.6    | 1.24 ± 0.02 s |            baseline |         2,288 MB |          baseline |
-| GeoPandas 1.1.3                           | Python 3.14.5 | 1.55 ± 0.02 s |              +24.7% |           865 MB |            -62.2% |
-| sf 1.1.1                                  | R 4.6.0       | 4.50 ± 0.07 s |             +262.9% |           736 MB |            -67.8% |
+| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    | 0.75 ± 0.01 s |              -12.2% |           252 MB |            -17.3% |
+| SDA-core 2.0.0-rc.17                      | Deno 2.9.6    | 0.86 ± 0.01 s |            baseline |           305 MB |          baseline |
+| GeoPandas 1.1.3                           | Python 3.14.5 | 1.19 ± 0.01 s |              +38.5% |           291 MB |             -4.4% |
+| sf 1.1.1                                  | R 4.6.0       | 1.69 ± 0.01 s |              +97.6% |           488 MB |            +60.0% |
 
 <!-- benchmark-results:end -->
 

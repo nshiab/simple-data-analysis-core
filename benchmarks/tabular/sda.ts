@@ -9,8 +9,10 @@ const sdb = new SimpleDB();
 try {
   const temperatures = sdb.newTable("temperatures");
   temperatures
-    .loadData(input, { allText: true })
-    .selectColumns(["time", "station", "station_name", "tas"])
+    .loadData(input, {
+      allText: true,
+      columns: ["time", "station", "station_name", "tas"],
+    })
     .removeMissing({ columns: "tas" })
     .convert({ tas: "double", time: "date" })
     .addColumn("decade", "integer", "FLOOR(YEAR(time) / 10) * 10");

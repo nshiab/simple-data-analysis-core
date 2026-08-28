@@ -9,16 +9,24 @@ const sdb = new SimpleDB();
 try {
   const trees = sdb.newTable("trees");
   trees
-    .loadData(treesInput, { ignoreErrors: true })
+    .loadData(treesInput, {
+      columns: ["Latitude", "Longitude"],
+      ignoreErrors: true,
+    })
     .removeMissing({ columns: ["Latitude", "Longitude"] })
-    .createPoints("Latitude", "Longitude", "geom");
+    .createPoints("Latitude", "Longitude", "geom")
+    .selectColumns("geom");
 
   const neighbourhoods = sdb.newTable("neighbourhoods");
-  neighbourhoods.loadGeoData(neighbourhoodsInput);
+  neighbourhoods.loadGeoData(neighbourhoodsInput, {
+    columns: ["nom_qr", "geom"],
+  });
 
   const joined = trees.joinGeo(neighbourhoods, "inside", {
     type: "inner",
     outputTable: "joined",
+    excludeLeftGeometry: true,
+    excludeRightGeometry: true,
   });
   joined
     .summarize({ by: "nom_qr", stats: "count" })

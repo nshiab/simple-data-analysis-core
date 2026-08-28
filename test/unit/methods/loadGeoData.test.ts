@@ -1,9 +1,19 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
+
+function spyOnQueries(table: SimpleTable): string[] {
+  const queries: string[] = [];
+  const original = table.runQuery;
+  table.runQuery = (query, connection, returnData, options) => {
+    queries.push(query);
+    return original(query, connection, returnData, options);
+  };
+  return queries;
+}
 
 Deno.test("should load an OSM XML file with geom geometries", async () => {
   const sdb = new SimpleDB();
@@ -34,6 +44,25 @@ Deno.test("should load an OSM XML file with geom geometries", async () => {
           "MULTIPOLYGON (((-73.595 45.505, -73.593 45.505, -73.593 45.507, -73.595 45.507, -73.595 45.505)))",
       },
     ],
+  );
+  await sdb.close();
+});
+
+Deno.test("should project selected OSM columns while loading", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("selectedOsm");
+  const queries = spyOnQueries(table);
+  table.loadGeoData("test/geodata/files/osm-fixture.osm", {
+    columns: ["kind", "id", "geom"],
+  });
+
+  assertEquals(await table.getColumns(), ["kind", "id", "geom"]);
+  assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+  const loadQuery = queries.find((query) => query.includes("osmium_read"));
+  assert(loadQuery !== undefined);
+  assertStringIncludes(
+    loadQuery,
+    `SELECT "kind", "id", geometry::GEOMETRY('EPSG:4326') AS geom`,
   );
   await sdb.close();
 });
@@ -133,6 +162,28 @@ Deno.test("should load a geojson file", async () => {
     nameFrench: "VARCHAR",
     geom: "GEOMETRY('EPSG:4326')",
   });
+  await sdb.close();
+});
+
+Deno.test("should project selected GeoJSON columns while loading", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("selectedGeoJSON");
+  const queries = spyOnQueries(table);
+  table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+    { columns: ["nameEnglish", "geom"] },
+  );
+
+  assertEquals(await table.getTypes(), {
+    nameEnglish: "VARCHAR",
+    geom: "GEOMETRY('EPSG:4326')",
+  });
+  const loadQuery = queries.find((query) => query.includes("ST_Read"));
+  assert(loadQuery !== undefined);
+  assertStringIncludes(
+    loadQuery,
+    'AS SELECT "nameEnglish", "geom" FROM ST_Read',
+  );
   await sdb.close();
 });
 
@@ -300,6 +351,27 @@ Deno.test("should load a geoparquet file with multiple columns", async () => {
     geom: "GEOMETRY('OGC:CRS84')",
     anotherGeom: "GEOMETRY('OGC:CRS84')",
   });
+  await sdb.close();
+});
+
+Deno.test("should project selected GeoParquet columns while loading", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("selectedGeoParquet");
+  const queries = spyOnQueries(table);
+  table.loadGeoData("test/geodata/files/data-multiple-columns.geoparquet", {
+    columns: ["name", "anotherGeom"],
+  });
+
+  assertEquals(await table.getTypes(), {
+    name: "VARCHAR",
+    anotherGeom: "GEOMETRY('OGC:CRS84')",
+  });
+  const loadQuery = queries.find((query) => query.includes("read_parquet"));
+  assert(loadQuery !== undefined);
+  assertStringIncludes(
+    loadQuery,
+    'AS SELECT "name", "anotherGeom" FROM read_parquet',
+  );
   await sdb.close();
 });
 

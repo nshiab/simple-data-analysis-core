@@ -16,8 +16,11 @@ input_path <- required_environment("BENCHMARK_INPUT")
 clean_output <- required_environment("BENCHMARK_CLEAN_OUTPUT")
 result_output <- required_environment("BENCHMARK_RESULT_OUTPUT")
 
-temperatures <- read_csv(input_path, col_types = cols(.default = col_character())) %>%
-  select(time, station, station_name, tas) %>%
+temperatures <- read_csv(
+  input_path,
+  col_types = cols(.default = col_character()),
+  col_select = c(time, station, station_name, tas)
+) %>%
   filter(!is.na(tas)) %>%
   mutate(
     tas = as.numeric(tas),

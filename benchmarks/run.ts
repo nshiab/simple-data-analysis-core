@@ -1,12 +1,14 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateBenchmarkReport } from "./report.ts";
+import assertEquivalentCleanOutputs from "./cleanValidation.ts";
 import {
   assertEquivalentResults,
   type BenchmarkName,
   type Observation,
   observationsToCSV,
   parsePeakMemoryMB,
+  rotateValues,
 } from "./helpers.ts";
 
 type CommandSpec = {
@@ -24,6 +26,7 @@ type RunResult = {
   resultCSV: string;
   seconds: number;
   peakMemoryMB: number;
+  artifacts: { directory: string; cleanOutput: string } | null;
 };
 
 const decoder = new TextDecoder();
@@ -137,6 +140,7 @@ async function rawDuckDBVersion(): Promise<string> {
     command: "deno",
     args: [
       "run",
+      "-A",
       `--config=${join(rootDir, "deno.json")}`,
       join(benchmarkDir, "duckdbVersion.ts"),
     ],
@@ -268,6 +272,7 @@ async function runImplementation(
   implementation: Implementation,
   benchmark: BenchmarkName,
   paths: { input: string; polygons?: string },
+  preserveArtifacts = false,
 ): Promise<RunResult> {
   const runDir = await Deno.makeTempDir({
     dir: workRoot,
@@ -310,8 +315,15 @@ async function runImplementation(
     );
   }
   const resultCSV = await Deno.readTextFile(resultOutput);
-  await Deno.remove(runDir, { recursive: true });
-  return { resultCSV, seconds, peakMemoryMB: peakMemoryMB ?? Number.NaN };
+  if (!preserveArtifacts) {
+    await Deno.remove(runDir, { recursive: true });
+  }
+  return {
+    resultCSV,
+    seconds,
+    peakMemoryMB: peakMemoryMB ?? Number.NaN,
+    artifacts: preserveArtifacts ? { directory: runDir, cleanOutput } : null,
+  };
 }
 
 const { iterations, dataDir, benchmarks } = parseArguments();
@@ -331,30 +343,59 @@ console.log("Warm-up: one fresh process per implementation");
 
 for (const benchmark of benchmarks) {
   const candidates = forBenchmark(allImplementations, benchmark);
-  const warmups = new Map<string, string>();
+  const warmups = new Map<string, RunResult>();
   for (const implementation of candidates) {
     console.log(`Warm-up ${benchmark}: ${implementation.name}`);
     const result = await runImplementation(
       implementation,
       benchmark,
       paths[benchmark],
+      benchmark === "tabular",
     );
-    warmups.set(implementation.name, result.resultCSV);
+    warmups.set(implementation.name, result);
   }
-  const expected = warmups.get("duckdb");
+  const expected = warmups.get("duckdb")?.resultCSV;
   if (expected === undefined) throw new Error("Raw DuckDB warm-up is missing.");
   for (const implementation of candidates) {
     assertEquivalentResults(
       expected,
-      warmups.get(implementation.name) ?? "",
+      warmups.get(implementation.name)?.resultCSV ?? "",
       benchmark,
       implementation.name,
     );
   }
   console.log(`${benchmark} warm-up results are equivalent.`);
 
-  for (let iteration = 1; iteration <= iterations; iteration++) {
+  if (benchmark === "tabular") {
+    const expectedClean = warmups.get("duckdb")?.artifacts?.cleanOutput;
+    if (expectedClean === undefined) {
+      throw new Error("Raw DuckDB cleaned warm-up output is missing.");
+    }
     for (const implementation of candidates) {
+      if (implementation.name === "duckdb") continue;
+      const actualClean = warmups.get(implementation.name)?.artifacts
+        ?.cleanOutput;
+      if (actualClean === undefined) {
+        throw new Error(
+          `${implementation.name} cleaned warm-up output is missing.`,
+        );
+      }
+      await assertEquivalentCleanOutputs(
+        expectedClean,
+        actualClean,
+        implementation.name,
+      );
+    }
+    for (const result of warmups.values()) {
+      if (result.artifacts !== null) {
+        await Deno.remove(result.artifacts.directory, { recursive: true });
+      }
+    }
+    console.log("tabular cleaned warm-up outputs are equivalent.");
+  }
+
+  for (let iteration = 1; iteration <= iterations; iteration++) {
+    for (const implementation of rotateValues(candidates, iteration)) {
       console.log(
         `Measure ${benchmark}: ${implementation.name} (${iteration}/${iterations})`,
       );

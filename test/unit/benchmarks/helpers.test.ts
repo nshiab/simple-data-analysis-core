@@ -7,6 +7,7 @@ import {
   observationsToCSV,
   parseCSV,
   parsePeakMemoryMB,
+  rotateValues,
 } from "../../../benchmarks/helpers.ts";
 
 Deno.test("benchmark helpers parse macOS peak resident memory", () => {
@@ -23,6 +24,30 @@ Deno.test("benchmark helpers parse quoted CSV fields", () => {
     [["name", "value"], ["Montréal, Québec", 'a "quote"']],
   );
   assertThrows(() => parseCSV('name\n"unfinished'));
+});
+
+Deno.test("benchmark helpers rotate values without mutating the input", () => {
+  const values = ["sda", "pandas", "tidyverse", "duckdb"];
+  assertEquals(rotateValues(values, 1), [
+    "pandas",
+    "tidyverse",
+    "duckdb",
+    "sda",
+  ]);
+  assertEquals(rotateValues(values, 5), [
+    "pandas",
+    "tidyverse",
+    "duckdb",
+    "sda",
+  ]);
+  assertEquals(rotateValues(values, -1), [
+    "duckdb",
+    "sda",
+    "pandas",
+    "tidyverse",
+  ]);
+  assertEquals(values, ["sda", "pandas", "tidyverse", "duckdb"]);
+  assertEquals(rotateValues([], 3), []);
 });
 
 Deno.test("benchmark helpers validate tabular results with numeric tolerance", () => {

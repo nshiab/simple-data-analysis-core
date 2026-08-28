@@ -19,6 +19,12 @@ export type Aggregate = {
   meanPeakMemoryMB: number;
 };
 
+export function rotateValues<T>(values: T[], offset: number): T[] {
+  if (values.length === 0) return [];
+  const normalized = ((offset % values.length) + values.length) % values.length;
+  return [...values.slice(normalized), ...values.slice(0, normalized)];
+}
+
 export function parsePeakMemoryMB(stderr: string): number | null {
   const match = stderr.match(
     /(?:^|\n)\s*(\d+)\s+maximum resident set size\s*(?:\n|$)/,

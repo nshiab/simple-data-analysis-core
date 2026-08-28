@@ -546,6 +546,7 @@ export default class SimpleTable extends Simple {
    * @param file - The URL or absolute path to the external file containing the geospatial data.
    * @param options - An optional object with configuration options:
    * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
+   * @param options.columns - The columns to load. Include the geometry column that should remain in the resulting table, usually `"geom"`. By default, all columns are loaded.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -559,6 +560,16 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Load geospatial data from a local file
    * await table.loadGeoData("./some-data.geojson").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load only the name and geometry columns
+   * await table
+   *   .loadGeoData("./boundaries.geojson", {
+   *     columns: ["name", "geom"],
+   *   })
+   *   .log();
    * ```
    *
    * @example
@@ -581,7 +592,10 @@ export default class SimpleTable extends Simple {
    */
   loadGeoData(
     file: string,
-    options: { toEPSG4326?: boolean } = {},
+    options: {
+      toEPSG4326?: boolean;
+      columns?: string[];
+    } = {},
   ): this {
     loadGeoData(this, file, options);
     return this;
