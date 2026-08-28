@@ -28,3 +28,24 @@ Deno.test("should return the schema of a table", async () => {
 
   await sdb.close();
 });
+
+Deno.test("should preserve primary-key schema metadata", async () => {
+  const sdb = new SimpleDB();
+  await sdb.customQuery(
+    `CREATE TABLE "primaryKeySchema" (id INTEGER PRIMARY KEY)`,
+  );
+  const table = sdb.newTable("primaryKeySchema");
+
+  assertEquals(await table.getSchema(), [
+    {
+      column_name: "id",
+      column_type: "INTEGER",
+      null: "NO",
+      key: "PRI",
+      default: null,
+      extra: null,
+    },
+  ]);
+
+  await sdb.close();
+});

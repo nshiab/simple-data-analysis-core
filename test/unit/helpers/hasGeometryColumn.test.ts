@@ -54,6 +54,17 @@ Deno.test("getData() - works normally when no geometry columns", async () => {
   await sdb.close();
 });
 
+Deno.test("getData() - can select non-geometry columns from a spatial table", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
+  table.insertRows([{ name: "Alice", geom: null }]);
+
+  assertEquals(await table.getData({ columns: "name" }), [{ name: "Alice" }]);
+
+  await sdb.close();
+});
+
 Deno.test("getDataAsCSV() - throws when table has geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");

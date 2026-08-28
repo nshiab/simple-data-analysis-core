@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("direct getData does not run a schema preflight query", async () => {
+Deno.test("getData does not run a schema preflight query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("queryCount");
   table.loadArray([{ value: 1 }]);

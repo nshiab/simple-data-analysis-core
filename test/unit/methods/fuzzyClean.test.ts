@@ -1,6 +1,29 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("should load rapidfuzz and compute pairs in one query", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("singleFuzzyQuery");
+  const queries: string[] = [];
+  const originalRunQuery = table.runQuery;
+  table.runQuery = (query, connection, returnData, options) => {
+    queries.push(query);
+    return originalRunQuery(query, connection, returnData, options);
+  };
+  table.insertRows([{ name: "Alice" }, { name: "Alicee" }]);
+
+  table.fuzzyClean("name", "name", 80);
+  await table.getData();
+
+  const rapidfuzzQueries = queries.filter((query) =>
+    query.includes("INSTALL rapidfuzz")
+  );
+  assertEquals(rapidfuzzQueries.length, 1);
+  assertEquals(rapidfuzzQueries[0].includes("WITH uniques AS"), true);
+
+  await sdb.close();
+});
+
 Deno.test("should bind replacement mapping values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundFuzzyClean");

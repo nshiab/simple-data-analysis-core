@@ -21,7 +21,6 @@ type RunQueryOptions = {
   values?: DuckDBValue[];
   logSQL: boolean;
   explainSQL: boolean;
-  rejectGeometry?: boolean;
 };
 
 const msPerDay = 24 * 60 * 60 * 1000;
@@ -138,7 +137,7 @@ export default async function runQuery(
       const columnNames = result.deduplicatedColumnNames();
       const columnTypes = result.columnTypes();
       if (
-        options.rejectGeometry === true &&
+        options.method === "getData()" &&
         columnTypes.some((type) =>
           type.toString().toLowerCase().includes("geometry")
         )

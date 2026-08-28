@@ -17,7 +17,6 @@ export default async function queryDB(
     returnData: boolean;
     values?: DuckDBValue[];
     noClean?: boolean;
-    rejectGeometry?: boolean;
   },
 ): Promise<
   | {

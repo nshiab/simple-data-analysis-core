@@ -55,7 +55,6 @@ export default class Simple {
    * @param options.values - Data values bound to placeholders in the SQL statement.
    * @param options.logSQL - Whether to log the SQL immediately before execution.
    * @param options.explainSQL - Whether to log a supported DuckDB query plan before execution.
-   * @param options.rejectGeometry - Whether to reject geometry columns.
    * @returns The converted rows when requested, otherwise `null`.
    *
    * @example
@@ -78,7 +77,6 @@ export default class Simple {
       values?: DuckDBValue[];
       logSQL: boolean;
       explainSQL: boolean;
-      rejectGeometry?: boolean;
     },
   ) => Promise<
     | {

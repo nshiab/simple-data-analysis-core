@@ -41,7 +41,6 @@ export default async function getData(
       table: simpleTable.name,
       method: "getData()",
       parameters: { options },
-      rejectGeometry: true,
     }),
   )) as {
     [key: string]: unknown;

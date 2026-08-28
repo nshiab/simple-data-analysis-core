@@ -10,7 +10,6 @@ export default function mergeOptions(
     returnData?: boolean;
     values?: import("@duckdb/node-api").DuckDBValue[];
     noClean?: boolean;
-    rejectGeometry?: boolean;
   },
 ): {
   table: string | null;
@@ -21,7 +20,6 @@ export default function mergeOptions(
   returnData: boolean;
   values?: import("@duckdb/node-api").DuckDBValue[];
   noClean?: boolean;
-  rejectGeometry?: boolean;
 } {
   return {
     table: options.table,
@@ -32,6 +30,5 @@ export default function mergeOptions(
     returnData: options.returnData ?? false,
     values: options.values,
     noClean: options.noClean,
-    rejectGeometry: options.rejectGeometry,
   };
 }
