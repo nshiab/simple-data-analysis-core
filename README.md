@@ -46,17 +46,17 @@ step-by-step execution.
 import { SimpleDB } from "@nshiab/simple-data-analysis-core";
 
 const sdb = new SimpleDB();
-const table = sdb.newTable();
 
 // One await, at the observation point. Everything
 // before it is fused into a single query.
-const data = await table
+const table = await sdb
+  .newTable()
   .loadData("temperatures.csv")
   .selectColumns(["city", "time", "tas"])
   .removeMissing({ columns: "tas" })
   .convert({ tas: "double", time: "date" })
   .addColumn("decade", "integer", "FLOOR(YEAR(time) / 10)*10")
-  .getData();
+  .log();
 
 await sdb.close();
 ```

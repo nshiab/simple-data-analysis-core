@@ -18,8 +18,10 @@ To start, create a SimpleDB instance and then a SimpleTable from this instance:
 import { SimpleDB } from "@nshiab/simple-data-analysis-core";
 
 const sdb = new SimpleDB();
-const table = sdb.newTable("myTable"); // This returns a SimpleTable instance
-await table.loadData("path/to/your/data.csv");
+const table = await sdb
+  .newTable("myTable")
+  .loadData("path/to/your/data.csv")
+  .log();
 
 // You can now perform various data analysis operations on the table.
 
@@ -114,12 +116,18 @@ A new table instance.
 
 ```ts
 // Create a table with a default name (e.g., "table1", "table2", etc.)
-const dataTable = sdb.newTable();
+const dataTable = await sdb
+  .newTable()
+  .loadArray([{ value: 1 }])
+  .log();
 ```
 
 ```ts
 // Create a table with a specific name
-const employees = sdb.newTable("employees");
+const employees = await sdb
+  .newTable("employees")
+  .loadData("employees.csv")
+  .log();
 ```
 
 #### `getTable`
@@ -145,6 +153,7 @@ A promise that resolves to the SimpleTable instance if found.
 ```ts
 // Retrieve the "employees" table
 const employees = await sdb.getTable("employees");
+await employees.log();
 ```
 
 #### `removeTables`
@@ -553,12 +562,11 @@ await sdb.close();
 ```ts
 // Create an in-memory database instance
 const sdb = new SimpleDB();
-// Create a new table named "employees"
-const employees = sdb.newTable("employees");
-// Load data from a CSV file into the "employees" table
-employees.loadData("./employees.csv");
-// Log the first few rows of the "employees" table to the console
-await employees.log();
+// Create a table, load a CSV file, and log its first few rows
+const employees = await sdb
+  .newTable("employees")
+  .loadData("./employees.csv")
+  .log();
 // Close the database connection and clean up resources
 await sdb.close();
 ```
@@ -654,6 +662,7 @@ await table
   .loadData("data.csv")
   .convert({ price: "number" })
   .run();
+await table.log();
 ```
 
 #### `renameTable`
@@ -679,6 +688,7 @@ A promise that resolves to the table, so methods can be chained.
 ```ts
 // Rename the table to "new_employees"
 await table.renameTable("new_employees");
+await table.log();
 ```
 
 #### `setTypes`
@@ -709,11 +719,11 @@ The table, so methods can be chained.
 
 ```ts
 // Set types for a new table
-table.setTypes({
+await table.setTypes({
   name: "string",
   salary: "integer",
   raise: "float",
-});
+}).log();
 ```
 
 #### `loadArray`
@@ -750,15 +760,15 @@ const data = [
   { letter: "a", number: 1 },
   { letter: "b", number: 2 },
 ];
-table.loadArray(data);
+await table.loadArray(data).log();
 ```
 
 ```ts
 // The offset determines the instant; the loaded TIMESTAMP is returned as
 // the equivalent UTC JavaScript Date.
-table.loadArray([{
+await table.loadArray([{
   observedAt: new Date("2024-04-07T13:00:00-04:00"),
-}]);
+}]).log();
 ```
 
 #### `loadData`
@@ -834,31 +844,31 @@ The table, so methods can be chained.
 
 ```ts
 // Load data from a single local CSV file
-table.loadData("./some-data.csv");
+await table.loadData("./some-data.csv").log();
 ```
 
 ```ts
 // Load data from a remote Parquet file
-table.loadData("https://some-website.com/some-data.parquet");
+await table.loadData("https://some-website.com/some-data.parquet").log();
 ```
 
 ```ts
 // Load data from multiple local JSON files
-table.loadData([
+await table.loadData([
   "./some-data1.json",
   "./some-data2.json",
   "./some-data3.json",
-]);
+]).log();
 ```
 
 ```ts
 // Load multiple CSV files and unify columns that differ between files
-table.loadData("./data/*.csv", { unifyColumns: true });
+await table.loadData("./data/*.csv", { unifyColumns: true }).log();
 ```
 
 ```ts
 // Load only specific columns from a CSV file
-table.loadData("./employees.csv", { columns: ["name", "salary"] });
+await table.loadData("./employees.csv", { columns: ["name", "salary"] }).log();
 ```
 
 #### `loadStatCanData`
@@ -907,7 +917,7 @@ await table
     lang: "fr",
     ttl: 24 * 60 * 60,
   })
-  .run();
+  .log();
 ```
 
 #### `loadGeoData`
@@ -941,27 +951,28 @@ The table, so methods can be chained.
 
 ```ts
 // Load geospatial data from a URL
-table.loadGeoData("https://some-website.com/some-data.geojson");
+await table.loadGeoData("https://some-website.com/some-data.geojson").log();
 ```
 
 ```ts
 // Load geospatial data from a local file
-table.loadGeoData("./some-data.geojson");
+await table.loadGeoData("./some-data.geojson").log();
 ```
 
 ```ts
 // Load geospatial data from a shapefile (with relevant files in the same folder) and reproject to EPSG:4326 (WGS84)
-table.loadGeoData("./some-data/some-data.shp", { toEPSG4326: true });
+await table.loadGeoData("./some-data/some-data.shp", { toEPSG4326: true })
+  .log();
 ```
 
 ```ts
 // Load geospatial data from a zipped shapefile and reproject to EPSG:4326 (WGS84)
-table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true });
+await table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true }).log();
 ```
 
 ```ts
 // Load OpenStreetMap XML or PBF data
-table.loadGeoData("./montreal.osm.pbf");
+await table.loadGeoData("./montreal.osm.pbf").log();
 ```
 
 #### `loadOSM`
@@ -1029,29 +1040,30 @@ The table, so methods can be chained.
 
 ```ts
 // Load features matching one equality filter
-table.loadOSM(
-  { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
-  { filters: ["amenity", "school"] },
-);
-const schools = await table.getGeoData();
+const schools = await table
+  .loadOSM(
+    { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
+    { filters: ["amenity", "school"] },
+  )
+  .log();
 ```
 
 ```ts
 // Load features matching either equality filter
-table.loadOSM(
+await table.loadOSM(
   { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
   {
     filters: [["amenity", "school"], ["amenity", "college"]],
   },
-);
+).log();
 ```
 
 ```ts
 // Use a raw Overpass filter fragment for an advanced filter
-table.loadOSM(
+await table.loadOSM(
   { west: -73.587799, south: 45.445078, east: -73.552265, north: 45.471086 },
   { filters: `["amenity"~"school|college"]` },
-);
+).log();
 ```
 
 #### `createFtsIndex`
@@ -1104,30 +1116,31 @@ The table, so methods can be chained.
 
 ```ts
 // Load a dataset and create an FTS index for later searches
-table.loadData("recipes.parquet");
-table.createFtsIndex("Dish", "Recipe");
+await table
+  .loadData("recipes.parquet")
+  .createFtsIndex("Dish", "Recipe").log();
 ```
 
 ```ts
 // Create an index with a specific language stemmer
-table.createFtsIndex("Dish", "Recipe", {
+await table.createFtsIndex("Dish", "Recipe", {
   stemmer: "french",
-});
+}).log();
 ```
 
 ```ts
 // Recreate an existing index with different settings
-table.createFtsIndex("Dish", "Recipe", {
+await table.createFtsIndex("Dish", "Recipe", {
   stemmer: "english",
   overwrite: true,
-});
+}).log();
 ```
 
 ```ts
 // Create index with verbose logging
-table.createFtsIndex("Dish", "Recipe", {
+await table.createFtsIndex("Dish", "Recipe", {
   verbose: true,
-});
+}).log();
 // Logs: 'Creating FTS index on "Recipe" column...'
 // Logs: "FTS index created successfully."
 ```
@@ -1177,35 +1190,34 @@ The table, so methods can be chained.
 
 ```ts
 // Load data that already contains an embedding column
-table.loadData("data.csv");
-
-// Create VSS index for fast similarity searches
-table.createVssIndex("embedding_column");
+await table
+  .loadData("data.csv")
+  .createVssIndex("embedding_column").log();
 ```
 
 ```ts
 // Recreate an existing index
-table.createVssIndex("embedding_column", {
+await table.createVssIndex("embedding_column", {
   overwrite: true,
-});
+}).log();
 ```
 
 ```ts
 // Create index with verbose logging
-table.createVssIndex("embedding_column", {
+await table.createVssIndex("embedding_column", {
   verbose: true,
-});
+}).log();
 // Logs: 'Creating VSS index on "embedding_column" column...'
 // Logs: "VSS index created successfully."
 ```
 
 ```ts
 // Create index with custom HNSW parameters for higher accuracy
-table.createVssIndex("embedding_column", {
+await table.createVssIndex("embedding_column", {
   efConstruction: 256,
   efSearch: 128,
   M: 32,
-});
+}).log();
 ```
 
 #### `bm25`
@@ -1275,36 +1287,33 @@ matches first), so methods can be chained.
 
 ```ts
 // Load a dataset of recipes
-table.loadData("recipes.parquet");
-
-// Search for "italian food" in the Recipe column, return top 5 results
-table.bm25("italian food", "Dish", "Recipe", 5);
-
-// Check the results
-const dishes = await table.getValues("Dish");
-// Returns: ["Carbonara", "Pizza", "Risotto", "Tiramisu", "Escarole Soup"]
+const dishes = await table
+  .loadData("recipes.parquet")
+  .bm25("italian food", "Dish", "Recipe", 5)
+  .log();
+// Logs the five most relevant dishes.
 ```
 
 ```ts
 // Search with a specific language stemmer
-table.bm25("french food", "Dish", "Recipe", 5, {
+await table.bm25("french food", "Dish", "Recipe", 5, {
   stemmer: "french",
-});
+}).log();
 ```
 
 ```ts
 // Recreate the index with different settings and perform search
-table.bm25("italian food", "Dish", "Recipe", 5, {
+await table.bm25("italian food", "Dish", "Recipe", 5, {
   stemmer: "english",
   overwriteIndex: true,
-});
+}).log();
 ```
 
 ```ts
 // Save results to a new table without modifying the original
-const italianDishes = table.bm25("italian food", "Dish", "Recipe", 5, {
+const italianDishes = await table.bm25("italian food", "Dish", "Recipe", 5, {
   outputTable: "italian_results",
-});
+}).log();
 
 // Original table remains unchanged
 const allDishes = await table.getValues("Dish");
@@ -1318,29 +1327,29 @@ console.log(italianOnly.length); // 5 (top results)
 ```ts
 // Multiple searches reuse the same index for better performance
 // The first search creates the index
-const italian = table.bm25("italian food", "Dish", "Recipe", 5, {
+const italian = await table.bm25("italian food", "Dish", "Recipe", 5, {
   outputTable: "italian",
-});
+}).log();
 
 // The second search reuses the existing index, so it's faster
-const french = table.bm25("french food", "Dish", "Recipe", 5, {
+const french = await table.bm25("french food", "Dish", "Recipe", 5, {
   outputTable: "french",
-});
+}).log();
 ```
 
 ```ts
 // Filter results by a minimum BM25 score and include the score in the output
-table.bm25("spicy noodles", "Dish", "Recipe", 10, {
+await table.bm25("spicy noodles", "Dish", "Recipe", 10, {
   minScore: 5.5,
   scoreColumn: "bm25_score",
-});
+}).log();
 ```
 
 ```ts
 // Use the conjunctive option to require all terms
-table.bm25("italian sauce", "Dish", "Recipe", 5, {
+await table.bm25("italian sauce", "Dish", "Recipe", 5, {
   conjunctive: true,
-});
+}).log();
 ```
 
 #### `insertRows`
@@ -1373,7 +1382,7 @@ const newRows = [
   { letter: "c", number: 3 },
   { letter: "d", number: 4 },
 ];
-table.insertRows(newRows);
+await table.insertRows(newRows).log();
 ```
 
 #### `insertTables`
@@ -1407,17 +1416,17 @@ The table, so methods can be chained.
 
 ```ts
 // Insert all rows from 'tableB' into 'tableA'.
-tableA.insertTables("tableB");
+await tableA.insertTables("tableB").log();
 ```
 
 ```ts
 // Insert all rows from 'tableB' and 'tableC' into 'tableA'.
-tableA.insertTables(["tableB", "tableC"]);
+await tableA.insertTables(["tableB", "tableC"]).log();
 ```
 
 ```ts
 // Insert rows from multiple tables, unifying columns. Missing columns will be filled with NULL.
-tableA.insertTables(["tableB", "tableC"], { unifyColumns: true });
+await tableA.insertTables(["tableB", "tableC"], { unifyColumns: true }).log();
 ```
 
 #### `loadSample`
@@ -1452,7 +1461,7 @@ loadSample(sample: "fires" | "recipes" | "temperatures" | "temperaturesCities" |
 
 ```ts
 // Load the fires sample data
-table.loadSample("fires");
+await table.loadSample("fires").log();
 ```
 
 #### `clone`
@@ -1501,47 +1510,47 @@ A new table instance containing the cloned data, so methods can be chained.
 
 ```ts
 // Clone tableA to a new table with a default generated name (e.g., "table1")
-const tableB = tableA.clone();
+const tableB = await tableA.clone().log();
 ```
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using string parameter
-const tableB = tableA.clone("my_cloned_table");
+const tableB = await tableA.clone("my_cloned_table").log();
 ```
 
 ```ts
 // Clone tableA to a new table named "my_cloned_table" using options object
-const tableB = tableA.clone({ name: "my_cloned_table" });
+const tableB = await tableA.clone({ name: "my_cloned_table" }).log();
 ```
 
 ```ts
 // Clone tableA, including only rows where 'column1' is greater than 10
-const tableB = tableA.clone({ conditions: `column1 > 10` });
+const tableB = await tableA.clone({ conditions: `column1 > 10` }).log();
 ```
 
 ```ts
 // Clone tableA with only specific columns
-const tableB = tableA.clone({ columns: ["name", "age", "city"] });
+const tableB = await tableA.clone({ columns: ["name", "age", "city"] }).log();
 ```
 
 ```ts
 // Clone only the first 10 rows of tableA
-const tableB = tableA.clone({ limit: 10 });
+const tableB = await tableA.clone({ limit: 10 }).log();
 ```
 
 ```ts
 // Clone 10 rows after skipping the first 5 rows
-const tableB = tableA.clone({ limit: 10, offset: 5 });
+const tableB = await tableA.clone({ limit: 10, offset: 5 }).log();
 ```
 
 ```ts
 // Clone tableA to a specific table name with filtered data, specific columns, and limited rows
-const tableB = tableA.clone({
+const tableB = await tableA.clone({
   name: "filtered_data",
   conditions: `status = 'active' AND created_date >= '2023-01-01'`,
   columns: ["name", "status", "created_date"],
   limit: 100,
-});
+}).log();
 ```
 
 #### `cloneColumn`
@@ -1571,7 +1580,7 @@ The table, so methods can be chained.
 
 ```ts
 // Clone 'firstName' column as 'contactName'
-table.cloneColumn("firstName", "contactName");
+await table.cloneColumn("firstName", "contactName").log();
 ```
 
 #### `cloneColumnWithOffset`
@@ -1612,28 +1621,33 @@ The table, so methods can be chained.
 
 ```ts
 // Clone 'value' as 'previous_value', offsetting by 1 row (value of row N-1 goes to row N)
-table.cloneColumnWithOffset("value", "previous_value");
+await table.cloneColumnWithOffset("value", "previous_value").log();
 ```
 
 ```ts
 // Clone 'sales' as 'sales_2_days_ago', offsetting by 2 rows
-table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 });
+await table.cloneColumnWithOffset("sales", "sales_2_days_ago", { offset: 2 })
+  .log();
 ```
 
 ```ts
 // Clone 'temperature' as 'prev_temp_by_city', offsetting by 1 row within each 'city' category
-table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
+await table.cloneColumnWithOffset("temperature", "prev_temp_by_city", {
   offset: 1,
   by: "city",
-});
+}).log();
 ```
 
 ```ts
 // Clone 'stock_price' as 'prev_price_by_stock_and_exchange', offsetting by 1 row within each 'stock_symbol' and 'exchange' category
-table.cloneColumnWithOffset("stock_price", "prev_price_by_stock_and_exchange", {
-  offset: 1,
-  by: ["stock_symbol", "exchange"],
-});
+await table.cloneColumnWithOffset(
+  "stock_price",
+  "prev_price_by_stock_and_exchange",
+  {
+    offset: 1,
+    by: ["stock_symbol", "exchange"],
+  },
+).log();
 ```
 
 #### `fill`
@@ -1683,37 +1697,37 @@ The table, so methods can be chained.
 
 ```ts
 // Fill NULL values in 'column1' with the previous non-NULL value
-table.fill("column1");
+await table.fill("column1").log();
 ```
 
 ```ts
 // Fill NULL values in multiple columns
-table.fill(["columnA", "columnB"]);
+await table.fill(["columnA", "columnB"]).log();
 ```
 
 ```ts
 // Fill NULL values in 'value' independently within each 'group'
-table.fill("value", { by: "group" });
+await table.fill("value", { by: "group" }).log();
 ```
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation
-table.fill("value", { interpolate: true });
+await table.fill("value", { interpolate: true }).log();
 ```
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation, independently within each 'group'
-table.fill("value", { by: "group", interpolate: true });
+await table.fill("value", { by: "group", interpolate: true }).log();
 ```
 
 ```ts
 // Fill NULL values in 'value' using linear interpolation proportional to 'x' distances
-table.fill("value", { interpolate: true, interpolateBy: "x" });
+await table.fill("value", { interpolate: true, interpolateBy: "x" }).log();
 ```
 
 ```ts
 // interpolateBy implies interpolate: true, so this is equivalent to the previous example
-table.fill("value", { interpolateBy: "x" });
+await table.fill("value", { interpolateBy: "x" }).log();
 ```
 
 #### `sort`
@@ -1752,22 +1766,22 @@ The table, so methods can be chained.
 
 ```ts
 // Sort all columns from left to right in ascending order
-table.sort();
+await table.sort().log();
 ```
 
 ```ts
 // Sort 'column1' in ascending order
-table.sort({ column1: "asc" });
+await table.sort({ column1: "asc" }).log();
 ```
 
 ```ts
 // Sort 'column1' ascendingly, then 'column2' descendingly
-table.sort({ column1: "asc", column2: "desc" });
+await table.sort({ column1: "asc", column2: "desc" }).log();
 ```
 
 ```ts
 // Sort 'column1' considering French accents
-table.sort({ column1: "asc" }, { lang: { column1: "fr" } });
+await table.sort({ column1: "asc" }, { lang: { column1: "fr" } }).log();
 ```
 
 #### `selectColumns`
@@ -1794,12 +1808,12 @@ The table, so methods can be chained.
 
 ```ts
 // Select only the 'firstName' and 'lastName' columns, removing all other columns.
-table.selectColumns(["firstName", "lastName"]);
+await table.selectColumns(["firstName", "lastName"]).log();
 ```
 
 ```ts
 // Select only the 'productName' column.
-table.selectColumns("productName");
+await table.selectColumns("productName").log();
 ```
 
 #### `skip`
@@ -1827,7 +1841,7 @@ The table, so methods can be chained.
 
 ```ts
 // Skip the first 10 rows of the table
-table.skip(10);
+await table.skip(10).log();
 ```
 
 #### `hasColumn`
@@ -1887,17 +1901,17 @@ The table, so methods can be chained.
 
 ```ts
 // Select 100 random rows from the table
-table.sample(100);
+await table.sample(100).log();
 ```
 
 ```ts
 // Select 10% of the rows randomly
-table.sample("10%");
+await table.sample("10%").log();
 ```
 
 ```ts
 // Select random rows with a specific seed for repeatable results
-table.sample("10%", { seed: 123 });
+await table.sample("10%", { seed: 123 }).log();
 ```
 
 #### `selectRows`
@@ -1934,24 +1948,24 @@ table), so methods can be chained.
 
 ```ts
 // Select the first 100 rows of the current table
-table.selectRows(100);
+await table.selectRows(100).log();
 ```
 
 ```ts
 // Select 100 rows after skipping the first 50 rows
-table.selectRows(100, { offset: 50 });
+await table.selectRows(100, { offset: 50 }).log();
 ```
 
 ```ts
 // Select 50 rows and store them in a new table with a generated name
-const newTable = table.selectRows(50, { outputTable: true });
+const newTable = await table.selectRows(50, { outputTable: true }).log();
 ```
 
 ```ts
 // Select 75 rows and store them in a new table named "top_customers"
-const topCustomersTable = table.selectRows(75, {
+const topCustomersTable = await table.selectRows(75, {
   outputTable: "top_customers",
-});
+}).log();
 ```
 
 #### `removeDuplicates`
@@ -1983,17 +1997,17 @@ The table, so methods can be chained.
 
 ```ts
 // Remove duplicate rows based on all columns
-table.removeDuplicates();
+await table.removeDuplicates().log();
 ```
 
 ```ts
 // Remove duplicate rows based only on the 'email' column
-table.removeDuplicates({ on: "email" });
+await table.removeDuplicates({ on: "email" }).log();
 ```
 
 ```ts
 // Remove duplicate rows based on 'firstName' and 'lastName' columns
-table.removeDuplicates({ on: ["firstName", "lastName"] });
+await table.removeDuplicates({ on: ["firstName", "lastName"] }).log();
 ```
 
 #### `removeMissing`
@@ -2029,22 +2043,22 @@ The table, so methods can be chained.
 
 ```ts
 // Remove rows with missing values in any column
-table.removeMissing();
+await table.removeMissing().log();
 ```
 
 ```ts
 // Remove rows with missing values only in 'firstName' or 'lastName' columns
-table.removeMissing({ columns: ["firstName", "lastName"] });
+await table.removeMissing({ columns: ["firstName", "lastName"] }).log();
 ```
 
 ```ts
 // Keep only rows with missing values in any column
-table.removeMissing({ invert: true });
+await table.removeMissing({ invert: true }).log();
 ```
 
 ```ts
 // Remove rows where 'age' is missing or is equal to -1
-table.removeMissing({ columns: "age", missingValues: [-1] });
+await table.removeMissing({ columns: "age", missingValues: [-1] }).log();
 ```
 
 #### `trim`
@@ -2078,17 +2092,17 @@ The table, so methods can be chained.
 
 ```ts
 // Trim whitespace from 'column1'
-table.trim("column1");
+await table.trim("column1").log();
 ```
 
 ```ts
 // Trim leading and trailing asterisks from 'productCode'
-table.trim("productCode", { character: "*" });
+await table.trim("productCode", { character: "*" }).log();
 ```
 
 ```ts
 // Right-trim whitespace from 'description' and 'notes' columns
-table.trim(["description", "notes"], { side: "right" });
+await table.trim(["description", "notes"], { side: "right" }).log();
 ```
 
 #### `filter`
@@ -2118,22 +2132,23 @@ The table, so methods can be chained.
 
 ```ts
 // Keep only rows where the 'fruit' column is not 'apple'
-table.filter(`fruit != 'apple'`);
+await table.filter(`fruit != 'apple'`).log();
 ```
 
 ```ts
 // Keep rows where 'price' is greater than 100 AND 'quantity' is greater than 0
-table.filter(`price > 100 && quantity > 0`); // Using JS syntax
+await table.filter(`price > 100 && quantity > 0`).log(); // Using JS syntax
 ```
 
 ```ts
 // Keep rows where 'category' is 'Electronics' OR 'Appliances'
-table.filter(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
+await table.filter(`category === 'Electronics' || category === 'Appliances'`)
+  .log(); // Using JS syntax
 ```
 
 ```ts
 // Keep rows where 'lastPurchaseDate' is on or after '2023-01-01'
-table.filter(`lastPurchaseDate >= '2023-01-01'`);
+await table.filter(`lastPurchaseDate >= '2023-01-01'`).log();
 ```
 
 #### `keepValues`
@@ -2164,17 +2179,18 @@ The table, so methods can be chained.
 
 ```ts
 // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-table.keepValues({ job: ["accountant", "developer"], city: "Montreal" });
+await table.keepValues({ job: ["accountant", "developer"], city: "Montreal" })
+  .log();
 ```
 
 ```ts
 // Keep only rows where 'status' is 'active'
-table.keepValues({ status: "active" });
+await table.keepValues({ status: "active" }).log();
 ```
 
 ```ts
 // Keep only rows where 'status' is NULL
-table.keepValues({ status: null });
+await table.keepValues({ status: null }).log();
 ```
 
 #### `removeValues`
@@ -2205,17 +2221,18 @@ The table, so methods can be chained.
 
 ```ts
 // Remove rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-table.removeValues({ job: ["accountant", "developer"], city: "Montreal" });
+await table.removeValues({ job: ["accountant", "developer"], city: "Montreal" })
+  .log();
 ```
 
 ```ts
 // Remove rows where 'status' is 'inactive'
-table.removeValues({ status: "inactive" });
+await table.removeValues({ status: "inactive" }).log();
 ```
 
 ```ts
 // Remove rows where 'status' is NULL
-table.removeValues({ status: null });
+await table.removeValues({ status: null }).log();
 ```
 
 #### `removeRows`
@@ -2246,22 +2263,24 @@ The table, so methods can be chained.
 
 ```ts
 // Remove rows where the 'fruit' column is 'apple'
-table.removeRows(`fruit = 'apple'`);
+await table.removeRows(`fruit = 'apple'`).log();
 ```
 
 ```ts
 // Remove rows where 'quantity' is less than 5
-table.removeRows(`quantity < 5`);
+await table.removeRows(`quantity < 5`).log();
 ```
 
 ```ts
 // Remove rows where 'price' is less than 100 AND 'quantity' is 0
-table.removeRows(`price < 100 && quantity === 0`); // Using JS syntax
+await table.removeRows(`price < 100 && quantity === 0`).log(); // Using JS syntax
 ```
 
 ```ts
 // Remove rows where 'category' is 'Electronics' OR 'Appliances'
-table.removeRows(`category === 'Electronics' || category === 'Appliances'`); // Using JS syntax
+await table.removeRows(
+  `category === 'Electronics' || category === 'Appliances'`,
+).log(); // Using JS syntax
 ```
 
 #### `renameColumns`
@@ -2296,17 +2315,18 @@ The table, so methods can be chained.
 
 ```ts
 // Rename "How old?" to "age" and "Man or woman?" to "sex"
-table.renameColumns({ "How old?": "age", "Man or woman?": "sex" });
+await table.renameColumns({ "How old?": "age", "Man or woman?": "sex" }).log();
 ```
 
 ```ts
 // Rename a single column
-table.renameColumns({ "product_id": "productId" });
+await table.renameColumns({ "product_id": "productId" }).log();
 ```
 
 ```ts
 // Skip the existence check when renaming across many tables
-table.renameColumns({ "product_id": "productId" }, { strict: false });
+await table.renameColumns({ "product_id": "productId" }, { strict: false })
+  .log();
 ```
 
 #### `cleanColumnNames`
@@ -2332,7 +2352,7 @@ The table, so methods can be chained.
 ```ts
 // Clean all column names in the table
 // e.g., "First Name" becomes "firstName", "Product ID" becomes "productId"
-table.cleanColumnNames();
+await table.cleanColumnNames().log();
 ```
 
 #### `longer`
@@ -2373,7 +2393,7 @@ The table, so methods can be chained.
 
 ```ts
 // Restructure the table by stacking year columns into 'year' and 'employees'
-table.longer(["2021", "2022", "2023"], "year", "employees");
+await table.longer(["2021", "2022", "2023"], "year", "employees").log();
 ```
 
 The table will then look like this:
@@ -2434,7 +2454,7 @@ The table, so methods can be chained.
 
 ```ts
 // Restructure the table by pivoting 'Year' into new columns with 'Employees' as values
-table.wider("Year", "Employees");
+await table.wider("Year", "Employees").log();
 ```
 
 The table will then look like this:
@@ -2500,36 +2520,40 @@ The table, so methods can be chained.
 
 ```ts
 // Convert 'column1' to string and 'column2' to integer (JavaScript types)
-table.convert({ column1: "string", column2: "integer" });
+await table.convert({ column1: "string", column2: "integer" }).log();
 ```
 
 ```ts
 // Convert 'column1' to VARCHAR and 'column2' to BIGINT (SQL types)
-table.convert({ column1: "varchar", column2: "bigint" });
+await table.convert({ column1: "varchar", column2: "bigint" }).log();
 ```
 
 ```ts
 // Convert strings in 'column3' to datetime using a specific format
-table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" });
+await table.convert({ column3: "datetime" }, { datetimeFormat: "%Y-%m-%d" })
+  .log();
 ```
 
 ```ts
 // Both values identify instants and are rendered in UTC.
-table.loadArray([
-  { observedAt: "2024-04-07T13:00:00-04:00" },
-  { observedAt: "2024-04-07T17:00:00Z" },
-]);
-table.convert({ observedAt: "datetimeTz" });
+await table
+  .loadArray([
+    { observedAt: "2024-04-07T13:00:00-04:00" },
+    { observedAt: "2024-04-07T17:00:00Z" },
+  ])
+  .convert({ observedAt: "datetimeTz" }).log();
 ```
 
 ```ts
 // Convert datetime values in 'column3' to strings using a specific format
-table.convert({ column3: "string" }, { datetimeFormat: "%Y-%m-%d %H:%M:%S" });
+await table.convert({ column3: "string" }, {
+  datetimeFormat: "%Y-%m-%d %H:%M:%S",
+}).log();
 ```
 
 ```ts
 // Convert 'amount' to float, replacing unconvertible values with NULL
-table.convert({ amount: "float" }, { strict: false });
+await table.convert({ amount: "float" }, { strict: false }).log();
 ```
 
 #### `removeTable`
@@ -2578,12 +2602,12 @@ The table, so methods can be chained.
 
 ```ts
 // Remove 'column1' and 'column2' from the table
-table.removeColumns(["column1", "column2"]);
+await table.removeColumns(["column1", "column2"]).log();
 ```
 
 ```ts
 // Remove a single column named 'tempColumn'
-table.removeColumns("tempColumn");
+await table.removeColumns("tempColumn").log();
 ```
 
 #### `addColumn`
@@ -2616,12 +2640,16 @@ The table, so methods can be chained.
 
 ```ts
 // Add a new column 'total' as a float, calculated from 'column1' and 'column2'
-table.addColumn("total", "float", "column1 + column2");
+await table.addColumn("total", "float", "column1 + column2").log();
 ```
 
 ```ts
 // Add a new geometry column 'centroid' using the centroid of an existing 'country' geometry column
-table.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid("country")`);
+await table.addColumn(
+  "centroid",
+  "geometry('EPSG:4326')",
+  `ST_Centroid("country")`,
+).log();
 ```
 
 #### `extractDatePart`
@@ -2661,15 +2689,15 @@ The table, so methods can be chained.
 
 ```ts
 // Add a column named 'year' from the 'publishedAt' timestamp
-table.extractDatePart("publishedAt", "year");
+await table.extractDatePart("publishedAt", "year").log();
 ```
 
 ```ts
 // Extract multiple components with custom column names
-table.extractDatePart("publishedAt", {
+await table.extractDatePart("publishedAt", {
   publicationYear: "year",
   publicationMonth: "month",
-});
+}).log();
 ```
 
 #### `addRowNumber`
@@ -2701,12 +2729,12 @@ The table, so methods can be chained.
 
 ```ts
 // Add a new column named 'rowNumber' with the row number for each row
-table.addRowNumber("rowNumber");
+await table.addRowNumber("rowNumber").log();
 ```
 
 ```ts
 // Add a new column named 'rowNumber' with the row number for each 'category'
-table.addRowNumber("rowNumber", { by: "category" });
+await table.addRowNumber("rowNumber", { by: "category" }).log();
 ```
 
 #### `crossJoin`
@@ -2743,17 +2771,17 @@ new table), so methods can be chained.
 
 ```ts
 // Perform a cross join with 'tableB', overwriting the current table (tableA)
-tableA.crossJoin(tableB);
+await tableA.crossJoin(tableB).log();
 ```
 
 ```ts
 // Perform a cross join with 'tableB' and store the results in a new table with a generated name
-const tableC = tableA.crossJoin(tableB, { outputTable: true });
+const tableC = await tableA.crossJoin(tableB, { outputTable: true }).log();
 ```
 
 ```ts
 // Perform a cross join with 'tableB' and store the results in a new table named 'tableC'
-const tableC = tableA.crossJoin(tableB, { outputTable: "tableC" });
+const tableC = await tableA.crossJoin(tableB, { outputTable: "tableC" }).log();
 ```
 
 #### `join`
@@ -2796,21 +2824,21 @@ table), so methods can be chained.
 
 ```ts
 // Perform a left join with 'tableB' on a common column (auto-detected), overwriting tableA
-tableA.join(tableB);
+await tableA.join(tableB).log();
 ```
 
 ```ts
 // Perform an inner join with 'tableB' on the 'id' column, storing results in a new table named 'tableC'
-const tableC = tableA.join(tableB, {
+const tableC = await tableA.join(tableB, {
   on: "id",
   type: "inner",
   outputTable: "tableC",
-});
+}).log();
 ```
 
 ```ts
 // Perform a join on multiple columns ('name' and 'category')
-tableA.join(tableB, { on: ["name", "category"] });
+await tableA.join(tableB, { on: ["name", "category"] }).log();
 ```
 
 #### `fuzzyJoin`
@@ -2877,14 +2905,14 @@ new table), so methods can be chained.
 ```ts
 // Fuzzy left join tableA with tableB on 'name' (left) and 'standardName' (right) with a threshold of 80
 // A length-based pre-filter is automatically applied.
-tableA.fuzzyJoin(tableB, "name", "standardName", 80);
+await tableA.fuzzyJoin(tableB, "name", "standardName", 80).log();
 ```
 
 ```ts
 // Fuzzy join with a prefix-based pre-filter and a threshold of 80
-tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
+await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
   preFilterPrefixLen: 3, // Must share the same first 3 characters
-});
+}).log();
 ```
 
 ```ts
@@ -2892,14 +2920,14 @@ tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
 const tableC = await tableA.fuzzyJoin(tableB, "name", "standardName", 90, {
   method: "token_sort_ratio",
   outputTable: "tableC",
-});
+}).log();
 ```
 
 ```ts
 // Fuzzy join with a custom similarity column name and a threshold of 80
-tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
+await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
   similarityColumn: "matchScore",
-});
+}).log();
 ```
 
 #### `fuzzyClean`
@@ -2963,26 +2991,28 @@ The table, so methods can be chained.
 ```ts
 // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
 // A length-based pre-filter is automatically applied.
-table.fuzzyClean("city", "cityClean", 80);
+await table.fuzzyClean("city", "cityClean", 80).log();
 ```
 
 ```ts
 // Normalize with a prefix-based pre-filter and a threshold of 80
-table.fuzzyClean("city", "cityClean", 80, {
+await table.fuzzyClean("city", "cityClean", 80, {
   preFilterPrefixLen: 5, // Must share the same first 5 characters
-});
+}).log();
 ```
 
 ```ts
 // Normalize 'companyName' into a new column using token_sort_ratio and a threshold of 90
-table.fuzzyClean("companyName", "companyNameClean", 90, {
+await table.fuzzyClean("companyName", "companyNameClean", 90, {
   method: "token_sort_ratio",
-});
+}).log();
 ```
 
 ```ts
 // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
-table.fuzzyClean("category", "category", 80, { strategy: "longestString" });
+await table.fuzzyClean("category", "category", 80, {
+  strategy: "longestString",
+}).log();
 ```
 
 #### `replace`
@@ -3020,27 +3050,31 @@ The table, so methods can be chained.
 
 ```ts
 // Replace all occurrences of "kilograms" with "kg" in 'column1'
-table.replace("column1", { "kilograms": "kg" });
+await table.replace("column1", { "kilograms": "kg" }).log();
 ```
 
 ```ts
 // Replace "kilograms" with "kg" and "liters" with "l" in 'column1' and 'column2'
-table.replace(["column1", "column2"], { "kilograms": "kg", "liters": "l" });
+await table.replace(["column1", "column2"], {
+  "kilograms": "kg",
+  "liters": "l",
+}).log();
 ```
 
 ```ts
 // Replace only if the entire string in 'column1' is "kilograms"
-table.replace("column1", { "kilograms": "kg" }, { entireString: true });
+await table.replace("column1", { "kilograms": "kg" }, { entireString: true })
+  .log();
 ```
 
 ```ts
 // Replace any sequence of one or more digits with a hyphen in 'column1' using regex
-table.replace("column1", { "\d+": "-" }, { regex: true });
+await table.replace("column1", { "\d+": "-" }, { regex: true }).log();
 ```
 
 ```ts
 // Replace "%" with "" in all columns
-table.replace("all", { "%": "" });
+await table.replace("all", { "%": "" }).log();
 ```
 
 #### `lower`
@@ -3068,12 +3102,12 @@ The table, so methods can be chained.
 
 ```ts
 // Convert strings in 'column1' to lowercase
-table.lower("column1");
+await table.lower("column1").log();
 ```
 
 ```ts
 // Convert strings in 'column1' and 'column2' to lowercase
-table.lower(["column1", "column2"]);
+await table.lower(["column1", "column2"]).log();
 ```
 
 #### `upper`
@@ -3101,12 +3135,12 @@ The table, so methods can be chained.
 
 ```ts
 // Convert strings in 'column1' to uppercase
-table.upper("column1");
+await table.upper("column1").log();
 ```
 
 ```ts
 // Convert strings in 'column1' and 'column2' to uppercase
-table.upper(["column1", "column2"]);
+await table.upper(["column1", "column2"]).log();
 ```
 
 #### `capitalize`
@@ -3134,12 +3168,12 @@ The table, so methods can be chained.
 
 ```ts
 // Capitalize strings in 'column1' (e.g., "hello world" becomes "Hello world")
-table.capitalize("column1");
+await table.capitalize("column1").log();
 ```
 
 ```ts
 // Capitalize strings in 'column1' and 'column2'
-table.capitalize(["column1", "column2"]);
+await table.capitalize(["column1", "column2"]).log();
 ```
 
 #### `truncate`
@@ -3168,12 +3202,12 @@ The table, so methods can be chained.
 
 ```ts
 // Truncate strings in 'description' column to 50 characters
-table.truncate("description", 50);
+await table.truncate("description", 50).log();
 ```
 
 ```ts
 // Truncate strings in 'name' column to 10 characters
-table.truncate("name", 10);
+await table.truncate("name", 10).log();
 ```
 
 #### `pad`
@@ -3214,19 +3248,19 @@ The table, so methods can be chained.
 
 ```ts
 // Left-pad 'id' column to 3 characters with zeros (default)
-table.pad("id", 3);
+await table.pad("id", 3).log();
 // Result: '1' -> '001', '23' -> '023', null -> null
 ```
 
 ```ts
 // Right-pad 'code' column to 5 characters with spaces
-table.pad("code", 5, { side: "right", character: " " });
+await table.pad("code", 5, { side: "right", character: " " }).log();
 // Result: '123' -> '123  ', '45' -> '45   ', null -> null
 ```
 
 ```ts
 // Left-pad multiple columns to 5 characters with dashes
-table.pad(["id", "code"], 5, { side: "left", character: "-" });
+await table.pad(["id", "code"], 5, { side: "left", character: "-" }).log();
 // Result: '1' -> '----1', '23' -> '---23'
 ```
 
@@ -3264,13 +3298,13 @@ The table, so methods can be chained.
 ```ts
 // Split 'address' by comma and extract the second part (index 1) into a new 'city' column
 // e.g., "123 Main St, Anytown, USA" -> "Anytown"
-table.splitExtract("address", ",", 1, "city");
+await table.splitExtract("address", ",", 1, "city").log();
 ```
 
 ```ts
 // Split 'filename' by dot and extract the first part (index 0), overwriting 'filename'
 // e.g., "document.pdf" -> "document"
-table.splitExtract("filename", ".", 0, "filename");
+await table.splitExtract("filename", ".", 0, "filename").log();
 ```
 
 #### `splitSpread`
@@ -3313,18 +3347,18 @@ The table, so methods can be chained.
 ```ts
 // Split 'fullName' by comma and spread into 'lastName' and 'firstName'
 // e.g., "Shiab, Nael" -> lastName: "Shiab", firstName: "Nael"
-table.splitSpread("fullName", ",", ["lastName", "firstName"]);
+await table.splitSpread("fullName", ",", ["lastName", "firstName"]).log();
 ```
 
 ```ts
 // Split 'address' by comma and spread into three columns
 // e.g., "123 Main St, Anytown, USA" -> street: "123 Main St", city: "Anytown", country: "USA"
-table.splitSpread("address", ",", ["street", "city", "country"]);
+await table.splitSpread("address", ",", ["street", "city", "country"]).log();
 ```
 
 ```ts
 // Skip validation for performance
-table.splitSpread("data", "|", ["col1", "col2"], { strict: false });
+await table.splitSpread("data", "|", ["col1", "col2"], { strict: false }).log();
 ```
 
 #### `firstChars`
@@ -3356,7 +3390,7 @@ The table, so methods can be chained.
 ```ts
 // Replace strings in 'productCode' with their first two characters
 // e.g., "ABC-123" becomes "AB"
-table.firstChars("productCode", 2);
+await table.firstChars("productCode", 2).log();
 ```
 
 #### `lastChars`
@@ -3388,7 +3422,7 @@ The table, so methods can be chained.
 ```ts
 // Replace strings in 'productCode' with their last two characters
 // e.g., "ABC-123" becomes "23"
-table.lastChars("productCode", 2);
+await table.lastChars("productCode", 2).log();
 ```
 
 #### `replaceNulls`
@@ -3418,22 +3452,22 @@ The table, so methods can be chained.
 
 ```ts
 // Replace NULL values in 'column1' with 0
-table.replaceNulls("column1", 0);
+await table.replaceNulls("column1", 0).log();
 ```
 
 ```ts
 // Replace NULL values in 'columnA' and 'columnB' with the string "N/A"
-table.replaceNulls(["columnA", "columnB"], "N/A");
+await table.replaceNulls(["columnA", "columnB"], "N/A").log();
 ```
 
 ```ts
 // Replace NULL values in 'dateColumn' with a specific date
-table.replaceNulls("dateColumn", new Date("2023-01-01"));
+await table.replaceNulls("dateColumn", new Date("2023-01-01")).log();
 ```
 
 ```ts
 // Replace NULL values in all columns with 0
-table.replaceNulls("all", 0);
+await table.replaceNulls("all", 0).log();
 ```
 
 #### `concatenate`
@@ -3465,12 +3499,13 @@ The table, so methods can be chained.
 
 ```ts
 // Concatenate 'firstName' and 'lastName' into a new 'fullName' column
-table.concatenate(["firstName", "lastName"], "fullName");
+await table.concatenate(["firstName", "lastName"], "fullName").log();
 ```
 
 ```ts
 // Concatenate 'city' and 'country' into 'location', separated by a comma and space
-table.concatenate(["city", "country"], "location", { separator: ", " });
+await table.concatenate(["city", "country"], "location", { separator: ", " })
+  .log();
 ```
 
 #### `rowToText`
@@ -3512,10 +3547,10 @@ The table, so methods can be chained.
 
 ```ts
 // Concatenate multiple string columns into a labeled text field
-table.rowToText(
+await table.rowToText(
   ["summary", "findings", "context", "date", "quote"],
   "fullText",
-);
+).log();
 // Result in "fullText" will look like:
 // summary:
 // [value]
@@ -3536,8 +3571,9 @@ table.rowToText(
 ```ts
 // Convert numeric columns to strings first, then concatenate
 // NULL values will appear as 'Unknown'
-table.convert({ age: "string", salary: "string" });
-table.rowToText(["name", "age", "salary"], "profile");
+await table
+  .convert({ age: "string", salary: "string" })
+  .rowToText(["name", "age", "salary"], "profile").log();
 ```
 
 #### `unnest`
@@ -3574,7 +3610,7 @@ The table, so methods can be chained.
 // Unnest 'tags' column separated by commas
 // Before: [{ id: 1, tags: "red,blue,green" }]
 // After:  [{ id: 1, tags: "red" }, { id: 1, tags: "blue" }, { id: 1, tags: "green" }]
-table.unnest("tags", ",");
+await table.unnest("tags", ",").log();
 ```
 
 ```ts
@@ -3583,7 +3619,7 @@ table.unnest("tags", ",");
 // After:  [{ city: "Montreal", neighborhoods: "Old Montreal" },
 //         { city: "Montreal", neighborhoods: "Chinatown" },
 //         { city: "Montreal", neighborhoods: "Griffintown" }]
-table.unnest("neighborhoods", " / ");
+await table.unnest("neighborhoods", " / ").log();
 ```
 
 #### `repeatRows`
@@ -3618,14 +3654,14 @@ The table, so methods can be chained.
 
 ```ts
 // Before: [{ id: 1, count: 2, category: "A" }, { id: 2, count: 3, category: "B" }]
-table.repeatRows("count");
+await table.repeatRows("count").log();
 // After:  [{ id: 1, count: 2, category: "A" }, { id: 1, count: 2, category: "A" },
 //          { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }, { id: 2, count: 3, category: "B" }]
 ```
 
 ```ts
 // With an index column
-table.repeatRows("count", { index: "copyId" });
+await table.repeatRows("count", { index: "copyId" }).log();
 // After:  [{ id: 1, count: 2, category: "A", copyId: 0 }, { id: 1, count: 2, category: "A", copyId: 1 },
 //          { id: 2, count: 3, category: "B", copyId: 0 }, { id: 2, count: 3, category: "B", copyId: 1 }, { id: 2, count: 3, category: "B", copyId: 2 }]
 ```
@@ -3667,7 +3703,7 @@ The table, so methods can be chained.
 //         { city: "Montreal", neighborhoods: "Chinatown" },
 //         { city: "Montreal", neighborhoods: "Griffintown" }]
 // After:  [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-table.nest("neighborhoods", " / ", "city");
+await table.nest("neighborhoods", " / ", "city").log();
 ```
 
 ```ts
@@ -3675,7 +3711,7 @@ table.nest("neighborhoods", " / ", "city");
 // Before: [{ country: "Canada", city: "Montreal", tags: "red" },
 //         { country: "Canada", city: "Montreal", tags: "blue" }]
 // After:  [{ country: "Canada", city: "Montreal", tags: "red,blue" }]
-table.nest("tags", ",", ["country", "city"]);
+await table.nest("tags", ",", ["country", "city"]).log();
 ```
 
 #### `round`
@@ -3712,27 +3748,28 @@ The table, so methods can be chained.
 
 ```ts
 // Round 'column1' values to the nearest integer
-table.round("column1");
+await table.round("column1").log();
 ```
 
 ```ts
 // Round 'column1' values to 2 decimal places
-table.round("column1", { decimals: 2 });
+await table.round("column1", { decimals: 2 }).log();
 ```
 
 ```ts
 // Round 'column1' values down to the nearest integer (floor)
-table.round("column1", { method: "floor" });
+await table.round("column1", { method: "floor" }).log();
 ```
 
 ```ts
 // Round 'columnA' and 'columnB' values to 1 decimal place using ceiling method
-table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" });
+await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" })
+  .log();
 ```
 
 ```ts
 // Round 'column1' values to 2 decimal places using the shorthand
-table.round("column1", 2);
+await table.round("column1", 2).log();
 ```
 
 #### `updateColumn`
@@ -3762,20 +3799,20 @@ The table, so methods can be chained.
 
 ```ts
 // Update 'column1' with the left 5 characters of 'column2'
-table.updateColumn("column1", `LEFT(column2, 5)`);
+await table.updateColumn("column1", `LEFT(column2, 5)`).log();
 ```
 
 ```ts
 // Double the values in 'price' column
-table.updateColumn("price", `price * 2`);
+await table.updateColumn("price", `price * 2`).log();
 ```
 
 ```ts
 // Set 'status' to 'active' where 'isActive' is true
-table.updateColumn(
+await table.updateColumn(
   "status",
   `CASE WHEN isActive THEN 'active' ELSE 'inactive' END`,
-);
+).log();
 ```
 
 #### `ranks`
@@ -3812,22 +3849,23 @@ The table, so methods can be chained.
 
 ```ts
 // Compute ranks in a new 'rank' column based on 'score' values (ascending)
-table.ranks("score", "rank");
+await table.ranks("score", "rank").log();
 ```
 
 ```ts
 // Compute ranks in a new 'descRank' column based on 'score' values (descending)
-table.ranks("score", "descRank", { order: "desc" });
+await table.ranks("score", "descRank", { order: "desc" }).log();
 ```
 
 ```ts
 // Compute ranks by 'department', based on 'salary' values, without gaps
-table.ranks("salary", "salaryRank", { by: "department", dense: true });
+await table.ranks("salary", "salaryRank", { by: "department", dense: true })
+  .log();
 ```
 
 ```ts
 // Compute ranks by both 'department' and 'city'
-table.ranks("sales", "salesRank", { by: ["department", "city"] });
+await table.ranks("sales", "salesRank", { by: ["department", "city"] }).log();
 ```
 
 #### `quantiles`
@@ -3863,17 +3901,17 @@ The table, so methods can be chained.
 
 ```ts
 // Assigns a quantile from 1 to 10 for each row in a new 'quantiles' column, based on 'column1' values.
-table.quantiles("column1", 10, "quantiles");
+await table.quantiles("column1", 10, "quantiles").log();
 ```
 
 ```ts
 // Assign quantiles by 'column2', based on 'column1' values.
-table.quantiles("column1", 10, "quantiles", { by: "column2" });
+await table.quantiles("column1", 10, "quantiles", { by: "column2" }).log();
 ```
 
 ```ts
 // Assigns quartiles (4 quantiles) to 'sales' data, storing results in 'salesQuartile'
-table.quantiles("sales", 4, "salesQuartile");
+await table.quantiles("sales", 4, "salesQuartile").log();
 ```
 
 #### `bins`
@@ -3907,13 +3945,13 @@ The table, so methods can be chained.
 ```ts
 // Assigns a bin for each row in a new 'bins' column based on 'column1' values, with an interval of 10.
 // If the minimum value in 'column1' is 5, the bins will follow this pattern: "[5-14]", "[15-24]", etc.
-table.bins("column1", 10, "bins");
+await table.bins("column1", 10, "bins").log();
 ```
 
 ```ts
 // Assigns bins starting at a specific value (0) with an interval of 10.
 // The bins will follow this pattern: "[0-9]", "[10-19]", "[20-29]", etc.
-table.bins("column1", 10, "bins", { startValue: 0 });
+await table.bins("column1", 10, "bins", { startValue: 0 }).log();
 ```
 
 #### `rowProportions`
@@ -3956,7 +3994,8 @@ The table, so methods can be chained.
 
 ```ts
 // Compute horizontal proportions for 'Men', 'Women', and 'NonBinary' columns, rounded to 2 decimal places
-table.rowProportions(["Men", "Women", "NonBinary"], { decimals: 2 });
+await table.rowProportions(["Men", "Women", "NonBinary"], { decimals: 2 })
+  .log();
 ```
 
 The table will then look like this:
@@ -3972,10 +4011,10 @@ customize this suffix using the `suffix` option.
 
 ```ts
 // Compute horizontal proportions with a custom suffix "Prop"
-table.rowProportions(["Men", "Women", "NonBinary"], {
+await table.rowProportions(["Men", "Women", "NonBinary"], {
   suffix: "Prop",
   decimals: 2,
-});
+}).log();
 ```
 
 The table will then look like this:
@@ -4035,19 +4074,19 @@ The table, so methods can be chained.
 
 ```ts
 // Add the name and value of the highest-scoring party on each row.
-table.rowRanks(["CAQ", "PLQ", "PQ"], {
+await table.rowRanks(["CAQ", "PLQ", "PQ"], {
   nameColumn: "winner",
   valueColumn: "winningVotes",
-});
+}).log();
 ```
 
 ```ts
 // Add only the second-lowest value on each row.
-table.rowRanks(["CAQ", "PLQ", "PQ"], {
+await table.rowRanks(["CAQ", "PLQ", "PQ"], {
   valueColumn: "secondLowestVotes",
   rank: 2,
   order: "asc",
-});
+}).log();
 ```
 
 #### `columnProportions`
@@ -4085,19 +4124,20 @@ The table, so methods can be chained.
 
 ```ts
 // Add a new column 'perc' with each 'column1' value divided by the sum of all 'column1' values
-table.columnProportions("column1", "perc");
+await table.columnProportions("column1", "perc").log();
 ```
 
 ```ts
 // Compute proportions for 'column1' by 'column2', rounded to two decimal places
-table.columnProportions("column1", "perc", { by: "column2", decimals: 2 });
+await table.columnProportions("column1", "perc", { by: "column2", decimals: 2 })
+  .log();
 ```
 
 ```ts
 // Compute proportions for 'sales' by 'region' and 'product_type'
-table.columnProportions("sales", "sales_proportion", {
+await table.columnProportions("sales", "sales_proportion", {
   by: ["region", "product_type"],
-});
+}).log();
 ```
 
 #### `summarize`
@@ -4148,72 +4188,81 @@ new table), so methods can be chained. When summarizing more than one column, a
 ```ts
 // Summarize all columns with all available statistics, overwriting the current table
 const columns = await table.getColumns();
-table.summarize({ columns });
+await table.summarize({ columns }).log();
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table with a generated name
 const columns = await table.getColumns();
-const summaryTable = table.summarize({ columns, outputTable: true });
+const summaryTable = await table.summarize({ columns, outputTable: true })
+  .log();
 ```
 
 ```ts
 // Summarize all columns and store the results in a new table named 'mySummary'
 const columns = await table.getColumns();
-const mySummaryTable = table.summarize({ columns, outputTable: "mySummary" });
+const mySummaryTable = await table.summarize({
+  columns,
+  outputTable: "mySummary",
+}).log();
 ```
 
 ```ts
 // Summarize a single column ('sales') with all available statistics
-table.summarize({ columns: "sales" });
+await table.summarize({ columns: "sales" }).log();
 ```
 
 ```ts
 // Summarize multiple columns ('sales' and 'profit') with all available statistics
-table.summarize({ columns: ["sales", "profit"] });
+await table.summarize({ columns: ["sales", "profit"] }).log();
 ```
 
 ```ts
 // Summarize 'sales' by 'region' (single category)
-table.summarize({ columns: "sales", by: "region" });
+await table.summarize({ columns: "sales", by: "region" }).log();
 ```
 
 ```ts
 // Summarize 'sales' by 'region' and 'product_type'
-table.summarize({ columns: "sales", by: ["region", "product_type"] });
+await table.summarize({ columns: "sales", by: ["region", "product_type"] })
+  .log();
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with a specific statistic (mean)
-table.summarize({ columns: "sales", by: "region", stats: "mean" });
+await table.summarize({ columns: "sales", by: "region", stats: "mean" }).log();
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with specific statistics (mean and sum)
-table.summarize({ columns: "sales", by: "region", stats: ["mean", "sum"] });
+await table.summarize({
+  columns: "sales",
+  by: "region",
+  stats: ["mean", "sum"],
+}).log();
 ```
 
 ```ts
 // Summarize 'sales' by 'region' with custom named statistics
-table.summarize({
+await table.summarize({
   columns: "sales",
   by: "region",
   stats: { averageSales: "mean", totalSales: "sum" },
-});
+}).log();
 ```
 
 ```ts
 // Summarize 'price' and 'cost', rounding aggregated columns to 2 decimal places
-table.summarize({ columns: ["price", "cost"], decimals: 2 });
+await table.summarize({ columns: ["price", "cost"], decimals: 2 }).log();
 ```
 
 ```ts
 // Summarize 'timestamp_column' by converting to milliseconds first
-table.summarize({
+await table.summarize({
   columns: "timestamp_column",
   datesToMs: true,
   stats: "mean",
-});
+}).log();
 ```
 
 #### `addSummaryRows`
@@ -4258,25 +4307,25 @@ The table, so methods can be chained.
 
 ```ts
 // Add a total row for every numeric column, labelled "sum" in "region".
-table.addSummaryRows("all", "region", { stats: "sum" });
+await table.addSummaryRows("all", "region", { stats: "sum" }).log();
 ```
 
 ```ts
 // Add two summary rows with default labels.
-table.addSummaryRows(["sales", "expenses"], "region", {
+await table.addSummaryRows(["sales", "expenses"], "region", {
   stats: ["sum", "mean"],
   position: "top",
-});
+}).log();
 ```
 
 ```ts
 // Customize the labels written to the label column.
-table.addSummaryRows("all", "region", {
+await table.addSummaryRows("all", "region", {
   stats: [
     { stat: "sum", label: "Total" },
     { stat: "mean", label: "Average" },
   ],
-});
+}).log();
 ```
 
 #### `accumulate`
@@ -4311,20 +4360,21 @@ The table, so methods can be chained.
 ```ts
 // Compute the cumulative sum of 'sales' in a new 'cumulativeSales' column
 // Ensure the table is sorted by a relevant column (e.g., date) before calling this method.
-table.accumulate("sales", "cumulativeSales");
+await table.accumulate("sales", "cumulativeSales").log();
 ```
 
 ```ts
 // Compute the cumulative sum of 'orders' by 'customer_id'
 // Ensure the table is sorted by 'customer_id' and then by a relevant order column (e.g., order_date).
-table.accumulate("orders", "cumulativeOrders", { by: "customer_id" });
+await table.accumulate("orders", "cumulativeOrders", { by: "customer_id" })
+  .log();
 ```
 
 ```ts
 // Compute the cumulative sum of 'revenue' by 'region' and 'product_category'
-table.accumulate("revenue", "cumulativeRevenue", {
+await table.accumulate("revenue", "cumulativeRevenue", {
   by: ["region", "product_category"],
-});
+}).log();
 ```
 
 #### `rolling`
@@ -4369,19 +4419,21 @@ The table, so methods can be chained.
 ```ts
 // Compute a 7-day rolling average of 'sales' with 3 preceding and 3 following rows
 // (total window size of 7: 3 preceding + current + 3 following)
-table.rolling("sales", "rollingAvgSales", "mean", 3, 3);
+await table.rolling("sales", "rollingAvgSales", "mean", 3, 3).log();
 ```
 
 ```ts
 // Compute a rolling sum of 'transactions' by 'customer_id'
-table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, {
+await table.rolling("transactions", "rollingSumTransactions", "sum", 5, 0, {
   by: "customer_id",
-});
+}).log();
 ```
 
 ```ts
 // Compute a rolling maximum of 'temperature' rounded to 1 decimal place
-table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, { decimals: 1 });
+await table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, {
+  decimals: 1,
+}).log();
 ```
 
 #### `correlations`
@@ -4426,30 +4478,30 @@ a new table), so methods can be chained.
 
 ```ts
 // Compute correlations between all numeric columns, overwriting the current table
-table.correlations();
+await table.correlations().log();
 ```
 
 ```ts
 // Compute correlations between 'column1' and all other numeric columns
-table.correlations({ x: "column1" });
+await table.correlations({ x: "column1" }).log();
 ```
 
 ```ts
 // Compute the correlation between 'column1' and 'column2'
-table.correlations({ x: "column1", y: "column2" });
+await table.correlations({ x: "column1", y: "column2" }).log();
 ```
 
 ```ts
 // Compute correlations within 'categoryColumn' and store results in a new table
-const correlationTable = table.correlations({
+const correlationTable = await table.correlations({
   by: "categoryColumn",
   outputTable: true,
-});
+}).log();
 ```
 
 ```ts
 // Compute correlations, rounded to 2 decimal places
-table.correlations({ decimals: 2 });
+await table.correlations({ decimals: 2 }).log();
 ```
 
 #### `linearRegressions`
@@ -4496,30 +4548,30 @@ table or a new table), so methods can be chained.
 
 ```ts
 // Compute all linear regressions between all numeric columns, overwriting the current table
-table.linearRegressions();
+await table.linearRegressions().log();
 ```
 
 ```ts
 // Compute linear regressions with 'column1' as the independent variable and all other numeric columns as dependent variables
-table.linearRegressions({ x: "column1" });
+await table.linearRegressions({ x: "column1" }).log();
 ```
 
 ```ts
 // Compute the linear regression of 'sales' (y) over 'advertising' (x)
-table.linearRegressions({ x: "advertising", y: "sales" });
+await table.linearRegressions({ x: "advertising", y: "sales" }).log();
 ```
 
 ```ts
 // Compute linear regressions by 'region' and store results in a new table
-const regressionTable = table.linearRegressions({
+const regressionTable = await table.linearRegressions({
   by: "region",
   outputTable: true,
-});
+}).log();
 ```
 
 ```ts
 // Compute linear regressions, rounded to 3 decimal places
-table.linearRegressions({ decimals: 3 });
+await table.linearRegressions({ decimals: 3 }).log();
 ```
 
 #### `outliersIQR`
@@ -4553,12 +4605,12 @@ The table, so methods can be chained.
 
 ```ts
 // Look for outliers in the 'age' column and store results in a new 'isOutlier' column
-table.outliersIQR("age", "isOutlier");
+await table.outliersIQR("age", "isOutlier").log();
 ```
 
 ```ts
 // Look for outliers in 'salary' by 'gender'
-table.outliersIQR("salary", "salaryOutlier", { by: "gender" });
+await table.outliersIQR("salary", "salaryOutlier", { by: "gender" }).log();
 ```
 
 #### `zScore`
@@ -4593,17 +4645,17 @@ The table, so methods can be chained.
 
 ```ts
 // Calculate the Z-score for 'age' values and store results in a new 'ageZScore' column
-table.zScore("age", "ageZScore");
+await table.zScore("age", "ageZScore").log();
 ```
 
 ```ts
 // Calculate Z-scores for 'salary' by 'department'
-table.zScore("salary", "salaryZScore", { by: "department" });
+await table.zScore("salary", "salaryZScore", { by: "department" }).log();
 ```
 
 ```ts
 // Calculate Z-scores for 'score', rounded to 2 decimal places
-table.zScore("score", "scoreZScore", { decimals: 2 });
+await table.zScore("score", "scoreZScore", { decimals: 2 }).log();
 ```
 
 #### `normalize`
@@ -4641,22 +4693,22 @@ The table, so methods can be chained.
 
 ```ts
 // Normalize the values in 'column1' and store them in a new 'normalizedColumn1' column
-table.normalize("column1", "normalizedColumn1");
+await table.normalize("column1", "normalizedColumn1").log();
 ```
 
 ```ts
 // Normalize 'value' by 'group'
-table.normalize("value", "normalizedValue", { by: "group" });
+await table.normalize("value", "normalizedValue", { by: "group" }).log();
 ```
 
 ```ts
 // Normalize 'data' values, rounded to 2 decimal places
-table.normalize("data", "normalizedData", { decimals: 2 });
+await table.normalize("data", "normalizedData", { decimals: 2 }).log();
 ```
 
 ```ts
 // Normalize 'score' values to a range from 0 to 10
-table.normalize("score", "scaledScore", { range: [0, 10] });
+await table.normalize("score", "scaledScore", { range: [0, 10] }).log();
 ```
 
 #### `indexValues`
@@ -4722,7 +4774,7 @@ The table, so methods can be chained.
 
 ```ts
 // Index each country's average home price to its January 2001 value.
-table.indexValues(
+await table.indexValues(
   "homePrice",
   "homePriceIndexed",
   {
@@ -4734,23 +4786,23 @@ table.indexValues(
     base: 100,
     decimals: 1,
   },
-);
+).log();
 ```
 
 ```ts
 // Index each value against the mean of its group.
-table.indexValues("homePrice", "homePriceIndexed", { stat: "mean" }, {
+await table.indexValues("homePrice", "homePriceIndexed", { stat: "mean" }, {
   by: "country",
-});
+}).log();
 ```
 
 ```ts
 // Index each country's average home price to its earliest value.
 // This throws if multiple rows share the earliest date in a country.
-table.indexValues("homePrice", "homePriceIndexed", {
+await table.indexValues("homePrice", "homePriceIndexed", {
   column: "date",
   at: "min",
-}, { by: "country" });
+}, { by: "country" }).log();
 ```
 
 #### `updateWithJS`
@@ -4817,7 +4869,7 @@ const reviews = await table
     const scores = await response.json() as number[];
     return rows.map((row, index) => ({ ...row, score: scores[index] }));
   }, { batchSize: 100 })
-  .getData();
+  .log();
 ```
 
 #### `getSchema`
@@ -4950,15 +5002,18 @@ The table, so methods can be chained.
 
 ```ts
 // Normalize text column and store in new column
-table.normalizeString("recipeName", "recipeNameNormalized");
+await table.normalizeString("recipeName", "recipeNameNormalized").log();
 // "Épicerie Parisienne!" → "epicerie parisienne"
 ```
 
 ```ts
 // Keep punctuation for emails and URLs
-table.normalizeString("email", "emailNormalized", { stripPunctuation: false });
+await table.normalizeString("email", "emailNormalized", {
+  stripPunctuation: false,
+}).log();
 // "User@Example.com" → "user@example.com"
-table.normalizeString("url", "urlNormalized", { stripPunctuation: false });
+await table.normalizeString("url", "urlNormalized", { stripPunctuation: false })
+  .log();
 // "https://Example.com/path" → "https://example.com/path"
 ```
 
@@ -5913,12 +5968,12 @@ The table, so methods can be chained.
 // Create point geometries in a new 'geom' column using latitude (y) and longitude (x) columns.
 // The resulting coordinates are ordered as [longitude, latitude], or [x, y].
 // The projection is assumed to be EPSG:4326 (WGS84).
-table.createPoints("lat", "lon", "geom");
+await table.createPoints("lat", "lon", "geom").log();
 ```
 
 ```ts
 // Create point geometries from coordinates in a projected coordinate system
-table.createPoints("y", "x", "geom", { projection: "EPSG:3347" });
+await table.createPoints("y", "x", "geom", { projection: "EPSG:3347" }).log();
 ```
 
 #### `addGeoValidity`
@@ -5952,12 +6007,12 @@ The table, so methods can be chained.
 ```ts
 // Check if geometries are valid and store results in a new 'isValid' column
 // The method will automatically detect the geometry column.
-table.addGeoValidity("isValid");
+await table.addGeoValidity("isValid").log();
 ```
 
 ```ts
 // Check validity of geometries in a specific column named 'myGeom'
-table.addGeoValidity("isValidMyGeom", { column: "myGeom" });
+await table.addGeoValidity("isValidMyGeom", { column: "myGeom" }).log();
 ```
 
 #### `addVertexCount`
@@ -5990,12 +6045,12 @@ The table, so methods can be chained.
 ```ts
 // Add a new column 'vertexCount' with the number of vertices for each geometry
 // The method will automatically detect the geometry column.
-table.addVertexCount("vertexCount");
+await table.addVertexCount("vertexCount").log();
 ```
 
 ```ts
 // Add vertex counts for geometries in a specific column named 'myGeom'
-table.addVertexCount("myGeomVertices", { column: "myGeom" });
+await table.addVertexCount("myGeomVertices", { column: "myGeom" }).log();
 ```
 
 #### `fixGeo`
@@ -6024,12 +6079,12 @@ The table, so methods can be chained.
 
 ```ts
 // Fix invalid geometries in the default geometry column
-table.fixGeo();
+await table.fixGeo().log();
 ```
 
 ```ts
 // Fix invalid geometries in a specific column named 'myGeom'
-table.fixGeo("myGeom");
+await table.fixGeo("myGeom").log();
 ```
 
 #### `addGeoClosedStatus`
@@ -6062,12 +6117,13 @@ The table, so methods can be chained.
 
 ```ts
 // Check if geometries are closed and store results in a new 'isClosed' column
-table.addGeoClosedStatus("isClosed");
+await table.addGeoClosedStatus("isClosed").log();
 ```
 
 ```ts
 // Check closed status of geometries in a specific column named 'boundaryGeom'
-table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" });
+await table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" })
+  .log();
 ```
 
 #### `addGeoType`
@@ -6100,12 +6156,12 @@ The table, so methods can be chained.
 
 ```ts
 // Add a new column 'geometryType' with the type of each geometry
-table.addGeoType("geometryType");
+await table.addGeoType("geometryType").log();
 ```
 
 ```ts
 // Get the geometry type for geometries in a specific column named 'featureGeom'
-table.addGeoType("featureType", { column: "featureGeom" });
+await table.addGeoType("featureType", { column: "featureGeom" }).log();
 ```
 
 #### `flipCoordinates`
@@ -6138,12 +6194,12 @@ The table, so methods can be chained.
 
 ```ts
 // Flip coordinates in the default geometry column
-table.flipCoordinates();
+await table.flipCoordinates().log();
 ```
 
 ```ts
 // Flip coordinates in a specific column named 'myGeom'
-table.flipCoordinates("myGeom");
+await table.flipCoordinates("myGeom").log();
 ```
 
 #### `reducePrecision`
@@ -6176,12 +6232,12 @@ The table, so methods can be chained.
 
 ```ts
 // Reduce the precision of geometries in the default column to 3 decimal places
-table.reducePrecision(3);
+await table.reducePrecision(3).log();
 ```
 
 ```ts
 // Reduce the precision of geometries in a specific column named 'myGeom' to 2 decimal places
-table.reducePrecision(2, { column: "myGeom" });
+await table.reducePrecision(2, { column: "myGeom" }).log();
 ```
 
 #### `reproject`
@@ -6214,12 +6270,12 @@ The table, so methods can be chained.
 
 ```ts
 // Reproject geometries in the default column to EPSG:3347 (NAD83/Statistics Canada Lambert)
-table.reproject("EPSG:3347");
+await table.reproject("EPSG:3347").log();
 ```
 
 ```ts
 // Reproject geometries in a specific column named 'myGeom' to EPSG:3347
-table.reproject("EPSG:3347", { column: "myGeom" });
+await table.reproject("EPSG:3347", { column: "myGeom" }).log();
 ```
 
 #### `area`
@@ -6256,22 +6312,22 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the area of geometries in square meters and store in 'area_m2'
-table.area("area_m2");
+await table.area("area_m2").log();
 ```
 
 ```ts
 // Compute the area of geometries in square kilometers and store in 'area_km2'
-table.area("area_km2", { unit: "km2" });
+await table.area("area_km2", { unit: "km2" }).log();
 ```
 
 ```ts
 // Compute areas in square kilometers rounded to two decimal places
-table.area("area_km2", { unit: "km2", decimals: 2 });
+await table.area("area_km2", { unit: "km2", decimals: 2 }).log();
 ```
 
 ```ts
 // Compute the area of geometries in a specific column named 'myGeom'
-table.area("myGeomArea", { column: "myGeom" });
+await table.area("myGeomArea", { column: "myGeom" }).log();
 ```
 
 #### `length`
@@ -6308,22 +6364,22 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the length of line geometries in meters and store in 'length_m'
-table.length("length_m");
+await table.length("length_m").log();
 ```
 
 ```ts
 // Compute the length of line geometries in kilometers and store in 'length_km'
-table.length("length_km", { unit: "km" });
+await table.length("length_km", { unit: "km" }).log();
 ```
 
 ```ts
 // Compute lengths in kilometers rounded to two decimal places
-table.length("length_km", { unit: "km", decimals: 2 });
+await table.length("length_km", { unit: "km", decimals: 2 }).log();
 ```
 
 ```ts
 // Compute the length of geometries in a specific column named 'routeGeom'
-table.length("routeLength", { column: "routeGeom" });
+await table.length("routeLength", { column: "routeGeom" }).log();
 ```
 
 #### `perimeter`
@@ -6360,22 +6416,23 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the perimeter of polygon geometries in meters and store in 'perimeter_m'
-table.perimeter("perimeter_m");
+await table.perimeter("perimeter_m").log();
 ```
 
 ```ts
 // Compute the perimeter of polygon geometries in kilometers and store in 'perimeter_km'
-table.perimeter("perimeter_km", { unit: "km" });
+await table.perimeter("perimeter_km", { unit: "km" }).log();
 ```
 
 ```ts
 // Compute perimeters in kilometers rounded to two decimal places
-table.perimeter("perimeter_km", { unit: "km", decimals: 2 });
+await table.perimeter("perimeter_km", { unit: "km", decimals: 2 }).log();
 ```
 
 ```ts
 // Compute the perimeter of geometries in a specific column named 'landParcelGeom'
-table.perimeter("landParcelPerimeter", { column: "landParcelGeom" });
+await table.perimeter("landParcelPerimeter", { column: "landParcelGeom" })
+  .log();
 ```
 
 #### `buffer`
@@ -6411,12 +6468,12 @@ The table, so methods can be chained.
 
 ```ts
 // Create a buffer of 1 unit around geometries in the default column, storing results in 'bufferedGeom'
-table.buffer("bufferedGeom", 1);
+await table.buffer("bufferedGeom", 1).log();
 ```
 
 ```ts
 // Create a buffer of 10 units around geometries in a specific column named 'pointsGeom'
-table.buffer("pointsBuffer", 10, { column: "pointsGeom" });
+await table.buffer("pointsBuffer", 10, { column: "pointsGeom" }).log();
 ```
 
 #### `joinGeo`
@@ -6475,45 +6532,45 @@ or a new table), so methods can be chained.
 
 ```ts
 // Merge data based on intersecting geometries, overwriting tableA
-tableA.joinGeo(tableB, "intersect");
+await tableA.joinGeo(tableB, "intersect").log();
 ```
 
 ```ts
 // Merge data where geometries in tableA are inside geometries in tableB
-tableA.joinGeo(tableB, "inside");
+await tableA.joinGeo(tableB, "inside").log();
 ```
 
 ```ts
 // Join using both geometries without copying them into the result
-tableA.joinGeo(tableB, "intersect", {
+await tableA.joinGeo(tableB, "intersect", {
   excludeLeftGeometry: true,
   excludeRightGeometry: true,
-});
+}).log();
 ```
 
 ```ts
 // Merge data where geometries in tableA are within 10 units (SRS) of geometries in tableB
-tableA.joinGeo(tableB, "withinDistance", { distance: 10 });
+await tableA.joinGeo(tableB, "withinDistance", { distance: 10 }).log();
 ```
 
 ```ts
 // Merge data where geometries in tableA are within 10 kilometers (Haversine) of geometries in tableB
 // Input geometries must be in EPSG:4326 (WGS84).
-tableA.joinGeo(tableB, "withinDistance", {
+await tableA.joinGeo(tableB, "withinDistance", {
   distance: 10,
   distanceMethod: "haversine",
   unit: "km",
-});
+}).log();
 ```
 
 ```ts
 // Merge data with specific geometry columns and an inner join type, storing results in a new table
-const tableC = tableA.joinGeo(tableB, "intersect", {
+const tableC = await tableA.joinGeo(tableB, "intersect", {
   leftColumn: "geometriesA",
   rightColumn: "geometriesB",
   type: "inner",
   outputTable: true,
-});
+}).log();
 ```
 
 #### `intersection`
@@ -6546,7 +6603,7 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the intersection of geometries in 'geomA' and 'geomB' columns, storing results in 'intersectGeom'
-table.intersection("geomA", "geomB", "intersectGeom");
+await table.intersection("geomA", "geomB", "intersectGeom").log();
 ```
 
 #### `difference`
@@ -6580,7 +6637,7 @@ The table, so methods can be chained.
 
 ```ts
 // Subtract 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
-table.difference("geomA", "geomB", "geomA_minus_geomB");
+await table.difference("geomA", "geomB", "geomA_minus_geomB").log();
 ```
 
 #### `fillHoles`
@@ -6609,12 +6666,12 @@ The table, so methods can be chained.
 
 ```ts
 // Fill holes in geometries in the default geometry column
-table.fillHoles();
+await table.fillHoles().log();
 ```
 
 ```ts
 // Fill holes in geometries in a specific column named 'polygonGeom'
-table.fillHoles("polygonGeom");
+await table.fillHoles("polygonGeom").log();
 ```
 
 #### `intersects`
@@ -6647,7 +6704,7 @@ The table, so methods can be chained.
 
 ```ts
 // Check if geometries in 'geomA' and 'geomB' intersect, storing results in 'doIntersect'
-table.intersects("geomA", "geomB", "doIntersect");
+await table.intersects("geomA", "geomB", "doIntersect").log();
 ```
 
 #### `coveredBy`
@@ -6681,7 +6738,7 @@ The table, so methods can be chained.
 
 ```ts
 // Check if geometries in 'pointGeom' are covered by 'polygonGeom', storing results in 'isCovered'
-table.coveredBy("pointGeom", "polygonGeom", "isCovered");
+await table.coveredBy("pointGeom", "polygonGeom", "isCovered").log();
 ```
 
 #### `union`
@@ -6714,7 +6771,7 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the union of geometries in 'geomA' and 'geomB', storing results in 'unionGeom'
-table.union("geomA", "geomB", "unionGeom");
+await table.union("geomA", "geomB", "unionGeom").log();
 ```
 
 #### `extractLatLon`
@@ -6747,7 +6804,7 @@ The table, so methods can be chained.
 
 ```ts
 // Extract latitude (y) and longitude (x) from 'geom' into new 'lat' and 'lon' columns.
-table.extractLatLon("geom", "lat", "lon");
+await table.extractLatLon("geom", "lat", "lon").log();
 ```
 
 #### `simplify`
@@ -6783,12 +6840,12 @@ The table, so methods can be chained.
 
 ```ts
 // Simplify geometries in the default column with a tolerance of 0.1
-table.simplify(0.1);
+await table.simplify(0.1).log();
 ```
 
 ```ts
 // Simplify geometries in 'myGeom' column, preserving the boundary
-table.simplify(0.05, { column: "myGeom", simplifyBoundary: false });
+await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false }).log();
 ```
 
 #### `centroid`
@@ -6821,12 +6878,12 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the centroid of geometries in the default column, storing results in 'centerPoint'
-table.centroid("centerPoint");
+await table.centroid("centerPoint").log();
 ```
 
 ```ts
 // Compute the centroid of geometries in a specific column named 'areaGeom'
-table.centroid("areaCentroid", { column: "areaGeom" });
+await table.centroid("areaCentroid", { column: "areaGeom" }).log();
 ```
 
 #### `randomPoint`
@@ -6860,17 +6917,17 @@ randomPoint(newColumn: string, tries: number, options?: { column?: string; stric
 
 ```ts
 // Generate a random point for each geometry in the default column, trying 100 points
-table.randomPoint("randomPoint", 100);
+await table.randomPoint("randomPoint", 100).log();
 ```
 
 ```ts
 // Generate a random point for each geometry in a specific column named 'areaGeom', trying 50 points
-table.randomPoint("pointInArea", 50, { column: "areaGeom" });
+await table.randomPoint("pointInArea", 50, { column: "areaGeom" }).log();
 ```
 
 ```ts
 // Generate a random point for each geometry, but don't throw if some points cannot be generated
-table.randomPoint("pointInArea", 1, { strict: false });
+await table.randomPoint("pointInArea", 1, { strict: false }).log();
 ```
 
 #### `distance`
@@ -6914,32 +6971,33 @@ The table, so methods can be chained.
 
 ```ts
 // Compute distance between 'geomA' and 'geomB' in SRS units, store in 'distance_srs'
-table.distance("geomA", "geomB", "distance_srs");
+await table.distance("geomA", "geomB", "distance_srs").log();
 ```
 
 ```ts
 // Compute Haversine distance in meters between 'point1' and 'point2', store in 'distance_m'
 // Input geometries must be in EPSG:4326 (WGS84).
-table.distance("point1", "point2", "distance_m", { method: "haversine" });
+await table.distance("point1", "point2", "distance_m", { method: "haversine" })
+  .log();
 ```
 
 ```ts
 // Compute Haversine distance in kilometers, rounded to 2 decimal places
 // Input geometries must be in EPSG:4326 (WGS84).
-table.distance("point1", "point2", "distance_km", {
+await table.distance("point1", "point2", "distance_km", {
   method: "haversine",
   unit: "km",
   decimals: 2,
-});
+}).log();
 ```
 
 ```ts
 // Compute Spheroid distance in kilometers
 // Input geometries must be in EPSG:4326 (WGS84).
-table.distance("area1", "area2", "distance_spheroid_km", {
+await table.distance("area1", "area2", "distance_spheroid_km", {
   method: "spheroid",
   unit: "km",
-});
+}).log();
 ```
 
 #### `unnestGeo`
@@ -6969,12 +7027,12 @@ The table, so methods can be chained.
 
 ```ts
 // Unnest geometries in the default column
-table.unnestGeo();
+await table.unnestGeo().log();
 ```
 
 ```ts
 // Unnest geometries in a specific column named 'multiGeom'
-table.unnestGeo("multiGeom");
+await table.unnestGeo("multiGeom").log();
 ```
 
 #### `addBoundingBox`
@@ -7008,13 +7066,13 @@ The table, so methods can be chained.
 
 ```ts
 // Compute the bounding box for geometries in the default column
-table.addBoundingBox();
+await table.addBoundingBox().log();
 // The table now has minLon, minLat, maxLon, and maxLat columns.
 ```
 
 ```ts
 // Compute the bounding box for geometries in 'geom' column and round coordinates to 2 decimal places
-table.addBoundingBox({ column: "geom", decimals: 2 });
+await table.addBoundingBox({ column: "geom", decimals: 2 }).log();
 // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
 ```
 
@@ -7057,20 +7115,20 @@ or a new table), so methods can be chained.
 
 ```ts
 // Aggregate all geometries in the default column into a single union geometry
-table.aggregateGeo("union");
+await table.aggregateGeo("union").log();
 ```
 
 ```ts
 // Aggregate geometries by 'country' and compute their union
-table.aggregateGeo("union", { by: "country" });
+await table.aggregateGeo("union", { by: "country" }).log();
 ```
 
 ```ts
 // Aggregate geometries in 'regions' column into their intersection, storing results in a new table
-const intersectionTable = table.aggregateGeo("intersection", {
+const intersectionTable = await table.aggregateGeo("intersection", {
   column: "regions",
   outputTable: true,
-});
+}).log();
 ```
 
 #### `linesToPolygons`
@@ -7099,12 +7157,12 @@ The table, so methods can be chained.
 
 ```ts
 // Transform closed linestrings in the default geometry column into polygons
-table.linesToPolygons();
+await table.linesToPolygons().log();
 ```
 
 ```ts
 // Transform closed linestrings in a specific column named 'routeLines' into polygons
-table.linesToPolygons("routeLines");
+await table.linesToPolygons("routeLines").log();
 ```
 
 #### `getBoundingBox`
@@ -7393,6 +7451,7 @@ const items = await sdb.newTable("items").cache((table) => {
       stats: ["min", "max", "mean"],
     });
 });
+await items.log();
 
 // It's important to call close() on the SimpleDB instance to clean up the cache.
 // This prevents the cache from growing indefinitely.
@@ -7403,16 +7462,16 @@ await sdb.close();
 // Cache with a Time-To-Live (TTL) of 60 seconds
 // The computations will be re-run if the cached data is older than 1 minute, the callback changes, or the table changes.
 const sdb = new SimpleDB();
-const table = sdb.newTable();
-
-await table.cache(() => {
-  table.loadData("items.csv");
-  table.summarize({
-    columns: "price",
-    by: "department",
-    stats: ["min", "max", "mean"],
-  });
+const table = await sdb.newTable().cache((table) => {
+  table
+    .loadData("items.csv")
+    .summarize({
+      columns: "price",
+      by: "department",
+      stats: ["min", "max", "mean"],
+    });
 }, { ttl: 60 });
+await table.log();
 
 await sdb.close();
 ```
@@ -7420,16 +7479,16 @@ await sdb.close();
 ```ts
 // Enable verbose logging for cache operations via SimpleDB instance
 const sdb = new SimpleDB({ cacheVerbose: true });
-const table = sdb.newTable();
-
-await table.cache(() => {
-  table.loadData("items.csv");
-  table.summarize({
-    columns: "price",
-    by: "department",
-    stats: ["min", "max", "mean"],
-  });
+const table = await sdb.newTable().cache((table) => {
+  table
+    .loadData("items.csv")
+    .summarize({
+      columns: "price",
+      by: "department",
+      stats: ["min", "max", "mean"],
+    });
 });
+await table.log();
 
 await sdb.close();
 ```
@@ -7437,12 +7496,12 @@ await sdb.close();
 ```ts
 // Read-only table dependencies are tracked automatically. Other captured values go in inputs.
 const year = 2026;
-const summary = sdb.newTable("summary");
-await summary.cache(async () => {
-  summary.loadArray(
+const summary = await sdb.newTable("summary").cache(async (table) => {
+  table.loadArray(
     await fires.getData({ conditions: `year = ${year}` }),
   );
 }, { inputs: [year] });
+await summary.log();
 ```
 
 #### `log`
@@ -7757,14 +7816,11 @@ await table.logExtent("price");
 // Create a SimpleDB instance (in-memory by default)
 const sdb = new SimpleDB();
 
-// Create a new table named "employees" within the database
-const employees = sdb.newTable("employees");
-
-// Load data from a CSV file into the "employees" table
-employees.loadData("./employees.csv");
-
-// Log the first few rows of the "employees" table to the console
-await employees.log();
+// Create a table, load a CSV file, and log its first few rows
+const employees = await sdb
+  .newTable("employees")
+  .loadData("./employees.csv")
+  .log();
 
 // Close the database connection and free up resources
 await sdb.close();
@@ -7775,11 +7831,11 @@ await sdb.close();
 // Create a SimpleDB instance
 const sdb = new SimpleDB();
 
-// Create a new table for geospatial data
-const boundaries = sdb.newTable("boundaries");
-
-// Load geospatial data from a GeoJSON file
-boundaries.loadGeoData("./boundaries.geojson");
+// Create a table and load geospatial data from a GeoJSON file
+const boundaries = await sdb
+  .newTable("boundaries")
+  .loadGeoData("./boundaries.geojson")
+  .log();
 
 // Close the database connection
 await sdb.close();

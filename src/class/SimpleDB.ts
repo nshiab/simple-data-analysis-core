@@ -34,12 +34,11 @@ import formatMissingTables from "../helpers/formatMissingTables.ts";
  * ```ts
  * // Create an in-memory database instance
  * const sdb = new SimpleDB();
- * // Create a new table named "employees"
- * const employees = sdb.newTable("employees");
- * // Load data from a CSV file into the "employees" table
- * employees.loadData("./employees.csv");
- * // Log the first few rows of the "employees" table to the console
- * await employees.log();
+ * // Create a table, load a CSV file, and log its first few rows
+ * const employees = await sdb
+ *   .newTable("employees")
+ *   .loadData("./employees.csv")
+ *   .log();
  * // Close the database connection and clean up resources
  * await sdb.close();
  * ```
@@ -424,13 +423,19 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @example
    * ```ts
    * // Create a table with a default name (e.g., "table1", "table2", etc.)
-   * const dataTable = sdb.newTable();
+   * const dataTable = await sdb
+   *   .newTable()
+   *   .loadArray([{ value: 1 }])
+   *   .log();
    * ```
    *
    * @example
    * ```ts
    * // Create a table with a specific name
-   * const employees = sdb.newTable("employees");
+   * const employees = await sdb
+   *   .newTable("employees")
+   *   .loadData("employees.csv")
+   *   .log();
    * ```
    */
   newTable(
@@ -478,6 +483,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```ts
    * // Retrieve the "employees" table
    * const employees = await sdb.getTable("employees");
+   * await employees.log();
    * ```
    */
   async getTable(name: string): Promise<Table> {
