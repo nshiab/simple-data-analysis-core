@@ -7,7 +7,7 @@ import { recordCacheTableReferences } from "./cacheTableDependencies.ts";
 import { captureAsyncOperation } from "./asyncOperationContext.ts";
 
 /**
- * Queues an internal fusable operation, barrier, or asynchronous barrier.
+ * Queues an internal relational operation, barrier, or asynchronous barrier.
  *
  * @internal
  */
@@ -25,34 +25,26 @@ export default function queueOp(
     ...op,
     parameters: op.parameters === null ? null : structuredClone(op.parameters),
   };
-  if (capturedOp.kind === "fusable") {
+  if (capturedOp.kind === "fusable" || capturedOp.kind === "source") {
     capturedOp = {
       ...capturedOp,
       rawSQL: capturedOp.rawSQL === undefined
         ? undefined
         : [...capturedOp.rawSQL],
-      values: capturedOp.values === undefined
-        ? undefined
-        : typeof capturedOp.values === "function"
-        ? capturedOp.values
-        : [...capturedOp.values],
     };
     if (capturedOp.rawSQL !== undefined) {
       recordCacheTableReferences(simpleTable, capturedOp.rawSQL);
     }
-  } else if (capturedOp.kind === "source") {
+  }
+  if (
+    capturedOp.kind === "fusable" &&
+    capturedOp.values !== undefined &&
+    typeof capturedOp.values !== "function"
+  ) {
     capturedOp = {
       ...capturedOp,
-      rawSQL: capturedOp.rawSQL === undefined
-        ? undefined
-        : [...capturedOp.rawSQL],
-      values: capturedOp.values === undefined
-        ? undefined
-        : [...capturedOp.values],
+      values: [...capturedOp.values],
     };
-    if (capturedOp.rawSQL !== undefined) {
-      recordCacheTableReferences(simpleTable, capturedOp.rawSQL);
-    }
   }
   // A table de-registered by removeTable()/removeTables()/selectTables() that
   // queues new work comes back under the flush's responsibility, like v1

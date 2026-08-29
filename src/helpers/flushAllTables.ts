@@ -112,6 +112,11 @@ type CompiledCte = {
   values: import("@duckdb/node-api").DuckDBValue[];
 };
 
+type CompiledOp = {
+  cte: CompiledCte;
+  schema: TableSchema | null;
+};
+
 async function flush(sdb: SimpleDB): Promise<void> {
   // Take ownership of every queue upfront, in program order.
   const entries: PendingEntry[] = [];
@@ -206,16 +211,22 @@ async function replayEntries(
         continue;
       }
 
+      const sourceSegment: Segment | null = open;
       if (
         op.kind === "fusable" &&
-        op.requiresMaterializedInput &&
-        open?.ops[0]?.kind === "source"
+        (op.requiresMaterializedInput || op.needsSpatial) &&
+        sourceSegment?.ops[0]?.kind === "source"
       ) {
-        // Materialize the source-rooted segment before this operation, then
-        // let the operation begin a fresh segment so later transforms can
-        // still fuse with it.
-        await runOpenSegment();
-        open = { table, ops: [op] };
+        // Materialize only the external source when this operation needs a
+        // stable physical input or when spatial work is faster against one.
+        // Earlier transforms remain open and fuse with this operation.
+        const source: RelationalOp = sourceSegment.ops[0];
+        const pending: RelationalOp[] = sourceSegment.ops.slice(1);
+        open = null;
+        executing = table;
+        await runSegment(table, [source]);
+        executing = null;
+        open = { table, ops: [...pending, op] };
         current = null;
         continue;
       }
@@ -341,7 +352,7 @@ async function runSegment(
     return;
   }
 
-  if (ops.some((op) => op.needsSpatial)) {
+  if (ops.some(needsSpatial)) {
     await ensureSpatial(table);
   }
 
@@ -354,19 +365,10 @@ async function runSegment(
   let schema: TableSchema | null = null;
   for (let i = 0; i < ops.length; i++) {
     const op = ops[i];
-    let select: string;
     try {
-      if (op.kind === "source") {
-        select = cleanSQL(op.buildSelect());
-      } else {
-        const input = ctes.length === 0
-          ? quoteIdentifier(table.name)
-          : quoteIdentifier(ctes[ctes.length - 1].alias);
-        if (op.needsSchema && schema === null) {
-          schema = await describeChain(table, ctes);
-        }
-        select = cleanSQL(op.buildSelect(input, schema ?? {}));
-      }
+      const compiled = await compileOp(table, op, ctes, schema);
+      ctes.push(compiled.cte);
+      schema = compiled.schema;
     } catch (error) {
       // Flush-time validation (or a broken earlier fragment surfacing at
       // DESCRIBE) fails the chain at this operation. The steps before it
@@ -377,18 +379,42 @@ async function runSegment(
       }
       throw error;
     }
-    ctes.push({
-      alias: `s${ctes.length + 1}`,
-      select,
-      values: op.kind === "source"
-        ? op.values ?? []
-        : resolveValues(op, schema ?? {}),
-    });
-    if (op.kind === "source" || op.preservesSchema !== true) {
-      schema = null;
-    }
   }
   await executeFused(table, ops, ctes);
+}
+
+async function compileOp(
+  table: SimpleTable,
+  op: RelationalOp,
+  ctes: CompiledCte[],
+  schema: TableSchema | null,
+): Promise<CompiledOp> {
+  if (op.kind === "source") {
+    return {
+      cte: {
+        alias: `s${ctes.length + 1}`,
+        select: cleanSQL(op.buildSelect()),
+        values: [],
+      },
+      schema: null,
+    };
+  }
+
+  const input = ctes.length === 0
+    ? quoteIdentifier(table.name)
+    : quoteIdentifier(ctes[ctes.length - 1].alias);
+  const inputSchema = op.needsSchema && schema === null
+    ? await describeChain(table, ctes)
+    : schema;
+  const buildSchema = inputSchema ?? {};
+  return {
+    cte: {
+      alias: `s${ctes.length + 1}`,
+      select: cleanSQL(op.buildSelect(input, buildSchema)),
+      values: resolveValues(op, buildSchema),
+    },
+    schema: op.preservesSchema === true ? inputSchema : null,
+  };
 }
 
 async function executeFused(
@@ -439,39 +465,29 @@ async function runStepwise(
   table: SimpleTable,
   op: RelationalOp,
 ): Promise<void> {
-  if (op.needsSpatial) {
+  if (needsSpatial(op)) {
     await ensureSpatial(table);
   }
-  if (op.kind === "source") {
-    const select = cleanSQL(op.buildSelect());
-    await queryDB(
-      table,
-      `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS ${select}`,
-      mergeOptions(table, {
-        table: table.name,
-        method: op.method,
-        parameters: op.parameters,
-        values: op.values ?? [],
-        noClean: true,
-      }),
-    );
-    return;
-  }
-  const schema = op.needsSchema ? await describeChain(table, []) : {};
-  // The fragment is cleaned exactly as it would be inside a fused statement,
-  // so the stepwise path executes the same SQL as the fused path.
-  const select = cleanSQL(op.buildSelect(quoteIdentifier(table.name), schema));
+  // Compilation is shared with the fused path, so both paths execute the same
+  // cleaned fragment with the same bound values and schema handling.
+  const compiled = await compileOp(table, op, [], null);
   await queryDB(
     table,
-    `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS ${select}`,
+    `CREATE OR REPLACE TABLE ${
+      quoteIdentifier(table.name)
+    } AS ${compiled.cte.select}`,
     mergeOptions(table, {
       table: table.name,
       method: op.method,
       parameters: op.parameters,
-      values: resolveValues(op, schema),
+      values: compiled.cte.values,
       noClean: true,
     }),
   );
+}
+
+function needsSpatial(op: RelationalOp): boolean {
+  return op.kind === "fusable" && op.needsSpatial === true;
 }
 
 function resolveValues(op: FusableOp, schema: TableSchema) {

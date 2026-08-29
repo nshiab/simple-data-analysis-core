@@ -174,6 +174,69 @@ Deno.test("should attribute a downstream source-fusion failure", async () => {
   await sdb.close();
 });
 
+Deno.test("should materialize source sampling only when seeded", async () => {
+  const sdb = new SimpleDB();
+
+  const unseeded = sdb.newTable("unseededSourceSample");
+  const unseededQueries = spyOnQueries(unseeded);
+  assertEquals(
+    (await unseeded
+      .loadData("test/data/files/employees.csv")
+      .sample(5)
+      .getData()).length,
+    5,
+  );
+  assertEquals(
+    unseededQueries.filter((query) =>
+      query.includes('CREATE OR REPLACE TABLE "unseededSourceSample"')
+    ).length,
+    1,
+  );
+
+  const seeded = sdb.newTable("seededSourceSample");
+  const seededQueries = spyOnQueries(seeded);
+  assertEquals(
+    (await seeded
+      .loadData("test/data/files/employees.csv")
+      .sample(5, { seed: 10 })
+      .getData()).length,
+    5,
+  );
+  assertEquals(
+    seededQueries.filter((query) =>
+      query.includes('CREATE OR REPLACE TABLE "seededSourceSample"')
+    ).length,
+    2,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should materialize an external source before spatial transforms", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sourceSpatial");
+  const queries = spyOnQueries(table);
+
+  assertEquals(
+    await table
+      .loadData("test/geodata/files/coordinates.csv")
+      .convert({ lat: "double", lon: "double" })
+      .createPoints("lat", "lon", "geom")
+      .selectColumns("geom")
+      .getRowCount(),
+    3,
+  );
+
+  const createStatements = queries.filter((query) =>
+    query.includes('CREATE OR REPLACE TABLE "sourceSpatial"')
+  );
+  assertEquals(createStatements.length, 2);
+  assert(createStatements[0].includes("read_csv_auto"));
+  assert(createStatements[1].includes("ST_Point"));
+
+  await sdb.close();
+});
+
 Deno.test("should fuse REPLACE-style column updates into the chain", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("replaceFused");

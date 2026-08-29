@@ -10,6 +10,11 @@ const benchmarkDir = dirname(fileURLToPath(import.meta.url));
 
 export const benchmarkResultsStart = "<!-- benchmark-results:start -->";
 export const benchmarkResultsEnd = "<!-- benchmark-results:end -->";
+const benchmarkNames = ["tabular", "spatial"] as const;
+
+function benchmarkHeading(benchmark: Aggregate["benchmark"]): string {
+  return benchmark === "tabular" ? "Tabular workload" : "Spatial workload";
+}
 
 function percentageDifference(relativeToBaseline: number): string {
   const percentage = (relativeToBaseline - 1) * 100;
@@ -108,20 +113,24 @@ function table(rows: Aggregate[]): string {
     .join("\n");
 }
 
-export function renderBenchmarkResults(rows: Aggregate[]): string {
-  return (["tabular", "spatial"] as const).map((benchmark) => {
-    const benchmarkRows = rows.filter((row) => row.benchmark === benchmark);
-    const heading = benchmark === "tabular"
-      ? "Tabular workload"
-      : "Spatial workload";
-    return `### ${heading}\n\n${table(benchmarkRows)}`;
-  }).join("\n\n");
+function renderBenchmarkSection(
+  benchmark: Aggregate["benchmark"],
+  rows: Aggregate[],
+): string {
+  const benchmarkRows = rows.filter((row) => row.benchmark === benchmark);
+  return `### ${benchmarkHeading(benchmark)}\n\n${table(benchmarkRows)}`;
 }
 
-export function replaceBenchmarkResults(
-  readme: string,
-  results: string,
-): string {
+export function renderBenchmarkResults(rows: Aggregate[]): string {
+  return benchmarkNames.map((benchmark) =>
+    renderBenchmarkSection(benchmark, rows)
+  ).join("\n\n");
+}
+
+function benchmarkResultsBounds(readme: string): {
+  contentStart: number;
+  end: number;
+} {
   const start = readme.indexOf(benchmarkResultsStart);
   const end = readme.indexOf(benchmarkResultsEnd);
   if (start === -1 || end === -1 || end < start) {
@@ -129,10 +138,59 @@ export function replaceBenchmarkResults(
       "README benchmark result markers are missing or out of order.",
     );
   }
-  const contentStart = start + benchmarkResultsStart.length;
+  return { contentStart: start + benchmarkResultsStart.length, end };
+}
+
+export function replaceBenchmarkResults(
+  readme: string,
+  results: string,
+): string {
+  const { contentStart, end } = benchmarkResultsBounds(readme);
   return `${readme.slice(0, contentStart)}\n\n${results.trim()}\n\n${
     readme.slice(end)
   }`;
+}
+
+/**
+ * Replaces only workload sections represented in `rows`, preserving published
+ * results for workloads omitted by a partial benchmark run.
+ */
+export function replaceMeasuredBenchmarkResults(
+  readme: string,
+  rows: Aggregate[],
+): string {
+  const measured = new Set(rows.map((row) => row.benchmark));
+  if (measured.size === 0) {
+    throw new Error("Cannot update benchmark results without measurements.");
+  }
+  if (measured.size === benchmarkNames.length) {
+    return replaceBenchmarkResults(readme, renderBenchmarkResults(rows));
+  }
+
+  const { contentStart, end } = benchmarkResultsBounds(readme);
+  const current = readme.slice(contentStart, end).trim();
+  const sections = new Map<Aggregate["benchmark"], string>();
+  for (let i = 0; i < benchmarkNames.length; i++) {
+    const benchmark = benchmarkNames[i];
+    const heading = `### ${benchmarkHeading(benchmark)}`;
+    const start = current.indexOf(heading);
+    const nextHeading = benchmarkNames[i + 1] === undefined
+      ? current.length
+      : current.indexOf(`### ${benchmarkHeading(benchmarkNames[i + 1])}`);
+    if (start === -1 || nextHeading === -1 || nextHeading < start) {
+      throw new Error(
+        `README benchmark results are missing the ${benchmark} workload section.`,
+      );
+    }
+    sections.set(benchmark, current.slice(start, nextHeading).trim());
+  }
+
+  const results = benchmarkNames.map((benchmark) =>
+    measured.has(benchmark)
+      ? renderBenchmarkSection(benchmark, rows)
+      : sections.get(benchmark)!
+  ).join("\n\n");
+  return replaceBenchmarkResults(readme, results);
 }
 
 export async function generateBenchmarkReport(
@@ -146,6 +204,6 @@ export async function generateBenchmarkReport(
   const readme = await Deno.readTextFile(readmePath);
   await Deno.writeTextFile(
     readmePath,
-    replaceBenchmarkResults(readme, renderBenchmarkResults(aggregates)),
+    replaceMeasuredBenchmarkResults(readme, aggregates),
   );
 }

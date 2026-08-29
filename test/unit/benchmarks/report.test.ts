@@ -5,6 +5,7 @@ import {
   benchmarkResultsStart,
   renderBenchmarkResults,
   replaceBenchmarkResults,
+  replaceMeasuredBenchmarkResults,
 } from "../../../benchmarks/report.ts";
 
 const aggregates: Aggregate[] = [
@@ -63,4 +64,34 @@ Deno.test("benchmark report replaces only the generated README section", () => {
     Error,
     "markers are missing",
   );
+});
+
+Deno.test("partial benchmark reports preserve the unmeasured workload", () => {
+  const readme = `before
+${benchmarkResultsStart}
+
+### Tabular workload
+
+old tabular
+
+### Spatial workload
+
+old spatial
+
+${benchmarkResultsEnd}
+after
+`;
+
+  const tabular = replaceMeasuredBenchmarkResults(readme, aggregates);
+  assertStringIncludes(tabular, "SDA-core 2.0.0-rc.17");
+  assertStringIncludes(tabular, "old spatial");
+  assertEquals(tabular.includes("old tabular"), false);
+
+  const spatial = replaceMeasuredBenchmarkResults(readme, [{
+    ...aggregates[1],
+    benchmark: "spatial",
+  }]);
+  assertStringIncludes(spatial, "old tabular");
+  assertStringIncludes(spatial, "SDA-core 2.0.0-rc.17");
+  assertEquals(spatial.includes("old spatial"), false);
 });

@@ -17,7 +17,7 @@ export default function sample(
     // Seeded reservoir sampling returns a stable row order from a materialized
     // table, but DuckDB can emit those rows in a different order when the
     // sampler consumes a file scan directly.
-    requiresMaterializedInput: true,
+    requiresMaterializedInput: typeof options.seed === "number",
     preservesSchema: true,
     buildSelect: (input) =>
       `SELECT * FROM ${input} USING SAMPLE RESERVOIR(${

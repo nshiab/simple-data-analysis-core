@@ -47,7 +47,8 @@ export type FusableOp = {
    * Whether the operation's fused segment must be rooted in a materialized
    * table rather than an external source. Used when DuckDB's source execution
    * shape affects an observable result such as deterministic sampled-row
-   * order.
+   * order. Spatial operations are materialized by the flush compiler based on
+   * `needsSpatial` instead of setting this flag individually.
    */
   requiresMaterializedInput?: boolean;
   /** Data values bound to placeholders in this operation's SELECT. */
@@ -78,15 +79,11 @@ export type SourceOp = {
   parameters: { [key: string]: unknown } | null;
   /** The operation's position in database-wide program order. */
   sequence: number;
-  /** Whether the source SELECT uses spatial functions. */
-  needsSpatial?: boolean;
   /**
    * User-supplied SQL fragments or table names read by the source. They close
    * pending segments for those tables before the source executes.
    */
   rawSQL?: string[];
-  /** Data values bound to placeholders in the source SELECT. */
-  values?: DuckDBValue[];
   /** Returns the source as a single composable SELECT statement. */
   buildSelect: () => string;
 };
