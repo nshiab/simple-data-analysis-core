@@ -1,7 +1,7 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import capitalize from "../helpers/capitalize.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import findGeoColumn from "../helpers/findGeoColumn.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -109,13 +109,15 @@ async function executeJoinGeo(
     excludeRightGeometry?: boolean;
   },
 ): Promise<void> {
+  const leftTypes = await leftTable.getTypes();
+  const rightTypes = await rightTable.getTypes();
   const leftColumn = options.leftColumn ??
-    (await findGeoColumn(leftTable, "joinGeo()"));
+    findGeoColumnFromSchema(leftTypes, "joinGeo()", leftTable.name);
   const rightColumn = options.rightColumn ??
-    (await findGeoColumn(rightTable, "joinGeo()"));
+    findGeoColumnFromSchema(rightTypes, "joinGeo()", rightTable.name);
 
-  const leftTableColumns = await leftTable.getColumns();
-  const rightTableColumns = await rightTable.getColumns();
+  const leftTableColumns = Object.keys(leftTypes);
+  const rightTableColumns = Object.keys(rightTypes);
   const sharedColumn = leftColumn === rightColumn ? leftColumn : "";
   const identicalColumns = (
     getIdenticalColumns(

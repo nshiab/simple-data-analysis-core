@@ -26,6 +26,7 @@ export default function removeMissing(
     method: "removeMissing()",
     parameters: { options },
     needsSchema: true,
+    preservesSchema: true,
     values: (types) => {
       const columns = getRemoveMissingColumns(types, options.columns);
       return getRemoveMissingValues(types, columns, missingValues);

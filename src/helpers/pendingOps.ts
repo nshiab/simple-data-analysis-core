@@ -47,8 +47,7 @@ export type FusableOp = {
    * Whether the operation's fused segment must be rooted in a materialized
    * table rather than an external source. Used when DuckDB's source execution
    * shape affects an observable result such as deterministic sampled-row
-   * order. Spatial operations are materialized by the flush compiler based on
-   * `needsSpatial` instead of setting this flag individually.
+   * order.
    */
   requiresMaterializedInput?: boolean;
   /** Data values bound to placeholders in this operation's SELECT. */
@@ -60,6 +59,12 @@ export type FusableOp = {
    * schema-preserving operations instead of running a DESCRIBE per step.
    */
   preservesSchema?: boolean;
+  /**
+   * Derives the output schema from a known input schema without another
+   * DESCRIBE query. Used by projections and explicit casts whose output types
+   * are fully determined by their arguments.
+   */
+  outputSchema?: (input: TableSchema) => TableSchema;
   /**
    * Returns a single SELECT statement over `input`, which is either the
    * quoted table name or the alias of the previous CTE in the fused chain.
@@ -84,6 +89,8 @@ export type SourceOp = {
    * pending segments for those tables before the source executes.
    */
   rawSQL?: string[];
+  /** A schema known from explicit source options, when inference is unnecessary. */
+  schema?: TableSchema;
   /** Returns the source as a single composable SELECT statement. */
   buildSelect: () => string;
 };

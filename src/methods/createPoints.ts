@@ -17,6 +17,10 @@ export default function createPoints(
     parameters: { latColumn, lonColumn, newColumn, options },
     needsSchema: true,
     needsSpatial: true,
+    outputSchema: (types) => ({
+      ...types,
+      [newColumn]: `GEOMETRY('${options.projection ?? "EPSG:4326"}')`,
+    }),
     buildSelect: (input, types) => {
       const expression = `ST_Point(${quoteIdentifier(lonColumn)}, ${
         quoteIdentifier(latColumn)

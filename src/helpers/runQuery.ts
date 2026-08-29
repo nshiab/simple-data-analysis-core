@@ -133,7 +133,9 @@ export default async function runQuery(
   try {
     await observeQuery(connection, query, values, options);
     if (returnData) {
-      const result = await connection.run(query, values);
+      const result = values.length === 0
+        ? await connection.run(query)
+        : await connection.run(query, values);
       const columnNames = result.deduplicatedColumnNames();
       const columnTypes = result.columnTypes();
       if (
@@ -172,7 +174,11 @@ export default async function runQuery(
       }
       return rows;
     } else {
-      await connection.run(query, values);
+      if (values.length === 0) {
+        await connection.run(query);
+      } else {
+        await connection.run(query, values);
+      }
       return null;
     }
   } catch (error) {

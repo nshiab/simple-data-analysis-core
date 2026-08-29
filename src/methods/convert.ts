@@ -35,6 +35,15 @@ export default function convert(
     method: "convert()",
     parameters: { types, options },
     needsSchema: true,
+    outputSchema: (allTypes) => ({
+      ...allTypes,
+      ...Object.fromEntries(
+        Object.entries(types).map(([column, type]) => [
+          column,
+          parseType(type),
+        ]),
+      ),
+    }),
     values: (allTypes) =>
       getDatetimeFormatValues(
         Object.keys(types),

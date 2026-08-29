@@ -77,11 +77,14 @@ async function executeLoadGeoData(
       options.columns.length > 0
     ? options.columns.map(quoteIdentifier).join(", ")
     : "*";
+  const spatialSetup = simpleTable.sdb.spatialLoaded
+    ? ""
+    : "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
 
   if (fileExtension === "geoparquet" || fileExtension === "parquet") {
     await queryDB(
       simpleTable,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
+      `${spatialSetup}${
         file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""
       }
       CREATE OR REPLACE TABLE ${
@@ -96,7 +99,7 @@ async function executeLoadGeoData(
   } else {
     await queryDB(
       simpleTable,
-      `INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;${
+      `${spatialSetup}${
         file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""
       }
       CREATE OR REPLACE TABLE ${
@@ -111,7 +114,9 @@ async function executeLoadGeoData(
   }
   simpleTable.sdb.spatialLoaded = true;
 
-  if (await simpleTable.hasColumn("OGC_FID")) {
+  const mayIncludeOgcFid = options.columns === undefined ||
+    options.columns.length === 0 || options.columns.includes("OGC_FID");
+  if (mayIncludeOgcFid && await simpleTable.hasColumn("OGC_FID")) {
     await removeColumnsNow(simpleTable, ["OGC_FID"], "loadGeoData()");
   }
 

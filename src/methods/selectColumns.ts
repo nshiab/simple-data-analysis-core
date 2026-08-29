@@ -8,14 +8,21 @@ export default function selectColumns(
   columns: string | string[],
 ) {
   columns = Array.isArray(columns) ? [...columns] : columns;
+  const selectedColumns = stringToArray(columns);
   queueOp(simpleTable, {
     kind: "fusable",
     method: "selectColumns()",
     parameters: { columns },
     needsSchema: false,
+    outputSchema: (types) =>
+      Object.fromEntries(
+        selectedColumns
+          .filter((column) => types[column] !== undefined)
+          .map((column) => [column, types[column]]),
+      ),
     buildSelect: (input) =>
       `SELECT ${
-        stringToArray(columns)
+        selectedColumns
           .map((d) => `${quoteIdentifier(d)}`)
           .join(", ")
       } FROM ${input}`,

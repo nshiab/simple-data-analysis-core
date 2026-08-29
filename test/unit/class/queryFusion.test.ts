@@ -212,7 +212,7 @@ Deno.test("should materialize source sampling only when seeded", async () => {
   await sdb.close();
 });
 
-Deno.test("should materialize an external source before spatial transforms", async () => {
+Deno.test("should materialize an untyped source before spatial transforms", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sourceSpatial");
   const queries = spyOnQueries(table);

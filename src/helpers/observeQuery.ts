@@ -22,7 +22,10 @@ export default async function observeQuery(
 ): Promise<void> {
   if (options.explainSQL && await canExplain(connection, query)) {
     try {
-      const result = await connection.run(`EXPLAIN ${query}`, values);
+      const explain = `EXPLAIN ${query}`;
+      const result = values.length === 0
+        ? await connection.run(explain)
+        : await connection.run(explain, values);
       const rows = await result.getRowsJS();
       const plan = rows.map((row) => String(row[1] ?? row[0] ?? "")).join("\n");
       console.log(`EXPLAIN ${query}\n${plan}`);

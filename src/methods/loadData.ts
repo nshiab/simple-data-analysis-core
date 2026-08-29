@@ -44,6 +44,7 @@ export default function loadData(
     kind: "source",
     method: "loadData()",
     parameters: { files, options },
+    schema: knownSourceSchema(stringToArray(files), options),
     buildSelect: () => select,
   });
 }
@@ -69,6 +70,42 @@ type LoadDataOptions = {
   records?: boolean;
   sheet?: string;
 };
+
+function knownSourceSchema(
+  files: string[],
+  options: LoadDataOptions,
+): { [column: string]: string } | undefined {
+  if (options.columns === undefined || options.columns.length === 0) {
+    return undefined;
+  }
+  const extension = getExtension(files[0]);
+  const textSource = options.fileType === "csv" ||
+    options.fileType === "dsv" ||
+    options.fileType === "excel" ||
+    extension === "csv" ||
+    extension === "xlsx" ||
+    typeof options.delim === "string";
+  if (!textSource) return undefined;
+  if (options.allText === true) {
+    return Object.fromEntries(
+      options.columns.map((column) => [column, "VARCHAR"]),
+    );
+  }
+  if (
+    options.columnTypes !== undefined &&
+    options.columns.every((column) =>
+      options.columnTypes?.[column] !== undefined
+    )
+  ) {
+    return Object.fromEntries(
+      options.columns.map((column) => [
+        column,
+        options.columnTypes![column].toUpperCase(),
+      ]),
+    );
+  }
+  return undefined;
+}
 
 export function loadDataQuery(
   table: string,
@@ -115,20 +152,19 @@ function loadDataSelect(
     ? `, auto_detect=${String(options.autoDetect).toUpperCase()}`
     : ", auto_detect=TRUE";
   const columnTypes = options.columnTypes
-    ? `, columns={${
+    ? `${
       Object.entries(options.columnTypes).map(([column, type]) =>
         `${parseValue(column)}: ${parseValue(type)}`
       ).join(", ")
-    }}`
-    : "";
+    }`
+    : null;
   const filename = typeof options.filename === "boolean"
     ? `, filename=${String(options.filename).toUpperCase()}`
     : "";
   const unifyColumns = typeof options.unifyColumns === "boolean"
     ? `, union_by_name=${String(options.unifyColumns).toUpperCase()}`
     : "";
-  const generalOptions =
-    `${autoDetect}${columnTypes}${filename}${unifyColumns}`;
+  const generalOptions = `${autoDetect}${filename}${unifyColumns}`;
 
   const limit = typeof options.limit === "number"
     ? ` LIMIT ${options.limit}`
@@ -161,8 +197,9 @@ function loadDataSelect(
       ? `, encoding=${parseValue(options.encoding)}`
       : "";
     const strict = options.strict === false ? `, strict_mode=FALSE` : "";
+    const types = columnTypes === null ? "" : `, types={${columnTypes}}`;
 
-    return `SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit}`;
+    return `SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${types}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit}`;
   } else if (options.fileType === "json" || fileExtension === "json") {
     // DuckDB expects "newline_delimited" (snake_case), unlike the other two
     // format values, which already match the public camelCase option.
@@ -178,7 +215,8 @@ function loadDataSelect(
     const records = typeof options.records === "boolean"
       ? `, records=${String(options.records).toUpperCase()}`
       : "";
-    return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${jsonFormat}${records})${limit}`;
+    const columns = columnTypes === null ? "" : `, columns={${columnTypes}}`;
+    return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${columns}${jsonFormat}${records})${limit}`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
     return `SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${limit}`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {

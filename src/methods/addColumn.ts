@@ -39,6 +39,7 @@ export default function addColumn(
     // GEOMETRY type and for the spatial functions in the definition.
     needsSpatial: newType.toLowerCase().includes("geometry"),
     rawSQL: [definition],
+    outputSchema: (types) => ({ ...types, [newColumn]: newType }),
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addColumn()");
       return `SELECT *, CAST((${definition}) AS ${newType}) AS ${

@@ -26,6 +26,15 @@ Deno.test("loadDataQuery escapes generated string literals", () => {
   assertStringIncludes(excelQuery, "sheet='Owner''s Data'");
 });
 
+Deno.test("loadDataQuery uses partial CSV type overrides", () => {
+  const query = loadDataQuery("coordinates", ["coordinates.csv"], {
+    columns: ["lat"],
+    columnTypes: { lat: "DOUBLE" },
+  });
+  assertStringIncludes(query, "types={'lat': 'DOUBLE'}");
+  assertEquals(query.includes("columns={'lat': 'DOUBLE'}"), false);
+});
+
 Deno.test("loadDataQuery reports supported file types", () => {
   assertThrows(
     () =>
@@ -79,6 +88,24 @@ Deno.test("should load data from a csv file", async () => {
     { key1: "3", key2: "coucou" },
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
+  ]);
+  await sdb.close();
+});
+
+Deno.test("should partially override CSV column types", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  const data = await table
+    .loadData("test/geodata/files/coordinates.csv", {
+      columns: ["name", "lat"],
+      columnTypes: { lat: "DOUBLE" },
+    })
+    .getData();
+
+  assertEquals(data, [
+    { name: "montreal", lat: 43.77 },
+    { name: "toronto", lat: 45.35 },
+    { name: "vancouver", lat: 49.07 },
   ]);
   await sdb.close();
 });

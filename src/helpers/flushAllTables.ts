@@ -212,16 +212,20 @@ async function replayEntries(
       }
 
       const sourceSegment: Segment | null = open;
+      const segmentSource = sourceSegment?.ops[0];
       if (
         op.kind === "fusable" &&
-        (op.requiresMaterializedInput || op.needsSpatial) &&
-        sourceSegment?.ops[0]?.kind === "source"
+        segmentSource?.kind === "source" &&
+        (op.requiresMaterializedInput ||
+          (op.needsSpatial && segmentSource.schema === undefined))
       ) {
         // Materialize only the external source when this operation needs a
-        // stable physical input or when spatial work is faster against one.
-        // Earlier transforms remain open and fuse with this operation.
-        const source: RelationalOp = sourceSegment.ops[0];
-        const pending: RelationalOp[] = sourceSegment.ops.slice(1);
+        // stable physical input, or when a spatial operation would otherwise
+        // make DuckDB scan an unknown source once for schema inference and
+        // again for execution. Earlier transforms remain open and fuse with
+        // this operation.
+        const source: RelationalOp = segmentSource;
+        const pending: RelationalOp[] = sourceSegment?.ops.slice(1) ?? [];
         open = null;
         executing = table;
         await runSegment(table, [source]);
@@ -396,7 +400,7 @@ async function compileOp(
         select: cleanSQL(op.buildSelect()),
         values: [],
       },
-      schema: null,
+      schema: op.schema ?? null,
     };
   }
 
@@ -407,13 +411,20 @@ async function compileOp(
     ? await describeChain(table, ctes)
     : schema;
   const buildSchema = inputSchema ?? {};
+  const outputSchema = inputSchema === null
+    ? null
+    : op.outputSchema !== undefined
+    ? op.outputSchema(inputSchema)
+    : op.preservesSchema === true
+    ? inputSchema
+    : null;
   return {
     cte: {
       alias: `s${ctes.length + 1}`,
       select: cleanSQL(op.buildSelect(input, buildSchema)),
       values: resolveValues(op, buildSchema),
     },
-    schema: op.preservesSchema === true ? inputSchema : null,
+    schema: outputSchema,
   };
 }
 
