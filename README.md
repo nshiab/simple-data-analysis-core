@@ -63,6 +63,48 @@ npx @nshiab/setup-data-project
 bunx @nshiab/setup-data-project
 ```
 
+## Database files in version 2
+
+`new SimpleDB()` works in memory. To work directly in a DuckDB file, pass
+`{ file: "./analysis.duckdb" }`: SDA opens an existing file or creates a new one
+on first use. Await `getTable()` to access a saved table, or `start()` to
+restore all saved table handles before using the synchronous `getTables()`
+method. `{ readOnly: true }` opens an existing file without allowing changes.
+
+```ts
+const sdb = new SimpleDB({ file: "./analysis.duckdb" });
+const observations = await sdb.getTable("observations");
+await observations.filter("value IS NOT NULL").log();
+await sdb.close();
+```
+
+`loadDB(file)` imports a copy into the current database, including into a
+persistent database. It opens the source read-only, rejects existing table-name
+conflicts, and rolls back failed copies. `writeDB(file)` exports a snapshot
+after executing pending work; subsequent changes still affect the working
+database.
+
+When migrating from the previous interface:
+
+- Replace `loadDB(file, { detach: false })` with `new SimpleDB({ file })` for
+  DuckDB files. The `detach` and `name` import options have been removed. SQLite
+  files are supported for import/export, not as the persistent working database.
+- The constructor now opens existing files by default. Explicit
+  `overwrite: true` still replaces a file on first use.
+- Existing export destinations require `writeDB(file, { overwrite: true })`.
+  Exports finish in a temporary file before publishing the output. Open database
+  files attached to that instance, symbolic links, and directories cannot be
+  replaced.
+- DuckDB files support both `.db` and `.duckdb` extensions. SDA index
+  definitions are stored inside the reserved `__sda` schema. Writable persistent
+  databases save metadata on `close()`.
+- SQLite exports contain main-schema tables and views materialized as tables.
+  They do not preserve DuckDB schemas, indexes, constraints, or SDA metadata.
+  SQLite conversion may lose type information; unsupported conversions fail
+  without replacing the destination.
+- `close()` executes pending work, saves metadata, and releases resources. It no
+  longer compacts or replaces persistent database files.
+
 ## Performance benchmarks
 
 These benchmarks compare SDA-core with raw DuckDB and popular Python and R

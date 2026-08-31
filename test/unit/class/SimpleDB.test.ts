@@ -2,7 +2,9 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import withDbFiles from "../../helpers/withDbFiles.ts";
 
 const output = "./test/output/";
 if (!existsSync(output)) {
@@ -432,7 +434,7 @@ Deno.test("should write the db", async () => {
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
 
-  await sdb.writeDB(`${output}database.db`);
+  await sdb.writeDB(`${output}database.db`, { overwrite: true });
   // How to test?
   await sdb.close();
 });
@@ -441,7 +443,7 @@ Deno.test("should write the SQLite db", async () => {
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
 
-  await sdb.writeDB(`${output}database.sqlite`);
+  await sdb.writeDB(`${output}database.sqlite`, { overwrite: true });
   // How to test?
   await sdb.close();
 });
@@ -469,44 +471,7 @@ Deno.test("should load the db", async () => {
   // How to test?
   await sdb.close();
 });
-Deno.test("should load the db with a specific name", async () => {
-  const sdb = new SimpleDB();
 
-  await sdb.loadDB(`${output}database.db`, { name: 'some "thing' });
-  // const test = await sdb.getTable("test");
-  // await test.log();
-
-  // How to test?
-  await sdb.close();
-});
-Deno.test("should load the sqlite db with a specific name", async () => {
-  const sdb = new SimpleDB();
-
-  await sdb.loadDB(`${output}database.sqlite`, { name: 'some "thing' });
-  // const test = await sdb.getTable("test");
-  // await test.log();
-
-  await sdb.close();
-});
-Deno.test("should load the db with and don't detach", async () => {
-  const sdb = new SimpleDB();
-
-  await sdb.loadDB(`${output}database.db`, { detach: false });
-  // const test = await sdb.getTable("test");
-  // await test.log();
-
-  // How to test?
-  await sdb.close();
-});
-Deno.test("should load the sqlite db and don't detach", async () => {
-  const sdb = new SimpleDB();
-
-  await sdb.loadDB(`${output}database.sqlite`, { detach: false });
-  // const test = await sdb.getTable("test");
-  // await test.log();
-
-  await sdb.close();
-});
 Deno.test("should load the sqlite db", async () => {
   const sdb = new SimpleDB();
 
@@ -549,7 +514,7 @@ Deno.test("should write the db with geometries", async () => {
   // await test.logProjections();
   // await test.log();
 
-  await sdb.writeDB(`${output}database_geometry.db`);
+  await sdb.writeDB(`${output}database_geometry.db`, { overwrite: true });
   // How to test?
   await sdb.close();
 });
@@ -671,7 +636,7 @@ Deno.test("should create a DB with bm25 index", async () => {
   table.bm25("italian food", "Dish", "Recipe", 10, { verbose: true });
   // await table.log(1);
 
-  await sdb.writeDB(`${output}database_bm25.db`);
+  await sdb.writeDB(`${output}database_bm25.db`, { overwrite: true });
 
   // Just making sure it's doesnt crash for now
   assertEquals(true, true);
@@ -727,11 +692,7 @@ Deno.test("should preserve complete index definitions when writing and loading a
   }).run();
   const expectedIndexes = structuredClone(sourceTable.indexes);
 
-  await sourceSdb.writeDB(file);
-  const writtenIndexes = JSON.parse(
-    readFileSync(`${output}database_index_definitions_indexes.json`, "utf-8"),
-  );
-  assertEquals(writtenIndexes, { articles: expectedIndexes });
+  await sourceSdb.writeDB(file, { overwrite: true });
   await sourceSdb.close();
 
   const loadedSdb = new SimpleDB();
@@ -751,4 +712,123 @@ Deno.test("should start with tempDir option", async () => {
   await sdb.start();
   assertEquals(true, true);
   await sdb.close();
+});
+
+Deno.test("persistent databases reopen existing tables and close without replacing the file", async () => {
+  await withDbFiles(async ({ directory, db }) => {
+    const file = join(directory, "persistent.duckdb");
+    const first = db({ file });
+    await first.newTable("articles").loadArray([{
+      id: "one",
+      text: "tomato pasta",
+    }]).createFtsIndex("id", "text").run();
+    const inode = Deno.statSync(file).ino;
+    await first.close();
+    assertEquals(Deno.statSync(file).ino, inode);
+    assertEquals(existsSync(join(directory, "persistent_compacted.db")), false);
+    const second = db({ file });
+    const table = await second.getTable("articles");
+    assertEquals(table.indexes.length, 1);
+    assertEquals(await table.getData(), [{ id: "one", text: "tomato pasta" }]);
+    second.newTable("added").loadArray([{ id: 2 }]);
+    await second.close();
+    const third = db({ file, readOnly: true });
+    assertEquals(await third.getTableNames(), ["added", "articles"]);
+    assertEquals(await (await third.getTable("added")).getData(), [{ id: 2 }]);
+  });
+});
+
+Deno.test("read-only databases reject modifications and leave files unchanged", async () => {
+  await withDbFiles(async ({ directory, db }) => {
+    const file = join(directory, "readonly.db");
+    const source = db({ file });
+    source.newTable("data").loadArray([{ id: 1 }]);
+    await source.close();
+    const before = Deno.readFileSync(file);
+    const readOnly = db({ file, readOnly: true });
+    const table = await readOnly.getTable("data");
+    assertEquals(await table.getData(), [{ id: 1 }]);
+    await assertRejects(() => table.filter("id = 2").run(), Error, "read-only");
+    await assertRejects(() => readOnly.loadDB(file), Error, "read-only");
+    await readOnly.close();
+    assertEquals(Deno.readFileSync(file), before);
+    const noFile = db({ readOnly: true });
+    await assertRejects(() => noFile.start(), Error, "readOnly requires");
+    const incompatible = db({ file, readOnly: true, overwrite: true });
+    await assertRejects(() => incompatible.start(), Error, "readOnly requires");
+    assertEquals(Deno.readFileSync(file), before);
+    const missing = db({ file: join(directory, "missing.db"), readOnly: true });
+    await assertRejects(() => missing.start(), Error, "does not exist");
+    assertEquals(existsSync(join(directory, "missing.db")), false);
+  });
+});
+
+Deno.test("explicit persistent overwrite replaces existing contents", async () => {
+  await withDbFiles(async ({ directory, db }) => {
+    const file = join(directory, "overwrite.db");
+    const first = db({ file });
+    first.newTable("old").loadArray([{ id: 1 }]);
+    await first.close();
+    const replacement = db({ file, overwrite: true });
+    replacement.newTable("new").loadArray([{ id: 2 }]);
+    await replacement.close();
+    const reopened = db({ file, readOnly: true });
+    assertEquals(await reopened.getTableNames(), ["new"]);
+  });
+});
+
+Deno.test("persistent VSS indexes retain definitions and physical indexes after reopening", async () => {
+  await withDbFiles(async ({ directory, db }) => {
+    const file = join(directory, "vectors.db");
+    const first = db({ file });
+    const table = first.newTable("vectors").loadArray([{
+      id: 1,
+      embedding: [0.1, 0.2, 0.3],
+    }]).createVssIndex("embedding", { M: 8 });
+    await first.close();
+    const second = db({ file, readOnly: true });
+    const restored = await second.getTable("vectors");
+    assertEquals(restored.indexes, table.indexes);
+    assertEquals(await restored.getRowCount(), 1);
+    assertEquals(
+      await second.customQuery("SELECT index_name FROM duckdb_indexes();", {
+        returnData: true,
+      }),
+      [{ index_name: table.indexes[0].name }],
+    );
+  });
+});
+
+Deno.test("persistent startup rejects newTable names already saved in the file", async () => {
+  await withDbFiles(async ({ directory, db }) => {
+    const file = join(directory, "existing.db");
+    const first = db({ file });
+    first.newTable("existing").loadArray([{ id: 1 }]);
+    await first.close();
+    const second = db({ file });
+    await assertRejects(
+      () => second.newTable("existing").loadArray([{ id: 2 }]).run(),
+      Error,
+      "Use getTable()",
+    );
+    await second.close();
+    const third = db({ file, readOnly: true });
+    assertEquals(await (await third.getTable("existing")).getData(), [{
+      id: 1,
+    }]);
+  });
+});
+
+Deno.test("restored default table names skip gaps without collisions", async () => {
+  await withDbFiles(async ({ directory, db }) => {
+    const file = join(directory, "names.db");
+    const first = db({ file });
+    first.newTable("table1").loadArray([{ id: 1 }]);
+    first.newTable("table3").loadArray([{ id: 3 }]);
+    await first.close();
+    const second = db({ file });
+    await second.start();
+    assertEquals(second.newTable().name, "table2");
+    assertEquals(second.newTable().name, "table4");
+  });
 });

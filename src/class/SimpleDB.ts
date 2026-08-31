@@ -8,10 +8,16 @@ import Simple from "./Simple.ts";
 import queryDB from "../helpers/queryDB.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import getTableNames from "../methods/getTableNames.ts";
-import getExtension from "../helpers/getExtension.ts";
 import { existsSync, rmSync } from "node:fs";
-import writeIndexes from "../helpers/writeIndexes.ts";
-import { renameSync } from "node:fs";
+import createDirectory from "../helpers/createDirectory.ts";
+import getDbFileType from "../helpers/getDbFileType.ts";
+import getCurrentDatabase from "../helpers/getCurrentDatabase.ts";
+import getDbIndexes from "../helpers/getDbIndexes.ts";
+import readDbMetadata from "../helpers/readDbMetadata.ts";
+import writeDbMetadata from "../helpers/writeDbMetadata.ts";
+import prepareDbExtensions from "../helpers/prepareDbExtensions.ts";
+import setDbProps from "../helpers/setDbProps.ts";
+import queryDbFile from "../helpers/queryDbFile.ts";
 import removeTables from "../methods/removeTables.ts";
 import selectTables from "../methods/selectTables.ts";
 import loadDB from "../methods/loadDB.ts";
@@ -45,11 +51,10 @@ import formatMissingTables from "../helpers/formatMissingTables.ts";
  *
  * @example
  * ```ts
- * // Create a persistent database instance, saving data to a file
- * // To load an existing database, use the `loadDB` method instead
+ * // Open or create a persistent DuckDB database. Changes persist in this file.
  * const sdb = new SimpleDB({ file: "./my_database.db" });
  * // Perform database operations...
- * // Close the database connection, which saves changes to the specified file
+ * // Execute pending work, save SDA metadata, and close the database connection
  * await sdb.close();
  * ```
  *
@@ -154,6 +159,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   flushPromise: Promise<void> | null;
   #closePromise: Promise<SimpleDB> | null = null;
+  #startPromise: Promise<SimpleDB> | null = null;
+  #initialized = false;
   /** The database lifecycle state. This is for internal use only. */
   lifecycleState: "open" | "closing" | "closed";
   /**
@@ -204,19 +211,35 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   tempDir: string | undefined;
   /**
-   * The path to the database file. If not provided, an in-memory database is used.
+   * The path to the persistent DuckDB database, opened or created on first use.
+   * If not provided, an in-memory database is used. Imports and exports do not change this path.
    *
    * @defaultValue `:memory:`
    * @category Properties
    */
   file: string;
   /**
-   * A flag indicating whether to overwrite the database file if it already exists.
+   * Whether to replace an existing DuckDB file on first use instead of opening it.
    *
    * @defaultValue `false`
    * @category Properties
    */
   overwrite: boolean;
+  /**
+   * Whether the persistent DuckDB file is opened read-only. Requires an existing
+   * file and cannot be combined with `overwrite`. DuckDB rejects writes to it.
+   *
+   * @defaultValue `false`
+   * @category Properties
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ file: "./archive.duckdb", readOnly: true });
+   * const table = await sdb.getTable("employees");
+   * await table.log();
+   * await sdb.close();
+   * ```
+   */
+  readOnly: boolean;
   /**
    * The class used to create table instances. Defaults to `SimpleTable`.
    * Override this property when subclassing to ensure all table-creating
@@ -268,9 +291,14 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * DuckDB sessions use UTC so temporal parsing, extraction, and returned
    * `TIMESTAMP WITH TIME ZONE` strings are consistent across environments.
    *
+   * Existing tables and SDA index metadata are restored on first use. The
+   * `__sda` schema is reserved for versioned SDA metadata. SQLite files can be
+   * imported with `loadDB()` but cannot be used as the persistent database.
+   *
    * @param options - Configuration options for the SimpleDB instance.
-   * @param options.file - The path to the database file. If not provided, an in-memory database is used.
-   * @param options.overwrite - A flag indicating whether to overwrite the database file if it already exists.
+   * @param options.file - A `.db` or `.duckdb` file to open or create. Defaults to an in-memory database.
+   * @param options.overwrite - If true, replaces an existing file on first use. Defaults to false, which opens the existing file.
+   * @param options.readOnly - Opens an existing DuckDB file read-only. Defaults to false. Requires a file and cannot be combined with overwrite.
    * @param options.logDuration - A flag indicating whether to log the total execution duration.
    * @param options.rowsToLog - The number of rows to display when logging a table.
    * @param options.charsToLog - The maximum number of characters to display for text-based cells.
@@ -296,6 +324,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     options: {
       file?: string;
       overwrite?: boolean;
+      readOnly?: boolean;
       logDuration?: boolean;
       rowsToLog?: number;
       charsToLog?: number;
@@ -314,6 +343,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.logSQL = options.logSQL ?? false;
     this.explainSQL = options.explainSQL ?? false;
     this.overwrite = options.overwrite ?? false;
+    this.readOnly = options.readOnly ?? false;
     this.logDuration = options.logDuration ?? false;
     this.tableIncrement = 1;
     initializeTableRegistry(this);
@@ -351,31 +381,45 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
         `start() cannot use a SimpleDB that is ${this.lifecycleState}.`,
       );
     }
-    if (this.db === undefined || this.connection === undefined) {
+    if (this.#startPromise === null) {
       // The setup queries below must run before any queued operation, so
       // they must not trigger a flush.
-      await runExemptFromFlush(this, () => this.#setup());
+      this.#startPromise = runExemptFromFlush(this, async () => {
+        await this.#setup();
+        this.#initialized = true;
+        return this;
+      });
     }
-    return this;
+    return await this.#startPromise;
   }
 
   async #setup(): Promise<void> {
+    if (this.readOnly && (this.file === ":memory:" || this.overwrite)) {
+      throw new Error(
+        "readOnly requires an existing database file and cannot be combined with overwrite.",
+      );
+    }
     if (this.file !== ":memory:") {
-      if (getExtension(this.file) !== "db") {
+      if (getDbFileType(this.file) !== "duckdb") {
         throw new Error(
-          `The file extension must be .db. The current file is ${this.file}.`,
+          "Persistent databases must use .db or .duckdb. Use loadDB() to import SQLite files.",
         );
       }
-      if (existsSync(this.file) && this.overwrite === false) {
-        throw new Error(
-          `The file ${this.file} already exists. Set the overwrite option to true to overwrite it. Otherwise, use the loadDB() method to load an existing database with more options.`,
-        );
-      } else if (existsSync(this.file) && this.overwrite === true) {
+      if (this.readOnly && !existsSync(this.file)) {
+        throw new Error(`The file ${this.file} does not exist.`);
+      }
+      if (existsSync(this.file) && this.overwrite) {
         rmSync(this.file);
+        // A WAL belongs to the database being explicitly replaced.
+        rmSync(`${this.file}.wal`, { force: true });
       }
+      if (!this.readOnly) createDirectory(this.file);
     }
 
-    this.db = await DuckDBInstance.create(this.file);
+    this.db = await DuckDBInstance.create(
+      this.file,
+      this.readOnly ? { access_mode: "READ_ONLY" } : {},
+    );
     this.connection = await this.db.connect();
 
     // Keep temporal parsing, extraction, and serialization deterministic
@@ -410,6 +454,25 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       await this.customQuery(
         `SET temp_directory = '${this.tempDir}';`,
       );
+    }
+    if (this.file !== ":memory:") {
+      const database = await getCurrentDatabase(this);
+      const indexes = await readDbMetadata(this, database);
+      await prepareDbExtensions(this, database, indexes);
+      const existingNames = new Set(
+        (await this.getTableNames()).map((name) => name.toLowerCase()),
+      );
+      const conflicts = this.getTables().filter((table) =>
+        existingNames.has(table.name.toLowerCase())
+      );
+      if (conflicts.length > 0) {
+        throw new Error(
+          `Tables already exist in ${this.file}: ${
+            conflicts.map((table) => table.name).join(", ")
+          }. Use getTable() to access them.`,
+        );
+      }
+      await setDbProps(this, indexes);
     }
   }
 
@@ -458,6 +521,13 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       });
       table.defaultTableName = false;
     } else {
+      while (
+        this.getTables().some((table) =>
+          table.name.toLowerCase() === `table${this.tableIncrement}`
+        )
+      ) {
+        this.tableIncrement++;
+      }
       table = new TableClass(`table${this.tableIncrement}`, this, {
         rowsToLog: this.rowsToLog,
         charsToLog: this.charsToLog,
@@ -487,6 +557,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * ```
    */
   async getTable(name: string): Promise<Table> {
+    await this.start();
     const tables = this.getTables();
     const table = tables.find((t) => t.name === name);
     if (table) {
@@ -756,17 +827,18 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   }
 
   /**
-   * Loads a database from a specified file into the current SimpleDB instance.
-   * Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite).
-   * If a sibling `<database>_indexes.json` file exists, its definitions are
-   * restored to each table's `SimpleTable.indexes` property. The sidecar is
-   * logical SDA metadata; physical index objects, when supported, come from
-   * the database file itself.
+   * Imports a copy of a `.db` or `.duckdb` (DuckDB) or `.sqlite` (SQLite)
+   * file into the current database. The source is opened read-only and detached
+   * after importing; subsequent transformations do not modify the source file.
+   * Imports work with in-memory and writable persistent databases. Existing
+   * table-name conflicts are rejected and a failed copy is rolled back.
    *
-   * @param file - The absolute path to the database file (e.g., "./my_database.db").
-   * @param options - Configuration options for loading the database.
-   * @param options.name - The name to assign to the loaded database within the DuckDB instance. Defaults to the file name without extension.
-   * @param options.detach - If `true` (default), the database is detached after loading its contents into memory. If `false`, the database remains attached and queries use its physical indexes in place, which is preferable for repeated searches across scripts.
+   * DuckDB files restore embedded SDA index definitions when present. SQLite
+   * imports copy data without SDA index metadata. The `__sda` schema is reserved
+   * for SDA metadata.
+   * To edit an existing DuckDB file in place, use `new SimpleDB({ file })`.
+   *
+   * @param file - The relative or absolute path to the database file.
    * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
@@ -778,35 +850,42 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    *
    * @example
    * ```ts
-   * // Load a SQLite database file and keep it attached
-   * await sdb.loadDB("./my_database.sqlite", { detach: false });
+   * // Import SQLite tables without modifying the original file
+   * await sdb.loadDB("./my_database.sqlite");
    * ```
    *
    * @example
    * ```ts
-   * // Load a database with a custom name
-   * await sdb.loadDB("./archive.db", { name: "archive_db" });
+   * // Import a copy into a persistent DuckDB database
+   * const sdb = new SimpleDB({ file: "./analysis.duckdb" });
+   * await sdb.loadDB("./archive.db");
+   * await sdb.close();
    * ```
    */
-  async loadDB(file: string, options: {
-    name?: string;
-    detach?: boolean;
-  } = {}): Promise<this> {
-    await loadDB(this, file, options);
+  async loadDB(file: string): Promise<this> {
+    await loadDB(this, file);
     return this;
   }
 
   /**
-   * Writes the current state of the database to a specified file.
-   * Supported output file types are `.db` (DuckDB) and `.sqlite` (SQLite).
-   * By default, this also writes each table's `SimpleTable.indexes`
-   * definitions to a sibling `<database>_indexes.json` file. This metadata is
-   * the source of truth SDA restores with `loadDB()`; it is separate from any
-   * physical index objects DuckDB copies into the database file.
+   * Exports a snapshot of the current database after executing pending work.
+   * Does not change the working database or where subsequent changes persist.
+   * DuckDB outputs (`.db` and `.duckdb`) preserve database objects and embed SDA
+   * index definitions in the reserved `__sda` schema.
    *
-   * @param file - The absolute path to the output file (e.g., "./my_exported_database.db").
+   * SQLite output (`.sqlite`) materializes main-schema tables and views as
+   * tables. It does not preserve DuckDB schemas, indexes, constraints, or SDA
+   * metadata, and SQLite type conversion may lose type information. Unsupported
+   * conversions fail without replacing an existing destination.
+   *
+   * Existing files require explicit overwrite permission. The completed export
+   * is published only after its connection is detached. Database files attached
+   * to this instance, directories, and symbolic links cannot be replaced.
+   *
+   * @param file - The relative or absolute path to the output file.
    * @param options - Configuration options for writing the database.
-   * @param options.metadata - If `false`, metadata files (indexes) are not created alongside the database file. Defaults to `true`.
+   * @param options.overwrite - If true, permits atomic replacement of an existing output file. Defaults to false.
+   * @param options.metadata - If false, omits logical SDA index definitions from DuckDB exports. Defaults to true. Does not control physical indexes; SQLite exports never include SDA metadata.
    * @returns A promise that resolves to the database, so methods can be chained.
    * @category File Operations
    *
@@ -818,13 +897,19 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    *
    * @example
    * ```ts
-   * // Write the current database to a SQLite file without metadata
-   * await sdb.writeDB("./my_exported_database.sqlite", { metadata: false });
+   * // Explicitly replace an earlier snapshot
+   * await sdb.writeDB("./my_exported_database.duckdb", { overwrite: true });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Export table data for use with SQLite
+   * await sdb.writeDB("./my_exported_database.sqlite");
    * ```
    */
   async writeDB(
     file: string,
-    options: { metadata?: boolean } = {},
+    options: { overwrite?: boolean; metadata?: boolean } = {},
   ): Promise<this> {
     await writeDB(this, file, options);
     return this;
@@ -864,9 +949,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   }
 
   /**
-   * Frees up memory by closing the database connection and instance, and cleans up the cache.
-   * If the database is file-based, it also compacts the database file to optimize storage.
-   * Pending transformations are executed before cleanup.
+   * Executes pending transformations, saves SDA metadata for writable persistent
+   * databases, and closes the connection and instance. Also cleans up temporary
+   * files and the cache. Does not copy, compact, or replace the database file.
    *
    * @returns A promise that resolves to the SimpleDB instance after cleanup.
    * @throws An error after cleanup when pending execution or cleanup fails.
@@ -893,15 +978,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     let operationError: unknown;
     try {
       await flushAllTables(this);
-      if (this.file !== ":memory:" && this.db instanceof DuckDBInstance) {
-        await this.customQuery("CHECKPOINT;");
-        // To make sure the files will have the proper names.
-        writeIndexes(this, getExtension(this.file), this.file);
-        await this.writeDB(this.file.replace(".db", "_compacted.db"), {
-          metadata: false,
-        });
-        rmSync(this.file);
-        renameSync(this.file.replace(".db", "_compacted.db"), this.file);
+      if (this.file !== ":memory:" && !this.readOnly && this.#initialized) {
+        const database = await getCurrentDatabase(this);
+        await readDbMetadata(this, database);
+        await writeDbMetadata(this, database, getDbIndexes(this));
+        await queryDbFile(this, `CHECKPOINT ${quoteIdentifier(database)};`);
       }
     } catch (error) {
       operationError = error;

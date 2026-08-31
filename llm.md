@@ -60,13 +60,19 @@ Creates a new SimpleDB instance.
 DuckDB sessions use UTC so temporal parsing, extraction, and returned
 `TIMESTAMP WITH TIME ZONE` strings are consistent across environments.
 
+Existing tables and SDA index metadata are restored on first use. The `__sda`
+schema is reserved for versioned SDA metadata. SQLite files can be imported with
+`loadDB()` but cannot be used as the persistent database.
+
 #### Parameters
 
 - **`options`**: Configuration options for the SimpleDB instance.
-- **`options.file`**: The path to the database file. If not provided, an
-  in-memory database is used.
-- **`options.overwrite`**: A flag indicating whether to overwrite the database
-  file if it already exists.
+- **`options.file`**: A `.db` or `.duckdb` file to open or create. Defaults to
+  an in-memory database.
+- **`options.overwrite`**: If true, replaces an existing file on first use.
+  Defaults to false, which opens the existing file.
+- **`options.readOnly`**: Opens an existing DuckDB file read-only. Defaults to
+  false. Requires a file and cannot be combined with overwrite.
 - **`options.logDuration`**: A flag indicating whether to log the total
   execution duration.
 - **`options.rowsToLog`**: The number of rows to display when logging a table.
@@ -414,28 +420,26 @@ console.log(youngEmployees);
 
 #### `loadDB`
 
-Loads a database from a specified file into the current SimpleDB instance.
-Supported file types are `.db` (DuckDB) and `.sqlite` (SQLite). If a sibling
-`<database>_indexes.json` file exists, its definitions are restored to each
-table's `SimpleTable.indexes` property. The sidecar is logical SDA metadata;
-physical index objects, when supported, come from the database file itself.
+Imports a copy of a `.db` or `.duckdb` (DuckDB) or `.sqlite` (SQLite) file into
+the current database. The source is opened read-only and detached after
+importing; subsequent transformations do not modify the source file. Imports
+work with in-memory and writable persistent databases. Existing table-name
+conflicts are rejected and a failed copy is rolled back.
+
+DuckDB files restore embedded SDA index definitions when present. SQLite imports
+copy data without SDA index metadata. The `__sda` schema is reserved for SDA
+metadata. To edit an existing DuckDB file in place, use
+`new SimpleDB({ file })`.
 
 ##### Signature
 
 ```typescript
-async loadDB(file: string, options?: { name?: string; detach?: boolean }): Promise<this>;
+async loadDB(file: string): Promise<this>;
 ```
 
 ##### Parameters
 
-- **`file`**: The absolute path to the database file (e.g., "./my_database.db").
-- **`options`**: Configuration options for loading the database.
-- **`options.name`**: The name to assign to the loaded database within the
-  DuckDB instance. Defaults to the file name without extension.
-- **`options.detach`**: If `true` (default), the database is detached after
-  loading its contents into memory. If `false`, the database remains attached
-  and queries use its physical indexes in place, which is preferable for
-  repeated searches across scripts.
+- **`file`**: The relative or absolute path to the database file.
 
 ##### Returns
 
@@ -449,37 +453,48 @@ await sdb.loadDB("./my_database.db");
 ```
 
 ```ts
-// Load a SQLite database file and keep it attached
-await sdb.loadDB("./my_database.sqlite", { detach: false });
+// Import SQLite tables without modifying the original file
+await sdb.loadDB("./my_database.sqlite");
 ```
 
 ```ts
-// Load a database with a custom name
-await sdb.loadDB("./archive.db", { name: "archive_db" });
+// Import a copy into a persistent DuckDB database
+const sdb = new SimpleDB({ file: "./analysis.duckdb" });
+await sdb.loadDB("./archive.db");
+await sdb.close();
 ```
 
 #### `writeDB`
 
-Writes the current state of the database to a specified file. Supported output
-file types are `.db` (DuckDB) and `.sqlite` (SQLite). By default, this also
-writes each table's `SimpleTable.indexes` definitions to a sibling
-`<database>_indexes.json` file. This metadata is the source of truth SDA
-restores with `loadDB()`; it is separate from any physical index objects DuckDB
-copies into the database file.
+Exports a snapshot of the current database after executing pending work. Does
+not change the working database or where subsequent changes persist. DuckDB
+outputs (`.db` and `.duckdb`) preserve database objects and embed SDA index
+definitions in the reserved `__sda` schema.
+
+SQLite output (`.sqlite`) materializes main-schema tables and views as tables.
+It does not preserve DuckDB schemas, indexes, constraints, or SDA metadata, and
+SQLite type conversion may lose type information. Unsupported conversions fail
+without replacing an existing destination.
+
+Existing files require explicit overwrite permission. The completed export is
+published only after its connection is detached. Database files attached to this
+instance, directories, and symbolic links cannot be replaced.
 
 ##### Signature
 
 ```typescript
-async writeDB(file: string, options?: { metadata?: boolean }): Promise<this>;
+async writeDB(file: string, options?: { overwrite?: boolean; metadata?: boolean }): Promise<this>;
 ```
 
 ##### Parameters
 
-- **`file`**: The absolute path to the output file (e.g.,
-  "./my_exported_database.db").
+- **`file`**: The relative or absolute path to the output file.
 - **`options`**: Configuration options for writing the database.
-- **`options.metadata`**: If `false`, metadata files (indexes) are not created
-  alongside the database file. Defaults to `true`.
+- **`options.overwrite`**: If true, permits atomic replacement of an existing
+  output file. Defaults to false.
+- **`options.metadata`**: If false, omits logical SDA index definitions from
+  DuckDB exports. Defaults to true. Does not control physical indexes; SQLite
+  exports never include SDA metadata.
 
 ##### Returns
 
@@ -493,8 +508,13 @@ await sdb.writeDB("./my_exported_database.db");
 ```
 
 ```ts
-// Write the current database to a SQLite file without metadata
-await sdb.writeDB("./my_exported_database.sqlite", { metadata: false });
+// Explicitly replace an earlier snapshot
+await sdb.writeDB("./my_exported_database.duckdb", { overwrite: true });
+```
+
+```ts
+// Export table data for use with SQLite
+await sdb.writeDB("./my_exported_database.sqlite");
 ```
 
 #### `run`
@@ -531,9 +551,9 @@ await sdb.run();
 
 #### `close`
 
-Frees up memory by closing the database connection and instance, and cleans up
-the cache. If the database is file-based, it also compacts the database file to
-optimize storage. Pending transformations are executed before cleanup.
+Executes pending transformations, saves SDA metadata for writable persistent
+databases, and closes the connection and instance. Also cleans up temporary
+files and the cache. Does not copy, compact, or replace the database file.
 
 ##### Signature
 
@@ -572,11 +592,10 @@ await sdb.close();
 ```
 
 ```ts
-// Create a persistent database instance, saving data to a file
-// To load an existing database, use the `loadDB` method instead
+// Open or create a persistent DuckDB database. Changes persist in this file.
 const sdb = new SimpleDB({ file: "./my_database.db" });
 // Perform database operations...
-// Close the database connection, which saves changes to the specified file
+// Execute pending work, save SDA metadata, and close the database connection
 await sdb.close();
 ```
 
@@ -781,7 +800,7 @@ when `run()` is called.
 ##### Signature
 
 ```typescript
-loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; limit?: number; filename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
+loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; conditions?: string; limit?: number; filename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -793,8 +812,14 @@ loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json"
   "parquet", "excel"). Defaults to being inferred from the file extension.
 - **`options.autoDetect`**: A boolean indicating whether to automatically detect
   the data format. Defaults to `true`.
-- **`options.limit`**: A number indicating the maximum number of rows to load.
-  Defaults to all rows.
+- **`options.conditions`**: A SQL `WHERE` clause expression, without the `WHERE`
+  keyword, to filter source rows before applying `limit`. Uses the same syntax
+  as `filter()`, including JavaScript operators. Can reference source columns
+  excluded from `columns`. Defaults to no filtering; an empty string behaves the
+  same as omitting this option.
+- **`options.limit`**: A number indicating the maximum number of matching rows
+  to load, after applying `conditions` if provided. Defaults to all matching
+  rows.
 - **`options.filename`**: A boolean indicating whether to include the filename
   as a new column in the loaded data. Defaults to `false`.
 - **`options.unifyColumns`**: A boolean indicating whether to unify columns
@@ -871,6 +896,17 @@ await table.loadData("./data/*.csv", { unifyColumns: true }).log();
 await table.loadData("./employees.csv", { columns: ["name", "salary"] }).log();
 ```
 
+```ts
+// Load up to 100 matching employees, keeping only their names
+await table
+  .loadData("./employees.parquet", {
+    conditions: "salary > 100000",
+    columns: ["name"],
+    limit: 100,
+  })
+  .log();
+```
+
 #### `loadStatCanData`
 
 Downloads a complete Statistics Canada table and loads it into this table. The
@@ -932,7 +968,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-loadGeoData(file: string, options?: { toEPSG4326?: boolean; columns?: string[] }): this;
+loadGeoData(file: string, options?: { toEPSG4326?: boolean; columns?: string[]; conditions?: string }): this;
 ```
 
 ##### Parameters
@@ -945,6 +981,12 @@ loadGeoData(file: string, options?: { toEPSG4326?: boolean; columns?: string[] }
 - **`options.columns`**: The columns to load. Include the geometry column that
   should remain in the resulting table, usually `"geom"`. By default, all
   columns are loaded.
+- **`options.conditions`**: A SQL `WHERE` clause expression, without the `WHERE`
+  keyword, to filter source rows before materialization and reprojection. Uses
+  the same syntax as `filter()`, including JavaScript operators. Can reference
+  source columns excluded from `columns`. Geometry conditions use the source
+  coordinate system; OSM geometry is available as `geom` in EPSG:4326. Defaults
+  to no filtering; an empty string behaves the same as omitting this option.
 
 ##### Returns
 
@@ -985,6 +1027,16 @@ await table.loadGeoData("./some-data.shp.zip", { toEPSG4326: true }).log();
 ```ts
 // Load OpenStreetMap XML or PBF data
 await table.loadGeoData("./montreal.osm.pbf").log();
+```
+
+```ts
+// Filter on a source property without retaining it in the table
+await table
+  .loadGeoData("./boundaries.geojson", {
+    conditions: "population > 100000",
+    columns: ["name", "geom"],
+  })
+  .log();
 ```
 
 #### `loadOSM`
