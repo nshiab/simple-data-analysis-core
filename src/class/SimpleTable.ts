@@ -146,7 +146,6 @@ import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type { PendingOp } from "../helpers/pendingOps.ts";
-import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
 
 /**
  * IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
@@ -219,7 +218,31 @@ export default class SimpleTable extends Simple {
    * // [{ kind: "vss", name: "vss_cosine_index_articles", ... }]
    * ```
    */
-  indexes: IndexDefinition[];
+  indexes: (
+    | {
+      kind: "vss";
+      name: string;
+      column: string;
+      options: {
+        efConstruction?: number;
+        efSearch?: number;
+        M?: number;
+      };
+    }
+    | {
+      kind: "fts";
+      name: string;
+      idColumn: string;
+      textColumn: string;
+      options: {
+        stemmer?: string;
+        stopwords?: string;
+        ignore?: string;
+        stripAccents?: boolean;
+        lower?: boolean;
+      };
+    }
+  )[];
   /**
    * The operations queued by sync builder methods, waiting to be executed at
    * the next observation point. This is for internal use only.

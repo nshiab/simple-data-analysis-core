@@ -5,7 +5,9 @@ import type {
 } from "@duckdb/node-api";
 
 /**
- * An abstract base class providing common properties for SimpleDB and SimpleTable. This class is not intended for direct instantiation.
+ * Shared implementation of the properties used by SimpleDB and SimpleTable.
+ * This base class is not intended for direct instantiation.
+ * @internal
  */
 export default class Simple {
   /**

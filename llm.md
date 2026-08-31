@@ -34,6 +34,18 @@ An error thrown when a SQL query fails. It carries the SDA method that triggered
 the query, the parameters passed to it, the SQL query itself, and the original
 error as `cause`.
 
+### Constructor
+
+Creates an error that preserves the failing query and its original cause.
+
+#### Parameters
+
+- **`options`**: Details of the failed query.
+- **`options.method`**: The SDA method that triggered the query, or `null`.
+- **`options.parameters`**: The method's arguments, or `null`.
+- **`options.query`**: The SQL statement that failed.
+- **`options.cause`**: The original error thrown while executing the query.
+
 ### Examples
 
 ```ts
