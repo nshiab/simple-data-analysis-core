@@ -11,6 +11,7 @@ export default function loadData(
   options: {
     fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
     autoDetect?: boolean;
+    conditions?: string;
     limit?: number;
     filename?: boolean;
     unifyColumns?: boolean;
@@ -44,6 +45,7 @@ export default function loadData(
     kind: "source",
     method: "loadData()",
     parameters: { files, options },
+    rawSQL: options.conditions === undefined ? undefined : [options.conditions],
     schema: knownSourceSchema(stringToArray(files), options),
     buildSelect: () => select,
   });
@@ -52,6 +54,7 @@ export default function loadData(
 type LoadDataOptions = {
   fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
   autoDetect?: boolean;
+  conditions?: string;
   limit?: number;
   filename?: boolean;
   unifyColumns?: boolean;
@@ -166,6 +169,7 @@ function loadDataSelect(
     : "";
   const generalOptions = `${autoDetect}${filename}${unifyColumns}`;
 
+  const conditions = options.conditions ? ` WHERE ${options.conditions}` : "";
   const limit = typeof options.limit === "number"
     ? ` LIMIT ${options.limit}`
     : "";
@@ -199,7 +203,7 @@ function loadDataSelect(
     const strict = options.strict === false ? `, strict_mode=FALSE` : "";
     const types = columnTypes === null ? "" : `, types={${columnTypes}}`;
 
-    return `SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${types}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${limit}`;
+    return `SELECT ${selectColumns} FROM read_csv_auto(${filesAsString}${generalOptions}${types}${header}${allText}${delim}${skip}${compression}${encoding}${strict}${nullPadding}${ignoreErrors})${conditions}${limit}`;
   } else if (options.fileType === "json" || fileExtension === "json") {
     // DuckDB expects "newline_delimited" (snake_case), unlike the other two
     // format values, which already match the public camelCase option.
@@ -216,9 +220,9 @@ function loadDataSelect(
       ? `, records=${String(options.records).toUpperCase()}`
       : "";
     const columns = columnTypes === null ? "" : `, columns={${columnTypes}}`;
-    return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${columns}${jsonFormat}${records})${limit}`;
+    return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${columns}${jsonFormat}${records})${conditions}${limit}`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
-    return `SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${limit}`;
+    return `SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${conditions}${limit}`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {
     if (files.length > 1) {
       throw new Error(
@@ -235,7 +239,7 @@ function loadDataSelect(
 
     return `SELECT ${selectColumns} FROM read_xlsx(${parseValue(files[0])}${
       options.sheet ? `, sheet=${parseValue(options.sheet)}` : ""
-    }${header}${allText})`;
+    }${header}${allText})${conditions}${limit}`;
   } else {
     throw unsupportedFileTypeError(
       files[0],

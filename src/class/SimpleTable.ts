@@ -404,7 +404,8 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-   * @param options.limit - A number indicating the maximum number of rows to load. Defaults to all rows.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Uses the same syntax as `filter()`, including JavaScript operators. Can reference source columns excluded from `columns`. Defaults to no filtering; an empty string behaves the same as omitting this option.
+   * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
    * @param options.filename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
@@ -457,12 +458,25 @@ export default class SimpleTable extends Simple {
    * // Load only specific columns from a CSV file
    * await table.loadData("./employees.csv", { columns: ["name", "salary"] }).log();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Load up to 100 matching employees, keeping only their names
+   * await table
+   *   .loadData("./employees.parquet", {
+   *     conditions: "salary > 100000",
+   *     columns: ["name"],
+   *     limit: 100,
+   *   })
+   *   .log();
+   * ```
    */
   loadData(
     files: string | string[],
     options: {
       fileType?: "csv" | "dsv" | "json" | "parquet" | "excel";
       autoDetect?: boolean;
+      conditions?: string;
       limit?: number;
       filename?: boolean;
       unifyColumns?: boolean;
@@ -547,6 +561,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
    * @param options.columns - The columns to load. Include the geometry column that should remain in the resulting table, usually `"geom"`. By default, all columns are loaded.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Uses the same syntax as `filter()`, including JavaScript operators. Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system; OSM geometry is available as `geom` in EPSG:4326. Defaults to no filtering; an empty string behaves the same as omitting this option.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -589,12 +604,24 @@ export default class SimpleTable extends Simple {
    * // Load OpenStreetMap XML or PBF data
    * await table.loadGeoData("./montreal.osm.pbf").log();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Filter on a source property without retaining it in the table
+   * await table
+   *   .loadGeoData("./boundaries.geojson", {
+   *     conditions: "population > 100000",
+   *     columns: ["name", "geom"],
+   *   })
+   *   .log();
+   * ```
    */
   loadGeoData(
     file: string,
     options: {
       toEPSG4326?: boolean;
       columns?: string[];
+      conditions?: string;
     } = {},
   ): this {
     loadGeoData(this, file, options);

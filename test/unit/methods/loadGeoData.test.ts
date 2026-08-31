@@ -1,9 +1,15 @@
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
+import SDAError from "../../../src/class/SDAError.ts";
 
 function spyOnQueries(table: SimpleTable): string[] {
   const queries: string[] = [];
@@ -62,9 +68,142 @@ Deno.test("should project selected OSM columns while loading", async () => {
   assert(loadQuery !== undefined);
   assertStringIncludes(
     loadQuery,
-    `SELECT "kind", "id", geometry::GEOMETRY('EPSG:4326') AS geom`,
+    `SELECT "kind", "id", "geom"`,
   );
   await sdb.close();
+});
+
+for (
+  const { file, conditions } of [
+    {
+      file: "test/geodata/files/CanadianProvincesAndTerritories.json",
+      conditions: "nameEnglish === 'Quebec' && nameFrench === 'Québec'",
+    },
+    {
+      file:
+        "test/geodata/files/CanadianProvincesAndTerritories/CanadianProvincesAndTerritories.shp",
+      conditions: "nameEnglis = 'Quebec'",
+    },
+    {
+      file: "test/geodata/files/CanadianProvincesAndTerritories.shp.zip",
+      conditions: "nameEnglis = 'Quebec'",
+    },
+    {
+      file: "test/geodata/files/data.geoparquet",
+      conditions: "name = 'polygonB'",
+    },
+    {
+      file: "test/geodata/files/osm-fixture.osm",
+      conditions: "id = 1 AND ST_X(geom) < -73",
+    },
+  ]
+) {
+  Deno.test(`loadGeoData applies conditions before projection: ${file}`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable();
+      const queries = spyOnQueries(table);
+      table.loadGeoData(file, { conditions, columns: ["geom"] });
+      assertEquals(await table.getRowCount(), 1);
+      assertEquals(await table.getColumns(), ["geom"]);
+      const writes = queries.filter((query) =>
+        query.includes("CREATE OR REPLACE TABLE")
+      );
+      assertEquals(writes.length, 1);
+      assertStringIncludes(writes[0], "WHERE");
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("loadGeoData conditions can use OSM geom without retaining it", async () => {
+  const sdb = new SimpleDB();
+  try {
+    assertEquals(
+      await sdb.newTable().loadGeoData("test/geodata/files/osm-fixture.osm", {
+        conditions: "kind = 'node' AND ST_X(geom) < -73.5985",
+        columns: ["id"],
+      }).getData(),
+      [{ id: 1 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadGeoData captures conditions and handles empty, unmatched, and invalid conditions", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const file = "test/geodata/files/pointsInside.json";
+    const options = { conditions: "name = 'pointB'", columns: ["name"] };
+    const captured = sdb.newTable().loadGeoData(file, options);
+    options.conditions = "FALSE";
+    assertEquals(await captured.getData(), [{ name: "pointB" }]);
+    for (const conditions of [undefined, "", "FALSE"]) {
+      const table = sdb.newTable().loadGeoData(file, { conditions });
+      assertEquals(await table.getRowCount(), conditions === "FALSE" ? 0 : 4);
+      assertEquals(await table.getColumns(), ["name", "geom"]);
+    }
+    for (const conditions of ["missing_column > 1", "name ="]) {
+      const table = sdb.newTable().loadGeoData(file, { conditions });
+      const error = await assertRejects(() => table.getData(), SDAError);
+      assertEquals(error.method, "loadGeoData()");
+      assertEquals(error.parameters, { file, options: { conditions } });
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadGeoData applies geometry conditions before reprojection", async () => {
+  const sdb = new SimpleDB();
+  const file = await Deno.makeTempFile({ suffix: ".geoparquet" });
+  try {
+    await sdb.customQuery(`
+      INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;
+      COPY (
+        SELECT ST_Point(x, 2000000)::GEOMETRY('EPSG:3857') AS geom
+        FROM (VALUES (0), (1000000)) AS points(x)
+      ) TO '${file}' (FORMAT PARQUET)
+    `);
+    const table = sdb.newTable().loadGeoData(file, {
+      conditions: "ST_X(geom) > 1000",
+      toEPSG4326: true,
+    });
+    assertEquals(await table.getRowCount(), 1);
+    assertEquals(await table.getProjection("geom"), "GEOMETRY('EPSG:4326')");
+    assertEquals(await table.filter("ST_X(geom) < 180").getRowCount(), 1);
+  } finally {
+    await sdb.close();
+    await Deno.remove(file);
+  }
+});
+
+Deno.test("loadGeoData tracks table dependencies in conditions for cache invalidation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("geoLoadConditionsSource");
+    const output = sdb.newTable("geoLoadConditionsOutput");
+    source.loadArray([{ name: "pointA" }, { name: "pointB" }]);
+    let runs = 0;
+    const compute = () => {
+      runs++;
+      output.loadGeoData("test/geodata/files/pointsInside.json", {
+        conditions: `name IN (SELECT name FROM "${source.name}")`,
+        columns: ["name"],
+      });
+    };
+    await output.cache(compute);
+    await output.cache(compute);
+    assertEquals(runs, 1);
+    source.filter("name = 'pointB'");
+    await output.cache(compute);
+    assertEquals(runs, 2);
+    assertEquals(await output.getData(), [{ name: "pointB" }]);
+  } finally {
+    await sdb.close();
+  }
 });
 
 Deno.test("should load an OSM PBF file with geom geometries", async () => {

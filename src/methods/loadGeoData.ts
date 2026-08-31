@@ -9,6 +9,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import { rmSync } from "node:fs";
 import SDAError from "../class/SDAError.ts";
 import loadOsmFile from "../helpers/loadOsmFile.ts";
+import { recordCacheTableReferences } from "../helpers/cacheTableDependencies.ts";
 import {
   downloadOsmToTemporaryFile,
   getOsmFileSuffix,
@@ -18,6 +19,7 @@ import {
 type LoadGeoDataOptions = {
   toEPSG4326?: boolean;
   columns?: string[];
+  conditions?: string;
 };
 
 export default function loadGeoData(
@@ -26,6 +28,9 @@ export default function loadGeoData(
   options: LoadGeoDataOptions = {},
 ) {
   options = structuredClone(options);
+  if (options.conditions !== undefined) {
+    recordCacheTableReferences(simpleTable, [options.conditions]);
+  }
   queueOp(simpleTable, {
     kind: "barrier",
     method: "loadGeoData()",
@@ -53,6 +58,7 @@ async function executeLoadGeoData(
         method: "loadGeoData()",
         parameters: { file, options },
         columns: options.columns,
+        conditions: options.conditions,
       });
       return;
     } catch (error) {
@@ -80,6 +86,7 @@ async function executeLoadGeoData(
   const spatialSetup = simpleTable.sdb.spatialLoaded
     ? ""
     : "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
+  const conditions = options.conditions ? ` WHERE ${options.conditions}` : "";
 
   if (fileExtension === "geoparquet" || fileExtension === "parquet") {
     await queryDB(
@@ -89,7 +96,9 @@ async function executeLoadGeoData(
       }
       CREATE OR REPLACE TABLE ${
         quoteIdentifier(simpleTable.name)
-      } AS SELECT ${selectColumns} FROM read_parquet(${parseValue(file)});`,
+      } AS SELECT ${selectColumns} FROM read_parquet(${
+        parseValue(file)
+      })${conditions};`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",
@@ -104,7 +113,9 @@ async function executeLoadGeoData(
       }
       CREATE OR REPLACE TABLE ${
         quoteIdentifier(simpleTable.name)
-      } AS SELECT ${selectColumns} FROM ST_Read(${parseValue(file)});`,
+      } AS SELECT ${selectColumns} FROM ST_Read(${
+        parseValue(file)
+      })${conditions};`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",

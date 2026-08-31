@@ -6,7 +6,153 @@ import {
 } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
+import SDAError from "../../../src/class/SDAError.ts";
 import { loadDataQuery } from "../../../src/methods/loadData.ts";
+
+for (
+  const { file, conditions, columns, expected } of [
+    {
+      file: "test/data/files/data.csv",
+      conditions: "key1 = '8' OR key1 = 'brioche'",
+      columns: ["key2"],
+      expected: [{ key2: "10" }],
+    },
+    {
+      file: "test/data/files/data.json",
+      conditions: "key1 >= 3",
+      columns: ["key2"],
+      expected: [{ key2: "trois" }],
+    },
+    {
+      file: "test/data/files/data.parquet",
+      conditions: "key1 >= 8",
+      columns: ["key2"],
+      expected: [{ key2: "trois" }],
+    },
+    {
+      file: "test/data/files/populations-one-sheet.xlsx",
+      conditions: '"Population (million)" > 40',
+      columns: undefined,
+      expected: [{ Country: "US", "Population (million)": 332 }],
+    },
+  ]
+) {
+  Deno.test(`loadData applies conditions before projection and limit: ${file}`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      assertEquals(
+        await sdb.newTable().loadData(file, { conditions, columns, limit: 1 })
+          .getData(),
+        expected,
+      );
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("loadData captures conditions and fuses downstream operations across multiple files", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("filteredLoad");
+    const queries: string[] = [];
+    const original = table.runQuery;
+    table.runQuery = (query, connection, returnData, options) => {
+      queries.push(query);
+      return original(query, connection, returnData, options);
+    };
+    const options = {
+      conditions: "key1 === 2 || key1 === 3",
+      columns: ["key2"],
+    };
+    table.loadData([
+      "test/data/files/data.json",
+      "test/data/files/data.json",
+    ], options).filter("key2 !== 'deux'").addColumn(
+      "selected",
+      "boolean",
+      "TRUE",
+    );
+    options.conditions = "FALSE";
+
+    assertEquals(await table.getData(), [
+      { key2: "trois", selected: true },
+      { key2: "trois", selected: true },
+    ]);
+    assertEquals(
+      queries.filter((query) => query.includes("CREATE OR REPLACE TABLE"))
+        .length,
+      1,
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadData handles empty, unmatched, and invalid conditions", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const conditions of [undefined, "", "FALSE"]) {
+      const table = sdb.newTable().loadData("test/data/files/data.json", {
+        conditions,
+      });
+      assertEquals(await table.getRowCount(), conditions === "FALSE" ? 0 : 4);
+      assertEquals(await table.getColumns(), ["key1", "key2"]);
+    }
+    for (const conditions of ["missing_column > 1", "key1 >"]) {
+      const table = sdb.newTable().loadData("test/data/files/data.json", {
+        conditions,
+      });
+      const error = await assertRejects(() => table.getData(), SDAError);
+      assertEquals(error.method, "loadData()");
+      assertEquals(error.parameters, {
+        files: "test/data/files/data.json",
+        options: { conditions },
+      });
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadData conditions read preceding changes to the same table", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("previousLoad");
+    table.loadArray([{ key1: 1 }, { key1: 3 }]).filter("key1 = 3")
+      .loadData("test/data/files/data.json", {
+        conditions: 'key1 IN (SELECT key1 FROM "previousLoad")',
+      });
+    assertEquals(await table.getData(), [{ key1: 3, key2: "trois" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadData tracks table dependencies in conditions for cache invalidation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("loadConditionsSource");
+    const output = sdb.newTable("loadConditionsOutput");
+    source.loadArray([{ key1: 1 }, { key1: 3 }]);
+    let runs = 0;
+    const compute = () => {
+      runs++;
+      output.loadData("test/data/files/data.json", {
+        conditions: `key1 IN (SELECT key1 FROM "${source.name}")`,
+      });
+    };
+    await output.cache(compute);
+    await output.cache(compute);
+    assertEquals(runs, 1);
+    source.filter("key1 = 3");
+    await output.cache(compute);
+    assertEquals(runs, 2);
+    assertEquals(await output.getData(), [{ key1: 3, key2: "trois" }]);
+  } finally {
+    await sdb.close();
+  }
+});
 
 Deno.test("loadDataQuery escapes generated string literals", () => {
   const csvQuery = loadDataQuery("data", ["owner's.csv"], {
