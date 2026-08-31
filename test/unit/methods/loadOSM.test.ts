@@ -349,7 +349,11 @@ Deno.test("loadOSM rejects well-formed Overpass error responses", async () => {
   }
 });
 
-Deno.test("loadOSM works with the public Overpass endpoint", async () => {
+Deno.test({
+  name: "loadOSM works with the public Overpass endpoint",
+  // Public Overpass availability should not determine CI results.
+  ignore: Deno.env.get("CI") === "true",
+}, async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("publicOverpassSchools");
 
