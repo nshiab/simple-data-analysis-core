@@ -118,7 +118,19 @@ function renderBenchmarkSection(
   rows: Aggregate[],
 ): string {
   const benchmarkRows = rows.filter((row) => row.benchmark === benchmark);
-  return `### ${benchmarkHeading(benchmark)}\n\n${table(benchmarkRows)}`;
+  const description = benchmark === "tabular"
+    ? `Using 22,051,025 temperature records (\`ahccd.csv\`, 1.77 GB, in
+\`benchmarks/data/\`), we remove missing temperatures, convert dates and numbers,
+save the cleaned data, then calculate average temperatures by station and decade
+and export the sorted results.`
+    : `Using 335,024 Montreal public trees (\`arbres-publics.csv\`, 135.5 MB) and 91
+neighbourhood boundaries (\`quartierreferencehabitation.geojson\`, 1.14 MB), both
+in \`benchmarks/data/\`, we remove missing coordinates, create points, join trees
+to neighbourhoods, then count trees per neighbourhood and export the sorted
+results.`;
+  return `### ${benchmarkHeading(benchmark)}\n\n${description}\n\n${
+    table(benchmarkRows)
+  }`;
 }
 
 export function renderBenchmarkResults(rows: Aggregate[]): string {

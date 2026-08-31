@@ -65,44 +65,17 @@ bunx @nshiab/setup-data-project
 
 ## Performance benchmarks
 
-The benchmark suite compares this checkout with common Python and R tools and
-with raw DuckDB. It runs equivalent tabular and spatial workloads in fresh
-processes, checks every final result and the cleaned tabular warm-up outputs,
-and measures duration and peak memory. The tabular workload includes writing the
-cleaned 1.6 GB dataset to disk, reflecting a common SDA workflow. Measured
-implementation order rotates between iterations to reduce ordering bias.
-
-Each implementation projects only the columns needed by the workload at its
-data-reader boundary when the API supports it. Pandas and tidyverse still
-materialize intermediate data frames, and GeoPandas and sf materialize their
-spatial joins, while raw DuckDB can optimize and fuse relational operations
-across those boundaries.
-
-Run the complete suite and refresh the results below with one command:
-
-```bash
-deno task benchmark
-```
-
-To diagnose SDA versus raw DuckDB without running Python or R or updating the
-published results, run the opt-in per-query profiler. It writes detailed timing
-rows to `benchmarks/.work/query-profile.csv`; pass `--only=tabular` or
-`--only=spatial` to narrow the workload.
-
-```bash
-deno task benchmark --profile
-deno task benchmark --profile --only=spatial
-```
-
-The task expects `ahccd.csv`, `arbres-publics.csv`, and
-`quartierreferencehabitation.geojson` in `benchmarks/data/`, Python with pandas
-and GeoPandas, and R with tidyverse and sf. By default, it runs each
-implementation three times after one warm-up and takes roughly 7 minutes on an
-Apple M4 Max.
+These benchmarks compare SDA-core with raw DuckDB and popular Python and R
+libraries, measuring duration and peak memory.
 
 <!-- benchmark-results:start -->
 
 ### Tabular workload
+
+Using 22,051,025 temperature records (`ahccd.csv`, 1.77 GB, in
+`benchmarks/data/`), we remove missing temperatures, convert dates and numbers,
+save the cleaned data, then calculate average temperatures by station and decade
+and export the sorted results.
 
 | Library version                           | Runtime       |  Mean duration | Duration difference | Mean peak memory | Memory difference |
 | ----------------------------------------- | ------------- | -------------: | ------------------: | ---------------: | ----------------: |
@@ -112,6 +85,12 @@ Apple M4 Max.
 | tidyverse 2.0.0                           | R 4.6.0       | 77.09 ± 0.16 s |            +5983.4% |         8,178 MB |           +237.1% |
 
 ### Spatial workload
+
+Using 335,024 Montreal public trees (`arbres-publics.csv`, 135.5 MB) and 91
+neighbourhood boundaries (`quartierreferencehabitation.geojson`, 1.14 MB), both
+in `benchmarks/data/`, we remove missing coordinates, create points, join trees
+to neighbourhoods, then count trees per neighbourhood and export the sorted
+results.
 
 | Library version                           | Runtime       | Mean duration | Duration difference | Mean peak memory | Memory difference |
 | ----------------------------------------- | ------------- | ------------: | ------------------: | ---------------: | ----------------: |

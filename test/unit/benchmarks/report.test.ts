@@ -66,6 +66,35 @@ Deno.test("benchmark report replaces only the generated README section", () => {
   );
 });
 
+Deno.test("benchmark report keeps workload descriptions before their tables", () => {
+  const markdown = renderBenchmarkResults(aggregates);
+  const spatialStart = markdown.indexOf("### Spatial workload");
+  const tabular = markdown.slice(0, spatialStart);
+  const spatial = markdown.slice(spatialStart);
+  for (
+    const [section, files] of [
+      [tabular, ["ahccd.csv"]],
+      [spatial, ["arbres-publics.csv", "quartierreferencehabitation.geojson"]],
+    ] as const
+  ) {
+    for (const file of files) {
+      assertStringIncludes(section, file);
+      assertEquals(section.indexOf(file) < section.indexOf("| Library"), true);
+    }
+    assertStringIncludes(section, "benchmarks/data/");
+  }
+  assertEquals(tabular.includes("SDA-core is the baseline"), false);
+  assertEquals(spatial.includes("SDA-core is the baseline"), false);
+  assertStringIncludes(tabular, "22,051,025 temperature records");
+  assertStringIncludes(tabular, "1.77 GB");
+  assertStringIncludes(spatial, "335,024 Montreal public trees");
+  assertStringIncludes(spatial, "135.5 MB");
+  assertStringIncludes(spatial, "91\nneighbourhood boundaries");
+  assertStringIncludes(spatial, "1.14 MB");
+  assertStringIncludes(tabular, "average temperatures by station and decade");
+  assertStringIncludes(spatial, "trees per neighbourhood");
+});
+
 Deno.test("partial benchmark reports preserve the unmeasured workload", () => {
   const readme = `before
 ${benchmarkResultsStart}
@@ -84,6 +113,7 @@ after
 
   const tabular = replaceMeasuredBenchmarkResults(readme, aggregates);
   assertStringIncludes(tabular, "SDA-core 2.0.0-rc.17");
+  assertStringIncludes(tabular, "ahccd.csv");
   assertStringIncludes(tabular, "old spatial");
   assertEquals(tabular.includes("old tabular"), false);
 
@@ -93,5 +123,6 @@ after
   }]);
   assertStringIncludes(spatial, "old tabular");
   assertStringIncludes(spatial, "SDA-core 2.0.0-rc.17");
+  assertStringIncludes(spatial, "arbres-publics.csv");
   assertEquals(spatial.includes("old spatial"), false);
 });
