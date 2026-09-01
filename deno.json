@@ -1,7 +1,22 @@
 {
   "name": "@nshiab/simple-data-analysis-core",
   "version": "2.0.0",
-  "description": "The core functionalities of the simple-data-analysis library, with only one dependency: DuckDB.",
+  "description": "Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Deno, Node.js, and Bun.",
+  "keywords": [
+    "data-analysis",
+    "typescript",
+    "duckdb",
+    "dataframe",
+    "tabular",
+    "sql",
+    "csv",
+    "parquet",
+    "geospatial",
+    "spatial-analysis",
+    "deno",
+    "nodejs",
+    "bun"
+  ],
   "repository": "https://github.com/nshiab/simple-data-analysis-core",
   "license": "MIT",
   "exports": {

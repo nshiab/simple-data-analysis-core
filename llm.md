@@ -9,7 +9,7 @@ deno add jsr:@nshiab/simple-data-analysis-core
 To install the library with Node.js, use:
 
 ```bash
-npx jsr add @nshiab/simple-data-analysis-core
+npm i @nshiab/simple-data-analysis-core
 ```
 
 To start, create a SimpleDB instance and then a SimpleTable from this instance:

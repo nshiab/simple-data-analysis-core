@@ -21,6 +21,7 @@ const denoConfig = JSON.parse(
 ) as {
   name: string;
   version: string;
+  keywords: string[];
   exports: Record<string, string>;
 };
 
@@ -149,7 +150,13 @@ try {
   console.log(`Building ${denoConfig.name}@${denoConfig.version} for npm...`);
   await run(
     Deno.execPath(),
-    ["run", "--no-lock", "-A", "jsr:@nshiab/deno-to-npm"],
+    [
+      "run",
+      "--no-lock",
+      "--min-dep-age=0",
+      "-A",
+      "jsr:@nshiab/deno-to-npm",
+    ],
     { cwd: rootPath, env },
   );
 
@@ -173,12 +180,23 @@ try {
       }),
     ),
   );
+  const generatedPackage = JSON.parse(
+    await Deno.readTextFile(new URL("package.json", new URL("npm/", root))),
+  ) as { keywords?: string[] };
+  if (
+    JSON.stringify(generatedPackage.keywords) !==
+      JSON.stringify(denoConfig.keywords)
+  ) {
+    throw new Error("npm package keywords do not match deno.json");
+  }
   const paths = new Set(packReport.files.map(({ path }) => path));
   for (
     const required of [
       "package.json",
       "README.md",
       "LICENSE",
+      "llm.md",
+      "llms.txt",
       "esm/index.js",
       "esm/index.d.ts",
       "script/index.js",

@@ -1,28 +1,25 @@
 # Simple data analysis core (SDA-core)
 
-This repository contains the core functionalities of the
-[simple-data-analysis library](https://github.com/nshiab/simple-data-analysis),
-an easy-to-use and high-performance TypeScript library for data analysis that
-you can use with tabular, geospatial and vector data.
+SDA-core is a lightweight DuckDB-powered TypeScript library for tabular, SQL,
+CSV, Parquet, and geospatial data analysis on Deno, Node.js, and Bun. It has one
+runtime dependency: DuckDB.
 
-You'll find here a stripped-out version with only one dependency (DuckDB) that
-is aimed to be light-weight and to be used in constrained environment.
+Choose this package for core data loading, cleaning, joining, statistics, and
+geospatial operations. For AI, vector search, Google Sheets, and data
+visualization features, use the full
+[simple-data-analysis library](https://github.com/nshiab/simple-data-analysis).
 
 The library is available on
 [JSR](https://jsr.io/@nshiab/simple-data-analysis-core) with its
 [documentation](https://jsr.io/@nshiab/simple-data-analysis-core/doc).
 
-The documentation is also available as the markdown file
-[llm.md](https://github.com/nshiab/simple-data-analysis-core/blob/main/llm.md),
-which can be passed as context to improve the use of the library by AI coding
-assistants or agents.
+AI coding assistants and agents can start with the concise
+[llms.txt](https://github.com/nshiab/simple-data-analysis-core/blob/main/llms.txt)
+index. The complete generated API reference is available in
+[llm.md](https://github.com/nshiab/simple-data-analysis-core/blob/main/llm.md).
 
 The library is maintained by [Nael Shiab](http://naelshiab.com/), computational
 journalist and senior data producer for [CBC News](https://www.cbc.ca/news).
-
-For the full-fledged library (with AI, dataviz, google sheet methods and more),
-check the
-[simple-data-analysis repository](https://github.com/nshiab/simple-data-analysis).
 
 > [!TIP]
 > To learn how to use SDA, check out
