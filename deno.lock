@@ -1,7 +1,7 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@nshiab/deno-docs-to-md@*": "0.1.12",
+    "jsr:@nshiab/deno-docs-to-md@*": "0.1.13",
     "jsr:@std/assert@1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "npm:@duckdb/node-api@*": "1.5.2-r.1",
@@ -9,8 +9,8 @@
     "npm:@duckdb/node-api@1.5.5-r.4": "1.5.5-r.4"
   },
   "jsr": {
-    "@nshiab/deno-docs-to-md@0.1.12": {
-      "integrity": "bfd7872bc6631b071c2785f29bf1fcfd9c5d69ecd109ea45afe912379ef58292"
+    "@nshiab/deno-docs-to-md@0.1.13": {
+      "integrity": "621a1374c42d1d38fbe54c64b5394b8028782ff8102a77bd9eefef84dbee0292"
     },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
