@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@david/code-block-writer@^13.0.3": "13.0.3",
     "jsr:@deno/dnt@~0.42.3": "0.42.3",
+    "jsr:@nshiab/bump-version@*": "0.1.4",
     "jsr:@nshiab/deno-docs-to-md@*": "0.1.14",
     "jsr:@nshiab/deno-to-npm@*": "0.0.5",
     "jsr:@std/assert@1.0.19": "1.0.19",
@@ -31,6 +32,9 @@
         "jsr:@std/path@1",
         "jsr:@ts-morph/bootstrap"
       ]
+    },
+    "@nshiab/bump-version@0.1.4": {
+      "integrity": "f00c57584240d658426fa7b5b5b12eb14c0ecebcf360daf7ca1033946e60ba29"
     },
     "@nshiab/deno-docs-to-md@0.1.14": {
       "integrity": "6102006d895d0b57ef6efa3fe9fab913752d847b13bf1cb155815a2626030bea"
