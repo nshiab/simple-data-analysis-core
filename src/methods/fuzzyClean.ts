@@ -3,6 +3,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
+import buildFuzzyMatchSql from "../helpers/buildFuzzyMatchSql.ts";
 
 export default function fuzzyClean(
   table: SimpleTable,
@@ -59,18 +60,13 @@ async function executeFuzzyClean(
 ): Promise<void> {
   const method = options.method ?? "ratio";
   const strategy = options.strategy ?? "mostCommon";
-
-  let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
-
-  if (method === "ratio") {
-    const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
-    onClause +=
-      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${maxDiffMultiplier} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
-  }
-  if (options.prefilterPrefixLength !== undefined) {
-    onClause +=
-      ` AND SUBSTR(a.value, 1, ${options.prefilterPrefixLength}) = SUBSTR(b.value, 1, ${options.prefilterPrefixLength})`;
-  }
+  const { scoreExpression, condition } = buildFuzzyMatchSql(
+    "a.value",
+    "b.value",
+    method,
+    threshold,
+    { prefilterPrefixLength: options.prefilterPrefixLength },
+  );
 
   // Compute fuzzy pairs and embed counts for both sides. Only values that
   // appear in at least one pair above the threshold can be normalized —
@@ -89,10 +85,10 @@ async function executeFuzzyClean(
        b.value AS right_value,
        a.cnt   AS left_cnt,
        b.cnt   AS right_cnt,
-       rapidfuzz_${method}(a.value, b.value) AS score
+       ${scoreExpression} AS score
      FROM uniques a
      JOIN uniques b
-       ON ${onClause}
+       ON ${condition}
        AND a.value < b.value`,
     mergeOptions(table, {
       table: table.name,

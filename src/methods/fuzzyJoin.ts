@@ -5,6 +5,9 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import assertSameDatabase from "../helpers/assertSameDatabase.ts";
+import buildFuzzyMatchSql, {
+  type FuzzyMethod,
+} from "../helpers/buildFuzzyMatchSql.ts";
 
 export default function fuzzyJoin(
   leftTable: SimpleTable,
@@ -157,42 +160,26 @@ function fuzzyJoinQuery(
   leftColumn: string,
   rightTable: string,
   rightColumn: string,
-  method:
-    | "ratio"
-    | "partial_ratio"
-    | "token_sort_ratio"
-    | "token_set_ratio",
+  method: FuzzyMethod,
   threshold: number,
   outputTable: string,
   similarityColumn: string | undefined,
   rightSelect: string,
   prefilterPrefixLength?: number,
 ) {
-  const fn = `ROUND(rapidfuzz_${method}(${quoteIdentifier(leftTable)}.${
+  const leftExpression = `${quoteIdentifier(leftTable)}.${
     quoteIdentifier(leftColumn)
-  }, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)}), 2)`;
-
-  let onClause = `${fn} >= ${threshold}`;
-
-  if (method === "ratio") {
-    const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
-    onClause += ` AND ABS(LENGTH(${quoteIdentifier(leftTable)}.${
-      quoteIdentifier(leftColumn)
-    }) - LENGTH(${quoteIdentifier(rightTable)}.${
-      quoteIdentifier(rightColumn)
-    })) <= ${maxDiffMultiplier} * GREATEST(LENGTH(${
-      quoteIdentifier(leftTable)
-    }.${quoteIdentifier(leftColumn)}), LENGTH(${quoteIdentifier(rightTable)}.${
-      quoteIdentifier(rightColumn)
-    }))`;
-  }
-  if (prefilterPrefixLength !== undefined) {
-    onClause += ` AND SUBSTR(${quoteIdentifier(leftTable)}.${
-      quoteIdentifier(leftColumn)
-    }, 1, ${prefilterPrefixLength}) = SUBSTR(${quoteIdentifier(rightTable)}.${
-      quoteIdentifier(rightColumn)
-    }, 1, ${prefilterPrefixLength})`;
-  }
+  }`;
+  const rightExpression = `${quoteIdentifier(rightTable)}.${
+    quoteIdentifier(rightColumn)
+  }`;
+  const { scoreExpression, condition } = buildFuzzyMatchSql(
+    leftExpression,
+    rightExpression,
+    method,
+    threshold,
+    { decimals: 2, prefilterPrefixLength },
+  );
 
   if (similarityColumn) {
     return `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable)} AS
@@ -200,10 +187,12 @@ SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS ${
       quoteIdentifier(similarityColumn)
     }
 FROM (
-  SELECT ${quoteIdentifier(leftTable)}.*, ${rightSelect}, ${fn} AS "_sda_score"
+  SELECT ${
+      quoteIdentifier(leftTable)
+    }.*, ${rightSelect}, ${scoreExpression} AS "_sda_score"
   FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
       quoteIdentifier(rightTable)
-    } ON ${onClause}
+    } ON ${condition}
 ) _sda
 ORDER BY ${quoteIdentifier(leftColumn)}, "_sda_score" DESC;\n`;
   }
@@ -214,7 +203,7 @@ FROM (
   SELECT ${quoteIdentifier(leftTable)}.*, ${rightSelect}
   FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
     quoteIdentifier(rightTable)
-  } ON ${onClause}
+  } ON ${condition}
 ) _sda
 ORDER BY ${quoteIdentifier(leftColumn)}, ${quoteIdentifier(rightColumn)};\n`;
 }

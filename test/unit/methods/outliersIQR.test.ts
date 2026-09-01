@@ -64,6 +64,33 @@ Deno.test("should choose the IQR quantile method from each group's row count", a
   await sdb.close();
 });
 
+Deno.test("should ignore nulls when choosing each group's IQR quantile method", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+
+  const data = await table
+    .loadArray([
+      { group: "even", value: 0 },
+      { group: "even", value: 10 },
+      { group: "even", value: 20 },
+      { group: "even", value: 51 },
+      { group: "even", value: null },
+    ])
+    .outliersIQR("value", "isOutlier", { by: "group" })
+    .sort({ value: "asc" })
+    .getData();
+
+  assertEquals(data, [
+    { group: "even", value: 0, isOutlier: false },
+    { group: "even", value: 10, isOutlier: false },
+    { group: "even", value: 20, isOutlier: false },
+    { group: "even", value: 51, isOutlier: true },
+    { group: "even", value: null, isOutlier: false },
+  ]);
+
+  await sdb.close();
+});
+
 Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
   const sdb = new SimpleDB();
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/

@@ -36,7 +36,7 @@ function outliersIQRSelect(
 
   const partition = by.length > 0 ? `PARTITION BY ${by.join(", ")}` : "";
   const quantile = (fraction: number) =>
-    `IF(COUNT(*) OVER (${partition}) % 2 = 0,
+    `IF(COUNT(${quoteIdentifier(column)}) OVER (${partition}) % 2 = 0,
       quantile_disc(${
       quoteIdentifier(column)
     }, ${fraction}) OVER (${partition}),
