@@ -92,7 +92,7 @@ Deno.test("should convert all DuckDB types read from a table", async () => {
   );
   const rows = await table.getData();
   assertEquals(rows, [expectedAllTypesRow]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => {
@@ -103,20 +103,37 @@ Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => 
     `CREATE OR REPLACE TABLE "tstz" AS SELECT TIMESTAMPTZ '2020-01-15 14:30:45' AS tstz`,
   );
   const rows = await table.getData();
-  const value = rows[0].tstz;
-  // The string offset depends on the process timezone, but the format is
-  // stable and the value must round-trip to the same instant.
-  assertEquals(typeof value, "string");
-  const match = (value as string).match(
-    /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})([+-]\d{2}(:\d{2})?)$/,
+  assertEquals(rows, [{ tstz: "2020-01-15 14:30:45+00" }]);
+  await sdb.close();
+});
+
+Deno.test("should use UTC for TIMESTAMPTZ values", async () => {
+  const sdb = new SimpleDB();
+  const rows = await sdb.customQuery(
+    `SELECT
+      current_setting('TimeZone') AS timezone,
+      TIMESTAMPTZ '2024-04-07 13:14:15.123456+00' AS timestamp,
+      [TIMESTAMPTZ '2024-04-07 13:14:15.123456+00'] AS timestamps`,
+    { returnData: true },
   );
-  assertEquals(match !== null, true);
-  const offset = match![3].includes(":") ? match![3] : `${match![3]}:00`;
-  assertEquals(
-    new Date(`${match![1]}T${match![2]}${offset}`).getTime(),
-    new Date("2020-01-15T14:30:45.000Z").getTime(),
-  );
-  await sdb.done();
+  assertEquals(rows, [{
+    timezone: "UTC",
+    timestamp: "2024-04-07 13:14:15.123456+00",
+    timestamps: ["2024-04-07 13:14:15.123456+00"],
+  }]);
+
+  const stringTable = sdb.newTable();
+  stringTable.loadArray([{ timestamp: "2024-04-07 13:14:15.123456" }]);
+  stringTable.convert({ timestamp: "datetimeTz" });
+  assertEquals(await stringTable.getData(), [{
+    timestamp: "2024-04-07 13:14:15.123456+00",
+  }]);
+
+  const date = new Date("2024-04-07T13:14:15.123Z");
+  const dateTable = sdb.newTable();
+  dateTable.loadArray([{ timestamp: date }]);
+  assertEquals(await dateTable.getData(), [{ timestamp: date }]);
+  await sdb.close();
 });
 
 Deno.test("should convert dates and timestamps as UTC", async () => {
@@ -141,7 +158,7 @@ Deno.test("should convert dates and timestamps as UTC", async () => {
     rows[0].tsBeforeEpoch,
     new Date(Date.UTC(1969, 11, 31, 23, 59, 59, 999)),
   );
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return an empty array for an empty result", async () => {
@@ -152,13 +169,13 @@ Deno.test("should return an empty array for an empty result", async () => {
   );
   const rows = await table.getData();
   assertEquals(rows, []);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert computed values from a SimpleDB custom query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("computedSource");
-  await table.loadArray([
+  table.loadArray([
     { category: "a", value: 10 },
     { category: "b", value: 20 },
     { category: "b", value: 30 },
@@ -172,7 +189,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
   // dates are Date objects even here.
   const data = await sdb.customQuery(
     `SELECT count(*) AS cnt, max(dt) AS maxDate, sum(value)::BIGINT AS sumValue FROM "computedSource2"`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
   assertEquals(data, [
     {
@@ -181,25 +198,25 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
       sumValue: 60,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert computed columns not present in any table schema", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("computedCols");
-  await table.loadArray([
+  table.loadArray([
     { category: "a", value: 10 },
     { category: "b", value: 20 },
   ]);
   const data = await sdb.customQuery(
     `SELECT category || '!' AS exclaimed, count(*)::BIGINT AS cnt FROM "computedCols" GROUP BY category ORDER BY category`,
-    { returnDataFrom: "query", table: "computedCols" },
+    { returnData: true, table: "computedCols" },
   );
   assertEquals(data, [
     { exclaimed: "a!", cnt: 1 },
     { exclaimed: "b!", cnt: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should warn once per column for unsafe BIGINT values", async () => {
@@ -228,7 +245,7 @@ Deno.test("should warn once per column for unsafe BIGINT values", async () => {
       warnings.filter((w) => w.includes('"safe"')).length,
       0,
     );
-    await sdb.done();
+    await sdb.close();
   } finally {
     console.warn = originalWarn;
   }
@@ -240,10 +257,10 @@ Deno.test("should keep duplicate column names in results by suffixing them", asy
   // columns. The typed read path deduplicates the names instead.
   const data = await sdb.customQuery(
     `SELECT 1 AS a, 2 AS a, 3 AS b`,
-    { returnDataFrom: "query" },
+    { returnData: true },
   );
   assertEquals(data, [{ a: 1, "a:1": 2, b: 3 }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should warn about unsafe BIGINT values separately for each table", async () => {
@@ -269,7 +286,7 @@ Deno.test("should warn about unsafe BIGINT values separately for each table", as
       warnings.filter((w) => w.includes('"unsafePerTableB"')).length,
       1,
     );
-    await sdb.done();
+    await sdb.close();
   } finally {
     console.warn = originalWarn;
   }

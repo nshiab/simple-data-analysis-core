@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the count of null values, non null values, and distinct values in each column of a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.json");
+  table.loadData("test/data/files/employees.json");
 
   const description = await table.getDescription();
 
@@ -34,5 +34,23 @@ Deno.test("should return the count of null values, non null values, and distinct
     { column: "Name", type: "VARCHAR", count: 51, unique: 46, null: 4 },
     { column: "Salary", type: "JSON", count: 51, unique: 33, null: 3 },
   ]);
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should describe a table with a single column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadArray([
+    { name: "Chloe" },
+    { name: "Philip" },
+    { name: null },
+    { name: "Chloe" },
+  ]);
+
+  const description = await table.getDescription();
+
+  assertEquals(description, [
+    { column: "name", type: "VARCHAR", count: 4, unique: 2, null: 1 },
+  ]);
+  await sdb.close();
 });

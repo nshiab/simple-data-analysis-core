@@ -1,8 +1,9 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function concatenate(
+export default function concatenate(
   simpleTable: SimpleTable,
   columns: string[],
   newColumn: string,
@@ -10,34 +11,28 @@ export default async function concatenate(
     separator?: string;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    concatenateQuery(simpleTable.name, columns, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "concatenate()",
-      parameters: { columns, newColumn, options },
-    }),
-  );
-}
-
-function concatenateQuery(
-  table: string,
-  columns: string[],
-  newColumn: string,
-  options: { separator?: string },
-) {
-  let query = `ALTER TABLE "${table}" ADD "${newColumn}" VARCHAR;
-    UPDATE "${table}" SET "${newColumn}" = `;
-  if (typeof options.separator === "string") {
-    query += `CONCAT_WS('${options.separator}', ${
-      columns
-        .map((d) => `"${d}"`)
-        .join(", ")
-    })`;
-  } else {
-    query += `CONCAT(${columns.map((d) => `"${d}"`).join(", ")})`;
-  }
-
-  return query;
+  columns = [...columns];
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "concatenate()",
+    parameters: { columns, newColumn, options },
+    needsSchema: true,
+    values: typeof options.separator === "string"
+      ? [options.separator]
+      : undefined,
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [newColumn], "concatenate()");
+      const expression = typeof options.separator === "string"
+        ? `CONCAT_WS(?, ${
+          columns
+            .map((d) => `${quoteIdentifier(d)}`)
+            .join(", ")
+        })`
+        : `CONCAT(${columns.map((d) => `${quoteIdentifier(d)}`).join(", ")})`;
+      return `SELECT *, CAST(${expression} AS VARCHAR) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
+    },
+  });
 }

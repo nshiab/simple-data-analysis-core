@@ -11,5 +11,5 @@ Deno.test("should return the projection of a column", async () => {
 
   const projection = await table.getProjection("geom");
   assertEquals(projection, "GEOMETRY('EPSG:4326')");
-  await sdb.done();
+  await sdb.close();
 });

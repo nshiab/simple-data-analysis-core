@@ -1,35 +1,38 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertColumnsExist from "../helpers/assertColumnsExist.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function renameColumns(
+export default function renameColumns(
   simpleTable: SimpleTable,
   names: { [key: string]: string },
+  options: { strict?: boolean } = {},
 ) {
   const oldNames = Object.keys(names);
   const newNames = Object.values(names);
+  // DuckDB's SELECT * RENAME silently drops a rename whose source column is
+  // absent, so a typo would pass unnoticed. Validating requires the schema;
+  // strict: false skips both the check and its DESCRIBE round-trip.
+  const strict = options.strict !== false;
 
-  await queryDB(
-    simpleTable,
-    renameColumnQuery(simpleTable.name, oldNames, newNames),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "renameColumns()",
-      parameters: { names },
-    }),
-  );
-}
-
-function renameColumnQuery(
-  table: string,
-  oldColumns: string[],
-  newColumns: string[],
-) {
-  let query = "";
-  for (let i = 0; i < oldColumns.length; i++) {
-    query += `ALTER TABLE "${table}" RENAME COLUMN "${oldColumns[i]}" TO "${
-      newColumns[i]
-    }";\n`;
-  }
-  return query;
+  names = { ...names };
+  options = { ...options };
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "renameColumns()",
+    parameters: { names, options },
+    needsSchema: strict,
+    buildSelect: (input, schema) => {
+      if (strict) {
+        assertColumnsExist(schema, oldNames, "renameColumns()");
+      }
+      return `SELECT * RENAME (${
+        oldNames
+          .map((d, i) =>
+            `${quoteIdentifier(d)} AS ${quoteIdentifier(newNames[i])}`
+          )
+          .join(", ")
+      }) FROM ${input}`;
+    },
+  });
 }

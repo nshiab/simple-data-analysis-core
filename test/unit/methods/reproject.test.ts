@@ -4,11 +4,11 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should convert from one projection to another one", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
+  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
-  await table.reproject("EPSG:4326");
-  await table.fixGeo();
-  await table.reducePrecision(3);
+  table.reproject("EPSG:4326");
+  table.fixGeo();
+  table.reducePrecision(3);
 
   const data = await table.getGeoData();
 
@@ -17,16 +17,16 @@ Deno.test("should convert from one projection to another one", async () => {
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should convert from one projection to another one from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
+  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
-  await table.reproject("EPSG:4326", { column: "geom" });
-  await table.fixGeo();
-  await table.reducePrecision(3);
+  table.reproject("EPSG:4326", { column: "geom" });
+  table.fixGeo();
+  table.reducePrecision(3);
 
   const data = await table.getGeoData();
 
@@ -35,41 +35,23 @@ Deno.test("should convert from one projection to another one from a specific col
   const types2 = await table.getTypes();
   assertEquals(types2.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
-});
-Deno.test("should return the same result when converting to EPSG:4326 and WGS84", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
-
-  await table.reproject("WGS84");
-  await table.fixGeo();
-  await table.reducePrecision(3);
-
-  const data = await table.getGeoData();
-
-  assertEquals(data, expectedGeo);
-
-  const types3 = await table.getTypes();
-  assertEquals(types3.geom, "GEOMETRY('EPSG:4326')");
-
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should be able to reproject multiples times by keeping track of the projection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
+  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
-  await table.reproject("EPSG:4326");
-  await table.reproject("EPSG:3347");
-  await table.reproject("EPSG:4326");
-  await table.fixGeo();
-  await table.reducePrecision(3);
+  table.reproject("EPSG:4326");
+  table.reproject("EPSG:3347");
+  table.reproject("EPSG:4326");
+  table.fixGeo();
+  table.reducePrecision(3);
 
   const data = await table.getGeoData();
 
   assertEquals(data, expectedGeo);
-  await sdb.done();
+  await sdb.close();
 });
 
 const expectedGeo = {

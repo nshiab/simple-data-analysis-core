@@ -1,17 +1,17 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should clone a column with an offset", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { firstName: "nael", lastName: "shiab" },
     { firstName: "graeme", lastName: "bruce" },
     { firstName: "wendy", lastName: "martinez" },
     { firstName: "andrew", lastName: "ryan" },
   ]);
 
-  await table.cloneColumnWithOffset("firstName", "nextFirstName");
+  table.cloneColumnWithOffset("firstName", "nextFirstName");
 
   const data = await table.getData();
 
@@ -26,19 +26,19 @@ Deno.test("should clone a column with an offset", async () => {
     { firstName: "andrew", lastName: "ryan", nextFirstName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with an offset of 2", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { firstName: "nael", lastName: "shiab" },
     { firstName: "graeme", lastName: "bruce" },
     { firstName: "wendy", lastName: "martinez" },
     { firstName: "andrew", lastName: "ryan" },
   ]);
 
-  await table.cloneColumnWithOffset("firstName", "nextFirstName", {
+  table.cloneColumnWithOffset("firstName", "nextFirstName", {
     offset: 2,
   });
 
@@ -55,20 +55,20 @@ Deno.test("should clone a column with an offset of 2", async () => {
     { firstName: "andrew", lastName: "ryan", nextFirstName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { group: "A", firstName: "nael", lastName: "shiab" },
     { group: "B", firstName: "wendy", lastName: "martinez" },
     { group: "A", firstName: "graeme", lastName: "bruce" },
     { group: "B", firstName: "andrew", lastName: "ryan" },
   ]);
 
-  await table.cloneColumnWithOffset("firstName", "nextFirstName", {
-    categories: "group",
+  table.cloneColumnWithOffset("firstName", "nextFirstName", {
+    by: "group",
   });
 
   const data = await table.getData();
@@ -100,15 +100,15 @@ Deno.test("should clone a column with a category", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should clone a column with a positive offset when working with many rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/rents.csv");
-  await table.cloneColumnWithOffset("rent", "previousYearRent", {
+  table.loadData("test/data/files/rents.csv");
+  table.cloneColumnWithOffset("rent", "previousYearRent", {
     offset: -1,
-    categories: "bedroomType",
+    by: "bedroomType",
   });
 
   const data = await table.getData();
@@ -682,10 +682,10 @@ Deno.test("should clone a column with a positive offset when working with many r
 Deno.test("should clone a column with a negative offset when working with many rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/rents.csv");
-  await table.cloneColumnWithOffset("rent", "nextYearRent", {
+  table.loadData("test/data/files/rents.csv");
+  table.cloneColumnWithOffset("rent", "nextYearRent", {
     offset: 1,
-    categories: "bedroomType",
+    by: "bedroomType",
   });
 
   const data = await table.getData();
@@ -1264,7 +1264,7 @@ Deno.test("should clone a column with geo data with an offset", async () => {
       "test/geodata/files/CanadianProvincesAndTerritories.json",
     );
 
-  await table.cloneColumnWithOffset("geom", "geom_cloned");
+  table.cloneColumnWithOffset("geom", "geom_cloned");
 
   assertEquals(await table.getTypes(), {
     geom: "GEOMETRY('EPSG:4326')",
@@ -1279,5 +1279,22 @@ Deno.test("should clone a column with geo data with an offset", async () => {
     null,
   );
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { firstName: "a", nextFirstName: "already here" },
+    { firstName: "b", nextFirstName: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.cloneColumnWithOffset("firstName", "nextFirstName").run(),
+    Error,
+    'the column "nextFirstName" already exists',
+  );
+
+  await sdb.close();
 });

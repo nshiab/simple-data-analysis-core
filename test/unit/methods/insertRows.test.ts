@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("add rows in an empty table", async () => {
@@ -6,7 +6,7 @@ Deno.test("add rows in an empty table", async () => {
 
   const table = sdb.newTable("data");
 
-  await table.insertRows([
+  table.insertRows([
     { key1: 5, key2: "cinq" },
     { key1: 6, key2: "six" },
   ]);
@@ -18,16 +18,16 @@ Deno.test("add rows in an empty table", async () => {
     { key1: 6, key2: "six" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("add rows in a table", async () => {
   const sdb = new SimpleDB();
 
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/data.json");
+  table.loadData("test/data/files/data.json");
 
-  await table.insertRows([
+  table.insertRows([
     { key1: 5, key2: "cinq" },
     { key1: 6, key2: "six" },
   ]);
@@ -43,5 +43,59 @@ Deno.test("add rows in a table", async () => {
     { key1: 6, key2: "six" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("insertRows binds data values separately from generated SQL", async () => {
+  const sdb = new SimpleDB({ logSQL: true });
+  const table = sdb.newTable('bound "rows"');
+  table.loadArray([{
+    text: "base",
+    nullable: "value",
+    date: new Date("2020-01-01T00:00:00.000Z"),
+    flag: true,
+    number: 0,
+  }]);
+  await table.run();
+
+  const logs: unknown[][] = [];
+  const originalLog = console.log;
+  console.log = (...args: unknown[]) => logs.push(args);
+  try {
+    table.insertRows([{
+      text: "O'Brien",
+      nullable: null,
+      date: new Date("2024-02-03T04:05:06.000Z"),
+      flag: false,
+      number: 42.5,
+    }]);
+    await table.run();
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert(logs.some(([message]) =>
+    typeof message === "string" &&
+    message.includes('INSERT INTO "bound ""rows"""') &&
+    message.includes("VALUES\n(?, ?, ?, ?, ?)")
+  ));
+  assert(logs.some(([message]) => message === "Bound values:"));
+  assertEquals(await table.getData(), [
+    {
+      text: "base",
+      nullable: "value",
+      date: new Date("2020-01-01T00:00:00.000Z"),
+      flag: true,
+      number: 0,
+    },
+    {
+      text: "O'Brien",
+      nullable: null,
+      date: new Date("2024-02-03T04:05:06.000Z"),
+      flag: false,
+      number: 42.5,
+    },
+  ]);
+
+  await sdb.close();
 });

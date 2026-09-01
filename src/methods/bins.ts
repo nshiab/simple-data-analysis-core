@@ -1,49 +1,88 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function bins(
+export default function bins(
   simpleTable: SimpleTable,
-  values: string,
+  column: string,
   interval: number,
   newColumn: string,
   options: {
     startValue?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    await binsQuery(simpleTable, values, interval, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "bins()",
-      parameters: {
-        values,
-        interval,
-        newColumn,
-        options,
-      },
-    }),
-  );
+  // This validation does not need the database, so it stays at call time.
+  if (!Number.isFinite(interval) || interval <= 0) {
+    throw new Error(
+      "bins() interval must be a finite number greater than 0.",
+    );
+  }
+  // The intervals depend on the minimum and maximum values of the data, so
+  // bins can't be expressed as a single SELECT over its input: it executes
+  // as a barrier.
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "bins()",
+    parameters: { column, interval, newColumn, options },
+    execute: async () => {
+      await queryDB(
+        simpleTable,
+        await binsQuery(simpleTable, column, interval, newColumn, options),
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "bins()",
+          parameters: {
+            column,
+            interval,
+            newColumn,
+            options,
+          },
+        }),
+      );
+    },
+  });
 }
 
 async function binsQuery(
   SimpleTable: SimpleTable,
-  values: string,
+  column: string,
   interval: number,
   newColumn: string,
   options: {
     startValue?: number;
   } = {},
 ) {
-  const minValue = await SimpleTable.getMin(values);
+  // A SELECT *, expr AS col colliding with an existing column would be
+  // silently renamed by DuckDB (col -> col_1) instead of erroring, unlike
+  // the ALTER TABLE ADD this used to run.
+  assertNewColumns(await SimpleTable.getTypes(), [newColumn], "bins()");
+
+  // The minimum and maximum are computed in one scan instead of one
+  // getMin/getMax query each.
+  const minMax = await queryDB(
+    SimpleTable,
+    `SELECT MIN(${quoteIdentifier(column)}) AS "min", MAX(${
+      quoteIdentifier(column)
+    }) AS "max" FROM ${quoteIdentifier(SimpleTable.name)}`,
+    mergeOptions(SimpleTable, {
+      table: SimpleTable.name,
+      method: "bins()",
+      parameters: { column, interval, newColumn, options },
+      returnData: true,
+    }),
+  );
+  const minValue = minMax?.[0]?.min;
   if (typeof minValue !== "number") {
-    throw new Error(`minValue of ${values} is not a number`);
+    throw new Error(`minValue of ${column} is not a number`);
   }
 
-  let startValue = 0;
+  let startValue: number;
   if (typeof options.startValue === "number") {
-    if (startValue > minValue) {
+    if (options.startValue > minValue) {
       throw new Error(
         `startValue ${options.startValue} can't be greater than minValue ${minValue}`,
       );
@@ -53,9 +92,9 @@ async function binsQuery(
     startValue = minValue;
   }
 
-  const maxValue = await SimpleTable.getMax(values);
+  const maxValue = minMax?.[0]?.max;
   if (typeof maxValue !== "number") {
-    throw new Error(`maxValue of ${values} is not a number`);
+    throw new Error(`maxValue of ${column} is not a number`);
   }
   const endValue = maxValue;
 
@@ -74,14 +113,19 @@ async function binsQuery(
     const start = i;
     const end = (i + interval - increment).toFixed(decimals);
     intervals.push(
-      `WHEN "${values}" >= ${start} AND "${values}" <= ${end} THEN '[${start}-${end}]'`,
+      `WHEN ${quoteIdentifier(column)} >= ${start} AND ${
+        quoteIdentifier(column)
+      } <= ${end} THEN '[${start}-${end}]'`,
     );
   }
 
-  const query = `ALTER TABLE "${SimpleTable.name}" ADD "${newColumn}" VARCHAR;
-    UPDATE "${SimpleTable.name}" SET "${newColumn}" = CASE
+  // A single rewrite, so the table is scanned once instead of once for the
+  // ALTER and once for the UPDATE.
+  const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(SimpleTable.name)} AS
+    SELECT *, CASE
     ${intervals.join("\n")}
-    END`;
+    END AS ${quoteIdentifier(newColumn)}
+    FROM ${quoteIdentifier(SimpleTable.name)}`;
 
   return query;
 }

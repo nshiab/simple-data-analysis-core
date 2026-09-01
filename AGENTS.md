@@ -2,6 +2,16 @@
 
 ### Phase 1: Exploration (BEFORE Modifying)
 
+- **Library Architecture:** SDA is split into two packages.
+  - **`simple-data-analysis-core`** (this repo) contains all core
+    DuckDB-dependent logic (loading, filtering, joining, geospatial, etc.).
+  - **[`simple-data-analysis`](https://github.com/nshiab/simple-data-analysis)**
+    is an extension adding AI, Google Sheets, and Dataviz features and more.
+- **Where to contribute:**
+  - Prefer `simple-data-analysis-core` for features that depend only on DuckDB
+    or have no external runtime dependencies.
+  - Prefer `simple-data-analysis` for features requiring a runtime library
+    beyond DuckDB, such as AI, Google Sheets, or charting integrations.
 - **Analyze Structure:** Review the directory tree to understand the module
   hierarchy.
 - **Check Capabilities:** Read `deno.json` to identify available `tasks` and
@@ -16,11 +26,33 @@
 
 ### Phase 2: Implementation (DURING Development)
 
+- **Public API Organization:** Give every public method a matching
+  implementation file at `src/methods/<methodName>.ts` and test file at
+  `test/unit/methods/<methodName>.test.ts`. Shared internal logic may live in a
+  separate module whose filename matches its exported function.
+- **Inline Public Types:** Define the complete type of every object-shaped
+  public parameter inline in the public signature. Recursively inline nested
+  object-shaped types, aliases, and interfaces within options. Public option
+  signatures must not reference named application types. Built-in types such as
+  `Promise`, `Date`, and `URL` may remain named. Implementation-only functions
+  may use reusable named aliases. Keep internal named types colocated with the
+  implementation that owns them, and do not re-export them from public
+  `index.ts` files.
 - **Strict Typing:** Avoid `any`. Use explicit interfaces and types.
 - **Documentation:** Every new public property, method, or parameter must have a
   JSDoc block.
   - Include a clear description.
   - Include at least one `@example`.
+  - In examples that produce a table, chain table operations and finish the
+    chain with `.log()`. If direct chaining is unavailable, finish the example
+    with `await table.log()`.
+
+    ```ts
+    await table
+      .selectColumns(["name", "salary"])
+      .log();
+    ```
+
   - Update `@param` and `@returns` tags accurately.
   - Match existing JSDoc block styling.
   - If modifying existing code, ensure all related JSDoc remains synchronized

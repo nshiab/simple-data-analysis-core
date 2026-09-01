@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should unnest geometries", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/earthquake.geojson");
-  await table.unnestGeo();
+  table.loadGeoData("test/geodata/files/earthquake.geojson");
+  table.unnestGeo();
 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
@@ -1133,13 +1133,13 @@ Deno.test("should unnest geometries", async () => {
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should unnest geometries from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/earthquake.geojson");
-  await table.unnestGeo("geom");
+  table.loadGeoData("test/geodata/files/earthquake.geojson");
+  table.unnestGeo("geom");
 
   const data = await table.getGeoData();
 
@@ -2263,5 +2263,5 @@ Deno.test("should unnest geometries from a specific column", async () => {
       },
     ],
   });
-  await sdb.done();
+  await sdb.close();
 });

@@ -1,16 +1,16 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
 Deno.test("should add rows from a table into another table", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData("test/data/files/data.json");
+  table1.loadData("test/data/files/data.json");
 
   const table2 = sdb.newTable("table2");
-  await table2.loadData("test/data/files/data.json");
+  table2.loadData("test/data/files/data.json");
 
-  await table1.insertTables(table2);
+  table1.insertTables(table2);
   const data = await table1.getData();
   assertEquals(data, [
     { key1: 1, key2: "un" },
@@ -22,19 +22,19 @@ Deno.test("should add rows from a table into another table", async () => {
     { key1: 3, key2: "trois" },
     { key1: 4, key2: "quatre" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add rows from a table into another table even if the column order is not the same", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData("test/data/files/data.json");
+  table1.loadData("test/data/files/data.json");
 
   const table2 = sdb.newTable("table2");
-  await table2.loadData("test/data/files/data.json");
-  await table2.selectColumns(["key2", "key1"]);
+  table2.loadData("test/data/files/data.json");
+  table2.selectColumns(["key2", "key1"]);
 
-  await table1.insertTables(table2);
+  table1.insertTables(table2);
   const data = await table1.getData();
   assertEquals(data, [
     { key1: 1, key2: "un" },
@@ -46,34 +46,88 @@ Deno.test("should add rows from a table into another table even if the column or
     { key1: 3, key2: "trois" },
     { key1: 4, key2: "quatre" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should throw an error if the tables have different columns", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadData("test/data/files/data.json");
+  table1.loadData("test/data/files/data.json");
 
   const table2 = sdb.newTable();
-  await table2.loadData("test/data/files/data.json");
-  await table2.selectColumns(["key2"]);
+  table2.loadData("test/data/files/data.json");
+  table2.selectColumns(["key2"]);
 
-  await assertRejects(async () => await table1.insertTables(table2));
+  // insertTables() queues the operation; run() executes it.
+  await assertRejects(() => table1.insertTables(table2).run());
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should explain which columns differ when inserting tables", async () => {
+  const sdb = new SimpleDB();
+  const redistributedVotes = sdb.newTable("redistributedVotes");
+  redistributedVotes.loadArray([{
+    "shared": 1,
+    "B.R.": "value",
+    "Date scrutin": "2026-08-12",
+  }]);
+
+  const votesWithoutMatch = sdb.newTable("votesWithoutMatch");
+  votesWithoutMatch.loadArray([{
+    "shared": 1,
+    "unmatched reason": "missing district",
+  }]);
+
+  const error = await assertRejects(() =>
+    redistributedVotes.insertTables(votesWithoutMatch).run()
+  );
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `Tables "redistributedVotes" and "votesWithoutMatch" do not have the same columns.
+2 columns missing from "votesWithoutMatch": "B.R.", "Date scrutin".
+1 column missing from "redistributedVotes": "unmatched reason".
+Pass { unifyColumns: true } to fill missing columns with NULL values.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should explain which column types differ when inserting tables", async () => {
+  const sdb = new SimpleDB();
+  const redistributedVotes = sdb.newTable("redistributedVotes");
+  redistributedVotes.loadArray([{ votes: 10 }]);
+
+  const votesWithoutMatch = sdb.newTable("votesWithoutMatch");
+  votesWithoutMatch.loadArray([{ votes: "10" }]);
+
+  const error = await assertRejects(() =>
+    redistributedVotes.insertTables(votesWithoutMatch).run()
+  );
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `Column "votes" has different types:
+"redistributedVotes": DOUBLE
+"votesWithoutMatch": VARCHAR
+Convert "votes" to the same type in both tables before inserting.`,
+  );
+
+  await sdb.close();
 });
 
 Deno.test("should add rows from multiple tables into another table", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData("test/data/files/data.json");
+  table1.loadData("test/data/files/data.json");
 
   const table2 = sdb.newTable("table2");
-  await table2.loadData("test/data/files/data.json");
+  table2.loadData("test/data/files/data.json");
 
   const table3 = sdb.newTable("table3");
-  await table3.loadData("test/data/files/data.json");
+  table3.loadData("test/data/files/data.json");
 
-  await table1.insertTables([table2, table3]);
+  table1.insertTables([table2, table3]);
   const data = await table1.getData();
   assertEquals(data, [
     { key1: 1, key2: "un" },
@@ -89,29 +143,29 @@ Deno.test("should add rows from multiple tables into another table", async () =>
     { key1: 3, key2: "trois" },
     { key1: 4, key2: "quatre" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows from tables with different columns", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadArray([
+  table1.loadArray([
     { firstName: "John", lastName: "Doe" },
     { firstName: "Jane", lastName: "Doe" },
   ]);
 
   const table2 = sdb.newTable("table2");
-  await table2.loadArray([
+  table2.loadArray([
     { firstName: "Anthony", age: 25 },
     { firstName: "Eleonore", age: 22 },
   ]);
 
   const table3 = sdb.newTable("table3");
-  await table3.loadArray([
+  table3.loadArray([
     { city: "Montreal" },
     { city: "Toronto" },
   ]);
 
-  await table1.insertTables([table2, table3], { unifyColumns: true });
+  table1.insertTables([table2, table3], { unifyColumns: true });
   const data = await table1.getData();
   assertEquals(data, [
     { firstName: "John", lastName: "Doe", age: null, city: null },
@@ -121,29 +175,29 @@ Deno.test("should add rows from tables with different columns", async () => {
     { firstName: null, lastName: null, age: null, city: "Montreal" },
     { firstName: null, lastName: null, age: null, city: "Toronto" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows from tables with different columns without adding columns to the original tables", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadArray([
+  table1.loadArray([
     { firstName: "John", lastName: "Doe" },
     { firstName: "Jane", lastName: "Doe" },
   ]);
 
   const table2 = sdb.newTable("table2");
-  await table2.loadArray([
+  table2.loadArray([
     { firstName: "Anthony", age: 25 },
     { firstName: "Eleonore", age: 22 },
   ]);
 
   const table3 = sdb.newTable("table3");
-  await table3.loadArray([
+  table3.loadArray([
     { city: "Montreal" },
     { city: "Toronto" },
   ]);
 
-  await table1.insertTables([table2, table3], { unifyColumns: true });
+  table1.insertTables([table2, table3], { unifyColumns: true });
   const data = await table1.getData();
   const data2 = await table2.getData();
   const data3 = await table3.getData();
@@ -165,20 +219,20 @@ Deno.test("should add rows from tables with different columns without adding col
       { city: "Toronto" },
     ],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows from tables with geometries", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadGeoData(
+  table1.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.latLon("geom", "lat", "lon");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.extractLatLon("geom", "lat", "lon");
 
-  await table1.insertTables(table2, { unifyColumns: true });
+  table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
 
@@ -191,55 +245,55 @@ Deno.test("should add rows from tables with geometries", async () => {
       lon: "DOUBLE",
     },
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should throw an error if geometry projections are not the same", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadGeoData(
+  table1.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table1.selectColumns("geom");
+  table1.selectColumns("geom");
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.reproject("EPSG:3347");
-  await table2.selectColumns("geom");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.reproject("EPSG:3347");
+  table2.selectColumns("geom");
 
-  await assertRejects(async () => await table1.insertTables(table2));
+  await assertRejects(() => table1.insertTables(table2).run());
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should throw an error if geometry projections are not the same, even if columns are unified", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadGeoData(
+  table1.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.reproject("EPSG:3347");
-  await table2.latLon("geom", "lat", "lon");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.reproject("EPSG:3347");
+  table2.extractLatLon("geom", "lat", "lon");
 
-  await assertRejects(async () =>
-    await table1.insertTables(table2, { unifyColumns: true })
+  await assertRejects(() =>
+    table1.insertTables(table2, { unifyColumns: true }).run()
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows with geometries to a table without geometries", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadData(
+  table1.loadData(
     "test/data/files/cities.csv",
   );
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.latLon("geom", "lat", "lon");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.extractLatLon("geom", "lat", "lon");
 
-  await table1.insertTables(table2, { unifyColumns: true });
+  table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
 
@@ -252,20 +306,20 @@ Deno.test("should add rows with geometries to a table without geometries", async
       lon: "DOUBLE",
     },
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows without geometries to a table with geometries", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadData(
+  table1.loadData(
     "test/data/files/cities.csv",
   );
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.latLon("geom", "lat", "lon");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.extractLatLon("geom", "lat", "lon");
 
-  await table2.insertTables(table1, { unifyColumns: true });
+  table2.insertTables(table1, { unifyColumns: true });
 
   const types = await table2.getTypes();
 
@@ -278,20 +332,20 @@ Deno.test("should add rows without geometries to a table with geometries", async
       lon: "DOUBLE",
     },
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows and unify columns when the second table has more columns", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadGeoData(
+  table1.loadGeoData(
     "test/geodata/files/point.json",
   );
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.latLon("geom", "lat", "lon");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.extractLatLon("geom", "lat", "lon");
 
-  await table1.insertTables(table2, { unifyColumns: true });
+  table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
 
@@ -302,24 +356,24 @@ Deno.test("should add rows and unify columns when the second table has more colu
       lon: "DOUBLE",
     },
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows with tables with multiple geometry columns", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
-  await table1.loadGeoData(
+  table1.loadGeoData(
     "test/geodata/files/point.json",
   );
-  await table1.cloneColumn("geom", "geom2");
-  await table1.reproject("EPSG:3347", { column: "geom2" });
+  table1.cloneColumn("geom", "geom2");
+  table1.reproject("EPSG:3347", { column: "geom2" });
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.latLon("geom", "lat", "lon");
-  await table2.cloneColumn("geom", "geom2");
-  await table2.reproject("EPSG:3347", { column: "geom2" });
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.extractLatLon("geom", "lat", "lon");
+  table2.cloneColumn("geom", "geom2");
+  table2.reproject("EPSG:3347", { column: "geom2" });
 
-  await table1.insertTables(table2, { unifyColumns: true });
+  table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
 
@@ -331,48 +385,49 @@ Deno.test("should add rows with tables with multiple geometry columns", async ()
       lon: "DOUBLE",
     },
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return the table", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
-  await table1.loadData("test/data/files/data.json");
+  table1.loadData("test/data/files/data.json");
 
   const table2 = sdb.newTable("table2");
-  await table2.loadData("test/data/files/data.json");
+  table2.loadData("test/data/files/data.json");
 
-  const result = await table1.insertTables(table2);
+  const result = table1.insertTables(table2);
   assertEquals(result instanceof SimpleTable, true);
   assertEquals(result.name, "table1");
-  await sdb.done();
+  await result.run();
+  await sdb.close();
 });
 Deno.test("should add rows to an empty table", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
 
   const table2 = sdb.newTable();
-  await table2.loadArray([
+  table2.loadArray([
     { first: "John", last: "Doe" },
     { first: "Jane", last: "Doe" },
   ]);
 
-  await table1.insertTables(table2);
+  table1.insertTables(table2);
 
   assertEquals(await table1.getData(), [
     { first: "John", last: "Doe" },
     { first: "Jane", last: "Doe" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add rows with geometries to an empty table", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable();
 
   const table2 = sdb.newTable();
-  await table2.loadGeoData("test/geodata/files/point.json");
-  await table2.latLon("geom", "lat", "lon");
+  table2.loadGeoData("test/geodata/files/point.json");
+  table2.extractLatLon("geom", "lat", "lon");
 
-  await table1.insertTables(table2, { unifyColumns: true });
+  table1.insertTables(table2, { unifyColumns: true });
 
   const types = await table1.getTypes();
 
@@ -383,5 +438,5 @@ Deno.test("should add rows with geometries to an empty table", async () => {
       lon: "DOUBLE",
     },
   });
-  await sdb.done();
+  await sdb.close();
 });

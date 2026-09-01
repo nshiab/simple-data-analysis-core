@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should filter the rows based on one condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.filter(`"Job" = 'Clerk'`);
+  table.filter(`"Job" = 'Clerk'`);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -171,13 +171,13 @@ Deno.test("should filter the rows based on one condition", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should filter the rows based on multiple conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.filter(`"Job" = 'Clerk' AND "Department or unit" != '50'`);
+  table.loadData(["test/data/files/employees.csv"]);
+  table.filter(`"Job" = 'Clerk' AND "Department or unit" != '50'`);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -230,29 +230,29 @@ Deno.test("should filter the rows based on multiple conditions", async () => {
       "End-of_year-BONUS?": "24,17%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should filter the rows based on booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { name: "Nael", value: true },
     { name: "Graeme", value: false },
   ]);
-  await table.filter(`value = TRUE`);
+  table.filter(`value = TRUE`);
   const data = await table.getData();
 
   assertEquals(data, [{ name: "Nael", value: true }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not throw an error when all data has been filtered out", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.filter(`Name = 'Nael'`);
+  table.loadData(["test/data/files/employees.csv"]);
+  table.filter(`Name = 'Nael'`);
   const data = await table.getData();
 
   assertEquals(data, []);
-  await sdb.done();
+  await sdb.close();
 });

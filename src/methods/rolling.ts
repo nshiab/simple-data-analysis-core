@@ -1,58 +1,57 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function rolling(
+export default function rolling(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
-  summary: "min" | "max" | "mean" | "median" | "sum",
+  stat: "min" | "max" | "mean" | "median" | "sum",
   preceding: number,
   following: number,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    rollingQuery(
-      simpleTable.name,
-      column,
-      newColumn,
-      summary,
-      preceding,
-      following,
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "rolling()",
-      parameters: {
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "rolling()",
+    parameters: { column, newColumn, stat, preceding, following, options },
+    needsSchema: true,
+    buildSelect: (input, schema) =>
+      rollingSelect(
+        input,
+        schema,
         column,
         newColumn,
-        summary,
+        stat,
         preceding,
         following,
         options,
-      },
-    }),
-  );
+      ),
+  });
 }
 
-function rollingQuery(
-  table: string,
+function rollingSelect(
+  input: string,
+  schema: TableSchema,
   column: string,
   newColumn: string,
-  summary: "count" | "min" | "max" | "mean" | "median" | "sum",
+  stat: "count" | "min" | "max" | "mean" | "median" | "sum",
   preceding: number,
   following: number,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
   } = {},
 ) {
+  assertNewColumns(schema, [newColumn], "rolling()");
+
   const aggregates: { [key: string]: string } = {
     count: "COUNT",
     min: "MIN",
@@ -62,31 +61,28 @@ function rollingQuery(
     sum: "SUM",
   };
 
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  const partition = categories.length > 0
-    ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
+  const by = options.by ? stringToArray(options.by) : [];
+  const partition = by.length > 0
+    ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
     : "";
 
-  const tempQuery = `${aggregates[summary]}("${column}") OVER (${partition}
+  const window = `OVER (${partition}
                 ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING)`;
 
-  const query = `CREATE OR REPLACE TABLE "${table}" AS SELECT *,
-    ${
+  const tempQuery = `${aggregates[stat]}(${quoteIdentifier(column)}) ${window}`;
+
+  // Windows touching the edges of the frame (or of their category) have
+  // fewer values than requested, so their result is NULL.
+  return `SELECT *,
+    CASE
+        WHEN COUNT(${quoteIdentifier(column)}) ${window} != ${
+    preceding + following + 1
+  } THEN NULL
+        ELSE ${
     typeof options.decimals === "number"
       ? `ROUND(${tempQuery}, ${options.decimals})`
       : tempQuery
-  } AS "${newColumn}",
-        COUNT("${column}") OVER (${partition}
-            ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING) as tempCountForRolling
-        FROM "${table}";
-        UPDATE "${table}" SET "${newColumn}" = CASE
-            WHEN "tempCountForRolling" != ${preceding + following + 1} THEN NULL
-            ELSE "${newColumn}"
-        END;
-        ALTER TABLE "${table}" DROP COLUMN "tempCountForRolling";
-        `;
-
-  return query;
+  }
+    END AS ${quoteIdentifier(newColumn)}
+        FROM ${input}`;
 }

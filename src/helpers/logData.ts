@@ -7,7 +7,7 @@ export default function logData(
       [key: string]: unknown;
     }[]
     | null,
-  nbCharactersToLog?: number,
+  charsToLog?: number,
 ) {
   if (data === null) {
     console.log("Data is null");
@@ -25,13 +25,13 @@ export default function logData(
         } = {};
         for (const key of keys) {
           if (
-            typeof nbCharactersToLog === "number" &&
+            typeof charsToLog === "number" &&
             typeof data[i][key] === "string" &&
-            (data[i][key] as string).length > nbCharactersToLog
+            (data[i][key] as string).length > charsToLog
           ) {
             newItem[key] = (data[i][key] as string).slice(
               0,
-              nbCharactersToLog,
+              charsToLog,
             ) + "...";
           } else {
             newItem[key] = data[i][key];
@@ -59,8 +59,8 @@ export default function logData(
       printTable(
         dataToBeLogged,
         {
-          ...(typeof nbCharactersToLog === "number"
-            ? { maxColumnWidth: nbCharactersToLog }
+          ...(typeof charsToLog === "number"
+            ? { maxColumnWidth: charsToLog }
             : {}),
           ...(hasTypesRow ? { typesRowIndex: 0 } : {}),
         },

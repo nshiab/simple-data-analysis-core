@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should untidy data by expanding mutiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataTidy.json");
-  await table.wider("year", "employees");
+  table.loadData("test/data/files/dataTidy.json");
+  table.wider("year", "employees");
 
-  await table.sort({ Department: "asc" });
+  table.sort({ Department: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -40,13 +40,13 @@ Deno.test("should untidy data by expanding mutiple columns", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should untidy data by expanding mutiple columns with spaces in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       Department: "accounting",
       "approximate year": "2015",
@@ -138,9 +138,9 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
       "employees full-time": 27,
     },
   ]);
-  await table.wider("approximate year", "employees full-time");
+  table.wider("approximate year", "employees full-time");
 
-  await table.sort({ Department: "asc" });
+  table.sort({ Department: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -173,5 +173,37 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { Department: "accounting", year: "2015", employees: 10 },
+    { Department: "accounting", year: "2015", employees: 5 },
+  ]);
+  table.wider("year", "employees");
+
+  const data = await table.getData();
+
+  assertEquals(data, [{ Department: "accounting", "2015": 15 }]);
+
+  await sdb.close();
+});
+
+Deno.test("should use the stat option instead of the default sum", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { Department: "accounting", year: "2015", employees: 10 },
+    { Department: "accounting", year: "2015", employees: 5 },
+  ]);
+  table.wider("year", "employees", { stat: "mean" });
+
+  const data = await table.getData();
+
+  assertEquals(data, [{ Department: "accounting", "2015": 7.5 }]);
+
+  await sdb.close();
 });

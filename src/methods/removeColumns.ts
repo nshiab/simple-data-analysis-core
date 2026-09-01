@@ -1,22 +1,21 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function removeColumns(
+export default function removeColumns(
   simpleTable: SimpleTable,
   columns: string | string[],
 ) {
   const cols = stringToArray(columns);
-  await queryDB(
-    simpleTable,
-    cols.map((d) => `ALTER TABLE "${simpleTable.name}" DROP "${d}";`).join(
-      "\n",
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "removeColumns()",
-      parameters: { columns },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "removeColumns()",
+    parameters: { columns },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT * EXCLUDE (${
+        cols.map((d) => `${quoteIdentifier(d)}`).join(", ")
+      }) FROM ${input}`,
+  });
 }

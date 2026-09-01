@@ -1,47 +1,53 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
-export default async function sort(
+export default function sort(
   simpleTable: SimpleTable,
   order: { [key: string]: "asc" | "desc" } | null = null,
   options: {
     lang?: { [key: string]: string };
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    sortQuery(simpleTable.name, order, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "sort()",
-      parameters: { order, options },
-    }),
-  );
+  const capturedOrder = order === null ? null : { ...order };
+  const capturedOptions = {
+    ...options,
+    lang: options.lang === undefined ? undefined : { ...options.lang },
+  };
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "sort()",
+    parameters: { order: capturedOrder, options: capturedOptions },
+    needsSchema: false,
+    preservesSchema: true,
+    buildSelect: (input) => sortSelect(input, capturedOrder, capturedOptions),
+  });
 }
 
-function sortQuery(
-  table: string,
+function sortSelect(
+  input: string,
   order: { [key: string]: "asc" | "desc" } | null,
   options: {
     lang?: { [key: string]: string };
   } = {},
 ) {
-  let query = `CREATE OR REPLACE TABLE "${table}" AS SELECT * FROM "${table}"
+  let query = `SELECT * FROM ${input}
     ORDER BY`;
 
   if (order === null) {
-    query += " ALL; ";
+    query += " ALL,";
   } else {
     for (const column of Object.keys(order)) {
       if (options.lang && options.lang[column]) {
-        query += `\n"${column}" COLLATE ${options.lang[column]} ${
+        query += `\n${quoteIdentifier(column)} COLLATE ${
+          options.lang[column]
+        } ${
           order[
             column
           ].toUpperCase()
         },`;
       } else {
-        query += `\n"${column}" ${order[column].toUpperCase()},`;
+        query += `\n${quoteIdentifier(column)} ${order[column].toUpperCase()},`;
       }
     }
   }

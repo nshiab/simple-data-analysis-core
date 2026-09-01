@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should stream the same rows as getData", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dailyTemperatures.csv");
+  table.loadData("test/data/files/dailyTemperatures.csv");
 
   const streamed: { [key: string]: unknown }[] = [];
   for await (const row of table.stream()) {
@@ -12,7 +12,7 @@ Deno.test("should stream the same rows as getData", async () => {
   }
 
   assertEquals(streamed, await table.getData());
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should stream more rows than one DuckDB chunk", async () => {
@@ -22,7 +22,7 @@ Deno.test("should stream more rows than one DuckDB chunk", async () => {
     id: i,
     value: `value-${i}`,
   }));
-  await table.loadArray(data);
+  table.loadArray(data);
 
   let count = 0;
   let idSum = 0;
@@ -32,13 +32,13 @@ Deno.test("should stream more rows than one DuckDB chunk", async () => {
   }
   assertEquals(count, 5000);
   assertEquals(idSum, (4999 * 5000) / 2);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should stream with columns and conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("filtered");
-  await table.loadArray([
+  table.loadArray([
     { name: "a", value: 1 },
     { name: "b", value: 2 },
     { name: "c", value: 3 },
@@ -51,7 +51,7 @@ Deno.test("should stream with columns and conditions", async () => {
     streamed.push(row);
   }
   assertEquals(streamed, [{ name: "b" }, { name: "c" }]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should convert values while streaming like getData", async () => {
@@ -79,13 +79,13 @@ Deno.test("should convert values while streaming like getData", async () => {
       nullInt: null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should allow breaking out of the stream early", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("early");
-  await table.loadArray(
+  table.loadArray(
     Array.from({ length: 5000 }, (_, i) => ({ id: i })),
   );
 
@@ -99,6 +99,6 @@ Deno.test("should allow breaking out of the stream early", async () => {
   assertEquals(count, 10);
 
   // The table is still usable after an early break.
-  assertEquals(await table.getNbRows(), 5000);
-  await sdb.done();
+  assertEquals(await table.getRowCount(), 5000);
+  await sdb.close();
 });

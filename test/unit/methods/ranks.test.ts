@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 // Based on https://www.sqlshack.com/overview-of-sql-rank-functions/
@@ -6,8 +6,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add a column with the rank", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank");
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank");
   const data = await table.getData();
   assertEquals(data, [
     { Name: "Isabella", Subject: "Maths", Mark: 50, rank: 1 },
@@ -20,14 +20,14 @@ Deno.test("should add a column with the rank", async () => {
     { Name: "Olivia", Subject: "English", Mark: 89, rank: 8 },
     { Name: "Isabella", Subject: "English", Mark: 90, rank: 9 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the rank in descending order", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", { order: "desc" });
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", { order: "desc" });
   const data = await table.getData();
   assertEquals(data, [
     { Name: "Isabella", Subject: "English", Mark: 90, rank: 1 },
@@ -40,15 +40,15 @@ Deno.test("should add a column with the rank in descending order", async () => {
     { Name: "Olivia", Subject: "Maths", Mark: 55, rank: 8 },
     { Name: "Isabella", Subject: "Maths", Mark: 50, rank: 9 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the rank and no gaps", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", {
-    noGaps: true,
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", {
+    dense: true,
   });
   const data = await table.getData();
 
@@ -63,17 +63,17 @@ Deno.test("should add a column with the rank and no gaps", async () => {
     { Name: "Olivia", Subject: "English", Mark: 89, rank: 7 },
     { Name: "Isabella", Subject: "English", Mark: 90, rank: 8 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the rank after grouping with one category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", {
-    categories: "Subject",
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", {
+    by: "Subject",
   });
-  await table.sort({
+  table.sort({
     Subject: "asc",
     Mark: "asc",
   });
@@ -89,18 +89,18 @@ Deno.test("should add a column with the rank after grouping with one category", 
     { Name: "Isabella", Subject: "Science", Mark: 70, rank: 2 },
     { Name: "Lily", Subject: "Science", Mark: 80, rank: 3 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("should add a column with the rank after grouping with multiple categories", async () => {
+Deno.test("should add a column with the rank after grouping by multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.ranks("Mark", "rank", {
-    categories: ["Name", "Subject"],
+  table.loadData("test/data/files/dataRank.csv");
+  table.ranks("Mark", "rank", {
+    by: ["Name", "Subject"],
   });
 
-  await table.sort({
+  table.sort({
     Name: "asc",
     Subject: "asc",
     Mark: "asc",
@@ -119,5 +119,22 @@ Deno.test("should add a column with the rank after grouping with multiple catego
     { Name: "Olivia", Subject: "Maths", Mark: 55, rank: 1 },
     { Name: "Olivia", Subject: "Science", Mark: 60, rank: 1 },
   ]);
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { value: 1, existing: "already here" },
+    { value: 2, existing: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.ranks("value", "existing").run(),
+    Error,
+    'the column "existing" already exists',
+  );
+
+  await sdb.close();
 });

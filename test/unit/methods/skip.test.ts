@@ -10,8 +10,8 @@ Deno.test("should skip rows", async () => {
       { first: "Graeme" },
       { first: "Andrew" },
     ]);
-  await table.skip(1);
+  table.skip(1);
   const data = await table.getData();
   assertEquals(data, [{ first: "Graeme" }, { first: "Andrew" }]);
-  await sdb.done();
+  await sdb.close();
 });

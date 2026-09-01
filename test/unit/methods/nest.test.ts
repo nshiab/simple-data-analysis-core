@@ -4,7 +4,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should nest rows based on a single category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { city: "Montreal", neighborhoods: "Old Montreal" },
     { city: "Montreal", neighborhoods: "Chinatown" },
     { city: "Montreal", neighborhoods: "Griffintown" },
@@ -16,7 +16,7 @@ Deno.test("should nest rows based on a single category", async () => {
     { city: "Vancouver", neighborhoods: "Yaletown" },
   ]);
 
-  await table.nest("neighborhoods", " / ", "city");
+  table.nest("neighborhoods", " / ", "city");
 
   const data = await table.getData();
 
@@ -32,13 +32,13 @@ Deno.test("should nest rows based on a single category", async () => {
     { city: "Vancouver", neighborhoods: "Coal Harbour / West end / Yaletown" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should nest with multiple category columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { country: "Canada", city: "Montreal", tags: "red" },
     { country: "Canada", city: "Montreal", tags: "blue" },
     { country: "Canada", city: "Toronto", tags: "green" },
@@ -47,7 +47,7 @@ Deno.test("should nest with multiple category columns", async () => {
     { country: "USA", city: "New York", tags: "purple" },
   ]);
 
-  await table.nest("tags", ",", ["country", "city"]);
+  table.nest("tags", ",", ["country", "city"]);
 
   const data = await table.getData();
 
@@ -57,7 +57,7 @@ Deno.test("should nest with multiple category columns", async () => {
     { country: "USA", city: "New York", tags: "orange,purple" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should work as inverse of unnest (round-trip test)", async () => {
@@ -77,19 +77,32 @@ Deno.test("should work as inverse of unnest (round-trip test)", async () => {
     { city: "Vancouver", neighborhoods: "Coal Harbour / West end / Yaletown" },
   ];
 
-  await table.loadArray(originalData);
+  table.loadArray(originalData);
 
   // Unnest to expand rows
-  await table.unnest("neighborhoods", " / ");
+  table.unnest("neighborhoods", " / ");
 
   const unnested = await table.getData();
   assertEquals(unnested.length, 9); // 3 rows expanded to 9
 
   // Nest back to original structure
-  await table.nest("neighborhoods", " / ", "city");
+  table.nest("neighborhoods", " / ", "city");
 
   const nested = await table.getData();
   assertEquals(nested, originalData);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should bind a nesting separator containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundNest");
+
+  table.loadArray([
+    { group: "a", value: "rock" },
+    { group: "a", value: "roll" },
+  ]).nest("value", "'n'", "group");
+
+  assertEquals(await table.getData(), [{ group: "a", value: "rock'n'roll" }]);
+  await sdb.close();
 });

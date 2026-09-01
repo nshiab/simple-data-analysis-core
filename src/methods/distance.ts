@@ -1,8 +1,9 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function distance(
+export default function distance(
   simpleTable: SimpleTable,
   column1: string,
   column2: string,
@@ -13,28 +14,35 @@ export default async function distance(
     decimals?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    distanceQuery(simpleTable.name, column1, column2, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "distance()",
-      parameters: { column1, column2, newColumn },
-    }),
-  );
+  // Building the expression doesn't need the database, so invalid options
+  // throw at call time.
+  const expression = distanceExpression(column1, column2, options);
+
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "distance()",
+    parameters: { column1, column2, newColumn },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [newColumn], "distance()");
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
+    },
+  });
 }
 
-function distanceQuery(
-  table: string,
+function distanceExpression(
   column1: string,
   column2: string,
-  newColumn: string,
   options: {
     unit?: "m" | "km";
     method?: "srs" | "spheroid" | "haversine";
     decimals?: number;
   } = {},
 ) {
+  options = structuredClone(options);
   options.method = options.method ?? "srs";
 
   if (options.method === "srs" && typeof options.unit === "string") {
@@ -50,43 +58,26 @@ function distanceQuery(
     }
   }
 
-  let query =
-    `ALTER TABLE "${table}" ADD "${newColumn}" DOUBLE; UPDATE "${table}" SET "${newColumn}" = `;
-
+  let expression = "";
   if (options.method === "srs") {
-    if (typeof options.decimals === "number") {
-      query +=
-        `ROUND(ST_Distance("${column1}", "${column2}"), ${options.decimals})`;
-    } else {
-      query += `ST_Distance("${column1}", "${column2}")`;
-    }
+    expression = `ST_Distance(${quoteIdentifier(column1)}, ${
+      quoteIdentifier(column2)
+    })`;
   } else if (options.method === "haversine") {
-    if (typeof options.decimals === "number") {
-      query += `ROUND(ST_Distance_Sphere("${column1}", "${column2}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      }, ${options.decimals});`;
-    } else {
-      query += `ST_Distance_Sphere("${column1}", "${column2}") ${
-        options.unit === "km" ? "/ 1000" : ""
-      };`;
-    }
+    expression = `ST_Distance_Sphere(${quoteIdentifier(column1)}, ${
+      quoteIdentifier(column2)
+    }) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else if (options.method === "spheroid") {
-    if (typeof options.decimals === "number") {
-      query +=
-        `ROUND(ST_Distance_Spheroid("${column1}"::GEOMETRY, "${column2}"::GEOMETRY) ${
-          options.unit === "km" ? "/ 1000" : ""
-        }, ${options.decimals});`;
-    } else {
-      query +=
-        `ST_Distance_Spheroid("${column1}"::GEOMETRY, "${column2}"::GEOMETRY) ${
-          options.unit === "km" ? "/ 1000" : ""
-        };`;
-    }
+    expression = `ST_Distance_Spheroid(${quoteIdentifier(column1)}::GEOMETRY, ${
+      quoteIdentifier(column2)
+    }::GEOMETRY) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else {
     throw new Error(
-      `Uknown method ${options.method}. Choose between 'srs', 'haversine' and 'spheroid'.`,
+      `distance() received an unknown method: ${options.method}. Choose "srs", "haversine", or "spheroid".`,
     );
   }
 
-  return query;
+  return typeof options.decimals === "number"
+    ? `ROUND(${expression}, ${options.decimals})`
+    : expression;
 }

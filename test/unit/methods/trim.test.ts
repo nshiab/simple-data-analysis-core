@@ -1,12 +1,28 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should report valid trim sides", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+
+  assertThrows(
+    () =>
+      table.trim("value", {
+        side: "middle" as "left",
+      }),
+    Error,
+    `trim() options.side must be "left", "right", or "both". Received "middle".`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should remove whitespace", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key1");
+  table.trim("key1");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -16,16 +32,16 @@ Deno.test("should remove whitespace", async () => {
     { key1: "d", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace with column name containing spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
-  await table.renameColumns({ key1: "key 1" });
+  table.loadData(["test/data/files/dataTrim.json"]);
+  table.renameColumns({ key1: "key 1" });
 
-  await table.trim("key 1");
+  table.trim("key 1");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -35,15 +51,15 @@ Deno.test("should remove whitespace with column name containing spaces", async (
     { "key 1": "d", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace from multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim(["key1", "key2"]);
+  table.trim(["key1", "key2"]);
 
   const data = await table.getData();
 
@@ -54,16 +70,16 @@ Deno.test("should remove whitespace from multiple columns", async () => {
     { key1: "d", key2: "!@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace just on the left", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key1", {
-    method: "leftTrim",
+  table.trim("key1", {
+    side: "left",
   });
   const data = await table.getData();
 
@@ -74,16 +90,16 @@ Deno.test("should remove whitespace just on the left", async () => {
     { key1: "d  ", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove whitespace just on the right", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key1", {
-    method: "rightTrim",
+  table.trim("key1", {
+    side: "right",
   });
   const data = await table.getData();
 
@@ -94,16 +110,16 @@ Deno.test("should remove whitespace just on the right", async () => {
     { key1: "  d", key2: " !@d!@" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove specific characters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataTrim.json"]);
+  table.loadData(["test/data/files/dataTrim.json"]);
 
-  await table.trim("key2", {
-    method: "rightTrim",
+  table.trim("key2", {
+    side: "right",
     character: "!@",
   });
   const data = await table.getData();
@@ -115,5 +131,16 @@ Deno.test("should remove specific characters", async () => {
     { key1: "  d  ", key2: " !@d" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should bind trim characters containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundTrim");
+
+  table.loadArray([{ value: "''quoted''" }]);
+  table.trim("value", { character: "'" });
+
+  assertEquals(await table.getData(), [{ value: "quoted" }]);
+  await sdb.close();
 });

@@ -7,7 +7,7 @@ export default async function getTableNames(simpleDB: SimpleDB) {
     simpleDB,
     `SHOW TABLES`,
     mergeOptions(simpleDB, {
-      returnDataFrom: "query",
+      returnData: true,
       table: null,
       method: "getTables",
       parameters: {},
@@ -15,7 +15,7 @@ export default async function getTableNames(simpleDB: SimpleDB) {
   );
 
   if (!queryResult) {
-    throw new Error("No result");
+    throw new Error("The query did not return a result.");
   }
 
   const tables = queryResult.map((d) => d.name) as string[];

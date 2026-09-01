@@ -1,43 +1,65 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function cloneColumnWithOffset(
+export default function cloneColumnWithOffset(
   simpleTable: SimpleTable,
-  originalColumn: string,
+  column: string,
   newColumn: string,
   options: {
     offset?: number;
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  const offset = options.offset ?? 1;
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  const partition = categories.length > 0
-    ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
-    : "";
+  // The offset is based on rowid, which only exists on the materialized
+  // table, not on the output of a fused step: it executes as a barrier.
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "cloneColumnWithOffset()",
+    parameters: { column, newColumn, options },
+    execute: async () => {
+      // A SELECT *, expr AS col colliding with an existing column would be
+      // silently renamed by DuckDB (col -> col_1) instead of erroring.
+      assertNewColumns(
+        await simpleTable.getTypes(),
+        [newColumn],
+        "cloneColumnWithOffset()",
+      );
 
-  const tempRowCol = `rowNumberForCloneColumnWithOffset`;
-  await simpleTable.addRowNumber(tempRowCol);
+      const offset = options.offset ?? 1;
+      const by = options.by ? stringToArray(options.by) : [];
+      const partition = by.length > 0
+        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
+        : "";
 
-  // Apply the offset using the row number for ordering
-  // When categories are specified, also sort the final result by categories
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE("${tempRowCol}"), LEAD("${originalColumn}", ${offset}) OVER(${partition} ORDER BY "${tempRowCol}") AS "${newColumn}" FROM "${simpleTable.name}"${
-      categories.length > 0
-        ? ` ORDER BY ${
-          categories.map((d) => `"${d}"`).join(", ")
-        }, "${tempRowCol}"`
-        : ` ORDER BY "${tempRowCol}"`
-    };`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "cloneColumnWithOffset()",
-      parameters: { originalColumn, newColumn },
-    }),
-  );
+      // When by are specified, also sort the final result by
+      // by.
+      await queryDB(
+        simpleTable,
+        `CREATE OR REPLACE TABLE ${
+          quoteIdentifier(simpleTable.name)
+        } AS SELECT *, LEAD(${
+          quoteIdentifier(column)
+        }, ${offset}) OVER(${partition} ORDER BY rowid) AS ${
+          quoteIdentifier(newColumn)
+        } FROM ${quoteIdentifier(simpleTable.name)}${
+          by.length > 0
+            ? ` ORDER BY ${
+              by.map((d) => `${quoteIdentifier(d)}`).join(", ")
+            }, rowid`
+            : ` ORDER BY rowid`
+        };`,
+        mergeOptions(simpleTable, {
+          table: simpleTable.name,
+          method: "cloneColumnWithOffset()",
+          parameters: { column, newColumn },
+        }),
+      );
+    },
+  });
 }

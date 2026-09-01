@@ -1,25 +1,29 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function sample(
+export default function sample(
   simpleTable: SimpleTable,
-  quantity: number | string,
+  count: number | string,
   options: {
     seed?: number;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${simpleTable.name}" USING SAMPLE RESERVOIR(${
-      typeof quantity === "number" ? `${quantity} ROWS` : quantity
-    })${
-      typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
-    }`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "sample()",
-      parameters: { quantity, options },
-    }),
-  );
+  options = { ...options };
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "sample()",
+    parameters: { count, options },
+    needsSchema: false,
+    // Seeded reservoir sampling returns a stable row order from a materialized
+    // table, but DuckDB can emit those rows in a different order when the
+    // sampler consumes a file scan directly.
+    requiresMaterializedInput: typeof options.seed === "number",
+    preservesSchema: true,
+    buildSelect: (input) =>
+      `SELECT * FROM ${input} USING SAMPLE RESERVOIR(${
+        typeof count === "number" ? `${count} ROWS` : count
+      })${
+        typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
+      }`,
+  });
 }

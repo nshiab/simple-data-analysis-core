@@ -1,53 +1,37 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function quantiles(
+export default function quantiles(
   simpleTable: SimpleTable,
-  values: string,
-  nbQuantiles: number,
+  column: string,
+  count: number,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    quantilesQuery(simpleTable.name, values, nbQuantiles, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "quantiles()",
-      parameters: {
-        values,
-        nbQuantiles,
-        newColumn,
-        options,
-      },
-    }),
-  );
-}
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "quantiles()",
+    parameters: { column, count, newColumn, options },
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      assertNewColumns(schema, [newColumn], "quantiles()");
 
-function quantilesQuery(
-  table: string,
-  values: string,
-  nbQuantiles: number,
-  newColumn: string,
-  options: {
-    categories?: string | string[];
-  } = {},
-) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+      const by = options.by ? stringToArray(options.by) : [];
 
-  const partition = categories.length === 0
-    ? ""
-    : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
+      const partition = by.length === 0
+        ? ""
+        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
 
-  const query =
-    `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ntile(${nbQuantiles}) OVER (${partition}ORDER BY "${values}") AS "${newColumn}"
-    FROM "${table}"`;
-
-  return query;
+      return `SELECT *, ntile(${count}) OVER (${partition}ORDER BY ${
+        quoteIdentifier(column)
+      }) AS ${quoteIdentifier(newColumn)}
+    FROM ${input}`;
+    },
+  });
 }

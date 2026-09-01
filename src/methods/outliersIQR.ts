@@ -1,74 +1,64 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function outliersIQR(
+export default function outliersIQR(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    outliersIQRQuery(
-      simpleTable.name,
-      column,
-      newColumn,
-      (await simpleTable.getNbRows()) % 2 === 0 ? "even" : "odd",
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "outliersIQR()",
-      parameters: { column, newColumn, options },
-    }),
-  );
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "outliersIQR()",
+    parameters: { column, newColumn, options },
+    needsSchema: false,
+    buildSelect: (input) =>
+      outliersIQRSelect(input, column, newColumn, options),
+  });
 }
 
-function outliersIQRQuery(
-  table: string,
+function outliersIQRSelect(
+  input: string,
   column: string,
   newColumn: string,
-  parity: "even" | "odd",
   options: {
-    categories?: string | string[];
+    by?: string | string[];
   } = {},
 ) {
-  const categories = options.categories
-    ? stringToArray(options.categories).map((d) => `"${d}"`)
+  const by = options.by
+    ? stringToArray(options.by).map((d) => `${quoteIdentifier(d)}`)
     : [];
 
-  const quantileFunc = parity === "even" ? "quantile_disc" : "quantile_cont";
+  const partition = by.length > 0 ? `PARTITION BY ${by.join(", ")}` : "";
+  const quantile = (fraction: number) =>
+    `IF(COUNT(${quoteIdentifier(column)}) OVER (${partition}) % 2 = 0,
+      quantile_disc(${
+      quoteIdentifier(column)
+    }, ${fraction}) OVER (${partition}),
+      quantile_cont(${quoteIdentifier(column)}, ${fraction}) OVER (${partition})
+    )`;
 
-  const where = categories.length > 0
-    ? `WHERE ${
-      categories
-        .map((d) => `"${table}".${d} = "iqr".${d}`)
-        .join(" AND ")
-    }`
-    : "";
-
-  const query = `ALTER TABLE "${table}"
-    ADD COLUMN "${newColumn}" BOOLEAN;
-    WITH "iqr" AS (
-        SELECT${categories.length > 0 ? `\n${categories.join(", ")},` : ""}
-            ${quantileFunc}("${column}", 0.25) as "q1",
-            ${quantileFunc}("${column}", 0.75) as "q3",
-            ("q3"-"q1")*1.5 as "range",
-            "q1"-"range" as "lowThreshold",
-            "q3"+"range" as "highThreshold"
-        FROM "${table}"
-        ${categories.length > 0 ? `GROUP BY ${categories.join(", ")}` : ""}
-    )
-    UPDATE "${table}"
-    SET "${newColumn}" = CASE
-        WHEN "${column}" > (SELECT "highThreshold" FROM "iqr" ${where}) OR "${column}" < (SELECT "lowThreshold" FROM "iqr" ${where}) THEN TRUE
+  // q1/q3 are computed as window values (one pass) instead of a per-category
+  // CTE joined back through a correlated subquery per row.
+  return `SELECT * EXCLUDE ("_sda_q1", "_sda_q3"), CASE
+        WHEN ${
+    quoteIdentifier(column)
+  } > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
+          OR ${
+    quoteIdentifier(column)
+  } < "_sda_q1" - ("_sda_q3" - "_sda_q1") * 1.5
+        THEN TRUE
         ELSE FALSE
-    END;
-    `;
-
-  return query;
+    END AS ${quoteIdentifier(newColumn)}
+    FROM (
+        SELECT *,
+            ${quantile(0.25)} AS "_sda_q1",
+            ${quantile(0.75)} AS "_sda_q3"
+        FROM ${input}
+    ) "_sda"`;
 }

@@ -1,42 +1,26 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function cloneColumn(
+export default function cloneColumn(
   simpleTable: SimpleTable,
-  originalColumn: string,
+  column: string,
   newColumn: string,
 ) {
-  const types = await simpleTable.getTypes();
-
-  await queryDB(
-    simpleTable,
-    cloneColumnQuery(simpleTable.name, originalColumn, newColumn, types),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "cloneColumn()",
-      parameters: { originalColumn, newColumn },
-    }),
-  );
-}
-
-function cloneColumnQuery(
-  table: string,
-  originalColumn: string,
-  newColumn: string,
-  types: { [key: string]: string },
-) {
-  let query = "";
-
-  const originalColumnType = types[originalColumn];
-
-  if (originalColumnType) {
-    query +=
-      `ALTER TABLE "${table}" ADD COLUMN "${newColumn}" ${originalColumnType};
-        UPDATE "${table}" SET "${newColumn}" = "${originalColumn}"`;
-  } else {
-    throw new Error(`Can't find type of ${originalColumn}`);
-  }
-
-  return query;
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "cloneColumn()",
+    parameters: { column, newColumn },
+    needsSchema: true,
+    buildSelect: (input, types) => {
+      if (!types[column]) {
+        throw new Error(`Can't find type of ${column}`);
+      }
+      assertNewColumns(types, [newColumn], "cloneColumn()");
+      return `SELECT *, ${quoteIdentifier(column)} AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
+    },
+  });
 }

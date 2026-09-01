@@ -1,25 +1,33 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function longer(
+export default function longer(
   simpleTable: SimpleTable,
   columns: string[],
-  columnsTo: string,
+  namesTo: string,
   valuesTo: string,
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM (
-            FROM "${simpleTable.name}" UNPIVOT INCLUDE NULLS (
-            "${valuesTo}"
-            for "${columnsTo}" in (${columns.map((d) => `"${d}"`).join(", ")})
+  columns = [...columns];
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "longer()",
+    parameters: { columns, namesTo, valuesTo },
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      // The pivoted columns are consumed by UNPIVOT and don't appear in the
+      // output, so namesTo/valuesTo may reuse one of those names.
+      assertNewColumns(schema, [namesTo, valuesTo], "longer()", columns);
+
+      return `SELECT * FROM (
+            FROM ${input} UNPIVOT INCLUDE NULLS (
+            ${quoteIdentifier(valuesTo)}
+            for ${quoteIdentifier(namesTo)} in (${
+        columns.map((d) => `${quoteIdentifier(d)}`).join(", ")
+      })
             )
-        )`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "longer()",
-      parameters: { columns, columnsTo, valuesTo },
-    }),
-  );
+        )`;
+    },
+  });
 }

@@ -1,17 +1,17 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should repeat rows based on a specific column values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: 1, count: 2, category: "A" },
     { id: 2, count: 3, category: "B" },
     { id: 3, count: 0, category: "C" },
     { id: 4, count: -1, category: "D" },
     { id: 5, count: null, category: "E" },
   ]);
-  await table.repeatRows("count");
+  table.repeatRows("count");
 
   const data = await table.getData();
 
@@ -23,17 +23,17 @@ Deno.test("should repeat rows based on a specific column values", async () => {
     { id: 2, count: 3, category: "B" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should repeat rows based on a specific column values and add an index column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { id: 1, count: 2, category: "A" },
     { id: 2, count: 3, category: "B" },
   ]);
-  await table.repeatRows("count", { index: "copyId" });
+  table.repeatRows("count", { index: "copyId" });
 
   const data = await table.getData();
 
@@ -45,5 +45,19 @@ Deno.test("should repeat rows based on a specific column values and add an index
     { id: 2, count: 3, category: "B", copyId: 2 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should throw when the index column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ id: 1, count: 2, copyId: "already here" }]);
+
+  await assertRejects(
+    () => table.repeatRows("count", { index: "copyId" }).run(),
+    Error,
+    'the column "copyId" already exists',
+  );
+
+  await sdb.close();
 });

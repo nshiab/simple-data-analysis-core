@@ -1,96 +1,109 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function fill(
+export default function fill(
   simpleTable: SimpleTable,
   columns: string | string[],
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     interpolate?: boolean;
     interpolateBy?: string;
   } = {},
 ) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  const tempRowCol = `rowNumberForFill`;
-
+  // This validation doesn't need the database, so it stays at call time.
   if (options.interpolateBy && options.interpolate === false) {
     throw new Error(
       `interpolate cannot be false when interpolateBy is set.`,
     );
   }
 
+  // The fill order is based on rowid, which only exists on the materialized
+  // table: it executes as a barrier.
+  columns = Array.isArray(columns) ? [...columns] : columns;
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "fill()",
+    parameters: { columns, options },
+    execute: () => executeFill(simpleTable, columns, options),
+  });
+}
+
+async function executeFill(
+  simpleTable: SimpleTable,
+  columns: string | string[],
+  options: {
+    by?: string | string[];
+    interpolate?: boolean;
+    interpolateBy?: string;
+  },
+): Promise<void> {
+  const by = options.by ? stringToArray(options.by) : [];
+
+  const cols = stringToArray(columns);
+  const excludeList = cols.map((col) => `${quoteIdentifier(col)}`).join(", ");
+  let selectList: string;
+
   if (options.interpolate || options.interpolateBy) {
-    const cols = stringToArray(columns);
-
-    // Always add temp row number to preserve original row order in output
-    await simpleTable.addRowNumber(tempRowCol);
-
-    // Use interpolateBy for the window function's ORDER BY (correct interpolation math),
-    // but always order final output by tempRowCol to preserve input row order
-    const windowOrderCol = options.interpolateBy ?? tempRowCol;
-    const excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
-    const overClause = categories.length > 0
-      ? `(PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")})`
+    // Use interpolateBy for the window function's ORDER BY (correct
+    // interpolation math), but always order the final output by rowid to
+    // preserve input row order.
+    const windowOrder = options.interpolateBy
+      ? `${quoteIdentifier(options.interpolateBy)}`
+      : "rowid";
+    const overClause = by.length > 0
+      ? `(PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")})`
       : `()`;
-    const selectList = cols
+    selectList = cols
       .map(
         (col) =>
-          `fill(${col} ORDER BY "${windowOrderCol}") OVER ${overClause} as ${col}`,
+          `fill(${
+            quoteIdentifier(col)
+          } ORDER BY ${windowOrder}) OVER ${overClause} as ${
+            quoteIdentifier(col)
+          }`,
       )
       .join(", ");
-    await queryDB(
-      simpleTable,
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${tempRowCol}";`,
-      mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        method: "fill()",
-        parameters: { columns, ...options },
-      }),
-    );
-  } else if (categories.length > 0) {
+  } else if (by.length > 0) {
     const partition = `PARTITION BY ${
-      categories.map((d) => `"${d}"`).join(", ")
+      by.map((d) => `${quoteIdentifier(d)}`).join(", ")
     }`;
-    await simpleTable.addRowNumber(tempRowCol);
-    const cols = stringToArray(columns);
-    const excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
-    const selectList = cols
+    selectList = cols
       .map(
         (col) =>
-          `COALESCE(${col}, LAG(${col} IGNORE NULLS) OVER(${partition} ORDER BY "${tempRowCol}")) as ${col}`,
+          `COALESCE(${quoteIdentifier(col)}, LAG(${
+            quoteIdentifier(col)
+          } IGNORE NULLS) OVER(${partition} ORDER BY rowid)) as ${
+            quoteIdentifier(col)
+          }`,
       )
       .join(", ");
-    await queryDB(
-      simpleTable,
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${tempRowCol}";`,
-      mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        method: "fill()",
-        parameters: { columns, ...options },
-      }),
-    );
   } else {
-    // Simple path: add temp row number and order by it to preserve input row order
-    await simpleTable.addRowNumber(tempRowCol);
-    const cols = stringToArray(columns);
-    const excludeList = [`"${tempRowCol}"`, ...cols].join(", ");
-    const selectList = cols
+    selectList = cols
       .map(
-        (col) => `COALESCE(${col}, LAG(${col} IGNORE NULLS) OVER()) as ${col}`,
+        (col) =>
+          `COALESCE(${quoteIdentifier(col)}, LAG(${
+            quoteIdentifier(col)
+          } IGNORE NULLS) OVER(ORDER BY rowid)) as ${quoteIdentifier(col)}`,
       )
       .join(", ");
-    await queryDB(
-      simpleTable,
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM "${simpleTable.name}" ORDER BY "${tempRowCol}";`,
-      mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        method: "fill()",
-        parameters: { columns, ...options },
-      }),
-    );
   }
+
+  await queryDB(
+    simpleTable,
+    `CREATE OR REPLACE TABLE ${
+      quoteIdentifier(simpleTable.name)
+    } AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM ${
+      quoteIdentifier(simpleTable.name)
+    } ORDER BY rowid;`,
+    mergeOptions(simpleTable, {
+      table: simpleTable.name,
+      method: "fill()",
+      parameters: { columns, ...options },
+    }),
+  );
 }

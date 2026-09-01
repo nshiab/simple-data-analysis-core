@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import { readFileSync } from "node:fs";
 import rewind from "../../../src/helpers/rewind.ts";
@@ -6,8 +6,8 @@ import rewind from "../../../src/helpers/rewind.ts";
 Deno.test("should find the column with geometries and return geospatial data as a geojson", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/polygons.geojson");
-  await table.renameColumns({ geom: "newGeom" });
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.renameColumns({ geom: "newGeom" });
   const geoData = await table.getGeoData();
 
   assertEquals(geoData, {
@@ -50,14 +50,14 @@ Deno.test("should find the column with geometries and return geospatial data as 
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return geospatial data as a geojson with a specific geometry column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/polygons.geojson");
-  await table.renameColumns({ geom: "newGeom" });
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.renameColumns({ geom: "newGeom" });
   const geoData = await table.getGeoData("newGeom");
 
   assertEquals(geoData, {
@@ -100,12 +100,27 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
     ],
   });
 
-  await sdb.done();
+  await sdb.close();
 });
+
+Deno.test("should quote unusual geometry column names", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geoData");
+  const geometryColumn = 'geo "column';
+
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.renameColumns({ geom: geometryColumn });
+  const geoData = await table.getGeoData(geometryColumn);
+
+  assertEquals(geoData.features.length, 2);
+
+  await sdb.close();
+});
+
 Deno.test("should return geospatial data not rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
+  table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData();
 
   const originalData = JSON.parse(
@@ -114,12 +129,12 @@ Deno.test("should return geospatial data not rewinded", async () => {
 
   assertEquals(geoData, originalData);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return geospatial data rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
-  await table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
+  table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData(undefined, { rewind: true });
 
   const rewindedData = rewind(JSON.parse(
@@ -131,5 +146,41 @@ Deno.test("should return geospatial data rewinded", async () => {
 
   assertEquals(geoData, rewindedData);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should convert date-valued GeoJSON properties", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("datedGeoData");
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.addColumn("observed", "date", "'2020-01-15'");
+
+  const geoData = await table.getGeoData();
+  assertEquals(
+    (geoData.features[0] as { properties: { observed: unknown } }).properties
+      .observed,
+    new Date("2020-01-15T00:00:00.000Z"),
+  );
+  await sdb.close();
+});
+
+Deno.test("should preserve multiple geometry-column selection", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("multipleGeometries");
+  table.loadGeoData("test/geodata/files/polygons.geojson");
+  table.cloneColumn("geom", "otherGeom");
+
+  await assertRejects(
+    () => table.getGeoData(),
+    Error,
+    `getGeoData() found 2 geometry columns in table "multipleGeometries": "geom", "otherGeom". Specify one explicitly.`,
+  );
+  const geoData = await table.getGeoData("geom");
+  assertEquals(geoData.features.length, 2);
+  assertEquals(
+    typeof (geoData.features[0] as { properties: { otherGeom: unknown } })
+      .properties.otherGeom,
+    "string",
+  );
+  await sdb.close();
 });

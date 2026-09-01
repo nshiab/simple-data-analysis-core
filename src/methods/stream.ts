@@ -1,7 +1,9 @@
-import hasGeometryColumn from "../helpers/hasGeometryColumn.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import { makeConverter } from "../helpers/runQuery.ts";
 import SDAError from "../class/SDAError.ts";
+import flushAllTables from "../helpers/flushAllTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import observeQuery from "../helpers/observeQuery.ts";
 
 export default async function* stream(
   simpleTable: SimpleTable,
@@ -16,11 +18,9 @@ export default async function* stream(
     simpleTable.connection = simpleTable.sdb.connection;
   }
 
-  if (await hasGeometryColumn(simpleTable)) {
-    throw new Error(
-      "Table contains geometry columns. Use getGeoData() instead.",
-    );
-  }
+  // stream() reads directly from the connection instead of going through
+  // queryDB, so it must flush the pending chains itself before yielding.
+  await flushAllTables(simpleTable.sdb);
 
   const columns = options.columns
     ? (typeof options.columns === "string"
@@ -28,22 +28,31 @@ export default async function* stream(
       : options.columns)
     : undefined;
   const query = `SELECT ${
-    columns ? columns.map((d) => `"${d}"`).join(", ") : "*"
-  } FROM "${simpleTable.name}"${
+    columns ? columns.map((d) => `${quoteIdentifier(d)}`).join(", ") : "*"
+  } FROM ${quoteIdentifier(simpleTable.name)}${
     options.conditions ? ` WHERE ${options.conditions}` : ""
   };`;
-  if (simpleTable.debug) {
-    console.log(query);
-  }
-
   try {
+    await observeQuery(simpleTable.connection, query, [], {
+      logSQL: simpleTable.sdb.logSQL,
+      explainSQL: simpleTable.sdb.explainSQL,
+    });
     const result = await simpleTable.connection.stream(query);
     const columnNames = result.deduplicatedColumnNames();
     const columnTypes = result.columnTypes();
+    if (
+      columnTypes.some((type) =>
+        type.toString().toLowerCase().includes("geometry")
+      )
+    ) {
+      throw new Error(
+        "The query returns geometry columns. Use getGeoData() instead.",
+      );
+    }
     const converters = columnTypes.map((type, i) =>
       makeConverter(type, columnNames[i], simpleTable.name)
     );
-    const nbColumns = columnNames.length;
+    const columnCount = columnNames.length;
 
     while (true) {
       const chunk = await result.fetchChunk();
@@ -52,7 +61,7 @@ export default async function* stream(
       }
       for (const rawRow of chunk.getRows()) {
         const row: { [key: string]: unknown } = {};
-        for (let i = 0; i < nbColumns; i++) {
+        for (let i = 0; i < columnCount; i++) {
           row[columnNames[i]] = converters[i](rawRow[i]);
         }
         yield row;
@@ -61,9 +70,6 @@ export default async function* stream(
   } catch (error) {
     if (error instanceof SDAError) {
       throw error;
-    }
-    if (simpleTable.debug) {
-      console.warn(error);
     }
     throw new SDAError({
       method: "stream()",

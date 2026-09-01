@@ -1,53 +1,40 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function ranks(
+export default function ranks(
   simpleTable: SimpleTable,
-  values: string,
+  column: string,
   newColumn: string,
   options: {
     order?: "asc" | "desc";
-    categories?: string | string[];
-    noGaps?: boolean;
+    by?: string | string[];
+    dense?: boolean;
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    rankQuery(simpleTable.name, values, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "ranks()",
-      parameters: { values, newColumn, options },
-    }),
-  );
-}
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "ranks()",
+    parameters: { column, newColumn, options },
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      assertNewColumns(schema, [newColumn], "ranks()");
 
-function rankQuery(
-  table: string,
-  values: string,
-  newColumn: string,
-  options: {
-    order?: "asc" | "desc";
-    categories?: string | string[];
-    noGaps?: boolean;
-  } = {},
-) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
+      const by = options.by ? stringToArray(options.by) : [];
 
-  const partition = categories.length === 0
-    ? ""
-    : `PARTITION BY ${categories.map((d) => `"${d}"`).join(",")} `;
+      const partition = by.length === 0
+        ? ""
+        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
 
-  const query = `CREATE OR REPLACE TABLE "${table}" AS SELECT *, ${
-    options.noGaps ? "dense_rank()" : "rank()"
-  } OVER (${partition}ORDER BY "${values}" ${
-    typeof options.order === "string" ? options.order.toUpperCase() : ""
-  }) AS "${newColumn}"
-    FROM "${table}"`;
-
-  return query;
+      return `SELECT *, ${
+        options.dense ? "dense_rank()" : "rank()"
+      } OVER (${partition}ORDER BY ${quoteIdentifier(column)} ${
+        typeof options.order === "string" ? options.order.toUpperCase() : ""
+      }) AS ${quoteIdentifier(newColumn)}
+    FROM ${input}`;
+    },
+  });
 }

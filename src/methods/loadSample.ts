@@ -6,7 +6,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
  * @param table - The SimpleTable instance to load the data into.
  * @param sample - The name of the sample to load.
  */
-export default async function loadSample(
+export default function loadSample(
   table: SimpleTable,
   sample:
     | "fires"
@@ -15,7 +15,7 @@ export default async function loadSample(
     | "temperaturesCities"
     | "canada"
     | "firesGeo",
-): Promise<SimpleTable> {
+): SimpleTable {
   const samples = {
     fires: {
       url:
@@ -51,13 +51,20 @@ export default async function loadSample(
 
   const sampleToLoad = samples[sample];
 
+  // This validation doesn't need the database, so it stays at call time.
   if (!sampleToLoad) {
-    throw new Error(`Unknown sample: ${sample}`);
+    throw new Error(
+      `loadSample() does not recognize sample ${
+        JSON.stringify(sample)
+      }. Available samples: ${
+        Object.keys(samples).map((name) => JSON.stringify(name)).join(", ")
+      }.`,
+    );
   }
 
   if (sampleToLoad.geo) {
-    return await table.loadGeoData(sampleToLoad.url);
+    return table.loadGeoData(sampleToLoad.url);
   } else {
-    return await table.loadData(sampleToLoad.url);
+    return table.loadData(sampleToLoad.url);
   }
 }

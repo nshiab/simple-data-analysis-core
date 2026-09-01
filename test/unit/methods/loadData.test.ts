@@ -1,6 +1,196 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import {
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+  assertThrows,
+} from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
+import SDAError from "../../../src/class/SDAError.ts";
+import { loadDataQuery } from "../../../src/methods/loadData.ts";
+
+for (
+  const { file, conditions, columns, expected } of [
+    {
+      file: "test/data/files/data.csv",
+      conditions: "key1 = '8' OR key1 = 'brioche'",
+      columns: ["key2"],
+      expected: [{ key2: "10" }],
+    },
+    {
+      file: "test/data/files/data.json",
+      conditions: "key1 >= 3",
+      columns: ["key2"],
+      expected: [{ key2: "trois" }],
+    },
+    {
+      file: "test/data/files/data.parquet",
+      conditions: "key1 >= 8",
+      columns: ["key2"],
+      expected: [{ key2: "trois" }],
+    },
+    {
+      file: "test/data/files/populations-one-sheet.xlsx",
+      conditions: '"Population (million)" > 40',
+      columns: undefined,
+      expected: [{ Country: "US", "Population (million)": 332 }],
+    },
+  ]
+) {
+  Deno.test(`loadData applies conditions before projection and limit: ${file}`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      assertEquals(
+        await sdb.newTable().loadData(file, { conditions, columns, limit: 1 })
+          .getData(),
+        expected,
+      );
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("loadData captures conditions and fuses downstream operations across multiple files", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("filteredLoad");
+    const queries: string[] = [];
+    const original = table.runQuery;
+    table.runQuery = (query, connection, returnData, options) => {
+      queries.push(query);
+      return original(query, connection, returnData, options);
+    };
+    const options = {
+      conditions: "key1 === 2 || key1 === 3",
+      columns: ["key2"],
+    };
+    table.loadData([
+      "test/data/files/data.json",
+      "test/data/files/data.json",
+    ], options).filter("key2 !== 'deux'").addColumn(
+      "selected",
+      "boolean",
+      "TRUE",
+    );
+    options.conditions = "FALSE";
+
+    assertEquals(await table.getData(), [
+      { key2: "trois", selected: true },
+      { key2: "trois", selected: true },
+    ]);
+    assertEquals(
+      queries.filter((query) => query.includes("CREATE OR REPLACE TABLE"))
+        .length,
+      1,
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadData handles empty, unmatched, and invalid conditions", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const conditions of [undefined, "", "FALSE"]) {
+      const table = sdb.newTable().loadData("test/data/files/data.json", {
+        conditions,
+      });
+      assertEquals(await table.getRowCount(), conditions === "FALSE" ? 0 : 4);
+      assertEquals(await table.getColumns(), ["key1", "key2"]);
+    }
+    for (const conditions of ["missing_column > 1", "key1 >"]) {
+      const table = sdb.newTable().loadData("test/data/files/data.json", {
+        conditions,
+      });
+      const error = await assertRejects(() => table.getData(), SDAError);
+      assertEquals(error.method, "loadData()");
+      assertEquals(error.parameters, {
+        files: "test/data/files/data.json",
+        options: { conditions },
+      });
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadData conditions read preceding changes to the same table", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("previousLoad");
+    table.loadArray([{ key1: 1 }, { key1: 3 }]).filter("key1 = 3")
+      .loadData("test/data/files/data.json", {
+        conditions: 'key1 IN (SELECT key1 FROM "previousLoad")',
+      });
+    assertEquals(await table.getData(), [{ key1: 3, key2: "trois" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadData tracks table dependencies in conditions for cache invalidation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("loadConditionsSource");
+    const output = sdb.newTable("loadConditionsOutput");
+    source.loadArray([{ key1: 1 }, { key1: 3 }]);
+    let runs = 0;
+    const compute = () => {
+      runs++;
+      output.loadData("test/data/files/data.json", {
+        conditions: `key1 IN (SELECT key1 FROM "${source.name}")`,
+      });
+    };
+    await output.cache(compute);
+    await output.cache(compute);
+    assertEquals(runs, 1);
+    source.filter("key1 = 3");
+    await output.cache(compute);
+    assertEquals(runs, 2);
+    assertEquals(await output.getData(), [{ key1: 3, key2: "trois" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadDataQuery escapes generated string literals", () => {
+  const csvQuery = loadDataQuery("data", ["owner's.csv"], {
+    fileType: "csv",
+    delim: "'",
+    encoding: "owner's encoding",
+  });
+  assertStringIncludes(csvQuery, "['owner''s.csv']");
+  assertStringIncludes(csvQuery, "delim=''''");
+  assertStringIncludes(csvQuery, "encoding='owner''s encoding'");
+
+  const excelQuery = loadDataQuery("data", ["owner's.xlsx"], {
+    fileType: "excel",
+    sheet: "Owner's Data",
+  });
+  assertStringIncludes(excelQuery, "read_xlsx('owner''s.xlsx'");
+  assertStringIncludes(excelQuery, "sheet='Owner''s Data'");
+});
+
+Deno.test("loadDataQuery uses partial CSV type overrides", () => {
+  const query = loadDataQuery("coordinates", ["coordinates.csv"], {
+    columns: ["lat"],
+    columnTypes: { lat: "DOUBLE" },
+  });
+  assertStringIncludes(query, "types={'lat': 'DOUBLE'}");
+  assertEquals(query.includes("columns={'lat': 'DOUBLE'}"), false);
+});
+
+Deno.test("loadDataQuery reports supported file types", () => {
+  assertThrows(
+    () =>
+      loadDataQuery("data", ["data.csv"], {
+        fileType: "xml" as "csv",
+      }),
+    Error,
+    `loadData() could not determine a supported file type for "data.csv". options.fileType: "xml". Detected extension: ".csv". Supported file types: "csv", "dsv", "json", "parquet", and "excel" (for .xlsx files).`,
+  );
+});
 
 Deno.test("should load data from a csv file and return the table", async () => {
   const sdb = new SimpleDB();
@@ -9,7 +199,8 @@ Deno.test("should load data from a csv file and return the table", async () => {
     .loadData(["test/data/files/data.csv"]);
 
   assertEquals(table instanceof SimpleTable, true);
-  await sdb.done();
+  await table.run();
+  await sdb.close();
 });
 Deno.test("should load data from a csv file with a specific encoding and return the table", async () => {
   const sdb = new SimpleDB();
@@ -18,7 +209,8 @@ Deno.test("should load data from a csv file with a specific encoding and return 
     .loadData(["test/data/files/data.csv"], { encoding: "latin-1" });
 
   assertEquals(table instanceof SimpleTable, true);
-  await sdb.done();
+  await table.run();
+  await sdb.close();
 });
 Deno.test("should load data from a csv file with strict false", async () => {
   const sdb = new SimpleDB();
@@ -27,12 +219,13 @@ Deno.test("should load data from a csv file with strict false", async () => {
     .loadData(["test/data/files/data.csv"], { strict: false });
 
   assertEquals(table instanceof SimpleTable, true);
-  await sdb.done();
+  await table.run();
+  await sdb.close();
 });
 Deno.test("should load data from a csv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.csv"]);
+  table.loadData(["test/data/files/data.csv"]);
 
   const data = await table.getData();
 
@@ -42,12 +235,30 @@ Deno.test("should load data from a csv file", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should partially override CSV column types", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  const data = await table
+    .loadData("test/geodata/files/coordinates.csv", {
+      columns: ["name", "lat"],
+      columnTypes: { lat: "DOUBLE" },
+    })
+    .getData();
+
+  assertEquals(data, [
+    { name: "montreal", lat: 43.77 },
+    { name: "toronto", lat: 45.35 },
+    { name: "vancouver", lat: 49.07 },
+  ]);
+  await sdb.close();
 });
 Deno.test("should load data from a csv file with a limit", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.csv"], {
+  table.loadData(["test/data/files/data.csv"], {
     limit: 2,
   });
 
@@ -57,12 +268,12 @@ Deno.test("should load data from a csv file with a limit", async () => {
     { key1: "1", key2: "2" },
     { key1: "3", key2: "coucou" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a compressed csv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.csv.gz"]);
+  table.loadData(["test/data/files/data.csv.gz"]);
 
   const data = await table.getData();
 
@@ -72,12 +283,12 @@ Deno.test("should load data from a compressed csv file", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data with dates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataDates.csv"]);
+  table.loadData(["test/data/files/dataDates.csv"]);
 
   const data = await table.getData();
 
@@ -115,12 +326,12 @@ Deno.test("should load data with dates", async () => {
       weirdDatetime: "2010/01/04_23h_25min_15sec",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data while keeping everything as text", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataDates.csv"], {
+  table.loadData(["test/data/files/dataDates.csv"], {
     allText: true,
   });
 
@@ -160,12 +371,12 @@ Deno.test("should load data while keeping everything as text", async () => {
       weirdDatetime: "2010/01/04_23h_25min_15sec",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load a messy csv", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/activefires.csv"], {
+  table.loadData(["test/data/files/activefires.csv"], {
     nullPadding: true,
   });
 
@@ -206,12 +417,12 @@ Deno.test("should load a messy csv", async () => {
       response_type: null,
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a fetched csv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData([
+  table.loadData([
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/data.csv",
   ]);
 
@@ -223,12 +434,12 @@ Deno.test("should load data from a fetched csv file", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a csv file after skypping some lines at the top", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataExtraLines.csv"], {
+  table.loadData(["test/data/files/dataExtraLines.csv"], {
     skip: 2,
   });
   const data = await table.getData();
@@ -238,12 +449,12 @@ Deno.test("should load data from a csv file after skypping some lines at the top
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a tsv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.tsv"], {
+  table.loadData(["test/data/files/data.tsv"], {
     fileType: "dsv",
   });
 
@@ -255,12 +466,12 @@ Deno.test("should load data from a tsv file", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a txt file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.txt"], {
+  table.loadData(["test/data/files/data.txt"], {
     fileType: "dsv",
   });
 
@@ -272,12 +483,12 @@ Deno.test("should load data from a txt file", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a compressed txt file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/dataCsvCompressed.txt"], {
+  table.loadData(["test/data/files/dataCsvCompressed.txt"], {
     fileType: "csv",
     compression: "gzip",
   });
@@ -290,12 +501,12 @@ Deno.test("should load data from a compressed txt file", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a json file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.json"]);
+  table.loadData(["test/data/files/data.json"]);
 
   const data = await table.getData();
 
@@ -317,13 +528,13 @@ Deno.test("should load data from a json file", async () => {
       key2: "quatre",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a json file with a limit", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.json"], {
+  table.loadData(["test/data/files/data.json"], {
     limit: 2,
   });
 
@@ -339,13 +550,13 @@ Deno.test("should load data from a json file with a limit", async () => {
       key2: "deux",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a parquet file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.parquet"]);
+  table.loadData(["test/data/files/data.parquet"]);
 
   const data = await table.getData();
 
@@ -367,13 +578,13 @@ Deno.test("should load data from a parquet file", async () => {
       key2: "quatre",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a parquet file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.parquet"], {
+  table.loadData(["test/data/files/data.parquet"], {
     limit: 2,
   });
 
@@ -389,13 +600,13 @@ Deno.test("should load data from a parquet file", async () => {
       key2: "deux",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a compressed parquet file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.parquet"]);
+  table.loadData(["test/data/files/data.parquet"]);
 
   const data = await table.getData();
 
@@ -417,13 +628,13 @@ Deno.test("should load data from a compressed parquet file", async () => {
       key2: "quatre",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from multiple files", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData([
+  table.loadData([
     "test/data/directory/data1.csv",
     "test/data/directory/data2.csv",
     "test/data/directory/data3.csv",
@@ -444,19 +655,19 @@ Deno.test("should load data from multiple files", async () => {
     { key1: 10, key2: "dix" },
     { key1: 11, key2: "onze" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from multiple files and add a column with the file name.", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(
+  table.loadData(
     [
       "test/data/directory/data1.csv",
       "test/data/directory/data2.csv",
       "test/data/directory/data3.csv",
     ],
-    { fileName: true },
+    { includeFilename: true },
   );
 
   const data = await table.getData();
@@ -518,21 +729,13 @@ Deno.test("should load data from multiple files and add a column with the file n
       filename: "test/data/directory/data3.csv",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("should load data from multiple files and unify the columns.", async () => {
+Deno.test("should load and unify multiple files matching a glob", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(
-    [
-      "test/data/directory/data1.csv",
-      "test/data/directory/data2.csv",
-      "test/data/directory/data3.csv",
-      "test/data/directory/data4ExtraColumn.csv",
-    ],
-    { unifyColumns: true },
-  );
+  table.loadData("test/data/directory/*.csv", { unifyColumns: true });
 
   const data = await table.getData();
   assertEquals(data, [
@@ -551,13 +754,13 @@ Deno.test("should load data from multiple files and unify the columns.", async (
     { key1: 10, key2: "dix", key3: "ten" },
     { key1: 11, key2: "onze", key3: "eleven" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a json file with specific types for each column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.json"], {
+  table.loadData(["test/data/files/data.json"], {
     columnTypes: {
       key1: "VARCHAR",
       key2: "VARCHAR",
@@ -584,13 +787,13 @@ Deno.test("should load data from a json file with specific types for each column
       key2: "quatre",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a xlsx url", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData([
+  table.loadData([
     "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/populations-one-sheet.xlsx",
   ]);
   const data = await table.getData();
@@ -600,13 +803,13 @@ Deno.test("should load data from a xlsx url", async () => {
     { Country: "US", "Population (million)": 332 },
     { Country: "France", "Population (million)": 68 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load data from a xlsx file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/populations-one-sheet.xlsx"]);
+  table.loadData(["test/data/files/populations-one-sheet.xlsx"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -614,12 +817,12 @@ Deno.test("should load data from a xlsx file", async () => {
     { Country: "US", "Population (million)": 332 },
     { Country: "France", "Population (million)": 68 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a specific sheet in an xlsx file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/populations-two-sheets.xlsx", {
+  table.loadData("test/data/files/populations-two-sheets.xlsx", {
     sheet: "provinces",
   });
   const data = await table.getData();
@@ -629,12 +832,12 @@ Deno.test("should load data from a specific sheet in an xlsx file", async () => 
     { Provinces: "Ontario", "Population (million)": 15 },
     { Provinces: "British Columbia", "Population (million)": 5 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a specific sheet in an xlsx file and all as text", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/populations-two-sheets.xlsx", {
+  table.loadData("test/data/files/populations-two-sheets.xlsx", {
     sheet: "provinces",
     allText: true,
   });
@@ -645,12 +848,12 @@ Deno.test("should load data from a specific sheet in an xlsx file and all as tex
     { Provinces: "Ontario", "Population (million)": "15.0" },
     { Provinces: "British Columbia", "Population (million)": "5.0" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load data from a specific sheet in an xlsx file and all as text without a header", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/populations-two-sheets.xlsx", {
+  table.loadData("test/data/files/populations-two-sheets.xlsx", {
     sheet: "provinces",
     allText: true,
     header: false,
@@ -663,13 +866,13 @@ Deno.test("should load data from a specific sheet in an xlsx file and all as tex
     { A1: "Ontario", B1: "15.0" },
     { A1: "British Columbia", B1: "5.0" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load only specific columns from a CSV file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.csv"], {
+  table.loadData(["test/data/files/data.csv"], {
     columns: ["key1"],
   });
 
@@ -681,13 +884,13 @@ Deno.test("should load only specific columns from a CSV file", async () => {
     { key1: "8" },
     { key1: "brioche" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load multiple specific columns from a CSV file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.csv"], {
+  table.loadData(["test/data/files/data.csv"], {
     columns: ["key2", "key1"],
   });
 
@@ -699,13 +902,13 @@ Deno.test("should load multiple specific columns from a CSV file", async () => {
     { key2: "10", key1: "8" },
     { key2: "croissant", key1: "brioche" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load only specific columns from a JSON file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.json"], {
+  table.loadData(["test/data/files/data.json"], {
     columns: ["key2"],
   });
 
@@ -717,13 +920,13 @@ Deno.test("should load only specific columns from a JSON file", async () => {
     { key2: "trois" },
     { key2: "quatre" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load only specific columns from a Parquet file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.parquet"], {
+  table.loadData(["test/data/files/data.parquet"], {
     columns: ["key1"],
   });
 
@@ -735,13 +938,13 @@ Deno.test("should load only specific columns from a Parquet file", async () => {
     { key1: 8 },
     { key1: 3 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("empty columns array should load all columns (CSV)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/data.csv"], {
+  table.loadData(["test/data/files/data.csv"], {
     columns: [],
   });
 
@@ -753,7 +956,7 @@ Deno.test("empty columns array should load all columns (CSV)", async () => {
     { key1: "8", key2: "10" },
     { key1: "brioche", key2: "croissant" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("invalid column name should throw a DuckDB error", async () => {
@@ -764,17 +967,17 @@ Deno.test("invalid column name should throw a DuckDB error", async () => {
     () =>
       table.loadData(["test/data/files/data.csv"], {
         columns: ["nonexistent_column"],
-      }),
+      }).run(),
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("combining columns with Excel files should throw an error", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await assertRejects(
+  assertThrows(
     () =>
       table.loadData(["test/data/files/populations-one-sheet.xlsx"], {
         columns: ["Country"],
@@ -783,14 +986,14 @@ Deno.test("combining columns with Excel files should throw an error", async () =
     "columns",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("combining columns with Excel files (by fileType) should throw an error", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  await assertRejects(
+  assertThrows(
     () =>
       table.loadData(["test/data/files/populations-one-sheet.xlsx"], {
         fileType: "excel",
@@ -800,5 +1003,59 @@ Deno.test("combining columns with Excel files (by fileType) should throw an erro
     "columns",
   );
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should skip malformed rows with ignoreErrors and parse the rest normally", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataMalformedRows.csv", {
+    ignoreErrors: true,
+  });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1, key2: 2 },
+    { key1: 5, key2: 6 },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("should load newline-delimited JSON with jsonFormat", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/dataNewlineDelimited.ndjson", {
+    fileType: "json",
+    jsonFormat: "newlineDelimited",
+  });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1, key2: "a" },
+    { key1: 2, key2: "b" },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("should load JSON records with the records option", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/data.json", {
+    records: true,
+  });
+
+  const data = await table.getData();
+
+  assertEquals(data, [
+    { key1: 1, key2: "un" },
+    { key1: 2, key2: "deux" },
+    { key1: 3, key2: "trois" },
+    { key1: 4, key2: "quatre" },
+  ]);
+
+  await sdb.close();
 });

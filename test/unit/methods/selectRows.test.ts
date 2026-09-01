@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should return the first 5 rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectRows(5);
+  table.selectRows(5);
 
   const data = await table.getData();
 
@@ -53,15 +53,15 @@ Deno.test("should return the first 5 rows", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows, with an offset of 5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectRows(5, { offset: 5 });
+  table.selectRows(5, { offset: 5 });
 
   const data = await table.getData();
 
@@ -108,15 +108,15 @@ Deno.test("should return the first 5 rows, with an offset of 5", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows and output the results to a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  const newTable = await table.selectRows(5, {
+  const newTable = table.selectRows(5, {
     outputTable: true,
   });
 
@@ -165,15 +165,15 @@ Deno.test("should return the first 5 rows and output the results to a new table"
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  const newTable = await table.selectRows(5, {
+  const newTable = table.selectRows(5, {
     offset: 5,
     outputTable: true,
   });
@@ -223,21 +223,21 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table with a specific name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectRows(5, {
+  table.selectRows(5, {
     offset: 5,
     outputTable: "newData",
   });
 
   const data = await sdb.customQuery(`select * from newData`, {
-    returnDataFrom: "query",
+    returnData: true,
   });
 
   assertEquals(data, [
@@ -283,5 +283,5 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

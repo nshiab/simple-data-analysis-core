@@ -1,7 +1,22 @@
 {
   "name": "@nshiab/simple-data-analysis-core",
-  "version": "1.0.1",
-  "description": "The core functionalities of the simple-data-analysis library, with only one dependency: DuckDB.",
+  "version": "2.0.0",
+  "description": "Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Deno, Node.js, and Bun.",
+  "keywords": [
+    "data-analysis",
+    "typescript",
+    "duckdb",
+    "dataframe",
+    "tabular",
+    "sql",
+    "csv",
+    "parquet",
+    "geospatial",
+    "spatial-analysis",
+    "deno",
+    "nodejs",
+    "bun"
+  ],
   "repository": "https://github.com/nshiab/simple-data-analysis-core",
   "license": "MIT",
   "exports": {
@@ -9,10 +24,11 @@
     "./helpers": "./src/helpers/index.ts"
   },
   "tasks": {
-    "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task llm",
+    "all-tests": "deno fmt --check && deno lint && deno check src/index.ts && deno doc --lint src/index.ts src/helpers/index.ts && deno publish --allow-dirty --dry-run && rm -rf test/output && deno test -A --fail-fast && deno task npm-smoke && deno task llm",
+    "benchmark": "deno run -A benchmarks/run.ts",
     "llm": "deno run -A jsr:@nshiab/deno-docs-to-md && deno fmt llm.md",
+    "npm-smoke": "deno run -A scripts/npmSmoke.ts",
     "test-coverage": "deno test -A --env-file --fail-fast --coverage=cov_profile && deno coverage cov_profile",
-    "bench": "deno run -A benchmarks/bench.ts",
     "patch-no-tests": "deno run -A jsr:@nshiab/bump-version patch",
     "patch": "deno task all-tests && deno run -A jsr:@nshiab/bump-version patch",
     "minor": "deno task all-tests && deno run -A jsr:@nshiab/bump-version minor",
@@ -25,19 +41,22 @@
   "publish": {
     "exclude": [
       "test",
+      "benchmarks",
+      "scripts",
       ".github",
-      "npm",
-      "benchmarks"
+      "npm"
     ]
   },
   "nodeModulesDir": "auto",
   "imports": {
-    "@duckdb/node-api": "npm:@duckdb/node-api@1.5.3-r.2",
+    "@duckdb/node-api": "npm:@duckdb/node-api@1.5.5-r.4",
     "@std/assert": "jsr:@std/assert@1.0.19"
   },
   "fmt": {
     "exclude": [
       ".sda-cache",
+      "benchmarks/.work",
+      "benchmarks/data",
       "test/output",
       "src/helpers/rewind.ts",
       "src/helpers/csvFormat.ts"

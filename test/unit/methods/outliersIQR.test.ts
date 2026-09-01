@@ -1,12 +1,102 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should fuse with neighboring builder methods", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("fusedOutliers");
+  const queries: string[] = [];
+  const original = table.runQuery;
+  table.runQuery = (query, connection, returnData, options) => {
+    queries.push(query);
+    return original(query, connection, returnData, options);
+  };
+
+  const data = await table
+    .loadArray([{ age: 10 }, { age: 11 }, { age: 12 }, { age: 100 }])
+    .filter("age >= 10")
+    .outliersIQR("age", "isOutlier")
+    .sort({ age: "asc" })
+    .getData();
+
+  assertEquals(data, [
+    { age: 10, isOutlier: false },
+    { age: 11, isOutlier: false },
+    { age: 12, isOutlier: false },
+    { age: 100, isOutlier: true },
+  ]);
+  const creates = queries.filter((query) =>
+    query.includes('CREATE OR REPLACE TABLE "fusedOutliers"')
+  );
+  assertEquals(creates.length, 1);
+  assert(creates[0].includes('"s3"'));
+
+  await sdb.close();
+});
+
+Deno.test("should choose the IQR quantile method from each group's row count", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+
+  const data = await table
+    .loadArray([
+      { group: "even", value: 0 },
+      { group: "even", value: 10 },
+      { group: "even", value: 20 },
+      { group: "even", value: 51 },
+      { group: "odd", value: 1 },
+      { group: "odd", value: 2 },
+      { group: "odd", value: 3 },
+    ])
+    .outliersIQR("value", "isOutlier", { by: "group" })
+    .sort({ group: "asc", value: "asc" })
+    .getData();
+
+  assertEquals(data, [
+    { group: "even", value: 0, isOutlier: false },
+    { group: "even", value: 10, isOutlier: false },
+    { group: "even", value: 20, isOutlier: false },
+    { group: "even", value: 51, isOutlier: true },
+    { group: "odd", value: 1, isOutlier: false },
+    { group: "odd", value: 2, isOutlier: false },
+    { group: "odd", value: 3, isOutlier: false },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("should ignore nulls when choosing each group's IQR quantile method", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+
+  const data = await table
+    .loadArray([
+      { group: "even", value: 0 },
+      { group: "even", value: 10 },
+      { group: "even", value: 20 },
+      { group: "even", value: 51 },
+      { group: "even", value: null },
+    ])
+    .outliersIQR("value", "isOutlier", { by: "group" })
+    .sort({ value: "asc" })
+    .getData();
+
+  assertEquals(data, [
+    { group: "even", value: 0, isOutlier: false },
+    { group: "even", value: 10, isOutlier: false },
+    { group: "even", value: 20, isOutlier: false },
+    { group: "even", value: 51, isOutlier: true },
+    { group: "even", value: null, isOutlier: false },
+  ]);
+
+  await sdb.close();
+});
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
   const sdb = new SimpleDB();
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33 },
     { name: "Philip", age: 33 },
     { name: "Sonny", age: 57 },
@@ -25,8 +115,8 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Jane", age: 32 },
   ]);
 
-  await table.outliersIQR("age", "ageOutliers");
-  await table.sort({
+  table.outliersIQR("age", "ageOutliers");
+  table.sort({
     ageOutliers: "desc",
     age: "asc",
   });
@@ -51,15 +141,15 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Claudia", age: 35, ageOutliers: false },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
+Deno.test("should add an outliers column based on the IQR method with an odd number of rows", async () => {
   const sdb = new SimpleDB();
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33 },
     { name: "Philip", age: 33 },
     { name: "Sonny", age: 57 },
@@ -78,9 +168,9 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Genevieve", age: 32 },
     { name: "Jane", age: 32 },
   ]);
-  await table.outliersIQR("age", "ageOutliers");
+  table.outliersIQR("age", "ageOutliers");
 
-  await table.sort({
+  table.sort({
     ageOutliers: "desc",
     age: "asc",
   });
@@ -106,13 +196,13 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Claudia", age: 35, ageOutliers: false },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add an outliers column based on the IQR method with an even number of rows and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Chloe", age: 33, gender: "Woman" },
     { name: "Philip", age: 125, gender: "Man" },
     { name: "Sonny", age: 57, gender: "Man" },
@@ -131,10 +221,10 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Genevieve", age: 3, gender: "Woman" },
     { name: "Jane", age: 32, gender: "Woman" },
   ]);
-  await table.outliersIQR("age", "ageOutliers", {
-    categories: "gender",
+  table.outliersIQR("age", "ageOutliers", {
+    by: "gender",
   });
-  await table.sort({
+  table.sort({
     gender: "asc",
     ageOutliers: "desc",
     age: "asc",
@@ -161,5 +251,5 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
     { name: "Claudia", age: 35, gender: "Woman", ageOutliers: false },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

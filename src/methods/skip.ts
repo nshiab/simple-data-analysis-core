@@ -1,18 +1,16 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function skip(
+export default function skip(
   simpleTable: SimpleTable,
-  nbRowsToSkip: number,
+  count: number,
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${simpleTable.name}" OFFSET ${nbRowsToSkip} ROWS;`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "skip()",
-      parameters: { nbRowsToSkip },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "skip()",
+    parameters: { count },
+    needsSchema: false,
+    preservesSchema: true,
+    buildSelect: (input) => `SELECT * FROM ${input} OFFSET ${count} ROWS`,
+  });
 }

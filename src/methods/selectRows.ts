@@ -1,43 +1,46 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import queueOp from "../helpers/queueOp.ts";
+import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function selectRows(
+export default function selectRows(
   simpleTable: SimpleTable,
   count: number | string,
   options: { offset?: number; outputTable?: string | boolean } = {},
-) {
-  if (options.outputTable === true) {
-    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
-    simpleTable.sdb.tableIncrement += 1;
-  }
-  await queryDB(
-    simpleTable,
-    selectRowsQuery(simpleTable.name, count, options),
-    mergeOptions(simpleTable, {
-      table: typeof options.outputTable === "string"
-        ? options.outputTable
-        : simpleTable.name,
-      method: "selectRows",
-      parameters: { count, options },
-    }),
-  );
+): SimpleTable {
+  options = { ...options };
+  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
+
+  const limitAndOffset = `LIMIT ${count}${
+    typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""
+  }`;
 
   if (typeof options.outputTable === "string") {
-    return simpleTable.sdb.newTable(options.outputTable);
-  } else {
-    return simpleTable;
+    // The output table instance is created at call time so it can be
+    // returned synchronously and chained on right away.
+    const outputTable = simpleTable.sdb.newTable(options.outputTable);
+    queueOp(outputTable, {
+      kind: "source",
+      method: "selectRows()",
+      parameters: { count, options },
+      // The output table reads simpleTable by name rather than through its
+      // own (nonexistent) chain, so simpleTable's pending work must close
+      // and execute before this SELECT runs, as it would at this call
+      // position.
+      rawSQL: [`${quoteIdentifier(simpleTable.name)}`],
+      buildSelect: () =>
+        `SELECT * FROM ${quoteIdentifier(simpleTable.name)} ${limitAndOffset}`,
+    });
+    return outputTable;
   }
-}
 
-function selectRowsQuery(
-  table: string,
-  count: number | string,
-  options: { offset?: number; outputTable?: string | boolean } = {},
-) {
-  return `CREATE OR REPLACE TABLE "${
-    options.outputTable ?? table
-  }" AS SELECT * FROM "${table}" LIMIT ${count}${
-    typeof options.offset === "number" ? ` OFFSET ${options.offset}` : ""
-  };`;
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "selectRows()",
+    parameters: { count, options },
+    needsSchema: false,
+    preservesSchema: true,
+    buildSelect: (input) => `SELECT * FROM ${input} ${limitAndOffset}`,
+  });
+  return simpleTable;
 }

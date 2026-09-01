@@ -1,10 +1,43 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("getData does not run a schema preflight query", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("queryCount");
+  table.loadArray([{ value: 1 }]);
+  const queries: string[] = [];
+  const original = table.runQuery;
+  table.runQuery = async (query, connection, returnData, options) => {
+    queries.push(query);
+    return await original(query, connection, returnData, options);
+  };
+
+  await table.getData();
+
+  assertEquals(
+    queries.filter((query) => query.startsWith("DESCRIBE")).length,
+    0,
+  );
+  await sdb.close();
+});
+
+Deno.test("should limit returned rows", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("limited");
+  table.loadArray([{ value: 1 }, { value: 2 }, { value: 3 }]);
+
+  assertEquals(await table.getData({ limit: 2 }), [
+    { value: 1 },
+    { value: 2 },
+  ]);
+
+  await sdb.close();
+});
+
 Deno.test("should return the whole data from a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -417,13 +450,13 @@ Deno.test("should return the whole data from a table", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return data from a table based on a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const data = await table.getData({
     conditions: "Job = 'Programmer'",
   });
@@ -470,12 +503,12 @@ Deno.test("should return data from a table based on a condition", async () => {
       "End-of_year-BONUS?": "13,17%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should return data from a table based on a condition and column selection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   const data = await table.getData({
     conditions: "Job = 'Programmer'",
     columns: ["Name", "Hire date", "Job"],
@@ -496,5 +529,17 @@ Deno.test("should return data from a table based on a condition and column selec
       Job: "Programmer",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should keep duplicate selected columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("duplicates");
+  table.loadArray([{ value: 7 }]);
+
+  assertEquals(await table.getData({ columns: ["value", "value"] }), [{
+    value: 7,
+    "value:1": 7,
+  }]);
+  await sdb.close();
 });

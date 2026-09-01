@@ -4,22 +4,27 @@ export default async function getDescription(simpleTable: SimpleTable) {
   const types = await simpleTable.getTypes();
   const columns = await simpleTable.getColumns();
   const summaryForGetDescription = await simpleTable.summarize({
-    values: columns,
-    summaries: ["count", "countUnique", "countNull"],
-    toMs: true,
+    columns: columns,
+    stats: ["count", "countDistinct", "countNull"],
+    datesToMs: true,
     outputTable: "summaryForGetDescription",
   });
   const summaryData = await summaryForGetDescription.getData();
 
   await summaryForGetDescription.removeTable();
 
-  const description = summaryData.map((d) => ({
-    column: d["value"] as string,
-    type: types[d["value"] as string],
-    count: d["count"] as number,
-    unique: d["countUnique"] as number,
-    null: d["countNull"] as number,
-  }));
+  // summarize adds the `column` output column only when it summarizes more than one
+  // column; for a single-column table the column name is already known.
+  const description = summaryData.map((d) => {
+    const column = columns.length > 1 ? d.column as string : columns[0];
+    return {
+      column,
+      type: types[column],
+      count: d["count"] as number,
+      unique: d["countDistinct"] as number,
+      null: d["countNull"] as number,
+    };
+  });
 
   return description;
 }

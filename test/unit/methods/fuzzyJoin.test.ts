@@ -1,14 +1,14 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should perform a basic left fuzzy join and include all left table rows", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");
-  await peopleA.loadData("test/data/files/people_a.csv");
+  peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
-  await peopleB.loadData("test/data/files/people_b.csv");
+  peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
+  peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
     similarityColumn: "fuzzyScore",
   });
 
@@ -45,17 +45,17 @@ Deno.test("should perform a basic left fuzzy join and include all left table row
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should respect a custom threshold and only match exact strings at threshold 100", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");
-  await peopleA.loadData("test/data/files/people_a.csv");
+  peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
-  await peopleB.loadData("test/data/files/people_b.csv");
+  peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 100);
+  peopleA.fuzzyJoin(peopleB, "name", "standardName", 100);
 
   const data = await peopleA.getData();
 
@@ -71,17 +71,40 @@ Deno.test("should respect a custom threshold and only match exact strings at thr
     { id: 4, name: "David Jones", personId: null, standardName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should restrict comparisons with prefilterPrefixLength", async () => {
+  const sdb = new SimpleDB();
+  const left = sdb.newTable("prefixLeft");
+  left.loadArray([{ id: 1, label: "alpha" }]);
+  const right = sdb.newTable("prefixRight");
+  right.loadArray([{ matchId: 2, candidate: "alphi" }]);
+
+  const data = await left
+    .fuzzyJoin(right, "label", "candidate", 70, {
+      prefilterPrefixLength: 5,
+    })
+    .getData();
+
+  assertEquals(data, [{
+    id: 1,
+    label: "alpha",
+    matchId: null,
+    candidate: null,
+  }]);
+
+  await sdb.close();
 });
 
 Deno.test("should store result in a new table when outputTable is a string", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");
-  await peopleA.loadData("test/data/files/people_a.csv");
+  peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
-  await peopleB.loadData("test/data/files/people_b.csv");
+  peopleB.loadData("test/data/files/people_b.csv");
 
-  const fuzzyResult = await peopleA.fuzzyJoin(
+  const fuzzyResult = peopleA.fuzzyJoin(
     peopleB,
     "name",
     "standardName",
@@ -120,17 +143,17 @@ Deno.test("should store result in a new table when outputTable is a string", asy
     { personId: "W", standardName: "Emma Wilson" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should store result in a new auto-named table when outputTable is true", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");
-  await peopleA.loadData("test/data/files/people_a.csv");
+  peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
-  await peopleB.loadData("test/data/files/people_b.csv");
+  peopleB.loadData("test/data/files/people_b.csv");
 
-  const result = await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
+  const result = peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
     outputTable: true,
   });
 
@@ -154,17 +177,17 @@ Deno.test("should store result in a new auto-named table when outputTable is tru
     { id: 4, name: "David Jones" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should use a custom similarity column name", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");
-  await peopleA.loadData("test/data/files/people_a.csv");
+  peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
-  await peopleB.loadData("test/data/files/people_b.csv");
+  peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
+  peopleA.fuzzyJoin(peopleB, "name", "standardName", 80, {
     similarityColumn: "matchScore",
   });
 
@@ -199,21 +222,21 @@ Deno.test("should use a custom similarity column name", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should work with the token_sort_ratio method for reordered words", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("tableA");
-  await tableA.loadArray([
+  tableA.loadArray([
     { rowId: 1, label: "world hello" },
   ]);
   const tableB = sdb.newTable("tableB");
-  await tableB.loadArray([
+  tableB.loadArray([
     { itemId: "a", text: "hello world" },
   ]);
 
-  await tableA.fuzzyJoin(tableB, "label", "text", 90, {
+  tableA.fuzzyJoin(tableB, "label", "text", 90, {
     method: "token_sort_ratio",
     similarityColumn: "fuzzyScore",
   });
@@ -228,7 +251,7 @@ Deno.test("should work with the token_sort_ratio method for reordered words", as
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should find matches with significant length differences when using ratio at lower thresholds", async () => {
@@ -246,11 +269,11 @@ Deno.test("should find matches with significant length differences when using ra
   ];
 
   const tA = sdb.newTable("tA");
-  await tA.insertRows(dataA);
+  tA.insertRows(dataA);
   const tB = sdb.newTable("tB");
-  await tB.insertRows(dataB);
+  tB.insertRows(dataB);
 
-  await tA.fuzzyJoin(tB, "name", "name_B", 60, {
+  tA.fuzzyJoin(tB, "name", "name_B", 60, {
     method: "ratio",
   });
 
@@ -264,7 +287,7 @@ Deno.test("should find matches with significant length differences when using ra
     "Ratio should find match 'New York City' / 'New York' (approx 76%) at threshold 60",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should be lossless for all methods with justNames.csv", async () => {
@@ -278,14 +301,14 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
 
   for (const method of methods) {
     const tA = sdb.newTable(`tA_${method.replace(/_/g, "")}`);
-    await tA.loadData("test/data/files/justNames.csv");
+    tA.loadData("test/data/files/justNames.csv");
 
     const tB = sdb.newTable(`tB_${method.replace(/_/g, "")}`);
-    await tB.loadData("test/data/files/justNames.csv");
-    await tB.renameColumns({ "landlordNames": "landlordNames_B" });
+    tB.loadData("test/data/files/justNames.csv");
+    tB.renameColumns({ "landlordNames": "landlordNames_B" });
 
     // Every row should match itself at threshold 100
-    await tA.fuzzyJoin(tB, "landlordNames", "landlordNames_B", 100, {
+    tA.fuzzyJoin(tB, "landlordNames", "landlordNames_B", 100, {
       method,
     });
 
@@ -303,17 +326,17 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
     }
   }
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should not include a similarity column when similarityColumn is not provided", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");
-  await peopleA.loadData("test/data/files/people_a.csv");
+  peopleA.loadData("test/data/files/people_a.csv");
   const peopleB = sdb.newTable("peopleB");
-  await peopleB.loadData("test/data/files/people_b.csv");
+  peopleB.loadData("test/data/files/people_b.csv");
 
-  await peopleA.fuzzyJoin(peopleB, "name", "standardName", 80);
+  peopleA.fuzzyJoin(peopleB, "name", "standardName", 80);
 
   assertEquals(await peopleA.getData(), [
     { id: 1, name: "Alice Smith", personId: "X", standardName: "Alice Smith" },
@@ -327,29 +350,33 @@ Deno.test("should not include a similarity column when similarityColumn is not p
     { id: 4, name: "David Jones", personId: null, standardName: null },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw an error when tables have conflicting column names", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("tableA");
-  await tableA.loadArray([{ id: 1, name: "Alice" }]);
+  tableA.loadArray([{ id: 1, name: "Alice" }]);
   const tableB = sdb.newTable("tableB");
-  await tableB.loadArray([{ id: 2, name: "Alise" }]); // 'id' conflicts
+  tableB.loadArray([{ id: 2, name: "Alise" }]); // 'id' conflicts
 
-  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
+  // The leftColumn and rightColumn validation doesn't need the database, so
+  // it throws at call time.
+  assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
-  await sdb.done();
+  await sdb.run();
+  await sdb.close();
 });
 
 Deno.test("should throw an error when leftColumn and rightColumn have the same name", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("tableA");
-  await tableA.loadArray([{ name: "Alice" }]);
+  tableA.loadArray([{ name: "Alice" }]);
   const tableB = sdb.newTable("tableB");
-  await tableB.loadArray([{ name: "Alise", score: 1 }]); // only 'name' is shared, it's also the join key
+  tableB.loadArray([{ name: "Alise", score: 1 }]); // only 'name' is shared, it's also the join key
 
-  await assertRejects(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
+  assertThrows(() => tableA.fuzzyJoin(tableB, "name", "name", 80));
 
-  await sdb.done();
+  await sdb.run();
+  await sdb.close();
 });

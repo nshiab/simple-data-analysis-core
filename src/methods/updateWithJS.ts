@@ -1,28 +1,48 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
+import queueOp from "../helpers/queueOp.ts";
+import { executePreparedArray, prepareArray } from "./loadArray.ts";
 
-export default async function updateWithJS(
+type Row = { [key: string]: unknown };
+
+type DataModifier = (
+  rows: Row[],
+) => Row[] | Promise<Row[]>;
+
+type UpdateWithJSOptions = { batchSize?: number };
+
+export default function updateWithJS(
   simpleTable: SimpleTable,
-  dataModifier:
-    | ((
-      rows: {
-        [key: string]: unknown;
-      }[],
-    ) => Promise<
-      {
-        [key: string]: unknown;
-      }[]
-    >)
-    | ((
-      rows: {
-        [key: string]: unknown;
-      }[],
-    ) => {
-      [key: string]: unknown;
-    }[]),
-  options: { batchSize?: number } = {},
-) {
+  dataModifier: DataModifier,
+  options: UpdateWithJSOptions = {},
+): void {
+  if (
+    options.batchSize !== undefined &&
+    (!Number.isInteger(options.batchSize) || options.batchSize < 1)
+  ) {
+    throw new Error("updateWithJS() batchSize must be a positive integer.");
+  }
+
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "barrier",
+    method: "updateWithJS()",
+    parameters: { options },
+    execute: () => executeUpdateWithJS(simpleTable, dataModifier, options),
+  });
+}
+
+async function executeUpdateWithJS(
+  simpleTable: SimpleTable,
+  dataModifier: DataModifier,
+  options: UpdateWithJSOptions,
+): Promise<void> {
   const types = await simpleTable.getTypes();
-  if (Object.values(types).includes("GEOMETRY")) {
+  // Geometry columns are typed as GEOMETRY('<crs>'), not a bare "GEOMETRY".
+  if (
+    Object.values(types).some((d) => d.toUpperCase().startsWith("GEOMETRY"))
+  ) {
     throw new Error(
       "updateWithJS doesn't work with tables containing geometries.",
     );
@@ -43,28 +63,25 @@ export default async function updateWithJS(
         "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.",
       );
     }
-    await simpleTable.loadArray(newData);
+    await executePreparedArray(simpleTable, prepareArray(newData));
     return;
   }
 
   const batchSize = options.batchSize;
-  if (!Number.isInteger(batchSize) || batchSize < 1) {
-    throw new Error("batchSize must be a positive integer.");
-  }
   if (Object.keys(types).includes("__sda_rowid")) {
     throw new Error(
       'The table has a column named "__sda_rowid", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.',
     );
   }
 
-  const nbRows = await simpleTable.getNbRows();
-  if (nbRows === 0) {
+  const rowCount = await simpleTable.getRowCount();
+  if (rowCount === 0) {
     // Same behavior as the non-batched path on an empty table.
     const newData = await dataModifier([]);
     if (newData.length === 0) {
       return;
     }
-    await simpleTable.loadArray(newData);
+    await executePreparedArray(simpleTable, prepareArray(newData));
     return;
   }
 
@@ -81,10 +98,12 @@ export default async function updateWithJS(
 
     while (true) {
       const batch = (await simpleTable.sdb.customQuery(
-        `SELECT *, rowid AS __sda_rowid FROM "${simpleTable.name}"${
+        `SELECT *, rowid AS __sda_rowid FROM ${
+          quoteIdentifier(simpleTable.name)
+        }${
           lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
         } ORDER BY rowid LIMIT ${batchSize}`,
-        { returnDataFrom: "query" },
+        { returnData: true },
       )) as { [key: string]: unknown }[];
       if (batch.length === 0) {
         break;
@@ -98,15 +117,19 @@ export default async function updateWithJS(
       if (modified.length === 0) {
         continue;
       }
-      await scratch.loadArray(modified);
+      await executePreparedArray(scratch, prepareArray(modified));
       if (first) {
         await simpleTable.sdb.customQuery(
-          `CREATE OR REPLACE TABLE "${accumulator}" AS SELECT * FROM "${scratch.name}"`,
+          `CREATE OR REPLACE TABLE ${
+            quoteIdentifier(accumulator)
+          } AS SELECT * FROM ${quoteIdentifier(scratch.name)}`,
         );
         first = false;
       } else {
         await simpleTable.sdb.customQuery(
-          `INSERT INTO "${accumulator}" BY NAME SELECT * FROM "${scratch.name}"`,
+          `INSERT INTO ${quoteIdentifier(accumulator)} BY NAME SELECT * FROM ${
+            quoteIdentifier(scratch.name)
+          }`,
         );
       }
     }
@@ -118,15 +141,18 @@ export default async function updateWithJS(
     }
 
     await simpleTable.sdb.customQuery(
-      `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT * FROM "${accumulator}"`,
+      `CREATE OR REPLACE TABLE ${
+        quoteIdentifier(simpleTable.name)
+      } AS SELECT * FROM ${quoteIdentifier(accumulator)}`,
     );
   } finally {
     await simpleTable.sdb.customQuery(
-      `DROP TABLE IF EXISTS "${accumulator}";
-DROP TABLE IF EXISTS "${scratch.name}";`,
+      `DROP TABLE IF EXISTS ${quoteIdentifier(accumulator)};
+DROP TABLE IF EXISTS ${quoteIdentifier(scratch.name)};`,
     );
-    simpleTable.sdb.tables = simpleTable.sdb.tables.filter((t) =>
-      t !== scratch
+    retainRegisteredTables(
+      simpleTable.sdb,
+      (table) => table !== scratch,
     );
   }
 }

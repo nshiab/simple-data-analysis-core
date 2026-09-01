@@ -1,12 +1,24 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should throw when a column to remove does not exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData("test/data/files/employees.csv");
+
+  table.removeColumns("nope");
+
+  await assertRejects(() => table.getData());
+
+  await sdb.close();
+});
 
 Deno.test("should remove one column with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
 
-  await table.removeColumns("Hire date");
+  table.removeColumns("Hire date");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -368,15 +380,15 @@ Deno.test("should remove one column with spaces", async () => {
       "End-of_year-BONUS?": "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should remove one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
-  await table.cleanColumnNames();
+  table.loadData("test/data/files/employees.csv");
+  table.cleanColumnNames();
 
-  await table.removeColumns("hireDate");
+  table.removeColumns("hireDate");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -738,15 +750,15 @@ Deno.test("should remove one column", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should remove multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
-  await table.cleanColumnNames();
-  await table.removeColumns(["job", "salary"]);
+  table.loadData("test/data/files/employees.csv");
+  table.cleanColumnNames();
+  table.removeColumns(["job", "salary"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -1057,5 +1069,5 @@ Deno.test("should remove multiple columns", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });

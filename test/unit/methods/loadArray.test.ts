@@ -5,7 +5,7 @@ import SimpleTable from "../../../src/class/SimpleTable.ts";
 Deno.test("should load an array of objects into a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       key1: 1,
       key2: "un",
@@ -51,7 +51,7 @@ Deno.test("should load an array of objects into a table", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should load an array of objects into a table and return the table", async () => {
@@ -84,13 +84,14 @@ Deno.test("should load an array of objects into a table and return the table", a
   ]);
 
   assertEquals(table instanceof SimpleTable, true);
-  await sdb.done();
+  await table.run();
+  await sdb.close();
 });
 
 Deno.test("should load an array of objects into a table with spaces in column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "column 1": 1,
       "column 2": "un",
@@ -130,12 +131,12 @@ Deno.test("should load an array of objects into a table with spaces in column na
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load an array of objects even if the first rows have null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "column 1": 1,
       "column 2": null,
@@ -175,12 +176,12 @@ Deno.test("should load an array of objects even if the first rows have null valu
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should load an array of objects even if the all values in a column are null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     {
       "column 1": 1,
       "column 2": null,
@@ -227,7 +228,7 @@ Deno.test("should load an array of objects even if the all values in a column ar
     "column 2": "VARCHAR",
   });
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw a clear error for an empty array", async () => {
@@ -236,7 +237,7 @@ Deno.test("should throw a clear error for an empty array", async () => {
 
   let error: unknown;
   try {
-    await table.loadArray([]);
+    table.loadArray([]);
   } catch (e) {
     error = e;
   }
@@ -244,5 +245,55 @@ Deno.test("should throw a clear error for an empty array", async () => {
     (error as Error).message,
     "The array is empty. loadArray needs at least one object to infer the column types.",
   );
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("loadArray captures row, Date, and array values when queued", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("capturedArray");
+  const date = new Date("2020-01-02T03:04:05.000Z");
+  const vector = [1, 2];
+  const row = { name: "before", date, vector };
+  const rows = [
+    row,
+    { name: "empty", date: null, vector: null },
+  ];
+
+  table.loadArray(rows);
+  row.name = "after";
+  date.setUTCFullYear(2030);
+  vector[0] = 99;
+  rows.push({
+    name: "later",
+    date: new Date("2040-01-01T00:00:00.000Z"),
+    vector: [8, 9],
+  });
+
+  const result = await sdb.customQuery(
+    `SELECT name, date, vector[1] AS first FROM "capturedArray"`,
+    { returnData: true },
+  );
+  assertEquals(result, [
+    {
+      name: "before",
+      date: new Date("2020-01-02T03:04:05.000Z"),
+      first: 1,
+    },
+    { name: "empty", date: null, first: null },
+  ]);
+
+  await sdb.close();
+});
+
+Deno.test("library SQL supports double quotes in table and column names", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable('people "archive"');
+
+  const result = await table
+    .loadArray([{ 'full "name"': "Ada" }])
+    .sort({ 'full "name"': "asc" })
+    .getData({ columns: 'full "name"' });
+
+  assertEquals(result, [{ 'full "name"': "Ada" }]);
+  await sdb.close();
 });

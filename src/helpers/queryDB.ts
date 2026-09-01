@@ -1,7 +1,46 @@
+import type { DuckDBValue as NativeDuckDBValue } from "@duckdb/node-api";
 import SimpleTable from "../class/SimpleTable.ts";
 import SimpleDB from "../class/SimpleDB.ts";
 import cleanSQL from "./cleanSQL.ts";
+import flushAllTables from "./flushAllTables.ts";
+import { recordCacheTableAccess } from "./cacheTableDependencies.ts";
 
+/** @internal DuckDB owns this type; retain its exact binding contract without re-exporting it. */
+type DuckDBValue = NativeDuckDBValue;
+
+/**
+ * Executes SQL for a table or database after flushing all queued operations.
+ * Starts the database on first use and applies its SQL logging settings.
+ * Extension authors can construct `options` with `mergeOptions()`.
+ *
+ * @param simple - The table or database that owns the query.
+ * @param query - The SQL statement to execute.
+ * @param options - Query execution and diagnostic settings.
+ * @param options.table - The table name used for diagnostics, or `null`.
+ * @param options.method - The calling method used for diagnostics, or `null`.
+ * @param options.parameters - Arguments included in error diagnostics, or `null`.
+ * @param options.rowsToLog - The caller's row-display limit, retained for compatibility.
+ * @param options.charsToLog - The caller's per-cell display limit, retained for compatibility.
+ * @param options.returnData - Whether to convert and return the result rows.
+ * @param options.values - DuckDB-native values bound to SQL placeholders, in order.
+ * @param options.noClean - Whether to preserve the SQL text without cleaning it.
+ * @returns Converted rows when `returnData` is true, otherwise `null`.
+ *
+ * @example
+ * ```ts
+ * import { mergeOptions, queryDB, quoteIdentifier } from "@nshiab/simple-data-analysis-core/helpers";
+ *
+ * await table.loadArray([{ answer: 0 }]).run();
+ * const query = `UPDATE ${quoteIdentifier(table.name)} SET answer = ?`;
+ * await queryDB(table, query, mergeOptions(table, {
+ *   table: table.name,
+ *   method: "example()",
+ *   parameters: null,
+ *   values: [42],
+ * }));
+ * await table.log();
+ * ```
+ */
 export default async function queryDB(
   simple: SimpleTable | SimpleDB,
   query: string,
@@ -9,10 +48,11 @@ export default async function queryDB(
     table: string | null;
     method: string | null;
     parameters: { [key: string]: unknown } | null;
-    nbRowsToLog: number;
-    nbCharactersToLog: number | undefined;
-    returnDataFrom: "query" | "none";
-    debug: boolean;
+    rowsToLog: number;
+    charsToLog: number | undefined;
+    returnData: boolean;
+    values?: DuckDBValue[];
+    noClean?: boolean;
   },
 ): Promise<
   | {
@@ -20,6 +60,17 @@ export default async function queryDB(
   }[]
   | null
 > {
+  if (simple instanceof SimpleTable) {
+    recordCacheTableAccess(simple);
+  }
+  const sdb = simple instanceof SimpleTable ? simple.sdb : simple;
+  if (sdb.lifecycleState === "closed") {
+    throw new Error(
+      `${
+        options.method ?? "The query"
+      } cannot run because its SimpleDB is closed.`,
+    );
+  }
   if (simple instanceof SimpleDB && simple.connection === undefined) {
     await simple.start();
   } else if (
@@ -34,42 +85,33 @@ export default async function queryDB(
     throw new Error("simple.connection is undefined");
   }
 
-  query = cleanSQL(query);
+  // Observing executes: any query touching the database first flushes the
+  // operations queued by sync builder methods, preserving program order.
+  await flushAllTables(simple instanceof SimpleTable ? simple.sdb : simple);
 
-  if (options.debug) {
-    // We beautify it a little bit
-    if (query.at(-1) !== ";") {
-      query += ";";
-    }
-    if (query.includes("\n")) {
-      query = query
-        .trim()
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line !== "" && line !== ";")
-        .join("\n");
-    }
-    console.log(query);
+  if (options.noClean !== true) {
+    query = cleanSQL(query);
   }
 
-  let data = null;
+  const executionOptions = {
+    ...options,
+    logSQL: sdb.logSQL,
+    explainSQL: sdb.explainSQL,
+  };
 
-  if (options.returnDataFrom === "none") {
-    await simple.runQuery(query, simple.connection, false, options);
-  } else if (options.returnDataFrom === "query") {
-    data = await simple.runQuery(query, simple.connection, true, options);
-  } else {
-    throw new Error(
-      `Unknown ${options.returnDataFrom} options.returnDataFrom`,
+  if (options.returnData) {
+    const data = await simple.runQuery(
+      query,
+      simple.connection,
+      true,
+      executionOptions,
     );
-  }
-
-  if (options.returnDataFrom === "query") {
     if (data === null) {
       throw new Error("data is null");
     }
     return data;
   } else {
+    await simple.runQuery(query, simple.connection, false, executionOptions);
     return null;
   }
 }

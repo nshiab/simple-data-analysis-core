@@ -4,9 +4,9 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should create a buffer from points", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData("test/geodata/files/point.json");
-  await table.buffer("buffer", 1);
-  await table.selectColumns("buffer");
+  table.loadGeoData("test/geodata/files/point.json");
+  table.buffer("buffer", 1);
+  table.selectColumns("buffer");
 
   const data = await table.getGeoData("buffer");
 
@@ -55,15 +55,15 @@ Deno.test("should create a buffer from points", async () => {
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should create a buffer from points in a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData("test/geodata/files/point.json");
-  await table.buffer("buffer", 1, { column: "geom" });
-  await table.selectColumns("buffer");
+  table.loadGeoData("test/geodata/files/point.json");
+  table.buffer("buffer", 1, { column: "geom" });
+  table.selectColumns("buffer");
 
   const data = await table.getGeoData("buffer");
 
@@ -112,16 +112,16 @@ Deno.test("should create a buffer from points in a specific column", async () =>
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should create a buffer from polygons", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
-  await table.buffer("buffer", 100_000);
-  await table.selectColumns("buffer");
-  await table.reproject("EPSG:4326");
-  await table.reducePrecision(2);
+  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
+  table.buffer("buffer", 100_000);
+  table.selectColumns("buffer");
+  table.reproject("EPSG:4326");
+  table.reducePrecision(2);
 
   const data = await table.getGeoData("buffer");
 
@@ -2500,35 +2500,35 @@ Deno.test("should create a buffer from polygons", async () => {
       "properties": {},
     }],
   });
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("buffer() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
   // Add a column to overwrite
-  await table.addColumn("buff", "string", "'old'");
+  table.addColumn("buff", "string", "'old'");
 
   // This should now succeed and overwrite "buff"
-  await table.buffer("buff", 10, { column: "geom" });
+  table.buffer("buff", 10, { column: "geom" });
 
   const types = await table.getTypes();
   assertEquals(types.buff, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("buffer() should overwrite the source geometry column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
-  await table.buffer("geom", 10, { column: "geom" });
+  table.buffer("geom", 10, { column: "geom" });
 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
@@ -2540,5 +2540,5 @@ Deno.test("buffer() should overwrite the source geometry column", async () => {
     "Polygon",
   );
 
-  await sdb.done();
+  await sdb.close();
 });

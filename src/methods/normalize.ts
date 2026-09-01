@@ -1,59 +1,65 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function normalize(
+export default function normalize(
   simpleTable: SimpleTable,
   column: string,
   newColumn: string,
   options: {
-    categories?: string | string[];
+    by?: string | string[];
     decimals?: number;
+    range?: [number, number];
   } = {},
 ) {
-  await queryDB(
-    simpleTable,
-    normalizeQuery(simpleTable.name, column, newColumn, options),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "normalize()",
-      parameters: { column, options },
-    }),
-  );
-}
-
-function normalizeQuery(
-  table: string,
-  column: string,
-  newColumn: string,
-  options: {
-    categories?: string | string[];
-    decimals?: number;
-  } = {},
-) {
-  const categories = options.categories
-    ? stringToArray(options.categories)
-    : [];
-  const partition = categories.length > 0
-    ? `PARTITION BY ${categories.map((d) => `"${d}"`).join(", ")}`
-    : "";
-
-  const tempQuery = `("${column}" - MIN("${column}") OVER(${partition}))
-    /
-    (MAX("${column}") OVER(${partition}) - MIN("${column}") OVER(${partition}))`;
-
-  const query = `
-    CREATE OR REPLACE TABLE "${table}" AS
-    SELECT *, (
-        ${
-    typeof options.decimals === "number"
-      ? `ROUND(${tempQuery}, ${options.decimals})`
-      : tempQuery
+  if (
+    options.range !== undefined &&
+    (!Array.isArray(options.range) ||
+      options.range.length !== 2 ||
+      !Number.isFinite(options.range[0]) ||
+      !Number.isFinite(options.range[1]) ||
+      options.range[0] >= options.range[1])
+  ) {
+    throw new Error(
+      "normalize() options.range must contain two finite numbers in ascending order.",
+    );
   }
-        ) AS ${newColumn},
-    FROM "${table}"
-    `;
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "normalize()",
+    parameters: { column, newColumn, options },
+    needsSchema: true,
+    buildSelect: (input, schema) => {
+      assertNewColumns(schema, [newColumn], "normalize()");
 
-  return query;
+      const by = options.by ? stringToArray(options.by) : [];
+      const partition = by.length > 0
+        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
+        : "";
+
+      const normalizedQuery = `(${quoteIdentifier(column)} - MIN(${
+        quoteIdentifier(column)
+      }) OVER(${partition}))
+    /
+    (MAX(${quoteIdentifier(column)}) OVER(${partition}) - MIN(${
+        quoteIdentifier(column)
+      }) OVER(${partition}))`;
+      const [rangeMin, rangeMax] = options.range ?? [0, 1];
+      const scaledQuery = options.range === undefined
+        ? normalizedQuery
+        : `${rangeMin} + (${normalizedQuery}) * ${rangeMax - rangeMin}`;
+
+      return `SELECT *, (
+        ${
+        typeof options.decimals === "number"
+          ? `ROUND(${scaledQuery}, ${options.decimals})`
+          : scaledQuery
+      }
+        ) AS ${quoteIdentifier(newColumn)},
+    FROM ${input}`;
+    },
+  });
 }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="simple-data-analysis-core tests">
+  <bounds minlat="45.5000" minlon="-73.6000" maxlat="45.5100" maxlon="-73.5900"/>
+  <node id="1" lat="45.5010" lon="-73.5990" version="1">
+    <tag k="amenity" v="school"/>
+    <tag k="name" v="Test School"/>
+  </node>
+  <node id="2" lat="45.5020" lon="-73.5980" version="1"/>
+  <node id="3" lat="45.5020" lon="-73.5960" version="1"/>
+  <node id="4" lat="45.5040" lon="-73.5960" version="1"/>
+  <node id="5" lat="45.5040" lon="-73.5980" version="1"/>
+  <node id="6" lat="45.5050" lon="-73.5950" version="1"/>
+  <node id="7" lat="45.5050" lon="-73.5930" version="1"/>
+  <node id="8" lat="45.5070" lon="-73.5930" version="1"/>
+  <node id="9" lat="45.5070" lon="-73.5950" version="1"/>
+  <way id="10" version="1">
+    <nd ref="2"/>
+    <nd ref="3"/>
+    <nd ref="4"/>
+    <nd ref="5"/>
+    <nd ref="2"/>
+    <tag k="area" v="yes"/>
+    <tag k="building" v="school"/>
+    <tag k="name" v="Test School Building"/>
+  </way>
+  <way id="11" version="1">
+    <nd ref="6"/>
+    <nd ref="7"/>
+    <nd ref="8"/>
+    <nd ref="9"/>
+    <nd ref="6"/>
+  </way>
+  <relation id="20" version="1">
+    <member type="way" ref="11" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="leisure" v="park"/>
+    <tag k="name" v="Test Park"/>
+  </relation>
+</osm>

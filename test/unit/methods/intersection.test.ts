@@ -5,28 +5,28 @@ Deno.test("should compute the intersection of geometries", async () => {
   const sdb = new SimpleDB();
 
   const prov = sdb.newTable("prov");
-  await prov.loadGeoData(
+  prov.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await prov.renameColumns({ geom: "prov" });
+  prov.renameColumns({ geom: "prov" });
 
   const poly = sdb.newTable("poly");
-  await poly.loadGeoData("test/geodata/files/polygons.geojson");
-  await poly.area("polArea");
-  await poly.round("polArea");
-  await poly.renameColumns({ geom: "pol" });
+  poly.loadGeoData("test/geodata/files/polygons.geojson");
+  poly.area("polArea");
+  poly.round("polArea");
+  poly.renameColumns({ geom: "pol" });
 
-  const joined = await prov.crossJoin(poly, { outputTable: "joined" });
-  await joined.intersection("pol", "prov", "intersec");
-  await joined.area("intersecArea", { column: "intersec" });
-  await joined.round("intersecArea");
-  await joined.addColumn(
+  const joined = prov.crossJoin(poly, { outputTable: "joined" });
+  joined.intersection("pol", "prov", "intersec");
+  joined.area("intersecArea", { column: "intersec" });
+  joined.round("intersecArea");
+  joined.addColumn(
     "intersecPerc",
     "double",
     `ROUND(intersecArea/polArea, 4)`,
   );
 
-  await joined.selectColumns(["nameEnglish", "name", "intersecPerc"]);
+  joined.selectColumns(["nameEnglish", "name", "intersecPerc"]);
   const data = await joined.getData();
 
   assertEquals(data, [
@@ -94,37 +94,37 @@ Deno.test("should compute the intersection of geometries", async () => {
     { nameEnglish: "Nunavut", name: "polygonB", intersecPerc: 0.0366 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("intersection() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, inter: "old" },
   ]);
-  await table.points("lat", "lon", "geom1");
-  await table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
   // This should now succeed and overwrite "inter"
-  await table.intersection("geom1", "geom2", "inter");
+  table.intersection("geom1", "geom2", "inter");
 
   const types = await table.getTypes();
   assertEquals(types.inter, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("intersection() should overwrite one of the source geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { lat: 1, lon: 2, lat2: 1, lon2: 2 },
   ]);
-  await table.points("lat", "lon", "geom1");
-  await table.points("lat2", "lon2", "geom2");
+  table.createPoints("lat", "lon", "geom1");
+  table.createPoints("lat2", "lon2", "geom2");
 
-  await table.intersection("geom1", "geom2", "geom1");
+  table.intersection("geom1", "geom2", "geom1");
 
   const types = await table.getTypes();
   assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
@@ -136,7 +136,7 @@ Deno.test("intersection() should overwrite one of the source geometry columns", 
     "Point",
   );
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("intersection() should return null if one of the geometries is null", async () => {
@@ -158,7 +158,7 @@ Deno.test("intersection() should return null if one of the geometries is null", 
         (4, NULL, NULL);
 `);
 
-  await table.intersection("geom1", "geom2", "inter");
+  table.intersection("geom1", "geom2", "inter");
   const data = await table.getGeoData("inter");
 
   assertEquals(
@@ -178,5 +178,5 @@ Deno.test("intersection() should return null if one of the geometries is null", 
     null,
   );
 
-  await sdb.done();
+  await sdb.close();
 });

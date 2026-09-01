@@ -4,42 +4,42 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should log the projections of the table, even if there is none", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
 
   await table.logProjections();
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should log the projections of the table (Lambert conformal conic)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
+  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip");
 
   await table.logProjections();
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
-Deno.test("should log the projections of the table (Lambert conformal conic converted to WGS84)", async () => {
+Deno.test("should log the projections of the table (Lambert conformal conic converted to EPSG:4326)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip", {
-    toWGS84: true,
+  table.loadGeoData("test/geodata/files/canada-not-4326.shp.zip", {
+    toEPSG4326: true,
   });
 
   await table.logProjections();
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
-Deno.test("should log the projections of the table (geojson WGS84)", async () => {
+Deno.test("should log the projections of the table (GeoJSON EPSG:4326)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
@@ -47,5 +47,5 @@ Deno.test("should log the projections of the table (geojson WGS84)", async () =>
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

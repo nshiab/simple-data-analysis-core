@@ -4,21 +4,21 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should log unique values in a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logUniques("Name");
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should log stringified unique values in a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
+  table.loadData("test/data/files/employees.csv");
   await table.logUniques("Name", { stringify: true });
 
   // How to test?
   assertEquals(true, true);
-  await sdb.done();
+  await sdb.close();
 });

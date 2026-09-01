@@ -1,3 +1,4 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import rewind from "../helpers/rewind.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -10,8 +11,11 @@ export default async function getGeoData(
   column: string,
   options: { rewind?: boolean } = {},
 ) {
+  const quotedColumn = quoteIdentifier(column);
   const query =
-    `SELECT * EXCLUDE ${column}, ST_AsGeoJSON(${column}) as geoJsonFragment from "${SimpleTable.name}";`;
+    `SELECT * EXCLUDE ${quotedColumn}, ST_AsGeoJSON(${quotedColumn}) AS ${
+      quoteIdentifier("geoJsonFragment")
+    } FROM ${quoteIdentifier(SimpleTable.name)};`;
 
   const queryResult = await queryDB(
     SimpleTable,
@@ -20,12 +24,12 @@ export default async function getGeoData(
       table: null,
       method: "getGeoData()",
       parameters: { column },
-      returnDataFrom: "query",
+      returnData: true,
     }),
   );
 
   if (!queryResult) {
-    throw new Error("No queryResults");
+    throw new Error("The query did not return a result.");
   }
 
   const features = queryResult.map((d) => {

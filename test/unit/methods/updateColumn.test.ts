@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should update a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/cities.csv"]);
-  await table.updateColumn("city", `left("city", 3)`);
+  table.loadData(["test/data/files/cities.csv"]);
+  table.updateColumn("city", `left("city", 3)`);
 
   const data = await table.getData();
 
@@ -15,18 +15,18 @@ Deno.test("should update a column", async () => {
     { id: 7024745, city: "MON" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should update a column with a space in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/employees.csv");
-  await table.updateColumn(
+  table.loadData("test/data/files/employees.csv");
+  table.updateColumn(
     "Department or unit",
     `left("Department or unit", 1)`,
   );
-  await table.selectRows(3);
+  table.selectRows(3);
 
   const data = await table.getData();
 
@@ -57,5 +57,5 @@ Deno.test("should update a column with a space in its name", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

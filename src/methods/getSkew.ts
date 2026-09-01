@@ -1,6 +1,8 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
 export default async function getSkew(
   SimpleTable: SimpleTable,
@@ -9,21 +11,26 @@ export default async function getSkew(
     decimals?: number;
   } = {},
 ) {
+  const qualifiedColumn = quoteQualifiedIdentifier(SimpleTable.name, column);
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(SKEWNESS("${column}"), ${options.decimals}) AS "${column}" FROM "${SimpleTable.name}"`
-      : `SELECT SKEWNESS("${column}") AS "${column}" FROM "${SimpleTable.name}"`,
+      ? `SELECT ROUND(SKEWNESS(${qualifiedColumn}), ${options.decimals}) AS ${
+        quoteIdentifier(column)
+      } FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT SKEWNESS(${qualifiedColumn}) AS ${
+        quoteIdentifier(column)
+      } FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getSkew()",
       parameters: { column, options },
     }),
   );
 
   if (!queryResult) {
-    throw new Error("No queryResults");
+    throw new Error("The query did not return a result.");
   }
 
   const result = queryResult[0][column];

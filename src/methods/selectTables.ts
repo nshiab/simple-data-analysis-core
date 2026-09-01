@@ -1,30 +1,46 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import SimpleTable from "../class/SimpleTable.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
+import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
+import formatMissingTables from "../helpers/formatMissingTables.ts";
 
 export default async function selectTables(
   simpleDB: SimpleDB,
   tables: SimpleTable | string | (SimpleTable | string)[],
 ) {
-  const tablesToBeSelected = (Array.isArray(tables) ? tables : [tables]).map((
+  const selected = Array.isArray(tables) ? tables : [tables];
+  assertSameDatabase(
+    simpleDB,
+    selected.filter((table): table is SimpleTable =>
+      table instanceof SimpleTable
+    ),
+    "selectTables()",
+  );
+  const tablesToBeSelected = selected.map((
     t,
   ) => t instanceof SimpleTable ? t.name : t);
 
-  for (const table of tablesToBeSelected) {
-    if (!(await simpleDB.hasTable(table))) {
-      throw new Error(`Table ${table} not found.`);
-    }
+  const existingTables = await simpleDB.getTableNames();
+  const missingTables = tablesToBeSelected.filter((table) =>
+    !existingTables.includes(table)
+  );
+  if (missingTables.length > 0) {
+    throw new Error(
+      formatMissingTables("selectTables()", missingTables, existingTables),
+    );
   }
 
-  const tablesToBeRemoved = simpleDB.tables.filter((t) =>
+  const tablesToBeRemoved = simpleDB.getTables().filter((t) =>
     !tablesToBeSelected.includes(t.name)
   );
 
   await queryDB(
     simpleDB,
     tablesToBeRemoved.map((d) =>
-      `DROP TABLE "${d instanceof SimpleTable ? d.name : d}";`
+      `DROP TABLE ${quoteIdentifier(d instanceof SimpleTable ? d.name : d)};`
     ).join("\n"),
     mergeOptions(simpleDB, {
       table: null,
@@ -36,7 +52,8 @@ export default async function selectTables(
   const tablesNamesToBeRemoved = tablesToBeRemoved.map((t) =>
     t instanceof SimpleTable ? t.name : t
   );
-  simpleDB.tables = simpleDB.tables.filter((t) =>
-    !tablesNamesToBeRemoved.includes(t.name)
+  retainRegisteredTables(
+    simpleDB,
+    (table) => !tablesNamesToBeRemoved.includes(table.name),
   );
 }

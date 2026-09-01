@@ -1,15 +1,28 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should reject an empty newColumns array at call time", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+
+  assertThrows(
+    () => table.splitSpread("value", ",", []),
+    Error,
+    "splitSpread() newColumns must contain at least one column.",
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should split and spread a string into multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "Shiab, Nael" },
     { name: "Bruce, Graeme" },
   ]);
 
-  await table.splitSpread("name", ",", ["lastName", "firstName"]);
+  table.splitSpread("name", ",", ["lastName", "firstName"]);
 
   const data = await table.getData();
 
@@ -17,18 +30,18 @@ Deno.test("should split and spread a string into multiple columns", async () => 
     { name: "Shiab, Nael", lastName: "Shiab", firstName: " Nael" },
     { name: "Bruce, Graeme", lastName: "Bruce", firstName: " Graeme" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should split and spread into three columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { address: "123 Main St,Anytown,USA" },
     { address: "456 Oak Ave,Springfield,Canada" },
   ]);
 
-  await table.splitSpread("address", ",", ["street", "city", "country"]);
+  table.splitSpread("address", ",", ["street", "city", "country"]);
 
   const data = await table.getData();
 
@@ -46,13 +59,13 @@ Deno.test("should split and spread into three columns", async () => {
       country: "Canada",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should handle rows with fewer parts than expected", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { data: "A,B,C" },
     { data: "D,E" },
     { data: "F" },
@@ -65,7 +78,8 @@ Deno.test("should handle rows with fewer parts than expected", async () => {
     warnMessage = msg;
   };
 
-  await table.splitSpread("data", ",", ["part1", "part2", "part3"]);
+  // splitSpread() queues the operation; run() executes it.
+  await table.splitSpread("data", ",", ["part1", "part2", "part3"]).run();
 
   // Restore console.warn
   console.warn = originalWarn;
@@ -82,13 +96,13 @@ Deno.test("should handle rows with fewer parts than expected", async () => {
     { data: "D,E", part1: "D", part2: "E", part3: "" },
     { data: "F", part1: "F", part2: "", part3: "" },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw error when rows have more parts than expected", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { data: "A,B,C,D,E" },
     { data: "F,G,H" },
     { data: "I,J,K,L" },
@@ -97,7 +111,8 @@ Deno.test("should throw error when rows have more parts than expected", async ()
   let errorThrown = false;
   let errorMessage = "";
   try {
-    await table.splitSpread("data", ",", ["first", "second"]);
+    // splitSpread() queues the operation; run() executes it.
+    await table.splitSpread("data", ",", ["first", "second"]).run();
   } catch (error) {
     errorThrown = true;
     errorMessage = (error as Error).message;
@@ -119,20 +134,20 @@ Deno.test("should throw error when rows have more parts than expected", async ()
   assertEquals(errorMessage.includes("F,G,H"), true);
   assertEquals(errorMessage.includes("I,J,K,L"), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("should skip validation with noCheck option when rows have more parts than expected", async () => {
+Deno.test("should skip validation with strict: false when rows have more parts than expected", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { data: "A,B,C,D,E" },
     { data: "F,G,H" },
     { data: "I,J,K,L" },
   ]);
 
-  // This should not throw an error because noCheck is true
-  await table.splitSpread("data", ",", ["first", "second"], { noCheck: true });
+  // This should not throw an error because strict is false
+  table.splitSpread("data", ",", ["first", "second"], { strict: false });
 
   const data = await table.getData();
 
@@ -143,5 +158,36 @@ Deno.test("should skip validation with noCheck option when rows have more parts 
     { data: "I,J,K,L", first: "I", second: "J" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { name: "Shiab, Nael", lastName: "already here" },
+  ]);
+
+  await assertRejects(
+    () => table.splitSpread("name", ",", ["lastName", "firstName"]).run(),
+    Error,
+    'the column "lastName" already exists',
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should bind a spread separator containing an apostrophe", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundSplitSpread");
+
+  table.loadArray([{ value: "rock'n'roll" }]);
+  table.splitSpread("value", "'n'", ["first", "second"]);
+
+  assertEquals(await table.getData(), [{
+    value: "rock'n'roll",
+    first: "rock",
+    second: "roll",
+  }]);
+  await sdb.close();
 });

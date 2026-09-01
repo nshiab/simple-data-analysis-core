@@ -1,95 +1,89 @@
+import queryDbFile from "../helpers/queryDbFile.ts";
 import { existsSync } from "node:fs";
-import checkVssIndexes from "../helpers/checkVssIndexes.ts";
-import cleanPath from "../helpers/cleanPath.ts";
-import getExtension from "../helpers/getExtension.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
-import setDbProps from "../helpers/setDbProps.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
+import cleanPath from "../helpers/cleanPath.ts";
+import getDbFileType from "../helpers/getDbFileType.ts";
+import getCurrentDatabase from "../helpers/getCurrentDatabase.ts";
+import getDbIndexes from "../helpers/getDbIndexes.ts";
+import parseValue from "../helpers/parseValue.ts";
+import prepareDbExtensions from "../helpers/prepareDbExtensions.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import readDbMetadata from "../helpers/readDbMetadata.ts";
+import setDbProps from "../helpers/setDbProps.ts";
+import writeDbMetadata from "../helpers/writeDbMetadata.ts";
 
-export default async function loadDB(
-  simpleDB: SimpleDB,
-  file: string,
-  options: {
-    name?: string;
-    detach?: boolean;
-  } = {},
-) {
-  const name = options.name ?? "my_database";
-  const detach = options.detach ?? true;
-
-  if (!existsSync(file)) {
-    throw new Error(`The file ${file} does not exist.`);
-  }
-  const extension = getExtension(file);
-
-  const allIndexesFile = `${file.replace(`.${extension}`, "")}_indexes.json`;
-  const vssIndex = checkVssIndexes(allIndexesFile);
-  if (vssIndex) {
-    await simpleDB.customQuery(`INSTALL vss; LOAD vss;`);
+export default async function loadDB(sdb: SimpleDB, file: string) {
+  const type = getDbFileType(file);
+  if (!existsSync(file)) throw new Error(`The file ${file} does not exist.`);
+  if (sdb.readOnly) {
+    throw new Error("loadDB() cannot import into a read-only database.");
   }
 
-  if (extension === "db") {
-    if (detach) {
-      await queryDB(
-        simpleDB,
-        `ATTACH '${cleanPath(file)}' AS ${name};
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
-        mergeOptions(simpleDB, {
-          returnDataFrom: "none",
-          table: null,
-          method: "loadDB()",
-          parameters: {},
-        }),
-      );
-    } else {
-      await queryDB(
-        simpleDB,
-        `ATTACH '${cleanPath(file)}' AS ${name};
-          USE ${name};`,
-        mergeOptions(simpleDB, {
-          returnDataFrom: "none",
-          table: null,
-          method: "loadDB()",
-          parameters: {},
-        }),
-      );
-    }
-  } else if (extension === "sqlite") {
-    if (detach) {
-      await queryDB(
-        simpleDB,
-        `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-COPY FROM DATABASE ${name} TO memory;
-DETACH ${name};`,
-        mergeOptions(simpleDB, {
-          returnDataFrom: "none",
-          table: null,
-          method: "loadDB()",
-          parameters: {},
-        }),
-      );
-    } else {
-      await queryDB(
-        simpleDB,
-        `INSTALL sqlite; LOAD sqlite;
-        ATTACH '${cleanPath(file)}' AS ${name} (TYPE SQLITE);
-        USE ${name};`,
-        mergeOptions(simpleDB, {
-          returnDataFrom: "none",
-          table: null,
-          method: "loadDB()",
-          parameters: {},
-        }),
-      );
-    }
-  } else {
-    throw new Error(
-      `The extension ${extension} is not supported. Please use .db or .sqlite instead.`,
+  const destination = await getCurrentDatabase(sdb);
+  const target = quoteIdentifier(destination);
+  const name = `__sda_import_${crypto.randomUUID().replaceAll("-", "")}`;
+  const source = quoteIdentifier(name);
+  if (type === "sqlite") await queryDbFile(sdb, "INSTALL sqlite; LOAD sqlite;");
+  await queryDbFile(
+    sdb,
+    `ATTACH '${cleanPath(file)}' AS ${source} (TYPE ${type}, READ_ONLY);`,
+  );
+
+  let inTransaction = false;
+  try {
+    const indexes = type === "duckdb" ? await readDbMetadata(sdb, name) : {};
+    await readDbMetadata(sdb, destination);
+    await prepareDbExtensions(sdb, name, indexes);
+    const conflicts = await queryDbFile(
+      sdb,
+      `SELECT incoming.table_schema, incoming.table_name
+       FROM information_schema.tables incoming
+       JOIN information_schema.tables existing
+         ON lower(incoming.table_schema) = lower(existing.table_schema)
+         AND lower(incoming.table_name) = lower(existing.table_name)
+       WHERE incoming.table_catalog = ${parseValue(name)}
+         AND existing.table_catalog = ${parseValue(destination)}
+         AND incoming.table_schema <> '__sda';`,
+      { returnData: true },
     );
+    // Also protect registered table handles that have no physical table yet.
+    const incoming = await queryDbFile(
+      sdb,
+      `SELECT table_name FROM information_schema.tables
+       WHERE table_catalog = ${parseValue(name)} AND table_schema = 'main';`,
+      { returnData: true },
+    );
+    const registered = new Set(
+      sdb.getTables().map((table) => table.name.toLowerCase()),
+    );
+    const names = new Set([
+      ...conflicts!.map((row) => `${row.table_schema}.${row.table_name}`),
+      ...incoming!.filter((row) =>
+        registered.has(String(row.table_name).toLowerCase())
+      )
+        .map((row) => `main.${row.table_name}`),
+    ]);
+    if (names.size > 0) {
+      throw new Error(
+        `loadDB() cannot import existing tables: ${[...names].join(", ")}.`,
+      );
+    }
+    const mergedIndexes = { ...getDbIndexes(sdb), ...indexes };
+    await queryDbFile(sdb, "BEGIN TRANSACTION;");
+    inTransaction = true;
+    await queryDbFile(
+      sdb,
+      `DROP TABLE IF EXISTS ${target}.__sda.metadata;
+       COPY FROM DATABASE ${source} TO ${target};`,
+    );
+    await writeDbMetadata(sdb, destination, mergedIndexes);
+    await queryDbFile(sdb, "COMMIT;");
+    inTransaction = false;
+    await setDbProps(sdb, indexes);
+  } catch (error) {
+    if (inTransaction) await queryDbFile(sdb, "ROLLBACK;");
+    throw error;
+  } finally {
+    await queryDbFile(sdb, `DETACH ${source};`);
   }
-
-  await setDbProps(simpleDB, allIndexesFile);
 }

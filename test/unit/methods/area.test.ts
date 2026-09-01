@@ -1,15 +1,46 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should explain when a table has no geometry column", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("measurements");
+  table.loadArray([{ value: 1 }]);
+
+  const error = await assertRejects(() => table.area("area").run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `area() could not find a geometry column in table "measurements". Specify a geometry column explicitly, or add one to the table first.`,
+  );
+
+  await sdb.close();
+});
+
+Deno.test("should list geometry columns when a table has multiple", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  table.loadGeoData("test/geodata/files/point.json");
+  table.cloneColumn("geom", "other geometry");
+
+  const error = await assertRejects(() => table.area("area").run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `area() found 2 geometry columns in table "geodata": "geom", "other geometry". Specify one explicitly.`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should calculate the area of geometries in square meters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area");
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area");
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -76,18 +107,18 @@ Deno.test("should calculate the area of geometries in square meters", async () =
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the area of geometries in square meters from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area", { column: "geom" });
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area", { column: "geom" });
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -154,18 +185,18 @@ Deno.test("should calculate the area of geometries in square meters from a speci
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
-Deno.test("should calculate the area of geometries in square meters with a file loaded with option toWGS84", async () => {
+Deno.test("should calculate the area of geometries in square meters from an EPSG:4326 file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area");
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area");
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -232,18 +263,18 @@ Deno.test("should calculate the area of geometries in square meters with a file 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should calculate the area of geometries in square kilometers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  await table.loadGeoData(
+  table.loadGeoData(
     "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
-  await table.area("area", { unit: "km2" });
-  await table.selectColumns(["nameEnglish", "nameFrench", "area"]);
-  await table.round("area");
+  table.area("area", { unit: "km2" });
+  table.selectColumns(["nameEnglish", "nameFrench", "area"]);
+  table.round("area");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -290,5 +321,19 @@ Deno.test("should calculate the area of geometries in square kilometers", async 
     { nameEnglish: "Nunavut", nameFrench: "Nunavut", area: 2090913 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should round areas after converting their unit", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("geodata");
+  table.loadGeoData(
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
+  );
+  table.area("area", { unit: "km2", decimals: 2 });
+  table.selectColumns("area");
+
+  assertEquals(await table.getData({ limit: 1 }), [{ area: 407428.31 }]);
+
+  await sdb.close();
 });

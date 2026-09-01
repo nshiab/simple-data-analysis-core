@@ -1,19 +1,24 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function updateColumn(
+export default function updateColumn(
   simpleTable: SimpleTable,
   column: string,
   definition: string,
 ) {
-  await queryDB(
-    simpleTable,
-    `UPDATE "${simpleTable.name}" SET "${column}" = ${definition}`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "updateColumn()",
-      parameters: { column, definition },
-    }),
-  );
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "updateColumn()",
+    parameters: { column, definition },
+    // The schema is needed to keep the column's type: UPDATE casts the
+    // definition to the column's type on assignment.
+    needsSchema: true,
+    rawSQL: [definition],
+    preservesSchema: true,
+    buildSelect: (input, types) =>
+      `SELECT * REPLACE (CAST((${definition}) AS ${types[column]}) AS ${
+        quoteIdentifier(column)
+      }) FROM ${input}`,
+  });
 }

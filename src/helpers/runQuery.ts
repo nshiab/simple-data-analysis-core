@@ -1,13 +1,27 @@
+import quoteIdentifier from "./quoteIdentifier.ts";
 import {
   type DuckDBConnection,
   type DuckDBDateValue,
-  type DuckDBTimestampValue,
+  type DuckDBTimestampTZValue,
+  DuckDBTimestampValue,
   type DuckDBType,
   DuckDBTypeId,
   type DuckDBValue,
+  type DuckDBValueConverter,
+  type Json,
   JsonDuckDBValueConverter,
 } from "@duckdb/node-api";
 import SDAError from "../class/SDAError.ts";
+import observeQuery from "./observeQuery.ts";
+
+type RunQueryOptions = {
+  method: string | null;
+  parameters: { [key: string]: unknown } | null;
+  table?: string | null;
+  values?: DuckDBValue[];
+  logSQL: boolean;
+  explainSQL: boolean;
+};
 
 const msPerDay = 24 * 60 * 60 * 1000;
 const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER);
@@ -30,14 +44,35 @@ function makeIntegerConverter(columnName: string, tableName: string | null) {
     ) {
       warnedUnsafeIntegerColumns.add(warnKey);
       console.warn(
-        `SDA: Column "${columnName}"${
-          tableName === null ? "" : ` of table "${tableName}"`
+        `SDA: Column ${quoteIdentifier(columnName)}${
+          tableName === null ? "" : ` of table ${quoteIdentifier(tableName)}`
         } has at least one value exceeding Number.MAX_SAFE_INTEGER. Converted numbers may lose precision.`,
       );
     }
     return Number(bigintValue);
   };
 }
+
+function utcTimestampTzValue(value: DuckDBValue): string | null {
+  if (value === null) {
+    return null;
+  }
+  const timestamp = new DuckDBTimestampValue(
+    (value as DuckDBTimestampTZValue).micros,
+  ).toString();
+  return timestamp === "infinity" || timestamp === "-infinity"
+    ? timestamp
+    : `${timestamp}+00`;
+}
+
+const utcJsonValueConverter: DuckDBValueConverter<Json> = (
+  value,
+  type,
+  _converter,
+) =>
+  type.typeId === DuckDBTypeId.TIMESTAMP_TZ
+    ? utcTimestampTzValue(value)
+    : JsonDuckDBValueConverter(value, type, utcJsonValueConverter);
 
 export function makeConverter(
   type: DuckDBType,
@@ -72,59 +107,81 @@ export function makeConverter(
         const ms = micros >= 0n ? micros / 1000n : (micros - 999n) / 1000n;
         return new Date(Number(ms));
       };
+    case DuckDBTypeId.TIMESTAMP_TZ:
+      return utcTimestampTzValue;
     case DuckDBTypeId.BIGINT:
     case DuckDBTypeId.HUGEINT:
       return makeIntegerConverter(columnName, tableName);
     default:
       return (value) =>
-        JsonDuckDBValueConverter(value, type, JsonDuckDBValueConverter);
+        utcJsonValueConverter(value, type, utcJsonValueConverter);
   }
 }
 
 export default async function runQuery(
   query: string,
   connection: DuckDBConnection,
-  returnDataFromQuery: boolean,
-  options: {
-    debug: boolean;
-    method: string | null;
-    parameters: { [key: string]: unknown } | null;
-    table?: string | null;
-  },
+  returnData: boolean,
+  options: RunQueryOptions,
 ): Promise<
   | {
     [key: string]: unknown;
   }[]
   | null
 > {
+  const values = options.values ?? [];
   try {
-    if (returnDataFromQuery) {
-      const reader = await connection.runAndReadAll(query);
-      const columnNames = reader.deduplicatedColumnNames();
-      const columnTypes = reader.columnTypes();
+    await observeQuery(connection, query, values, options);
+    if (returnData) {
+      const result = values.length === 0
+        ? await connection.run(query)
+        : await connection.run(query, values);
+      const columnNames = result.deduplicatedColumnNames();
+      const columnTypes = result.columnTypes();
+      if (
+        options.method === "getData()" &&
+        columnTypes.some((type) =>
+          type.toString().toLowerCase().includes("geometry")
+        )
+      ) {
+        throw new Error(
+          "The query returns geometry columns. Use getGeoData() instead.",
+        );
+      }
       const converters = columnTypes.map((type, i) =>
         makeConverter(type, columnNames[i], options.table ?? null)
       );
-      const nbColumns = columnNames.length;
-      const rawRows = reader.getRows();
-      const rows: { [key: string]: unknown }[] = new Array(rawRows.length);
-      for (let i = 0; i < rawRows.length; i++) {
-        const rawRow = rawRows[i];
-        const row: { [key: string]: unknown } = {};
-        for (let j = 0; j < nbColumns; j++) {
-          row[columnNames[j]] = converters[j](rawRow[j]);
+      const columnCount = columnNames.length;
+      // The result is converted chunk by chunk, so no intermediate row-major
+      // copy of the whole result is materialized.
+      const rows: { [key: string]: unknown }[] = [];
+      while (true) {
+        const chunk = await result.fetchChunk();
+        if (chunk === null || chunk === undefined || chunk.rowCount === 0) {
+          break;
         }
-        rows[i] = row;
+        const base = rows.length;
+        for (let i = 0; i < chunk.rowCount; i++) {
+          rows.push({});
+        }
+        for (let j = 0; j < columnCount; j++) {
+          const columnName = columnNames[j];
+          const converter = converters[j];
+          chunk.visitColumnValues(j, (value, rowIndex) => {
+            rows[base + rowIndex][columnName] = converter(value);
+          });
+        }
       }
       return rows;
     } else {
-      await connection.run(query);
+      if (values.length === 0) {
+        await connection.run(query);
+      } else {
+        await connection.run(query, values);
+      }
       return null;
     }
   } catch (error) {
-    if (options.debug) {
-      console.warn(error);
-    }
     throw new SDAError({
       method: options.method,
       parameters: options.parameters,

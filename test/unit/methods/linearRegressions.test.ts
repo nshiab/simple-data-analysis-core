@@ -1,12 +1,27 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should explain when only one numeric column is available", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadArray([{ value: 1, category: "A" }]);
+
+  const error = await assertRejects(() => table.linearRegressions().run());
+  assert(error instanceof Error);
+  assertEquals(
+    error.message,
+    `linearRegressions() requires at least 2 numeric columns in table "data", but found 1: "value". Convert at least 1 more column to a numeric type first.`,
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and overwrite the current table with the results", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.linearRegressions({ decimals: 10 });
-  await table.sort({ r2: "desc", x: "asc" });
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.linearRegressions({ decimals: 10 });
+  table.sort({ r2: "desc", x: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -54,15 +69,15 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and overwrite the current table with the results, with 2 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.linearRegressions({ decimals: 2 });
-  await table.sort({ r2: "desc", x: "asc" });
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.linearRegressions({ decimals: 2 });
+  table.sort({ r2: "desc", x: "asc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -74,18 +89,18 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key4", y: "key2", slope: -0.63, yIntercept: 11.97, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and push the results to a new table, with 2 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  const regre = await table.linearRegressions({
+  table.loadData("test/data/files/dataCorrelations.json");
+  const regre = table.linearRegressions({
     decimals: 2,
     outputTable: true,
   });
-  await regre.sort({ r2: "desc", x: "asc" });
+  regre.sort({ r2: "desc", x: "asc" });
   const data = await regre.getData();
 
   assertEquals(data, [
@@ -97,18 +112,18 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key4", y: "key2", slope: -0.63, yIntercept: 11.97, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all permutations of numeric columns and push the results to a new table with a specific name, with 2 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  const regre = await table.linearRegressions({
+  table.loadData("test/data/files/dataCorrelations.json");
+  const regre = table.linearRegressions({
     decimals: 2,
     outputTable: "regr",
   });
-  await regre.sort({ r2: "desc", x: "asc" });
+  regre.sort({ r2: "desc", x: "asc" });
   const data = await regre.getData();
 
   assertEquals(data, [
@@ -120,27 +135,27 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key4", y: "key2", slope: -0.63, yIntercept: 11.97, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for specific columns with a specific category", async () => {
   const sdb = new SimpleDB();
   const temp = sdb.newTable();
-  await temp.loadData("./test/data/files/dailyTemperatures.csv");
-  await temp.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
-  await temp.summarize({
-    values: "t",
-    categories: ["decade", "id"],
-    summaries: "mean",
+  temp.loadData("./test/data/files/dailyTemperatures.csv");
+  temp.addColumn("decade", "integer", "FLOOR(YEAR(time)/10)*10");
+  temp.summarize({
+    columns: "t",
+    by: ["decade", "id"],
+    stats: "mean",
   });
-  await temp.linearRegressions({
+  temp.linearRegressions({
     x: "decade",
     y: "mean",
-    categories: "id",
+    by: "id",
     decimals: 2,
   });
 
-  await temp.sort({ r2: "desc" });
+  temp.sort({ r2: "desc" });
   const data = await temp.getData();
 
   assertEquals(data, [
@@ -170,18 +185,18 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for all combination of a column x and other numeric columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.linearRegressions({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.linearRegressions({
     x: "key2",
     decimals: 2,
   });
-  await table.sort({ r2: "desc" });
+  table.sort({ r2: "desc" });
   const data = await table.getData();
 
   assertEquals(data, [
@@ -189,14 +204,14 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key2", y: "key4", slope: -0.1, yIntercept: 5.63, r2: 0.06 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.linearRegressions({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.linearRegressions({
     x: "key2",
     y: "key3",
     decimals: 2,
@@ -206,14 +221,33 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     { x: "key2", y: "key3", slope: 0.17, yIntercept: 5.89, r2: 0.13 },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should bind result labels containing apostrophes", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { "x's": 1, y: 3 },
+    { "x's": 2, y: 5 },
+  ]);
+  table.linearRegressions({ x: "x's", y: "y" });
+
+  assertEquals(await table.getData(), [{
+    x: "x's",
+    y: "y",
+    slope: 2,
+    yIntercept: 1,
+    r2: 1,
+  }]);
+  await sdb.close();
 });
 
 Deno.test("should return the slope, yIntercept and coefficient of determination for two specific columns, with a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData("test/data/files/dataCorrelations.json");
-  await table.linearRegressions({
+  table.loadData("test/data/files/dataCorrelations.json");
+  table.linearRegressions({
     x: "key2",
     y: "key3",
     decimals: 5,
@@ -229,5 +263,5 @@ Deno.test("should return the slope, yIntercept and coefficient of determination 
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -1,26 +1,35 @@
-import findGeoColumn from "../helpers/findGeoColumn.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
+import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function length(
+export default function length(
   simpleTable: SimpleTable,
   newColumn: string,
-  options: { unit?: "m" | "km"; column?: string } = {},
+  options: { unit?: "m" | "km"; column?: string; decimals?: number } = {},
 ) {
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable);
-
-  await queryDB(
-    simpleTable,
-    `ALTER TABLE "${simpleTable.name}" ADD "${newColumn}" DOUBLE; UPDATE "${simpleTable.name}" SET "${newColumn}" =  ST_Length_Spheroid("${column}") ${
-      options.unit === "km" ? "/ 1000" : ""
-    };`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "length()",
-      parameters: { column, newColumn, options },
-    }),
-  );
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "length()",
+    parameters: { newColumn, options },
+    needsSchema: true,
+    needsSpatial: true,
+    buildSelect: (input, types) => {
+      assertNewColumns(types, [newColumn], "length()");
+      const column = typeof options.column === "string"
+        ? options.column
+        : findGeoColumnFromSchema(types, "length()", simpleTable.name);
+      let expression = `ST_Length_Spheroid(${quoteIdentifier(column)}) ${
+        options.unit === "km" ? "/ 1000" : ""
+      }`;
+      if (typeof options.decimals === "number") {
+        expression = `ROUND(${expression}, ${options.decimals})`;
+      }
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
+        quoteIdentifier(newColumn)
+      } FROM ${input}`;
+    },
+  });
 }

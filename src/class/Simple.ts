@@ -1,33 +1,33 @@
-import type { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
+import type {
+  DuckDBConnection,
+  DuckDBInstance,
+  DuckDBValue,
+} from "@duckdb/node-api";
 
 /**
- * An abstract base class providing common properties for SimpleDB and SimpleTable. This class is not intended for direct instantiation.
+ * Shared implementation of the properties used by SimpleDB and SimpleTable.
+ * This base class is not intended for direct instantiation.
+ * @internal
  */
 export default class Simple {
-  /**
-   * A flag indicating whether to log debugging information.
-   *
-   * @defaultValue `false`
-   */
-  debug: boolean;
   /**
    * The number of rows to display when logging a table.
    *
    * @defaultValue `10`
    */
-  nbRowsToLog: number;
+  rowsToLog: number;
   /**
    * A flag indicating whether to include data types when logging a table.
    *
    * @defaultValue `false`
    */
-  types: boolean;
+  typesToLog: boolean;
   /**
    * The maximum number of characters to display for text-based cells. If undefined, the entire text is shown.
    *
    * @defaultValue `undefined`
    */
-  nbCharactersToLog: number | undefined;
+  charsToLog: number | undefined;
   /**
    * A DuckDB database instance.
    */
@@ -43,17 +43,42 @@ export default class Simple {
    */
   defaultTableName: boolean;
   /**
-   * A function for running SQL queries. This is for internal use only. To run a custom SQL query, use the SimpleDB.customQuery method.
+   * A function for running SQL queries. Subclasses can wrap this seam to observe
+   * execution while forwarding every argument. To run custom SQL, use
+   * `SimpleDB.customQuery()` instead.
+   *
+   * @param query - The exact SQL statement to execute.
+   * @param connection - The DuckDB connection that executes the statement.
+   * @param returnData - Whether to convert and return result rows.
+   * @param options - Error-attribution, binding, and observability options.
+   * @param options.method - The SDA method responsible for the query, when available.
+   * @param options.parameters - The method arguments recorded for error attribution.
+   * @param options.table - The table associated with returned values and warnings.
+   * @param options.values - Data values bound to placeholders in the SQL statement.
+   * @param options.logSQL - Whether to log the SQL immediately before execution.
+   * @param options.explainSQL - Whether to log a supported DuckDB query plan before execution.
+   * @returns The converted rows when requested, otherwise `null`.
+   *
+   * @example
+   * ```ts
+   * const original = table.runQuery;
+   * table.runQuery = (query, connection, returnData, options) => {
+   *   console.log(query);
+   *   return original(query, connection, returnData, options);
+   * };
+   * ```
    */
   runQuery!: (
     query: string,
     connection: DuckDBConnection,
-    returnDataFromQuery: boolean,
+    returnData: boolean,
     options: {
-      debug: boolean;
       method: string | null;
       parameters: { [key: string]: unknown } | null;
       table?: string | null;
+      values?: DuckDBValue[];
+      logSQL: boolean;
+      explainSQL: boolean;
     },
   ) => Promise<
     | {
@@ -64,16 +89,14 @@ export default class Simple {
 
   constructor(
     options: {
-      debug?: boolean;
-      nbRowsToLog?: number;
-      nbCharactersToLog?: number;
-      types?: boolean;
+      rowsToLog?: number;
+      charsToLog?: number;
+      typesToLog?: boolean;
     } = {},
   ) {
-    this.nbRowsToLog = options.nbRowsToLog ?? 10;
-    this.nbCharactersToLog = options.nbCharactersToLog;
-    this.types = options.types ?? false;
-    this.debug = options.debug ?? false;
+    this.rowsToLog = options.rowsToLog ?? 10;
+    this.charsToLog = options.charsToLog;
+    this.typesToLog = options.typesToLog ?? false;
     this.defaultTableName = false;
   }
 }

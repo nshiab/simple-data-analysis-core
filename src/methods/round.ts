@@ -1,9 +1,9 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function round(
+export default function round(
   simpleTable: SimpleTable,
   columns: string | string[],
   options:
@@ -16,36 +16,26 @@ export default async function round(
   const optionsNormalized = typeof options === "number"
     ? { decimals: options }
     : options;
+  const cols = stringToArray(columns);
+  const method = optionsNormalized.method?.toUpperCase() ?? "ROUND";
+  const decimals = optionsNormalized.decimals ?? 0;
 
-  await queryDB(
-    simpleTable,
-    roundQuery(simpleTable.name, stringToArray(columns), optionsNormalized),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "round()",
-      parameters: { columns, options },
-    }),
-  );
-}
-
-function roundQuery(
-  table: string,
-  columns: string[],
-  options: { method?: "round" | "ceiling" | "floor"; decimals?: number },
-) {
-  let query = `UPDATE "${table}" SET`;
-  const method = options.method?.toUpperCase() ?? "ROUND";
-  const decimals = options.decimals ?? 0;
-
-  if (method === "ROUND") {
-    for (const column of columns) {
-      query += `\n"${column}" = ${method}("${column}", ${decimals}),`;
-    }
-  } else {
-    for (const column of columns) {
-      query += `\n"${column}" = ${method}("${column}"),`;
-    }
-  }
-
-  return query.slice(0, query.length - 1);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "round()",
+    parameters: { columns, options },
+    needsSchema: false,
+    buildSelect: (input) =>
+      `SELECT * REPLACE (${
+        cols
+          .map((c) =>
+            method === "ROUND"
+              ? `${method}(${quoteIdentifier(c)}, ${decimals}) AS ${
+                quoteIdentifier(c)
+              }`
+              : `${method}(${quoteIdentifier(c)}) AS ${quoteIdentifier(c)}`
+          )
+          .join(", ")
+      }) FROM ${input}`,
+  });
 }

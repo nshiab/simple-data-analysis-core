@@ -1,9 +1,10 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import parseType from "../helpers/parseTypes.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import type { TableSchema } from "../helpers/pendingOps.ts";
 
-export default async function convert(
+export default function convert(
   simpleTable: SimpleTable,
   types: {
     [key: string]:
@@ -23,41 +24,59 @@ export default async function convert(
       | "boolean";
   },
   options: {
-    try?: boolean;
+    strict?: boolean;
     datetimeFormat?: string;
   } = {},
 ) {
-  const allTypes = await simpleTable.getTypes();
-  const allColumns = Object.keys(allTypes);
-
-  for (const col in types) {
-    if (!allColumns.includes(col)) {
-      throw new Error(
-        `The column ${col} does not exist in the table.`,
-      );
-    }
-  }
-
-  await queryDB(
-    simpleTable,
-    convertQuery(
-      simpleTable.name,
-      Object.keys(types),
-      Object.values(types),
-      allColumns,
-      allTypes,
-      options,
-    ),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "convert()",
-      parameters: { types, options },
+  types = structuredClone(types);
+  options = structuredClone(options);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "convert()",
+    parameters: { types, options },
+    needsSchema: true,
+    outputSchema: (allTypes) => ({
+      ...allTypes,
+      ...Object.fromEntries(
+        Object.entries(types).map(([column, type]) => [
+          column,
+          parseType(type),
+        ]),
+      ),
     }),
-  );
+    values: (allTypes) =>
+      getDatetimeFormatValues(
+        Object.keys(types),
+        Object.values(types),
+        Object.keys(allTypes),
+        allTypes,
+        options,
+      ),
+    buildSelect: (input, allTypes) => {
+      const allColumns = Object.keys(allTypes);
+
+      for (const col in types) {
+        if (!allColumns.includes(col)) {
+          throw new Error(
+            `The column ${col} does not exist in the table.`,
+          );
+        }
+      }
+
+      return convertSelect(
+        input,
+        Object.keys(types),
+        Object.values(types),
+        allColumns,
+        allTypes,
+        options,
+      );
+    },
+  });
 }
 
-function convertQuery(
-  table: string,
+export function convertSelect(
+  input: string,
   columns: string[],
   columnsTypes: (
     | "integer"
@@ -76,41 +95,24 @@ function convertQuery(
     | "boolean"
   )[],
   allColumns: string[],
-  allTypes: {
-    [key: string]: string;
-  },
-  options: { datetimeFormat?: string; try?: boolean },
+  allTypes: TableSchema,
+  options: { datetimeFormat?: string; strict?: boolean },
 ) {
-  let query = "";
+  let query = `SELECT`;
 
-  // First, we clean if needed
-  for (const column of allColumns) {
-    const indexOf = columns.indexOf(column);
-    if (indexOf >= 0) {
-      const expectedType = parseType(columnsTypes[indexOf]);
-      const currentType = allTypes[column];
-      const stringToNumber = currentType === "VARCHAR" &&
-        ["DOUBLE", "BIGINT"].includes(expectedType);
-      if (stringToNumber) {
-        query +=
-          `UPDATE "${table}" SET "${column}" = REPLACE("${column}", ',', '');\n`;
-      }
-    }
-  }
-
-  query += `CREATE OR REPLACE TABLE "${table}" AS SELECT`;
-
-  const cast = options.try ? "TRY_CAST" : "CAST";
+  const cast = options.strict === false ? "TRY_CAST" : "CAST";
 
   for (const column of allColumns) {
     const indexOf = columns.indexOf(column);
     if (indexOf === -1) {
-      query += ` "${column}",`;
+      query += ` ${quoteIdentifier(column)},`;
     } else {
       const expectedType = parseType(columnsTypes[indexOf]);
       const currentType = allTypes[column];
       const datetimeFormatExist = typeof options.datetimeFormat === "string";
 
+      const stringToNumber = currentType === "VARCHAR" &&
+        ["DOUBLE", "BIGINT"].includes(expectedType);
       const stringToDate = currentType === "VARCHAR" &&
         (expectedType.includes("TIME") || expectedType.includes("DATE"));
       const dateToString = (currentType.includes("DATE") ||
@@ -128,36 +130,91 @@ function convertQuery(
         expectedType.includes("TIMESTAMP");
 
       if (datetimeFormatExist && stringToDate) {
-        query +=
-          ` strptime("${column}", '${options.datetimeFormat}') AS "${column}",`;
+        query += ` strptime(${quoteIdentifier(column)}, ?) AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (datetimeFormatExist && dateToString) {
-        query +=
-          ` strftime("${column}", '${options.datetimeFormat}') AS "${column}",`;
+        query += ` strftime(${quoteIdentifier(column)}, ?) AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (timeToMs) {
-        query += ` date_part('epoch', "${column}") * 1000 AS "${column}",`;
+        query += ` date_part('epoch', ${quoteIdentifier(column)}) * 1000 AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (dateToMs) {
-        query += ` epoch("${column}") * 1000 AS "${column}",`;
+        query += ` epoch(${quoteIdentifier(column)}) * 1000 AS ${
+          quoteIdentifier(column)
+        },`;
       } else if (msToTime) {
-        query +=
-          ` TIME '00:00:00' + to_milliseconds("${column}") AS "${column}",`;
+        query += ` TIME '00:00:00' + to_milliseconds(${
+          quoteIdentifier(column)
+        }) AS ${quoteIdentifier(column)},`;
       } else if (msToDate) {
-        query +=
-          ` DATE '1970-01-01' + to_milliseconds("${column}") AS "${column}",`;
+        query += ` DATE '1970-01-01' + to_milliseconds(${
+          quoteIdentifier(column)
+        }) AS ${quoteIdentifier(column)},`;
       } else if (msToTimestamp) {
-        query +=
-          ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds("${column}") AS "${column}",`;
+        query += ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds(${
+          quoteIdentifier(column)
+        }) AS ${quoteIdentifier(column)},`;
+      } else if (stringToNumber) {
+        // Thousand separators would make the cast fail.
+        query += ` ${cast}(REPLACE(${quoteIdentifier(column)}, ',', '') AS ${
+          parseType(columnsTypes[indexOf])
+        }) AS ${quoteIdentifier(column)},`;
       } else {
-        query += ` ${cast}("${columns[indexOf]}" AS ${
+        query += ` ${cast}(${quoteIdentifier(columns[indexOf])} AS ${
           parseType(
             columnsTypes[indexOf],
           )
-        }) AS "${columns[indexOf]}",`;
+        }) AS ${quoteIdentifier(columns[indexOf])},`;
       }
     }
   }
 
   query = query.slice(0, query.length - 1);
-  query += ` FROM "${table}"`;
+  query += ` FROM ${input}`;
 
   return query;
+}
+
+function getDatetimeFormatValues(
+  columns: string[],
+  columnsTypes: (
+    | "integer"
+    | "float"
+    | "number"
+    | "string"
+    | "date"
+    | "time"
+    | "datetime"
+    | "datetimeTz"
+    | "bigint"
+    | "double"
+    | "varchar"
+    | "timestamp"
+    | "timestamp with time zone"
+    | "boolean"
+  )[],
+  allColumns: string[],
+  allTypes: TableSchema,
+  options: { datetimeFormat?: string },
+): string[] {
+  const datetimeFormat = options.datetimeFormat;
+  if (typeof datetimeFormat !== "string") {
+    return [];
+  }
+  return allColumns.flatMap((column) => {
+    const index = columns.indexOf(column);
+    if (index === -1) {
+      return [];
+    }
+    const currentType = allTypes[column];
+    const expectedType = parseType(columnsTypes[index]);
+    const stringToDate = currentType === "VARCHAR" &&
+      (expectedType.includes("TIME") || expectedType.includes("DATE"));
+    const dateToString = (currentType.includes("DATE") ||
+      currentType.includes("TIME")) && expectedType === "VARCHAR";
+    return stringToDate || dateToString ? [datetimeFormat] : [];
+  });
 }

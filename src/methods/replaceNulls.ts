@@ -1,39 +1,48 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import parseValue from "../helpers/parseValue.ts";
-import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
-export default async function replaceNulls(
+export default function replaceNulls(
   simpleTable: SimpleTable,
   columns: "all" | string | string[],
-  value: number | string | Date | boolean,
+  value: unknown,
 ) {
-  const columnList = columns === "all"
-    ? await simpleTable.getColumns()
-    : stringToArray(columns);
-  await queryDB(
-    simpleTable,
-    replaceNullsQuery(simpleTable.name, columnList, value),
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "replaceNulls()",
-      parameters: { columns, value },
-    }),
-  );
-}
-
-function replaceNullsQuery(
-  table: string,
-  columns: string[],
-  value: number | string | Date | boolean,
-) {
-  let query = "";
-  const valueParsed = parseValue(value);
-  for (const column of columns) {
-    query +=
-      `UPDATE "${table}" SET "${column}" = ${valueParsed} WHERE "${column}" IS NULL;`;
-  }
-
-  return query;
+  columns = Array.isArray(columns) ? [...columns] : columns;
+  const capturedValue = value instanceof Date
+    ? new Date(value.getTime())
+    : value;
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "replaceNulls()",
+    // The schema resolves "all" to the column list and gives each column's
+    // type: v1 replaced nulls with an UPDATE, which assignment-casts the
+    // value to the column's type (e.g. 0 into a VARCHAR column becomes '0').
+    // COALESCE can't mix types, so the value is cast to the column's type to
+    // reproduce that.
+    needsSchema: true,
+    preservesSchema: true,
+    parameters: { columns, value: capturedValue },
+    values: (schema) => {
+      const columnList = columns === "all"
+        ? Object.keys(schema)
+        : stringToArray(columns);
+      return columnList.map(() => toDuckDBValue(capturedValue));
+    },
+    buildSelect: (input, schema) => {
+      const columnList = columns === "all"
+        ? Object.keys(schema)
+        : stringToArray(columns);
+      return `SELECT * REPLACE (${
+        columnList
+          .map((column) =>
+            `COALESCE(${quoteIdentifier(column)}, CAST(? AS ${
+              schema[column]
+            })) AS ${quoteIdentifier(column)}`
+          )
+          .join(", ")
+      }) FROM ${input}`;
+    },
+  });
 }

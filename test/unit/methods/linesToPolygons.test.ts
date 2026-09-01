@@ -4,8 +4,8 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should transform lines to polygons", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/closedLines.geojson");
-  await table.linesToPolygons();
+  table.loadGeoData("test/geodata/files/closedLines.geojson");
+  table.linesToPolygons();
 
   const data = await table.getGeoData("geom");
 
@@ -774,13 +774,13 @@ Deno.test("should transform lines to polygons", async () => {
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should transform lines to polygons from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadGeoData("test/geodata/files/closedLines.geojson");
-  await table.linesToPolygons("geom");
+  table.loadGeoData("test/geodata/files/closedLines.geojson");
+  table.linesToPolygons("geom");
 
   const data = await table.getGeoData("geom");
 
@@ -1549,5 +1549,5 @@ Deno.test("should transform lines to polygons from a specific column", async () 
   const types2 = await table.getTypes();
   assertEquals(types2.geom, "GEOMETRY('EPSG:4326')");
 
-  await sdb.done();
+  await sdb.close();
 });

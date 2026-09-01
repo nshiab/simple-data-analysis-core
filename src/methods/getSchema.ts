@@ -1,16 +1,17 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 export default async function getSchema(
   simpleTable: SimpleTable,
 ) {
   return (await queryDB(
     simpleTable,
-    `DESCRIBE "${simpleTable.name}"`,
+    `DESCRIBE ${quoteIdentifier(simpleTable.name)}`,
     mergeOptions(simpleTable, {
-      returnDataFrom: "query",
-      nbRowsToLog: Infinity,
+      returnData: true,
+      rowsToLog: Infinity,
       table: simpleTable.name,
       method: "getSchema()",
       parameters: {},

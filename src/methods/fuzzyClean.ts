@@ -1,8 +1,11 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import buildFuzzyMatchSql from "../helpers/buildFuzzyMatchSql.ts";
 
-export default async function fuzzyClean(
+export default function fuzzyClean(
   table: SimpleTable,
   column: string,
   newColumn: string,
@@ -13,57 +16,85 @@ export default async function fuzzyClean(
       | "partial_ratio"
       | "token_sort_ratio"
       | "token_set_ratio";
-    keep?:
+    strategy?:
       | "mostCommon"
       | "longestString"
       | "shortestString"
       | "mostCentral"
       | "maxScore";
-    preFilterPrefixLen?: number;
+    prefilterPrefixLength?: number;
+  } = {},
+): void {
+  // The clustering runs in JS over the fuzzy pairs read from the table, so
+  // fuzzyClean can't be expressed as a single SELECT over its input: it
+  // executes as a barrier.
+  options = structuredClone(options);
+  queueOp(table, {
+    kind: "barrier",
+    method: "fuzzyClean()",
+    parameters: { column, newColumn, threshold, options },
+    execute: () =>
+      executeFuzzyClean(table, column, newColumn, threshold, options),
+  });
+}
+
+async function executeFuzzyClean(
+  table: SimpleTable,
+  column: string,
+  newColumn: string,
+  threshold: number,
+  options: {
+    method?:
+      | "ratio"
+      | "partial_ratio"
+      | "token_sort_ratio"
+      | "token_set_ratio";
+    strategy?:
+      | "mostCommon"
+      | "longestString"
+      | "shortestString"
+      | "mostCentral"
+      | "maxScore";
+    prefilterPrefixLength?: number;
   } = {},
 ): Promise<void> {
   const method = options.method ?? "ratio";
-  const keep = options.keep ?? "mostCommon";
+  const strategy = options.strategy ?? "mostCommon";
+  const { scoreExpression, condition } = buildFuzzyMatchSql(
+    "a.value",
+    "b.value",
+    method,
+    threshold,
+    { prefilterPrefixLength: options.prefilterPrefixLength },
+  );
 
-  let onClause = `rapidfuzz_${method}(a.value, b.value) >= ${threshold}`;
-
-  if (method === "ratio") {
-    const maxDiffMultiplier = (200 - 2 * threshold) / (200 - threshold);
-    onClause +=
-      ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${maxDiffMultiplier} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
-  }
-  if (options.preFilterPrefixLen !== undefined) {
-    onClause +=
-      ` AND SUBSTR(a.value, 1, ${options.preFilterPrefixLen}) = SUBSTR(b.value, 1, ${options.preFilterPrefixLen})`;
-  }
-
-  // Single round trip: compute fuzzy pairs and embed counts for both sides.
-  // Only values that appear in at least one pair above the threshold can be
-  // normalized — singletons need no processing at all.
+  // Compute fuzzy pairs and embed counts for both sides. Only values that
+  // appear in at least one pair above the threshold can be normalized —
+  // singletons need no processing at all.
   const pairsData = await queryDB(
     table,
     `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;
      WITH uniques AS (
-       SELECT "${column}" AS value, COUNT(*) AS cnt
-       FROM "${table.name}"
-       WHERE "${column}" IS NOT NULL
-       GROUP BY "${column}"
+       SELECT ${quoteIdentifier(column)} AS value, COUNT(*) AS cnt
+       FROM ${quoteIdentifier(table.name)}
+       WHERE ${quoteIdentifier(column)} IS NOT NULL
+       GROUP BY ${quoteIdentifier(column)}
      )
      SELECT
        a.value AS left_value,
        b.value AS right_value,
        a.cnt   AS left_cnt,
        b.cnt   AS right_cnt,
-       rapidfuzz_${method}(a.value, b.value) AS score
+       ${scoreExpression} AS score
      FROM uniques a
      JOIN uniques b
-       ON ${onClause}
+       ON ${condition}
        AND a.value < b.value`,
     mergeOptions(table, {
       table: table.name,
       method: "fuzzyClean()",
       parameters: { column, newColumn, threshold, options },
-      returnDataFrom: "query",
+      returnData: true,
     }),
   ) as
     | Array<{
@@ -80,9 +111,11 @@ export default async function fuzzyClean(
     if (newColumn !== column) {
       await queryDB(
         table,
-        `ALTER TABLE "${table.name}" ADD "${newColumn}" VARCHAR;
-         UPDATE "${table.name}"
-           SET "${newColumn}" = "${column}";`,
+        `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
+          quoteIdentifier(newColumn)
+        } VARCHAR;
+         UPDATE ${quoteIdentifier(table.name)}
+           SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};`,
         mergeOptions(table, {
           table: table.name,
           method: "fuzzyClean()",
@@ -193,24 +226,24 @@ export default async function fuzzyClean(
     };
 
     let canonical: string;
-    if (keep === "longestString") {
+    if (strategy === "longestString") {
       canonical = members.reduce((a, b) => {
         if (a.length !== b.length) return a.length > b.length ? a : b;
         return byScore(a, b);
       });
-    } else if (keep === "shortestString") {
+    } else if (strategy === "shortestString") {
       canonical = members.reduce((a, b) => {
         if (a.length !== b.length) return a.length < b.length ? a : b;
         return byScore(a, b);
       });
-    } else if (keep === "mostCommon") {
+    } else if (strategy === "mostCommon") {
       canonical = members.reduce((a, b) => {
         const ca = countMap.get(a) ?? 0;
         const cb = countMap.get(b) ?? 0;
         if (ca !== cb) return ca > cb ? a : b;
         return byScore(a, b);
       });
-    } else if (keep === "mostCentral") {
+    } else if (strategy === "mostCentral") {
       // Most central string — highest total similarity to all other cluster members.
       canonical = members.reduce((a, b) => byScore(a, b));
     } else {
@@ -227,41 +260,39 @@ export default async function fuzzyClean(
 
   // Use a VALUES-based CTE for the UPDATE so DuckDB can use a hash join
   // instead of evaluating a potentially huge CASE WHEN expression.
-  const escape = (s: string) => s.replace(/'/g, "''");
-  const valuesList = [...replacement.entries()]
-    .map(([from, to]) => `('${escape(from)}', '${escape(to)}')`)
-    .join(",\n     ");
+  const replacementEntries = [...replacement.entries()];
+  const valuesList = replacementEntries.map(() => "(?, ?)").join(",\n     ");
+  const values = replacementEntries.flatMap(([from, to]) => [from, to]);
 
-  if (newColumn !== column) {
-    await queryDB(
-      table,
-      `ALTER TABLE "${table.name}" ADD "${newColumn}" VARCHAR;
-       UPDATE "${table.name}"
-         SET "${newColumn}" = "${column}";
+  const query = newColumn !== column
+    ? `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
+      quoteIdentifier(newColumn)
+    } VARCHAR;
+       UPDATE ${quoteIdentifier(table.name)}
+         SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};
        WITH mapping(original, canonical) AS (VALUES ${valuesList})
-       UPDATE "${table.name}"
-         SET "${newColumn}" = m.canonical
+       UPDATE ${quoteIdentifier(table.name)}
+         SET ${quoteIdentifier(newColumn)} = m.canonical
          FROM mapping m
-         WHERE "${table.name}"."${newColumn}" = m.original`,
-      mergeOptions(table, {
-        table: table.name,
-        method: "fuzzyClean()",
-        parameters: { column, newColumn, options },
-      }),
-    );
-  } else {
-    await queryDB(
-      table,
-      `WITH mapping(original, canonical) AS (VALUES ${valuesList})
-       UPDATE "${table.name}"
-         SET "${column}" = m.canonical
+         WHERE ${quoteIdentifier(table.name)}.${
+      quoteIdentifier(newColumn)
+    } = m.original`
+    : `WITH mapping(original, canonical) AS (VALUES ${valuesList})
+       UPDATE ${quoteIdentifier(table.name)}
+         SET ${quoteIdentifier(column)} = m.canonical
          FROM mapping m
-         WHERE "${table.name}"."${column}" = m.original`,
-      mergeOptions(table, {
-        table: table.name,
-        method: "fuzzyClean()",
-        parameters: { column, newColumn, options },
-      }),
-    );
-  }
+         WHERE ${quoteIdentifier(table.name)}.${
+      quoteIdentifier(column)
+    } = m.original`;
+
+  await queryDB(
+    table,
+    query,
+    mergeOptions(table, {
+      table: table.name,
+      method: "fuzzyClean()",
+      parameters: { column, newColumn, options },
+      values,
+    }),
+  );
 }

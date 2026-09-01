@@ -1,12 +1,24 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should throw when a column to select does not exist", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadData(["test/data/files/employees.csv"]);
+
+  table.selectColumns(["Name", "nope"]);
+
+  await assertRejects(() => table.getData());
+
+  await sdb.close();
+});
 
 Deno.test("should return one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectColumns("Name");
+  table.selectColumns("Name");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -63,15 +75,15 @@ Deno.test("should return one column", async () => {
     { Name: "Patel, Joshua" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return one column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectColumns("Department or unit");
+  table.selectColumns("Department or unit");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -128,15 +140,15 @@ Deno.test("should return one column with spaces in its name", async () => {
     { "Department or unit": "50" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should return multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
+  table.loadData(["test/data/files/employees.csv"]);
 
-  await table.selectColumns(["Name", "Salary"]);
+  table.selectColumns(["Name", "Salary"]);
   const data = await table.getData();
 
   assertEquals(data, [
@@ -193,5 +205,5 @@ Deno.test("should return multiple columns", async () => {
     { Name: "Patel, Joshua", Salary: "2500" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

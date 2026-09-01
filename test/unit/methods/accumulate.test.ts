@@ -1,44 +1,44 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should add the cumulative sum in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 1 },
     { key1: 2 },
     { key1: 3 },
   ]);
-  await table.accumulate("key1", "cumulative");
+  table.accumulate("key1", "cumulative");
   const data = await table.getData();
   assertEquals(data, [
     { key1: 1, cumulative: 1 },
     { key1: 2, cumulative: 3 },
     { key1: 3, cumulative: 6 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should add the cumulative sum in a new column without reordering the rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 3 },
     { key1: 1 },
     { key1: 2 },
   ]);
-  await table.accumulate("key1", "cumulative");
+  table.accumulate("key1", "cumulative");
   const data = await table.getData();
   assertEquals(data, [
     { key1: 3, cumulative: 3 },
     { key1: 1, cumulative: 4 },
     { key1: 2, cumulative: 6 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
-Deno.test("should add the cumulative sum in a new column with categories", async () => {
+Deno.test("should add the cumulative sum by a grouping column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 6, key2: "b" },
     { key1: 1, key2: "a" },
     { key1: 4, key2: "b" },
@@ -46,7 +46,7 @@ Deno.test("should add the cumulative sum in a new column with categories", async
     { key1: 3, key2: "a" },
     { key1: 5, key2: "b" },
   ]);
-  await table.accumulate("key1", "cumulative", { categories: "key2" });
+  table.accumulate("key1", "cumulative", { by: "key2" });
   const data = await table.getData();
   assertEquals(data, [
     { key1: 6, key2: "b", cumulative: 6 },
@@ -56,12 +56,12 @@ Deno.test("should add the cumulative sum in a new column with categories", async
     { key1: 3, key2: "a", cumulative: 6 },
     { key1: 5, key2: "b", cumulative: 15 },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
-Deno.test("should add the cumulative sum in a new column with multiple categories", async () => {
+Deno.test("should add the cumulative sum in a new column by multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadArray([
+  table.loadArray([
     { key1: 6, key2: "b", key3: "c" },
     { key1: 1, key2: "a", key3: "c" },
     { key1: 4, key2: "b", key3: "c" },
@@ -69,8 +69,8 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
     { key1: 3, key2: "a", key3: "c" },
     { key1: 5, key2: "b", key3: "d" },
   ]);
-  await table.accumulate("key1", "cumulative", {
-    categories: ["key2", "key3"],
+  table.accumulate("key1", "cumulative", {
+    by: ["key2", "key3"],
   });
   const data = await table.getData();
   assertEquals(data, [
@@ -81,5 +81,22 @@ Deno.test("should add the cumulative sum in a new column with multiple categorie
     { key1: 3, key2: "a", key3: "c", cumulative: 4 },
     { key1: 5, key2: "b", key3: "d", cumulative: 5 },
   ]);
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { key1: 1, cumulative: "already here" },
+    { key1: 2, cumulative: "x" },
+  ]);
+
+  await assertRejects(
+    () => table.accumulate("key1", "cumulative").run(),
+    Error,
+    'the column "cumulative" already exists',
+  );
+
+  await sdb.close();
 });

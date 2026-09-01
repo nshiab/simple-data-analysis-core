@@ -4,10 +4,10 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should replace the text in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(["name", "endOfYearBonus"], { "%": "" });
+  table.replace(["name", "endOfYearBonus"], { "%": "" });
 
   const data = await table.getData();
 
@@ -421,16 +421,16 @@ Deno.test("should replace the text in one column", async () => {
       endOfYearBonus: "16,19",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace substings in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(["name", "endOfYearBonus"], { a: "@" });
+  table.replace(["name", "endOfYearBonus"], { a: "@" });
 
   const data = await table.getData();
 
@@ -845,16 +845,16 @@ Deno.test("should replace substings in one column", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace entire strings in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(
+  table.replace(
     ["name", "endOfYearBonus"],
     { "Grant, Douglas": "BOSS" },
     { entireString: true },
@@ -1272,16 +1272,16 @@ Deno.test("should replace entire strings in one column", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace multiple texts in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(["endOfYearBonus"], { "%": "", ",": "." });
+  table.replace(["endOfYearBonus"], { "%": "", ",": "." });
 
   const data = await table.getData();
 
@@ -1695,16 +1695,16 @@ Deno.test("should replace multiple texts in one column", async () => {
       endOfYearBonus: "16.19",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace the text in multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(["name", "endOfYearBonus"], { ",": " => " });
+  table.replace(["name", "endOfYearBonus"], { ",": " => " });
 
   const data = await table.getData();
 
@@ -2118,16 +2118,16 @@ Deno.test("should replace the text in multiple columns", async () => {
       endOfYearBonus: "16 => 19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace multiple texts in multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(["name", "endOfYearBonus"], {
+  table.replace(["name", "endOfYearBonus"], {
     "%": "",
     ",": ".",
   });
@@ -2544,15 +2544,15 @@ Deno.test("should replace multiple texts in multiple columns", async () => {
       endOfYearBonus: "16.19",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should work with ' without throwing an error", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace(["name"], {
+  table.replace(["name"], {
     ",": "'",
   });
 
@@ -2969,15 +2969,15 @@ Deno.test("should work with ' without throwing an error", async () => {
     },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 Deno.test("should use a regular expression", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadData(["test/data/files/employees.csv"]);
-  await table.cleanColumnNames();
+  table.loadData(["test/data/files/employees.csv"]);
+  table.cleanColumnNames();
 
-  await table.replace("hireDate", { "\\d+": "-" }, { regex: true });
+  table.replace("hireDate", { "\\d+": "-" }, { regex: true });
 
   const data = await table.getData();
 
@@ -3391,18 +3391,18 @@ Deno.test("should use a regular expression", async () => {
       endOfYearBonus: "16,19%",
     },
   ]);
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should replace text in all columns with the 'all' option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  await table.loadArray([
+  table.loadArray([
     { name: "a-b", code: "x-y" },
     { name: "c-d", code: "z-w" },
   ]);
 
-  await table.replace("all", { "-": "_" });
+  table.replace("all", { "-": "_" });
 
   const data = await table.getData();
 
@@ -3411,5 +3411,44 @@ Deno.test("should replace text in all columns with the 'all' option", async () =
     { name: "c_d", code: "z_w" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("replace captures arguments and leaves options unchanged", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("capturedReplace");
+  const replacements = { old: "new" };
+  const options: { entireString?: boolean; regex?: boolean } = {};
+
+  table.loadArray([{ value: "old" }]).replace(
+    "value",
+    replacements,
+    options,
+  );
+  replacements.old = "later";
+  options.regex = true;
+
+  assertEquals(options, { regex: true });
+  assertEquals(await table.getData(), [{ value: "new" }]);
+  await sdb.close();
+});
+
+Deno.test("entire-string replacement binds multiple sequential mappings", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("boundEntireReplacement");
+
+  table
+    .loadArray([{ value: "a" }, { value: "b" }, { value: "O'Brien" }])
+    .replace(
+      "value",
+      { a: "b", b: "c", "O'Brien": "D'Angelo" },
+      { entireString: true },
+    );
+
+  assertEquals(await table.getData(), [
+    { value: "c" },
+    { value: "c" },
+    { value: "D'Angelo" },
+  ]);
+  await sdb.close();
 });

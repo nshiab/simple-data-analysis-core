@@ -1,25 +1,30 @@
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import stringToArray from "../helpers/stringToArray.ts";
+import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default async function selectColumns(
+export default function selectColumns(
   simpleTable: SimpleTable,
   columns: string | string[],
 ) {
-  await queryDB(
-    simpleTable,
-    `CREATE OR REPLACE TABLE "${simpleTable.name}" AS SELECT ${
-      stringToArray(
-        columns,
-      )
-        .map((d) => `"${d}"`)
-        .join(", ")
-    } FROM "${simpleTable.name}"`,
-    mergeOptions(simpleTable, {
-      table: simpleTable.name,
-      method: "selectColumns()",
-      parameters: { columns },
-    }),
-  );
+  columns = Array.isArray(columns) ? [...columns] : columns;
+  const selectedColumns = stringToArray(columns);
+  queueOp(simpleTable, {
+    kind: "fusable",
+    method: "selectColumns()",
+    parameters: { columns },
+    needsSchema: false,
+    outputSchema: (types) =>
+      Object.fromEntries(
+        selectedColumns
+          .filter((column) => types[column] !== undefined)
+          .map((column) => [column, types[column]]),
+      ),
+    buildSelect: (input) =>
+      `SELECT ${
+        selectedColumns
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(", ")
+      } FROM ${input}`,
+  });
 }

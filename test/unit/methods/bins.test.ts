@@ -1,12 +1,25 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("should reject a non-positive interval at call time", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+
+  assertThrows(
+    () => table.bins("value", 0, "bin"),
+    Error,
+    "bins() interval must be a finite number greater than 0.",
+  );
+
+  await sdb.close();
+});
 
 Deno.test("should add a column with the bins and an interval of 10", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.convert({ Mark: "number" });
-  await table.bins("Mark", 10, "bins");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 10, "bins");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -21,15 +34,15 @@ Deno.test("should add a column with the bins and an interval of 10", async () =>
     { Name: "Olivia", Subject: "English", Mark: 89, bins: "[80-89]" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should add a column with the bins and an interval of 10 and 45 as start value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.convert({ Mark: "number" });
-  await table.bins("Mark", 10, "bins", {
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 10, "bins", {
     startValue: 45,
   });
   const data = await table.getData();
@@ -46,15 +59,45 @@ Deno.test("should add a column with the bins and an interval of 10 and 45 as sta
     { Name: "Olivia", Subject: "English", Mark: 89, bins: "[85-94]" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
+});
+
+Deno.test("should throw when startValue is greater than the minimum value", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 10, "bins", {
+    // The minimum Mark in dataRank.csv is 50.
+    startValue: 55,
+  });
+
+  await assertRejects(() => table.getData());
+
+  await sdb.close();
+});
+
+Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+
+  await assertRejects(
+    () => table.bins("Mark", 10, "Mark").run(),
+    Error,
+    'the column "Mark" already exists',
+  );
+
+  await sdb.close();
 });
 
 Deno.test("should add a column with the bins and an interval of 0.5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  await table.loadData("test/data/files/dataRank.csv");
-  await table.convert({ Mark: "number" });
-  await table.bins("Mark", 0.5, "bins");
+  table.loadData("test/data/files/dataRank.csv");
+  table.convert({ Mark: "number" });
+  table.bins("Mark", 0.5, "bins");
   const data = await table.getData();
 
   assertEquals(data, [
@@ -79,5 +122,5 @@ Deno.test("should add a column with the bins and an interval of 0.5", async () =
     { Name: "Olivia", Subject: "English", Mark: 89, bins: "[89-89.4]" },
   ]);
 
-  await sdb.done();
+  await sdb.close();
 });

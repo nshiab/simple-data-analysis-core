@@ -5,11 +5,12 @@ import SDAError from "../../../src/class/SDAError.ts";
 Deno.test("should throw an SDAError carrying method, parameters, query and cause", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("errorTable");
-  await table.loadArray([{ key1: 1 }]);
+  table.loadArray([{ key1: 1 }]);
 
   let error: unknown;
   try {
-    await table.selectColumns("aColumnThatDoesNotExist");
+    // selectColumns() queues the operation; run() executes it.
+    await table.selectColumns("aColumnThatDoesNotExist").run();
   } catch (e) {
     error = e;
   }
@@ -30,7 +31,7 @@ Deno.test("should throw an SDAError carrying method, parameters, query and cause
   );
   assertEquals(sdaError.message.includes("selectColumns()"), true);
 
-  await sdb.done();
+  await sdb.close();
 });
 
 Deno.test("should throw an SDAError from a failing custom query", async () => {
@@ -48,5 +49,5 @@ Deno.test("should throw an SDAError from a failing custom query", async () => {
   assertEquals(sdaError.method, "customQuery()");
   assertEquals(sdaError.query, "SELECT * FROM aTableThatDoesNotExist");
 
-  await sdb.done();
+  await sdb.close();
 });

@@ -1,15 +1,44 @@
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
+import queueOp from "../helpers/queueOp.ts";
+import resolveOutputTable from "../helpers/resolveOutputTable.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
-export default async function crossJoin(
+export default function crossJoin(
   simpleTable: SimpleTable,
   rightTable: SimpleTable,
   options: {
     outputTable?: string | boolean;
   } = {},
-) {
+): SimpleTable {
+  assertSameDatabase(simpleTable.sdb, [rightTable], "crossJoin()");
+  options = structuredClone(options);
+  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
+
+  // The output table instance is created at call time so it can be returned
+  // synchronously and chained on right away.
+  const outputTable = typeof options.outputTable === "string"
+    ? simpleTable.sdb.newTable(options.outputTable)
+    : simpleTable;
+
+  queueOp(outputTable, {
+    kind: "barrier",
+    method: "crossJoin()",
+    parameters: { rightTable: rightTable.name, options },
+    execute: () => executeCrossJoin(simpleTable, rightTable, outputTable),
+  });
+
+  return outputTable;
+}
+
+async function executeCrossJoin(
+  simpleTable: SimpleTable,
+  rightTable: SimpleTable,
+  outputTable: SimpleTable,
+): Promise<void> {
   const identicalColumns = getIdenticalColumns(
     await simpleTable.getColumns(),
     await rightTable.getColumns(),
@@ -17,42 +46,22 @@ export default async function crossJoin(
   if (identicalColumns.length > 0) {
     throw new Error(
       `The tables have columns with identical names. Rename or remove ${
-        identicalColumns.map((d) => `"${d}"`).join(", ")
+        identicalColumns.map((d) => `${quoteIdentifier(d)}`).join(", ")
       } in one of the two tables before doing the cross join.`,
     );
   }
 
-  if (options.outputTable === true) {
-    options.outputTable = `table${simpleTable.sdb.tableIncrement}`;
-    simpleTable.sdb.tableIncrement += 1;
-  }
   await queryDB(
     simpleTable,
-    crossJoinQuery(simpleTable.name, rightTable.name, options),
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS SELECT ${
+      quoteIdentifier(simpleTable.name)
+    }.*, ${quoteIdentifier(rightTable.name)}.* FROM ${
+      quoteIdentifier(simpleTable.name)
+    } CROSS JOIN ${quoteIdentifier(rightTable.name)};`,
     mergeOptions(simpleTable, {
-      table: typeof options.outputTable === "string"
-        ? options.outputTable
-        : simpleTable.name,
+      table: outputTable.name,
       method: "crossJoin()",
-      parameters: { rightTable, options },
+      parameters: { rightTable: rightTable.name },
     }),
   );
-
-  if (typeof options.outputTable === "string") {
-    return simpleTable.sdb.newTable(options.outputTable);
-  } else {
-    return simpleTable;
-  }
-}
-
-function crossJoinQuery(
-  table: string,
-  rightTable: string,
-  options: {
-    outputTable?: string | boolean;
-  } = {},
-) {
-  return `CREATE OR REPLACE TABLE "${
-    options.outputTable ?? table
-  }" AS SELECT "${table}".*, "${rightTable}".* FROM "${table}" CROSS JOIN "${rightTable}";`;
 }

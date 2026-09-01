@@ -1,21 +1,22 @@
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
+import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 export default async function getColumns(simpleTable: SimpleTable) {
   const queryResult = await queryDB(
     simpleTable,
-    `DESCRIBE ${simpleTable.name}`,
+    `DESCRIBE ${quoteIdentifier(simpleTable.name)}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
-      returnDataFrom: "query",
+      returnData: true,
       method: "getColumns()",
       parameters: {},
     }),
   );
 
   if (!queryResult) {
-    throw new Error("No result");
+    throw new Error("The query did not return a result.");
   }
 
   const columns = queryResult.map((d) => d.column_name) as string[];
