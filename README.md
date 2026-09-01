@@ -110,6 +110,8 @@ When migrating from the previous interface:
 These benchmarks compare SDA-core with raw DuckDB and popular Python and R
 libraries, measuring duration and peak memory.
 
+They were run on a MacBook Pro with an Apple M4 Max and 64 GB of memory.
+
 <!-- benchmark-results:start -->
 
 ### Tabular workload
@@ -121,10 +123,10 @@ and export the sorted results.
 
 | Library version                           | Runtime       |  Mean duration | Duration difference | Mean peak memory | Memory difference |
 | ----------------------------------------- | ------------- | -------------: | ------------------: | ---------------: | ----------------: |
-| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    |  1.20 ± 0.04 s |               -7.4% |         2,457 MB |             +3.7% |
-| SDA-core 2.0.0-rc.18                      | Deno 2.9.6    |  1.29 ± 0.01 s |            baseline |         2,370 MB |          baseline |
-| pandas 3.0.5                              | Python 3.14.7 | 28.09 ± 0.05 s |            +2075.9% |         4,699 MB |            +98.3% |
-| tidyverse 2.0.0                           | R 4.6.1       | 78.64 ± 0.34 s |            +5990.6% |         8,178 MB |           +245.1% |
+| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    |  1.14 ± 0.01 s |               -8.2% |         2,372 MB |             -7.1% |
+| SDA-core 2.0.0                            | Deno 2.9.6    |  1.24 ± 0.03 s |            baseline |         2,554 MB |          baseline |
+| pandas 3.0.5                              | Python 3.14.7 | 28.21 ± 0.01 s |            +2168.6% |         4,699 MB |            +84.0% |
+| tidyverse 2.0.0                           | R 4.6.1       | 78.81 ± 0.17 s |            +6236.7% |         8,178 MB |           +220.2% |
 
 ### Spatial workload
 
@@ -136,10 +138,10 @@ results.
 
 | Library version                           | Runtime       | Mean duration | Duration difference | Mean peak memory | Memory difference |
 | ----------------------------------------- | ------------- | ------------: | ------------------: | ---------------: | ----------------: |
-| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    | 0.76 ± 0.01 s |               -5.1% |           255 MB |             -7.2% |
-| SDA-core 2.0.0-rc.18                      | Deno 2.9.6    | 0.80 ± 0.01 s |            baseline |           274 MB |          baseline |
-| GeoPandas 1.1.4                           | Python 3.14.7 | 1.15 ± 0.00 s |              +44.3% |           292 MB |             +6.6% |
-| sf 1.1.2                                  | R 4.6.1       | 1.66 ± 0.01 s |             +107.8% |           490 MB |            +78.9% |
+| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6    | 0.72 ± 0.01 s |               -3.4% |           255 MB |             -7.2% |
+| SDA-core 2.0.0                            | Deno 2.9.6    | 0.75 ± 0.01 s |            baseline |           275 MB |          baseline |
+| GeoPandas 1.1.4                           | Python 3.14.7 | 1.11 ± 0.00 s |              +48.7% |           292 MB |             +6.0% |
+| sf 1.1.2                                  | R 4.6.1       | 1.58 ± 0.00 s |             +111.2% |           489 MB |            +78.0% |
 
 <!-- benchmark-results:end -->
 
