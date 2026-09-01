@@ -412,6 +412,23 @@ Deno.test("should break ties alphabetically when strategy is 'mostCommon' and co
   await sdb.close();
 });
 
+Deno.test("should restrict comparisons with prefilterPrefixLength", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ word: "alpha" }, { word: "alphi" }]);
+
+  const data = await table
+    .fuzzyClean("word", "cleanWord", 70, { prefilterPrefixLength: 5 })
+    .getData();
+
+  assertEquals(data, [
+    { word: "alpha", cleanWord: "alpha" },
+    { word: "alphi", cleanWord: "alphi" },
+  ]);
+
+  await sdb.close();
+});
+
 Deno.test("should break ties alphabetically when strategy is 'longestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

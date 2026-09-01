@@ -1,6 +1,4 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -13,39 +11,21 @@ export default function outliersIQR(
     by?: string | string[];
   } = {},
 ) {
-  // The quantile function depends on the parity of the number of rows, so
-  // outliersIQR can't be expressed as a single SELECT over its input: it
-  // executes as a barrier.
   options = structuredClone(options);
   queueOp(simpleTable, {
-    kind: "barrier",
+    kind: "fusable",
     method: "outliersIQR()",
     parameters: { column, newColumn, options },
-    execute: async () => {
-      await queryDB(
-        simpleTable,
-        outliersIQRQuery(
-          simpleTable.name,
-          column,
-          newColumn,
-          (await simpleTable.getRowCount()) % 2 === 0 ? "even" : "odd",
-          options,
-        ),
-        mergeOptions(simpleTable, {
-          table: simpleTable.name,
-          method: "outliersIQR()",
-          parameters: { column, newColumn, options },
-        }),
-      );
-    },
+    needsSchema: false,
+    buildSelect: (input) =>
+      outliersIQRSelect(input, column, newColumn, options),
   });
 }
 
-function outliersIQRQuery(
-  table: string,
+function outliersIQRSelect(
+  input: string,
   column: string,
   newColumn: string,
-  parity: "even" | "odd",
   options: {
     by?: string | string[];
   } = {},
@@ -54,13 +34,18 @@ function outliersIQRQuery(
     ? stringToArray(options.by).map((d) => `${quoteIdentifier(d)}`)
     : [];
 
-  const quantileFunc = parity === "even" ? "quantile_disc" : "quantile_cont";
   const partition = by.length > 0 ? `PARTITION BY ${by.join(", ")}` : "";
+  const quantile = (fraction: number) =>
+    `IF(COUNT(*) OVER (${partition}) % 2 = 0,
+      quantile_disc(${
+      quoteIdentifier(column)
+    }, ${fraction}) OVER (${partition}),
+      quantile_cont(${quoteIdentifier(column)}, ${fraction}) OVER (${partition})
+    )`;
 
   // q1/q3 are computed as window values (one pass) instead of a per-category
   // CTE joined back through a correlated subquery per row.
-  return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS
-    SELECT * EXCLUDE ("_sda_q1", "_sda_q3"), CASE
+  return `SELECT * EXCLUDE ("_sda_q1", "_sda_q3"), CASE
         WHEN ${
     quoteIdentifier(column)
   } > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
@@ -72,12 +57,8 @@ function outliersIQRQuery(
     END AS ${quoteIdentifier(newColumn)}
     FROM (
         SELECT *,
-            ${quantileFunc}(${
-    quoteIdentifier(column)
-  }, 0.25) OVER (${partition}) AS "_sda_q1",
-            ${quantileFunc}(${
-    quoteIdentifier(column)
-  }, 0.75) OVER (${partition}) AS "_sda_q3"
-        FROM ${quoteIdentifier(table)}
+            ${quantile(0.25)} AS "_sda_q1",
+            ${quantile(0.75)} AS "_sda_q3"
+        FROM ${input}
     ) "_sda"`;
 }

@@ -13,7 +13,7 @@ export default function loadData(
     autoDetect?: boolean;
     conditions?: string;
     limit?: number;
-    filename?: boolean;
+    includeFilename?: boolean;
     unifyColumns?: boolean;
     columnTypes?: { [key: string]: string };
     // column selection
@@ -56,7 +56,7 @@ type LoadDataOptions = {
   autoDetect?: boolean;
   conditions?: string;
   limit?: number;
-  filename?: boolean;
+  includeFilename?: boolean;
   unifyColumns?: boolean;
   columnTypes?: { [key: string]: string };
   columns?: string[];
@@ -161,13 +161,13 @@ function loadDataSelect(
       ).join(", ")
     }`
     : null;
-  const filename = typeof options.filename === "boolean"
-    ? `, filename=${String(options.filename).toUpperCase()}`
+  const includeFilename = typeof options.includeFilename === "boolean"
+    ? `, filename=${String(options.includeFilename).toUpperCase()}`
     : "";
   const unifyColumns = typeof options.unifyColumns === "boolean"
     ? `, union_by_name=${String(options.unifyColumns).toUpperCase()}`
     : "";
-  const generalOptions = `${autoDetect}${filename}${unifyColumns}`;
+  const generalOptions = `${autoDetect}${includeFilename}${unifyColumns}`;
 
   const conditions = options.conditions ? ` WHERE ${options.conditions}` : "";
   const limit = typeof options.limit === "number"
@@ -222,7 +222,7 @@ function loadDataSelect(
     const columns = columnTypes === null ? "" : `, columns={${columnTypes}}`;
     return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${columns}${jsonFormat}${records})${conditions}${limit}`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
-    return `SELECT ${selectColumns} FROM read_parquet(${filesAsString}${filename}${unifyColumns})${conditions}${limit}`;
+    return `SELECT ${selectColumns} FROM read_parquet(${filesAsString}${includeFilename}${unifyColumns})${conditions}${limit}`;
   } else if (options.fileType === "excel" || fileExtension === "xlsx") {
     if (files.length > 1) {
       throw new Error(

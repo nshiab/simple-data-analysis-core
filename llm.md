@@ -712,7 +712,7 @@ async renameTable(name: string): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+A promise that resolves to the renamed table.
 
 ##### Examples
 
@@ -812,7 +812,7 @@ when `run()` is called.
 ##### Signature
 
 ```typescript
-loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; conditions?: string; limit?: number; filename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
+loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json" | "parquet" | "excel"; autoDetect?: boolean; conditions?: string; limit?: number; includeFilename?: boolean; unifyColumns?: boolean; columnTypes?: Record<string, string>; columns?: string[]; header?: boolean; allText?: boolean; delim?: string; skip?: number; nullPadding?: boolean; ignoreErrors?: boolean; compression?: "none" | "gzip" | "zstd"; encoding?: string; strict?: boolean; jsonFormat?: "unstructured" | "newlineDelimited" | "array"; records?: boolean; sheet?: string }): this;
 ```
 
 ##### Parameters
@@ -832,8 +832,8 @@ loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json"
 - **`options.limit`**: A number indicating the maximum number of matching rows
   to load, after applying `conditions` if provided. Defaults to all matching
   rows.
-- **`options.filename`**: A boolean indicating whether to include the filename
-  as a new column in the loaded data. Defaults to `false`.
+- **`options.includeFilename`**: A boolean indicating whether to include the
+  filename as a new column in the loaded data. Defaults to `false`.
 - **`options.unifyColumns`**: A boolean indicating whether to unify columns
   across multiple files when their structures differ. Missing columns will be
   filled with `NULL` values. Defaults to `false`.
@@ -901,6 +901,13 @@ await table.loadData([
 ```ts
 // Load multiple CSV files and unify columns that differ between files
 await table.loadData("./data/*.csv", { unifyColumns: true }).log();
+```
+
+```ts
+// Keep the source filename when loading multiple files
+await table
+  .loadData("./data/*.csv", { includeFilename: true })
+  .log();
 ```
 
 ```ts
@@ -2645,7 +2652,7 @@ async removeTable(): Promise<this>;
 
 ##### Returns
 
-A promise that resolves to the table, so methods can be chained.
+A promise that resolves after the table is removed.
 
 ##### Examples
 
@@ -2940,7 +2947,7 @@ after the join.
 ##### Signature
 
 ```typescript
-fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; similarityColumn?: string; outputTable?: string | boolean; preFilterPrefixLen?: number }): this;
+fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; similarityColumn?: string; outputTable?: string | boolean; prefilterPrefixLength?: number }): this;
 ```
 
 ##### Parameters
@@ -2967,7 +2974,7 @@ fuzzyJoin(rightTable: SimpleTable, leftColumn: string, rightColumn: string, thre
   table with a generated name. If a string, it will be used as the name for the
   new table. If `false` or omitted, the current table will be overwritten.
   Defaults to `false`.
-- **`options.preFilterPrefixLen`**: An optional prefix length. Only strings
+- **`options.prefilterPrefixLength`**: An optional prefix length. Only strings
   sharing the same first N characters are compared. Note that prefix filtering
   is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
 
@@ -2987,7 +2994,7 @@ await tableA.fuzzyJoin(tableB, "name", "standardName", 80).log();
 ```ts
 // Fuzzy join with a prefix-based pre-filter and a threshold of 80
 await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
-  preFilterPrefixLen: 3, // Must share the same first 3 characters
+  prefilterPrefixLength: 3, // Must share the same first 3 characters
 }).log();
 ```
 
@@ -3027,7 +3034,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; strategy?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; preFilterPrefixLen?: number }): this;
+fuzzyClean(column: string, newColumn: string, threshold: number, options?: { method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio"; strategy?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore"; prefilterPrefixLength?: number }): this;
 ```
 
 ##### Parameters
@@ -3054,7 +3061,7 @@ fuzzyClean(column: string, newColumn: string, threshold: number, options?: { met
   all other cluster members (the most "central" string). - `"maxScore"`: Keep
   the string that participates in the single highest-scoring pairwise match
   within the cluster.
-- **`options.preFilterPrefixLen`**: An optional prefix length. Only strings
+- **`options.prefilterPrefixLength`**: An optional prefix length. Only strings
   sharing the same first N characters are compared. Note that prefix filtering
   is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
 
@@ -3073,7 +3080,7 @@ await table.fuzzyClean("city", "cityClean", 80).log();
 ```ts
 // Normalize with a prefix-based pre-filter and a threshold of 80
 await table.fuzzyClean("city", "cityClean", 80, {
-  preFilterPrefixLen: 5, // Must share the same first 5 characters
+  prefilterPrefixLength: 5, // Must share the same first 5 characters
 }).log();
 ```
 

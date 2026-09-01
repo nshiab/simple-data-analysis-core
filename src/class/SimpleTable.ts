@@ -320,7 +320,7 @@ export default class SimpleTable extends Simple {
    * Renames the current table.
    *
    * @param name - The new name for the table.
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns A promise that resolves to the renamed table.
    * @category Table Management
    *
    * @example
@@ -429,7 +429,7 @@ export default class SimpleTable extends Simple {
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
    * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Uses the same syntax as `filter()`, including JavaScript operators. Can reference source columns excluded from `columns`. Defaults to no filtering; an empty string behaves the same as omitting this option.
    * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
-   * @param options.filename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
+   * @param options.includeFilename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred.
    * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
@@ -478,6 +478,14 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Keep the source filename when loading multiple files
+   * await table
+   *   .loadData("./data/*.csv", { includeFilename: true })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
    * // Load only specific columns from a CSV file
    * await table.loadData("./employees.csv", { columns: ["name", "salary"] }).log();
    * ```
@@ -501,7 +509,7 @@ export default class SimpleTable extends Simple {
       autoDetect?: boolean;
       conditions?: string;
       limit?: number;
-      filename?: boolean;
+      includeFilename?: boolean;
       unifyColumns?: boolean;
       columnTypes?: { [key: string]: string };
       // column selection
@@ -2116,7 +2124,7 @@ export default class SimpleTable extends Simple {
   /**
    * Removes the table from the database. After this operation, invoking methods on this SimpleTable instance will result in an error.
    *
-   * @returns A promise that resolves to the table, so methods can be chained.
+   * @returns A promise that resolves after the table is removed.
    * @category Table Management
    *
    * @example
@@ -2413,7 +2421,7 @@ export default class SimpleTable extends Simple {
    *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
    * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
+   * @param options.prefilterPrefixLength - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
    * @returns A table instance containing the fuzzy-joined data (either the current table or a new table), so methods can be chained.
    * @category Table Operations
    *
@@ -2428,7 +2436,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Fuzzy join with a prefix-based pre-filter and a threshold of 80
    * await tableA.fuzzyJoin(tableB, "name", "standardName", 80, {
-   *   preFilterPrefixLen: 3, // Must share the same first 3 characters
+   *   prefilterPrefixLength: 3, // Must share the same first 3 characters
    * }).log();
    * ```
    *
@@ -2462,7 +2470,7 @@ export default class SimpleTable extends Simple {
         | "token_set_ratio";
       similarityColumn?: string;
       outputTable?: string | boolean;
-      preFilterPrefixLen?: number;
+      prefilterPrefixLength?: number;
     } = {},
   ): this {
     options = { ...options };
@@ -2507,7 +2515,7 @@ export default class SimpleTable extends Simple {
    *   - `"shortestString"`: Keep the shortest string in the cluster.
    *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
    *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
-   * @param options.preFilterPrefixLen - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
+   * @param options.prefilterPrefixLength - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -2522,7 +2530,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Normalize with a prefix-based pre-filter and a threshold of 80
    * await table.fuzzyClean("city", "cityClean", 80, {
-   *   preFilterPrefixLen: 5, // Must share the same first 5 characters
+   *   prefilterPrefixLength: 5, // Must share the same first 5 characters
    * }).log();
    * ```
    *
@@ -2554,7 +2562,7 @@ export default class SimpleTable extends Simple {
         | "shortestString"
         | "mostCentral"
         | "maxScore";
-      preFilterPrefixLen?: number;
+      prefilterPrefixLength?: number;
     } = {},
   ): this {
     fuzzyClean(this, column, newColumn, threshold, options);

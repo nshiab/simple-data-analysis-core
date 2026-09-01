@@ -74,6 +74,29 @@ Deno.test("should respect a custom threshold and only match exact strings at thr
   await sdb.close();
 });
 
+Deno.test("should restrict comparisons with prefilterPrefixLength", async () => {
+  const sdb = new SimpleDB();
+  const left = sdb.newTable("prefixLeft");
+  left.loadArray([{ id: 1, label: "alpha" }]);
+  const right = sdb.newTable("prefixRight");
+  right.loadArray([{ matchId: 2, candidate: "alphi" }]);
+
+  const data = await left
+    .fuzzyJoin(right, "label", "candidate", 70, {
+      prefilterPrefixLength: 5,
+    })
+    .getData();
+
+  assertEquals(data, [{
+    id: 1,
+    label: "alpha",
+    matchId: null,
+    candidate: null,
+  }]);
+
+  await sdb.close();
+});
+
 Deno.test("should store result in a new table when outputTable is a string", async () => {
   const sdb = new SimpleDB();
   const peopleA = sdb.newTable("peopleA");

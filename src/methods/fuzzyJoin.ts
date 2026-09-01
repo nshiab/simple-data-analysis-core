@@ -20,7 +20,7 @@ export default function fuzzyJoin(
       | "token_set_ratio";
     similarityColumn?: string;
     outputTable?: string | boolean;
-    preFilterPrefixLen?: number;
+    prefilterPrefixLength?: number;
   } = {},
 ): SimpleTable {
   assertSameDatabase(leftTable.sdb, [rightTable], "fuzzyJoin()");
@@ -79,7 +79,7 @@ async function executeFuzzyJoin(
       | "token_sort_ratio"
       | "token_set_ratio";
     similarityColumn?: string;
-    preFilterPrefixLen?: number;
+    prefilterPrefixLength?: number;
   },
 ): Promise<void> {
   const leftCols = await leftTable.getColumns();
@@ -132,7 +132,7 @@ async function executeFuzzyJoin(
       outputTable.name,
       similarityColumn,
       rightSelect,
-      options.preFilterPrefixLen,
+      options.prefilterPrefixLength,
     );
 
   await queryDB(
@@ -166,7 +166,7 @@ function fuzzyJoinQuery(
   outputTable: string,
   similarityColumn: string | undefined,
   rightSelect: string,
-  preFilterPrefixLen?: number,
+  prefilterPrefixLength?: number,
 ) {
   const fn = `ROUND(rapidfuzz_${method}(${quoteIdentifier(leftTable)}.${
     quoteIdentifier(leftColumn)
@@ -186,12 +186,12 @@ function fuzzyJoinQuery(
       quoteIdentifier(rightColumn)
     }))`;
   }
-  if (preFilterPrefixLen !== undefined) {
+  if (prefilterPrefixLength !== undefined) {
     onClause += ` AND SUBSTR(${quoteIdentifier(leftTable)}.${
       quoteIdentifier(leftColumn)
-    }, 1, ${preFilterPrefixLen}) = SUBSTR(${quoteIdentifier(rightTable)}.${
+    }, 1, ${prefilterPrefixLength}) = SUBSTR(${quoteIdentifier(rightTable)}.${
       quoteIdentifier(rightColumn)
-    }, 1, ${preFilterPrefixLen})`;
+    }, 1, ${prefilterPrefixLength})`;
   }
 
   if (similarityColumn) {

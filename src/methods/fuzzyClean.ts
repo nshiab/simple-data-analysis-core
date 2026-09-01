@@ -21,7 +21,7 @@ export default function fuzzyClean(
       | "shortestString"
       | "mostCentral"
       | "maxScore";
-    preFilterPrefixLen?: number;
+    prefilterPrefixLength?: number;
   } = {},
 ): void {
   // The clustering runs in JS over the fuzzy pairs read from the table, so
@@ -54,7 +54,7 @@ async function executeFuzzyClean(
       | "shortestString"
       | "mostCentral"
       | "maxScore";
-    preFilterPrefixLen?: number;
+    prefilterPrefixLength?: number;
   } = {},
 ): Promise<void> {
   const method = options.method ?? "ratio";
@@ -67,9 +67,9 @@ async function executeFuzzyClean(
     onClause +=
       ` AND ABS(LENGTH(a.value) - LENGTH(b.value)) <= ${maxDiffMultiplier} * GREATEST(LENGTH(a.value), LENGTH(b.value))`;
   }
-  if (options.preFilterPrefixLen !== undefined) {
+  if (options.prefilterPrefixLength !== undefined) {
     onClause +=
-      ` AND SUBSTR(a.value, 1, ${options.preFilterPrefixLen}) = SUBSTR(b.value, 1, ${options.preFilterPrefixLen})`;
+      ` AND SUBSTR(a.value, 1, ${options.prefilterPrefixLength}) = SUBSTR(b.value, 1, ${options.prefilterPrefixLength})`;
   }
 
   // Compute fuzzy pairs and embed counts for both sides. Only values that

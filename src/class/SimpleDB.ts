@@ -161,7 +161,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   #closePromise: Promise<SimpleDB> | null = null;
   #startPromise: Promise<SimpleDB> | null = null;
   #initialized = false;
-  /** The database lifecycle state. This is for internal use only. */
+  /**
+   * The database lifecycle state. This is for internal use only.
+   *
+   * @internal
+   */
   lifecycleState: "open" | "closing" | "closed";
   /**
    * The number of queued operations across all tables, so query execution
