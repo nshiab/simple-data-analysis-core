@@ -153,6 +153,7 @@ try {
     [
       "run",
       "--no-lock",
+      "--min-dep-age=0",
       "-A",
       "jsr:@nshiab/deno-to-npm",
     ],
