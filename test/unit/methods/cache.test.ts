@@ -1223,13 +1223,9 @@ Deno.test("should cache dates and retrieve dates", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const temperatures = sdb.newTable("temperatures");
   await temperatures.cache(async () => {
-    temperatures.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
-    );
+    temperatures.loadData("test/data/files/dailyTemperatures.csv");
     const cities = sdb.newTable("cities");
-    cities.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
-    );
+    cities.loadData("test/data/files/cities.csv");
     temperatures.join(cities);
     await cities.removeTable();
   });
@@ -1237,13 +1233,9 @@ Deno.test("should cache dates and retrieve dates", async () => {
   // await temperatures.log();
 
   await temperatures.cache(async () => {
-    temperatures.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
-    );
+    temperatures.loadData("test/data/files/dailyTemperatures.csv");
     const cities = sdb.newTable("cities");
-    cities.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
-    );
+    cities.loadData("test/data/files/cities.csv");
     temperatures.join(cities);
     await cities.removeTable();
   });

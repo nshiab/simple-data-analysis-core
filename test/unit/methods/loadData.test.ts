@@ -419,7 +419,11 @@ Deno.test("should load a messy csv", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should load data from a fetched csv file", async () => {
+Deno.test({
+  name: "should load data from a fetched csv file",
+  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData([
@@ -790,7 +794,11 @@ Deno.test("should load data from a json file with specific types for each column
   await sdb.close();
 });
 
-Deno.test("should load data from a xlsx url", async () => {
+Deno.test({
+  name: "should load data from a xlsx url",
+  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData([

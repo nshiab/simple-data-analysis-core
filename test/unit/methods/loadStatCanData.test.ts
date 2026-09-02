@@ -221,7 +221,11 @@ Deno.test("loadStatCanData reports unsuccessful WDS responses", async () => {
   }
 });
 
-Deno.test("loadStatCanData loads live English Statistics Canada data", async () => {
+Deno.test({
+  name: "loadStatCanData loads live English Statistics Canada data",
+  // Avoid repeatedly downloading from Statistics Canada in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   rmSync(cacheDirectory, { recursive: true, force: true });
   const sdb = new SimpleDB();
   const populationColumn =
@@ -253,7 +257,11 @@ Deno.test("loadStatCanData loads live English Statistics Canada data", async () 
   }
 });
 
-Deno.test("loadStatCanData loads live French Statistics Canada data", async () => {
+Deno.test({
+  name: "loadStatCanData loads live French Statistics Canada data",
+  // Avoid repeatedly downloading from Statistics Canada in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   rmSync(cacheDirectory, { recursive: true, force: true });
   const sdb = new SimpleDB();
   const populationColumn =

@@ -585,14 +585,12 @@ Deno.test("should log a table after a joinGeo", async () => {
 
   const fires = sdb.newTable("fires");
 
-  fires.loadData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
-  );
+  fires.loadData("test/geodata/files/firesCanada2023.csv");
   fires.createPoints("lat", "lon", "geom");
 
   const provinces = sdb.newTable("provinces");
   provinces.loadGeoData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const firesInsideProvinces = fires.joinGeo(provinces, "inside", {
