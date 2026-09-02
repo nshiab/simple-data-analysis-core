@@ -3,7 +3,7 @@
 > Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Deno, Node.js, and Bun.
 
 - Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.0.2`
+- Version: `2.0.4`
 
 Install with Deno: `deno add jsr:@nshiab/simple-data-analysis-core`
 
