@@ -6,15 +6,8 @@ import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import removeColumnsNow from "../helpers/removeColumnsNow.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import { rmSync } from "node:fs";
-import SDAError from "../class/SDAError.ts";
-import loadOsmFile from "../helpers/loadOsmFile.ts";
 import { recordCacheTableReferences } from "../helpers/cacheTableDependencies.ts";
-import {
-  downloadOsmToTemporaryFile,
-  getOsmFileSuffix,
-  isRemoteOsmUrl,
-} from "../helpers/osmFiles.ts";
+import { getOsmFileSuffix } from "../helpers/osmFiles.ts";
 
 type LoadGeoDataOptions = {
   toEPSG4326?: boolean;
@@ -27,6 +20,11 @@ export default function loadGeoData(
   file: string,
   options: LoadGeoDataOptions = {},
 ) {
+  if (getOsmFileSuffix(file) !== null) {
+    throw new Error(
+      "loadGeoData() does not support .osm or .osm.pbf files. Use loadOpenStreetMap() instead.",
+    );
+  }
   options = structuredClone(options);
   if (options.conditions !== undefined) {
     recordCacheTableReferences(simpleTable, [options.conditions]);
@@ -44,40 +42,6 @@ async function executeLoadGeoData(
   file: string,
   options: LoadGeoDataOptions,
 ): Promise<void> {
-  const osmSuffix = getOsmFileSuffix(file);
-  if (osmSuffix !== null) {
-    let temporaryFile: string | undefined;
-    try {
-      const localFile = isRemoteOsmUrl(file)
-        ? temporaryFile = await downloadOsmToTemporaryFile(file, {
-          suffix: osmSuffix,
-          request: { headers: { "accept-encoding": "gzip" } },
-        })
-        : file;
-      await loadOsmFile(simpleTable, localFile, {
-        method: "loadGeoData()",
-        parameters: { file, options },
-        columns: options.columns,
-        conditions: options.conditions,
-      });
-      return;
-    } catch (error) {
-      if (error instanceof SDAError) {
-        throw error;
-      }
-      throw new SDAError({
-        method: "loadGeoData()",
-        parameters: { file, options },
-        query: "",
-        cause: error,
-      });
-    } finally {
-      if (temporaryFile !== undefined) {
-        rmSync(temporaryFile, { force: true });
-      }
-    }
-  }
-
   const fileExtension = getExtension(file);
   const selectColumns = options.columns !== undefined &&
       options.columns.length > 0
