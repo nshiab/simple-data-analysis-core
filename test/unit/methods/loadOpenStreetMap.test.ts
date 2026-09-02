@@ -766,8 +766,8 @@ Deno.test("an expired OSM cache entry is not returned when refresh fails", async
 
 Deno.test({
   name: "loadOpenStreetMap works with the public Overpass endpoint",
-  // Public Overpass availability should not determine CI results.
-  ignore: Deno.env.get("CI") === "true",
+  // Avoid repeatedly querying the public Overpass service in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
 }, async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("publicOverpassSchools");
