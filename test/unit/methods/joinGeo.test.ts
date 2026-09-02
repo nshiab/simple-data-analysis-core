@@ -578,7 +578,11 @@ Deno.test("should return all points within a target distance (spheroid method)",
   ]);
   await sdb.close();
 });
-Deno.test("should log a table after a joinGeo", async () => {
+Deno.test({
+  name: "should log a table after a joinGeo",
+  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   // Example from Code Like a Journalist geospatial lesson
 
   const sdb = new SimpleDB();

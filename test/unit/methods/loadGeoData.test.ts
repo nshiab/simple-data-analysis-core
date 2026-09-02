@@ -220,7 +220,11 @@ Deno.test("should project selected GeoJSON columns while loading", async () => {
   await sdb.close();
 });
 
-Deno.test("should load a geojson file from a URL", async () => {
+Deno.test({
+  name: "should load a geojson file from a URL",
+  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData(

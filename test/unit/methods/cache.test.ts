@@ -1217,7 +1217,11 @@ Deno.test("should clean the cache when calling close", async () => {
     },
   );
 });
-Deno.test("should cache dates and retrieve dates", async () => {
+Deno.test({
+  name: "should cache dates and retrieve dates",
+  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
+  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
+}, async () => {
   // Example from Code Like a Journalist lesson about tabular data
 
   const sdb = new SimpleDB({ cacheVerbose: true });
