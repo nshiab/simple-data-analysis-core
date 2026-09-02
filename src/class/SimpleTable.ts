@@ -547,7 +547,7 @@ export default class SimpleTable extends Simple {
    * @param options - Optional retrieval and cache settings.
    * @param options.lang - The language of the table data. Defaults to `"en"`.
    * @param options.cache - Whether to read and write the cache. Defaults to `true`.
-   * @param options.ttl - Cache time to live in seconds. By default, cached data does not expire. Use `0` to refresh and replace the cache entry.
+   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the entry reaches that age.
    * @returns The table, so methods can be chained.
    * @category Importing Data
    *
@@ -6551,7 +6551,7 @@ export default class SimpleTable extends Simple {
    * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
    * @param options.inputs - An ordered array of additional values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` dependencies read by `compute` are tracked automatically, and the table being cached is already tracked, so neither needs to be included here.
-   * @param options.ttl - Time to live (in seconds). If the data in the cache is older than this duration, the `compute` function will be executed again to refresh the cache. By default, there is no TTL; the cache is invalidated when the `compute` function, the table, or an input changes.
+   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the entry reaches that age. The cache is also invalidated when the `compute` function, the table, or an input changes.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Caching
    *

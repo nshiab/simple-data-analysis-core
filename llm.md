@@ -948,8 +948,9 @@ loadStatCanData(pid: string, options?: { lang?: "en" | "fr"; cache?: boolean; tt
 - **`options`**: Optional retrieval and cache settings.
 - **`options.lang`**: The language of the table data. Defaults to `"en"`.
 - **`options.cache`**: Whether to read and write the cache. Defaults to `true`.
-- **`options.ttl`**: Cache time to live in seconds. By default, cached data does
-  not expire. Use `0` to refresh and replace the cache entry.
+- **`options.ttl`**: Cache lifetime in seconds. Omit for no expiration, use `0`
+  to refresh the matching cache entry immediately, or provide a positive value
+  to refresh once the entry reaches that age.
 
 ##### Returns
 
@@ -7540,9 +7541,9 @@ async cache(compute: (table: this) => void | Promise<void>, options?: { inputs?:
   cache. Functions and class constructors are compared by source. `SimpleTable`
   dependencies read by `compute` are tracked automatically, and the table being
   cached is already tracked, so neither needs to be included here.
-- **`options.ttl`**: Time to live (in seconds). If the data in the cache is
-  older than this duration, the `compute` function will be executed again to
-  refresh the cache. By default, there is no TTL; the cache is invalidated when
+- **`options.ttl`**: Cache lifetime in seconds. Omit for no expiration, use `0`
+  to refresh the matching cache entry immediately, or provide a positive value
+  to refresh once the entry reaches that age. The cache is also invalidated when
   the `compute` function, the table, or an input changes.
 
 ##### Returns
