@@ -1217,23 +1217,15 @@ Deno.test("should clean the cache when calling close", async () => {
     },
   );
 });
-Deno.test({
-  name: "should cache dates and retrieve dates",
-  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
-  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
-}, async () => {
+Deno.test("should cache dates and retrieve dates", async () => {
   // Example from Code Like a Journalist lesson about tabular data
 
   const sdb = new SimpleDB({ cacheVerbose: true });
   const temperatures = sdb.newTable("temperatures");
   await temperatures.cache(async () => {
-    temperatures.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
-    );
+    temperatures.loadData("test/data/files/dailyTemperatures.csv");
     const cities = sdb.newTable("cities");
-    cities.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
-    );
+    cities.loadData("test/data/files/cities.csv");
     temperatures.join(cities);
     await cities.removeTable();
   });
@@ -1241,13 +1233,9 @@ Deno.test({
   // await temperatures.log();
 
   await temperatures.cache(async () => {
-    temperatures.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/dailyTemperatures.csv",
-    );
+    temperatures.loadData("test/data/files/dailyTemperatures.csv");
     const cities = sdb.newTable("cities");
-    cities.loadData(
-      "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/data/files/cities.csv",
-    );
+    cities.loadData("test/data/files/cities.csv");
     temperatures.join(cities);
     await cities.removeTable();
   });

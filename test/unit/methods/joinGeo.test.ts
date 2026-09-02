@@ -578,25 +578,19 @@ Deno.test("should return all points within a target distance (spheroid method)",
   ]);
   await sdb.close();
 });
-Deno.test({
-  name: "should log a table after a joinGeo",
-  // Avoid repeatedly downloading remote fixtures in GitHub Actions.
-  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
-}, async () => {
+Deno.test("should log a table after a joinGeo", async () => {
   // Example from Code Like a Journalist geospatial lesson
 
   const sdb = new SimpleDB();
 
   const fires = sdb.newTable("fires");
 
-  fires.loadData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/firesCanada2023.csv",
-  );
+  fires.loadData("test/geodata/files/firesCanada2023.csv");
   fires.createPoints("lat", "lon", "geom");
 
   const provinces = sdb.newTable("provinces");
   provinces.loadGeoData(
-    "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+    "test/geodata/files/CanadianProvincesAndTerritories.json",
   );
 
   const firesInsideProvinces = fires.joinGeo(provinces, "inside", {
