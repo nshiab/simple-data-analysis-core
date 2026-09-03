@@ -107,6 +107,7 @@ import length from "../methods/length.ts";
 import area from "../methods/area.ts";
 import reproject from "../methods/reproject.ts";
 import reducePrecision from "../methods/reducePrecision.ts";
+import addGeoNoise from "../methods/addGeoNoise.ts";
 import flipCoordinates from "../methods/flipCoordinates.ts";
 import addGeoType from "../methods/addGeoType.ts";
 import addGeoClosedStatus from "../methods/addGeoClosedStatus.ts";
@@ -121,6 +122,7 @@ import getSchema from "../methods/getSchema.ts";
 import outliersIQR from "../methods/outliersIQR.ts";
 import bins from "../methods/bins.ts";
 import round from "../methods/round.ts";
+import addNoise from "../methods/addNoise.ts";
 import rowToText from "../methods/rowToText.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
@@ -3225,6 +3227,42 @@ export default class SimpleTable extends Simple {
   }
 
   /**
+   * Adds independently generated uniform random noise to numeric values in one or more columns.
+   * Each changed value receives an offset between `-max` and `max`. Selected integer and decimal columns become `DOUBLE` columns so fractional noise is retained. This method adds random jitter; it does not provide anonymization or differential privacy guarantees.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param columns - The numeric column name or array of numeric column names to which noise will be added. When multiple columns are provided, each value receives an independent random offset.
+   * @param max - The maximum absolute offset, expressed in each column's units. Must be a finite number greater than or equal to `0`.
+   * @param options - An optional object with configuration options:
+   * @param options.onlyDuplicates - If `true`, adds noise only to rows whose combined values across all selected columns occur more than once. Every row in a duplicated group is changed. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
+   *
+   * @example
+   * ```ts
+   * // Add an offset between -0.01 and 0.01 to every value
+   * await table.addNoise("measurement", 0.01).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Separate duplicated coordinate pairs while leaving unique pairs unchanged
+   * await table.addNoise(["latitude", "longitude"], 0.0001, {
+   *   onlyDuplicates: true,
+   * }).log();
+   * ```
+   */
+  addNoise(
+    columns: string | string[],
+    max: number,
+    options: { onlyDuplicates?: boolean } = {},
+  ): this {
+    addNoise(this, columns, max, options);
+    return this;
+  }
+
+  /**
    * Updates values in a specified column using a SQL expression.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -5512,6 +5550,49 @@ export default class SimpleTable extends Simple {
    */
   flipCoordinates(column?: string): this {
     flipCoordinates(this, column);
+    return this;
+  }
+
+  /**
+   * Moves EPSG:4326 point geometries to random locations within a maximum great-circle distance of their original positions.
+   *
+   * Points are sampled uniformly over the spherical cap using the spherical direct geodesic (destination-point) formula and the same mean Earth radius as DuckDB's `ST_Distance_Sphere()`. This accounts for longitude scale changing with latitude and handles poles and the antimeridian. Because the formula models Earth as a sphere rather than the WGS84 ellipsoid, distances are approximate and can differ from spheroidal distances by up to roughly 0.5%. This method adds random jitter; it does not provide anonymization or differential privacy guarantees.
+   *
+   * This method supports only `POINT` geometries in `EPSG:4326`. Null and empty geometries are preserved. It queues the operation; the operation runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param maxDistance - The maximum great-circle displacement in the selected unit. Must be a finite number greater than or equal to `0` and no greater than half Earth's circumference.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the EPSG:4326 point geometry column. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.unit - The unit of `maxDistance`: `"m"` for metres or `"km"` for kilometres. Defaults to `"m"`.
+   * @param options.onlyDuplicates - If `true`, moves only points whose original geometry occurs more than once. Every point in a duplicated group is moved. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
+   *
+   * @example
+   * ```ts
+   * // Move every point by no more than 500 metres
+   * await table.addGeoNoise(500).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Separate duplicated points by up to 0.1 kilometres
+   * await table.addGeoNoise(0.1, {
+   *   column: "geom",
+   *   unit: "km",
+   *   onlyDuplicates: true,
+   * }).log();
+   * ```
+   */
+  addGeoNoise(
+    maxDistance: number,
+    options: {
+      column?: string;
+      unit?: "m" | "km";
+      onlyDuplicates?: boolean;
+    } = {},
+  ): this {
+    addGeoNoise(this, maxDistance, options);
     return this;
   }
 
