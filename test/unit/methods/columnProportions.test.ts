@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the vertical proportions in a new column", async () => {
@@ -76,6 +76,43 @@ Deno.test("should return the vertical proportions in a new column and a specific
       key2Prop: null,
     },
   ]);
+  await sdb.close();
+});
+
+Deno.test("should scale vertical proportions to a custom base", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { group: "A", value: 1 },
+    { group: "A", value: 3 },
+    { group: "B", value: 2 },
+    { group: "B", value: 8 },
+  ]);
+  table.columnProportions("value", "percentage", {
+    by: "group",
+    base: 100,
+    decimals: 1,
+  });
+
+  assertEquals(await table.getData(), [
+    { group: "A", value: 1, percentage: 25 },
+    { group: "A", value: 3, percentage: 75 },
+    { group: "B", value: 2, percentage: 20 },
+    { group: "B", value: 8, percentage: 80 },
+  ]);
+  await sdb.close();
+});
+
+Deno.test("should reject an invalid vertical proportion base", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+
+  assertThrows(
+    () => table.columnProportions("value", "percentage", { base: 0 }),
+    Error,
+    "columnProportions() options.base must be a finite number greater than 0",
+  );
+
   await sdb.close();
 });
 
