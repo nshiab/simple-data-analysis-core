@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should return the horizontal proportions in new columns", async () => {
@@ -113,6 +113,42 @@ Deno.test("should return the horizontal proportions in new columns with a specif
       key3Prop: 0.375,
     },
   ]);
+
+  await sdb.close();
+});
+
+Deno.test("should scale horizontal proportions to a custom base", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ a: 1, b: 2, c: 7 }]);
+  table.rowProportions(["a", "b", "c"], {
+    suffix: "Share",
+    base: 1_000,
+    decimals: 0,
+  });
+
+  assertEquals(await table.getData(), [
+    {
+      a: 1,
+      b: 2,
+      c: 7,
+      aShare: 100,
+      bShare: 200,
+      cShare: 700,
+    },
+  ]);
+  await sdb.close();
+});
+
+Deno.test("should reject an invalid horizontal proportion base", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+
+  assertThrows(
+    () => table.rowProportions(["a", "b"], { base: Number.POSITIVE_INFINITY }),
+    Error,
+    "rowProportions() options.base must be a finite number greater than 0",
+  );
 
   await sdb.close();
 });
