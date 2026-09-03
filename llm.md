@@ -5155,6 +5155,37 @@ const columnCount = await table.getColumnCount();
 console.log(columnCount); // e.g., 3
 ```
 
+#### `addCharacterCount`
+
+Adds a new column containing the number of characters in each string in the
+specified column. `NULL` input values produce `NULL` counts.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+addCharacterCount(column: string, newColumn: string): this;
+```
+
+##### Parameters
+
+- **`column`**: The name of the column containing the strings to count.
+- **`newColumn`**: The name of the new column where the character counts will be
+  stored.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Add a character count for each value in the 'name' column
+await table.addCharacterCount("name", "nameCharacterCount").log();
+```
+
 #### `getCharacterCount`
 
 Returns the total number of characters in a column storing strings.

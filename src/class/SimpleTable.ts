@@ -5,6 +5,7 @@ import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
 import getRowCount from "../methods/getRowCount.ts";
 import getCharacterCount from "../methods/getCharacterCount.ts";
+import addCharacterCount from "../methods/addCharacterCount.ts";
 import getTypes from "../methods/getTypes.ts";
 import getHash from "../methods/getHash.ts";
 import getValues from "../methods/getValues.ts";
@@ -4524,6 +4525,28 @@ export default class SimpleTable extends Simple {
   async getColumnCount(): Promise<number> {
     const result = (await getColumns(this)).length;
     return result;
+  }
+
+  /**
+   * Adds a new column containing the number of characters in each string in the specified column.
+   * `NULL` input values produce `NULL` counts.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param column - The name of the column containing the strings to count.
+   * @param newColumn - The name of the new column where the character counts will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Text Processing
+   *
+   * @example
+   * ```ts
+   * // Add a character count for each value in the 'name' column
+   * await table.addCharacterCount("name", "nameCharacterCount").log();
+   * ```
+   */
+  addCharacterCount(column: string, newColumn: string): this {
+    addCharacterCount(this, column, newColumn);
+    return this;
   }
 
   /**
