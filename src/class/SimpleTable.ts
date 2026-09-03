@@ -142,6 +142,7 @@ import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
 import loadOpenStreetMap from "../methods/loadOpenStreetMap.ts";
 import loadStatCanData from "../methods/loadStatCanData.ts";
+import loadYahooFinanceData from "../methods/loadYahooFinanceData.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -580,6 +581,67 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     loadStatCanData(this, pid, options);
+    return this;
+  }
+
+  /**
+   * Downloads historical prices or trading volume from Yahoo Finance and
+   * loads them into this table as `timestamp` and `value` columns. Unix
+   * timestamps are expressed in milliseconds, and missing values are omitted.
+   *
+   * This method uses an undocumented Yahoo Finance endpoint and is not
+   * affiliated with or endorsed by Yahoo. It is provided for educational,
+   * research, and journalistic purposes. Before using it, review Yahoo's terms
+   * and any applicable data-provider restrictions.
+   *
+   * Use this method only from a server-side runtime. Do not call it from code
+   * delivered to a web browser.
+   *
+   * The method queues the download and load; they run when an async observer
+   * method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
+   * @param startDate - The inclusive start of the requested range.
+   * @param endDate - The inclusive end of the requested range. The observation
+   * beginning at this date or time is included when available.
+   * @param variable - The financial variable to retrieve.
+   * @param interval - The interval between observations: daily, hourly, or every
+   * minute.
+   * @returns The table, so methods can be chained.
+   * @throws {RangeError} If either date is invalid or `endDate` is before `startDate`.
+   * @throws {Error} If Yahoo rejects the request or returns no data.
+   * @see https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html
+   * @see https://help.yahoo.com/kb/finance/SLN2310.html
+   * @category Importing Data
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .loadYahooFinanceData(
+   *     "^GSPTSE",
+   *     new Date("2025-03-01"),
+   *     new Date("2025-03-15"),
+   *     "adjclose",
+   *     "1d",
+   *   )
+   *   .log();
+   * ```
+   */
+  loadYahooFinanceData(
+    symbol: string,
+    startDate: Date,
+    endDate: Date,
+    variable: "open" | "high" | "low" | "close" | "adjclose" | "volume",
+    interval: "1d" | "1h" | "1m",
+  ): this {
+    loadYahooFinanceData(
+      this,
+      symbol,
+      startDate,
+      endDate,
+      variable,
+      interval,
+    );
     return this;
   }
 
