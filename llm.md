@@ -4145,7 +4145,7 @@ each row, adding new columns for these proportions.
 ##### Signature
 
 ```typescript
-rowProportions(columns: string[], options?: { suffix?: string; decimals?: number }): this;
+rowProportions(columns: string[], options?: { suffix?: string; base?: number; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4155,6 +4155,8 @@ rowProportions(columns: string[], options?: { suffix?: string; decimals?: number
 - **`options`**: An optional object with configuration options:
 - **`options.suffix`**: A string suffix to append to the names of the new
   columns storing the computed proportions. Defaults to `"Perc"`.
+- **`options.base`**: A finite positive value that the proportions in each row
+  sum to before rounding. Defaults to `1`.
 - **`options.decimals`**: The number of decimal places to round the computed
   proportions. Defaults to `undefined` (no rounding).
 
@@ -4196,6 +4198,14 @@ The table will then look like this:
 | 2021 | 564 | 685   | 145       | 0.4     | 0.49      | 0.10          |
 | 2022 | 354 | 278   | 56        | 0.51    | 0.4       | 0.08          |
 | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
+
+```ts
+// Compute percentages that sum to 100 on each row before rounding
+await table.rowProportions(["Men", "Women", "NonBinary"], {
+  base: 100,
+  decimals: 1,
+}).log();
+```
 
 This method queues the operation; it runs when an async observer method (like
 `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -4272,7 +4282,7 @@ This method queues the operation; it runs when an async observer method (like
 ##### Signature
 
 ```typescript
-columnProportions(column: string, newColumn: string, options?: { by?: string | string[]; decimals?: number }): this;
+columnProportions(column: string, newColumn: string, options?: { by?: string | string[]; base?: number; decimals?: number }): this;
 ```
 
 ##### Parameters
@@ -4285,6 +4295,8 @@ columnProportions(column: string, newColumn: string, options?: { by?: string | s
 - **`options`**: An optional object with configuration options:
 - **`options.by`**: The column name or an array of column names to partition by.
   Proportions are calculated independently within each group.
+- **`options.base`**: A finite positive value that the proportions in the column
+  or each group sum to before rounding. Defaults to `1`.
 - **`options.decimals`**: The number of decimal places to round the computed
   proportions. Defaults to `undefined` (no rounding).
 
@@ -4303,6 +4315,14 @@ await table.columnProportions("column1", "perc").log();
 // Compute proportions for 'column1' by 'column2', rounded to two decimal places
 await table.columnProportions("column1", "perc", { by: "column2", decimals: 2 })
   .log();
+```
+
+```ts
+// Compute percentages that sum to 100 before rounding
+await table.columnProportions("sales", "sales_percentage", {
+  base: 100,
+  decimals: 1,
+}).log();
 ```
 
 ```ts
