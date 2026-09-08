@@ -3235,7 +3235,7 @@ export default class SimpleTable extends Simple {
    * @param columns - The numeric column name or array of numeric column names to which noise will be added. When multiple columns are provided, each value receives an independent random offset.
    * @param max - The maximum absolute offset, expressed in each column's units. Must be a finite number greater than or equal to `0`.
    * @param options - An optional object with configuration options:
-   * @param options.onlyDuplicates - If `true`, adds noise only to rows whose combined values across all selected columns occur more than once. Every row in a duplicated group is changed. Defaults to `false`.
+   * @param options.onlyDuplicates - If `true`, adds noise only to values that occur more than once in their column. Each selected column is evaluated independently, and every occurrence of a duplicated value is changed. Defaults to `false`.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
@@ -3247,7 +3247,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Separate duplicated x/y pairs measured in the same planar units
+   * // Add noise independently to duplicated x values and duplicated y values
    * await table.addNoise(["x", "y"], 0.1, {
    *   onlyDuplicates: true,
    * }).log();

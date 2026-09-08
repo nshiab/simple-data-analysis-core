@@ -77,13 +77,11 @@ function addNoiseSelect(
     );
   }
 
-  const duplicateCondition = onlyDuplicates
-    ? `COUNT(*) OVER (PARTITION BY ${
-      columns.map(quoteIdentifier).join(", ")
-    }) > 1`
-    : "TRUE";
   const replacements = columns.map((column) => {
     const quotedColumn = quoteIdentifier(column);
+    const duplicateCondition = onlyDuplicates
+      ? `COUNT(*) OVER (PARTITION BY ${quotedColumn}) > 1`
+      : "TRUE";
     return `CASE
       WHEN ${quotedColumn} IS NULL THEN NULL
       WHEN ${duplicateCondition}

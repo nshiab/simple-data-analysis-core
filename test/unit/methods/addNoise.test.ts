@@ -39,35 +39,46 @@ Deno.test("addNoise should add bounded independent noise to numeric columns", as
   await sdb.close();
 });
 
-Deno.test("addNoise should change only duplicated combined values", async () => {
+Deno.test("addNoise should evaluate duplicates independently in each column", async () => {
   const sdb = new SimpleDB();
-  const table = sdb.newTable("coordinates");
+  const table = sdb.newTable("measurements");
   table.loadArray([
-    { id: "duplicate-a", latitude: 45, longitude: -73 },
-    { id: "duplicate-b", latitude: 45, longitude: -73 },
-    { id: "unique-latitude", latitude: 45, longitude: -74 },
-    { id: "unique-longitude", latitude: 46, longitude: -73 },
+    { id: "both-a", x: 1, y: 10 },
+    { id: "both-b", x: 1, y: 10 },
+    { id: "duplicate-x", x: 1, y: 20 },
+    { id: "duplicate-y", x: 2, y: 10 },
+    { id: "unique", x: 3, y: 30 },
   ]);
 
-  table.addNoise(["latitude", "longitude"], 0.01, {
+  table.addNoise(["x", "y"], 0.01, {
     onlyDuplicates: true,
   });
   const data = await table.getData() as {
     id: string;
-    latitude: number;
-    longitude: number;
+    x: number;
+    y: number;
   }[];
 
+  const originals = new Map([
+    ["both-a", { x: 1, y: 10 }],
+    ["both-b", { x: 1, y: 10 }],
+    ["duplicate-x", { x: 1, y: 20 }],
+    ["duplicate-y", { x: 2, y: 10 }],
+    ["unique", { x: 3, y: 30 }],
+  ]);
   for (const row of data) {
-    if (row.id.startsWith("duplicate")) {
-      assert(Math.abs(row.latitude - 45) <= 0.01);
-      assert(Math.abs(row.longitude + 73) <= 0.01);
-    } else if (row.id === "unique-latitude") {
-      assertEquals(row.latitude, 45);
-      assertEquals(row.longitude, -74);
+    const original = originals.get(row.id)!;
+    if (row.id === "duplicate-y" || row.id === "unique") {
+      assertEquals(row.x, original.x);
     } else {
-      assertEquals(row.latitude, 46);
-      assertEquals(row.longitude, -73);
+      assert(row.x !== original.x);
+      assert(Math.abs(row.x - original.x) <= 0.01);
+    }
+    if (row.id === "duplicate-x" || row.id === "unique") {
+      assertEquals(row.y, original.y);
+    } else {
+      assert(row.y !== original.y);
+      assert(Math.abs(row.y - original.y) <= 0.01);
     }
   }
 
