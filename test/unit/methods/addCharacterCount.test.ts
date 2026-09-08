@@ -37,6 +37,23 @@ Deno.test("should support spaces in source and new column names", async () => {
   await sdb.close();
 });
 
+Deno.test("should count line breaks in multiple paragraphs", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("data");
+  const paragraphs = `First paragraph.
+
+Second paragraph.
+
+Third paragraph.`;
+  table.loadArray([{ text: paragraphs }]);
+  table.addCharacterCount("text", "characterCount");
+
+  const data = await table.getData();
+
+  assertEquals(data, [{ text: paragraphs, characterCount: 53 }]);
+  await sdb.close();
+});
+
 Deno.test("should reject an existing output column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
