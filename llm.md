@@ -762,8 +762,9 @@ await table.setTypes({
 
 #### `loadArray`
 
-Loads an array of JavaScript objects into the table. This method queues the
-load; it runs when an async observer method (like `getData()` or `log()`) is
+Loads an array of JavaScript objects into the table. Types can also be specified
+for individual columns instead of inferred from their values. This method queues
+the load; it runs when an async observer method (like `getData()` or `log()`) is
 awaited, or when `run()` is called.
 
 JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
@@ -774,13 +775,17 @@ offset originally used to construct it. String values remain `VARCHAR`; use
 ##### Signature
 
 ```typescript
-loadArray(rows: Record<string, unknown>[]): this;
+loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "INTEGER" | "BIGINT" | "DOUBLE" | "VARCHAR" | "BOOLEAN" | "DATE" | "TIME" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" | FLOAT[${number}] | float[${number}]> }): this;
 ```
 
 ##### Parameters
 
 - **`rows`**: An array of objects, where each object represents a row and its
   properties represent columns.
+- **`options`**: Options for loading the array, captured when called.
+- **`options.columnTypes`**: Types for specific columns; omitted columns are
+  inferred. Values must be compatible with the selected type without losing
+  information.
 
 ##### Returns
 
@@ -795,6 +800,14 @@ const data = [
   { letter: "b", number: 2 },
 ];
 await table.loadArray(data).log();
+```
+
+```ts
+// Specify a numeric type for an all-null column
+await table.loadArray(
+  [{ name: "A", value: null }, { name: "B", value: null }],
+  { columnTypes: { value: "DOUBLE" } },
+).log();
 ```
 
 ```ts
@@ -3960,6 +3973,54 @@ await table.round(["columnA", "columnB"], { decimals: 1, method: "ceiling" })
 await table.round("column1", 2).log();
 ```
 
+#### `addNoise`
+
+Adds independently generated uniform random noise to numeric values in one or
+more columns. Each changed value receives an offset between `-max` and `max`.
+Selected integer and decimal columns become `DOUBLE` columns so fractional noise
+is retained. This method adds random jitter; it does not provide anonymization
+or differential privacy guarantees.
+
+This method queues the operation; it runs when an async observer method (like
+`getData()` or `log()`) is awaited, or when `run()` is called.
+
+##### Signature
+
+```typescript
+addNoise(columns: string | string[], max: number, options?: { onlyDuplicates?: boolean }): this;
+```
+
+##### Parameters
+
+- **`columns`**: The numeric column name or array of numeric column names to
+  which noise will be added. When multiple columns are provided, each value
+  receives an independent random offset.
+- **`max`**: The maximum absolute offset, expressed in each column's units. Must
+  be a finite number greater than or equal to `0`.
+- **`options`**: An optional object with configuration options:
+- **`options.onlyDuplicates`**: If `true`, adds noise only to values that occur
+  more than once in their column. Each selected column is evaluated
+  independently, and every occurrence of a duplicated value is changed. Defaults
+  to `false`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Add an offset between -0.01 and 0.01 to every value
+await table.addNoise("measurement", 0.01).log();
+```
+
+```ts
+// Add noise independently to duplicated x values and duplicated y values
+await table.addNoise(["x", "y"], 0.1, {
+  onlyDuplicates: true,
+}).log();
+```
+
 #### `updateColumn`
 
 Updates values in a specified column using a SQL expression.
@@ -6476,6 +6537,62 @@ await table.flipCoordinates().log();
 ```ts
 // Flip coordinates in a specific column named 'myGeom'
 await table.flipCoordinates("myGeom").log();
+```
+
+#### `addGeoNoise`
+
+Moves EPSG:4326 point geometries to random locations within a maximum
+great-circle distance of their original positions.
+
+Points are sampled uniformly within the requested distance using the spherical
+direct geodesic (destination-point) formula and the same spherical Earth model
+as DuckDB's `ST_Distance_Sphere()`. This accounts for longitude scale changing
+with latitude. This method adds random jitter; it does not provide anonymization
+or differential privacy guarantees.
+
+This method supports only `POINT` geometries in `EPSG:4326`. Null and empty
+geometries are preserved. It queues the operation; the operation runs when an
+async observer method (like `getData()` or `log()`) is awaited, or when `run()`
+is called.
+
+##### Signature
+
+```typescript
+addGeoNoise(maxDistance: number, options?: { column?: string; unit?: "m" | "km"; onlyDuplicates?: boolean }): this;
+```
+
+##### Parameters
+
+- **`maxDistance`**: The maximum great-circle displacement in the selected unit.
+  Must be a finite number greater than or equal to `0` and no greater than half
+  Earth's circumference.
+- **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the EPSG:4326 point geometry column. If
+  omitted, the method will automatically attempt to find a geometry column.
+- **`options.unit`**: The unit of `maxDistance`: `"m"` for metres or `"km"` for
+  kilometres. Defaults to `"m"`.
+- **`options.onlyDuplicates`**: If `true`, moves only points whose complete
+  original geometry occurs more than once in the selected geometry column. Every
+  point in a duplicated group is moved. Defaults to `false`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Move every point by no more than 500 metres
+await table.addGeoNoise(500).log();
+```
+
+```ts
+// Separate duplicated points by up to 0.1 kilometres
+await table.addGeoNoise(0.1, {
+  column: "geom",
+  unit: "km",
+  onlyDuplicates: true,
+}).log();
 ```
 
 #### `reducePrecision`
