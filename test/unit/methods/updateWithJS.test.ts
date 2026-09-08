@@ -345,6 +345,49 @@ Deno.test("should throw a clear error when the table has a __sda_rowid column an
   await sdb.close();
 });
 
+for (
+  const column of ["rowid", "ROWID", "RowId", "__sda_rowid", "__SDA_RowId"]
+) {
+  Deno.test(`updateWithJS rejects batched cursor conflicts before modifying data (${column})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("cursorConflict");
+      const data = [
+        { [column]: 1, x: "a" },
+        { [column]: 1, x: "b" },
+        { [column]: 2, x: "c" },
+        { [column]: null, x: "d" },
+      ];
+      table.loadArray(data);
+      let calls = 0;
+      table.updateWithJS((rows) => {
+        calls++;
+        return rows;
+      }, { batchSize: 1 });
+
+      await assertRejects(
+        () => table.run(),
+        Error,
+        `The table has a column named "${column}", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.`,
+      );
+      assertEquals(calls, 0);
+      assertEquals(await table.getData(), data);
+      assertEquals(await sdb.getTableNames(), ["cursorConflict"]);
+
+      assertEquals(
+        await table.updateWithJS((rows) => {
+          calls++;
+          return rows;
+        }).getData(),
+        data,
+      );
+      assertEquals(calls, 1);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
 Deno.test("should be a no-op on an empty table when the modifier returns no rows", async () => {
   const sdb = new SimpleDB();
   const plain = sdb.newTable("emptyPlain");
