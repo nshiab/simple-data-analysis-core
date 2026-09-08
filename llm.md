@@ -986,6 +986,10 @@ as `datetime`, `open`, `high`, `low`, `close`, `adjustedClose`, and `volume`
 columns. `datetime` is a UTC-backed JavaScript `Date`, stored as a DuckDB
 `TIMESTAMP`. Unavailable values are preserved as `null`.
 
+Range boundaries are evaluated in UTC. Construct dates from ISO date-only
+strings like `new Date("2025-03-15")` or ISO date-time strings ending in `Z`.
+Avoid `new Date(2025, 2, 15)`, which uses the runtime's local timezone.
+
 This method uses an undocumented Yahoo Finance endpoint and is not affiliated
 with or endorsed by Yahoo. It is provided for educational, research, and
 journalistic purposes. Before using it, review Yahoo's terms and any applicable
@@ -1006,9 +1010,10 @@ loadYahooFinanceData(symbol: string, startDate: Date, endDate: Date, interval: "
 ##### Parameters
 
 - **`symbol`**: The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
-- **`startDate`**: The inclusive start of the requested range.
+- **`startDate`**: The inclusive start of the requested range, evaluated as a
+  UTC instant.
 - **`endDate`**: The inclusive end of the requested range. The UTC day, hour, or
-  minute containing this value is included, according to `interval`.
+  minute containing this instant is included, according to `interval`.
 - **`interval`**: The interval between observations: daily, hourly, or every
   minute.
 
@@ -1025,12 +1030,25 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
+// ISO date-only strings represent midnight UTC.
 await table
   .loadYahooFinanceData(
     "^GSPTSE",
     new Date("2025-03-01"),
     new Date("2025-03-15"),
     "1d",
+  )
+  .log();
+```
+
+```ts
+// Include the UTC hours from 13:00 through 16:00.
+await table
+  .loadYahooFinanceData(
+    "AAPL",
+    new Date("2025-03-14T13:00:00Z"),
+    new Date("2025-03-14T16:00:00Z"),
+    "1h",
   )
   .log();
 ```

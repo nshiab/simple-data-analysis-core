@@ -592,6 +592,10 @@ export default class SimpleTable extends Simple {
    * `volume` columns. `datetime` is a UTC-backed JavaScript `Date`, stored as a
    * DuckDB `TIMESTAMP`. Unavailable values are preserved as `null`.
    *
+   * Range boundaries are evaluated in UTC. Construct dates from ISO date-only
+   * strings like `new Date("2025-03-15")` or ISO date-time strings ending in
+   * `Z`. Avoid `new Date(2025, 2, 15)`, which uses the runtime's local timezone.
+   *
    * This method uses an undocumented Yahoo Finance endpoint and is not
    * affiliated with or endorsed by Yahoo. It is provided for educational,
    * research, and journalistic purposes. Before using it, review Yahoo's terms
@@ -604,9 +608,11 @@ export default class SimpleTable extends Simple {
    * method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
-   * @param startDate - The inclusive start of the requested range.
+   * @param startDate - The inclusive start of the requested range, evaluated as
+   * a UTC instant.
    * @param endDate - The inclusive end of the requested range. The UTC day,
-   * hour, or minute containing this value is included, according to `interval`.
+   * hour, or minute containing this instant is included, according to
+   * `interval`.
    * @param interval - The interval between observations: daily, hourly, or every
    * minute.
    * @returns The table, so methods can be chained.
@@ -618,12 +624,26 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // ISO date-only strings represent midnight UTC.
    * await table
    *   .loadYahooFinanceData(
    *     "^GSPTSE",
    *     new Date("2025-03-01"),
    *     new Date("2025-03-15"),
    *     "1d",
+   *   )
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Include the UTC hours from 13:00 through 16:00.
+   * await table
+   *   .loadYahooFinanceData(
+   *     "AAPL",
+   *     new Date("2025-03-14T13:00:00Z"),
+   *     new Date("2025-03-14T16:00:00Z"),
+   *     "1h",
    *   )
    *   .log();
    * ```
