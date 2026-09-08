@@ -10,9 +10,18 @@ export default function columnProportions(
   newColumn: string,
   options: {
     by?: string | string[];
+    base?: number;
     decimals?: number;
   } = {},
 ) {
+  if (
+    options.base !== undefined &&
+    (!Number.isFinite(options.base) || options.base <= 0)
+  ) {
+    throw new Error(
+      "columnProportions() options.base must be a finite number greater than 0.",
+    );
+  }
   options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "fusable",
@@ -27,16 +36,17 @@ export default function columnProportions(
       const partition = by.length === 0
         ? ""
         : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
+      const proportion = `${quoteIdentifier(column)} / sum(${
+        quoteIdentifier(column)
+      }) OVER(${partition}) * ${options.base ?? 1}`;
 
       return typeof options.decimals === "number"
-        ? `SELECT *, ROUND(${quoteIdentifier(column)} / sum(${
-          quoteIdentifier(column)
-        }) OVER(${partition}), ${options.decimals}) AS ${
+        ? `SELECT *, ROUND(${proportion}, ${options.decimals}) AS ${
           quoteIdentifier(newColumn)
         } FROM ${input}`
-        : `SELECT *, ${quoteIdentifier(column)} / sum(${
-          quoteIdentifier(column)
-        }) OVER(${partition}) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+        : `SELECT *, ${proportion} AS ${
+          quoteIdentifier(newColumn)
+        } FROM ${input}`;
     },
   });
 }

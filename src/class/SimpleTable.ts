@@ -3433,11 +3433,18 @@ export default class SimpleTable extends Simple {
    * | 2022 | 354 | 278   | 56        | 0.51    | 0.4       | 0.08          |
    * | 2023 | 856 | 321   | 221       | 0.61    | 0.23      | 0.16          |
    *
+   * @example
+   * ```ts
+   * // Compute percentages that sum to 100 on each row before rounding
+   * await table.rowProportions(["Men", "Women", "NonBinary"], { base: 100, decimals: 1 }).log();
+   * ```
+   *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param columns - An array of column names for which proportions will be computed on each row.
    * @param options - An optional object with configuration options:
    * @param options.suffix - A string suffix to append to the names of the new columns storing the computed proportions. Defaults to `"Perc"`.
+   * @param options.base - A finite positive value that the proportions in each row sum to before rounding. Defaults to `1`.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3446,6 +3453,7 @@ export default class SimpleTable extends Simple {
     columns: string[],
     options: {
       suffix?: string;
+      base?: number;
       decimals?: number;
     } = {},
   ): this {
@@ -3585,6 +3593,7 @@ export default class SimpleTable extends Simple {
    * @param newColumn - The name of the new column where the proportions will be stored.
    * @param options - An optional object with configuration options:
    * @param options.by - The column name or an array of column names to partition by. Proportions are calculated independently within each group.
+   * @param options.base - A finite positive value that the proportions in the column or each group sum to before rounding. Defaults to `1`.
    * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
@@ -3603,6 +3612,12 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Compute percentages that sum to 100 before rounding
+   * await table.columnProportions("sales", "sales_percentage", { base: 100, decimals: 1 }).log();
+   * ```
+   *
+   * @example
+   * ```ts
    * // Compute proportions for 'sales' by 'region' and 'product_type'
    * await table.columnProportions("sales", "sales_proportion", { by: ["region", "product_type"] }).log();
    * ```
@@ -3612,6 +3627,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: {
       by?: string | string[];
+      base?: number;
       decimals?: number;
     } = {},
   ): this {
