@@ -135,7 +135,9 @@ export async function downloadOsmToTemporaryFile(
       }
 
       await pipeline(
-        Readable.fromWeb(response.body),
+        Readable.fromWeb(
+          response.body as Parameters<typeof Readable.fromWeb>[0],
+        ),
         createWriteStream(temporaryFile, { flags: "wx" }),
       );
       if (options.verbose) {

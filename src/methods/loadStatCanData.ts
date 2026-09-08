@@ -158,7 +158,7 @@ async function downloadToFile(url: string, file: string): Promise<void> {
   }
   try {
     await pipeline(
-      Readable.fromWeb(response.body),
+      Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
       createWriteStream(file, { flags: "wx" }),
     );
   } catch (error) {

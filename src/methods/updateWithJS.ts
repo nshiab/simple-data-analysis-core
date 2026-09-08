@@ -2,7 +2,10 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
 import queueOp from "../helpers/queueOp.ts";
-import { executePreparedArray, prepareArray } from "./loadArray.ts";
+import { prepareArray } from "./loadArray.ts";
+import { DuckDBDataChunk } from "@duckdb/node-api";
+import readMutationRows from "../helpers/readMutationRows.ts";
+import parseDuckDBType from "../helpers/parseDuckDBType.ts";
 
 type Row = { [key: string]: unknown };
 
@@ -48,41 +51,11 @@ async function executeUpdateWithJS(
     );
   }
 
-  if (options.batchSize === undefined) {
-    const oldData = await simpleTable.getData();
-    if (!oldData) {
-      throw new Error("No data from getData.");
-    }
-    const newData = await dataModifier(oldData);
-    if (newData.length === 0) {
-      if (oldData.length === 0) {
-        // Empty table in, empty data out: nothing to update.
-        return;
-      }
-      throw new Error(
-        "The dataModifier returned no rows. updateWithJS can't infer the table schema from zero rows.",
-      );
-    }
-    await executePreparedArray(simpleTable, prepareArray(newData));
-    return;
-  }
-
   const batchSize = options.batchSize;
-  if (Object.keys(types).includes("__sda_rowid")) {
+  if (batchSize !== undefined && Object.keys(types).includes("__sda_rowid")) {
     throw new Error(
       'The table has a column named "__sda_rowid", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.',
     );
-  }
-
-  const rowCount = await simpleTable.getRowCount();
-  if (rowCount === 0) {
-    // Same behavior as the non-batched path on an empty table.
-    const newData = await dataModifier([]);
-    if (newData.length === 0) {
-      return;
-    }
-    await executePreparedArray(simpleTable, prepareArray(newData));
-    return;
   }
 
   // Rows are pulled in batches by rowid, passed through the modifier, and
@@ -94,30 +67,77 @@ async function executeUpdateWithJS(
 
   try {
     let first = true;
-    let lastRowid: number | null = null;
+    let lastRowid: bigint | null = null;
+    let sawRows = false;
 
     while (true) {
-      const batch = (await simpleTable.sdb.customQuery(
-        `SELECT *, rowid AS __sda_rowid FROM ${
-          quoteIdentifier(simpleTable.name)
-        }${
+      const source = await readMutationRows(
+        simpleTable.connection!,
+        `SELECT *${
+          batchSize === undefined ? "" : ", rowid AS __sda_rowid"
+        } FROM ${quoteIdentifier(simpleTable.name)}${
           lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
-        } ORDER BY rowid LIMIT ${batchSize}`,
-        { returnData: true },
-      )) as { [key: string]: unknown }[];
-      if (batch.length === 0) {
-        break;
-      }
-      lastRowid = batch[batch.length - 1].__sda_rowid as number;
-      for (const row of batch) {
-        delete row.__sda_rowid;
+        }${
+          batchSize === undefined ? "" : ` ORDER BY rowid LIMIT ${batchSize}`
+        }`,
+      );
+      const batch = source.rows;
+      const inputCount = batch.length;
+      if (inputCount === 0 && sawRows) break;
+      sawRows ||= inputCount > 0;
+      if (batchSize !== undefined && batch.length > 0) {
+        lastRowid = batch[batch.length - 1].__sda_rowid as bigint;
+        for (const row of batch) delete row.__sda_rowid;
+        source.types.delete("__sda_rowid");
       }
 
       const modified = await dataModifier(batch);
       if (modified.length === 0) {
+        if (!sawRows) return;
+        if (batchSize === undefined) break;
         continue;
       }
-      await executePreparedArray(scratch, prepareArray(modified));
+      const keys = Object.keys(modified[0]);
+      const newKeys = keys.filter((key) => !source.types.has(key));
+      const added = newKeys.length === 0
+        ? undefined
+        : prepareArray(modified.map((row) =>
+          Object.fromEntries(newKeys.map((key) => [key, row[key]]))
+        ));
+      const columnTypes = keys.map((key) =>
+        source.types.get(key) ??
+          parseDuckDBType(added!.types[newKeys.indexOf(key)])
+      );
+      await simpleTable.sdb.customQuery(
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(scratch.name)} (${
+          keys.map((key, i) => `${quoteIdentifier(key)} ${columnTypes[i]}`)
+            .join(", ")
+        })`,
+      );
+      const appender = await simpleTable.connection!.createAppender(
+        scratch.name,
+      );
+      try {
+        for (let start = 0; start < modified.length; start += 2000) {
+          const end = Math.min(start + 2000, modified.length);
+          const chunk = DuckDBDataChunk.create(columnTypes, end - start);
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            chunk.setColumnValues(
+              i,
+              source.types.has(key)
+                ? modified.slice(start, end).map((row) =>
+                  source.toNative(row[key], columnTypes[i])
+                )
+                : added!.columnsData[newKeys.indexOf(key)].slice(start, end),
+            );
+          }
+          appender.appendDataChunk(chunk);
+        }
+        appender.flushSync();
+      } finally {
+        appender.closeSync();
+      }
       if (first) {
         await simpleTable.sdb.customQuery(
           `CREATE OR REPLACE TABLE ${
@@ -132,6 +152,7 @@ async function executeUpdateWithJS(
           }`,
         );
       }
+      if (batchSize === undefined || inputCount === 0) break;
     }
 
     if (first) {

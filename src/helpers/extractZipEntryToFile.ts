@@ -86,8 +86,8 @@ export default async function extractZipEntryToFile(
         createWriteStream(output, {
           flags: "wx",
         }),
-      ]
-      : [source, checksum, createWriteStream(output, { flags: "wx" })];
+      ] as const
+      : [source, checksum, createWriteStream(output, { flags: "wx" })] as const;
     await pipeline(streams);
 
     if (checksum.size !== entry.uncompressedSize) {
