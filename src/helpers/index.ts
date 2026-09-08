@@ -20,3 +20,4 @@ export { default as queryDB } from "./queryDB.ts";
 export { default as queueAsyncBarrier } from "./queueAsyncBarrier.ts";
 export { default as quoteIdentifier } from "./quoteIdentifier.ts";
 export { default as stringToArray } from "./stringToArray.ts";
+export { default as updateColumnsWithJS } from "./updateColumnsWithJS.ts";
