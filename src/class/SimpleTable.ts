@@ -5556,7 +5556,7 @@ export default class SimpleTable extends Simple {
   /**
    * Moves EPSG:4326 point geometries to random locations within a maximum great-circle distance of their original positions.
    *
-   * Points are sampled uniformly over the spherical cap using the spherical direct geodesic (destination-point) formula and the same mean Earth radius as DuckDB's `ST_Distance_Sphere()`. This accounts for longitude scale changing with latitude and handles poles and the antimeridian. Because the formula models Earth as a sphere rather than the WGS84 ellipsoid, distances are approximate and can differ from spheroidal distances by up to roughly 0.5%. This method adds random jitter; it does not provide anonymization or differential privacy guarantees.
+   * Points are sampled uniformly within the requested distance using the spherical direct geodesic (destination-point) formula and the same spherical Earth model as DuckDB's `ST_Distance_Sphere()`. This accounts for longitude scale changing with latitude. This method adds random jitter; it does not provide anonymization or differential privacy guarantees.
    *
    * This method supports only `POINT` geometries in `EPSG:4326`. Null and empty geometries are preserved. It queues the operation; the operation runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
