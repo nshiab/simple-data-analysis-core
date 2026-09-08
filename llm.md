@@ -983,16 +983,14 @@ await table
 
 Downloads historical market data from Yahoo Finance and loads it into this table
 as `datetime`, `open`, `high`, `low`, `close`, `adjustedClose`, and `volume`
-columns. `datetime` is a UTC-backed JavaScript `Date`, stored as a DuckDB
-`TIMESTAMP`. For daily data, observations are selected using the exchange
-timezone reported by Yahoo. Unavailable values are preserved as `null`.
+columns. `datetime` contains Yahoo's timestamps as JavaScript `Date` values.
+Unavailable values are preserved as `null`.
 
-With the daily interval, the UTC calendar date in each argument identifies an
-exchange-local trading date; use ISO date-only strings such as
-`new Date("2025-03-15")`. Hourly and minute boundaries are UTC instants;
-construct them from ISO date-time strings ending in `Z`. Avoid numeric
-constructors such as `new Date(2025, 2, 15)`, which use the runtime's local
-timezone.
+All range boundaries are evaluated in UTC. Use ISO date-time strings ending in
+`Z`. Yahoo trading sessions may occur on a different UTC date from their
+exchange-local date, so choose the range appropriate for the market and
+interval. Avoid numeric constructors such as `new Date(2025, 2, 15)`, which use
+the runtime's local timezone.
 
 This method uses an undocumented Yahoo Finance endpoint and is not affiliated
 with or endorsed by Yahoo. It is provided for educational, research, and
@@ -1011,12 +1009,9 @@ loadYahooFinanceData(symbol: string, startDate: Date, endDate: Date, interval: "
 ##### Parameters
 
 - **`symbol`**: The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
-- **`startDate`**: The inclusive start of the requested range. For daily data,
-  its UTC calendar date identifies the first exchange-local trading date. For
-  intraday data, it is a UTC instant.
-- **`endDate`**: The inclusive end of the requested range. For daily data, its
-  UTC calendar date identifies the last exchange-local trading date. For
-  intraday data, the UTC hour or minute containing the instant is included.
+- **`startDate`**: The inclusive UTC start of the requested range.
+- **`endDate`**: The inclusive UTC end of the requested range. The UTC day,
+  hour, or minute containing this instant is included, according to `interval`.
 - **`interval`**: The interval between observations: daily, hourly, or every
   minute.
 
@@ -1033,12 +1028,12 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Request exchange-local trading dates with ISO date-only strings.
+// Request daily observations using explicit UTC boundaries.
 await table
   .loadYahooFinanceData(
     "^GSPTSE",
-    new Date("2025-03-01"),
-    new Date("2025-03-15"),
+    new Date("2025-03-01T00:00:00Z"),
+    new Date("2025-03-15T00:00:00Z"),
     "1d",
   )
   .log();

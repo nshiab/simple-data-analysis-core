@@ -18,13 +18,11 @@ function yahooResponse(
     adjustedClose?: Array<number | null>;
     volume?: Array<number | null>;
   },
-  exchangeTimezoneName = "America/New_York",
 ): Response {
   return Response.json({
     chart: {
       error: null,
       result: [{
-        meta: { exchangeTimezoneName },
         timestamp: timestamps,
         indicators: {
           adjclose: [{ adjclose: values.adjustedClose }],
@@ -106,52 +104,10 @@ Deno.test("loadYahooFinanceData loads a complete table and preserves missing val
     });
     assertEquals(
       requestedUrl?.searchParams.get("period2"),
-      String(Date.parse("2025-03-16T00:00:00Z") / 1000),
+      String(Date.parse("2025-03-15T00:00:00Z") / 1000),
     );
     assertEquals(requestedUrl?.searchParams.has("events"), false);
     assertStringIncludes(requestedHeaders?.get("User-Agent") ?? "", "Chrome");
-  } finally {
-    globalThis.fetch = originalFetch;
-    await sdb.close();
-  }
-});
-
-Deno.test("loadYahooFinanceData uses the exchange timezone for daily ranges", async () => {
-  let requestedUrl: URL | undefined;
-  globalThis.fetch = (input) => {
-    requestedUrl = new URL(input instanceof Request ? input.url : input);
-    return Promise.resolve(yahooResponse(
-      [
-        Date.parse("2025-03-13T23:00:00Z") / 1000,
-        Date.parse("2025-03-14T23:00:00Z") / 1000,
-      ],
-      { close: [100, 101] },
-      "Australia/Sydney",
-    ));
-  };
-
-  const sdb = new SimpleDB();
-  try {
-    const table = sdb.newTable("yahooSydney").loadYahooFinanceData(
-      "BHP.AX",
-      new Date("2025-03-14"),
-      new Date("2025-03-14"),
-      "1d",
-    );
-
-    assertEquals(await table.getData(), [{
-      datetime: new Date("2025-03-13T23:00:00Z"),
-      open: null,
-      high: null,
-      low: null,
-      close: 100,
-      adjustedClose: null,
-      volume: null,
-    }]);
-    assertEquals(
-      requestedUrl?.searchParams.get("period1"),
-      String(Date.parse("2025-03-13T00:00:00Z") / 1000),
-    );
   } finally {
     globalThis.fetch = originalFetch;
     await sdb.close();
