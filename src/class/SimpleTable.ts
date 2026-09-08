@@ -3247,8 +3247,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Separate duplicated coordinate pairs while leaving unique pairs unchanged
-   * await table.addNoise(["latitude", "longitude"], 0.0001, {
+   * // Separate duplicated x/y pairs measured in the same planar units
+   * await table.addNoise(["x", "y"], 0.1, {
    *   onlyDuplicates: true,
    * }).log();
    * ```
