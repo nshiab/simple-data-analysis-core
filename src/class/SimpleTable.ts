@@ -4485,13 +4485,6 @@ export default class SimpleTable extends Simple {
   /**
    * Updates data in the table using a JavaScript function. The function receives the existing rows as an array of objects and must return the modified rows as an array of objects.
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
-   * Retained columns keep their original SQL types; new columns have inferred types.
-   * Integer types represented by DuckDB as bigint remain JavaScript bigint values.
-   * Arrays/lists and structs are exposed as arrays and objects. DATE and TIMESTAMP
-   * values use JavaScript Date objects; returning those objects unchanged preserves
-   * their original precision. Other specialized values (including DECIMAL) retain
-   * their DuckDB-native wrappers. Use SQL or convert() for explicit type changes.
-   * Failed callbacks or writes leave the original table intact.
    * This method does not work with tables containing geometries.
    *
    * This method queues the update; the dataModifier function runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
