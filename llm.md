@@ -5187,7 +5187,7 @@ await table.addCharacterCount("name", "nameCharacterCount").log();
 
 #### `addWordCount`
 
-Adds a new column containing a rough word count for each string in the specified
+Adds a new column containing the word count for each string in the specified
 column. A word is any contiguous sequence of non-whitespace characters. Spaces,
 tabs, and line breaks separate words. Punctuation is not removed, so a
 standalone punctuation sequence counts as a word. Text without whitespace counts
@@ -5216,7 +5216,7 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Add a rough word count for each value in the 'article' column
+// Add a word count for each value in the 'article' column
 await table.addWordCount("article", "wordCount").log();
 ```
 

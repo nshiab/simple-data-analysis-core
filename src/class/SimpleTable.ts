@@ -4550,7 +4550,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Adds a new column containing a rough word count for each string in the specified column.
+   * Adds a new column containing the word count for each string in the specified column.
    * A word is any contiguous sequence of non-whitespace characters. Spaces, tabs, and line breaks separate words. Punctuation is not removed, so a standalone punctuation sequence counts as a word. Text without whitespace counts as one word, regardless of language. Empty or whitespace-only strings produce `0`, and `NULL` input values produce `NULL` counts.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -4562,7 +4562,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Add a rough word count for each value in the 'article' column
+   * // Add a word count for each value in the 'article' column
    * await table.addWordCount("article", "wordCount").log();
    * ```
    */
