@@ -52,10 +52,17 @@ async function executeUpdateWithJS(
   }
 
   const batchSize = options.batchSize;
-  if (batchSize !== undefined && Object.keys(types).includes("__sda_rowid")) {
-    throw new Error(
-      'The table has a column named "__sda_rowid", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.',
+  if (batchSize !== undefined) {
+    // DuckDB resolves identifiers case-insensitively, and a real rowid column
+    // shadows its hidden row identifier used for pagination.
+    const conflictingColumn = Object.keys(types).find((column) =>
+      ["rowid", "__sda_rowid"].includes(column.toLowerCase())
     );
+    if (conflictingColumn !== undefined) {
+      throw new Error(
+        `The table has a column named "${conflictingColumn}", which conflicts with the internal column used by the batchSize option. Rename it or run updateWithJS without batchSize.`,
+      );
+    }
   }
 
   // Rows are pulled in batches by rowid, passed through the modifier, and

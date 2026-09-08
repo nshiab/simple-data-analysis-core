@@ -4491,7 +4491,7 @@ export default class SimpleTable extends Simple {
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
    * @param options - An optional object with configuration options:
-   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. The modifier function is called once per batch.
+   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. The modifier function is called once per batch. Tables with a column named `rowid` or `__sda_rowid` (case-insensitive) are rejected before the modifier runs; rename the column or omit batchSize.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    *
