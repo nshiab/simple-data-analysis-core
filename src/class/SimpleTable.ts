@@ -587,9 +587,10 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Downloads historical prices or trading volume from Yahoo Finance and
-   * loads them into this table as `timestamp` and `value` columns. Unix
-   * timestamps are expressed in milliseconds, and missing values are omitted.
+   * Downloads historical market data from Yahoo Finance and loads it into this
+   * table as `datetime`, `open`, `high`, `low`, `close`, `adjustedClose`, and
+   * `volume` columns. `datetime` is a UTC-backed JavaScript `Date`, stored as a
+   * DuckDB `TIMESTAMP`. Unavailable values are preserved as `null`.
    *
    * This method uses an undocumented Yahoo Finance endpoint and is not
    * affiliated with or endorsed by Yahoo. It is provided for educational,
@@ -604,9 +605,8 @@ export default class SimpleTable extends Simple {
    *
    * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
    * @param startDate - The inclusive start of the requested range.
-   * @param endDate - The inclusive end of the requested range. The observation
-   * beginning at this date or time is included when available.
-   * @param variable - The financial variable to retrieve.
+   * @param endDate - The inclusive end of the requested range. The UTC day,
+   * hour, or minute containing this value is included, according to `interval`.
    * @param interval - The interval between observations: daily, hourly, or every
    * minute.
    * @returns The table, so methods can be chained.
@@ -623,7 +623,6 @@ export default class SimpleTable extends Simple {
    *     "^GSPTSE",
    *     new Date("2025-03-01"),
    *     new Date("2025-03-15"),
-   *     "adjclose",
    *     "1d",
    *   )
    *   .log();
@@ -633,17 +632,9 @@ export default class SimpleTable extends Simple {
     symbol: string,
     startDate: Date,
     endDate: Date,
-    variable: "open" | "high" | "low" | "close" | "adjclose" | "volume",
     interval: "1d" | "1h" | "1m",
   ): this {
-    loadYahooFinanceData(
-      this,
-      symbol,
-      startDate,
-      endDate,
-      variable,
-      interval,
-    );
+    loadYahooFinanceData(this, symbol, startDate, endDate, interval);
     return this;
   }
 

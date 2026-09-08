@@ -41,6 +41,7 @@ type PreparedArray = {
 
 export function prepareArray(
   rows: { [key: string]: unknown }[],
+  columnTypes: { [key: string]: string } = {},
 ): PreparedArray {
   const keys = Object.keys(rows[0]);
   const firstNonNullValue = keys.map((key) =>
@@ -100,6 +101,7 @@ export function prepareArray(
           : d as DuckDBValue;
       }
     }
+    types[i] = columnTypes[key] ?? types[i];
   }
 
   return { keys, types, columnsData, rowCount: rows.length };
