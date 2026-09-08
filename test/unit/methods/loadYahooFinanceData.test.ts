@@ -215,13 +215,40 @@ Deno.test({
     try {
       const table = sdb.newTable("yahooLive").loadYahooFinanceData(
         "^GSPTSE",
-        new Date("2025-03-13"),
-        new Date("2025-03-14"),
+        new Date("2025-03-13T00:00:00Z"),
+        new Date("2025-03-14T00:00:00Z"),
         "1d",
       );
 
-      assertEquals(await table.getRowCount() > 0, true);
-      assertEquals((await table.getData())[0].datetime instanceof Date, true);
+      assertEquals(await table.getTypes(), {
+        datetime: "TIMESTAMP",
+        open: "DOUBLE",
+        high: "DOUBLE",
+        low: "DOUBLE",
+        close: "DOUBLE",
+        adjustedClose: "DOUBLE",
+        volume: "DOUBLE",
+      });
+      assertEquals(await table.getData(), [
+        {
+          datetime: new Date("2025-03-13T13:30:00Z"),
+          open: 24_375.099609375,
+          high: 24_467.599609375,
+          low: 24_145.599609375,
+          close: 24_203.19921875,
+          adjustedClose: 24_203.19921875,
+          volume: 343_747_400,
+        },
+        {
+          datetime: new Date("2025-03-14T13:30:00Z"),
+          open: 24_301.69921875,
+          high: 24_565.400390625,
+          low: 24_293.19921875,
+          close: 24_553.400390625,
+          adjustedClose: 24_553.400390625,
+          volume: 262_196_500,
+        },
+      ]);
     } finally {
       await sdb.close();
     }
