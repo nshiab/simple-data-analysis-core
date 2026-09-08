@@ -5,6 +5,8 @@ import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
 import getRowCount from "../methods/getRowCount.ts";
 import getCharacterCount from "../methods/getCharacterCount.ts";
+import addCharacterCount from "../methods/addCharacterCount.ts";
+import addWordCount from "../methods/addWordCount.ts";
 import getTypes from "../methods/getTypes.ts";
 import getHash from "../methods/getHash.ts";
 import getValues from "../methods/getValues.ts";
@@ -4345,17 +4347,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Count words correctly across multilingual article text.
-   * const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+   * // Extract hostnames with JavaScript's URL parser.
    * const table = await sdb
    *   .newTable()
-   *   .loadData("articles.csv")
+   *   .loadData("websites.csv")
    *   .updateWithJS((rows) => {
    *     return rows.map((row) => ({
    *       ...row,
-   *       wordCount: typeof row.text === "string"
-   *         ? [...segmenter.segment(row.text)].filter((part) => part.isWordLike)
-   *           .length
+   *       hostname: typeof row.url === "string"
+   *         ? new URL(row.url).hostname
    *         : null,
    *     }));
    *   })
@@ -4543,7 +4543,53 @@ export default class SimpleTable extends Simple {
   }
 
   /**
+   * Adds a new column containing the number of characters in each string in the specified column.
+   * Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
+   * `NULL` input values produce `NULL` counts.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param column - The name of the column containing the strings to count.
+   * @param newColumn - The name of the new column where the character counts will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Text Processing
+   *
+   * @example
+   * ```ts
+   * // Add a character count for each value in the 'name' column
+   * await table.addCharacterCount("name", "nameCharacterCount").log();
+   * ```
+   */
+  addCharacterCount(column: string, newColumn: string): this {
+    addCharacterCount(this, column, newColumn);
+    return this;
+  }
+
+  /**
+   * Adds a new column containing the word count for each string in the specified column.
+   * A word is any contiguous sequence of non-whitespace characters. Spaces, tabs, and line breaks separate words. Punctuation is not removed, so a standalone punctuation sequence counts as a word. Text without whitespace counts as one word, regardless of language. Empty or whitespace-only strings produce `0`, and `NULL` input values produce `NULL` counts.
+   *
+   * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param column - The name of the column containing the strings to count.
+   * @param newColumn - The name of the new column where the word counts will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Text Processing
+   *
+   * @example
+   * ```ts
+   * // Add a word count for each value in the 'article' column
+   * await table.addWordCount("article", "wordCount").log();
+   * ```
+   */
+  addWordCount(column: string, newColumn: string): this {
+    addWordCount(this, column, newColumn);
+    return this;
+  }
+
+  /**
    * Returns the total number of characters in a column storing strings.
+   * Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
    *
    * @param column - The name of the string column to count characters from.
    * @returns A promise that resolves to the total number of characters across all rows in the specified column.
