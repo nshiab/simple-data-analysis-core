@@ -5564,7 +5564,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.column - The name of the EPSG:4326 point geometry column. If omitted, the method will automatically attempt to find a geometry column.
    * @param options.unit - The unit of `maxDistance`: `"m"` for metres or `"km"` for kilometres. Defaults to `"m"`.
-   * @param options.onlyDuplicates - If `true`, moves only points whose complete original geometry occurs more than once in the selected geometry column. Geometries are compared exactly at their stored coordinate precision, without a distance tolerance or independent longitude and latitude matching. Every point in a duplicated group is moved. Defaults to `false`.
+   * @param options.onlyDuplicates - If `true`, moves only points whose complete original geometry occurs more than once in the selected geometry column. Every point in a duplicated group is moved. Defaults to `false`.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
