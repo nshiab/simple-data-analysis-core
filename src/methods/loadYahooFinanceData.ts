@@ -26,18 +26,19 @@ type YahooInterval = keyof typeof INTERVAL_SECONDS;
 type YahooQuoteVariable = "open" | "high" | "low" | "close" | "volume";
 type YahooValues = Array<number | null>;
 
+type YahooFinanceResult = {
+  meta?: { exchangeTimezoneName?: string };
+  timestamp?: number[];
+  indicators?: {
+    adjclose?: Array<{ adjclose?: YahooValues }>;
+    quote?: Array<Partial<Record<YahooQuoteVariable, YahooValues>>>;
+  };
+};
+
 type YahooFinanceResponse = {
   chart?: {
     error?: { description?: string } | null;
-    result?:
-      | Array<{
-        timestamp?: number[];
-        indicators?: {
-          adjclose?: Array<{ adjclose?: YahooValues }>;
-          quote?: Array<Partial<Record<YahooQuoteVariable, YahooValues>>>;
-        };
-      }>
-      | null;
+    result?: YahooFinanceResult[] | null;
   };
 };
 
@@ -106,8 +107,11 @@ async function getYahooFinanceData(request: {
   interval: YahooInterval;
 }): Promise<YahooFinanceRow[]> {
   const { symbol, startDate, endDate, interval } = request;
-  const startTime = startDate.getTime();
-  const exclusiveEndTime = getExclusiveEndTime(endDate, interval);
+  const { requestStartTime, requestEndTime } = getRequestTimeRange(
+    startDate,
+    endDate,
+    interval,
+  );
   const url = new URL(
     `https://query1.finance.yahoo.com/v8/finance/chart/${
       encodeURIComponent(symbol)
@@ -116,8 +120,8 @@ async function getYahooFinanceData(request: {
   url.search = new URLSearchParams({
     includeAdjustedClose: "true",
     interval,
-    period1: String(Math.floor(startTime / 1000)),
-    period2: String(Math.ceil(exclusiveEndTime / 1000)),
+    period1: String(Math.floor(requestStartTime / 1000)),
+    period2: String(Math.ceil(requestEndTime / 1000)),
   }).toString();
 
   const response = await fetch(url, {
@@ -148,10 +152,11 @@ async function getYahooFinanceData(request: {
 
   const quote = result.indicators?.quote?.[0];
   const adjustedClose = result.indicators?.adjclose?.[0]?.adjclose;
+  const isInRange = getRangeFilter(result, request);
   const rows: YahooFinanceRow[] = [];
   for (let index = 0; index < timestamps.length; index++) {
     const timestamp = timestamps[index] * 1000;
-    if (timestamp >= startTime && timestamp < exclusiveEndTime) {
+    if (Number.isFinite(timestamp) && isInRange(timestamp)) {
       rows.push({
         datetime: new Date(timestamp),
         open: getFiniteValue(quote?.open, index),
@@ -168,6 +173,90 @@ async function getYahooFinanceData(request: {
     throw new Error(`No Yahoo Finance data found for ${symbol}.`);
   }
   return rows;
+}
+
+function getRequestTimeRange(
+  startDate: Date,
+  endDate: Date,
+  interval: YahooInterval,
+): { requestStartTime: number; requestEndTime: number } {
+  if (interval === "1d") {
+    const day = INTERVAL_SECONDS["1d"] * 1000;
+    return {
+      requestStartTime: getUtcDateStart(startDate) - day,
+      requestEndTime: getUtcDateStart(endDate) + 2 * day,
+    };
+  }
+  return {
+    requestStartTime: startDate.getTime(),
+    requestEndTime: getExclusiveEndTime(endDate, interval),
+  };
+}
+
+function getRangeFilter(
+  result: YahooFinanceResult,
+  request: {
+    symbol: string;
+    startDate: Date;
+    endDate: Date;
+    interval: YahooInterval;
+  },
+): (timestamp: number) => boolean {
+  if (request.interval !== "1d") {
+    const startTime = request.startDate.getTime();
+    const exclusiveEndTime = getExclusiveEndTime(
+      request.endDate,
+      request.interval,
+    );
+    return (timestamp) =>
+      timestamp >= startTime && timestamp < exclusiveEndTime;
+  }
+
+  const timeZone = result.meta?.exchangeTimezoneName;
+  if (!timeZone) {
+    throw new Error(
+      `Yahoo Finance did not provide an exchange timezone for ${request.symbol}.`,
+    );
+  }
+  let formatter: Intl.DateTimeFormat;
+  try {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      calendar: "iso8601",
+      numberingSystem: "latn",
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch (error) {
+    throw new Error(
+      `Yahoo Finance returned an invalid exchange timezone for ${request.symbol}: ${timeZone}.`,
+      { cause: error },
+    );
+  }
+  const startDateKey = getUtcDateKey(request.startDate);
+  const endDateKey = getUtcDateKey(request.endDate);
+  return (timestamp) => {
+    const dateKey = getDateKey(new Date(timestamp), formatter);
+    return dateKey >= startDateKey && dateKey <= endDateKey;
+  };
+}
+
+function getUtcDateStart(date: Date): number {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function getUtcDateKey(date: Date): number {
+  return date.getUTCFullYear() * 10_000 +
+    (date.getUTCMonth() + 1) * 100 + date.getUTCDate();
+}
+
+function getDateKey(date: Date, formatter: Intl.DateTimeFormat): number {
+  const parts = formatter.formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+  return year * 10_000 + month * 100 + day;
 }
 
 function getFiniteValue(

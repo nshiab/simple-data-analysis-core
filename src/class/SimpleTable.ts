@@ -590,11 +590,16 @@ export default class SimpleTable extends Simple {
    * Downloads historical market data from Yahoo Finance and loads it into this
    * table as `datetime`, `open`, `high`, `low`, `close`, `adjustedClose`, and
    * `volume` columns. `datetime` is a UTC-backed JavaScript `Date`, stored as a
-   * DuckDB `TIMESTAMP`. Unavailable values are preserved as `null`.
+   * DuckDB `TIMESTAMP`. For daily data, observations are selected using the
+   * exchange timezone reported by Yahoo. Unavailable values are preserved as
+   * `null`.
    *
-   * Range boundaries are evaluated in UTC. Construct dates from ISO date-only
-   * strings like `new Date("2025-03-15")` or ISO date-time strings ending in
-   * `Z`. Avoid `new Date(2025, 2, 15)`, which uses the runtime's local timezone.
+   * With the daily interval, the UTC calendar date in each argument identifies
+   * an exchange-local trading date; use ISO date-only strings such as
+   * `new Date("2025-03-15")`. Hourly and minute boundaries are UTC instants;
+   * construct them from ISO date-time strings ending in `Z`. Avoid numeric
+   * constructors such as `new Date(2025, 2, 15)`, which use the runtime's local
+   * timezone.
    *
    * This method uses an undocumented Yahoo Finance endpoint and is not
    * affiliated with or endorsed by Yahoo. It is provided for educational,
@@ -608,11 +613,12 @@ export default class SimpleTable extends Simple {
    * method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
-   * @param startDate - The inclusive start of the requested range, evaluated as
-   * a UTC instant.
-   * @param endDate - The inclusive end of the requested range. The UTC day,
-   * hour, or minute containing this instant is included, according to
-   * `interval`.
+   * @param startDate - The inclusive start of the requested range. For daily
+   * data, its UTC calendar date identifies the first exchange-local trading
+   * date. For intraday data, it is a UTC instant.
+   * @param endDate - The inclusive end of the requested range. For daily data,
+   * its UTC calendar date identifies the last exchange-local trading date. For
+   * intraday data, the UTC hour or minute containing the instant is included.
    * @param interval - The interval between observations: daily, hourly, or every
    * minute.
    * @returns The table, so methods can be chained.
@@ -624,7 +630,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // ISO date-only strings represent midnight UTC.
+   * // Request exchange-local trading dates with ISO date-only strings.
    * await table
    *   .loadYahooFinanceData(
    *     "^GSPTSE",
