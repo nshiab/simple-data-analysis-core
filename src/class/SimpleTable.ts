@@ -144,6 +144,7 @@ import insertRows from "../methods/insertRows.ts";
 import loadGeoData from "../methods/loadGeoData.ts";
 import loadOpenStreetMap from "../methods/loadOpenStreetMap.ts";
 import loadStatCanData from "../methods/loadStatCanData.ts";
+import loadYahooFinanceData from "../methods/loadYahooFinanceData.ts";
 import setTypes from "../methods/setTypes.ts";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -582,6 +583,76 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     loadStatCanData(this, pid, options);
+    return this;
+  }
+
+  /**
+   * Downloads historical market data from Yahoo Finance and loads it into this
+   * table as `datetime`, `open`, `high`, `low`, `close`, `adjustedClose`, and
+   * `volume` columns. `datetime` contains Yahoo's timestamps as JavaScript
+   * `Date` values. Unavailable values are preserved as `null`.
+   *
+   * All range boundaries are evaluated in UTC. Use ISO date-time strings ending
+   * in `Z`. Yahoo trading sessions may occur on a different UTC date from their
+   * exchange-local date, so choose the range appropriate for the market and
+   * interval. Avoid numeric constructors such as `new Date(2025, 2, 15)`, which
+   * use the runtime's local timezone.
+   *
+   * This method uses an undocumented Yahoo Finance endpoint and is not
+   * affiliated with or endorsed by Yahoo. It is provided for educational,
+   * research, and journalistic purposes. Before using it, review Yahoo's terms
+   * and any applicable data-provider restrictions.
+   *
+   * The method queues the download and load; they run when an async observer
+   * method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   *
+   * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
+   * @param startDate - The inclusive UTC start of the requested range.
+   * @param endDate - The inclusive UTC end of the requested range. The UTC day,
+   * hour, or minute containing this instant is included, according to
+   * `interval`.
+   * @param interval - The interval between observations: daily, hourly, or every
+   * minute.
+   * @returns The table, so methods can be chained.
+   * @throws {RangeError} If either date is invalid or `endDate` is before `startDate`.
+   * @throws {Error} If Yahoo rejects the request or returns no data.
+   * @see https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html
+   * @see https://help.yahoo.com/kb/finance/SLN2310.html
+   * @category Importing Data
+   *
+   * @example
+   * ```ts
+   * // Request daily observations using explicit UTC boundaries.
+   * await table
+   *   .loadYahooFinanceData(
+   *     "^GSPTSE",
+   *     new Date("2025-03-01T00:00:00Z"),
+   *     new Date("2025-03-15T00:00:00Z"),
+   *     "1d",
+   *   )
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Include the UTC hours from 13:00 through 16:00.
+   * await table
+   *   .loadYahooFinanceData(
+   *     "AAPL",
+   *     new Date("2025-03-14T13:00:00Z"),
+   *     new Date("2025-03-14T16:00:00Z"),
+   *     "1h",
+   *   )
+   *   .log();
+   * ```
+   */
+  loadYahooFinanceData(
+    symbol: string,
+    startDate: Date,
+    endDate: Date,
+    interval: "1d" | "1h" | "1m",
+  ): this {
+    loadYahooFinanceData(this, symbol, startDate, endDate, interval);
     return this;
   }
 
