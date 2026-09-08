@@ -2,7 +2,10 @@ import {
   arrayValue,
   type DuckDBConnection,
   DuckDBDataChunk,
+  DuckDBDateValue,
+  DuckDBTimestampTZValue,
   DuckDBTimestampValue,
+  DuckDBTimeValue,
   type DuckDBValue,
 } from "@duckdb/node-api";
 import queueOp from "../helpers/queueOp.ts";
@@ -14,6 +17,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 export default function loadArray(
   simpleTable: SimpleTable,
   rows: { [key: string]: unknown }[],
+  options: NonNullable<Parameters<SimpleTable["loadArray"]>[1]> = {},
 ) {
   // This validation doesn't need the database, so it stays at call time.
   if (rows.length === 0) {
@@ -22,7 +26,7 @@ export default function loadArray(
     );
   }
 
-  const prepared = prepareArray(rows);
+  const prepared = prepareArray(rows, options.columnTypes);
 
   queueOp(simpleTable, {
     kind: "barrier",
@@ -44,6 +48,27 @@ export function prepareArray(
   columnTypes: { [key: string]: string } = {},
 ): PreparedArray {
   const keys = Object.keys(rows[0]);
+  const overrides = new Map<string, string>();
+  for (const [key, type] of Object.entries(columnTypes)) {
+    if (!keys.includes(key)) {
+      throw new Error(
+        `Unknown column ${JSON.stringify(key)} in loadArray columnTypes.`,
+      );
+    }
+    try {
+      const normalized = /^FLOAT\[[1-9]\d*\]$/i.test(type)
+        ? type.toUpperCase()
+        : parseType(type as Parameters<typeof parseType>[0]);
+      parseDuckDBType(normalized);
+      overrides.set(key, normalized);
+    } catch {
+      throw new Error(
+        `Unsupported type ${JSON.stringify(type)} for column ${
+          JSON.stringify(key)
+        }.`,
+      );
+    }
+  }
   const firstNonNullValue = keys.map((key) =>
     rows.find((obj) => obj[key] !== null && obj[key] !== undefined)
       ?.[key]
@@ -56,6 +81,14 @@ export function prepareArray(
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const columnData = columnsData[i];
+    const override = overrides.get(key);
+    if (override !== undefined) {
+      types[i] = override;
+      for (let j = 0; j < rows.length; j++) {
+        columnData[j] = prepareTypedValue(rows[j][key], override, key, j + 1);
+      }
+      continue;
+    }
     const value = firstNonNullValue[i];
     const type = typeof value;
     if (type === "symbol" || type === "function") {
@@ -101,7 +134,6 @@ export function prepareArray(
           : d as DuckDBValue;
       }
     }
-    types[i] = columnTypes[key] ?? types[i];
   }
 
   return { keys, types, columnsData, rowCount: rows.length };
@@ -140,4 +172,102 @@ export async function executePreparedArray(
   }
 
   appender.flushSync();
+}
+
+/** Validates and snapshots a value for an explicitly declared destination type. */
+function prepareTypedValue(
+  value: unknown,
+  type: string,
+  column: string,
+  row: number,
+): DuckDBValue {
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  let compatible = false;
+  if (type === "VARCHAR" && typeof value === "string") return value;
+  if (type === "BOOLEAN" && typeof value === "boolean") return value;
+  if (type === "DOUBLE") {
+    if (typeof value === "number") return value;
+    compatible = typeof value === "bigint";
+    if (typeof value === "bigint") {
+      const number = Number(value);
+      if (Number.isFinite(number) && BigInt(number) === value) return number;
+    }
+  } else if (type === "INTEGER") {
+    compatible = typeof value === "number" || typeof value === "bigint";
+    if (typeof value === "number") {
+      if (
+        Number.isInteger(value) && value >= -2147483648 && value <= 2147483647
+      ) {
+        return value;
+      }
+    } else if (
+      typeof value === "bigint" && value >= -2147483648n && value <= 2147483647n
+    ) {
+      return Number(value);
+    }
+  } else if (type === "BIGINT") {
+    compatible = typeof value === "number" || typeof value === "bigint";
+    if (typeof value === "bigint") {
+      if (value >= -9223372036854775808n && value <= 9223372036854775807n) {
+        return value;
+      }
+    } else if (
+      typeof value === "number" && Number.isInteger(value) &&
+      value >= -(2 ** 63) && value < 2 ** 63
+    ) {
+      // The upper bound is exclusive: 2 ** 63 - 1 rounds up as a JS number.
+      return BigInt(value);
+    }
+  } else if (
+    ["DATE", "TIME", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE"].includes(type)
+  ) {
+    if (type === "TIME" && value instanceof DuckDBTimeValue) {
+      if (value.micros >= 0n && value.micros <= 86400000000n) {
+        return new DuckDBTimeValue(value.micros);
+      }
+      compatible = true;
+    } else if (value instanceof Date) {
+      const millis = value.getTime();
+      compatible = Number.isFinite(millis);
+      if (compatible) {
+        if (type === "DATE" && millis % 86400000 === 0) {
+          return new DuckDBDateValue(millis / 86400000);
+        }
+        const micros = BigInt(millis) * 1000n;
+        if (type === "TIMESTAMP") return new DuckDBTimestampValue(micros);
+        if (type === "TIMESTAMP WITH TIME ZONE") {
+          return new DuckDBTimestampTZValue(micros);
+        }
+      }
+    }
+  } else if (type.startsWith("FLOAT[") && Array.isArray(value)) {
+    compatible = true;
+    const size = Number(type.slice(6, -1));
+    if (
+      value.length === size &&
+      value.every((item) =>
+        item === null || item === undefined ||
+        (typeof item === "number" &&
+          (Number.isNaN(item) || Math.fround(item) === item))
+      )
+    ) {
+      return arrayValue(
+        value.map((item: unknown) =>
+          item === undefined || Number.isNaN(item)
+            ? null
+            : item as number | null
+        ),
+      );
+    }
+  }
+  const displayed = typeof value === "string"
+    ? JSON.stringify(value)
+    : String(value);
+  throw new Error(
+    `Column ${JSON.stringify(column)}, row ${row}: value ${displayed} ${
+      compatible
+        ? `cannot be stored as ${type} without losing information`
+        : `is incompatible with ${type}`
+    }. Select a type compatible with this value.`,
+  );
 }

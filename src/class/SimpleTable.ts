@@ -385,7 +385,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Loads an array of JavaScript objects into the table. This method queues the load; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   * Loads an array of JavaScript objects into the table. Types can also be specified for individual columns instead of inferred from their values. This method queues the load; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
    * instant is preserved, but JavaScript `Date` does not retain the timezone or
@@ -393,6 +393,8 @@ export default class SimpleTable extends Simple {
    * use `convert()` to parse them as temporal values.
    *
    * @param rows - An array of objects, where each object represents a row and its properties represent columns.
+   * @param options - Options for loading the array, captured when called.
+   * @param options.columnTypes - Types for specific columns; omitted columns are inferred. Values must be compatible with the selected type without losing information.
    * @returns The table, so methods can be chained.
    * @category Importing Data
    *
@@ -408,6 +410,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Specify a numeric type for an all-null column
+   * await table.loadArray(
+   *   [{ name: "A", value: null }, { name: "B", value: null }],
+   *   { columnTypes: { value: "DOUBLE" } },
+   * ).log();
+   * ```
+   *
+   * @example
+   * ```ts
    * // The offset determines the instant; the loaded TIMESTAMP is returned as
    * // the equivalent UTC JavaScript Date.
    * await table.loadArray([{
@@ -417,8 +428,38 @@ export default class SimpleTable extends Simple {
    */
   loadArray(
     rows: { [key: string]: unknown }[],
+    options: {
+      columnTypes?: {
+        [key: string]:
+          | "integer"
+          | "float"
+          | "number"
+          | "string"
+          | "date"
+          | "time"
+          | "datetime"
+          | "datetimeTz"
+          | "bigint"
+          | "double"
+          | "varchar"
+          | "timestamp"
+          | "timestamp with time zone"
+          | "boolean"
+          | "INTEGER"
+          | "BIGINT"
+          | "DOUBLE"
+          | "VARCHAR"
+          | "BOOLEAN"
+          | "DATE"
+          | "TIME"
+          | "TIMESTAMP"
+          | "TIMESTAMP WITH TIME ZONE"
+          | `FLOAT[${number}]`
+          | `float[${number}]`;
+      };
+    } = {},
   ): this {
-    loadArray(this, rows);
+    loadArray(this, rows, options);
 
     return this;
   }
