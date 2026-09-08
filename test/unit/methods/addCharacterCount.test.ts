@@ -4,10 +4,14 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 Deno.test("should add the character count for each string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
+  const familyEmoji = "👨‍👩‍👧‍👦";
+  const decomposedAccent = "e\u0301";
   table.loadArray([
     { text: "hello" },
     { text: "café" },
     { text: "🙂" },
+    { text: familyEmoji },
+    { text: decomposedAccent },
     { text: "" },
     { text: null },
   ]);
@@ -19,6 +23,8 @@ Deno.test("should add the character count for each string", async () => {
     { text: "hello", characterCount: 5 },
     { text: "café", characterCount: 4 },
     { text: "🙂", characterCount: 1 },
+    { text: familyEmoji, characterCount: 7 },
+    { text: decomposedAccent, characterCount: 2 },
     { text: "", characterCount: 0 },
     { text: null, characterCount: null },
   ]);

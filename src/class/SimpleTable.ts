@@ -4529,6 +4529,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Adds a new column containing the number of characters in each string in the specified column.
+   * Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
    * `NULL` input values produce `NULL` counts.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
@@ -4551,6 +4552,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the total number of characters in a column storing strings.
+   * Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
    *
    * @param column - The name of the string column to count characters from.
    * @returns A promise that resolves to the total number of characters across all rows in the specified column.
