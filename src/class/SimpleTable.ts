@@ -606,9 +606,6 @@ export default class SimpleTable extends Simple {
    * research, and journalistic purposes. Before using it, review Yahoo's terms
    * and any applicable data-provider restrictions.
    *
-   * Use this method only from a server-side runtime. Do not call it from code
-   * delivered to a web browser.
-   *
    * The method queues the download and load; they run when an async observer
    * method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
