@@ -473,7 +473,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Uses the same syntax as `filter()`, including JavaScript-style operators when `SimpleDB.expressionSyntax` is `"js"` (the default). Can reference source columns excluded from `columns`. Defaults to no filtering; an empty string behaves the same as omitting this option.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Can reference source columns excluded from `columns`. Defaults to no filtering; an empty string behaves the same as omitting this option.
    * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
    * @param options.includeFilename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
@@ -708,7 +708,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
    * @param options.columns - The columns to load. Include the geometry column that should remain in the resulting table, usually `"geom"`. By default, all columns are loaded.
-   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Uses the same syntax as `filter()`, including JavaScript-style operators when `SimpleDB.expressionSyntax` is `"js"` (the default). Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system. Defaults to no filtering; an empty string behaves the same as omitting this option.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system. Defaults to no filtering; an empty string behaves the same as omitting this option.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
