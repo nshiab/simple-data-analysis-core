@@ -461,7 +461,7 @@ Deno.test("should reject null and zero calculated or selected reference values",
     {
       rows: [{ period: 1, value: null }, { period: 2, value: 10 }],
       reference: { column: "period", equals: 1 } as const,
-      message: "indexValues() found a NULL reference value",
+      message: "indexValues() found a null reference value",
     },
     {
       rows: [{ period: 1, value: 0 }, { period: 2, value: 10 }],
@@ -476,7 +476,7 @@ Deno.test("should reject null and zero calculated or selected reference values",
       ],
       reference: { stat: "mean" } as const,
       options: { by: "group" },
-      message: "indexValues() calculated a NULL reference value",
+      message: "indexValues() calculated a null reference value",
     },
     {
       rows: [{ value: -1 }, { value: 1 }],
