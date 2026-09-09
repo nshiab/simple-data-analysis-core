@@ -17,9 +17,10 @@ import { retainRegisteredTables } from "./tableRegistry.ts";
  * staging succeeds. Empty tables are unchanged and do not invoke the callback;
  * outputs that remain null in every batch use VARCHAR.
  *
- * Tables containing any geometry column are rejected before generation, even
- * when that column is absent from both inputColumns and outputColumns. Typed
- * geometry ingestion through loadArray() does not remove this restriction.
+ * Untouched geometry columns remain in DuckDB, preserving their values, types
+ * and CRS without GeoJSON conversion. Geometry columns cannot be selected as
+ * inputs or overwritten as outputs; use updateWithJS() for editable GeoJSON.
+ * This SQL-only preservation path accepts any source CRS.
  *
  * @param table - Table to enrich.
  * @param inputColumns - Columns available to the callback.
@@ -70,14 +71,19 @@ export default async function updateColumnsWithJS(
     throw new Error("Output columns must be unique.");
   }
   const types = await table.getTypes();
-  if (
-    Object.values(types).some((type) =>
-      type.toUpperCase().startsWith("GEOMETRY")
-    )
-  ) {
-    throw new Error(
-      "JavaScript column updates don't work with tables containing geometries.",
-    );
+  for (const [name, type] of Object.entries(types)) {
+    if (
+      type.toUpperCase().startsWith("GEOMETRY") &&
+      [...inputColumns, ...outputColumns].some((column) =>
+        column.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      throw new Error(
+        `Geometry column ${
+          JSON.stringify(name)
+        } cannot be an input or output of updateColumnsWithJS(); use updateWithJS() for editable GeoJSON.`,
+      );
+    }
   }
   const suffix = crypto.randomUUID().replaceAll("-", "");
   const id = `__sda_id_${suffix}`;

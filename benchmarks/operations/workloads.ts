@@ -22,6 +22,70 @@ export const workloads = [
     rows: 100_000,
     batchSize: 10_000,
   },
+  {
+    name: "geo-point-attribute-all",
+    label: "Points: attribute update",
+    rows: 100000,
+    batchSize: 0,
+    shape: "point",
+    edit: false,
+  },
+  {
+    name: "geo-point-attribute-batch",
+    label: "Points: attribute update",
+    rows: 100000,
+    batchSize: 1000,
+    shape: "point",
+    edit: false,
+  },
+  {
+    name: "geo-point-geometry-all",
+    label: "Points: geometry update",
+    rows: 100000,
+    batchSize: 0,
+    shape: "point",
+    edit: true,
+  },
+  {
+    name: "geo-point-geometry-batch",
+    label: "Points: geometry update",
+    rows: 100000,
+    batchSize: 1000,
+    shape: "point",
+    edit: true,
+  },
+  {
+    name: "geo-polygon-attribute-all",
+    label: "Polygons: attribute update",
+    rows: 1000,
+    batchSize: 0,
+    shape: "polygon",
+    edit: false,
+  },
+  {
+    name: "geo-polygon-attribute-batch",
+    label: "Polygons: attribute update",
+    rows: 1000,
+    batchSize: 100,
+    shape: "polygon",
+    edit: false,
+  },
+  {
+    name: "geo-polygon-geometry-all",
+    label: "Polygons: geometry update",
+    rows: 1000,
+    batchSize: 0,
+    shape: "polygon",
+    edit: true,
+  },
+  {
+    name: "geo-polygon-geometry-batch",
+    label: "Polygons: geometry update",
+    rows: 1000,
+    batchSize: 100,
+    shape: "polygon",
+    edit: true,
+  },
 ] as const;
 export type WorkloadName = typeof workloads[number]["name"];
 type Row = Record<string, unknown>;
@@ -34,6 +98,19 @@ export async function prepareWorkload(
 ): Promise<{ execute: () => Promise<void>; validate: () => Promise<void> }> {
   const workload = workloads.find((candidate) => candidate.name === name)!;
   if (sdb && sdb.getTables().length) await sdb.removeTables("all");
+  if ("shape" in workload) {
+    const { default: prepareGeometryWorkload } = await import(
+      "./prepareGeometryWorkload.ts"
+    );
+    return prepareGeometryWorkload(
+      workload.shape,
+      workload.edit,
+      workload.batchSize,
+      rows,
+      connection,
+      sdb,
+    );
+  }
   if (name !== "load-array") {
     await connection.run(`CREATE OR REPLACE TABLE input AS SELECT
     i::DOUBLE AS id, (i % 10)::DOUBLE AS category, (i % 97)::DOUBLE AS value

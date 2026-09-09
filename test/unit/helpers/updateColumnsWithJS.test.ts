@@ -200,3 +200,71 @@ Deno.test("column generation bounds default batches and validates size before re
     await sdb.close();
   }
 });
+
+Deno.test("column generation retains SQL geometry and rejects selected geometry before generation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("geo");
+    await table.loadArray([{
+      text: "a",
+      geom: { type: "Point", coordinates: [1.1234567890123457, 2] },
+      empty: null,
+    }, { text: "b", geom: null, empty: null }], {
+      columnTypes: {
+        geom: "GEOMETRY('EPSG:4326')",
+        empty: "GEOMETRY('EPSG:4326')",
+      },
+    }).run();
+    const query =
+      "SELECT text, ST_AsWKB(geom)::VARCHAR AS geom, ST_AsWKB(empty)::VARCHAR AS empty FROM geo";
+    const before = await sdb.customQuery(query, { returnData: true });
+    for (const column of ["label", "vector"]) {
+      await updateColumnsWithJS(
+        table,
+        ["text"],
+        [column],
+        (rows) =>
+          Promise.resolve(rows.map((row) => ({
+            [column]: column === "label"
+              ? String(row.text).toUpperCase()
+              : [1, 2],
+          }))),
+        { batchSize: 1 },
+      );
+    }
+    assertEquals(await sdb.customQuery(query, { returnData: true }), before);
+    assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    assertEquals((await table.getTypes()).empty, "GEOMETRY('EPSG:4326')");
+    for (
+      const [inputs, outputs] of [[["GEOM"], ["label"]], [["text"], ["GEOM"]]]
+    ) {
+      let calls = 0;
+      await assertRejects(
+        () =>
+          updateColumnsWithJS(table, inputs, outputs, () => {
+            calls++;
+            return Promise.resolve([]);
+          }),
+        Error,
+        "Geometry column",
+      );
+      assertEquals(calls, 0);
+    }
+    await assertRejects(() =>
+      updateColumnsWithJS(
+        table,
+        ["text"],
+        ["vector"],
+        (rows) =>
+          Promise.resolve(rows.map((row) => ({
+            vector: row.text === "a" ? [1, 2] : [3n, 4n],
+          }))),
+        { batchSize: 1 },
+      )
+    );
+    assertEquals(await sdb.customQuery(query, { returnData: true }), before);
+    assertEquals(await sdb.getTableNames(), ["geo"]);
+  } finally {
+    await sdb.close();
+  }
+});

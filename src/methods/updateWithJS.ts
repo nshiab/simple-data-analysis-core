@@ -1,3 +1,5 @@
+import prepareGeometry from "../helpers/prepareGeometry.ts";
+import geometryFromJSON from "../helpers/geometryFromJSON.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
@@ -13,7 +15,9 @@ type DataModifier = (
   rows: Row[],
 ) => Row[] | Promise<Row[]>;
 
-type UpdateWithJSOptions = { batchSize?: number };
+type UpdateWithJSOptions = NonNullable<
+  Parameters<SimpleTable["updateWithJS"]>[1]
+>;
 
 export default function updateWithJS(
   simpleTable: SimpleTable,
@@ -42,13 +46,49 @@ async function executeUpdateWithJS(
   options: UpdateWithJSOptions,
 ): Promise<void> {
   const types = await simpleTable.getTypes();
-  // Geometry columns are typed as GEOMETRY('<crs>'), not a bare "GEOMETRY".
-  if (
-    Object.values(types).some((d) => d.toUpperCase().startsWith("GEOMETRY"))
-  ) {
-    throw new Error(
-      "updateWithJS doesn't work with tables containing geometries.",
+  const geometryColumns = Object.keys(types).filter((key) =>
+    types[key].toUpperCase().startsWith("GEOMETRY")
+  );
+  for (const column of geometryColumns) {
+    if (types[column].toUpperCase() !== "GEOMETRY('EPSG:4326')") {
+      throw new Error(
+        `Column ${JSON.stringify(column)} has CRS ${
+          types[column]
+        }. Call .reproject("EPSG:4326", { column: ${
+          JSON.stringify(column)
+        } }) before updateWithJS().`,
+      );
+    }
+    const name = quoteIdentifier(column);
+    // Compare the actual binary representation, including dimensions and double
+    // precision, rather than assuming GeoJSON serialization is lossless.
+    const result = await simpleTable.connection!.runAndReadAll(
+      `SELECT count(*) AS invalid FROM ${quoteIdentifier(simpleTable.name)}
+       WHERE ${name} IS NOT NULL AND
+       ST_AsWKB(${name}) != ST_AsWKB(${
+        geometryFromJSON(`ST_AsGeoJSON(${name})`)
+      })`,
     );
+    if (result.getRows()[0][0] !== 0n) {
+      throw new Error(
+        `Column ${
+          JSON.stringify(column)
+        } contains geometry that cannot round-trip through GeoJSON without losing precision or dimensions; unsupported representations cannot be updated with updateWithJS().`,
+      );
+    }
+  }
+  for (const key of Object.keys(options.columnTypes ?? {})) {
+    if (
+      Object.keys(types).some((name) =>
+        name.toLowerCase() === key.toLowerCase()
+      )
+    ) {
+      throw new Error(
+        `updateWithJS() columnTypes may only declare new columns; ${
+          JSON.stringify(key)
+        } already exists.`,
+      );
+    }
   }
 
   const batchSize = options.batchSize;
@@ -76,15 +116,23 @@ async function executeUpdateWithJS(
     let first = true;
     let lastRowid: bigint | null = null;
     let sawRows = false;
+    let outputOffset = 0;
+    let inputOffset = 0;
 
     while (true) {
       const source = await readMutationRows(
         simpleTable.connection!,
-        `SELECT *${
-          batchSize === undefined ? "" : ", rowid AS __sda_rowid"
-        } FROM ${quoteIdentifier(simpleTable.name)}${
-          lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
-        }${
+        `SELECT ${
+          Object.keys(types).map((key) =>
+            geometryColumns.includes(key)
+              ? `ST_AsGeoJSON(${quoteIdentifier(key)})::VARCHAR AS ${
+                quoteIdentifier(key)
+              }`
+              : quoteIdentifier(key)
+          ).join(", ")
+        }${batchSize === undefined ? "" : ", rowid AS __sda_rowid"} FROM ${
+          quoteIdentifier(simpleTable.name)
+        }${lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`}${
           batchSize === undefined ? "" : ` ORDER BY rowid LIMIT ${batchSize}`
         }`,
       );
@@ -98,6 +146,13 @@ async function executeUpdateWithJS(
         source.types.delete("__sda_rowid");
       }
 
+      for (const [index, row] of batch.entries()) {
+        for (const key of geometryColumns) {
+          row[key] = row[key] === null ? null : JSON.parse(row[key] as string);
+          prepareGeometry(row[key], key, inputOffset + index + 1);
+        }
+      }
+      inputOffset += inputCount;
       const modified = await dataModifier(batch);
       if (modified.length === 0) {
         if (!sawRows) return;
@@ -105,15 +160,44 @@ async function executeUpdateWithJS(
         continue;
       }
       const keys = Object.keys(modified[0]);
+      for (const key of Object.keys(options.columnTypes ?? {})) {
+        if (!keys.includes(key)) {
+          throw new Error(
+            `Unknown column ${
+              JSON.stringify(key)
+            } in updateWithJS columnTypes.`,
+          );
+        }
+      }
       const newKeys = keys.filter((key) => !source.types.has(key));
-      const added = newKeys.length === 0
-        ? undefined
-        : prepareArray(modified.map((row) =>
+      const added = newKeys.length === 0 ? undefined : prepareArray(
+        modified.map((row) =>
           Object.fromEntries(newKeys.map((key) => [key, row[key]]))
-        ));
+        ),
+        options.columnTypes,
+      );
+      const outputGeometry = keys.filter((key) =>
+        geometryColumns.includes(key) ||
+        (added && added.types[newKeys.indexOf(key)] === "GEOMETRY('EPSG:4326')")
+      );
+      if (outputGeometry.length && !simpleTable.sdb.spatialLoaded) {
+        await simpleTable.sdb.customQuery(
+          "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;",
+        );
+        simpleTable.sdb.spatialLoaded = true;
+      }
+      const geometryData = new Map(outputGeometry.map((key) => [
+        key,
+        modified.map((row, i) =>
+          prepareGeometry(row[key], key, outputOffset + i + 1)
+        ),
+      ]));
+      outputOffset += modified.length;
       const columnTypes = keys.map((key) =>
-        source.types.get(key) ??
-          parseDuckDBType(added!.types[newKeys.indexOf(key)])
+        outputGeometry.includes(key)
+          ? parseDuckDBType("VARCHAR")
+          : source.types.get(key) ??
+            parseDuckDBType(added!.types[newKeys.indexOf(key)])
       );
       await simpleTable.sdb.customQuery(
         `CREATE OR REPLACE TABLE ${quoteIdentifier(scratch.name)} (${
@@ -132,7 +216,9 @@ async function executeUpdateWithJS(
             const key = keys[i];
             chunk.setColumnValues(
               i,
-              source.types.has(key)
+              outputGeometry.includes(key)
+                ? geometryData.get(key)!.slice(start, end)
+                : source.types.has(key)
                 ? modified.slice(start, end).map((row) =>
                   source.toNative(row[key], columnTypes[i])
                 )
@@ -145,18 +231,25 @@ async function executeUpdateWithJS(
       } finally {
         appender.closeSync();
       }
+      const projection = keys.map((key) =>
+        outputGeometry.includes(key)
+          ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
+            quoteIdentifier(key)
+          }`
+          : quoteIdentifier(key)
+      ).join(", ");
       if (first) {
         await simpleTable.sdb.customQuery(
           `CREATE OR REPLACE TABLE ${
             quoteIdentifier(accumulator)
-          } AS SELECT * FROM ${quoteIdentifier(scratch.name)}`,
+          } AS SELECT ${projection} FROM ${quoteIdentifier(scratch.name)}`,
         );
         first = false;
       } else {
         await simpleTable.sdb.customQuery(
-          `INSERT INTO ${quoteIdentifier(accumulator)} BY NAME SELECT * FROM ${
-            quoteIdentifier(scratch.name)
-          }`,
+          `INSERT INTO ${
+            quoteIdentifier(accumulator)
+          } BY NAME SELECT ${projection} FROM ${quoteIdentifier(scratch.name)}`,
         );
       }
       if (batchSize === undefined || inputCount === 0) break;

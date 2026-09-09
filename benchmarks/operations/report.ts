@@ -42,14 +42,18 @@ export function renderResults(
 ): string {
   const mean = (values: number[]) =>
     values.reduce((a, b) => a + b, 0) / values.length;
-  function table(join: boolean) {
+  function table(section: "join" | "transfer" | "geometry") {
     const lines = [
       "| Operation | Rows | Batch size | Implementation | Mean duration ± SD | Mean peak process memory |",
       "| --- | ---: | ---: | --- | ---: | ---: |",
     ];
     for (
       const workload of workloads.filter((w) =>
-        (w.name === "join-aggregate") === join
+        section === "join"
+          ? w.name === "join-aggregate"
+          : section === "geometry"
+          ? "shape" in w
+          : w.name !== "join-aggregate" && !("shape" in w)
       )
     ) {
       for (const implementation of ["core", "duckdb"] as const) {
@@ -99,11 +103,20 @@ export function renderResults(
   }
   return `#### Join followed by aggregation
 
-${table(true)}
+${table("join")}
 
 #### JavaScript data transfer
 
-${table(false)}`;
+${table("transfer")}
+
+#### JavaScript geometry updates
+
+Points have one position per geometry; polygons have one ring with 1,001
+positions. Both implementations transfer GeoJSON through JavaScript and stage
+writes. Attribute updates add a label; geometry updates also shift every
+longitude by 0.01 degrees. A batch size of — means all input rows at once.
+
+${table("geometry")}`;
 }
 
 export async function writeReport(

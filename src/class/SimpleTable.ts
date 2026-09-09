@@ -4406,15 +4406,80 @@ export default class SimpleTable extends Simple {
   /**
    * Updates data in the table using a JavaScript function. The function receives the existing rows as an array of objects and must return the modified rows as an array of objects.
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
-   * Tables containing any geometry column are rejected before the modifier runs,
-   * even when only ordinary attributes would be changed. Loading geometry with
-   * `loadArray()` does not enable geometry updates through this method.
+   * Each row is an ordinary object whose keys are the table's column names. The callback
+   * receives an array of these rows, not a GeoJSON FeatureCollection or an array of Features.
+   * Ordinary columns stay at the top level of each row; they are not moved into a
+   * GeoJSON properties object. Each geometry column contains a GeoJSON geometry object
+   * (for example, { type: "Point", coordinates: [-73, 45] }), with SQL nulls exposed as null.
+   * GeometryCollections contain geometries instead of coordinates. Geometry column names
+   * are preserved: geom is only an example name, and multiple geometry columns are supported.
+   * Returned rows use the same structure. Geometry values are converted back to SQL geometry;
+   * ordinary objects are never inferred as new geometry columns without columnTypes.
+   * Only geometry type and coordinates (or geometries for a GeometryCollection) are stored.
+   * Extra members added inside a geometry, including properties, id, and bbox, are discarded
+   * on a successful update. Store attributes on the row instead: row.label becomes a column,
+   * whereas row.geom.properties does not. Feature and FeatureCollection values in geometry
+   * columns are rejected; crs members are also rejected.
+   * Unlike this row-based callback, getGeoData() exports a FeatureCollection: the selected
+   * geometry column becomes each Feature's geometry and the other columns become properties.
+   * Source geometry columns must have EPSG:4326 CRS; call `reproject("EPSG:4326", { column: "geom" })`
+   * first for unknown or different CRS. Coordinates use WGS84 longitude–latitude order.
+   * Supported geometries follow loadArray(): finite two-dimensional coordinates, including
+   * GeometryCollections; Z/M and representations that lose precision in conversion are rejected.
+   * Returned rows carry their geometry through filtering, reordering and duplication.
+   * Spreading a row shares its geometry reference; use structuredClone for independent nested edits.
+   * Existing SQL types (including all-null geometry columns) are retained. Callback and write
+   * failures leave the original table intact. JavaScript transfer and GeoJSON conversion can
+   * be expensive, especially in memory for complex geometries.
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
    * @param options - An optional object with configuration options:
-   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. The modifier function is called once per batch. Tables with a column named `rowid` or `__sda_rowid` (case-insensitive) are rejected before the modifier runs; rename the column or omit batchSize.
+   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. This limits input rows per batch, but does not eliminate conversion work or bound geometry size or callback output expansion. The modifier function is called once per batch. Tables with a column named `rowid` or `__sda_rowid` (case-insensitive) are rejected before the modifier runs; rename the column or omit batchSize.
+   * @param options.columnTypes - Explicit types for newly added columns, following loadArray's columnTypes contract. Declare geometry as GEOMETRY('EPSG:4326'); geometry is never inferred from object shape. Existing columns cannot be redeclared.
    * @returns The table, so methods can be chained.
    * @category Updating Data
+   *
+   * @example
+   * ```ts
+   * // Enrich an ordinary column while retaining geometry.
+   * await sdb.newTable().loadArray([
+   *   { name: "Station", geom: { type: "Point", coordinates: [-73, 45] } },
+   *   { name: "Unknown location", geom: null },
+   * ], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
+   *   .updateWithJS((rows) => {
+   *     // rows is an array of ordinary row objects:
+   *     // [
+   *     //   { name: "Station", geom: { type: "Point", coordinates: [-73, 45] } },
+   *     //   { name: "Unknown location", geom: null },
+   *     // ]
+   *     // Access attributes with row.name and geometry with row.geom.
+   *     return rows.map((row) => ({
+   *       ...row,
+   *       label: String(row.name).toUpperCase(),
+   *     }));
+   *   }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await sdb.newTable().loadArray([{
+   *   geom: { type: "Point", coordinates: [-73, 45] },
+   * }], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
+   *   .updateWithJS((rows) => rows.map((row) => {
+   *     // This example loads only Points. Narrow the type for coordinate access.
+   *     const geom = row.geom as { type: "Point"; coordinates: number[] } | null;
+   *     if (geom !== null) geom.coordinates[0] += 0.01;
+   *     return row;
+   *   })).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await sdb.newTable().loadArray([{ longitude: -73, latitude: 45 }])
+   *   .updateWithJS((rows) => rows.map((row) => ({
+   *     ...row, geom: { type: "Point", coordinates: [row.longitude, row.latitude] },
+   *   })), { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
+   * ```
    *
    * @example
    * ```ts
@@ -4467,7 +4532,10 @@ export default class SimpleTable extends Simple {
       ) => {
         [key: string]: unknown;
       }[]),
-    options: { batchSize?: number } = {},
+    options: {
+      batchSize?: number;
+      columnTypes?: { [key: string]: string };
+    } = {},
   ): this {
     updateWithJS(this, dataModifier, options);
     return this;
@@ -6494,7 +6562,13 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Returns the table's geospatial data as a GeoJSON object.
+   * Returns the table's geospatial data as a GeoJSON FeatureCollection.
+   * Each row becomes a Feature: the selected geometry column becomes its geometry,
+   * and the remaining columns become its properties. These properties are constructed
+   * from table columns, not from metadata inside the stored SQL geometry.
+   * Editing the returned object does not update the table. To persist edits, use
+   * updateWithJS(), whose callback receives ordinary row objects with columns as keys
+   * and geometry objects in geometry cells, rather than Features.
    * If the table has multiple geometry columns, you must specify which one to use.
    *
    * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
@@ -6540,6 +6614,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Writes the table's data to a file in various formats (CSV, JSON, Parquet, DuckDB, SQLite).
+   * Tables with geometry columns must use `writeGeoData()` instead.
    * If the specified path does not exist, it will be created.
    *
    * @param file - The absolute path to the output file (e.g., `"./output.csv"`, `"./output.json"`).
