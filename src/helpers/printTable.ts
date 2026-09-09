@@ -1,3 +1,4 @@
+import LogValue from "./LogValue.ts";
 import wrapString from "./wrapString.ts";
 
 /**
@@ -57,8 +58,11 @@ export default function printTable(
 
   // Helper function to format values for display
   const formatValue = (value: unknown): string => {
+    if (value instanceof LogValue) return value.text;
     if (value instanceof Date) {
-      return value.toISOString();
+      return Number.isNaN(value.getTime())
+        ? "Invalid Date"
+        : value.toISOString();
     }
     return String(value);
   };
@@ -158,6 +162,7 @@ export default function printTable(
     isTypeRow: boolean,
   ): string => {
     if (isTypeRow) return colors.grey;
+    if (value instanceof LogValue) return colors[value.category];
     if (value === null || value === undefined) return colors.null;
     if (value instanceof Date) return colors.date;
     if (typeof value === "boolean") return colors.boolean;

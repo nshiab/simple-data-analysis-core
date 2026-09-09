@@ -23,9 +23,15 @@ export default class Simple {
    */
   typesToLog: boolean;
   /**
-   * The maximum number of characters to display for text-based cells. If undefined, the entire text is shown.
+   * The maximum number of characters to display for text and stringified nested cells, including the truncation marker. This does not control column width. Set to Infinity to show the entire text.
    *
-   * @defaultValue `undefined`
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ charsToLog: 150 });
+   * await sdb.newTable().loadArray([{ text: "x".repeat(200) }]).log();
+   * ```
+   *
+   * @defaultValue `75`
    */
   charsToLog: number | undefined;
   /**
@@ -95,7 +101,7 @@ export default class Simple {
     } = {},
   ) {
     this.rowsToLog = options.rowsToLog ?? 10;
-    this.charsToLog = options.charsToLog;
+    this.charsToLog = options.charsToLog ?? 75;
     this.typesToLog = options.typesToLog ?? false;
     this.defaultTableName = false;
   }

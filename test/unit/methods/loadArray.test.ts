@@ -518,3 +518,42 @@ Deno.test("loadArray preserves numeric BIGINT boundaries", async () => {
     await sdb.close();
   }
 });
+
+Deno.test("loadArray nested documents can be loaded as JSON text and converted with SQL", async () => {
+  const sdb = new SimpleDB();
+  const originalLog = console.log;
+  const lines: string[] = [];
+  try {
+    const table = sdb.newTable("nested_documents");
+    assertThrows(
+      () => table.loadArray([{ document: { count: 2 } }]),
+      Error,
+      "Type object not supported",
+    );
+    table.loadArray([{
+      document: JSON.stringify({ scores: [1, null, 3], details: { count: 2 } }),
+    }]);
+    // customQuery flushes the queued loadArray before creating SQL nested values.
+    await sdb.customQuery(`CREATE OR REPLACE TABLE nested_documents AS SELECT
+      from_json(document, '{"scores":["INTEGER"],"details":{"count":"INTEGER"}}') AS document
+      FROM nested_documents`);
+    assertEquals(await table.getData(), [{
+      document: { scores: [1, null, 3], details: { count: 2 } },
+    }]);
+    console.log = (...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    };
+    await table.log();
+    assertEquals(
+      lines.join("\n").includes('{"scores":[1,null,3],"details":{"count":2}}'),
+      true,
+    );
+    const vectors = sdb.newTable().loadArray([{ values: [1, 2, 3] }]);
+    assertEquals(await vectors.getData(), [{ values: "<FLOAT[3]>" }]);
+    await vectors.log();
+    assertEquals(lines.join("\n").includes("<FLOAT[3]>"), true);
+  } finally {
+    console.log = originalLog;
+    await sdb.close();
+  }
+});

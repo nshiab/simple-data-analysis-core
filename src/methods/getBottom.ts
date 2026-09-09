@@ -10,6 +10,7 @@ export default async function getBottom(
     originalOrder?: boolean;
     conditions?: string;
   } = {},
+  method: "getBottom()" | "logBottom()" = "getBottom()",
 ) {
   const queryResult = await queryDB(
     simpleTable,
@@ -22,7 +23,7 @@ export default async function getBottom(
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,
-      method: "getBottom()",
+      method,
       parameters: { count, options },
     }),
   );

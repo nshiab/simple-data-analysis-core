@@ -11,6 +11,7 @@ export default async function getData(
     conditions?: string;
     limit?: number;
   } = {},
+  method: "getData()" | "log()" = "getData()",
 ) {
   if (
     options.limit !== undefined &&
@@ -39,7 +40,7 @@ export default async function getData(
     mergeOptions(simpleTable, {
       returnData: true,
       table: simpleTable.name,
-      method: "getData()",
+      method,
       parameters: { options },
     }),
   )) as {

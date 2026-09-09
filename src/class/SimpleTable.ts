@@ -1,3 +1,5 @@
+import logBottom from "../methods/logBottom.ts";
+import log from "../methods/log.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
@@ -270,7 +272,7 @@ export default class SimpleTable extends Simple {
    * @param simpleDB - The SimpleDB instance that this table belongs to.
    * @param options - An optional object with configuration options:
    * @param options.rowsToLog - The number of rows to log when displaying table data.
-   * @param options.charsToLog - The maximum number of characters to log for strings. Useful to avoid logging large text content.
+   * @param options.charsToLog - The maximum characters to display for text and stringified nested cells, including truncation markers (default: 75). Independent of column width. Use Infinity for unlimited text.
    * @param options.typesToLog - A boolean indicating whether to include data types when logging a table.
    * @category Constructor
    */
@@ -390,6 +392,11 @@ export default class SimpleTable extends Simple {
    * offset originally used to construct it. String values remain `VARCHAR`;
    * use `convert()` to parse them as temporal values.
    *
+   * Array-valued cells are inferred as fixed-size `FLOAT` vectors and use a
+   * compact placeholder when extracted or logged. Plain nested object cells
+   * are not supported. To load nested documents, stringify them first and use
+   * SQL to convert the text to typed lists and structs.
+   *
    * @param rows - An array of objects, where each object represents a row and its properties represent columns.
    * @param options - Options for loading the array, captured when called.
    * @param options.columnTypes - Types for specific columns; omitted columns are inferred. Values must be compatible with the selected type without losing information.
@@ -422,6 +429,19 @@ export default class SimpleTable extends Simple {
    * await table.loadArray([{
    *   observedAt: new Date("2024-04-07T13:00:00-04:00"),
    * }]).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load a nested document as text, then give it SQL list and struct types.
+   * const documents = sdb.newTable("nested_documents");
+   * await documents.loadArray([{
+   *   document: JSON.stringify({ scores: [1, null, 3], details: { count: 2 } }),
+   * }]).log();
+   * await sdb.customQuery(`CREATE OR REPLACE TABLE nested_documents AS SELECT
+   *   from_json(document, '{"scores":["INTEGER"],"details":{"count":"INTEGER"}}') AS document
+   *   FROM nested_documents`);
+   * await documents.log();
    * ```
    */
   loadArray(
@@ -5247,6 +5267,18 @@ export default class SimpleTable extends Simple {
    * returned as UTC strings, preserving DuckDB's microsecond precision;
    * JavaScript `Date` supports only milliseconds.
    *
+   * Top-level `BIGINT`, `UBIGINT`, `HUGEINT`, and `UHUGEINT` columns are
+   * returned as JavaScript numbers. Values outside `Number.MIN_SAFE_INTEGER`
+   * through `Number.MAX_SAFE_INTEGER` throw instead of losing precision.
+   * Cast such columns to `VARCHAR` to retrieve their exact digits.
+   *
+   * Nested SQL lists and structs become JavaScript arrays and objects. Within
+   * them, `BIGINT`, `UBIGINT`, `HUGEINT`, `UHUGEINT`, and `DECIMAL` values remain
+   * strings to preserve precision, even for small integers. Other nested types
+   * follow DuckDB's JSON conversion; for example, `INTEGER` becomes a number,
+   * `BOOLEAN` becomes a boolean, and null remains null. No safe-integer range
+   * check is applied to these nested strings.
+   *
    * @param options - An optional object with configuration options:
    * @param options.columns - An array of column names to include in the result. If omitted, all columns will be included.
    * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
@@ -5279,6 +5311,18 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Return at most two rows.
    * const preview = await table.getData({ limit: 2 });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Read nested integers without losing digits. SQL creates the nested types.
+   * await sdb.customQuery(`CREATE TABLE nested_example AS SELECT
+   *   [42::BIGINT, 9007199254740993::BIGINT] AS ids,
+   *   {'count': 2::INTEGER, 'amount': 123.450::DECIMAL(6,3)} AS details`);
+   * const nested = sdb.newTable("nested_example");
+   * const rows = await nested.getData();
+   * // [{ ids: ["42", "9007199254740993"], details: { count: 2, amount: "123.450" } }]
+   * await nested.log();
    * ```
    */
   async getData(
@@ -6704,6 +6748,15 @@ export default class SimpleTable extends Simple {
   /**
    * Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
    * You can optionally log the column types and filter the data based on conditions.
+   * SQL dates and timestamps retain their native precision for display, including
+   * temporal infinities. Lists and objects are stringified using the same nested
+   * representations as `getData()`, then truncated according to `charsToLog`.
+   * Unsafe top-level large integers throw, just as with `getData()`.
+   * Type annotations describe the SQL type and the JavaScript extraction type
+   * before display formatting; nulls do not determine the column's annotation.
+   * Colors reflect the SQL value's meaning, so exact decimal strings use numeric
+   * coloring. Column width is independent of the content truncation budget.
+   *
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
@@ -6750,72 +6803,7 @@ export default class SimpleTable extends Simple {
       conditions?: string;
     } = {},
   ): Promise<this> {
-    if (
-      this.connection === undefined
-    ) {
-      await this.sdb.start();
-      this.db = this.sdb.db;
-      this.connection = this.sdb.connection;
-    }
-    if (this.connection === undefined) {
-      throw new Error("this.connection is undefined");
-    }
-
-    let count: number;
-    if (typeof options === "number") {
-      count = options;
-    } else if (options === "all") {
-      count = await this.getRowCount();
-    } else if (typeof options === "object") {
-      if (options.count === "all") {
-        count = await this.getRowCount();
-      } else if (typeof options.count === "number") {
-        count = options.count;
-      } else {
-        count = this.rowsToLog;
-      }
-    } else {
-      count = this.rowsToLog;
-    }
-    const types = typeof options === "object"
-      ? options.types ?? this.typesToLog
-      : this.typesToLog;
-    const conditions = typeof options === "object"
-      ? options.conditions ?? undefined
-      : undefined;
-
-    if (
-      this.connection === undefined ||
-      !(await this.sdb.hasTable(this.name))
-    ) {
-      console.log(`\nTable ${this.name}: no data`);
-    } else {
-      console.log(`\nTable ${this.name}:`);
-      conditions && console.log(`Conditions: ${conditions}`);
-      const data = await this.getTop(count, { conditions });
-      logData(
-        types ? await this.getTypes() : null,
-        data,
-        this.charsToLog,
-      );
-      const rowCount = conditions
-        ? parseInt(
-          (await this.sdb.customQuery(
-            `select count(*) as count from ${
-              quoteIdentifier(this.name)
-            } where ${conditions}`,
-            { returnData: true },
-          ) as { count: string }[])[0].count,
-        )
-        : await this.getRowCount();
-      console.log(
-        `${formatNumber(rowCount)} rows in total ${`(count: ${count}${
-          typeof this.charsToLog === "number"
-            ? `, charsToLog: ${this.charsToLog}`
-            : ""
-        })`}`,
-      );
-    }
+    await log(this, options);
     return this;
   }
 
@@ -7039,6 +7027,10 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the bottom `n` rows of the table to the console. By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
    *
+   * Uses the same precision-preserving temporal display, nested stringification,
+   * numeric coloring, and `charsToLog` truncation as `log()`. Unsafe top-level
+   * large integers throw, just as with `getData()`.
+   *
    * @param count - The number of rows to log from the bottom of the table. Defaults to the table's `rowsToLog` option if not specified.
    * @param options - An optional object with logging preferences.
    * @param options.originalOrder - If true, the rows are displayed in their original order (top to bottom). Defaults to false.
@@ -7067,14 +7059,7 @@ export default class SimpleTable extends Simple {
     count?: number,
     options: { originalOrder?: boolean } = {},
   ): Promise<this> {
-    const rows = count ?? this.rowsToLog;
-    console.log(`\nTable ${this.name} (${rows} bottom rows):`);
-    const data = await this.getBottom(rows, options);
-    logData(
-      null,
-      data,
-      this.charsToLog,
-    );
+    await logBottom(this, count, options);
     return this;
   }
 

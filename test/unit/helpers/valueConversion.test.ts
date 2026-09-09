@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 // Pins the conversion of DuckDB values to JS values on the read path
@@ -11,8 +11,7 @@ const allTypesQuery = `SELECT
   2::SMALLINT AS small,
   3::INTEGER AS integ,
   4::BIGINT AS big,
-  9007199254740993::BIGINT AS bigUnsafe,
-  170141183460469231731687303715884105727::HUGEINT AS huge,
+  9007199254740991::HUGEINT AS huge,
   5::UBIGINT AS ubig,
   1.5::FLOAT AS flt,
   2.5::DOUBLE AS dbl,
@@ -50,9 +49,8 @@ const expectedAllTypesRow = {
   small: 2,
   integ: 3,
   big: 4,
-  bigUnsafe: 9007199254740992, // precision loss beyond Number.MAX_SAFE_INTEGER
-  huge: 1.7014118346046923e+38,
-  ubig: "5",
+  huge: 9007199254740991,
+  ubig: 5,
   flt: 1.5,
   dbl: 2.5,
   nan: "NaN",
@@ -219,38 +217,6 @@ Deno.test("should convert computed columns not present in any table schema", asy
   await sdb.close();
 });
 
-Deno.test("should warn once per column for unsafe BIGINT values", async () => {
-  const originalWarn = console.warn;
-  const warnings: string[] = [];
-  console.warn = (...args: unknown[]) => {
-    warnings.push(args.map(String).join(" "));
-  };
-  try {
-    const sdb = new SimpleDB();
-    const table = sdb.newTable("unsafeBig");
-    await sdb.customQuery(
-      `CREATE OR REPLACE TABLE "unsafeBig" AS SELECT * FROM (VALUES
-        (9007199254740993::BIGINT, 1::BIGINT),
-        (9007199254740995::BIGINT, 2::BIGINT)
-      ) AS t(unsafe, safe)`,
-    );
-    const rows = await table.getData();
-    assertEquals(rows, [
-      { unsafe: 9007199254740992, safe: 1 },
-      { unsafe: 9007199254740996, safe: 2 },
-    ]);
-    const unsafeWarnings = warnings.filter((w) => w.includes("unsafe"));
-    assertEquals(unsafeWarnings.length, 1);
-    assertEquals(
-      warnings.filter((w) => w.includes('"safe"')).length,
-      0,
-    );
-    await sdb.close();
-  } finally {
-    console.warn = originalWarn;
-  }
-});
-
 Deno.test("should keep duplicate column names in results by suffixing them", async () => {
   const sdb = new SimpleDB();
   // The old JSON-based read path silently kept only one of the duplicated
@@ -263,31 +229,55 @@ Deno.test("should keep duplicate column names in results by suffixing them", asy
   await sdb.close();
 });
 
-Deno.test("should warn about unsafe BIGINT values separately for each table", async () => {
-  const originalWarn = console.warn;
-  const warnings: string[] = [];
-  console.warn = (...args: unknown[]) => {
-    warnings.push(args.map(String).join(" "));
-  };
-  try {
+for (const type of ["BIGINT", "UBIGINT", "HUGEINT", "UHUGEINT"]) {
+  Deno.test(`${type}: safe numbers, unsafe errors, exact nested strings`, async () => {
     const sdb = new SimpleDB();
-    for (const tableName of ["unsafePerTableA", "unsafePerTableB"]) {
-      const table = sdb.newTable(tableName);
-      await sdb.customQuery(
-        `CREATE OR REPLACE TABLE "${tableName}" AS SELECT 9007199254740993::BIGINT AS sharedColumnName`,
-      );
-      await table.getData();
+    try {
+      const minimum = type.startsWith("U") ? 0 : Number.MIN_SAFE_INTEGER;
+      const table = sdb.newTable("integers");
+      await sdb.customQuery(`CREATE TABLE integers AS SELECT
+        ${minimum}::${type} AS minimum, 9007199254740991::${type} AS maximum,
+        NULL::${type} AS missing,
+        [42::${type}, 9007199254740993::${type}, NULL] AS items,
+        {'id': 9007199254740993::${type}, 'count': 2::INTEGER} AS nested`);
+      assertEquals(await table.getData(), [{
+        minimum,
+        maximum: Number.MAX_SAFE_INTEGER,
+        missing: null,
+        items: ["42", "9007199254740993", null],
+        nested: { id: "9007199254740993", count: 2 },
+      }]);
+      const unsafe = type.startsWith("U")
+        ? ["9007199254740992", "9007199254740993"]
+        : [
+          "9007199254740992",
+          "9007199254740993",
+          "-9007199254740992",
+          "-9007199254740993",
+        ];
+      for (const value of unsafe) {
+        await sdb.customQuery(
+          `CREATE OR REPLACE TABLE integers AS SELECT ${value}::${type} AS id`,
+        );
+        for (
+          const read of [
+            () => table.getData(),
+            () => table.log(),
+            () => table.logBottom(),
+          ]
+        ) {
+          await assertRejects(read, Error, 'Column "id" of table "integers"');
+        }
+        await assertRejects(() => table.getData(), Error, "safe integer range");
+        assertEquals(
+          await sdb.customQuery("SELECT id::VARCHAR AS id FROM integers", {
+            returnData: true,
+          }),
+          [{ id: value }],
+        );
+      }
+    } finally {
+      await sdb.close();
     }
-    assertEquals(
-      warnings.filter((w) => w.includes('"unsafePerTableA"')).length,
-      1,
-    );
-    assertEquals(
-      warnings.filter((w) => w.includes('"unsafePerTableB"')).length,
-      1,
-    );
-    await sdb.close();
-  } finally {
-    console.warn = originalWarn;
-  }
-});
+  });
+}
