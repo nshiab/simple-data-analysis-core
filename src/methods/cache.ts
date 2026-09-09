@@ -98,12 +98,15 @@ export default async function cache<Table extends SimpleTable>(
   const inputs = options.inputs?.filter((input) => input !== table) ?? [];
   const hasInputs = inputs.length > 0;
   const serializedInputs = hasInputs ? serializeCacheInputs(inputs) : null;
-  const codeHash = createHash(functionBody);
+  const codeHash = createHash(
+    JSON.stringify([table.sdb.expressionSyntax, functionBody]),
+  );
   const inputHashes = hasInputs
     ? inputs.map((input) => createHash(serializeCacheInputs([input])))
     : [];
   const hash = createHash(JSON.stringify([
     CACHE_FORMAT_VERSION,
+    table.sdb.expressionSyntax,
     table.name,
     entryGeneration,
     functionBody,

@@ -102,3 +102,24 @@ Deno.test("should allow breaking out of the stream early", async () => {
   assertEquals(await table.getRowCount(), 5000);
   await sdb.close();
 });
+
+Deno.test("stream honors expressionSyntax for conditions", async () => {
+  for (const expressionSyntax of ["js", "sql"] as const) {
+    const sdb = new SimpleDB({ expressionSyntax });
+    try {
+      const table = sdb.newTable().loadArray([
+        { active: true, admin: false, text: "a || b" },
+        { active: false, admin: false, text: "other" },
+      ]);
+      const conditions = expressionSyntax === "js"
+        ? "(active || admin) && text === 'a || b'"
+        : "(active OR admin) AND text || '!' = 'a || b!'";
+      const rows = [];
+      for await (const row of table.stream({ conditions })) rows.push(row);
+      assertEquals(rows, [{ active: true, admin: false, text: "a || b" }]);
+      assertEquals(rows, await table.getData({ conditions }));
+    } finally {
+      await sdb.close();
+    }
+  }
+});

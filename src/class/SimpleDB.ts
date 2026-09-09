@@ -71,6 +71,73 @@ import formatMissingTables from "../helpers/formatMissingTables.ts";
 export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   extends Simple {
   /**
+   * The operator syntax used by expressions and custom queries in this database.
+   * `"js"` translates JavaScript-style operators (`&&`, `||`, `==`, `===`,
+   * `!==`) and null comparisons within SQL expressions. It does not evaluate
+   * arbitrary JavaScript. `||` remains concatenation when string literals, list
+   * literals, explicit text casts, or `concat()` results make that intent clear.
+   * Otherwise `||` becomes OR; column types are not inferred. Use `concat()`
+   * when concatenation would otherwise be ambiguous, such as `first || last`.
+   * `"sql"` passes SQL through unchanged, including `||` and null comparisons.
+   * Choose the syntax when constructing the database; it applies to all tables.
+   *
+   * @defaultValue `"js"`
+   * @category Properties
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" }); // The default mode
+   * // || becomes SQL OR: keep rows where at least one condition is true.
+   * await sdb.newTable().loadArray([{ active: true, admin: false }])
+   *   .filter("active || admin").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * // && becomes SQL AND: both conditions must be true.
+   * // === becomes SQL =: compare the age with 18.
+   * await sdb.newTable().loadArray([{ active: true, age: 18 }])
+   *   .filter("active && age === 18").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * // SQL AND and OR also work in JS mode; they pass through unchanged.
+   * // Keep active adults, or anyone who is an admin.
+   * await sdb.newTable().loadArray([{ active: true, age: 18, admin: false }])
+   *   .filter("(active AND age >= 18) OR admin").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * // Bare column names do not establish concatenation. Use concat() explicitly.
+   * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+   *   .addColumn("name", "string", "concat(first, ' ', last)").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB(); // JS mode is the default
+   * // The string literal ' ' makes concatenation clear, so both || stay unchanged.
+   * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+   *   .addColumn("name", "string", "first || ' ' || last").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "sql" });
+   * // SQL mode preserves || as concatenation: the name becomes "Jane Doe".
+   * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+   *   .addColumn("name", "string", "first || ' ' || last").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "sql" });
+   * // Use SQL AND and OR for logical conditions; && and || are not translated.
+   * // Both active and adult must be true, unless admin is true.
+   * await sdb.newTable().loadArray([{ active: true, age: 18, admin: false }])
+   *   .filter("(active AND age >= 18) OR admin").log();
+   * ```
+   */
+  readonly expressionSyntax: "js" | "sql";
+  /**
    * Whether to log each SQL statement immediately before execution.
    *
    * @defaultValue `false`
@@ -308,6 +375,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.charsToLog - The maximum number of characters to display for text-based cells.
    * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
    * @param options.cacheVerbose - Whether to log cache hits and misses, code and input changes, TTL status, and cache read/write timing.
+   * @param options.expressionSyntax - Operator syntax for expressions and custom queries: `"js"` (default) translates JavaScript-style operators in SQL expressions; `"sql"` preserves SQL unchanged.
    * @param options.logSQL - A flag indicating whether to log SQL immediately before execution.
    * @param options.explainSQL - A flag indicating whether to log DuckDB query plans for supported statements.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
@@ -334,6 +402,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       charsToLog?: number;
       typesToLog?: boolean;
       cacheVerbose?: boolean;
+      expressionSyntax?: "js" | "sql";
       logSQL?: boolean;
       explainSQL?: boolean;
       duckDbCache?: boolean | null;
@@ -343,6 +412,13 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     } = {},
   ) {
     super(options);
+    if (
+      options.expressionSyntax !== undefined &&
+      !["js", "sql"].includes(options.expressionSyntax)
+    ) {
+      throw new Error('expressionSyntax must be "js" or "sql".');
+    }
+    this.expressionSyntax = options.expressionSyntax ?? "js";
     this.file = options.file ?? ":memory:";
     this.logSQL = options.logSQL ?? false;
     this.explainSQL = options.explainSQL ?? false;
@@ -774,6 +850,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
   /**
    * Executes a custom SQL query directly against the DuckDB instance.
+   * With the default `SimpleDB.expressionSyntax: "js"`, queries support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Queries run in UTC. When data is returned, temporal values use the same
    * JavaScript representations as `SimpleTable.getData()`.
    *

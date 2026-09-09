@@ -360,8 +360,7 @@ async function runSegment(
     await ensureSpatial(table);
   }
 
-  // Each fragment is cleaned individually: cleanSQL's WHERE handling must not
-  // cross fragment boundaries once they are composed into one statement.
+  // Normalize each fragment once using the database syntax before composition.
   const ctes: CompiledCte[] = [];
   // The schema of the next fragment's input, reused while operations declare
   // they preserve it, so a run of same-shape steps costs at most one
@@ -397,7 +396,7 @@ async function compileOp(
     return {
       cte: {
         alias: `s${ctes.length + 1}`,
-        select: cleanSQL(op.buildSelect()),
+        select: cleanSQL(op.buildSelect(), table.sdb.expressionSyntax),
         values: [],
       },
       schema: op.schema ?? null,
@@ -421,7 +420,10 @@ async function compileOp(
   return {
     cte: {
       alias: `s${ctes.length + 1}`,
-      select: cleanSQL(op.buildSelect(input, buildSchema)),
+      select: cleanSQL(
+        op.buildSelect(input, buildSchema),
+        table.sdb.expressionSyntax,
+      ),
       values: resolveValues(op, buildSchema),
     },
     schema: outputSchema,

@@ -832,3 +832,131 @@ Deno.test("restored default table names skip gaps without collisions", async () 
     assertEquals(second.newTable().name, "table4");
   });
 });
+
+Deno.test("expressionSyntax defaults to JS shorthand for boolean columns and projections", async () => {
+  const sdb = new SimpleDB();
+  try {
+    assertEquals(sdb.expressionSyntax, "js");
+    const table = sdb.newTable().loadArray([{ active: true, admin: false }, {
+      active: false,
+      admin: false,
+    }]);
+    assertEquals(
+      await table.filter("active || admin").addColumn(
+        "allowed",
+        "boolean",
+        "active || admin",
+      ).getData(),
+      [{ active: true, admin: false, allowed: true }],
+    );
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT false || true AS allowed, NULL == null AS missing",
+        { returnData: true },
+      ),
+      [{ allowed: true, missing: true }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("SQL expressionSyntax preserves operators and null comparisons in queued and custom queries", async () => {
+  const sdb = new SimpleDB({ expressionSyntax: "sql" });
+  try {
+    assertEquals(sdb.expressionSyntax, "sql");
+    const table = sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }]);
+    assertEquals(
+      await table.addColumn("name", "string", "first || ' ' || last").filter(
+        "name = 'Jane Doe'",
+      ).getData(),
+      [{ first: "Jane", last: "Doe", name: "Jane Doe" }],
+    );
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT NULL = NULL AS missing, 'a' || 'b' AS joined",
+        { returnData: true },
+      ),
+      [{ missing: null, joined: "ab" }],
+    );
+    await assertRejects(() => sdb.customQuery("SELECT 1 === 1"));
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("expressionSyntax applies to stepwise operations and observer conditions", async () => {
+  for (const expressionSyntax of ["js", "sql"] as const) {
+    const sdb = new SimpleDB({ expressionSyntax });
+    try {
+      const table = sdb.newTable().loadArray([{ a: true, b: false }, {
+        a: false,
+        b: false,
+      }]);
+      await table.run();
+      const condition = expressionSyntax === "js" ? "a || b" : "a OR b";
+      assertEquals(await table.getData({ conditions: condition }), [{
+        a: true,
+        b: false,
+      }]);
+      assertEquals(await table.filter(condition).getData(), [{
+        a: true,
+        b: false,
+      }]);
+    } finally {
+      await sdb.close();
+    }
+  }
+});
+
+Deno.test("generated rowToText SQL works in both expression modes", async () => {
+  for (const expressionSyntax of ["js", "sql"] as const) {
+    const sdb = new SimpleDB({ expressionSyntax });
+    try {
+      assertEquals(
+        await sdb.newTable().loadArray([{ name: "a || b" }]).rowToText(
+          ["name"],
+          "text",
+        ).getData(),
+        [{ name: "a || b", text: "name:\na || b" }],
+      );
+    } finally {
+      await sdb.close();
+    }
+  }
+});
+
+Deno.test("default JS mode combines obvious concatenation and logical OR across execution paths", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { first: "Jane", last: "Doe", active: true, admin: false },
+      { first: "John", last: "Doe", active: false, admin: false },
+    ]).addColumn("name", "string", "first || ' ' || last")
+      .filter("(active || admin) && name === 'Jane Doe'");
+    const expected = [{
+      first: "Jane",
+      last: "Doe",
+      active: true,
+      admin: false,
+      name: "Jane Doe",
+    }];
+    assertEquals(await table.getData(), expected);
+    const streamed = [];
+    for await (
+      const row of table.stream({
+        conditions: "name || '!' === 'Jane Doe!' && (active || admin)",
+      })
+    ) streamed.push(row);
+    assertEquals(streamed, expected);
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT ('a' || 'b') || 'c' AS text, [true] || [false] AS items, CAST(true AS VARCHAR) || '!' AS castText, false || true AS allowed",
+        { returnData: true },
+      ),
+      [{ text: "abc", items: [true, false], castText: "true!", allowed: true }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});

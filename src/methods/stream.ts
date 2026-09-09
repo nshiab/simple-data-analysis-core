@@ -1,3 +1,4 @@
+import cleanSQL from "../helpers/cleanSQL.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import { makeConverter } from "../helpers/runQuery.ts";
 import SDAError from "../class/SDAError.ts";
@@ -27,11 +28,14 @@ export default async function* stream(
       ? [options.columns]
       : options.columns)
     : undefined;
-  const query = `SELECT ${
-    columns ? columns.map((d) => `${quoteIdentifier(d)}`).join(", ") : "*"
-  } FROM ${quoteIdentifier(simpleTable.name)}${
-    options.conditions ? ` WHERE ${options.conditions}` : ""
-  };`;
+  const query = cleanSQL(
+    `SELECT ${
+      columns ? columns.map((d) => `${quoteIdentifier(d)}`).join(", ") : "*"
+    } FROM ${quoteIdentifier(simpleTable.name)}${
+      options.conditions ? ` WHERE ${options.conditions}` : ""
+    };`,
+    simpleTable.sdb.expressionSyntax,
+  );
   try {
     await observeQuery(simpleTable.connection, query, [], {
       logSQL: simpleTable.sdb.logSQL,
