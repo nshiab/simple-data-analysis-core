@@ -17,6 +17,10 @@ import { retainRegisteredTables } from "./tableRegistry.ts";
  * staging succeeds. Empty tables are unchanged and do not invoke the callback;
  * outputs that remain null in every batch use VARCHAR.
  *
+ * Tables containing any geometry column are rejected before generation, even
+ * when that column is absent from both inputColumns and outputColumns. Typed
+ * geometry ingestion through loadArray() does not remove this restriction.
+ *
  * @param table - Table to enrich.
  * @param inputColumns - Columns available to the callback.
  * @param outputColumns - Generated columns to add or replace.

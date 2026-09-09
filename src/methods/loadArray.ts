@@ -8,6 +8,8 @@ import {
   DuckDBTimeValue,
   type DuckDBValue,
 } from "@duckdb/node-api";
+import prepareGeometry from "../helpers/prepareGeometry.ts";
+import geometryFromJSON from "../helpers/geometryFromJSON.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import parseType from "../helpers/parseTypes.ts";
@@ -54,6 +56,17 @@ export function prepareArray(
       throw new Error(
         `Unknown column ${JSON.stringify(key)} in loadArray columnTypes.`,
       );
+    }
+    if (/^geometry/i.test(type)) {
+      if (!/^geometry\('EPSG:4326'\)$/i.test(type)) {
+        throw new Error(
+          `Unsupported type ${JSON.stringify(type)} for column ${
+            JSON.stringify(key)
+          }. GeoJSON ingestion requires GEOMETRY('EPSG:4326'); reproject input to WGS84 first.`,
+        );
+      }
+      overrides.set(key, "GEOMETRY('EPSG:4326')");
+      continue;
     }
     try {
       const normalized = /^FLOAT\[[1-9]\d*\]$/i.test(type)
@@ -150,28 +163,70 @@ export async function executePreparedArray(
 
   const { keys, types, columnsData, rowCount } = prepared;
 
-  await simpleTable.sdb.customQuery(
-    `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)}(${
-      keys.map((key, i) => `${quoteIdentifier(key)} ${types[i]}`).join(", ")
-    })`,
+  const hasGeometry = types.includes("GEOMETRY('EPSG:4326')");
+  const staged = hasGeometry
+    ? `__sda_array_${crypto.randomUUID().replaceAll("-", "")}`
+    : simpleTable.name;
+  const storageTypes = types.map((type) =>
+    type.startsWith("GEOMETRY") ? "VARCHAR" : type
   );
-
-  const appender = await (simpleTable.connection as DuckDBConnection)
-    .createAppender(simpleTable.name);
-
-  const duckDBTypes = types.map((d) => parseDuckDBType(d));
-  // The maximum capacity of a DuckDB data chunk is 2048 rows.
-  const chunkSize = 2000;
-  for (let start = 0; start < rowCount; start += chunkSize) {
-    const end = Math.min(start + chunkSize, rowCount);
-    const dataChunk = DuckDBDataChunk.create(duckDBTypes, end - start);
-    for (let i = 0; i < keys.length; i++) {
-      dataChunk.setColumnValues(i, columnsData[i].slice(start, end));
-    }
-    appender.appendDataChunk(dataChunk);
+  if (hasGeometry && !simpleTable.sdb.spatialLoaded) {
+    await simpleTable.sdb.customQuery(
+      "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;",
+    );
+    simpleTable.sdb.spatialLoaded = true;
   }
+  try {
+    await simpleTable.sdb.customQuery(
+      `CREATE ${hasGeometry ? "TEMP" : "OR REPLACE"} TABLE ${
+        quoteIdentifier(staged)
+      }(${
+        keys.map((key, i) => `${quoteIdentifier(key)} ${storageTypes[i]}`).join(
+          ", ",
+        )
+      })`,
+    );
 
-  appender.flushSync();
+    const appender = await (simpleTable.connection as DuckDBConnection)
+      .createAppender(staged);
+
+    try {
+      const duckDBTypes = storageTypes.map((d) => parseDuckDBType(d));
+      // The maximum capacity of a DuckDB data chunk is 2048 rows.
+      const chunkSize = 2000;
+      for (let start = 0; start < rowCount; start += chunkSize) {
+        const end = Math.min(start + chunkSize, rowCount);
+        const dataChunk = DuckDBDataChunk.create(duckDBTypes, end - start);
+        for (let i = 0; i < keys.length; i++) {
+          dataChunk.setColumnValues(i, columnsData[i].slice(start, end));
+        }
+        appender.appendDataChunk(dataChunk);
+      }
+
+      appender.flushSync();
+    } finally {
+      appender.closeSync();
+    }
+    if (!hasGeometry) return;
+    // CTAS is atomic: conversion must finish before the destination is replaced.
+    await simpleTable.sdb.customQuery(
+      `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} AS SELECT ${
+        keys.map((key, i) =>
+          types[i].startsWith("GEOMETRY")
+            ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
+              quoteIdentifier(key)
+            }`
+            : quoteIdentifier(key)
+        ).join(", ")
+      } FROM ${quoteIdentifier(staged)}`,
+    );
+  } finally {
+    if (hasGeometry) {
+      await simpleTable.sdb.customQuery(
+        `DROP TABLE IF EXISTS ${quoteIdentifier(staged)}`,
+      );
+    }
+  }
 }
 
 /** Validates and snapshots a value for an explicitly declared destination type. */
@@ -181,6 +236,9 @@ function prepareTypedValue(
   column: string,
   row: number,
 ): DuckDBValue {
+  if (type === "GEOMETRY('EPSG:4326')") {
+    return prepareGeometry(value, column, row);
+  }
   if (value === null || value === undefined || Number.isNaN(value)) return null;
   let compatible = false;
   if (type === "VARCHAR" && typeof value === "string") return value;
