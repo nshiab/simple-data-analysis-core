@@ -1,4 +1,8 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import {
+  executePreparedArray,
+  prepareArray,
+} from "../../../src/methods/loadArray.ts";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { DuckDBTimeValue } from "@duckdb/node-api";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
@@ -554,6 +558,236 @@ Deno.test("loadArray nested documents can be loaded as JSON text and converted w
     assertEquals(lines.join("\n").includes("<FLOAT[3]>"), true);
   } finally {
     console.log = originalLog;
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray ingests explicit GeoJSON kinds, collections, empty geometries and nulls", async () => {
+  const sdb = new SimpleDB();
+  const originalLog = console.log;
+  try {
+    const point = [-73.57123456789012, 45.50123456789012];
+    const ring = [[0, 0], [1, 0], [1, 1], [0, 0]];
+    const geometries = [
+      { type: "Point", coordinates: point },
+      { type: "LineString", coordinates: [[0, 0], [1, 1]] },
+      { type: "Polygon", coordinates: [ring] },
+      { type: "MultiPoint", coordinates: [[0, 0], [1, 1]] },
+      { type: "MultiLineString", coordinates: [[[0, 0], [1, 1]]] },
+      { type: "MultiPolygon", coordinates: [[ring]] },
+      {
+        type: "GeometryCollection",
+        geometries: [
+          { type: "Point", coordinates: point },
+          {
+            type: "GeometryCollection",
+            geometries: [{ type: "Polygon", coordinates: [ring] }],
+          },
+        ],
+      },
+      ...["Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"].map((
+        type,
+      ) => ({ type, coordinates: [] })),
+      { type: "GeometryCollection", geometries: [] },
+      null,
+    ];
+    const table = sdb.newTable("geometries").loadArray(
+      geometries.map((geom, id) => ({ id, geom, second: geom, missing: null })),
+      {
+        columnTypes: {
+          geom: "GEOMETRY('EPSG:4326')",
+          second: "geometry('EPSG:4326')",
+          missing: "GEOMETRY('EPSG:4326')",
+        },
+      },
+    );
+    assertEquals(await table.getTypes(), {
+      id: "DOUBLE",
+      geom: "GEOMETRY('EPSG:4326')",
+      second: "GEOMETRY('EPSG:4326')",
+      missing: "GEOMETRY('EPSG:4326')",
+    });
+    const data = await sdb.customQuery(
+      "SELECT id, ST_AsGeoJSON(geom)::VARCHAR AS geom, ST_AsGeoJSON(second)::VARCHAR AS second, missing IS NULL AS missing FROM geometries ORDER BY id",
+      { returnData: true },
+    );
+    assertEquals(
+      data?.map((row) => ({
+        ...row,
+        geom: row.geom === null ? null : JSON.parse(row.geom as string),
+        second: row.second === null ? null : JSON.parse(row.second as string),
+      })),
+      geometries.map((geom, id) => ({ id, geom, second: geom, missing: true })),
+    );
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT ST_X(geom) AS x, ST_Y(geom) AS y, ST_AsText(geom) AS wkt FROM geometries WHERE id = 0",
+        { returnData: true },
+      ),
+      [{ x: point[0], y: point[1], wkt: `POINT (${point[0]} ${point[1]})` }],
+    );
+    const lines: string[] = [];
+    console.log = (...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    };
+    await table.log();
+    assertEquals(lines.join("\n").includes("GEOM(EPSG:4326)"), true);
+  } finally {
+    console.log = originalLog;
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray snapshots nested geometry input at call time", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const point = {
+      type: "Point",
+      coordinates: [12.1234567890123, 34.1234567890123],
+    };
+    const geom = { type: "GeometryCollection", geometries: [point] };
+    const expected = JSON.stringify(geom);
+    const rows = [{ geom }];
+    const table = sdb.newTable("snapshot_geo").loadArray(rows, {
+      columnTypes: { geom: "GEOMETRY('EPSG:4326')" },
+    });
+    point.coordinates[0] = 80;
+    point.type = "Bad";
+    geom.geometries.push(point);
+    rows.length = 0;
+    await table.run();
+    const data = await sdb.customQuery(
+      "SELECT ST_AsGeoJSON(geom)::VARCHAR AS geom FROM snapshot_geo",
+      { returnData: true },
+    );
+    assertEquals(JSON.parse(data![0].geom as string), JSON.parse(expected));
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray rejects malformed geometries with row context and preserves existing data", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = await sdb.newTable().loadArray([{ value: 7 }]);
+    const cycle: { type: string; geometries: unknown[] } = {
+      type: "GeometryCollection",
+      geometries: [],
+    };
+    cycle.geometries.push(cycle);
+    for (
+      const value of [
+        undefined,
+        NaN,
+        "POINT (0 0)",
+        {},
+        [],
+        cycle,
+        { type: "Feature", geometry: null },
+        { type: "FeatureCollection", features: [] },
+        { type: "Point", coordinates: [] },
+        { type: "Point", coordinates: [1, 2, 3] },
+        { type: "Point", coordinates: [1, Infinity] },
+        { type: "Point", coordinates: [181, 0] },
+        { type: "Point", coordinates: new Array(2) },
+        { type: "Point", coordinates: [0, 91] },
+        { type: "Point", coordinates: ["0", 1] },
+        { type: "Point", coordinates: [0, 0], crs: "EPSG:3857" },
+        { type: "LineString", coordinates: [] },
+        { type: "LineString", coordinates: [[0, 0]] },
+        { type: "Polygon", coordinates: [[]] },
+        { type: "Polygon", coordinates: [[[0, 0], [1, 1], [1, 0], [2, 2]]] },
+        { type: "GeometryCollection", geometries: [null] },
+        { type: "MultiPolygon", coordinates: ["bad"] },
+      ]
+    ) {
+      assertThrows(
+        () =>
+          table.loadArray([{ value: null }, { value }], {
+            columnTypes: { value: "GEOMETRY('EPSG:4326')" },
+          }),
+        Error,
+        'Column "value", row 2:',
+      );
+    }
+    for (
+      const type of [
+        "GEOMETRY",
+        "GEOMETRY('EPSG:3857')",
+        "GEOMETRY('OGC:CRS84')",
+      ]
+    ) {
+      assertThrows(
+        () =>
+          // @ts-expect-error Unsupported geometry declarations are rejected at runtime too.
+          table.loadArray([{ value: null }], { columnTypes: { value: type } }),
+        Error,
+        "requires GEOMETRY('EPSG:4326')",
+      );
+    }
+    assertThrows(
+      () =>
+        table.loadArray([{ value: { type: "Point", coordinates: [0, 0] } }]),
+      Error,
+      "Type object not supported",
+    );
+    assertEquals(await table.getData(), [{ value: 7 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray SQL conversion failure preserves destination and cleans staging", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = await sdb.newTable("preserved_geometry").loadArray([{
+      value: 7,
+    }]);
+    const prepared = prepareArray([{
+      value: { type: "Point", coordinates: [0, 0] },
+    }], { value: "GEOMETRY('EPSG:4326')" });
+    // Inject a conversion failure after JavaScript preparation has succeeded.
+    prepared.columnsData[0][0] = "invalid JSON";
+    await assertRejects(() => executePreparedArray(table, prepared));
+    assertEquals(await table.getData(), [{ value: 7 }]);
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT table_name FROM duckdb_tables() WHERE temporary AND starts_with(table_name, '__sda_array_')",
+        { returnData: true },
+      ),
+      [],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray stages geometry batches with quoted identifiers and cleans up", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable('geo "batches"');
+    await table.loadArray(
+      Array.from({ length: 2001 }, (_, id) => ({
+        id,
+        'geo "point"': { type: "Point", coordinates: [id / 100, 45] },
+      })),
+      { columnTypes: { 'geo "point"': "GEOMETRY('EPSG:4326')" } },
+    ).run();
+    assertEquals(
+      await sdb.customQuery(
+        `SELECT count(*) AS count, max(ST_X("geo ""point""")) AS maximum FROM "geo ""batches"""`,
+        { returnData: true },
+      ),
+      [{ count: 2001, maximum: 20 }],
+    );
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT table_name FROM duckdb_tables() WHERE temporary AND starts_with(table_name, '__sda_array_')",
+        { returnData: true },
+      ),
+      [],
+    );
+  } finally {
     await sdb.close();
   }
 });

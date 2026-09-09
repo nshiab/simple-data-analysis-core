@@ -394,8 +394,33 @@ export default class SimpleTable extends Simple {
    *
    * Array-valued cells are inferred as fixed-size `FLOAT` vectors and use a
    * compact placeholder when extracted or logged. Plain nested object cells
-   * are not supported. To load nested documents, stringify them first and use
+   * require an explicit geometry type as described below. To load other nested documents, stringify them first and use
    * SQL to convert the text to typed lists and structs.
+   *
+   * Declare `columnTypes: { geom: "GEOMETRY('EPSG:4326')" }` to ingest
+   * GeoJSON geometry objects or nulls. Supports Point, LineString, Polygon,
+   * their Multi variants, and GeometryCollections nested up to 100 levels; Features and
+   * FeatureCollections must be reduced to geometry objects first. Positions
+   * must be finite two-dimensional WGS84 [longitude, latitude] coordinates
+   * within [-180, 180] and [-90, 90]. Z/M positions are rejected. The type
+   * declaration asserts the input CRS; no CRS inference or reprojection occurs.
+   * Empty Polygon, Multi geometries, and GeometryCollection arrays are allowed;
+   * empty Points, LineStrings, and polygon rings are rejected. Rings must be
+   * closed with at least four positions. CRS members are rejected; other
+   * metadata (including bbox) is not stored in SQL geometry values.
+   * Validation and JSON serialization snapshot geometries when called, using
+   * additional memory proportional to the input. Loading stages this text in
+   * DuckDB and parses it into geometry before atomically replacing the table,
+   * requiring temporary database storage and conversion work. Logging retains
+   * compact geometry placeholders.
+   *
+   * @example
+   * ```ts
+   * await table.loadArray([{
+   *   name: "Montreal",
+   *   geom: { type: "Point", coordinates: [-73.57, 45.50] },
+   * }], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
+   * ```
    *
    * @param rows - An array of objects, where each object represents a row and its properties represent columns.
    * @param options - Options for loading the array, captured when called.
@@ -472,6 +497,8 @@ export default class SimpleTable extends Simple {
           | "TIME"
           | "TIMESTAMP"
           | "TIMESTAMP WITH TIME ZONE"
+          | "GEOMETRY('EPSG:4326')"
+          | "geometry('EPSG:4326')"
           | `FLOAT[${number}]`
           | `float[${number}]`;
       };
@@ -4379,7 +4406,9 @@ export default class SimpleTable extends Simple {
   /**
    * Updates data in the table using a JavaScript function. The function receives the existing rows as an array of objects and must return the modified rows as an array of objects.
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
-   * This method does not work with tables containing geometries.
+   * Tables containing any geometry column are rejected before the modifier runs,
+   * even when only ordinary attributes would be changed. Loading geometry with
+   * `loadArray()` does not enable geometry updates through this method.
    *
    * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
    * @param options - An optional object with configuration options:
