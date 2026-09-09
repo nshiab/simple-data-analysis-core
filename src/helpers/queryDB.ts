@@ -90,7 +90,7 @@ export default async function queryDB(
   await flushAllTables(simple instanceof SimpleTable ? simple.sdb : simple);
 
   if (options.noClean !== true) {
-    query = cleanSQL(query);
+    query = cleanSQL(query, sdb.expressionSyntax);
   }
 
   const executionOptions = {

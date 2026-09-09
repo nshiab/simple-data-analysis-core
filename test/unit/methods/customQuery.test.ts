@@ -292,13 +292,13 @@ Deno.test("should work with ||", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with || as OR or concatenation", async () => {
+Deno.test("should support JS logical OR alongside concat()", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
   const data = await sdb.customQuery(
-    `SELECT *, "Job" || '-' || "Name" as JobName FROM employees WHERE Job === 'Clerk' && Salary === '2500' && ("Department or unit" = '30' || "Department or unit" = '50')`,
+    `SELECT *, concat("Job", '-', "Name") as JobName FROM employees WHERE Job === 'Clerk' && Salary === '2500' && ("Department or unit" = '30' || "Department or unit" = '50')`,
     { returnData: true },
   );
 

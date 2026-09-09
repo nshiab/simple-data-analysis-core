@@ -1188,6 +1188,7 @@ Deno.test("should clean the cache when calling close", async () => {
   const cacheSources = JSON.parse(
     readFileSync(".sda-cache/sources.json", "utf-8"),
   );
+  const expectedIds = Object.keys(cacheSources);
   cacheSources["testForCache"] = {
     timestamp: 1720117189389,
     file: "./.sda-cache/testForCache.json",
@@ -1207,13 +1208,8 @@ Deno.test("should clean the cache when calling close", async () => {
   assertEquals(
     { cacheSourcesIdsUpdated, files },
     {
-      cacheSourcesIdsUpdated: [
-        "table1.2c51401642fa11e673d3c0abcce28b1fa1a6b9c7333a852926fc416973053770",
-      ],
-      files: [
-        "sources.json",
-        "table1.2c51401642fa11e673d3c0abcce28b1fa1a6b9c7333a852926fc416973053770.db",
-      ],
+      cacheSourcesIdsUpdated: expectedIds,
+      files: ["sources.json", ...expectedIds.map((id) => `${id}.db`)].sort(),
     },
   );
 });
@@ -1260,3 +1256,33 @@ async function captureConsoleLogs(
   }
   return logs.join("\n");
 }
+
+Deno.test("cache separates identical computations using different expression syntaxes", async () => {
+  let runs = 0;
+  const databases = [
+    new SimpleDB({ expressionSyntax: "js" }),
+    new SimpleDB({ expressionSyntax: "sql" }),
+    new SimpleDB({ expressionSyntax: "js" }),
+    new SimpleDB({ expressionSyntax: "sql" }),
+  ];
+  try {
+    for (const sdb of databases) {
+      const table = sdb.newTable("syntaxCacheIsolation");
+      await table.cache(() => {
+        runs++;
+        table.loadArray([{ value: 1 }]).addColumn(
+          "missing",
+          "boolean",
+          "NULL = NULL",
+        );
+      });
+      assertEquals(await table.getData(), [{
+        value: 1,
+        missing: sdb.expressionSyntax === "js" ? true : null,
+      }]);
+    }
+    assertEquals(runs, 2);
+  } finally {
+    for (const sdb of databases) await sdb.close();
+  }
+});

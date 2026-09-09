@@ -473,7 +473,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Uses the same syntax as `filter()`, including JavaScript operators. Can reference source columns excluded from `columns`. Defaults to no filtering; an empty string behaves the same as omitting this option.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Uses the same syntax as `filter()`, including JavaScript-style operators when `SimpleDB.expressionSyntax` is `"js"` (the default). Can reference source columns excluded from `columns`. Defaults to no filtering; an empty string behaves the same as omitting this option.
    * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
    * @param options.includeFilename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
@@ -708,7 +708,7 @@ export default class SimpleTable extends Simple {
    * @param options - An optional object with configuration options:
    * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
    * @param options.columns - The columns to load. Include the geometry column that should remain in the resulting table, usually `"geom"`. By default, all columns are loaded.
-   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Uses the same syntax as `filter()`, including JavaScript operators. Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system. Defaults to no filtering; an empty string behaves the same as omitting this option.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Uses the same syntax as `filter()`, including JavaScript-style operators when `SimpleDB.expressionSyntax` is `"js"` (the default). Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system. Defaults to no filtering; an empty string behaves the same as omitting this option.
    * @returns The table, so methods can be chained.
    * @category Geospatial
    *
@@ -1846,7 +1846,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Filters rows from this table based on SQL conditions. Note that it's often faster to use the `removeRows` method for simple removals.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
@@ -1952,7 +1952,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -5160,7 +5160,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the first row of the table, optionally filtered by SQL conditions.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param options - An optional object with configuration options:
@@ -5196,7 +5196,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the last row of the table, optionally filtered by SQL conditions.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param options - An optional object with configuration options:
@@ -5232,7 +5232,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the top `n` rows of the table, optionally filtered by SQL conditions.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param count - The number of rows to return from the top of the table.
@@ -5271,7 +5271,7 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
    * By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param count - The number of rows to return from the bottom of the table.
@@ -5318,7 +5318,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns a single row that matches the specified conditions. If no row matches or if more than one row matches, an error is thrown by default.
-   * You can also use JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`).
+   * Conditions use the operator syntax selected by `SimpleDB.expressionSyntax` (default: `"js"`).
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
@@ -5373,7 +5373,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the data from the table as an array of objects, optionally filtered by SQL conditions.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * Top-level DuckDB `DATE` and `TIMESTAMP` columns are returned as JavaScript
    * `Date` objects interpreted in UTC. `TIMESTAMP WITH TIME ZONE` values are
@@ -5470,7 +5470,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the data from the table as a CSV string, optionally filtered by SQL conditions.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values are first converted as they are in `getData()`, then
    * serialized using UTC date and timestamp text.
    *
@@ -6893,7 +6893,7 @@ export default class SimpleTable extends Simple {
   /**
    * Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
    * You can optionally log the column types and filter the data based on conditions.
-   * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
    * @param options.count - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.

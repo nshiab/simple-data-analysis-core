@@ -71,6 +71,30 @@ import formatMissingTables from "../helpers/formatMissingTables.ts";
 export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   extends Simple {
   /**
+   * The operator syntax used by expressions and custom queries in this database.
+   * `"js"` translates JavaScript-style operators (`&&`, `||`, `==`, `===`,
+   * `!==`) and null comparisons within SQL expressions. It does not evaluate
+   * arbitrary JavaScript. In this mode, use `concat()` for text concatenation.
+   * `"sql"` passes SQL through unchanged, including `||` and null comparisons.
+   * Choose the syntax when constructing the database; it applies to all tables.
+   *
+   * @defaultValue `"js"`
+   * @category Properties
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * await sdb.newTable().loadArray([{ active: true, admin: false }])
+   *   .filter("active || admin").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "sql" });
+   * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+   *   .addColumn("name", "string", "first || ' ' || last").log();
+   * ```
+   */
+  readonly expressionSyntax: "js" | "sql";
+  /**
    * Whether to log each SQL statement immediately before execution.
    *
    * @defaultValue `false`
@@ -308,6 +332,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.charsToLog - The maximum number of characters to display for text-based cells.
    * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
    * @param options.cacheVerbose - Whether to log cache hits and misses, code and input changes, TTL status, and cache read/write timing.
+   * @param options.expressionSyntax - Operator syntax for expressions and custom queries: `"js"` (default) translates JavaScript-style operators in SQL expressions; `"sql"` preserves SQL unchanged.
    * @param options.logSQL - A flag indicating whether to log SQL immediately before execution.
    * @param options.explainSQL - A flag indicating whether to log DuckDB query plans for supported statements.
    * @param options.duckDbCache - A flag indicating whether to use DuckDB's external file cache.
@@ -334,6 +359,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       charsToLog?: number;
       typesToLog?: boolean;
       cacheVerbose?: boolean;
+      expressionSyntax?: "js" | "sql";
       logSQL?: boolean;
       explainSQL?: boolean;
       duckDbCache?: boolean | null;
@@ -343,6 +369,13 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     } = {},
   ) {
     super(options);
+    if (
+      options.expressionSyntax !== undefined &&
+      !["js", "sql"].includes(options.expressionSyntax)
+    ) {
+      throw new Error('expressionSyntax must be "js" or "sql".');
+    }
+    this.expressionSyntax = options.expressionSyntax ?? "js";
     this.file = options.file ?? ":memory:";
     this.logSQL = options.logSQL ?? false;
     this.explainSQL = options.explainSQL ?? false;

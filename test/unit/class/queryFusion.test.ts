@@ -298,16 +298,15 @@ Deno.test("should resolve mid-chain schemas for schema-dependent methods", async
   await sdb.close();
 });
 
-Deno.test("should not let cleanSQL cross fragment boundaries", async () => {
+Deno.test("should normalize logical operators without affecting concat functions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("fragments");
 
-  // The filter uses JS syntax (&&), while the addColumn definition uses the
-  // SQL concatenation operator (||), which must not be converted to OR.
+  // JS operators in the filter and SQL concat() in the projection compose.
   const result = await table
     .loadArray([{ a: "x", b: "y", n: 1 }])
     .filter(`n > 0 && n < 5`)
-    .addColumn("c", "string", `a || b`)
+    .addColumn("c", "string", `concat(a, b)`)
     .getData();
 
   assertEquals(result, [{ a: "x", b: "y", n: 1, c: "xy" }]);

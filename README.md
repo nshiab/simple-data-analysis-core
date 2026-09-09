@@ -60,6 +60,40 @@ npx @nshiab/setup-data-project
 bunx @nshiab/setup-data-project
 ```
 
+## Expression syntax
+
+`SimpleDB` defaults to JavaScript-style operators inside SQL expressions:
+
+```ts
+const sdb = new SimpleDB({ expressionSyntax: "js" });
+await sdb.newTable().loadArray([{ active: true, admin: false }])
+  .filter("active || admin").log();
+```
+
+This mode translates `&&`, `||`, `==`, `===`, and `!==`, and treats equality or
+inequality comparisons with `null` as SQL null checks. Expressions still use SQL
+functions and column references; this does not evaluate arbitrary JavaScript.
+Use `concat()` for text concatenation in this mode.
+
+For unchanged DuckDB SQL, choose the syntax when constructing the database:
+
+```ts
+const sdb = new SimpleDB({ expressionSyntax: "sql" });
+await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+  .addColumn("name", "string", "first || ' ' || last").log();
+```
+
+The setting applies to all tables, observer conditions, and custom queries. In
+SQL mode, use `AND`, `OR`, and `IS NULL` / `IS NOT NULL`; `||` retains SQL
+concatenation semantics. Neither mode rewrites quoted text, comments, or bound
+values.
+
+**Migration:** `||` now always means logical OR in the default `"js"` mode,
+including projections and bare boolean columns. Existing SQL concatenation
+expressions must use `concat()` or select `expressionSyntax: "sql"`. Switching
+to SQL mode also disables shorthand null checks: `x = NULL` follows SQL's null
+semantics and does not mean `x IS NULL`.
+
 ## Performance benchmarks
 
 These benchmarks compare SDA-core with raw DuckDB and popular Python and R

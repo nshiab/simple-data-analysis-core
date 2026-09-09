@@ -31,9 +31,9 @@ export default function rowToText(
       }
 
       const parts = columns.map((col) =>
-        `? || COALESCE(${quoteIdentifier(col)}, ?)`
+        `concat(?, COALESCE(${quoteIdentifier(col)}, ?))`
       );
-      const concatenatedExpression = parts.join(" || ");
+      const concatenatedExpression = `concat(${parts.join(", ")})`;
 
       return `SELECT *, CAST(${concatenatedExpression} AS VARCHAR) AS ${
         quoteIdentifier(newColumn)

@@ -202,7 +202,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
 });
 
 Deno.test("should convert computed columns not present in any table schema", async () => {
-  const sdb = new SimpleDB();
+  const sdb = new SimpleDB({ expressionSyntax: "sql" });
   const table = sdb.newTable("computedCols");
   table.loadArray([
     { category: "a", value: 10 },

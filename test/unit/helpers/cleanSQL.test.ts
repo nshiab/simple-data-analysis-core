@@ -33,7 +33,7 @@ Deno.test("SQL normalization preserves concatenation and assignment", () => {
       "SELECT * FROM t WHERE x >= null",
       "SELECT * FROM t WHERE EXISTS (SELECT a || b FROM t)",
     ]
-  ) assertEquals(cleanSQL(sql), sql);
+  ) assertEquals(cleanSQL(sql, "sql"), sql);
 });
 
 Deno.test("SQL shorthand works in nested predicates and across comments", async () => {
@@ -42,13 +42,13 @@ Deno.test("SQL shorthand works in nested predicates and across comments", async 
     const result = await sdb.newTable("strings")
       .loadArray([{ text: "a == b", n: 1 }, { text: "a = b", n: 2 }])
       .filter("(text = 'a == b' && n==1) || (n===3)")
-      .addColumn("joined", "string", "text || '!' ")
+      .addColumn("joined", "string", "concat(text, '!')")
       .getData();
     assertEquals(result, [{ text: "a == b", n: 1, joined: "a == b!" }]);
     const data = await queryDB(
       sdb,
       `SELECT ? AS bound, 'it''s == null' AS escaped
-      WHERE (((NULL==/* preserved */null) && (1===1)) || (2===3)) && ('a' || 'b' = 'ab')
+      WHERE (((NULL==/* preserved */null) && (1===1)) || (2===3)) && (concat('a', 'b') = 'ab')
       && (1!==2 || 2===3)`,
       mergeOptions(sdb, {
         table: null,
@@ -73,10 +73,10 @@ Deno.test("SQL normalization scopes nested queries and statement boundaries", as
     const rows = await queryDB(
       sdb,
       `
-      SELECT 'a' || 'b' AS text
-      WHERE EXISTS (SELECT 'x' || 'y' WHERE 1==1 || 2==3)
+      SELECT concat('a', 'b') AS text
+      WHERE EXISTS (SELECT concat('x', 'y') WHERE 1==1 || 2==3)
         || (1==2)
-      ORDER BY 'x' || 'y';
+      ORDER BY concat('x', 'y');
       SELECT $$a == b$$ AS text WHERE TRUE || FALSE;
     `,
       mergeOptions(sdb, {
@@ -174,10 +174,10 @@ for (
       "UPDATE t SET x=null; SELECT y IS null",
     ],
     ["SELECT x==/* == null */null", "SELECT x IS /* == null */null"],
-    ["SELECT * FROM t WHERE a||b='ab'", "SELECT * FROM t WHERE a||b='ab'"],
+    ["SELECT * FROM t WHERE a||b='ab'", "SELECT * FROM t WHERE a OR b='ab'"],
     [
       "SELECT * FROM t WHERE isActive||isAdmin",
-      "SELECT * FROM t WHERE isActive||isAdmin",
+      "SELECT * FROM t WHERE isActive OR isAdmin",
     ],
   ]
 ) {
@@ -218,7 +218,7 @@ const semanticCases = [
   ],
   [
     "nested CASE",
-    "CASE WHEN x=1 THEN CASE WHEN x==1 || x==2 THEN 'a' ELSE 'b' END ELSE 'c' END || '!' = 'a!'",
+    "concat(CASE WHEN x=1 THEN CASE WHEN x==1 || x==2 THEN 'a' ELSE 'b' END ELSE 'c' END, '!') = 'a!'",
     "CASE WHEN x=1 THEN CASE WHEN x=1 OR x=2 THEN 'a' ELSE 'b' END ELSE 'c' END || '!' = 'a!'",
   ],
   ["OR comparisons", "x==1 || x===3", "x=1 OR x=3"],
@@ -260,7 +260,7 @@ const semanticCases = [
   ],
   [
     "subquery projection",
-    "EXISTS (SELECT s || '!' WHERE x==1) || x==3",
+    "EXISTS (SELECT concat(s, '!') WHERE x==1) || x==3",
     "EXISTS (SELECT s || '!' WHERE x=1) OR x=3",
   ],
   [
@@ -271,11 +271,14 @@ const semanticCases = [
 ];
 for (const [name, shorthand, sql] of semanticCases) {
   Deno.test(`cleanSQL DuckDB semantics: ${name}`, async () => {
-    const sdb = new SimpleDB();
+    const sqlMode = /concat|list|cast/.test(name);
+    const sdb = new SimpleDB({ expressionSyntax: sqlMode ? "sql" : "js" });
     try {
       const prefix =
         "SELECT x FROM (VALUES (1,'a'),(2,'b'),(3,'c'),(NULL,NULL)) t(x,s) WHERE ";
-      const query = `${prefix}${shorthand} ORDER BY x NULLS LAST`;
+      const query = `${prefix}${
+        sqlMode ? sql : shorthand
+      } ORDER BY x NULLS LAST`;
       const options = mergeOptions(sdb, {
         table: null,
         method: null,
@@ -302,7 +305,7 @@ Deno.test("cleanSQL keeps named parameters distinct from SQL keywords", () => {
   );
   assertEquals(
     cleanSQL("SELECT $where || 'a' = 'b' || 'c' = 'd'"),
-    "SELECT $where || 'a' = 'b' || 'c' = 'd'",
+    "SELECT $where  OR  'a' = 'b'  OR  'c' = 'd'",
   );
 });
 
@@ -319,13 +322,13 @@ const queryCases = [
   ],
   [
     "UNION boundary",
-    "SELECT 'a' s WHERE 1==1 || 1==2 UNION ALL SELECT 'b' || 'c' s",
-    "SELECT 'a' s WHERE 1=1 OR 1=2 UNION ALL SELECT 'b' || 'c' s",
+    "SELECT 'a' s WHERE 1==1 || 1==2 UNION ALL SELECT concat('b', 'c') s",
+    "SELECT 'a' s WHERE 1=1 OR 1=2 UNION ALL SELECT concat('b', 'c') s",
   ],
   [
     "CTE",
-    "WITH t AS (SELECT 'a' || 'b' s WHERE 1==1 || 1==2) SELECT s FROM t WHERE s=='ab'",
-    "WITH t AS (SELECT 'a' || 'b' s WHERE 1=1 OR 1=2) SELECT s FROM t WHERE s='ab'",
+    "WITH t AS (SELECT concat('a', 'b') s WHERE 1==1 || 1==2) SELECT s FROM t WHERE s=='ab'",
+    "WITH t AS (SELECT concat('a', 'b') s WHERE 1=1 OR 1=2) SELECT s FROM t WHERE s='ab'",
   ],
   [
     "CASE condition",
@@ -457,5 +460,34 @@ Deno.test("cleanSQL normalizes every statement while preserving quoted semicolon
     );
   } finally {
     await sdb.close();
+  }
+});
+
+Deno.test("SQL mode is a byte-for-byte passthrough", () => {
+  for (
+    const sql of [
+      "  SELECT true || false;\n",
+      "SELECT null = null",
+      "SELECT 1 === 1",
+      "SELECT ? /* && */",
+      "'unterminated",
+      "SELECT [true] || [false]",
+    ]
+  ) {
+    assertEquals(cleanSQL(sql, "sql"), sql);
+  }
+});
+
+Deno.test("JS mode translates logical operators without guessing operand types", () => {
+  for (
+    const expression of [
+      "a||b",
+      "check_a()||check_b()",
+      "true||false",
+      "(a=1)||(b=2)",
+    ]
+  ) {
+    const query = `SELECT ${expression}`;
+    assertEquals(cleanSQL(query, "js"), query.replace("||", " OR "));
   }
 });
