@@ -8,6 +8,7 @@ import type {
   TableSchema,
 } from "./pendingOps.ts";
 import cleanSQL from "./cleanSQL.ts";
+import referencedTables from "./referencedTables.ts";
 import ensureSpatial from "./ensureSpatial.ts";
 import extractTypes from "./extractTypes.ts";
 import mergeOptions from "./mergeOptions.ts";
@@ -326,27 +327,6 @@ async function drainAsyncOperationFrame(
   }
 }
 
-/**
- * Returns the tables of the database whose names appear in the given SQL
- * fragments. Matching is conservative (a column sharing a table's name
- * counts as a reference): a false positive only costs fusion, never
- * correctness.
- */
-function referencedTables(rawSQL: string[], sdb: SimpleDB): SimpleTable[] {
-  const referenced: SimpleTable[] = [];
-  for (const table of getRegisteredTables(sdb)) {
-    const escaped = table.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const pattern = new RegExp(
-      `(?<![\\w"])"?${escaped}"?(?![\\w"])`,
-      "i",
-    );
-    if (rawSQL.some((sql) => pattern.test(sql))) {
-      referenced.push(table);
-    }
-  }
-  return referenced;
-}
-
 async function runSegment(
   table: SimpleTable,
   ops: RelationalOp[],
@@ -435,10 +415,11 @@ async function executeFused(
   ops: RelationalOp[],
   ctes: CompiledCte[],
 ): Promise<void> {
+  // A trailing line comment must end before the generated CTE delimiter.
   const query = `CREATE OR REPLACE TABLE ${
     quoteIdentifier(table.name)
   } AS WITH ${
-    ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select})`).join(", ")
+    ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select}\n)`).join(", ")
   } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
 
   try {
@@ -519,7 +500,9 @@ async function describeChain(
   const select = ctes.length === 0
     ? `SELECT * FROM ${quoteIdentifier(table.name)}`
     : `WITH ${
-      ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select})`).join(", ")
+      ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select}\n)`).join(
+        ", ",
+      )
     } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
   const query = ctes.length === 0
     ? `DESCRIBE ${quoteIdentifier(table.name)}`

@@ -360,3 +360,18 @@ Deno.test("selectRows() with outputTable reads simpleTable's state at its call p
 
   await sdb.close();
 });
+
+Deno.test("escaped quoted self-references read the preceding chain result", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable('quote"name');
+    await table.loadArray([{ x: 1 }, { x: 2 }, { x: 3 }]).run();
+    assertEquals(
+      await table.filter("x > 1")
+        .filter('x > (SELECT min(x) FROM "quote""name")').getData(),
+      [{ x: 3 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});

@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import referencedTables from "./referencedTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { getRegisteredTables } from "./tableRegistry.ts";
 import {
@@ -32,15 +33,8 @@ export function recordCacheTableReferences(
   if (dependencyContext.getStore() === undefined) {
     return;
   }
-  for (const candidate of getRegisteredTables(table.sdb)) {
-    const escaped = candidate.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const pattern = new RegExp(
-      `(?<![\\w\"])\"?${escaped}\"?(?![\\w\"])`,
-      "i",
-    );
-    if (sql.some((fragment) => pattern.test(fragment))) {
-      recordCacheTableAccess(candidate);
-    }
+  for (const candidate of referencedTables(sql, table.sdb)) {
+    recordCacheTableAccess(candidate);
   }
 }
 
