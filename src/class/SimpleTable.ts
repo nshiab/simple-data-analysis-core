@@ -468,6 +468,7 @@ export default class SimpleTable extends Simple {
    * Loads data from one or more local or remote files into the table.
    * Supported file formats include CSV, JSON, Parquet, and Excel.
    * This method queues the load; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param files - The path(s) or URL(s) of the file(s) containing the data to be loaded.
    * @param options - An optional object with configuration options:
@@ -701,6 +702,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Loads geospatial data from an external file or URL into the table.
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -1302,6 +1304,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns a new table with the same structure and data as this table. The data can be optionally filtered, limited to a specific number of rows, and offset.
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * If `conditions`, `limit`, and `offset` are all used, they are applied in this order: `conditions` (WHERE clause) first, then `offset`, and finally `limit` (LIMIT).
    *
@@ -2298,6 +2301,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition. This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+   * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param newColumn - The name of the new column to be added.
    * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
@@ -3378,6 +3382,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Updates values in a specified column using a SQL expression.
+   * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -4758,6 +4763,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the number of rows in the table.
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param options - An optional object with configuration options:
    * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
@@ -5318,7 +5324,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns a single row that matches the specified conditions. If no row matches or if more than one row matches, an error is thrown by default.
-   * Conditions use the operator syntax selected by `SimpleDB.expressionSyntax` (default: `"js"`).
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
@@ -5432,6 +5438,7 @@ export default class SimpleTable extends Simple {
    * Streams the table rows one by one as an async iterator, without
    * materializing the whole table in memory. Values are converted to
    * JavaScript types the same way as `getData()`.
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * The underlying DuckDB result is streamed chunk by chunk, so tables
    * larger than the available memory can be iterated. Avoid running other

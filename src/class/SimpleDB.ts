@@ -840,6 +840,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
   /**
    * Executes a custom SQL query directly against the DuckDB instance.
+   * With the default `SimpleDB.expressionSyntax: "js"`, queries support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Queries run in UTC. When data is returned, temporal values use the same
    * JavaScript representations as `SimpleTable.getData()`.
    *
