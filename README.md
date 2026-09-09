@@ -60,6 +60,24 @@ npx @nshiab/setup-data-project
 bunx @nshiab/setup-data-project
 ```
 
+## Running a data pipeline
+
+Transformation methods are synchronous and chainable. SDA-core queues their work
+and combines compatible operations into a single DuckDB statement. Async methods
+such as `getData()`, `log()`, and `writeData()` execute pending work before
+returning results, so only the final method in a chain needs to be awaited.
+
+```ts
+await table
+  .filter("salary > 50000")
+  .selectColumns(["name", "salary"])
+  .log();
+```
+
+Use `await table.run()` or `await sdb.run()` to execute pending work without
+reading or exporting a result. Both execute queued operations across all tables
+in the database, in the order the methods were called.
+
 ## Performance benchmarks
 
 These benchmarks compare SDA-core with raw DuckDB and popular Python and R

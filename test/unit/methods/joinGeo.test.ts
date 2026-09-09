@@ -601,3 +601,43 @@ Deno.test("should log a table after a joinGeo", async () => {
   await firesInsideProvinces.run();
   await sdb.close();
 });
+
+Deno.test("should fuse spatial joins with downstream projection, filtering, and aggregation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable("points");
+    const right = sdb.newTable("regions");
+    await left.loadArray([{ x: 1, y: 1, value: 10 }, { x: 2, y: 2, value: 20 }])
+      .createPoints("y", "x", "geom").run();
+    await right.loadArray([{ x: 1, y: 1, category: "a" }])
+      .createPoints("y", "x", "geom").selectColumns(["geom", "category"]).run();
+    const baseline = left.joinGeo(right, "withinDistance", {
+      distance: 10,
+      outputTable: "baseline",
+    });
+    await baseline.run();
+    const expected = await baseline.selectColumns(["value", "category"])
+      .filter("value > 10").summarize({
+        columns: "value",
+        by: "category",
+        stats: "sum",
+      }).getData();
+    const queries: string[] = [];
+    const original = left.runQuery;
+    left.runQuery = (query, connection, returnData, options) => {
+      queries.push(query);
+      return original(query, connection, returnData, options);
+    };
+    const actual = await left.joinGeo(right, "withinDistance", { distance: 10 })
+      .selectColumns(["value", "category"]).filter("value > 10")
+      .summarize({ columns: "value", by: "category", stats: "sum" }).getData();
+    assertEquals(actual, expected);
+    assertEquals(
+      queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE"))
+        .length,
+      1,
+    );
+  } finally {
+    await sdb.close();
+  }
+});

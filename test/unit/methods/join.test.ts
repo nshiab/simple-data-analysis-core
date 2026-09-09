@@ -372,3 +372,145 @@ Deno.test("should keep the join keys of unmatched rows on both sides in a full j
 
   await sdb.close();
 });
+
+for (const shape of ["narrow", "wide", "high-fanout"]) {
+  for (const outputTable of [undefined, true, "joined"]) {
+    Deno.test(`should fuse ${shape} joins with downstream operations (output ${outputTable})`, async () => {
+      const sdb = new SimpleDB();
+      try {
+        const left = sdb.newTable("left");
+        const right = sdb.newTable("right");
+        await left.loadArray(Array.from({ length: 100 }, (_, i) => ({
+          key: i % 10,
+          value: i,
+          ...(shape === "wide" ? { unused: "x".repeat(1000) } : {}),
+        }))).run();
+        await right.loadArray(
+          Array.from(
+            { length: shape === "high-fanout" ? 100 : 10 },
+            (_, i) => ({
+              key: i % 10,
+              category: i % 2,
+            }),
+          ),
+        ).run();
+        const baseline = left.join(right, {
+          on: "key",
+          type: "inner",
+          outputTable: "baseline",
+        });
+        await baseline.run();
+        const expected = await baseline.selectColumns(["value", "category"])
+          .filter("value >= 50")
+          .summarize({ columns: "value", by: "category", stats: "sum" })
+          .sort({ category: "asc" }).getData();
+        const joined = left.join(right, {
+          on: "key",
+          type: "inner",
+          outputTable,
+        });
+        const queries: string[] = [];
+        const original = joined.runQuery;
+        joined.runQuery = (query, connection, returnData, options) => {
+          queries.push(query);
+          return original(query, connection, returnData, options);
+        };
+        const actual = await joined.selectColumns(["value", "category"])
+          .filter("value >= 50")
+          .summarize({ columns: "value", by: "category", stats: "sum" })
+          .sort({ category: "asc" }).getData();
+        assertEquals(actual, expected);
+        const writes = queries.filter((query) =>
+          query.startsWith("CREATE OR REPLACE TABLE")
+        );
+        assertEquals(writes.length, 1);
+        assert(writes[0].includes(" JOIN "));
+        assert(writes[0].includes("SUM("));
+      } finally {
+        await sdb.close();
+      }
+    });
+  }
+}
+
+Deno.test("fused joins preserve preceding input changes and later right-table changes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable("left").loadArray([{ key: 1 }, { key: 2 }]);
+    const right = sdb.newTable("right").loadArray([{ key: 1, value: 10 }, {
+      key: 2,
+      value: 20,
+    }]);
+    left.filter("key = 2");
+    left.join(right, { on: "key" }).selectColumns("value");
+    right.filter("key = 1");
+    assertEquals(await left.getData(), [{ value: 20 }]);
+    assertEquals(await right.getData(), [{ key: 1, value: 10 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("a self-referencing filter after a fused join reads the joined result", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable('left"table').loadArray([{ key: 1 }, { key: 2 }]);
+    const right = sdb.newTable("right").loadArray([{ key: 1, value: 10 }, {
+      key: 2,
+      value: 20,
+    }]);
+    assertEquals(
+      await left.join(right, { on: "key" }).selectColumns("value")
+        .filter('value > (SELECT AVG(value) FROM "left""table")').getData(),
+      [{ value: 20 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (const failure of ["validation", "execution"]) {
+  Deno.test(`a downstream ${failure} failure preserves the successful join and other queued work`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const left = sdb.newTable("left").loadArray([{ key: 1 }]);
+      const right = sdb.newTable("right").loadArray([{ key: 1, value: 10 }]);
+      const joined = left.join(right, { on: "key", outputTable: "joined" });
+      if (failure === "validation") joined.selectColumns("missing");
+      else joined.filter("missing > 0");
+      right.filter("value > 20");
+      await assertRejects(() => joined.run());
+      assertEquals(await joined.getData(), [{ key: 1, value: 10 }]);
+      assertEquals(await right.getData(), []);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("join sources do not collide with generated CTE names", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable("s1");
+    const right = sdb.newTable("S2");
+    await left.loadArray([{ key: 1 }]).run();
+    await right.loadArray([{ key: 1, value: 10 }]).run();
+    const queries: string[] = [];
+    const original = left.runQuery;
+    left.runQuery = (query, connection, returnData, options) => {
+      queries.push(query);
+      return original(query, connection, returnData, options);
+    };
+    assertEquals(
+      await left.join(right, { on: "key" }).selectColumns("value").getData(),
+      [{ value: 10 }],
+    );
+    assertEquals(
+      queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE"))
+        .length,
+      1,
+    );
+  } finally {
+    await sdb.close();
+  }
+});

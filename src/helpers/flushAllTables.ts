@@ -199,7 +199,7 @@ async function replayEntries(
         ? []
         : referencedTables(op.rawSQL, sdb);
 
-      if (reads.includes(table)) {
+      if (op.kind === "fusable" && reads.includes(table)) {
         // User-supplied SQL referencing the operation's own table must read
         // the state produced by the previous steps, which a fused chain
         // can't provide (the name would resolve to the pre-chain table). So
@@ -239,7 +239,8 @@ async function replayEntries(
       if (op.kind === "source") {
         // A source replaces the target table from an external relation. It
         // starts a new segment rather than consuming any segment already open
-        // on the same table.
+        // on the same table. A source may read that materialized table itself
+        // (for example, an in-place join) and still fuse with downstream steps.
         await runOpenSegment();
         open = { table, ops: [op] };
         current = null;
@@ -372,11 +373,20 @@ async function compileOp(
   ctes: CompiledCte[],
   schema: TableSchema | null,
 ): Promise<CompiledOp> {
+  // Source relations can read tables named s1, s2, etc. A generated CTE must
+  // not shadow those physical inputs, including in later chain fragments.
+  const usedNames = new Set([
+    ...getRegisteredTables(table.sdb).map((input) => input.name.toLowerCase()),
+    ...ctes.map((cte) => cte.alias),
+  ]);
+  let aliasIndex = ctes.length + 1;
+  while (usedNames.has(`s${aliasIndex}`)) aliasIndex++;
+  const alias = `s${aliasIndex}`;
   if (op.kind === "source") {
     return {
       cte: {
-        alias: `s${ctes.length + 1}`,
-        select: cleanSQL(op.buildSelect(), table.sdb.expressionSyntax),
+        alias,
+        select: cleanSQL(await op.buildSelect(), table.sdb.expressionSyntax),
         values: [],
       },
       schema: op.schema ?? null,
@@ -399,7 +409,7 @@ async function compileOp(
     : null;
   return {
     cte: {
-      alias: `s${ctes.length + 1}`,
+      alias,
       select: cleanSQL(
         op.buildSelect(input, buildSchema),
         table.sdb.expressionSyntax,
@@ -481,7 +491,7 @@ async function runStepwise(
 }
 
 function needsSpatial(op: RelationalOp): boolean {
-  return op.kind === "fusable" && op.needsSpatial === true;
+  return op.needsSpatial === true;
 }
 
 function resolveValues(op: FusableOp, schema: TableSchema) {
