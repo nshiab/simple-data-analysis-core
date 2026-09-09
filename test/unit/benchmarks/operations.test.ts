@@ -30,6 +30,8 @@ Deno.test("operation tables report duration spread, process memory, and batch si
   const report = renderResults(observations);
   assertStringIncludes(report, "15.00 ± 5.00 ms");
   assertStringIncludes(report, "150.0 MiB");
+  assertStringIncludes(report, "#### JavaScript geometry updates");
+  assertStringIncludes(report, "Polygons: geometry update");
   assertStringIncludes(report, "10,003 | 1000 | Core");
   assertStringIncludes(report, "10,003 | 10000 | DuckDB");
   assertThrows(() => renderResults(observations.slice(1)));
@@ -90,7 +92,9 @@ Deno.test("both implementations validate complete outputs after warm-up and meas
           "benchmarks/operations/worker.ts",
           implementation,
           workload.name,
-          "10003",
+          "shape" in workload
+            ? String(workload.batchSize ? workload.batchSize + 3 : 103)
+            : "10003",
         ],
         stdout: "piped",
         stderr: "piped",

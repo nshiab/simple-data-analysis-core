@@ -91,12 +91,16 @@ schema is reserved for versioned SDA metadata. SQLite files can be imported with
 - **`options.logDuration`**: A flag indicating whether to log the total
   execution duration.
 - **`options.rowsToLog`**: The number of rows to display when logging a table.
-- **`options.charsToLog`**: The maximum number of characters to display for
-  text-based cells.
+- **`options.charsToLog`**: The maximum characters to display for text and
+  stringified nested cells, including truncation markers (default: 75).
+  Independent of column width. Use Infinity for unlimited text.
 - **`options.typesToLog`**: A flag indicating whether to include data types when
   logging a table.
 - **`options.cacheVerbose`**: Whether to log cache hits and misses, code and
   input changes, TTL status, and cache read/write timing.
+- **`options.expressionSyntax`**: Operator syntax for expressions and custom
+  queries: `"js"` (default) translates JavaScript-style operators in SQL
+  expressions; `"sql"` preserves SQL unchanged.
 - **`options.logSQL`**: A flag indicating whether to log SQL immediately before
   execution.
 - **`options.explainSQL`**: A flag indicating whether to log DuckDB query plans
@@ -385,9 +389,11 @@ console.log(extensions); // Output: [{ extension_name: "spatial", loaded: true, 
 
 #### `customQuery`
 
-Executes a custom SQL query directly against the DuckDB instance. Queries run in
-UTC. When data is returned, temporal values use the same JavaScript
-representations as `SimpleTable.getData()`.
+Executes a custom SQL query directly against the DuckDB instance. With the
+default `SimpleDB.expressionSyntax: "js"`, queries support JavaScript-style
+operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for
+unchanged SQL. Queries run in UTC. When data is returned, temporal values use
+the same JavaScript representations as `SimpleTable.getData()`.
 
 `customQuery()` bypasses the dependency and table-generation tracking used by
 `SimpleTable.cache()`. Reading or changing a table with `customQuery()` can
@@ -643,8 +649,9 @@ Creates an instance of SimpleTable.
 - **`simpleDB`**: The SimpleDB instance that this table belongs to.
 - **`options`**: An optional object with configuration options:
 - **`options.rowsToLog`**: The number of rows to log when displaying table data.
-- **`options.charsToLog`**: The maximum number of characters to log for strings.
-  Useful to avoid logging large text content.
+- **`options.charsToLog`**: The maximum characters to display for text and
+  stringified nested cells, including truncation markers (default: 75).
+  Independent of column width. Use Infinity for unlimited text.
 - **`options.typesToLog`**: A boolean indicating whether to include data types
   when logging a table.
 
@@ -731,9 +738,6 @@ Sets the data types for columns in a new table. If the table already exists, it
 will be replaced. To convert the types of an existing table, use the
 `.convert()` method instead.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -763,19 +767,38 @@ await table.setTypes({
 #### `loadArray`
 
 Loads an array of JavaScript objects into the table. Types can also be specified
-for individual columns instead of inferred from their values. This method queues
-the load; it runs when an async observer method (like `getData()` or `log()`) is
-awaited, or when `run()` is called.
+for individual columns instead of inferred from their values.
 
 JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
 instant is preserved, but JavaScript `Date` does not retain the timezone or
 offset originally used to construct it. String values remain `VARCHAR`; use
 `convert()` to parse them as temporal values.
 
+Array-valued cells are inferred as fixed-size `FLOAT` vectors and use a compact
+placeholder when extracted or logged. Plain nested object cells require an
+explicit geometry type as described below. To load other nested documents,
+stringify them first and use SQL to convert the text to typed lists and structs.
+
+Declare `columnTypes: { geom: "GEOMETRY('EPSG:4326')" }` to ingest GeoJSON
+geometry objects or nulls. Supports Point, LineString, Polygon, their Multi
+variants, and GeometryCollections nested up to 100 levels; Features and
+FeatureCollections must be reduced to geometry objects first. Positions must be
+finite two-dimensional WGS84 [longitude, latitude] coordinates within [-180,
+180] and [-90, 90]. Z/M positions are rejected. The type declaration asserts the
+input CRS; no CRS inference or reprojection occurs. Empty Polygon, Multi
+geometries, and GeometryCollection arrays are allowed; empty Points,
+LineStrings, and polygon rings are rejected. Rings must be closed with at least
+four positions. CRS members are rejected; other metadata (including bbox) is not
+stored in SQL geometry values. Validation and JSON serialization snapshot
+geometries when called, using additional memory proportional to the input.
+Loading stages this text in DuckDB and parses it into geometry before atomically
+replacing the table, requiring temporary database storage and conversion work.
+Logging retains compact geometry placeholders.
+
 ##### Signature
 
 ```typescript
-loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "INTEGER" | "BIGINT" | "DOUBLE" | "VARCHAR" | "BOOLEAN" | "DATE" | "TIME" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" | FLOAT[${number}] | float[${number}]> }): this;
+loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "INTEGER" | "BIGINT" | "DOUBLE" | "VARCHAR" | "BOOLEAN" | "DATE" | "TIME" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" | "GEOMETRY('EPSG:4326')" | "geometry('EPSG:4326')" | FLOAT[${number}] | float[${number}]> }): this;
 ```
 
 ##### Parameters
@@ -792,6 +815,13 @@ loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<stri
 The table, so methods can be chained.
 
 ##### Examples
+
+```ts
+await table.loadArray([{
+  name: "Montreal",
+  geom: { type: "Point", coordinates: [-73.57, 45.50] },
+}], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
+```
 
 ```ts
 // Load data from an array of objects
@@ -818,12 +848,26 @@ await table.loadArray([{
 }]).log();
 ```
 
+```ts
+// Load a nested document as text, then give it SQL list and struct types.
+const documents = sdb.newTable("nested_documents");
+await documents.loadArray([{
+  document: JSON.stringify({ scores: [1, null, 3], details: { count: 2 } }),
+}]).log();
+await sdb.customQuery(`CREATE OR REPLACE TABLE nested_documents AS SELECT
+  from_json(document, '{"scores":["INTEGER"],"details":{"count":"INTEGER"}}') AS document
+  FROM nested_documents`);
+await documents.log();
+```
+
 #### `loadData`
 
 Loads data from one or more local or remote files into the table. Supported file
-formats include CSV, JSON, Parquet, and Excel. This method queues the load; it
-runs when an async observer method (like `getData()` or `log()`) is awaited, or
-when `run()` is called.
+formats include CSV, JSON, Parquet, and Excel.
+
+With the default `SimpleDB.expressionSyntax: "js"`, conditions support
+JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL.
 
 ##### Signature
 
@@ -841,10 +885,8 @@ loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json"
 - **`options.autoDetect`**: A boolean indicating whether to automatically detect
   the data format. Defaults to `true`.
 - **`options.conditions`**: A SQL `WHERE` clause expression, without the `WHERE`
-  keyword, to filter source rows before applying `limit`. Uses the same syntax
-  as `filter()`, including JavaScript operators. Can reference source columns
-  excluded from `columns`. Defaults to no filtering; an empty string behaves the
-  same as omitting this option.
+  keyword, to filter source rows before applying `limit`. Can reference source
+  columns excluded from `columns`.
 - **`options.limit`**: A number indicating the maximum number of matching rows
   to load, after applying `conditions` if provided. Defaults to all matching
   rows.
@@ -944,9 +986,7 @@ await table
 
 #### `loadStatCanData`
 
-Downloads a complete Statistics Canada table and loads it into this table. The
-method queues the download and load; they run when an async observer method
-(like `getData()` or `log()`) is awaited, or when `run()` is called.
+Downloads a complete Statistics Canada table and loads it into this table.
 
 Results are cached as Parquet files in `.sda-cache/statcan` by default. Cached
 data does not expire unless a TTL is provided.
@@ -1010,9 +1050,6 @@ with or endorsed by Yahoo. It is provided for educational, research, and
 journalistic purposes. Before using it, review Yahoo's terms and any applicable
 data-provider restrictions.
 
-The method queues the download and load; they run when an async observer method
-(like `getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -1066,10 +1103,10 @@ await table
 
 #### `loadGeoData`
 
-Loads geospatial data from an external file or URL into the table.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
+Loads geospatial data from an external file or URL into the table. With the
+default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style
+operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for
+unchanged SQL.
 
 ##### Signature
 
@@ -1088,11 +1125,9 @@ loadGeoData(file: string, options?: { toEPSG4326?: boolean; columns?: string[]; 
   should remain in the resulting table, usually `"geom"`. By default, all
   columns are loaded.
 - **`options.conditions`**: A SQL `WHERE` clause expression, without the `WHERE`
-  keyword, to filter source rows before materialization and reprojection. Uses
-  the same syntax as `filter()`, including JavaScript operators. Can reference
-  source columns excluded from `columns`. Geometry conditions use the source
-  coordinate system. Defaults to no filtering; an empty string behaves the same
-  as omitting this option.
+  keyword, to filter source rows before materialization and reprojection. Can
+  reference source columns excluded from `columns`. Geometry conditions use the
+  source coordinate system.
 
 ##### Returns
 
@@ -1145,8 +1180,7 @@ await table
 Loads OpenStreetMap data into the table from a local `.osm` or `.osm.pbf` file,
 a remote file URL, or an Overpass bounding-box query. Pass a path or URL string
 to load an existing file, or pass a bounding box with `filters` to download
-matching features. The method queues the load; it runs when an async observer
-method (like `getData()` or `log()`) is awaited, or when `run()` is called.
+matching features.
 
 DuckDB's
 [Osmium community extension](https://duckdb.org/community_extensions/extensions/osmium)
@@ -1279,9 +1313,6 @@ method requires an FTS index and creates one automatically when needed. DuckDB
 FTS indexes do not update automatically when the table changes; use
 `overwrite: true` to rebuild the index after modifying the table.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -1354,9 +1385,6 @@ DuckDB's [VSS extension](https://duckdb.org/docs/stable/extensions/vss).
 If a VSS index already exists on the table, this method will skip creation and
 log a message (when verbose is enabled), unless the `overwrite` option is set to
 `true`. The index definition is recorded in {@link indexes}.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1431,9 +1459,6 @@ This method creates the required index with DuckDB's
 It reuses the table's existing FTS index unless `overwriteIndex` is `true`.
 DuckDB FTS indexes do not update automatically when the source table changes;
 use `overwriteIndex: true` to rebuild the index after modifying the table.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1557,9 +1582,6 @@ await table.bm25("italian sauce", "Dish", "Recipe", 5, {
 
 Inserts rows, provided as an array of JavaScript objects, into the table.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -1590,9 +1612,7 @@ await table.insertRows(newRows).log();
 
 Inserts all rows from one or more other tables into this table. If tables do not
 have the same columns, an error will be thrown unless the `unifyColumns` option
-is set to `true`. This method queues the operation; it runs when an async
-observer method (like `getData()` or `log()`) is awaited, or when `run()` is
-called.
+is set to `true`.
 
 ##### Signature
 
@@ -1634,9 +1654,6 @@ await tableA.insertTables(["tableB", "tableC"], { unifyColumns: true }).log();
 
 Fetches sample data from the simple-data-analysis-core GitHub repository.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -1668,16 +1685,16 @@ await table.loadSample("fires").log();
 #### `clone`
 
 Returns a new table with the same structure and data as this table. The data can
-be optionally filtered, limited to a specific number of rows, and offset.
+be optionally filtered, limited to a specific number of rows, and offset. With
+the default `SimpleDB.expressionSyntax: "js"`, conditions support
+JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL.
 
 If `conditions`, `limit`, and `offset` are all used, they are applied in this
 order: `conditions` (WHERE clause) first, then `offset`, and finally `limit`
 (LIMIT).
 
 Note that cloning large tables can be a slow operation.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1759,9 +1776,6 @@ const tableB = await tableA.clone({
 Clones an existing column in this table, creating a new column with identical
 values.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -1793,9 +1807,6 @@ different time points.
 **Important:** The offset is applied based on the current row order in the
 table. For meaningful results, ensure your data is sorted appropriately (e.g.,
 by date/time for time-series analysis) before calling this method.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1860,9 +1871,6 @@ at the ends). Pass `interpolateBy` with a real numeric or date column name to
 use it as the X-axis, so that interpolated values are proportional to the actual
 distances between X-axis values rather than treating every row as equidistant.
 When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -1937,11 +1945,9 @@ Sorts the rows of the table based on specified column(s) and order(s). If no
 columns are specified, all columns are sorted from left to right in ascending
 order.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called. Order-preserving
-transformations queued after a sort retain that order. Operations such as joins,
-grouping, aggregation, and sampling do not guarantee input order; chain `sort()`
-after them when deterministic output order matters.
+Order-preserving transformations after a sort retain that order. Operations such
+as joins, grouping, aggregation, and sampling do not guarantee input order;
+chain `sort()` after them when deterministic output order matters.
 
 ##### Signature
 
@@ -1987,9 +1993,7 @@ await table.sort({ column1: "asc" }, { lang: { column1: "fr" } }).log();
 
 #### `selectColumns`
 
-Selects specific columns in the table, removing all others. This method queues
-the operation; it runs when an async observer method (like `getData()` or
-`log()`) is awaited, or when `run()` is called.
+Selects specific columns in the table, removing all others.
 
 ##### Signature
 
@@ -2020,9 +2024,6 @@ await table.selectColumns("productName").log();
 #### `skip`
 
 Skips the first `n` rows of the table, effectively removing them.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2076,9 +2077,6 @@ console.log(hasAgeColumn); // Output: true or false
 Selects random rows from the table, removing all others. You can optionally
 specify a seed to ensure repeatable sampling.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -2119,9 +2117,6 @@ await table.sample("10%", { seed: 123 }).log();
 
 Selects a specified number of rows from this table. An offset can be applied to
 skip initial rows, and the results can be output to a new table.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2174,9 +2169,6 @@ const topCustomersTable = await table.selectRows(75, {
 Removes duplicate rows from this table, keeping only unique rows. Note that the
 resulting data order might differ from the original.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -2215,9 +2207,7 @@ await table.removeDuplicates({ on: ["firstName", "lastName"] }).log();
 
 Removes rows with missing values from this table. By default, missing values
 include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`,
-`"NaN"`, `"undefined"`, and empty strings `""`. This method queues the
-operation; it runs when an async observer method (like `getData()` or `log()`)
-is awaited, or when `run()` is called.
+`"NaN"`, `"undefined"`, and empty strings `""`.
 
 ##### Signature
 
@@ -2265,9 +2255,7 @@ await table.removeMissing({ columns: "age", missingValues: [-1] }).log();
 #### `trim`
 
 Trims specified characters from the beginning, end, or both sides of string
-values in the given columns. This method queues the operation; it runs when an
-async observer method (like `getData()` or `log()`) is awaited, or when `run()`
-is called.
+values in the given columns.
 
 ##### Signature
 
@@ -2309,10 +2297,9 @@ await table.trim(["description", "notes"], { side: "right" }).log();
 #### `filter`
 
 Filters rows from this table based on SQL conditions. Note that it's often
-faster to use the `removeRows` method for simple removals. You can also use
-JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`). This method
-queues the operation; it runs when an async observer method (like `getData()` or
-`log()`) is awaited, or when `run()` is called.
+faster to use the `removeRows` method for simple removals. With the default
+`SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators
+(`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
 
 ##### Signature
 
@@ -2357,9 +2344,6 @@ await table.filter(`lastPurchaseDate >= '2023-01-01'`).log();
 Keeps rows in this table that have specific values in specified columns,
 removing all other rows.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -2397,9 +2381,6 @@ await table.keepValues({ status: null }).log();
 #### `removeValues`
 
 Removes rows from this table that have specific values in specified columns.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2439,11 +2420,9 @@ await table.removeValues({ status: null }).log();
 #### `removeRows`
 
 Removes rows from this table based on SQL conditions. This method is similar to
-`filter()`, but removes rows instead of keeping them. You can also use
-JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
+`filter()`, but removes rows instead of keeping them. With the default
+`SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators
+(`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
 
 ##### Signature
 
@@ -2489,9 +2468,6 @@ await table.removeRows(
 Renames one or more columns in the table. Throws if a source column does not
 exist, so a typo fails loudly instead of being silently ignored.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -2534,9 +2510,6 @@ await table.renameColumns({ "product_id": "productId" }, { strict: false })
 
 Cleans column names by removing non-alphanumeric characters and formatting them
 to camel case.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2608,9 +2581,6 @@ The table will then look like this:
 | Sales      | 2022 | 75        |
 | Sales      | 2023 | 98        |
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 #### `wider`
 
 Restructures this table by unstacking (pivoting) values, transforming data from
@@ -2669,9 +2639,6 @@ When multiple rows share the same `namesFrom`/grouping combination, their
 `valuesFrom` values are combined with the `options.stat` function (`"sum"` by
 default).
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 #### `convert`
 
 Converts data types of specified columns to target types (JavaScript or SQL
@@ -2690,10 +2657,6 @@ UTC).
 
 When converting strings to numbers, commas (often used as thousand separators)
 will be automatically removed before conversion.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called. If a column
-doesn't exist, the error is thrown at that point too.
 
 ##### Signature
 
@@ -2781,9 +2744,7 @@ await table.removeTable();
 
 #### `removeColumns`
 
-Removes one or more columns from this table. This method queues the operation;
-it runs when an async observer method (like `getData()` or `log()`) is awaited,
-or when `run()` is called.
+Removes one or more columns from this table.
 
 ##### Signature
 
@@ -2814,9 +2775,9 @@ await table.removeColumns("tempColumn").log();
 #### `addColumn`
 
 Adds a new column to the table based on a specified data type (JavaScript or SQL
-types) and a SQL definition. This method queues the operation; it runs when an
-async observer method (like `getData()` or `log()`) is awaited, or when `run()`
-is called.
+types) and a SQL definition. With the default `SimpleDB.expressionSyntax: "js"`,
+expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL.
 
 ##### Signature
 
@@ -2867,9 +2828,6 @@ time parts apply to times and timestamps. `NULL` input values produce `NULL`
 extracted values. Parts extracted from `TIMESTAMP WITH TIME ZONE` values use
 UTC.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -2906,9 +2864,6 @@ await table.extractDatePart("publishedAt", {
 Adds a new column to the table containing the row number, starting at 0 (like an
 index).
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -2944,9 +2899,6 @@ Performs a cross join operation with another table. A cross join returns the
 Cartesian product of the rows from both tables, meaning all possible pairs of
 rows will be in the resulting table. This means that if the left table has `n`
 rows and the right table has `m` rows, the result will have `n * m` rows.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -2991,10 +2943,7 @@ Merges the data of this table (considered the left table) with another table
 (the right table) based on a common column or multiple columns. Note that the
 order of rows in the returned data is not guaranteed to be the same as in the
 original tables. This operation might create temporary files in a `.tmp` folder;
-consider adding `.tmp` to your `.gitignore`. This method queues the operation;
-it runs when an async observer method (like `getData()` or `log()`) is awaited,
-or when `run()` is called. The join uses the other table's state as of this
-call: operations queued on it afterwards run after the join.
+consider adding `.tmp` to your `.gitignore`.
 
 ##### Signature
 
@@ -3056,11 +3005,6 @@ order alphabetically by the left column and then by the right column.
 
 This operation might create temporary files in a `.tmp` folder; consider adding
 `.tmp` to your `.gitignore`.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called. The join uses the
-other table's state as of this call: operations queued on it afterwards run
-after the join.
 
 ##### Signature
 
@@ -3146,9 +3090,6 @@ Similarity is computed using the
 [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community
 extension, which is installed and loaded automatically.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3220,9 +3161,6 @@ await table.fuzzyClean("category", "category", 80, {
 
 Replaces specified strings in the selected columns.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3280,9 +3218,7 @@ await table.replace("all", { "%": "" }).log();
 
 #### `lower`
 
-Converts string values in the specified columns to lowercase. This method queues
-the operation; it runs when an async observer method (like `getData()` or
-`log()`) is awaited, or when `run()` is called.
+Converts string values in the specified columns to lowercase.
 
 ##### Signature
 
@@ -3313,9 +3249,7 @@ await table.lower(["column1", "column2"]).log();
 
 #### `upper`
 
-Converts string values in the specified columns to uppercase. This method queues
-the operation; it runs when an async observer method (like `getData()` or
-`log()`) is awaited, or when `run()` is called.
+Converts string values in the specified columns to uppercase.
 
 ##### Signature
 
@@ -3347,9 +3281,7 @@ await table.upper(["column1", "column2"]).log();
 #### `capitalize`
 
 Capitalizes the first letter of each string in the specified columns and
-converts the rest of the string to lowercase. This method queues the operation;
-it runs when an async observer method (like `getData()` or `log()`) is awaited,
-or when `run()` is called.
+converts the rest of the string to lowercase.
 
 ##### Signature
 
@@ -3380,9 +3312,6 @@ await table.capitalize(["column1", "column2"]).log();
 #### `truncate`
 
 Truncates string values in a specified column to a maximum number of characters.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3418,9 +3347,6 @@ Pads the strings in the specified columns to a target length.
 The columns must contain string (VARCHAR) values. An error is thrown if any
 column is of a different type. `null` values remain `null`. If any string
 already exceeds the target length, an error is thrown (no silent truncation).
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3471,9 +3397,6 @@ Splits strings in a specified column by a separator and extracts a substring at
 a given index, storing the result in a new or existing column. If the index is
 out of bounds, an empty string will be returned for that row.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3520,9 +3443,6 @@ extra columns will contain empty strings (unless `strict` is set to `false`). If
 a row has more parts than the number of new columns, an error will be thrown
 unless `strict` is set to `false`.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3567,9 +3487,6 @@ await table.splitSpread("data", "|", ["col1", "col2"], { strict: false }).log();
 Extracts a specific number of characters from the beginning (left side) of
 string values in the specified column.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3599,9 +3516,6 @@ await table.firstChars("productCode", 2).log();
 Extracts a specific number of characters from the end (right side) of string
 values in the specified column.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3629,9 +3543,6 @@ await table.lastChars("productCode", 2).log();
 #### `replaceNulls`
 
 Replaces `NULL` values in the specified columns with a given value.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3674,9 +3585,6 @@ await table.replaceNulls("all", 0).log();
 #### `concatenate`
 
 Concatenates values from specified columns into a new column.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3723,9 +3631,6 @@ All values must be string, otherwise an error will be thrown. Use the
 
 If a column value is `NULL`, it will be replaced by `'Unknown'` in the
 concatenated result.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3786,9 +3691,6 @@ Each value in the specified column is split using the provided separator, and a
 new row is created for each resulting substring. All other column values are
 duplicated across the newly created rows.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3829,9 +3731,6 @@ Repeats rows based on the values in a column.
 
 If a row has a value of 3 in the specified column, it will be repeated 3 times.
 If the value is 0 or negative, the row will be removed.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3876,9 +3775,6 @@ This is the inverse operation of `unnest()`. Multiple rows are combined into
 fewer rows by grouping on specified category columns and concatenating the
 target column values with a separator.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -3918,9 +3814,6 @@ await table.nest("tags", ",", ["country", "city"]).log();
 #### `round`
 
 Rounds numeric values in specified columns.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -3981,9 +3874,6 @@ Selected integer and decimal columns become `DOUBLE` columns so fractional noise
 is retained. This method adds random jitter; it does not provide anonymization
 or differential privacy guarantees.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -4023,10 +3913,10 @@ await table.addNoise(["x", "y"], 0.1, {
 
 #### `updateColumn`
 
-Updates values in a specified column using a SQL expression.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
+Updates values in a specified column using a SQL expression. With the default
+`SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style
+operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for
+unchanged SQL.
 
 ##### Signature
 
@@ -4067,9 +3957,6 @@ await table.updateColumn(
 #### `ranks`
 
 Assigns ranks to rows in a new column based on the values of a specified column.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4121,9 +4008,6 @@ await table.ranks("sales", "salesRank", { by: ["department", "city"] }).log();
 
 Assigns quantiles to rows in a new column based on specified column values.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -4166,9 +4050,6 @@ await table.quantiles("sales", 4, "salesQuartile").log();
 #### `bins`
 
 Assigns bins for specified column values based on an interval size.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4284,9 +4165,6 @@ await table.rowProportions(["Men", "Women", "NonBinary"], {
 }).log();
 ```
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 #### `rowRanks`
 
 Selects a ranked numeric value within each row and adds its source column name,
@@ -4298,9 +4176,6 @@ default, a tie at the requested rank throws an error. Set `options.ties` to
 to produce one row for each tied column. The `"all"` option can therefore
 increase the table's row count. If null values leave a row without the requested
 rank, the new columns contain null.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4352,9 +4227,6 @@ await table.rowRanks(["CAQ", "PLQ", "PQ"], {
 
 Computes proportions vertically over a column's values, relative to the sum of
 all values in that column or group.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4414,9 +4286,6 @@ await table.columnProportions("sales", "sales_proportion", {
 Creates a summary table from selected columns, optionally grouped by other
 columns. This method allows you to aggregate data, calculate statistics (e.g.,
 count, mean, sum), and group results by categorical columns.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4545,9 +4414,6 @@ summarized nor used for labels contain `NULL` in the added rows. A stat string
 is also used as its row label; pass an object to customize that label. If
 `options.stats` is omitted, every supported stat is added.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -4602,9 +4468,6 @@ await table.addSummaryRows("all", "region", {
 Computes the cumulative sum of values in a column. For this method to work
 properly, ensure your data is sorted first.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -4652,9 +4515,6 @@ Computes rolling aggregations (e.g., rolling average, min, max) over a specified
 column. For rows without enough preceding or following rows to form a complete
 window, `NULL` will be returned. For this method to work properly, ensure your
 data is sorted by the relevant column(s) first.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4711,9 +4571,6 @@ Calculates correlations between columns. If no `x` and `y` columns are
 specified, the method computes the correlations for all numeric column
 combinations. Note that correlation is symmetrical: the correlation of `x` with
 `y` is the same as `y` with `x`.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4781,9 +4638,6 @@ the method computes linear regression analysis for all numeric column
 permutations. Note that linear regression analysis is asymmetrical: the linear
 regression of `x` over `y` is not the same as `y` over `x`.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -4848,9 +4702,6 @@ await table.linearRegressions({ decimals: 3 }).log();
 Identifies outliers in a specified column using the Interquartile Range (IQR)
 method.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -4885,9 +4736,6 @@ await table.outliersIQR("salary", "salaryOutlier", { by: "gender" }).log();
 #### `zScore`
 
 Computes the Z-score for values in a specified column.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4930,9 +4778,6 @@ await table.zScore("score", "scoreZScore", { decimals: 2 }).log();
 #### `normalize`
 
 Normalizes the values in a column using min-max normalization.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -4998,9 +4843,6 @@ JavaScript `Date` objects only have millisecond precision and always represent
 an instant. Construct them with an explicit timezone, such as
 `new Date("2001-01-01T00:00:00Z")`; date-time strings without `Z` or an offset
 use the user's local timezone.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5080,16 +4922,40 @@ Updates data in the table using a JavaScript function. The function receives the
 existing rows as an array of objects and must return the modified rows as an
 array of objects. This method offers high flexibility for data manipulation but
 can be slow for large tables as it involves transferring data between DuckDB and
-JavaScript. This method does not work with tables containing geometries.
-
-This method queues the update; the dataModifier function runs when an async
-observer method (like `getData()` or `log()`) is awaited, or when `run()` is
-called.
+JavaScript. Each row is an ordinary object whose keys are the table's column
+names. The callback receives an array of these rows, not a GeoJSON
+FeatureCollection or an array of Features. Ordinary columns stay at the top
+level of each row; they are not moved into a GeoJSON properties object. Each
+geometry column contains a GeoJSON geometry object (for example, { type:
+"Point", coordinates: [-73, 45] }), with SQL nulls exposed as null.
+GeometryCollections contain geometries instead of coordinates. Geometry column
+names are preserved: geom is only an example name, and multiple geometry columns
+are supported. Returned rows use the same structure. Geometry values are
+converted back to SQL geometry; ordinary objects are never inferred as new
+geometry columns without columnTypes. Only geometry type and coordinates (or
+geometries for a GeometryCollection) are stored. Extra members added inside a
+geometry, including properties, id, and bbox, are discarded on a successful
+update. Store attributes on the row instead: row.label becomes a column, whereas
+row.geom.properties does not. Feature and FeatureCollection values in geometry
+columns are rejected; crs members are also rejected. Unlike this row-based
+callback, getGeoData() exports a FeatureCollection: the selected geometry column
+becomes each Feature's geometry and the other columns become properties. Source
+geometry columns must have EPSG:4326 CRS; call
+`reproject("EPSG:4326", { column: "geom" })` first for unknown or different CRS.
+Coordinates use WGS84 longitude–latitude order. Supported geometries follow
+loadArray(): finite two-dimensional coordinates, including GeometryCollections;
+Z/M and representations that lose precision in conversion are rejected. Returned
+rows carry their geometry through filtering, reordering and duplication.
+Spreading a row shares its geometry reference; use structuredClone for
+independent nested edits. Existing SQL types (including all-null geometry
+columns) are retained. Callback and write failures leave the original table
+intact. JavaScript transfer and GeoJSON conversion can be expensive, especially
+in memory for complex geometries.
 
 ##### Signature
 
 ```typescript
-updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<Record<string, unknown>[]>) | ((rows: Record<string, unknown>[]) => Record<string, unknown>[]), options?: { batchSize?: number }): this;
+updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<Record<string, unknown>[]>) | ((rows: Record<string, unknown>[]) => Record<string, unknown>[]), options?: { batchSize?: number; columnTypes?: Record<string, string> }): this;
 ```
 
 ##### Parameters
@@ -5100,13 +4966,64 @@ updateWithJS(dataModifier: ((rows: Record<string, unknown>[]) => Promise<Record<
 - **`options`**: An optional object with configuration options:
 - **`options.batchSize`**: If provided, rows are processed in batches of this
   size instead of all at once, so large tables don't have to be materialized
-  entirely in memory. The modifier function is called once per batch.
+  entirely in memory. This limits input rows per batch, but does not eliminate
+  conversion work or bound geometry size or callback output expansion. The
+  modifier function is called once per batch. Tables with a column named `rowid`
+  or `__sda_rowid` (case-insensitive) are rejected before the modifier runs;
+  rename the column or omit batchSize.
+- **`options.columnTypes`**: Explicit types for newly added columns, following
+  loadArray's columnTypes contract. Declare geometry as GEOMETRY('EPSG:4326');
+  geometry is never inferred from object shape. Existing columns cannot be
+  redeclared.
 
 ##### Returns
 
 The table, so methods can be chained.
 
 ##### Examples
+
+```ts
+// Enrich an ordinary column while retaining geometry.
+await sdb.newTable().loadArray([
+  { name: "Station", geom: { type: "Point", coordinates: [-73, 45] } },
+  { name: "Unknown location", geom: null },
+], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
+  .updateWithJS((rows) => {
+    // rows is an array of ordinary row objects:
+    // [
+    //   { name: "Station", geom: { type: "Point", coordinates: [-73, 45] } },
+    //   { name: "Unknown location", geom: null },
+    // ]
+    // Access attributes with row.name and geometry with row.geom.
+    return rows.map((row) => ({
+      ...row,
+      label: String(row.name).toUpperCase(),
+    }));
+  }).log();
+```
+
+```ts
+await sdb.newTable().loadArray([{
+  geom: { type: "Point", coordinates: [-73, 45] },
+}], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
+  .updateWithJS((rows) =>
+    rows.map((row) => {
+      // This example loads only Points. Narrow the type for coordinate access.
+      const geom = row.geom as { type: "Point"; coordinates: number[] } | null;
+      if (geom !== null) geom.coordinates[0] += 0.01;
+      return row;
+    })
+  ).log();
+```
+
+```ts
+await sdb.newTable().loadArray([{ longitude: -73, latitude: 45 }])
+  .updateWithJS((rows) =>
+    rows.map((row) => ({
+      ...row,
+      geom: { type: "Point", coordinates: [row.longitude, row.latitude] },
+    })), { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
+```
 
 ```ts
 // Extract hostnames with JavaScript's URL parser.
@@ -5242,9 +5159,6 @@ Normalizes string values in a column by:
 Produces identical output to `journalism-format`'s `normalizeString()` function
 for all common cases including accented Latin characters.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -5312,9 +5226,6 @@ clusters. A user-perceived character composed of multiple code points, such as
 some emoji or decomposed accented letters, counts as multiple characters. `NULL`
 input values produce `NULL` counts.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -5346,9 +5257,6 @@ tabs, and line breaks separate words. Punctuation is not removed, so a
 standalone punctuation sequence counts as a word. Text without whitespace counts
 as one word, regardless of language. Empty or whitespace-only strings produce
 `0`, and `NULL` input values produce `NULL` counts.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -5405,7 +5313,9 @@ console.log(totalChars); // e.g., 523
 
 #### `getRowCount`
 
-Returns the number of rows in the table.
+Returns the number of rows in the table. With the default
+`SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators
+(`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
 
 ##### Signature
 
@@ -5895,9 +5805,11 @@ console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
 
 #### `getFirstRow`
 
-Returns the first row of the table, optionally filtered by SQL conditions. You
-can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-Temporal values use the same JavaScript representations as `getData()`.
+Returns the first row of the table, optionally filtered by SQL conditions. With
+the default `SimpleDB.expressionSyntax: "js"`, conditions support
+JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL. Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5934,9 +5846,11 @@ console.log(firstRowBooks);
 
 #### `getLastRow`
 
-Returns the last row of the table, optionally filtered by SQL conditions. You
-can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-Temporal values use the same JavaScript representations as `getData()`.
+Returns the last row of the table, optionally filtered by SQL conditions. With
+the default `SimpleDB.expressionSyntax: "js"`, conditions support
+JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL. Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -5974,8 +5888,10 @@ console.log(lastRowBooks);
 #### `getTop`
 
 Returns the top `n` rows of the table, optionally filtered by SQL conditions.
-You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`,
-`!==`). Temporal values use the same JavaScript representations as `getData()`.
+With the default `SimpleDB.expressionSyntax: "js"`, conditions support
+JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL. Temporal values use the same
+JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -6012,9 +5928,10 @@ console.log(top5Books);
 
 Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
 By default, the last row will be returned first. To preserve the original order,
-use the `originalOrder` option. You can also use JavaScript syntax for
-conditions (e.g., `&&`, `||`, `===`, `!==`). Temporal values use the same
-JavaScript representations as `getData()`.
+use the `originalOrder` option. With the default
+`SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators
+(`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+Temporal values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -6063,9 +5980,10 @@ console.log(bottom5Books);
 #### `getRow`
 
 Returns a single row that matches the specified conditions. If no row matches or
-if more than one row matches, an error is thrown by default. You can also use
-JavaScript syntax for conditions (e.g., `AND`, `||`, `===`, `!==`). Temporal
-values use the same JavaScript representations as `getData()`.
+if more than one row matches, an error is thrown by default. With the default
+`SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators
+(`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+Temporal values use the same JavaScript representations as `getData()`.
 
 ##### Signature
 
@@ -6114,13 +6032,26 @@ console.log(flexibleRow);
 #### `getData`
 
 Returns the data from the table as an array of objects, optionally filtered by
-SQL conditions. You can also use JavaScript syntax for conditions (e.g., `&&`,
-`||`, `===`, `!==`).
+SQL conditions. With the default `SimpleDB.expressionSyntax: "js"`, conditions
+support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL.
 
 Top-level DuckDB `DATE` and `TIMESTAMP` columns are returned as JavaScript
 `Date` objects interpreted in UTC. `TIMESTAMP WITH TIME ZONE` values are
 returned as UTC strings, preserving DuckDB's microsecond precision; JavaScript
 `Date` supports only milliseconds.
+
+Top-level `BIGINT`, `UBIGINT`, `HUGEINT`, and `UHUGEINT` columns are returned as
+JavaScript numbers. Values outside `Number.MIN_SAFE_INTEGER` through
+`Number.MAX_SAFE_INTEGER` throw instead of losing precision. Cast such columns
+to `VARCHAR` to retrieve their exact digits.
+
+Nested SQL lists and structs become JavaScript arrays and objects. Within them,
+`BIGINT`, `UBIGINT`, `HUGEINT`, `UHUGEINT`, and `DECIMAL` values remain strings
+to preserve precision, even for small integers. Other nested types follow
+DuckDB's JSON conversion; for example, `INTEGER` becomes a number, `BOOLEAN`
+becomes a boolean, and null remains null. No safe-integer range check is applied
+to these nested strings.
 
 ##### Signature
 
@@ -6171,11 +6102,24 @@ console.log(booksData);
 const preview = await table.getData({ limit: 2 });
 ```
 
+```ts
+// Read nested integers without losing digits. SQL creates the nested types.
+await sdb.customQuery(`CREATE TABLE nested_example AS SELECT
+  [42::BIGINT, 9007199254740993::BIGINT] AS ids,
+  {'count': 2::INTEGER, 'amount': 123.450::DECIMAL(6,3)} AS details`);
+const nested = sdb.newTable("nested_example");
+const rows = await nested.getData();
+// [{ ids: ["42", "9007199254740993"], details: { count: 2, amount: "123.450" } }]
+await nested.log();
+```
+
 #### `stream`
 
 Streams the table rows one by one as an async iterator, without materializing
 the whole table in memory. Values are converted to JavaScript types the same way
-as `getData()`.
+as `getData()`. With the default `SimpleDB.expressionSyntax: "js"`, conditions
+support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL.
 
 The underlying DuckDB result is streamed chunk by chunk, so tables larger than
 the available memory can be iterated. Avoid running other queries on the same
@@ -6222,9 +6166,10 @@ for await (
 #### `getDataAsCSV`
 
 Returns the data from the table as a CSV string, optionally filtered by SQL
-conditions. You can also use JavaScript syntax for conditions (e.g., `&&`, `||`,
-`===`, `!==`). Temporal values are first converted as they are in `getData()`,
-then serialized using UTC date and timestamp text.
+conditions. With the default `SimpleDB.expressionSyntax: "js"`, conditions
+support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL. Temporal values are first converted
+as they are in `getData()`, then serialized using UTC date and timestamp text.
 
 ##### Signature
 
@@ -6274,9 +6219,6 @@ console.log(booksDataCSV);
 
 Creates point geometries from latitude (y) and longitude (x) columns.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6317,9 +6259,6 @@ await table.createPoints("y", "x", "geom", { projection: "EPSG:3347" }).log();
 
 Adds a column with boolean values indicating the validity of geometries.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6356,9 +6295,6 @@ await table.addGeoValidity("isValidMyGeom", { column: "myGeom" }).log();
 
 Adds a column with the number of vertices (points) in each geometry.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6394,9 +6330,6 @@ await table.addVertexCount("myGeomVertices", { column: "myGeom" }).log();
 
 Attempts to make invalid geometries valid without removing any vertices.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6428,9 +6361,6 @@ await table.fixGeo("myGeom").log();
 
 Adds a column with boolean values indicating whether geometries are closed
 (e.g., polygons) or open (e.g., linestrings).
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6467,9 +6397,6 @@ await table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" })
 
 Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`,
 `"POLYGON"`) for each geometry.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6508,9 +6435,6 @@ Flips the coordinate order of geometries in a specified column (e.g., from
 vice-versa). **Warning:** This method should be used with caution as it directly
 manipulates coordinate order and can affect the accuracy of geospatial
 operations if not used correctly.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6551,9 +6475,7 @@ with latitude. This method adds random jitter; it does not provide anonymization
 or differential privacy guarantees.
 
 This method supports only `POINT` geometries in `EPSG:4326`. Null and empty
-geometries are preserved. It queues the operation; the operation runs when an
-async observer method (like `getData()` or `log()`) is awaited, or when `run()`
-is called.
+geometries are preserved.
 
 ##### Signature
 
@@ -6600,9 +6522,6 @@ await table.addGeoNoise(0.1, {
 Reduces the precision of geometries in a specified column to a given number of
 decimal places.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6638,9 +6557,6 @@ await table.reducePrecision(2, { column: "myGeom" }).log();
 Reprojects the geometries in a specified column to another Spatial Reference
 System (SRS).
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6675,9 +6591,6 @@ await table.reproject("EPSG:3347", { column: "myGeom" }).log();
 
 Computes the area of geometries in square meters (`"m2"`) or optionally square
 kilometers (`"km2"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6728,9 +6641,6 @@ await table.area("myGeomArea", { column: "myGeom" }).log();
 Computes the length of line geometries in meters (`"m"`) or optionally
 kilometers (`"km"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6779,9 +6689,6 @@ await table.length("routeLength", { column: "routeGeom" }).log();
 
 Computes the perimeter of polygon geometries in meters (`"m"`) or optionally
 kilometers (`"km"`). The input geometry is assumed to be in EPSG:4326 (WGS84).
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -6834,9 +6741,6 @@ Computes a buffer (a polygon representing a specified distance around a
 geometry) for geometries in a specified column. The distance is in the Spatial
 Reference System (SRS) unit of the input geometries.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -6875,10 +6779,7 @@ Merges the data of this table (considered the left table) with another table
 (the right table) based on a spatial relationship. Note that the order of rows
 in the returned data is not guaranteed to be the same as in the original tables.
 This operation might create temporary files in a `.tmp` folder; consider adding
-`.tmp` to your `.gitignore`. This method queues the operation; it runs when an
-async observer method (like `getData()` or `log()`) is awaited, or when `run()`
-is called. The join uses the other table's state as of this call: operations
-queued on it afterwards run after the join.
+`.tmp` to your `.gitignore`.
 
 ##### Signature
 
@@ -6971,9 +6872,6 @@ const tableC = await tableA.joinGeo(tableB, "intersect", {
 Computes the intersection of two sets of geometries, creating new geometries
 where they overlap.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7004,9 +6902,6 @@ await table.intersection("geomA", "geomB", "intersectGeom").log();
 Computes the geometric difference between two geometries, returning the portion
 of the first geometry that does not intersect the second.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7036,9 +6931,6 @@ await table.difference("geomA", "geomB", "geomA_minus_geomB").log();
 #### `fillHoles`
 
 Fills holes in polygon geometries.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7072,9 +6964,6 @@ await table.fillHoles("polygonGeom").log();
 Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE`
 otherwise.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7104,9 +6993,6 @@ await table.intersects("geomA", "geomB", "doIntersect").log();
 
 Returns `TRUE` if every point of a geometry in `column` is covered by a geometry
 in `containerColumn`, including their boundaries, and `FALSE` otherwise.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7139,9 +7025,6 @@ await table.coveredBy("pointGeom", "polygonGeom", "isCovered").log();
 Computes the union of two geometries, creating a new geometry that represents
 the merged area of both.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7172,9 +7055,6 @@ await table.union("geomA", "geomB", "unionGeom").log();
 Extracts the latitude (y) and longitude (x) coordinates from point geometries.
 The input geometry is assumed to be in EPSG:4326 (WGS84).
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7204,9 +7084,6 @@ await table.extractLatLon("geom", "lat", "lon").log();
 
 Simplifies geometries while preserving their overall coverage. A higher
 tolerance results in more significant simplification.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7246,9 +7123,6 @@ await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false }).log();
 Computes the centroid of geometries. The values are returned in the SRS unit of
 the input geometries.
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7282,9 +7156,6 @@ await table.centroid("areaCentroid", { column: "areaGeom" }).log();
 #### `randomPoint`
 
 Generates a random point within the geometries of a specified column.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7330,9 +7201,6 @@ the distance is calculated in the Spatial Reference System (SRS) unit of the
 input geometries. You can optionally specify `"spheroid"` or `"haversine"`
 methods to get results in meters or kilometers. If using `"spheroid"` or
 `"haversine"`, the input geometries must be in EPSG:4326 (WGS84).
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7398,9 +7266,6 @@ await table.distance("area1", "area2", "distance_spheroid_km", {
 Unnests geometries recursively, transforming multi-part geometries (e.g.,
 MultiPolygon) into individual single-part geometries (e.g., Polygon).
 
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
-
 ##### Signature
 
 ```typescript
@@ -7432,9 +7297,6 @@ await table.unnestGeo("multiGeom").log();
 
 Adds the bounding box coordinates of geometries in a specified column as four
 new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7473,9 +7335,6 @@ await table.addBoundingBox({ column: "geom", decimals: 2 }).log();
 
 Aggregates geometries in a specified column based on a chosen aggregation
 method.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7527,9 +7386,6 @@ const intersectionTable = await table.aggregateGeo("intersection", {
 #### `linesToPolygons`
 
 Transforms closed linestring geometries into polygon geometries.
-
-This method queues the operation; it runs when an async observer method (like
-`getData()` or `log()`) is awaited, or when `run()` is called.
 
 ##### Signature
 
@@ -7596,8 +7452,14 @@ console.log(areaBbox);
 
 #### `getGeoData`
 
-Returns the table's geospatial data as a GeoJSON object. If the table has
-multiple geometry columns, you must specify which one to use.
+Returns the table's geospatial data as a GeoJSON FeatureCollection. Each row
+becomes a Feature: the selected geometry column becomes its geometry, and the
+remaining columns become its properties. These properties are constructed from
+table columns, not from metadata inside the stored SQL geometry. Editing the
+returned object does not update the table. To persist edits, use updateWithJS(),
+whose callback receives ordinary row objects with columns as keys and geometry
+objects in geometry cells, rather than Features. If the table has multiple
+geometry columns, you must specify which one to use.
 
 ##### Signature
 
@@ -7641,7 +7503,8 @@ console.log(rewoundGeojson);
 #### `writeData`
 
 Writes the table's data to a file in various formats (CSV, JSON, Parquet,
-DuckDB, SQLite). If the specified path does not exist, it will be created.
+DuckDB, SQLite). Tables with geometry columns must use `writeGeoData()` instead.
+If the specified path does not exist, it will be created.
 
 ##### Signature
 
@@ -7901,8 +7764,18 @@ await summary.log();
 
 Logs a specified number of rows from the table to the console. By default, the
 first 10 rows are logged. You can optionally log the column types and filter the
-data based on conditions. You can also use JavaScript syntax for conditions
-(e.g., `&&`, `||`, `===`, `!==`).
+data based on conditions. SQL dates and timestamps retain their native precision
+for display, including temporal infinities. Lists and objects are stringified
+using the same nested representations as `getData()`, then truncated according
+to `charsToLog`. Unsafe top-level large integers throw, just as with
+`getData()`. Type annotations describe the SQL type and the JavaScript
+extraction type before display formatting; nulls do not determine the column's
+annotation. Colors reflect the SQL value's meaning, so exact decimal strings use
+numeric coloring. Column width is independent of the content truncation budget.
+
+With the default `SimpleDB.expressionSyntax: "js"`, conditions support
+JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+`expressionSyntax: "sql"` for unchanged SQL.
 
 ##### Signature
 
@@ -8142,6 +8015,10 @@ await table.logRowCount();
 Logs the bottom `n` rows of the table to the console. By default, the last row
 will be returned first. To preserve the original order, use the `originalOrder`
 option.
+
+Uses the same precision-preserving temporal display, nested stringification,
+numeric coloring, and `charsToLog` truncation as `log()`. Unsafe top-level large
+integers throw, just as with `getData()`.
 
 ##### Signature
 

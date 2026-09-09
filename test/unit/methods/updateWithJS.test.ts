@@ -406,21 +406,6 @@ Deno.test("should be a no-op on an empty table when the modifier returns no rows
   await sdb.close();
 });
 
-Deno.test("should throw on a table containing a geometry column", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("geodata");
-  table.loadGeoData("test/geodata/files/pointsInside.json");
-
-  table.updateWithJS((rows) => rows);
-  await assertRejects(
-    () => table.run(),
-    Error,
-    "updateWithJS doesn't work with tables containing geometries.",
-  );
-
-  await sdb.close();
-});
-
 for (const batchSize of [undefined, 1]) {
   Deno.test(`updateWithJS preserves SQL values and types (${batchSize})`, async () => {
     const sdb = new SimpleDB();
@@ -517,3 +502,336 @@ Deno.test("updateWithJS continues batching when the callback consumes the input 
     await sdb.close();
   }
 });
+
+for (const batchSize of [undefined, 2]) {
+  Deno.test(`updateWithJS carries editable geometry with transformed rows (${batchSize})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("geo");
+      await table.loadArray(
+        [1, 2, 3, 4].map((id) => ({
+          id,
+          geom: { type: "Point", coordinates: [id, 45.123456789012345] },
+          empty: null,
+        })),
+        {
+          columnTypes: {
+            geom: "GEOMETRY('EPSG:4326')",
+            empty: "GEOMETRY('EPSG:4326')",
+          },
+        },
+      ).run();
+      const expected: { id: number; x: number; y: number; label: string }[] =
+        [];
+      await table.updateWithJS(
+        (rows) =>
+          rows.reverse().filter((row) => row.id !== 3).flatMap((row) => {
+            const geom = row.geom as { type: string; coordinates: number[] };
+            assertEquals(geom.coordinates[1], 45.123456789012345);
+            geom.coordinates[0] += 10;
+            const clone = structuredClone(geom);
+            clone.coordinates[0] += 20;
+            const outputs = [{
+              ...row,
+              id: row.id,
+              geom,
+              label: "original",
+              added: geom,
+            }, {
+              ...row,
+              id: row.id,
+              geom: clone,
+              label: "clone",
+              added: null,
+            }];
+            for (const output of outputs) {
+              expected.push({
+                id: output.id as number,
+                x: (output.geom as typeof geom).coordinates[0],
+                y: 45.123456789012345,
+                label: output.label,
+              });
+            }
+            return outputs;
+          }),
+        { batchSize, columnTypes: { added: "GEOMETRY('EPSG:4326')" } },
+      ).run();
+      assertEquals(
+        await sdb.customQuery(
+          "SELECT id, ST_X(geom) AS x, ST_Y(geom) AS y, label FROM geo",
+          { returnData: true },
+        ),
+        expected,
+      );
+      assertEquals(
+        await sdb.customQuery(
+          "SELECT ST_X(added) AS x, empty IS NULL AS empty FROM geo",
+          { returnData: true },
+        ),
+        expected.map((row) => ({
+          x: row.label === "original" ? row.x : null,
+          empty: true,
+        })),
+      );
+      const types = await table.getTypes();
+      for (const key of ["geom", "empty", "added"]) {
+        assertEquals(types[key], "GEOMETRY('EPSG:4326')");
+      }
+      assertEquals(
+        await sdb.customQuery("SELECT DISTINCT ST_CRS(geom) AS crs FROM geo", {
+          returnData: true,
+        }),
+        [{ crs: "EPSG:4326" }],
+      );
+      const originalLog = console.log;
+      const lines: string[] = [];
+      try {
+        console.log = (...args: unknown[]) => {
+          lines.push(args.map(String).join(" "));
+        };
+        await table.log();
+      } finally {
+        console.log = originalLog;
+      }
+      assertEquals(lines.join("\n").includes("GEOM(EPSG:4326)"), true);
+      assertEquals(lines.join("\n").includes("coordinates"), false);
+      assertEquals(await sdb.getTableNames(), ["geo"]);
+    } finally {
+      await sdb.close();
+    }
+  });
+
+  for (const failure of ["callback", "geometry", "attribute", "collision"]) {
+    Deno.test(`updateWithJS geometry failure is atomic (${batchSize}, ${failure})`, async () => {
+      const sdb = new SimpleDB();
+      try {
+        const table = sdb.newTable("geo");
+        await table.loadArray(
+          [1, 2, 3, 4].map((id) => ({
+            id,
+            geom: { type: "Point", coordinates: [id, 45] },
+          })),
+          { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } },
+        ).run();
+        const query = "SELECT id, ST_AsText(geom) AS geom FROM geo";
+        const before = await sdb.customQuery(query, { returnData: true });
+        await assertRejects(() =>
+          table.updateWithJS((rows) =>
+            rows.map((row) => {
+              if (row.id !== 4) {
+                return failure === "attribute"
+                  ? { ...row, vector: [1, 2] }
+                  : row;
+              }
+              if (failure === "callback") throw new Error("callback failed");
+              if (failure === "attribute") return { ...row, vector: [3n, 4n] };
+              return {
+                ...row,
+                geom: failure === "collision"
+                  ? "AI text"
+                  : { type: "Point", coordinates: [1, 2, 3] },
+              };
+            }), { batchSize }).run()
+        );
+        assertEquals(
+          await sdb.customQuery(query, { returnData: true }),
+          before,
+        );
+        assertEquals(await sdb.getTableNames(), ["geo"]);
+      } finally {
+        await sdb.close();
+      }
+    });
+  }
+
+  Deno.test(`updateWithJS preserves geometry binary values and ordinary exact SQL types (${batchSize})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("geo");
+      await table.loadArray(
+        [{ geom: { type: "Point", coordinates: [1, 2] } }],
+        { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } },
+      ).run();
+      await sdb.customQuery(`CREATE OR REPLACE TABLE geo AS SELECT
+        ST_GeomFromText(wkt)::GEOMETRY('EPSG:4326') AS geom,
+        9007199254740993::BIGINT AS id,
+        1234567890123456.789::DECIMAL(19,3) AS amount,
+        TIMESTAMP '2025-01-01 00:00:00.123456' AS instant
+        FROM (VALUES ('POINT (1.1234567890123457 2.0000000000000004)'),
+        ('LINESTRING (1 2, 3 4)'), ('POLYGON ((0 0, 1 0, 1 1, 0 0))'),
+        ('MULTIPOINT (1 2, 3 4)'), ('MULTILINESTRING ((1 2, 3 4))'),
+        ('MULTIPOLYGON (((0 0, 1 0, 1 1, 0 0)))'),
+        ('GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (1 2, 3 4))'),
+        ('POLYGON EMPTY'), ('MULTIPOINT EMPTY'), ('GEOMETRYCOLLECTION EMPTY'), (NULL)) t(wkt)`);
+      await sdb.customQuery("CREATE TABLE expected AS SELECT * FROM geo");
+      const types = await table.getTypes();
+      await table.updateWithJS(
+        (rows) => rows.map((row) => ({ ...row, label: "ok" })),
+        { batchSize },
+      ).run();
+      assertEquals(await table.getTypes(), { ...types, label: "VARCHAR" });
+      assertEquals(
+        await sdb.customQuery(
+          `SELECT count(*) AS differences FROM (
+        (SELECT ST_AsWKB(geom), id, amount, instant FROM geo)
+        EXCEPT ALL (SELECT ST_AsWKB(geom), id, amount, instant FROM expected))`,
+          { returnData: true },
+        ),
+        [{ differences: 0 }],
+      );
+      await table.updateWithJS(
+        (rows) => rows.map((row) => ({ ...row, geom: null })),
+        { batchSize },
+      ).run();
+      assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+for (const type of ["GEOMETRY", "GEOMETRY('EPSG:3857')"]) {
+  Deno.test(`updateWithJS rejects CRS before callbacks (${type})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("geo");
+      await table.loadArray([{ geom: null }], {
+        columnTypes: { geom: "GEOMETRY('EPSG:4326')" },
+      }).run();
+      await sdb.customQuery(`CREATE OR REPLACE TABLE geo (geom ${type})`);
+      let calls = 0;
+      await assertRejects(
+        () =>
+          table.updateWithJS((rows) => {
+            calls++;
+            return rows;
+          }).run(),
+        Error,
+        '.reproject("EPSG:4326", { column: "geom" })',
+      );
+      assertEquals(calls, 0);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+for (
+  const wkt of [
+    "POINT Z (1 2 3)",
+    "POINT M (1 2 3)",
+    "POINT ZM (1 2 3 4)",
+    "POINT EMPTY",
+    "LINESTRING EMPTY",
+  ]
+) {
+  Deno.test(`updateWithJS rejects unsupported source geometry (${wkt})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("geo");
+      await table.loadArray([{ geom: null }], {
+        columnTypes: { geom: "GEOMETRY('EPSG:4326')" },
+      }).run();
+      await sdb.customQuery(
+        `INSERT INTO geo VALUES (ST_GeomFromText('${wkt}')::GEOMETRY('EPSG:4326'))`,
+      );
+      let calls = 0;
+      await assertRejects(
+        () =>
+          table.updateWithJS((rows) => {
+            calls++;
+            return rows;
+          }).run(),
+        Error,
+        "geom",
+      );
+      assertEquals(calls, 0);
+      assertEquals(await table.getRowCount(), 2);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("updateWithJS requires explicit types for new geometry and validates declarations", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("geo");
+    await table.loadArray([{ id: 1 }]).run();
+    const declarations: ({ [key: string]: string } | undefined)[] = [
+      undefined,
+      { geom: "GEOMETRY" },
+      {
+        missing: "DOUBLE",
+      },
+      { ID: "DOUBLE" },
+    ];
+    for (const columnTypes of declarations) {
+      await assertRejects(() =>
+        table.updateWithJS((rows) =>
+          rows.map((row) => ({
+            ...row,
+            geom: { type: "Point", coordinates: [1, 2] },
+          })), { columnTypes }).run()
+      );
+      assertEquals(await table.getData(), [{ id: 1 }]);
+    }
+    await table.updateWithJS((rows) =>
+      rows.map((row) => ({
+        ...row,
+        geom: { type: "Point", coordinates: [1, 2] },
+      })), { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).run();
+    assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (const batchSize of [undefined, 1]) {
+  Deno.test(`updateWithJS stores row attributes, discards geometry metadata, and rejects Features (${batchSize})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("geometry_metadata");
+      await table.loadArray([{
+        name: "Station",
+        geom: { type: "Point", coordinates: [-73, 45] },
+      }], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
+        .updateWithJS((rows) =>
+          rows.map((row) => ({
+            ...row,
+            label: "Stored attribute",
+            geom: {
+              ...(row.geom as Record<string, unknown>),
+              properties: { label: "Discarded geometry metadata" },
+              id: "discarded-id",
+              bbox: [-73, 45, -73, 45],
+            },
+          })), { batchSize }).run();
+      const expected = {
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [-73, 45] },
+          properties: { name: "Station", label: "Stored attribute" },
+        }],
+      };
+      const exported = await table.getGeoData() as typeof expected;
+      assertEquals(exported, expected);
+      exported.features[0].properties.label = "Local export edit";
+      assertEquals(await table.getGeoData(), expected);
+      await assertRejects(
+        () =>
+          table.updateWithJS((rows) =>
+            rows.map((row) => ({
+              ...row,
+              geom: expected.features[0],
+            })), { batchSize }).run(),
+        Error,
+        "not a Feature or FeatureCollection",
+      );
+      assertEquals(await table.getGeoData(), expected);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
