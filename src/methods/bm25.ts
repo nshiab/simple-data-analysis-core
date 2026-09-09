@@ -1,5 +1,4 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import camelCase from "../helpers/camelCase.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import queryDB from "../helpers/queryDB.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
@@ -133,7 +132,7 @@ async function executeBm25(
     `CREATE OR REPLACE TABLE ${
       quoteIdentifier(outputTable.name)
     } AS SELECT ${selectClause} FROM (SELECT *, ${
-      quoteIdentifier(`fts_main_${camelCase(simpleTable.name)}`)
+      quoteIdentifier(`fts_main_${simpleTable.name}`)
     }.match_bm25(${quoteIdentifier(idColumn)}, ?${
       typeof options.k === "number" ? `, k := ${options.k}` : ""
     }${typeof options.b === "number" ? `, b := ${options.b}` : ""}${
