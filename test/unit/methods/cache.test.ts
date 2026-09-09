@@ -245,13 +245,13 @@ Deno.test("should restore FTS indexes from cache", async () => {
   };
 
   const firstSdb = new SimpleDB();
-  const firstTable = firstSdb.newTable("cacheFtsIndex");
+  const firstTable = firstSdb.newTable("cache_Fts_Index");
   await firstTable.cache(createCompute(firstTable));
   const cacheSources = JSON.parse(
     readFileSync(".sda-cache/sources.json", "utf-8"),
   ) as { [key: string]: { file: string | null } };
   const cacheFile = Object.values(cacheSources).find(({ file }) =>
-    file?.includes("cacheFtsIndex")
+    file?.includes("cache_Fts_Index")
   )?.file;
   if (cacheFile === undefined || cacheFile === null) {
     throw new Error("The FTS cache test did not create an artifact.");
@@ -260,7 +260,7 @@ Deno.test("should restore FTS indexes from cache", async () => {
     `ATTACH '${cacheFile}' AS cached_fts (READ_ONLY);`,
   );
   const cachedSchemas = await firstSdb.customQuery(
-    "SELECT schema_name FROM duckdb_schemas() WHERE database_name = 'cached_fts' AND schema_name = 'fts_main_cacheFtsIndex'",
+    "SELECT schema_name FROM duckdb_schemas() WHERE database_name = 'cached_fts' AND schema_name = 'fts_main_cache_Fts_Index'",
     { returnData: true },
   ) as { schema_name: string }[];
   await firstSdb.customQuery("DETACH cached_fts;");
@@ -268,10 +268,10 @@ Deno.test("should restore FTS indexes from cache", async () => {
   await firstSdb.close();
 
   const secondSdb = new SimpleDB();
-  const secondTable = secondSdb.newTable("cacheFtsIndex");
+  const secondTable = secondSdb.newTable("cache_Fts_Index");
   await secondTable.cache(createCompute(secondTable));
   const schemas = await secondSdb.customQuery(
-    "SELECT schema_name FROM duckdb_schemas() WHERE schema_name = 'fts_main_cacheFtsIndex'",
+    "SELECT schema_name FROM duckdb_schemas() WHERE schema_name = 'fts_main_cache_Fts_Index'",
     { returnData: true },
   ) as { schema_name: string }[];
 
@@ -279,7 +279,7 @@ Deno.test("should restore FTS indexes from cache", async () => {
   assertEquals(schemas.length, 1);
   assertEquals(secondTable.indexes, [{
     kind: "fts",
-    name: "fts_index_cacheftsindex",
+    name: "fts_index_cacheFtsIndex",
     idColumn: "id",
     textColumn: "text",
     options: {

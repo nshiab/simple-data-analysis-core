@@ -242,3 +242,29 @@ Deno.test("should successfully run a search with conjunctive option", async () =
   // Check that one of the results actually has both words (case-insensitive check on content would be ideal but content is not returned by default)
   // Let's just trust DuckDB's fts extension for now if it doesn't throw.
 });
+
+for (const name of ["ranking_probe", "ranking$probe", "Ranking_Épreuve"]) {
+  Deno.test(`bm25 preserves the FTS table name: ${name}`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable(name).loadArray([
+        { id: "a", text: "zebra" },
+        { id: "b", text: "other" },
+      ]);
+      for (const overwriteIndex of [false, false, true]) {
+        const result = table.bm25("zebra", "id", "text", 1, {
+          outputTable: "result",
+          overwriteIndex,
+        });
+        assertEquals(await result.getValues("id"), ["a"]);
+        await result.removeTable();
+        assertEquals(
+          table.indexes.filter(({ kind }) => kind === "fts").length,
+          1,
+        );
+      }
+    } finally {
+      await sdb.close();
+    }
+  });
+}
