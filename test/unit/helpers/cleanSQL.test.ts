@@ -4,6 +4,132 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 import queryDB from "../../../src/helpers/queryDB.ts";
 import mergeOptions from "../../../src/helpers/mergeOptions.ts";
 
+Deno.test("SQL normalization preserves Unicode dollar-quoted payloads", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const tag of ["é", "数据", "e\u0301", "🙂", "tag_é1"]) {
+      const value = "a == b || c !== null /* ' */";
+      const query = `SELECT $${tag}$${value}$${tag}$ AS value WHERE 1===1`;
+      assertEquals(await sdb.customQuery(query, { returnData: true }), [{
+        value,
+      }]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("SQL normalization preserves parameterized text casts", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const type of ["VARCHAR(10)", "CHAR(10)", "TEXT(10)"]) {
+      for (
+        const expression of [
+          `CAST(12 AS ${type})`,
+          `TRY_CAST(12 AS ${type})`,
+          `12::${type}`,
+          `CAST(CAST(12 AS INTEGER) AS ${type})`,
+        ]
+      ) {
+        const query = `SELECT ${expression} || 34 AS value`;
+        assertEquals(await sdb.customQuery(query, { returnData: true }), [{
+          value: "1234",
+        }]);
+      }
+    }
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT 'false'::VARCHAR(10)::BOOLEAN || true AS value",
+        { returnData: true },
+      ),
+      [{ value: true }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("SQL normalization distinguishes SET columns from assignments", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const expression of [
+        "set == null",
+        "t.set == null",
+        "(set == null)",
+        "(t.set == null)",
+      ]
+    ) {
+      assertEquals(
+        await sdb.customQuery(
+          `SELECT ${expression} AS value FROM (VALUES (NULL)) t(set)`,
+          { returnData: true },
+        ),
+        [{ value: true }],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("SQL normalization preserves assignments and translates their RHS null checks", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(
+      "CREATE TABLE updates (x INTEGER, b BOOLEAN, c BOOLEAN, set INTEGER); INSERT INTO updates VALUES (1, false, false, 1), (NULL, false, false, NULL)",
+    );
+    await sdb.customQuery(
+      "UPDATE updates SET b = x == null, c = set !== null, set = null",
+    );
+    assertEquals(
+      await sdb.customQuery("SELECT * FROM updates ORDER BY x NULLS LAST", {
+        returnData: true,
+      }),
+      [{ x: 1, b: false, c: true, set: null }, {
+        x: null,
+        b: true,
+        c: false,
+        set: null,
+      }],
+    );
+    await sdb.customQuery(
+      "WITH source AS (SELECT 1) UPDATE updates SET b = set == null, c = null FROM source WHERE set == null",
+    );
+    assertEquals(
+      await sdb.customQuery("SELECT b, c FROM updates", { returnData: true }),
+      [{ b: true, c: null }, { b: true, c: null }],
+    );
+    await sdb.customQuery(
+      "UPDATE updates SET (b, c) = (x == null, x !== null); SELECT set == null FROM updates",
+    );
+    assertEquals(
+      await sdb.customQuery("SELECT b, c FROM updates ORDER BY x NULLS LAST", {
+        returnData: true,
+      }),
+      [{ b: false, c: true }, { b: true, c: false }],
+    );
+    await sdb.customQuery("SET VARIABLE missing = null");
+    assertEquals(
+      await sdb.customQuery("SELECT getvariable('missing') IS NULL AS value", {
+        returnData: true,
+      }),
+      [{ value: true }],
+    );
+    await sdb.customQuery(
+      "PREPARE reset_values AS UPDATE updates SET b = null",
+    );
+    await sdb.customQuery("EXECUTE reset_values");
+    await sdb.customQuery("EXPLAIN UPDATE updates SET b = null");
+    assertEquals(
+      await sdb.customQuery("SELECT b FROM updates", { returnData: true }),
+      [{ b: null }, { b: null }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("SQL normalization preserves opaque regions", () => {
   for (
     const opaque of [

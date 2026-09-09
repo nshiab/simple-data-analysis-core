@@ -41,7 +41,11 @@ function scan(query: string): Token[] {
         }
       }
     } else {
-      const dollar = rest.match(/^\$(?:[A-Za-z_][A-Za-z_0-9]*)?\$/)?.[0];
+      // DuckDB permits non-ASCII characters in dollar tags, including
+      // combining marks and characters outside the Unicode letter categories.
+      const dollar = rest.match(
+        /^\$(?:[A-Za-z_\u0080-\uFFFF][A-Za-z_0-9\u0080-\uFFFF]*)?\$/,
+      )?.[0];
       if (dollar) {
         kind = "quoted";
         const end = query.indexOf(dollar, i + dollar.length);
@@ -174,6 +178,12 @@ export default function cleanSQL(
 
   // Only infer types that are explicit in the expression. Never infer a
   // column's or an arbitrary function's type from its name or argument types.
+  function isTextType(start: number, end: number): boolean {
+    return textTypes.has(original[start]) &&
+      (start + 1 === end ||
+        (original[start + 1] === "(" && pairs.get(start + 1) === end - 1));
+  }
+
   function concatenable(start: number, end: number): boolean {
     if (start >= end) return false;
     let cast: number | undefined;
@@ -189,7 +199,7 @@ export default function cleanSQL(
     }
     // The final cast determines the result type, including casts to BOOLEAN.
     if (cast !== undefined) {
-      return cast + 2 === end && textTypes.has(original[cast + 1]);
+      return isTextType(cast + 1, end);
     }
     if (original[start] === "(" && pairs.get(start) === end - 1) {
       return concatenable(start + 1, end - 1);
@@ -202,7 +212,13 @@ export default function cleanSQL(
     if (original[start + 1] === "(" && pairs.get(start + 1) === end - 1) {
       if (["CONCAT", "CONCAT_WS"].includes(original[start])) return true;
       if (["CAST", "TRY_CAST"].includes(original[start])) {
-        return original[end - 3] === "AS" && textTypes.has(original[end - 2]);
+        for (let i = start + 2; i < end - 1; i++) {
+          if (["(", "[", "CASE"].includes(original[i])) {
+            i = pairs.get(i) ?? end;
+          } else if (original[i] === "AS") {
+            return isTextType(i + 1, end - 1);
+          }
+        }
       }
     }
     return false;
@@ -249,9 +265,21 @@ export default function cleanSQL(
   }
 
   function normalize(start: number, end: number) {
-    let assignment = false;
+    let statement: string | undefined = original[start];
+    let inSetClause = false;
+    let assignmentTarget = false;
     for (let i = start; i < end; i++) {
       const word = original[i];
+      if (statement === undefined) statement = word;
+      // Nested queries are visited separately below. Look through statement
+      // prefixes to find the outer command that can introduce assignments.
+      if (
+        ["WITH", "EXPLAIN", "PREPARE"].includes(statement) &&
+        ["SELECT", "INSERT", "UPDATE", "DELETE", "MERGE"].includes(word)
+      ) statement = word;
+      if (
+        word === "UPDATE" && ["DO", "THEN"].includes(original[i - 1])
+      ) statement = word;
       if (["(", "[", "CASE"].includes(word)) {
         const close = pairs.get(i);
         if (close !== undefined) {
@@ -261,7 +289,9 @@ export default function cleanSQL(
         }
       }
       if (["WHERE", "HAVING", "QUALIFY", "WHEN"].includes(word)) {
-        assignment = false;
+        statement = word;
+        inSetClause = false;
+        assignmentTarget = false;
       } else if (
         [
           "THEN",
@@ -278,8 +308,24 @@ export default function cleanSQL(
           ";",
         ].includes(word)
       ) {
-        assignment = false;
-      } else if (word === "SET") assignment = true;
+        statement = word;
+        inSetClause = false;
+        assignmentTarget = false;
+      } else if (
+        word === "SET" && !inSetClause &&
+        (statement === "UPDATE" ||
+          (statement === "SET" &&
+            (original[i + 1] === "VARIABLE" || original[i + 2] === "=")))
+      ) {
+        inSetClause = true;
+        assignmentTarget = true;
+      } else if (word === "," && inSetClause) assignmentTarget = true;
+      if (word === ";") statement = undefined;
+
+      // Preserve only the assignment operator itself. Comparisons in its RHS
+      // still use shorthand, even when they are not wrapped in parentheses.
+      const assignment = assignmentTarget && ["=", "==", "==="].includes(word);
+      if (assignment) assignmentTarget = false;
 
       const token = significant[i];
       if (["==", "==="].includes(word)) token.text = "=";
