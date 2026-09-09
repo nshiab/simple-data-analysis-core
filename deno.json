@@ -33,7 +33,8 @@
     "patch": "deno task all-tests && deno run --no-lock -A jsr:@nshiab/bump-version patch",
     "minor": "deno task all-tests && deno run --no-lock -A jsr:@nshiab/bump-version minor",
     "minor-no-tests": "deno run --no-lock -A jsr:@nshiab/bump-version minor",
-    "major": "deno task all-tests && deno run --no-lock -A jsr:@nshiab/bump-version major"
+    "major": "deno task all-tests && deno run --no-lock -A jsr:@nshiab/bump-version major",
+    "benchmark-core": "deno run -A benchmarks/operations/run.ts"
   },
   "exclude": [
     "npm/"

@@ -80,6 +80,8 @@ in the database, in the order the methods were called.
 
 ## Performance benchmarks
 
+These are end-to-end workflow comparisons.
+
 These benchmarks compare SDA-core with raw DuckDB and popular Python and R
 libraries, measuring duration and peak memory.
 
@@ -117,6 +119,35 @@ results.
 | sf 1.1.2                                  | R 4.6.1       | 1.58 ± 0.00 s |             +111.2% |           489 MB |            +78.0% |
 
 <!-- benchmark-results:end -->
+
+### Focused operation benchmarks
+
+These additional benchmarks compare Core and DuckDB on data transfer, joins, and
+aggregations to help track and improve performance over time.
+
+<!-- benchmark-operations:start -->
+
+#### Join followed by aggregation
+
+| Operation        |      Rows | Batch size | Implementation | Mean duration ± SD | Mean peak process memory |
+| ---------------- | --------: | ---------: | -------------- | -----------------: | -----------------------: |
+| Join → aggregate | 1,000,000 |          — | Core           |    11.31 ± 0.20 ms |                119.9 MiB |
+| Join → aggregate | 1,000,000 |          — | DuckDB         |    10.53 ± 0.13 ms |                135.2 MiB |
+
+#### JavaScript data transfer
+
+| Operation      |    Rows | Batch size | Implementation | Mean duration ± SD | Mean peak process memory |
+| -------------- | ------: | ---------: | -------------- | -----------------: | -----------------------: |
+| loadArray()    | 100,000 |          — | Core           |     6.06 ± 0.14 ms |                232.6 MiB |
+| loadArray()    | 100,000 |          — | DuckDB         |    18.67 ± 0.34 ms |                232.3 MiB |
+| getData()      | 100,000 |          — | Core           |     9.16 ± 0.40 ms |                190.5 MiB |
+| getData()      | 100,000 |          — | DuckDB         |    11.84 ± 0.21 ms |                208.2 MiB |
+| updateWithJS() | 100,000 |       1000 | Core           |   113.86 ± 1.31 ms |                206.9 MiB |
+| updateWithJS() | 100,000 |       1000 | DuckDB         |    59.44 ± 0.41 ms |                237.2 MiB |
+| updateWithJS() | 100,000 |      10000 | Core           |    72.78 ± 1.29 ms |                243.4 MiB |
+| updateWithJS() | 100,000 |      10000 | DuckDB         |    42.33 ± 2.46 ms |                244.4 MiB |
+
+<!-- benchmark-operations:end -->
 
 ## Building extensions
 
