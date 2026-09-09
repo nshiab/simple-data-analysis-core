@@ -1847,8 +1847,6 @@ export default class SimpleTable extends Simple {
   /**
    * Filters rows from this table based on SQL conditions. Note that it's often faster to use the `removeRows` method for simple removals.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
    * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
@@ -1955,8 +1953,6 @@ export default class SimpleTable extends Simple {
   /**
    * Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    *
    * This method queues the operation; it runs when an async observer method (like `getData()` or `log()`) is awaited, or when `run()` is called.
    *
@@ -5165,8 +5161,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the first row of the table, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param options - An optional object with configuration options:
@@ -5203,8 +5197,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the last row of the table, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param options - An optional object with configuration options:
@@ -5241,8 +5233,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the top `n` rows of the table, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param count - The number of rows to return from the top of the table.
@@ -5282,8 +5272,6 @@ export default class SimpleTable extends Simple {
    * Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
    * By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @param count - The number of rows to return from the bottom of the table.
@@ -5386,8 +5374,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the data from the table as an array of objects, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    *
    * Top-level DuckDB `DATE` and `TIMESTAMP` columns are returned as JavaScript
    * `Date` objects interpreted in UTC. `TIMESTAMP WITH TIME ZONE` values are
@@ -5485,8 +5471,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the data from the table as a CSV string, optionally filtered by SQL conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    * Temporal values are first converted as they are in `getData()`, then
    * serialized using UTC date and timestamp text.
    *
@@ -6910,8 +6894,6 @@ export default class SimpleTable extends Simple {
    * Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
    * You can optionally log the column types and filter the data based on conditions.
    * You can also use JavaScript syntax for conditions (e.g., `&&`, `||`, `===`, `!==`).
-   * Logical `||` requires explicit predicates on both sides, such as `a = 1 || b = 2`; otherwise it remains SQL concatenation.
-   * String literals, quoted identifiers, and comments are preserved.
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
    * @param options.count - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
