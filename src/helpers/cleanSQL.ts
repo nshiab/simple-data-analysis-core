@@ -48,7 +48,7 @@ function scan(query: string): Token[] {
         i = end === -1 ? query.length : end + dollar.length;
       } else {
         const token = rest.match(
-          /^(?:[\p{L}_][\p{L}\p{N}_$]*|\$[0-9]+|!==|===|==|!=|<>|<=|>=|&&|\|\||::)/u,
+          /^(?:[\p{L}_][\p{L}\p{N}_$]*|\$(?:[0-9]+|[\p{L}_][\p{L}\p{N}_]*)|!==|===|==|!=|<>|<=|>=|&&|\|\||::)/u,
         )?.[0];
         i += token?.length ?? 1;
       }
@@ -67,11 +67,31 @@ export default function cleanSQL(query: string): string {
   const pairs = new Map<number, number>();
   const stack: number[] = [];
   for (let i = 0; i < original.length; i++) {
-    if (original[i] === "(") stack.push(i);
-    else if (original[i] === ")" && stack.length) {
+    if (["(", "[", "CASE"].includes(original[i])) stack.push(i);
+    else if (
+      stack.length &&
+      ((original[i] === ")" && original[stack[stack.length - 1]] === "(") ||
+        (original[i] === "]" && original[stack[stack.length - 1]] === "[") ||
+        (original[i] === "END" && original[stack[stack.length - 1]] === "CASE"))
+    ) {
       const start = stack.pop()!;
       pairs.set(start, i);
       pairs.set(i, start);
+    }
+  }
+  // BETWEEN owns its first AND at the same expression level. Parentheses
+  // and CASE expressions in either bound may contain unrelated conjunctions.
+  const betweenAnd = new Set<number>();
+  for (let i = 0; i < original.length; i++) {
+    if (original[i] !== "BETWEEN") continue;
+    for (let j = i + 1; j < original.length; j++) {
+      if (["(", "[", "CASE"].includes(original[j])) {
+        j = pairs.get(j) ?? original.length;
+      } else if ([")", "]", "END", ";"].includes(original[j])) break;
+      else if (original[j] === "AND") {
+        betweenAnd.add(j);
+        break;
+      }
     }
   }
   const comparisons = new Set([
@@ -111,7 +131,6 @@ export default function cleanSQL(query: string): string {
     "WHEN",
     "THEN",
     "ELSE",
-    "END",
     ",",
     ";",
   ]);
@@ -119,13 +138,15 @@ export default function cleanSQL(query: string): string {
   function predicate(start: number, end: number): boolean {
     if (start >= end) return false;
     if (original[start] === "NOT") return predicate(start + 1, end);
-    if (pairs.get(start) === end - 1) return predicate(start + 1, end - 1);
+    if (original[start] === "(" && pairs.get(start) === end - 1) {
+      return predicate(start + 1, end - 1);
+    }
     if (end === start + 1) return ["TRUE", "FALSE"].includes(original[start]);
     if (original[start] === "EXISTS" && pairs.get(start + 1) === end - 1) {
       return true;
     }
     for (let i = start; i < end; i++) {
-      if (original[i] === "(") {
+      if (["(", "[", "CASE"].includes(original[i])) {
         i = pairs.get(i) ?? end;
       } else if (["AND", "OR", "&&", "||"].includes(original[i])) {
         return predicate(start, i) && predicate(i + 1, end);
@@ -138,7 +159,7 @@ export default function cleanSQL(query: string): string {
     let assignment = false;
     for (let i = start; i < end; i++) {
       const word = original[i];
-      if (word === "(") {
+      if (["(", "[", "CASE"].includes(word)) {
         const close = pairs.get(i);
         if (close !== undefined) {
           normalize(i + 1, close, inWhere);
@@ -146,11 +167,13 @@ export default function cleanSQL(query: string): string {
           continue;
         }
       }
-      if (["WHERE", "HAVING", "QUALIFY"].includes(word)) {
+      if (["WHERE", "HAVING", "QUALIFY", "WHEN"].includes(word)) {
         inWhere = true;
         assignment = false;
       } else if (
         [
+          "THEN",
+          "ELSE",
           "SELECT",
           "FROM",
           "GROUP",
@@ -173,13 +196,23 @@ export default function cleanSQL(query: string): string {
       else if (word === "&&") token.text = " AND ";
       else if (word === "||" && inWhere) {
         let left = i - 1;
-        while (left >= start && !boundaries.has(original[left])) {
-          if (original[left] === ")") left = pairs.get(left) ?? start;
+        while (
+          left >= start &&
+          (!boundaries.has(original[left]) || betweenAnd.has(left))
+        ) {
+          if ([")", "]", "END"].includes(original[left])) {
+            left = pairs.get(left) ?? start;
+          }
           left--;
         }
         let right = i + 1;
-        while (right < end && !boundaries.has(original[right])) {
-          if (original[right] === "(") right = pairs.get(right) ?? end;
+        while (
+          right < end &&
+          (!boundaries.has(original[right]) || betweenAnd.has(right))
+        ) {
+          if (["(", "[", "CASE"].includes(original[right])) {
+            right = pairs.get(right) ?? end;
+          }
           right++;
         }
         // SQL also uses || for concatenation. Bare identifiers/functions have
