@@ -719,3 +719,24 @@ Deno.test("methods reject clearly after close()", async () => {
     "getData() cannot run because its SimpleDB is closed.",
   );
 });
+
+Deno.test("table names in SQL literals and comments preserve fusion", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("literalFusion");
+    await table.loadArray([{ x: 1 }, { x: 2 }, { x: 3 }]).run();
+    const queries = spyOnQueries(table);
+    const result = await table.filter("x > 1")
+      .filter(`x > 2 AND 'literalFusion' = $tag$literalFusion$tag$
+        /* literalFusion /* nested */ */ -- literalFusion
+      `).getData();
+    assertEquals(result, [{ x: 3 }]);
+    const creates = queries.filter((query) =>
+      query.includes('CREATE OR REPLACE TABLE "literalFusion"')
+    );
+    assertEquals(creates.length, 1);
+    assert(creates[0].includes('WITH "s1" AS'));
+  } finally {
+    await sdb.close();
+  }
+});

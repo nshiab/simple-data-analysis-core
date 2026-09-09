@@ -1286,3 +1286,51 @@ Deno.test("cache separates identical computations using different expression syn
     for (const sdb of databases) await sdb.close();
   }
 });
+
+Deno.test("escaped quoted SQL dependencies invalidate cached results", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable('cache"quotedSource');
+    const output = sdb.newTable("cacheQuotedOutput");
+    await source.loadArray([{ value: 1 }, { value: 2 }]).run();
+    let runs = 0;
+    const compute = () => {
+      runs++;
+      output.loadArray([{ value: 1 }, { value: 2 }])
+        .filter('value IN (SELECT value FROM "cache""quotedSource")');
+    };
+    await output.cache(compute);
+    await output.cache(compute);
+    assertEquals(runs, 1);
+    source.filter("value = 2");
+    await output.cache(compute);
+    assertEquals(runs, 2);
+    assertEquals(await output.getData(), [{ value: 2 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("table names in SQL literals and comments do not invalidate caches", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("cacheLiteralSource");
+    const output = sdb.newTable("cacheLiteralOutput");
+    await source.loadArray([{ value: 1 }, { value: 2 }]).run();
+    let runs = 0;
+    const compute = () => {
+      runs++;
+      output.loadArray([{ value: 1 }])
+        .filter(`'cacheLiteralSource' = $$cacheLiteralSource$$
+          /* cacheLiteralSource */ -- cacheLiteralSource
+        `);
+    };
+    await output.cache(compute);
+    source.filter("value = 2");
+    await output.cache(compute);
+    assertEquals(runs, 1);
+    assertEquals(await output.getData(), [{ value: 1 }]);
+  } finally {
+    await sdb.close();
+  }
+});
