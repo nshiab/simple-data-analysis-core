@@ -3,8 +3,6 @@ import capitalize from "../helpers/capitalize.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
@@ -33,11 +31,13 @@ export default function joinGeo(
     : leftTable;
 
   queueOp(outputTable, {
-    kind: "barrier",
+    kind: "source",
+    rawSQL: [quoteIdentifier(leftTable.name), quoteIdentifier(rightTable.name)],
+    needsSpatial: true,
     method: "joinGeo()",
     parameters: { method, rightTable: rightTable.name, options },
-    execute: () =>
-      executeJoinGeo(leftTable, method, rightTable, outputTable, options),
+    buildSelect: () =>
+      buildJoinGeoSelect(leftTable, method, rightTable, options),
   });
 
   return outputTable;
@@ -94,11 +94,10 @@ function formatReceivedValue(value: unknown): string {
   return JSON.stringify(value) ?? String(value);
 }
 
-async function executeJoinGeo(
+async function buildJoinGeoSelect(
   leftTable: SimpleTable,
   method: "intersect" | "inside" | "withinDistance",
   rightTable: SimpleTable,
-  outputTable: SimpleTable,
   options: {
     leftColumn?: string;
     rightColumn?: string;
@@ -108,7 +107,7 @@ async function executeJoinGeo(
     excludeLeftGeometry?: boolean;
     excludeRightGeometry?: boolean;
   },
-): Promise<void> {
+): Promise<string> {
   const leftTypes = await leftTable.getTypes();
   const rightTypes = await rightTable.getTypes();
   const leftColumn = options.leftColumn ??
@@ -181,30 +180,16 @@ async function executeJoinGeo(
 
   const type = options.type ?? "left";
 
-  await queryDB(
-    leftTable,
-    joinGeoQuery(
-      leftTable.name,
-      leftColumn,
-      method,
-      rightTable.name,
-      rightColumn,
-      type,
-      outputTable.name,
-      selectList,
-      options.distance,
-      options.distanceMethod,
-    ),
-    mergeOptions(leftTable, {
-      table: outputTable.name,
-      method: "joinGeo()",
-      parameters: {
-        leftTable: leftTable.name,
-        method,
-        rightTable: rightTable.name,
-        options,
-      },
-    }),
+  return joinGeoQuery(
+    leftTable.name,
+    leftColumn,
+    method,
+    rightTable.name,
+    rightColumn,
+    type,
+    selectList,
+    options.distance,
+    options.distanceMethod,
   );
 }
 
@@ -215,14 +200,11 @@ function joinGeoQuery(
   rightTable: string,
   rightColumn: string,
   join: "inner" | "left" | "right" | "full",
-  outputTable: string,
   selectList: string,
   distance: number | undefined,
   distanceMethod: "srs" | "haversine" | "spheroid" | undefined,
 ) {
-  let query = `CREATE OR REPLACE TABLE ${
-    quoteIdentifier(outputTable)
-  } AS SELECT ${selectList}`;
+  let query = `SELECT ${selectList}`;
   if (join === "inner") {
     query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
       quoteIdentifier(rightTable)
@@ -246,12 +228,12 @@ function joinGeoQuery(
   if (method === "intersect") {
     query += ` ON ST_Intersects(${quoteIdentifier(leftTable)}.${
       quoteIdentifier(leftColumn)
-    }, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)});`;
+    }, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)})`;
   } else if (method === "inside") {
     // Order is important
     query += ` ON ST_Covers(${quoteIdentifier(rightTable)}.${
       quoteIdentifier(rightColumn)
-    }, ${quoteIdentifier(leftTable)}.${quoteIdentifier(leftColumn)});`;
+    }, ${quoteIdentifier(leftTable)}.${quoteIdentifier(leftColumn)})`;
   } else if (method === "withinDistance") {
     if (typeof distance === "number") {
       if (distanceMethod === undefined || distanceMethod === "srs") {

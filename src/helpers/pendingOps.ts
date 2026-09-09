@@ -91,8 +91,10 @@ export type SourceOp = {
   rawSQL?: string[];
   /** A schema known from explicit source options, when inference is unnecessary. */
   schema?: TableSchema;
-  /** Returns the source as a single composable SELECT statement. */
-  buildSelect: () => string;
+  /** Whether the source uses spatial functions. */
+  needsSpatial?: boolean;
+  /** Returns a composable SELECT, optionally inspecting materialized inputs. */
+  buildSelect: () => string | Promise<string>;
 };
 
 /** A relational operation that can participate in a fused segment. */

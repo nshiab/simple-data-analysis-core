@@ -1,8 +1,6 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import getIdenticalColumns from "../helpers/getIdenticalColumns.ts";
-import mergeOptions from "../helpers/mergeOptions.ts";
-import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import assertSameDatabase from "../helpers/assertSameDatabase.ts";
 
@@ -24,24 +22,24 @@ export default function join(
     : leftTable;
 
   queueOp(outputTable, {
-    kind: "barrier",
+    kind: "source",
+    rawSQL: [quoteIdentifier(leftTable.name), quoteIdentifier(rightTable.name)],
     method: "join()",
     parameters: { rightTable: rightTable.name, options },
-    execute: () => executeJoin(leftTable, rightTable, outputTable, options),
+    buildSelect: () => buildJoinSelect(leftTable, rightTable, options),
   });
 
   return outputTable;
 }
 
-async function executeJoin(
+async function buildJoinSelect(
   leftTable: SimpleTable,
   rightTable: SimpleTable,
-  outputTable: SimpleTable,
   options: {
     on?: string | string[];
     type?: "inner" | "left" | "right" | "full";
   },
-): Promise<void> {
+): Promise<string> {
   const leftTableColumns = await leftTable.getColumns();
   const rightTableColumns = await rightTable.getColumns();
   const identicalColumns = getIdenticalColumns(
@@ -135,24 +133,12 @@ async function executeJoin(
       .map((d) => `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}`),
   ].join(", ");
 
-  await queryDB(
-    leftTable,
-    joinQuery(
-      leftTable.name,
-      rightTable.name,
-      on,
-      type,
-      outputTable.name,
-      selectList,
-    ),
-    mergeOptions(leftTable, {
-      table: outputTable.name,
-      method: "join()",
-      parameters: {
-        rightTable: rightTable.name,
-        options,
-      },
-    }),
+  return joinQuery(
+    leftTable.name,
+    rightTable.name,
+    on,
+    type,
+    selectList,
   );
 }
 
@@ -161,12 +147,9 @@ function joinQuery(
   rightTable: string,
   on: string[],
   join: "inner" | "left" | "right" | "full",
-  outputTable: string,
   selectList: string,
 ) {
-  let query = `CREATE OR REPLACE TABLE ${
-    quoteIdentifier(outputTable)
-  } AS SELECT ${selectList}`;
+  let query = `SELECT ${selectList}`;
 
   if (join === "inner") {
     query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
@@ -197,7 +180,7 @@ function joinQuery(
       .join(
         " AND ",
       )
-  });\n`;
+  })`;
 
   return query;
 }
