@@ -74,7 +74,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * The operator syntax used by expressions and custom queries in this database.
    * `"js"` translates JavaScript-style operators (`&&`, `||`, `==`, `===`,
    * `!==`) and null comparisons within SQL expressions. It does not evaluate
-   * arbitrary JavaScript. In this mode, use `concat()` for text concatenation.
+   * arbitrary JavaScript. `||` remains concatenation when string literals, list
+   * literals, explicit text casts, or `concat()` results make that intent clear.
+   * Otherwise `||` becomes OR; column types are not inferred. Use `concat()`
+   * when concatenation would otherwise be ambiguous, such as `first || last`.
    * `"sql"` passes SQL through unchanged, including `||` and null comparisons.
    * Choose the syntax when constructing the database; it applies to all tables.
    *
@@ -106,9 +109,16 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @example
    * ```ts
    * const sdb = new SimpleDB({ expressionSyntax: "js" });
-   * // In JS mode, || means OR. Use concat() to join text instead.
+   * // Bare column names do not establish concatenation. Use concat() explicitly.
    * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
    *   .addColumn("name", "string", "concat(first, ' ', last)").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB(); // JS mode is the default
+   * // The string literal ' ' makes concatenation clear, so both || stay unchanged.
+   * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+   *   .addColumn("name", "string", "first || ' ' || last").log();
    * ```
    * @example
    * ```ts

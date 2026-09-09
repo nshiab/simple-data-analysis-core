@@ -925,3 +925,38 @@ Deno.test("generated rowToText SQL works in both expression modes", async () => 
     }
   }
 });
+
+Deno.test("default JS mode combines obvious concatenation and logical OR across execution paths", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { first: "Jane", last: "Doe", active: true, admin: false },
+      { first: "John", last: "Doe", active: false, admin: false },
+    ]).addColumn("name", "string", "first || ' ' || last")
+      .filter("(active || admin) && name === 'Jane Doe'");
+    const expected = [{
+      first: "Jane",
+      last: "Doe",
+      active: true,
+      admin: false,
+      name: "Jane Doe",
+    }];
+    assertEquals(await table.getData(), expected);
+    const streamed = [];
+    for await (
+      const row of table.stream({
+        conditions: "name || '!' === 'Jane Doe!' && (active || admin)",
+      })
+    ) streamed.push(row);
+    assertEquals(streamed, expected);
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT ('a' || 'b') || 'c' AS text, [true] || [false] AS items, CAST(true AS VARCHAR) || '!' AS castText, false || true AS allowed",
+        { returnData: true },
+      ),
+      [{ text: "abc", items: [true, false], castText: "true!", allowed: true }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});

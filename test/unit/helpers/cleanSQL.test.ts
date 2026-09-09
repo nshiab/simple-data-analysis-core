@@ -271,14 +271,11 @@ const semanticCases = [
 ];
 for (const [name, shorthand, sql] of semanticCases) {
   Deno.test(`cleanSQL DuckDB semantics: ${name}`, async () => {
-    const sqlMode = /concat|list|cast/.test(name);
-    const sdb = new SimpleDB({ expressionSyntax: sqlMode ? "sql" : "js" });
+    const sdb = new SimpleDB();
     try {
       const prefix =
         "SELECT x FROM (VALUES (1,'a'),(2,'b'),(3,'c'),(NULL,NULL)) t(x,s) WHERE ";
-      const query = `${prefix}${
-        sqlMode ? sql : shorthand
-      } ORDER BY x NULLS LAST`;
+      const query = `${prefix}${shorthand} ORDER BY x NULLS LAST`;
       const options = mergeOptions(sdb, {
         table: null,
         method: null,
@@ -305,7 +302,7 @@ Deno.test("cleanSQL keeps named parameters distinct from SQL keywords", () => {
   );
   assertEquals(
     cleanSQL("SELECT $where || 'a' = 'b' || 'c' = 'd'"),
-    "SELECT $where  OR  'a' = 'b'  OR  'c' = 'd'",
+    "SELECT $where || 'a' = 'b'  OR  'c' = 'd'",
   );
 });
 
@@ -478,7 +475,7 @@ Deno.test("SQL mode is a byte-for-byte passthrough", () => {
   }
 });
 
-Deno.test("JS mode translates logical operators without guessing operand types", () => {
+Deno.test("JS mode treats untyped logical operands as OR", () => {
   for (
     const expression of [
       "a||b",
@@ -490,4 +487,62 @@ Deno.test("JS mode translates logical operators without guessing operand types",
     const query = `SELECT ${expression}`;
     assertEquals(cleanSQL(query, "js"), query.replace("||", " OR "));
   }
+});
+
+const obviousConcatenations = [
+  "first || ' ' || last",
+  "(first || ' ') || last",
+  "first || (last || '!')",
+  "(true::VARCHAR || '!') || last",
+  "first || last || '!'",
+  "'Hello ' || first || last",
+  "'a' || 'b'",
+  "$$a$$ || $tag$b$tag$",
+  "first /* || */ || '!'",
+  "('a') || first",
+  "[true] || [false]",
+  "CAST(true AS VARCHAR) || false",
+  "true::VARCHAR || false",
+  "concat('a', 'b') || first",
+];
+for (const expression of obviousConcatenations) {
+  Deno.test(`JS mode preserves obvious concatenation: ${expression}`, () => {
+    const query = `SELECT ${expression} FROM t`;
+    assertEquals(cleanSQL(query), query);
+    assertEquals(cleanSQL(cleanSQL(query)), query);
+  });
+}
+
+for (
+  const [input, expected] of [
+    ["text='a' || text='b'", "text='a'  OR  text='b'"],
+    ["text='a' || active", "text='a'  OR  active"],
+    ["active || admin", "active  OR  admin"],
+    ["is_active() || is_admin()", "is_active()  OR  is_admin()"],
+    ["first || last", "first  OR  last"],
+    [
+      "CAST('true' AS BOOLEAN) || active",
+      "CAST('true' AS BOOLEAN)  OR  active",
+    ],
+    ["'true'::BOOLEAN || active", "'true'::BOOLEAN  OR  active"],
+    ["(first || '!')='a!' || active", "(first || '!')='a!'  OR  active"],
+  ]
+) {
+  Deno.test(`JS mode keeps ambiguous or logical pipes as OR: ${input}`, () => {
+    assertEquals(
+      cleanSQL(`SELECT ${input} FROM t`),
+      `SELECT ${expected} FROM t`,
+    );
+  });
+}
+
+Deno.test("JS mode does not mistake BETWEEN string bounds for concatenation", () => {
+  assertEquals(
+    cleanSQL("SELECT * FROM t WHERE text BETWEEN 'a' AND 'b' || active"),
+    "SELECT * FROM t WHERE text BETWEEN 'a' AND 'b'  OR  active",
+  );
+  assertEquals(
+    cleanSQL("SELECT * FROM t WHERE text BETWEEN 'a' AND 'b' || text='c'"),
+    "SELECT * FROM t WHERE text BETWEEN 'a' AND 'b'  OR  text='c'",
+  );
 });
