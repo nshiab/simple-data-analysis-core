@@ -8,12 +8,20 @@ import { retainRegisteredTables } from "./tableRegistry.ts";
  * DuckDB. Call from an asynchronous extension barrier. The callback must return
  * one row per input row in the same order; only the declared output columns are
  * stored. Existing output columns are replaced, with types inferred from the
- * generated values. The original table is replaced only after staging succeeds.
+ * generated values. Generation runs sequentially in bounded batches (1,000 rows
+ * by default); callbacks must not depend on receiving the whole table. Non-null
+ * output types must agree across batches. All-null batches defer type inference.
+ * Only one batch of inputs and outputs is retained by this helper in JavaScript;
+ * callers must also bound their own buffering. Reads finish before callbacks or
+ * writes use the shared connection. The original table is replaced only after
+ * staging succeeds. Empty tables are unchanged and do not invoke the callback;
+ * outputs that remain null in every batch use VARCHAR.
  *
  * @param table - Table to enrich.
  * @param inputColumns - Columns available to the callback.
  * @param outputColumns - Generated columns to add or replace.
  * @param generate - Produces one result per input row, in input order.
+ * @param options - Controls the maximum rows read, generated, and staged at once.
  * @returns Resolves after merging the generated columns into the table.
  * @example
  * ```ts
@@ -21,7 +29,8 @@ import { retainRegisteredTables } from "./tableRegistry.ts";
  *   method: "label()",
  *   parameters: null,
  *   execute: () => updateColumnsWithJS(table, ["name"], ["label"], async (rows) =>
- *     rows.map((row) => ({ label: String(row.name).toUpperCase() }))),
+ *     rows.map((row) => ({ label: String(row.name).toUpperCase() })),
+ *     { batchSize: 500 }),
  * });
  * await table.log();
  * ```
@@ -33,7 +42,20 @@ export default async function updateColumnsWithJS(
   generate: (
     rows: { [key: string]: unknown }[],
   ) => Promise<{ [key: string]: unknown }[]>,
+  options: {
+    /** Maximum rows per callback and transfer batch. Defaults to 1,000.
+     * @example
+     * ```ts
+     * { batchSize: 500 }
+     * ```
+     */
+    batchSize?: number;
+  } = {},
 ): Promise<void> {
+  const batchSize = options.batchSize ?? 1000;
+  if (!Number.isSafeInteger(batchSize) || batchSize < 1) {
+    throw new Error("batchSize must be a positive safe integer.");
+  }
   if (inputColumns.length === 0 || outputColumns.length === 0) {
     throw new Error("Input and output columns must not be empty.");
   }
@@ -57,6 +79,7 @@ export default async function updateColumnsWithJS(
   const id = `__sda_id_${suffix}`;
   const snapshot = `__sda_source_${suffix}`;
   const staged = table.sdb.newTable(`__sda_generated_${suffix}`);
+  const batch = table.sdb.newTable(`__sda_batch_${suffix}`);
   const q = quoteIdentifier;
   try {
     // A SQL snapshot gives every row a stable identity, including duplicate rows
@@ -66,23 +89,70 @@ export default async function updateColumnsWithJS(
         q(id)
       } FROM ${q(table.name)}`,
     );
-    const { rows } = await readMutationRows(
-      table.connection!,
-      `SELECT ${q(id)}, ${inputColumns.map(q).join(", ")} FROM ${
-        q(snapshot)
-      } ORDER BY ${q(id)}`,
-    );
-    const ids = rows.map((row) => String(row[id]));
-    for (const row of rows) delete row[id];
-    const generated = await generate(rows);
-    if (generated.length !== ids.length) {
-      throw new Error("Column generation must return one row per input row.");
+    const knownTypes = new Map<string, string>();
+    let lastId = "0";
+    let hasRows = false;
+    while (true) {
+      const upperId = BigInt(lastId) + BigInt(batchSize);
+      const { rows } = await readMutationRows(
+        table.connection!,
+        `SELECT ${q(id)}, ${inputColumns.map(q).join(", ")} FROM ${
+          q(snapshot)
+        } WHERE ${q(id)} > ${lastId} AND ${q(id)} <= ${upperId}
+        ORDER BY ${q(id)} LIMIT ${batchSize}`,
+      );
+      if (rows.length === 0) break;
+      const ids = rows.map((row) => String(row[id]));
+      lastId = ids[ids.length - 1];
+      for (const row of rows) delete row[id];
+      const generated = await generate(rows);
+      if (generated.length !== ids.length) {
+        throw new Error("Column generation must return one row per input row.");
+      }
+      await batch.loadArray(generated.map((row, i) => ({
+        ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
+        [id]: ids[i],
+      }))).run();
+      const batchTypes = await batch.getTypes();
+      for (const name of outputColumns) {
+        const nonNull = generated.some((row) =>
+          row[name] !== null && row[name] !== undefined
+        );
+        if (!nonNull) continue;
+        const previous = knownTypes.get(name);
+        const current = batchTypes[name];
+        if (previous !== undefined && previous !== current) {
+          throw new Error(
+            `Generated column ${
+              JSON.stringify(name)
+            } changed type from ${previous} to ${current}.`,
+          );
+        }
+        if (previous === undefined) {
+          knownTypes.set(name, current);
+          if (hasRows) {
+            await table.sdb.customQuery(
+              `ALTER TABLE ${q(staged.name)} ALTER COLUMN ${
+                q(name)
+              } TYPE ${current} USING NULL`,
+            );
+          }
+        }
+      }
+      if (!hasRows) {
+        await table.sdb.customQuery(
+          `CREATE TEMP TABLE ${q(staged.name)} AS SELECT * FROM ${
+            q(batch.name)
+          }`,
+        );
+        hasRows = true;
+      } else {
+        await table.sdb.customQuery(
+          `INSERT INTO ${q(staged.name)} SELECT * FROM ${q(batch.name)}`,
+        );
+      }
     }
-    if (generated.length === 0) return;
-    await staged.loadArray(generated.map((row, i) => ({
-      ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
-      [id]: ids[i],
-    }))).run();
+    if (!hasRows) return;
     const outputs = new Map(
       outputColumns.map((name) => [name.toLowerCase(), name]),
     );
@@ -113,8 +183,11 @@ export default async function updateColumnsWithJS(
     await table.sdb.customQuery(
       `DROP TABLE IF EXISTS ${q(snapshot)}; DROP TABLE IF EXISTS ${
         q(staged.name)
-      };`,
+      }; DROP TABLE IF EXISTS ${q(batch.name)};`,
     );
-    retainRegisteredTables(table.sdb, (item) => item !== staged);
+    retainRegisteredTables(
+      table.sdb,
+      (item) => item !== staged && item !== batch,
+    );
   }
 }

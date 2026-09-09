@@ -74,3 +74,129 @@ Deno.test("failed generation and staging leave existing data intact", async () =
     await sdb.close();
   }
 });
+
+Deno.test("bounded column generation preserves identity and infers past null batches", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("bounded");
+  try {
+    await sdb.customQuery(`CREATE TABLE bounded AS SELECT i, 7 AS rowid,
+      9007199254740993::BIGINT AS exact, DATE '2025-01-01' AS date
+      FROM range(11) t(i)`);
+    const sizes: number[] = [];
+    await updateColumnsWithJS(
+      table,
+      ["i"],
+      ["vector", "missing"],
+      async (rows) => {
+        sizes.push(rows.length);
+        // The read has finished, so callbacks can use the shared connection.
+        await sdb.customQuery("SELECT 1");
+        return rows.map((row) => ({
+          vector: Number(row.i) < 3 || Number(row.i) >= 6
+            ? null
+            : [Number(row.i), 1],
+          missing: null,
+        }));
+      },
+      { batchSize: 3 },
+    );
+    assertEquals(sizes, [3, 3, 3, 2]);
+    assertEquals((await table.getTypes()).vector, "FLOAT[2]");
+    assertEquals((await table.getTypes()).missing, "VARCHAR");
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT i, vector[1] AS value FROM bounded ORDER BY i",
+        { returnData: true },
+      ),
+      Array.from({ length: 11 }, (_, i) => ({
+        i,
+        value: i >= 3 && i < 6 ? i : null,
+      })),
+    );
+    assertEquals(
+      await sdb.customQuery(
+        `SELECT count(*) AS valid FROM bounded WHERE rowid = 7
+      AND exact = 9007199254740993::BIGINT AND date = DATE '2025-01-01'`,
+        { returnData: true },
+      ),
+      [{ valid: 11 }],
+    );
+    assertEquals(await sdb.getTableNames(), ["bounded"]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("late generation failures and type changes discard all staged batches", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("atomic");
+  try {
+    await table.loadArray([{ n: 0 }, { n: 1 }, { n: 2 }]).run();
+    for (const mode of ["throw", "length", "type"]) {
+      let calls = 0;
+      await assertRejects(() =>
+        updateColumnsWithJS(table, ["n"], ["result"], (rows) => {
+          calls++;
+          if (calls === 3) {
+            if (mode === "throw") throw new Error("late failure");
+            if (mode === "length") return Promise.resolve([]);
+            return Promise.resolve([{ result: "incompatible" }]);
+          }
+          return Promise.resolve(rows.map(() => ({ result: 1 })));
+        }, { batchSize: 1 })
+      );
+      assertEquals(calls, 3);
+      assertEquals(await table.getData(), [{ n: 0 }, { n: 1 }, { n: 2 }]);
+      assertEquals(await sdb.getTableNames(), ["atomic"]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("column generation bounds default batches and validates size before reading", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("defaults");
+  try {
+    for (
+      const batchSize of [
+        0,
+        -1,
+        1.5,
+        Infinity,
+        NaN,
+        Number.MAX_SAFE_INTEGER + 1,
+      ]
+    ) {
+      await assertRejects(
+        () =>
+          updateColumnsWithJS(
+            table,
+            ["n"],
+            ["result"],
+            () => Promise.resolve([]),
+            { batchSize },
+          ),
+        Error,
+        "batchSize",
+      );
+    }
+    await sdb.customQuery("CREATE TABLE defaults (n INTEGER)");
+    await updateColumnsWithJS(table, ["n"], ["result"], () => {
+      throw new Error("Empty tables must not invoke generation");
+    });
+    assertEquals(await table.getTypes(), { n: "INTEGER" });
+    assertEquals(await sdb.getTableNames(), ["defaults"]);
+    await sdb.customQuery(
+      "CREATE OR REPLACE TABLE defaults AS SELECT i AS n FROM range(2501) t(i)",
+    );
+    const sizes: number[] = [];
+    await updateColumnsWithJS(table, ["n"], ["result"], (rows) => {
+      sizes.push(rows.length);
+      return Promise.resolve(rows.map(() => ({ result: true })));
+    });
+    assertEquals(sizes, [1000, 1000, 501]);
+  } finally {
+    await sdb.close();
+  }
+});
