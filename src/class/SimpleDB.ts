@@ -82,15 +82,48 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @category Properties
    * @example
    * ```ts
-   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * const sdb = new SimpleDB({ expressionSyntax: "js" }); // The default mode
+   * // || becomes SQL OR: keep rows where at least one condition is true.
    * await sdb.newTable().loadArray([{ active: true, admin: false }])
    *   .filter("active || admin").log();
    * ```
    * @example
    * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * // && becomes SQL AND: both conditions must be true.
+   * // === becomes SQL =: compare the age with 18.
+   * await sdb.newTable().loadArray([{ active: true, age: 18 }])
+   *   .filter("active && age === 18").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * // SQL AND and OR also work in JS mode; they pass through unchanged.
+   * // Keep active adults, or anyone who is an admin.
+   * await sdb.newTable().loadArray([{ active: true, age: 18, admin: false }])
+   *   .filter("(active AND age >= 18) OR admin").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "js" });
+   * // In JS mode, || means OR. Use concat() to join text instead.
+   * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
+   *   .addColumn("name", "string", "concat(first, ' ', last)").log();
+   * ```
+   * @example
+   * ```ts
    * const sdb = new SimpleDB({ expressionSyntax: "sql" });
+   * // SQL mode preserves || as concatenation: the name becomes "Jane Doe".
    * await sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }])
    *   .addColumn("name", "string", "first || ' ' || last").log();
+   * ```
+   * @example
+   * ```ts
+   * const sdb = new SimpleDB({ expressionSyntax: "sql" });
+   * // Use SQL AND and OR for logical conditions; && and || are not translated.
+   * // Both active and adult must be true, unless admin is true.
+   * await sdb.newTable().loadArray([{ active: true, age: 18, admin: false }])
+   *   .filter("(active AND age >= 18) OR admin").log();
    * ```
    */
   readonly expressionSyntax: "js" | "sql";
