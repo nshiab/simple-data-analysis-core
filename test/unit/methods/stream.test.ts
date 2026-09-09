@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should stream the same rows as getData", async () => {
@@ -121,5 +121,32 @@ Deno.test("stream honors expressionSyntax for conditions", async () => {
     } finally {
       await sdb.close();
     }
+  }
+});
+
+Deno.test("stream rejects unsafe top-level integers while retaining nested integer strings", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE stream_integers AS SELECT
+      9007199254740991::UBIGINT AS id, [9007199254740993::HUGEINT] AS nested`);
+    const table = sdb.newTable("stream_integers");
+    const rows: Record<string, unknown>[] = [];
+    for await (const row of table.stream()) rows.push(row);
+    assertEquals(rows, [{
+      id: Number.MAX_SAFE_INTEGER,
+      nested: ["9007199254740993"],
+    }]);
+    await sdb.customQuery(
+      `UPDATE stream_integers SET id = 9007199254740993::UBIGINT`,
+    );
+    await assertRejects(
+      async () => {
+        for await (const _row of table.stream()) { /* Consume the stream. */ }
+      },
+      Error,
+      "safe integer range",
+    );
+  } finally {
+    await sdb.close();
   }
 });

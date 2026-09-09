@@ -69,7 +69,7 @@ Deno.test("logData - types parameter adds types row in grey", () => {
   assertEquals(logs[2].includes("INTEGER/number"), true);
 });
 
-Deno.test("logData - charsToLog truncates strings and sets maxColumnWidth", () => {
+Deno.test("logData - charsToLog truncates strings", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -166,4 +166,22 @@ Deno.test("logData - ANSI color codes are present in output", () => {
 
   const allOutput = logs.join("\n");
   assertEquals(allOutput.includes("\x1b["), true);
+});
+
+Deno.test("logData keeps truncation independent of width and does not mutate annotations", () => {
+  const originalLog = console.log;
+  const lines: string[] = [];
+  const types = { value: "VARCHAR" };
+  try {
+    console.log = (...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    };
+    logData(types, [{ value: "x".repeat(200) }], 150);
+    assertEquals(lines[0].includes("─".repeat(77)), true);
+    assertEquals(lines[0].includes("─".repeat(78)), false);
+    assertEquals(types, { value: "VARCHAR" });
+    assertEquals(lines.join("\n").includes("..."), true);
+  } finally {
+    console.log = originalLog;
+  }
 });

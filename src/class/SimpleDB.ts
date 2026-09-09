@@ -372,7 +372,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @param options.readOnly - Opens an existing DuckDB file read-only. Defaults to false. Requires a file and cannot be combined with overwrite.
    * @param options.logDuration - A flag indicating whether to log the total execution duration.
    * @param options.rowsToLog - The number of rows to display when logging a table.
-   * @param options.charsToLog - The maximum number of characters to display for text-based cells.
+   * @param options.charsToLog - The maximum characters to display for text and stringified nested cells, including truncation markers (default: 75). Independent of column width. Use Infinity for unlimited text.
    * @param options.typesToLog - A flag indicating whether to include data types when logging a table.
    * @param options.cacheVerbose - Whether to log cache hits and misses, code and input changes, TTL status, and cache read/write timing.
    * @param options.expressionSyntax - Operator syntax for expressions and custom queries: `"js"` (default) translates JavaScript-style operators in SQL expressions; `"sql"` preserves SQL unchanged.

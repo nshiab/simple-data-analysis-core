@@ -1,3 +1,4 @@
+import makeLogConverter from "./makeLogConverter.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import {
   type DuckDBConnection,
@@ -27,26 +28,19 @@ const msPerDay = 24 * 60 * 60 * 1000;
 const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER);
 const minSafeInteger = BigInt(Number.MIN_SAFE_INTEGER);
 
-// Columns already warned about for precision loss (keyed by table and
-// column), so each column warns only once.
-const warnedUnsafeIntegerColumns = new Set<string>();
-
 function makeIntegerConverter(columnName: string, tableName: string | null) {
-  const warnKey = `${tableName ?? ""}\0${columnName}`;
   return (value: DuckDBValue) => {
     if (value === null) {
       return null;
     }
     const bigintValue = value as bigint;
     if (
-      (bigintValue > maxSafeInteger || bigintValue < minSafeInteger) &&
-      !warnedUnsafeIntegerColumns.has(warnKey)
+      bigintValue > maxSafeInteger || bigintValue < minSafeInteger
     ) {
-      warnedUnsafeIntegerColumns.add(warnKey);
-      console.warn(
+      throw new RangeError(
         `SDA: Column ${quoteIdentifier(columnName)}${
           tableName === null ? "" : ` of table ${quoteIdentifier(tableName)}`
-        } has at least one value exceeding Number.MAX_SAFE_INTEGER. Converted numbers may lose precision.`,
+        } contains ${bigintValue} outside JavaScript's safe integer range (Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER). Cast the column to VARCHAR to retrieve exact digits.`,
       );
     }
     return Number(bigintValue);
@@ -111,6 +105,8 @@ export function makeConverter(
       return utcTimestampTzValue;
     case DuckDBTypeId.BIGINT:
     case DuckDBTypeId.HUGEINT:
+    case DuckDBTypeId.UBIGINT:
+    case DuckDBTypeId.UHUGEINT:
       return makeIntegerConverter(columnName, tableName);
     default:
       return (value) =>
@@ -148,9 +144,16 @@ export default async function runQuery(
           "The query returns geometry columns. Use getGeoData() instead.",
         );
       }
-      const converters = columnTypes.map((type, i) =>
-        makeConverter(type, columnNames[i], options.table ?? null)
-      );
+      const logging = options.method === "log()" ||
+        options.method === "logBottom()";
+      const converters = columnTypes.map((type, i) => {
+        const converter = makeConverter(
+          type,
+          columnNames[i],
+          options.table ?? null,
+        );
+        return logging ? makeLogConverter(type, converter) : converter;
+      });
       const columnCount = columnNames.length;
       // The result is converted chunk by chunk, so no intermediate row-major
       // copy of the whole result is materialized.
