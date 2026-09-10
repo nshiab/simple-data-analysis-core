@@ -9,14 +9,19 @@ import {
   type DuckDBValue,
 } from "@duckdb/node-api";
 
-/** Reads values for mutation without the public display conversion. */
+/** Reads mutation values, optionally keeping a pagination cursor out of rows. */
 export default async function readMutationRows(
   connection: DuckDBConnection,
   query: string,
+  cursorColumn?: string,
 ) {
   const result = await connection.run(query);
   const names = result.deduplicatedColumnNames();
   const types = result.columnTypes();
+  const cursorIndex = cursorColumn === undefined
+    ? -1
+    : names.indexOf(cursorColumn);
+  let lastCursorValue: DuckDBValue | undefined;
   const dates = new WeakMap<Date, { millis: number; value: DuckDBValue }>();
   const convert = (value: DuckDBValue): unknown => {
     if (
@@ -55,6 +60,10 @@ export default async function readMutationRows(
     const offset = rows.length;
     for (let i = 0; i < chunk.rowCount; i++) rows.push({});
     for (let i = 0; i < names.length; i++) {
+      if (i === cursorIndex) {
+        lastCursorValue = chunk.getColumnVector(i).getItem(chunk.rowCount - 1);
+        continue;
+      }
       chunk.visitColumnValues(i, (value, row) => {
         rows[offset + row][names[i]] = convert(value);
       });
@@ -112,7 +121,10 @@ export default async function readMutationRows(
   };
   return {
     rows,
-    types: new Map(names.map((name, i) => [name, types[i]])),
+    types: new Map(
+      names.flatMap((name, i) => i === cursorIndex ? [] : [[name, types[i]]]),
+    ),
+    lastCursorValue,
     toNative,
   };
 }

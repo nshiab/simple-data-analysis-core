@@ -32,12 +32,18 @@ Deno.test("benchmark report renders tables and percentage differences", () => {
   assertStringIncludes(markdown, "### Tabular workload");
   assertStringIncludes(
     markdown,
-    "| @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 | Deno 2.9.6",
+    "**Tabular versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6)",
   );
   assertStringIncludes(
     markdown,
-    "| SDA-core 2.0.0-rc.17",
+    "SDA-core 2.0.0-rc.17 (Deno 2.9.6)",
   );
+  const table = markdown.slice(markdown.indexOf("| Library"));
+  assertEquals(table.includes("Runtime"), false);
+  assertEquals(table.includes("2.9.6"), false);
+  assertEquals(table.includes("2.0.0-rc.17"), false);
+  assertStringIncludes(table, "| DuckDB");
+  assertStringIncludes(table, "| SDA-core");
   assertStringIncludes(markdown, "Duration difference");
   assertStringIncludes(markdown, "Memory difference");
   assertEquals(
@@ -50,6 +56,41 @@ Deno.test("benchmark report renders tables and percentage differences", () => {
     "| 2.00 ± 0.20 s |            baseline |           200 MB |          baseline |",
   );
   assertStringIncludes(markdown, "|              -50.0% |           100 MB |");
+});
+
+Deno.test("partial benchmark runs retain the other workload's version details", () => {
+  const spatial: Aggregate = {
+    ...aggregates[1],
+    benchmark: "spatial",
+    version: "1.9.0/deno@2.8.0",
+  };
+  const readme = `${benchmarkResultsStart}\n${
+    renderBenchmarkResults([...aggregates, spatial])
+  }\n${benchmarkResultsEnd}`;
+  const updated = replaceMeasuredBenchmarkResults(readme, [{
+    ...aggregates[1],
+    version: "2.0.5/deno@2.9.6",
+  }]);
+  assertStringIncludes(
+    updated,
+    "**Tabular versions:** SDA-core 2.0.5 (Deno 2.9.6).",
+  );
+  assertStringIncludes(
+    updated,
+    "**Spatial versions:** SDA-core 1.9.0 (Deno 2.8.0).",
+  );
+  assertEquals(updated.includes("2.0.0-rc.17"), false);
+  assertEquals(updated.match(/\*\*Spatial versions:/g)?.length, 1);
+  assertEquals(
+    updated.slice(
+      updated.indexOf("### Spatial workload"),
+      updated.indexOf(benchmarkResultsEnd),
+    ).trim(),
+    readme.slice(
+      readme.indexOf("### Spatial workload"),
+      readme.indexOf(benchmarkResultsEnd),
+    ).trim(),
+  );
 });
 
 Deno.test("benchmark report replaces only the generated README section", () => {

@@ -52,7 +52,7 @@ export function renderResults(
         section === "join"
           ? w.name === "join-aggregate"
           : section === "geometry"
-          ? "shape" in w
+          ? "shape" in w && w.edit
           : w.name !== "join-aggregate" && !("shape" in w)
       )
     ) {
@@ -107,14 +107,20 @@ ${table("join")}
 
 #### JavaScript data transfer
 
+\`loadArray()\` measures JavaScript → DuckDB; \`getData()\` measures DuckDB →
+JavaScript. \`updateWithJS()\` measures the round trip with a simple numeric
+increment, including Core's staging and table replacement.
+
 ${table("transfer")}
 
 #### JavaScript geometry updates
 
 Points have one position per geometry; polygons have one ring with 1,001
 positions. Both implementations transfer GeoJSON through JavaScript and stage
-writes. Attribute updates add a label; geometry updates also shift every
-longitude by 0.01 degrees. A batch size of — means all input rows at once.
+writes. These updates add a label and shift every longitude by 0.01 degrees.
+A batch size of — means all input rows at once. Attribute-only updates are
+also measured and retained in the raw results; their similar timings are
+omitted here to keep the table concise.
 
 ${table("geometry")}`;
 }

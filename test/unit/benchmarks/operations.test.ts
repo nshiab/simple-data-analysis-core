@@ -32,6 +32,16 @@ Deno.test("operation tables report duration spread, process memory, and batch si
   assertStringIncludes(report, "150.0 MiB");
   assertStringIncludes(report, "#### JavaScript geometry updates");
   assertStringIncludes(report, "Polygons: geometry update");
+  const geometry = report.slice(
+    report.indexOf("#### JavaScript geometry updates"),
+  );
+  assertEquals(
+    geometry.split("\n").filter((line) => /^\| (Points|Polygons):/.test(line))
+      .length,
+    8,
+  );
+  assertEquals(geometry.includes("| Points: attribute update"), false);
+  assertEquals(geometry.includes("| Polygons: attribute update"), false);
   assertStringIncludes(report, "10,003 | 1000 | Core");
   assertStringIncludes(report, "10,003 | 10000 | DuckDB");
   assertThrows(() => renderResults(observations.slice(1)));

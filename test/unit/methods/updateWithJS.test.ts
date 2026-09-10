@@ -185,6 +185,82 @@ Deno.test("should call the modifier once per batch", async () => {
   await sdb.close();
 });
 
+Deno.test("batched updates preserve sparse cursors, partial batches, and consumed input", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("sparse");
+    await sdb.customQuery(
+      "CREATE TABLE sparse AS SELECT i::INTEGER AS id FROM range(5008) t(i)",
+    );
+    await sdb.customQuery("DELETE FROM sparse WHERE id % 1001 = 0");
+    const batchSizes: number[] = [];
+    await table.updateWithJS((rows) => {
+      batchSizes.push(rows.length);
+      for (const row of rows) assertEquals(Object.keys(row), ["id"]);
+      return rows.splice(0).map((row) => ({ ...row, label: `row-${row.id}` }));
+    }, { batchSize: 2500 }).run();
+    assertEquals(batchSizes, [2500, 2500, 2]);
+    assertEquals(
+      await table.getData(),
+      Array.from({ length: 5008 }, (_, id) => ({ id, label: `row-${id}` }))
+        .filter(({ id }) => id % 1001 !== 0),
+    );
+    assertEquals(await table.getTypes(), { id: "INTEGER", label: "VARCHAR" });
+    assertEquals(await sdb.getTableNames(), ["sparse"]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("geometry batches preserve sparse row order, nulls, and a partial final batch", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("polygon batches");
+    const polygon = {
+      type: "Polygon",
+      coordinates: [[[-73, 45], [-72, 45], [-72, 46], [-73, 45]]],
+    };
+    await table.loadArray(
+      Array.from({ length: 9 }, (_, id) => ({
+        id,
+        "shape column": id === 4 ? null : polygon,
+      })),
+      { columnTypes: { "shape column": "GEOMETRY('EPSG:4326')" } },
+    ).run();
+    await sdb.customQuery('DELETE FROM "polygon batches" WHERE id IN (0, 3)');
+    const batches: number[][] = [];
+    await table.updateWithJS((rows) => {
+      batches.push(rows.map((row) => Number(row.id)));
+      return rows.splice(0).map((row) => ({
+        ...row,
+        label: `polygon-${row.id}`,
+      }));
+    }, { batchSize: 3 }).run();
+    assertEquals(batches, [[1, 2, 4], [5, 6, 7], [8]]);
+    const actual = await sdb.customQuery(
+      `SELECT id, ST_AsGeoJSON("shape column")::VARCHAR AS geometry, label
+         FROM "polygon batches"`,
+      { returnData: true },
+    );
+    assertEquals(
+      actual!.map((row) => ({
+        ...row,
+        geometry: row.geometry === null
+          ? null
+          : JSON.parse(row.geometry as string),
+      })),
+      [1, 2, 4, 5, 6, 7, 8].map((id) => ({
+        id,
+        geometry: id === 4 ? null : polygon,
+        label: `polygon-${id}`,
+      })),
+    );
+    assertEquals(await sdb.getTableNames(), ["polygon batches"]);
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("should capture batchSize when the update is queued", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("capturedBatchSize");
