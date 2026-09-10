@@ -1,7 +1,7 @@
 # The Simple Data Analysis (Core) Library
 
 - Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.0.5`
+- Version: `2.0.6`
 
 To install the library with Deno, use:
 
@@ -120,7 +120,8 @@ schema is reserved for versioned SDA metadata. SQLite files can be imported with
 
 #### `newTable`
 
-Creates a new SimpleTable instance within the database.
+Creates a new SimpleTable instance within the database. The name must be unique
+among registered tables, ignoring ASCII letter case.
 
 ##### Signature
 
@@ -708,7 +709,8 @@ await table.log();
 
 #### `renameTable`
 
-Renames the current table.
+Renames the current table. The new name must not belong to another registered
+table, ignoring ASCII letter case.
 
 ##### Signature
 
@@ -7657,28 +7659,28 @@ await table.writeGeoData("./output_high_precision.geojson", {
 Caches the results of computations in `./.sda-cache`. You should add
 `./.sda-cache` to your `.gitignore` file.
 
-Cache entries are stored as DuckDB database files. Full-text search (FTS)
-indexes are persisted in the cache file and restored directly on a cache hit.
-Vector similarity search (VSS/HNSW) indexes are not persisted in the cache file;
-their definitions are stored as metadata and used to rebuild the indexes on
-every cache hit. If loading the entry or restoring its indexes fails, the
-computation runs again and replaces the cache entry.
-
 `cache()` automatically tracks whether earlier SDA operations changed the table.
 It also records every other already registered `SimpleTable` read through
 `SimpleTable` methods while `compute` runs and invalidates the cached step when
 any of their generations change. Tables created inside `compute` are part of the
 computation itself and are not dependencies.
 
+Inside `compute`, you may modify the table being cached and create or modify
+temporary tables, provided you remove them before the callback finishes. Other
+tables that already existed may be read but not modified, renamed, or removed.
+`customQuery()` bypasses enforcement of these rules.
+
 `SimpleDB.customQuery()` bypasses this tracking. Reading or changing a table
 with `customQuery()` can therefore return stale cached data. Include a value
 that identifies the custom query's dependencies in `options.inputs` (such as a
 table content hash), or use tracked `SimpleTable` methods.
 
-`compute` may modify only the table being cached. Other tables that existed
-before `compute` must remain read-only. Temporary tables may be created and
-modified inside `compute`, but they must be removed before it finishes because a
-cache hit does not run `compute` again.
+Cache entries are stored as DuckDB database files. Full-text search (FTS)
+indexes are persisted in the cache file and restored directly on a cache hit.
+Vector similarity search (VSS/HNSW) indexes are not persisted in the cache file;
+their definitions are stored as metadata and used to rebuild the indexes on
+every cache hit. If loading the entry or restoring its indexes fails, the
+computation runs again and replaces the cache entry.
 
 ##### Signature
 
