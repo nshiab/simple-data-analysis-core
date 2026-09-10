@@ -92,6 +92,7 @@ async function executeUpdateWithJS(
   }
 
   const batchSize = options.batchSize;
+  const geometryBatch = batchSize !== undefined && geometryColumns.length > 0;
   if (batchSize !== undefined) {
     // DuckDB resolves identifiers case-insensitively, and a real rowid column
     // shadows its hidden row identifier used for pagination.
@@ -120,6 +121,15 @@ async function executeUpdateWithJS(
     let inputOffset = 0;
 
     while (true) {
+      const page = `${quoteIdentifier(simpleTable.name)}${
+        lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`
+      }${batchSize === undefined ? "" : ` ORDER BY rowid LIMIT ${batchSize}`}`;
+      // Select the batch before serializing geometry. Otherwise DuckDB can
+      // evaluate ST_AsGeoJSON on remaining rows before applying the LIMIT,
+      // repeatedly converting polygons that belong to later batches.
+      const from = geometryBatch
+        ? `(SELECT *, rowid AS __sda_rowid FROM ${page}) AS __sda_batch ORDER BY __sda_rowid`
+        : page;
       const source = await readMutationRows(
         simpleTable.connection!,
         `SELECT ${
@@ -130,20 +140,23 @@ async function executeUpdateWithJS(
               }`
               : quoteIdentifier(key)
           ).join(", ")
-        }${batchSize === undefined ? "" : ", rowid AS __sda_rowid"} FROM ${
-          quoteIdentifier(simpleTable.name)
-        }${lastRowid === null ? "" : ` WHERE rowid > ${lastRowid}`}${
-          batchSize === undefined ? "" : ` ORDER BY rowid LIMIT ${batchSize}`
-        }`,
+        }${
+          batchSize === undefined
+            ? ""
+            : geometryBatch
+            ? ", __sda_rowid"
+            : ", rowid AS __sda_rowid"
+        } FROM ${from}`,
+        batchSize === undefined ? undefined : "__sda_rowid",
       );
       const batch = source.rows;
       const inputCount = batch.length;
       if (inputCount === 0 && sawRows) break;
       sawRows ||= inputCount > 0;
       if (batchSize !== undefined && batch.length > 0) {
-        lastRowid = batch[batch.length - 1].__sda_rowid as bigint;
-        for (const row of batch) delete row.__sda_rowid;
-        source.types.delete("__sda_rowid");
+        // Keep the cursor separate: adding and deleting it on every row also
+        // makes ordinary callback operations such as object spread slower.
+        lastRowid = source.lastCursorValue as bigint;
       }
 
       for (const [index, row] of batch.entries()) {

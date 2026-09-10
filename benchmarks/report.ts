@@ -75,18 +75,23 @@ function table(rows: Aggregate[]): string {
     left.meanSeconds - right.meanSeconds
   );
   const headers = [
-    "Library version",
-    "Runtime",
+    "Library",
     "Mean duration",
     "Duration difference",
     "Mean peak memory",
     "Memory difference",
   ];
   const values = orderedRows.map((row) => {
-    const versions = versionDetails(row);
+    const names: Record<string, string> = {
+      local: "SDA-core",
+      duckdb: "DuckDB",
+      pandas: "pandas",
+      tidyverse: "tidyverse",
+      geopandas: "GeoPandas",
+      sf: "sf",
+    };
     return [
-      versions.library,
-      versions.runtime,
+      names[row.implementation] ?? row.implementation,
       `${row.meanSeconds.toFixed(2)} ± ${row.stdDevSeconds.toFixed(2)} s`,
       percentageDifference(row.meanSeconds / baselineDuration),
       `${Math.round(row.meanPeakMemoryMB).toLocaleString("en-US")} MB`,
@@ -101,16 +106,31 @@ function table(rows: Aggregate[]): string {
   const formatRow = (row: string[]): string =>
     `| ${
       row.map((cell, column) =>
-        column <= 1
+        column === 0
           ? cell.padEnd(widths[column])
           : cell.padStart(widths[column])
       ).join(" | ")
     } |`;
   const separator = widths.map((width, column) =>
-    column <= 1 ? "-".repeat(width) : `${"-".repeat(width - 1)}:`
+    column === 0 ? "-".repeat(width) : `${"-".repeat(width - 1)}:`
   );
   return [formatRow(headers), formatRow(separator), ...values.map(formatRow)]
     .join("\n");
+}
+
+function renderVersions(
+  benchmark: Aggregate["benchmark"],
+  rows: Aggregate[],
+): string {
+  const details = rows.filter((row) => row.benchmark === benchmark).map(
+    (row) => {
+      const { library, runtime } = versionDetails(row);
+      return runtime === "—" ? library : `${library} (${runtime})`;
+    },
+  );
+  if (!details.length) return "";
+  const label = benchmark === "tabular" ? "Tabular" : "Spatial";
+  return `**${label} versions:** ${[...new Set(details)].join("; ")}.`;
 }
 
 function renderBenchmarkSection(
@@ -134,9 +154,13 @@ results.`;
 }
 
 export function renderBenchmarkResults(rows: Aggregate[]): string {
-  return benchmarkNames.map((benchmark) =>
+  const versions = benchmarkNames.map((benchmark) =>
+    renderVersions(benchmark, rows)
+  );
+  const sections = benchmarkNames.map((benchmark) =>
     renderBenchmarkSection(benchmark, rows)
-  ).join("\n\n");
+  );
+  return [...versions, ...sections].filter(Boolean).join("\n\n");
 }
 
 function benchmarkResultsBounds(readme: string): {
@@ -197,11 +221,21 @@ export function replaceMeasuredBenchmarkResults(
     sections.set(benchmark, current.slice(start, nextHeading).trim());
   }
 
-  const results = benchmarkNames.map((benchmark) =>
-    measured.has(benchmark)
-      ? renderBenchmarkSection(benchmark, rows)
-      : sections.get(benchmark)!
-  ).join("\n\n");
+  const versions = benchmarkNames.map((benchmark) => {
+    if (measured.has(benchmark)) return renderVersions(benchmark, rows);
+    const label = benchmark === "tabular" ? "Tabular" : "Spatial";
+    return current.match(
+      new RegExp(`\\*\\*${label} versions:\\*\\*[\\s\\S]*?(?=\\n\\n|$)`),
+    )?.[0] ?? "";
+  });
+  const results = [
+    ...versions,
+    ...benchmarkNames.map((benchmark) =>
+      measured.has(benchmark)
+        ? renderBenchmarkSection(benchmark, rows)
+        : sections.get(benchmark)!
+    ),
+  ].filter(Boolean).join("\n\n");
   return replaceBenchmarkResults(readme, results);
 }
 

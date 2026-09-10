@@ -12,9 +12,11 @@ also apply to polygons, so increase them with care.
 Geometry updates cover points and polygons, attribute enrichment and coordinate
 edits, each with all input rows at once or batches (1,000 points or 100
 polygons). Each polygon has one ring with 1,001 positions, including ring
-closure. Both implementations start from the same SQL-generated fixture without
-retaining a full JavaScript input array. Spatial extension loading happens
-outside the timer; a first run may download the extension.
+closure. The README shows only coordinate-edit results, with and without
+batching, for a compact eight-row comparison. Attribute-only results remain in
+the raw observations. Both implementations start from the same SQL-generated
+fixture without retaining a full JavaScript input array. Spatial extension
+loading happens outside the timer; a first run may download the extension.
 
 Core's public methods are compared with equivalent handwritten DuckDB
 operations. Both use warm connections with one thread, a 1 GB memory limit, UTC,
@@ -24,8 +26,12 @@ excludes startup, fixture creation, warm-up and correctness validation.
 reading and JS object conversion. Batched updates increment a numeric column in
 JavaScript on both implementations; the native baseline uses a row appender and
 rowid ranges. This compares complete transfer operations, not an isolated SQL
-overhead. Full output rows are checked after both the warm-up and measured
-operation.
+overhead. The numeric baseline has a fixed schema and writes directly to a
+separate result table; Core also handles general types and stages the update
+before replacing the input. The difference in duration is not solely API
+overhead. Keep all three transfer operations: separate reads and writes help
+explain changes in the round-trip timing. Full output rows are checked after
+both the warm-up and measured operation.
 
 The geometry baseline is handwritten against DuckDB's node API and the fixed
 fixture schema. It uses the same geometry-cell validator as Core, checks binary
@@ -53,3 +59,61 @@ existing benchmark command, this command requires macOS for `/usr/bin/time -l`.
 Results are local warm-run measurements, not cross-platform guarantees. Raw
 observations and runtime versions are retained in
 `benchmarks/.work/operations.json`.
+
+## Batched update investigation, September 10, 2026
+
+Profiling the numeric fixture identified an avoidable cost in preparing callback
+rows: each row received an internal pagination property that was then deleted.
+With 1,000-row batches, input preparation took about 10 ms and the object-spread
+callback took about 23 ms. Keeping the final native cursor separate from row
+objects reduced those phases to about 2 ms and 1 ms. Selection SQL, value
+conversion, batch sizes, staging, and cleanup are unchanged.
+
+Five fresh-process samples before and after the change, using
+`deno task benchmark-core --iterations=5`, gave these results for 100,000 rows:
+
+| Batch size | Before duration ± SD | After duration ± SD | Before peak RSS | After peak RSS |
+| ---------: | -------------------: | ------------------: | --------------: | -------------: |
+|      1,000 |     111.57 ± 3.65 ms |     81.55 ± 0.94 ms |       204.7 MiB |      207.8 MiB |
+|     10,000 |      74.63 ± 1.77 ms |     38.83 ± 0.19 ms |       249.7 MiB |      212.9 MiB |
+
+This is a 27% and 48% reduction in duration, respectively. Peak RSS remains a
+whole-process measurement; the small-batch run did not reduce it. Measurements
+used an Apple M4 Max, macOS arm64, Deno 2.9.6, and DuckDB 1.5.5 / node-api
+1.5.5-r.4, comparing revision `00cf3dc7fd92a426e076fd792623cb0d0b4a5c4b` with
+the cursor-separation change. Diagnostic instrumentation was excluded from these
+comparison timings. Local raw samples are retained as
+`benchmarks/.work/updateWithJS-before.json` and
+`benchmarks/.work/updateWithJS-after.json`.
+
+A separate check on 250,003 rows exercised a final partial batch. Three
+alternating before/after runs reduced mean duration from 283.87 to 197.89 ms at
+batch size 1,000, and from 205.02 to 111.02 ms at batch size 10,000. Output
+validation passed; samples are in `benchmarks/.work/updateWithJS-partial.json`.
+This remains an investigation check rather than an additional default workload.
+
+## Batched polygon investigation, September 10, 2026
+
+Starting from the cursor improvement above, profiling isolated the remaining
+polygon gap to batch reading. `EXPLAIN ANALYZE` showed GeoJSON conversion below
+the batch limit: the first query converted 1,000 polygons to return only 100.
+The next query repeated conversion for remaining rows. Selecting the batch in a
+subquery before converting geometry reduced total batch-read time from about 185
+ms to 44 ms. The outer query explicitly preserves cursor order. Geometry
+validation, staging, and callback behavior remain unchanged.
+
+Five alternating before/after pairs in fresh processes, using the same runtime
+and settings as above, measured 1,000 polygons in batches of 100:
+
+| Update    | Before duration ± SD | After duration ± SD | Before peak RSS | After peak RSS |
+| --------- | -------------------: | ------------------: | --------------: | -------------: |
+| Attribute |     526.39 ± 1.75 ms |    386.15 ± 2.44 ms |       752.4 MiB |      754.4 MiB |
+| Geometry  |     534.61 ± 3.82 ms |    393.37 ± 1.51 ms |       709.1 MiB |      726.8 MiB |
+
+Duration fell by about 26–27%. Whole-process peak RSS did not improve and was
+slightly higher in these runs. The comparison excluded profiling instrumentation
+and validated full output values and geometry binary representations. Raw
+samples and query plans are retained locally in
+`benchmarks/.work/polygons-comparison.json` and
+`benchmarks/.work/polygons-query-plans.txt`. The default workloads are
+unchanged.
