@@ -638,6 +638,41 @@ Deno.test("loadArray ingests explicit GeoJSON kinds, collections, empty geometri
   }
 });
 
+Deno.test("loadArray preserves signed zero in nested geometry coordinates", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.newTable("signed_zero").loadArray([
+      {
+        geom: { type: "Point", coordinates: [-0, 0] },
+        wkt: "POINT (-0.0 0)",
+      },
+      {
+        geom: {
+          type: "GeometryCollection",
+          geometries: [{ type: "Point", coordinates: [0, -0] }],
+        },
+        wkt: "GEOMETRYCOLLECTION (POINT (0 -0.0))",
+      },
+      {
+        geom: {
+          type: "Polygon",
+          coordinates: [[[-0, 0], [1, 0], [1, 1], [-0, 0]]],
+        },
+        wkt: "POLYGON ((-0.0 0, 1 0, 1 1, -0.0 0))",
+      },
+    ], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).run();
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT ST_AsWKB(geom) = ST_AsWKB(ST_GeomFromText(wkt)) AS preserved FROM signed_zero",
+        { returnData: true },
+      ),
+      [{ preserved: true }, { preserved: true }, { preserved: true }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("loadArray snapshots nested geometry input at call time", async () => {
   const sdb = new SimpleDB();
   try {

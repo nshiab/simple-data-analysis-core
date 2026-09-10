@@ -188,9 +188,11 @@ async function executeUpdateWithJS(
       }
       const geometryData = new Map(outputGeometry.map((key) => [
         key,
-        modified.map((row, i) =>
-          prepareGeometry(row[key], key, outputOffset + i + 1)
-        ),
+        geometryColumns.includes(key)
+          ? modified.map((row, i) =>
+            prepareGeometry(row[key], key, outputOffset + i + 1)
+          )
+          : added!.columnsData[newKeys.indexOf(key)],
       ]));
       outputOffset += modified.length;
       const columnTypes = keys.map((key) =>

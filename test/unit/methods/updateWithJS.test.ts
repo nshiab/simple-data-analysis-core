@@ -690,6 +690,53 @@ for (const batchSize of [undefined, 2]) {
   });
 }
 
+for (const batchSize of [undefined, 1]) {
+  Deno.test(`updateWithJS preserves signed zero in existing and new geometry (${batchSize})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("signed_zero");
+      await table.loadArray([{ geom: null }], {
+        columnTypes: { geom: "GEOMETRY('EPSG:4326')" },
+      }).run();
+      await sdb.customQuery(`CREATE OR REPLACE TABLE signed_zero AS SELECT
+        ST_Point(-0.0::DOUBLE, i::DOUBLE)::GEOMETRY('EPSG:4326') AS geom
+        FROM range(2) t(i)`);
+      await sdb.customQuery(
+        "CREATE TABLE expected AS SELECT * FROM signed_zero",
+      );
+      await table.updateWithJS((rows) =>
+        rows.map((row) => {
+          const geom = row.geom as { type: string; coordinates: number[] };
+          assertEquals(Object.is(geom.coordinates[0], -0), true);
+          return {
+            ...row,
+            added: { type: "GeometryCollection", geometries: [geom] },
+          };
+        }), { batchSize, columnTypes: { added: "GEOMETRY('EPSG:4326')" } })
+        .run();
+      assertEquals(await table.getTypes(), {
+        geom: "GEOMETRY('EPSG:4326')",
+        added: "GEOMETRY('EPSG:4326')",
+      });
+      assertEquals(
+        await sdb.customQuery(
+          `SELECT
+          ST_AsWKB(actual.geom) = ST_AsWKB(expected.geom) AS original,
+          ST_AsWKB(actual.added) = ST_AsWKB(ST_GeomFromText(
+            'GEOMETRYCOLLECTION (POINT (-0.0 ' || ST_Y(expected.geom) || '))')) AS added
+          FROM signed_zero actual JOIN expected USING (rowid)`,
+          {
+            returnData: true,
+          },
+        ),
+        [{ original: true, added: true }, { original: true, added: true }],
+      );
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
 for (const type of ["GEOMETRY", "GEOMETRY('EPSG:3857')"]) {
   Deno.test(`updateWithJS rejects CRS before callbacks (${type})`, async () => {
     const sdb = new SimpleDB();

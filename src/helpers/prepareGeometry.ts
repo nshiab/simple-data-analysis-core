@@ -9,6 +9,7 @@ export default function prepareGeometry(
     throw new Error(`Column ${JSON.stringify(column)}, row ${row}: ${message}`);
   };
   const active = new Set<object>();
+  let hasSignedZero = false;
   function position(value: unknown): number[] {
     if (
       !Array.isArray(value) || value.length !== 2 ||
@@ -26,6 +27,7 @@ export default function prepareGeometry(
         "Expected WGS84 longitude [-180, 180] and latitude [-90, 90]; reproject the input first.",
       );
     }
+    hasSignedZero ||= Object.is(point[0], -0) || Object.is(point[1], -0);
     return [...point];
   }
   function list(value: unknown, convert: (v: unknown) => unknown): unknown[] {
@@ -103,5 +105,13 @@ export default function prepareGeometry(
       active.delete(object);
     }
   }
-  return JSON.stringify(geometry(value));
+  const prepared = geometry(value);
+  if (!hasSignedZero) return JSON.stringify(prepared);
+  // JSON.stringify normalizes -0. Only supported geometry type names survive
+  // validation as strings, so the "-0" marker cannot collide with input text.
+  // Emit a decimal literal so DuckDB also preserves its sign when parsing JSON.
+  return JSON.stringify(
+    prepared,
+    (_key, cell: unknown) => Object.is(cell, -0) ? "-0" : cell,
+  ).replaceAll('"-0"', "-0.0");
 }
