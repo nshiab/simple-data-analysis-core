@@ -264,7 +264,7 @@ Deno.test("loadArray captures row, Date, and array values when queued", async ()
     { name: "empty", date: null, vector: null },
   ];
 
-  table.loadArray(rows);
+  table.loadArray(rows, { columnTypes: { vector: "FLOAT[2]" } });
   row.name = "after";
   date.setUTCFullYear(2030);
   vector[0] = 99;
@@ -532,7 +532,7 @@ Deno.test("loadArray nested documents can be loaded as JSON text and converted w
     assertThrows(
       () => table.loadArray([{ document: { count: 2 } }]),
       Error,
-      "Type object not supported",
+      "require an explicit columnTypes entry",
     );
     table.loadArray([{
       document: JSON.stringify({ scores: [1, null, 3], details: { count: 2 } }),
@@ -552,8 +552,10 @@ Deno.test("loadArray nested documents can be loaded as JSON text and converted w
       lines.join("\n").includes('{"scores":[1,null,3],"details":{"count":2}}'),
       true,
     );
-    const vectors = sdb.newTable().loadArray([{ values: [1, 2, 3] }]);
-    assertEquals(await vectors.getData(), [{ values: "<FLOAT[3]>" }]);
+    const vectors = sdb.newTable().loadArray([{ values: [1, 2, 3] }], {
+      columnTypes: { values: "FLOAT[3]" },
+    });
+    assertEquals(await vectors.getData(), [{ values: [1, 2, 3] }]);
     await vectors.log();
     assertEquals(lines.join("\n").includes("<FLOAT[3]>"), true);
   } finally {
@@ -764,7 +766,7 @@ Deno.test("loadArray rejects malformed geometries with row context and preserves
       () =>
         table.loadArray([{ value: { type: "Point", coordinates: [0, 0] } }]),
       Error,
-      "Type object not supported",
+      "require an explicit columnTypes entry",
     );
     assertEquals(await table.getData(), [{ value: 7 }]);
   } finally {
@@ -822,6 +824,140 @@ Deno.test("loadArray stages geometry batches with quoted identifiers and cleans 
       ),
       [],
     );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray requires explicit types for every array or object cell", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("explicit");
+    await table.loadArray([{ value: 1 }]).run();
+    for (
+      const value of [[], [1, 2], {}, { type: "Point", coordinates: [1, 2] }]
+    ) {
+      for (const first of [null, 1, "text", new Date(0)]) {
+        assertThrows(
+          () => table.loadArray([{ value: first }, { value }]),
+          Error,
+          'Column "value", row 2: array and object cells require an explicit columnTypes entry',
+        );
+      }
+    }
+    assertEquals(await table.getData(), [{ value: 1 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray ingests JSON values and nulls alongside geometry and vectors", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const values = [
+      { active: true, tags: ["weather", "urban"], nested: { n: null } },
+      [1, 2.5, null, { x: "text" }],
+      "text",
+      '{"already":"text"}',
+      1.0000000000000002,
+      true,
+      false,
+      null,
+      undefined,
+      -0,
+    ];
+    const table = sdb.newTable("json_values");
+    await table.loadArray(
+      values.map((doc, id) => ({
+        id,
+        doc,
+        missing: null,
+        geom: { type: "Point", coordinates: [1, 2] },
+        vector: [1, 2],
+      })),
+      {
+        columnTypes: {
+          doc: "JSON",
+          missing: "json",
+          geom: "GEOMETRY('EPSG:4326')",
+          vector: "FLOAT[2]",
+        },
+      },
+    ).run();
+    assertEquals(await table.getTypes(), {
+      id: "DOUBLE",
+      doc: "JSON",
+      missing: "JSON",
+      geom: "GEOMETRY('EPSG:4326')",
+      vector: "FLOAT[2]",
+    });
+    const data = await sdb.customQuery(
+      "SELECT doc, missing, ST_X(geom) AS x, vector[1] AS first FROM json_values ORDER BY id",
+      { returnData: true },
+    );
+    assertEquals(
+      data!.map((row) => ({
+        ...row,
+        doc: row.doc === null ? null : JSON.parse(row.doc as string),
+      })),
+      values.map((doc) => ({
+        doc: doc ?? null,
+        missing: null,
+        x: 1,
+        first: 1,
+      })),
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray snapshots JSON inputs and handles multiple chunks and quoted identifiers", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const doc = { data: [1, { label: "before" }] };
+    const table = sdb.newTable('json "table"');
+    table.loadArray(
+      Array.from({ length: 2105 }, (_, id) => ({ id, 'json "value"': doc })),
+      {
+        columnTypes: { 'json "value"': "JSON" },
+      },
+    );
+    (doc.data[1] as { label: string }).label = "after";
+    doc.data.push(3);
+    await table.run();
+    assertEquals(
+      await sdb.customQuery(
+        `SELECT count(*) AS n, count(DISTINCT "json ""value""") AS distinct_docs,
+      min("json ""value"""::VARCHAR) AS doc FROM "json ""table"""`,
+        { returnData: true },
+      ),
+      [{ n: 2105, distinct_docs: 1, doc: '{"data":[1,{"label":"before"}]}' }],
+    );
+    assertEquals(await sdb.getTableNames(), ['json "table"']);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("loadArray JSON validation and conversion failures preserve the destination", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("json_atomic");
+    await table.loadArray([{ id: 7 }]).run();
+    assertThrows(
+      () =>
+        table.loadArray([{ doc: {} }, { doc: { nested: [undefined] } }], {
+          columnTypes: { doc: "JSON" },
+        }),
+      Error,
+      'Column "doc", row 2, $["nested"][0]',
+    );
+    const prepared = prepareArray([{ doc: {} }], { doc: "JSON" });
+    prepared.columnsData[0][0] = "invalid JSON";
+    await assertRejects(() => executePreparedArray(table, prepared));
+    assertEquals(await table.getData(), [{ id: 7 }]);
+    assertEquals(await sdb.getTableNames(), ["json_atomic"]);
   } finally {
     await sdb.close();
   }

@@ -124,6 +124,15 @@ function loadDataSelect(
   files: string[],
   options: LoadDataOptions = {},
 ) {
+  if (
+    Object.values(options.columnTypes ?? {}).some((type) =>
+      /^\s*geometry\b/i.test(type)
+    )
+  ) {
+    throw new Error(
+      "Geometry column types are not supported by loadData(). Use loadGeoData() instead.",
+    );
+  }
   const fileExtension = getExtension(files[0]);
   if (
     options.fileType !== undefined &&

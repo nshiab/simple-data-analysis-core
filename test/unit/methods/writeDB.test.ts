@@ -66,9 +66,12 @@ Deno.test("writeDB embeds queued FTS and VSS index definitions and physical inde
       stripAccents: false,
     });
     const vectors = source.newTable("vectors").loadArray([
-      { id: 1, embedding: [0.1, 0.2, 0.3] },
-      { id: 2, embedding: [0.9, 0.1, 0.2] },
-    ]).createVssIndex("embedding", { M: 8, efConstruction: 32 });
+      { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+      { id: 2, embedding: [0.9, 0.1, 0.2].map(Math.fround) },
+    ], { columnTypes: { embedding: "FLOAT[3]" } }).createVssIndex("embedding", {
+      M: 8,
+      efConstruction: 32,
+    });
     await source.writeDB(file);
     const destination = db();
     await destination.loadDB(file);
@@ -108,7 +111,9 @@ Deno.test("DuckDB files with physical vector indexes load without SDA index defi
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "physical-index.db");
     const source = db();
-    source.newTable("vectors").loadArray([{ embedding: [1, 2, 3] }])
+    source.newTable("vectors").loadArray([{
+      embedding: [1, 2, 3].map(Math.fround),
+    }], { columnTypes: { embedding: "FLOAT[3]" } })
       .createVssIndex("embedding");
     await source.writeDB(file, { metadata: false });
     const destination = db();

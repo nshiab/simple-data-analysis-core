@@ -180,6 +180,10 @@ async function executeUpdateWithJS(
         geometryColumns.includes(key) ||
         (added && added.types[newKeys.indexOf(key)] === "GEOMETRY('EPSG:4326')")
       );
+      const outputJSON = keys.filter((key) =>
+        types[key] === "JSON" ||
+        (added && added.types[newKeys.indexOf(key)] === "JSON")
+      );
       if (outputGeometry.length && !simpleTable.sdb.spatialLoaded) {
         await simpleTable.sdb.customQuery(
           "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;",
@@ -196,7 +200,7 @@ async function executeUpdateWithJS(
       ]));
       outputOffset += modified.length;
       const columnTypes = keys.map((key) =>
-        outputGeometry.includes(key)
+        outputGeometry.includes(key) || outputJSON.includes(key)
           ? parseDuckDBType("VARCHAR")
           : source.types.get(key) ??
             parseDuckDBType(added!.types[newKeys.indexOf(key)])
@@ -238,6 +242,8 @@ async function executeUpdateWithJS(
           ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
             quoteIdentifier(key)
           }`
+          : outputJSON.includes(key)
+          ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
           : quoteIdentifier(key)
       ).join(", ");
       if (first) {

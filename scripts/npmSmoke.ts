@@ -124,6 +124,38 @@ try {
   if (actual !== expected) {
     throw new Error(\`Expected \${expected}, received \${actual}\`);
   }
+  const jsonTable = sdb.newTable("json_smoke").loadArray([{
+    payload: { tags: ["station"], active: true },
+    vector: [1, 2, 3],
+  }], { columnTypes: { payload: "JSON", vector: "FLOAT[3]" } });
+  const jsonTypes = await jsonTable.getTypes();
+  const jsonRows = await jsonTable.getData();
+  if (jsonTypes.payload !== "JSON" || JSON.parse(jsonRows[0].payload).tags[0] !== "station") {
+    throw new Error("Expected explicitly typed JSON ingestion");
+  }
+  if (JSON.stringify(jsonRows[0].vector) !== JSON.stringify([1, 2, 3])) {
+    throw new Error("Expected vector elements from getData()");
+  }
+  const typedTable = sdb.newTable("typed_smoke").loadArray([{
+    payload: '{"count":3}', vector: "[0.25,0.5,0.75]", geom: "POINT (-73 45)",
+  }]).convert({ payload: "JSON", vector: "FLOAT[3]", geom: "GEOMETRY('EPSG:4326')" })
+    .addColumn("copy", "json", "payload")
+    .addColumn("embedding", "float[3]", "vector");
+  const typedTypes = await typedTable.getTypes();
+  const typedGeo = await typedTable.getGeoData();
+  if (typedTypes.copy !== "JSON" || typedTypes.embedding !== "FLOAT[3]" ||
+      typedTypes.geom !== "GEOMETRY('EPSG:4326')" ||
+      JSON.stringify(typedGeo.features[0].geometry.coordinates) !== "[-73,45]" ||
+      JSON.stringify(typedGeo.features[0].properties.embedding) !== "[0.25,0.5,0.75]") {
+    throw new Error("Expected JSON, vector and geometry creation and conversion");
+  }
+  const emptyTypes = await sdb.newTable("empty_typed_smoke").setTypes({
+    payload: "JSON", vector: "FLOAT[3]", geom: "GEOMETRY('EPSG:4326')",
+  }).getTypes();
+  if (emptyTypes.payload !== "JSON" || emptyTypes.vector !== "FLOAT[3]" ||
+      emptyTypes.geom !== "GEOMETRY('EPSG:4326')") {
+    throw new Error("Expected JSON, vector and geometry schema creation");
+  }
 } finally {
   await sdb.close();
 }`;

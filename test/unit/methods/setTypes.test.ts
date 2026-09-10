@@ -51,3 +51,32 @@ Deno.test("should create a new SimpleTable with types and column names with spec
   });
   await sdb.close();
 });
+
+for (
+  const [json, vector, geometry] of [
+    ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
+    ["json", "float[3]", "geometry('EPSG:4326')"],
+  ] as const
+) {
+  Deno.test(`setTypes creates JSON, vector and geometry columns (${json})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().setTypes({
+        details: json,
+        embedding: vector,
+        geom: geometry,
+      });
+      assertEquals(await table.getTypes(), {
+        details: "JSON",
+        embedding: "FLOAT[3]",
+        geom: "GEOMETRY('EPSG:4326')",
+      });
+      assertEquals(await table.getGeoData(), {
+        type: "FeatureCollection",
+        features: [],
+      });
+    } finally {
+      await sdb.close();
+    }
+  });
+}

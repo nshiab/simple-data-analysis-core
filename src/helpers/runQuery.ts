@@ -80,10 +80,6 @@ export function makeConverter(
     })`;
     return (value) => (value === null ? null : placeholder);
   }
-  if (typeString.includes("FLOAT[")) {
-    const placeholder = `<${typeString}>`;
-    return (value) => (value === null ? null : placeholder);
-  }
   switch (type.typeId) {
     case DuckDBTypeId.DATE:
       return (value) =>

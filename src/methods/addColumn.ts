@@ -22,6 +22,10 @@ export default function addColumn(
     | "timestamp"
     | "timestamp with time zone"
     | "boolean"
+    | "json"
+    | "JSON"
+    | `float[${number}]`
+    | `FLOAT[${number}]`
     | `geometry('${string}')`
     | `GEOMETRY('${string}')`,
   definition: string,

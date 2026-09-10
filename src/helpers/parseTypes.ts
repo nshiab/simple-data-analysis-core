@@ -14,6 +14,10 @@ export default function parseType(
     | "timestamp"
     | "timestamp with time zone"
     | "boolean"
+    | "json"
+    | "JSON"
+    | `float[${number}]`
+    | `FLOAT[${number}]`
     | `geometry('${string}')`
     | `GEOMETRY('${string}')`,
 ) {
@@ -39,8 +43,11 @@ export default function parseType(
       "timestamp",
       "timestamp with time zone",
       "boolean",
+      "json",
     ].includes(typeLowerCase)
   ) {
+    return type.toUpperCase();
+  } else if (/^float\[[1-9]\d*\]$/.test(typeLowerCase)) {
     return type.toUpperCase();
   } else if (typeLowerCase.includes("geometry")) {
     return type.toUpperCase();

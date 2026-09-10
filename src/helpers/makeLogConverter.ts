@@ -11,8 +11,9 @@ export default function makeLogConverter(
   convert: (value: DuckDBValue) => unknown,
 ): (value: DuckDBValue) => LogValue {
   const sqlType = type.toString();
+  const floatArray = sqlType.includes("FLOAT[");
   const placeholder = sqlType.toLowerCase().includes("geometry") ||
-    sqlType.includes("FLOAT[");
+    floatArray;
   const temporal = [
     DuckDBTypeId.DATE,
     DuckDBTypeId.TIME,
@@ -49,7 +50,9 @@ export default function makeLogConverter(
   return (value) => {
     if (value === null) return new LogValue("null", jsType, "null");
     // TIMESTAMPTZ uses the existing UTC converter, independent of process timezone.
-    const converted = temporal && type.typeId !== DuckDBTypeId.TIMESTAMP_TZ
+    const converted = floatArray
+      ? `<${sqlType}>`
+      : temporal && type.typeId !== DuckDBTypeId.TIMESTAMP_TZ
       ? String(value)
       : convert(value);
     const text = typeof converted === "object" && converted !== null

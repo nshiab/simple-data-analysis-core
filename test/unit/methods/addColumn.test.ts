@@ -172,3 +172,40 @@ Deno.test("should add a column with a case statement and null", async () => {
   ]);
   await sdb.close();
 });
+
+for (
+  const [json, vector, geometry] of [
+    ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
+    ["json", "float[3]", "geometry('EPSG:4326')"],
+  ] as const
+) {
+  Deno.test(`addColumn creates JSON, vector and geometry values (${json})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadArray([{ value: 3 }])
+        .addColumn("details", json, "json_object('count', value)")
+        .addColumn("embedding", vector, "[0.25, 0.5, 0.75]")
+        .addColumn("geom", geometry, "ST_Point(-73, 45)");
+      assertEquals(await table.getTypes(), {
+        value: "DOUBLE",
+        details: "JSON",
+        embedding: "FLOAT[3]",
+        geom: "GEOMETRY('EPSG:4326')",
+      });
+      assertEquals(await table.getGeoData(), {
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [-73, 45] },
+          properties: {
+            value: 3,
+            details: '{"count":3.0}',
+            embedding: [0.25, 0.5, 0.75],
+          },
+        }],
+      });
+    } finally {
+      await sdb.close();
+    }
+  });
+}

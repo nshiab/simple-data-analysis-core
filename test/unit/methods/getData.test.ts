@@ -1,6 +1,56 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("getData returns vector elements and nulls instead of display labels", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("vectors").loadArray([
+      { vector: [1.5, null, -0] },
+      { vector: null },
+    ], { columnTypes: { vector: "FLOAT[3]" } });
+    const expected = [{ vector: [1.5, null, -0] }, { vector: null }];
+    const data = await table.getData();
+    assertEquals(data, expected);
+    (data[0].vector as (number | null)[])[0] = 99;
+    assertEquals(await table.getData(), expected);
+    assertEquals(
+      await table.getValues("vector"),
+      expected.map((row) => row.vector),
+    );
+    const streamed: { [key: string]: unknown }[] = [];
+    for await (const row of table.stream()) streamed.push(row);
+    assertEquals(streamed, expected);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("getData returns float lists and nested vectors as JavaScript arrays", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("nested_vectors");
+    await sdb.customQuery(`CREATE TABLE nested_vectors AS SELECT
+      [1.5, NULL, 2.5]::FLOAT[] AS list, []::FLOAT[] AS empty,
+      [[1, 2], [3, 4]]::FLOAT[2][2] AS matrix,
+      {'vector': [1, NULL]::FLOAT[2], 'label': 'a'} AS nested`);
+    const expected = [{
+      list: [1.5, null, 2.5],
+      empty: [],
+      matrix: [[1, 2], [3, 4]],
+      nested: { vector: [1, null], label: "a" },
+    }];
+    assertEquals(await table.getData(), expected);
+    assertEquals(
+      await sdb.customQuery("SELECT * FROM nested_vectors", {
+        returnData: true,
+      }),
+      expected,
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("getData does not run a schema preflight query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("queryCount");

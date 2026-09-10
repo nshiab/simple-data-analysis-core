@@ -7,10 +7,10 @@ Deno.test("should successfully create a VSS index", async () => {
 
   // Create a table with embedding data (FLOAT array)
   table.loadArray([
-    { id: 1, embedding: [0.1, 0.2, 0.3] },
-    { id: 2, embedding: [0.4, 0.5, 0.6] },
-    { id: 3, embedding: [0.7, 0.8, 0.9] },
-  ]);
+    { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+    { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+    { id: 3, embedding: [0.7, 0.8, 0.9].map(Math.fround) },
+  ], { columnTypes: { embedding: "FLOAT[3]" } });
 
   // Create VSS index
   const result = await table.createVssIndex("embedding").run();
@@ -32,9 +32,9 @@ Deno.test("should not recreate index if already exists", async () => {
   const table = sdb.newTable();
 
   table.loadArray([
-    { id: 1, embedding: [0.1, 0.2, 0.3] },
-    { id: 2, embedding: [0.4, 0.5, 0.6] },
-  ]);
+    { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+    { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+  ], { columnTypes: { embedding: "FLOAT[3]" } });
 
   // Create VSS index
   await table.createVssIndex("embedding", {
@@ -62,9 +62,9 @@ Deno.test("should recreate index when overwrite is true", async () => {
   const table = sdb.newTable();
 
   table.loadArray([
-    { id: 1, embedding: [0.1, 0.2, 0.3] },
-    { id: 2, embedding: [0.4, 0.5, 0.6] },
-  ]);
+    { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+    { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+  ], { columnTypes: { embedding: "FLOAT[3]" } });
 
   // Create initial VSS index
   await table.createVssIndex("embedding").run();
@@ -90,9 +90,9 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
   const table = sdb.newTable();
 
   table.loadArray([
-    { id: 1, embedding: [0.1, 0.2, 0.3] },
-    { id: 2, embedding: [0.4, 0.5, 0.6] },
-  ]);
+    { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+    { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+  ], { columnTypes: { embedding: "FLOAT[3]" } });
 
   // Create index with overwrite=true even though no index exists
   await table.createVssIndex("embedding", {
@@ -110,9 +110,9 @@ Deno.test("should recreate index with verbose logging when overwrite is true", a
   const table = sdb.newTable();
 
   table.loadArray([
-    { id: 1, embedding: [0.1, 0.2, 0.3] },
-    { id: 2, embedding: [0.4, 0.5, 0.6] },
-  ]);
+    { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+    { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+  ], { columnTypes: { embedding: "FLOAT[3]" } });
 
   // Create initial index
   await table.createVssIndex("embedding", {
@@ -141,10 +141,10 @@ Deno.test("should create index with custom HNSW parameters", async () => {
   const table = sdb.newTable();
 
   table.loadArray([
-    { id: 1, embedding: [0.1, 0.2, 0.3] },
-    { id: 2, embedding: [0.4, 0.5, 0.6] },
-    { id: 3, embedding: [0.7, 0.8, 0.9] },
-  ]);
+    { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+    { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+    { id: 3, embedding: [0.7, 0.8, 0.9].map(Math.fround) },
+  ], { columnTypes: { embedding: "FLOAT[3]" } });
 
   // Create VSS index with custom HNSW parameters
   const result = await table.createVssIndex("embedding", {

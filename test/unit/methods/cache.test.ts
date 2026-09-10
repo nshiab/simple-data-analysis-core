@@ -155,9 +155,9 @@ Deno.test("should restore fixed array types and VSS indexes from cache", async (
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
     table.loadArray([
-      { id: 1, embedding: [0.1, 0.2, 0.3] },
-      { id: 2, embedding: [0.4, 0.5, 0.6] },
-    ]);
+      { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+      { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+    ], { columnTypes: { embedding: "FLOAT[3]" } });
     table.createVssIndex("embedding", {
       efConstruction: 64,
       efSearch: 32,

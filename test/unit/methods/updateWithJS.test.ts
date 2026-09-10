@@ -882,3 +882,54 @@ for (const batchSize of [undefined, 1]) {
     }
   });
 }
+
+for (const batchSize of [undefined, 1]) {
+  Deno.test(`updateWithJS supports explicitly typed JSON columns (${batchSize})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("json_updates");
+      await table.loadArray([{ id: 1 }, { id: 2 }])
+        .updateWithJS((rows) =>
+          rows.map((row) => ({
+            ...row,
+            doc: row.id === 1
+              ? null
+              : { tags: ["a", "b"], n: 1.0000000000000002 },
+            missing: null,
+          })), { batchSize, columnTypes: { doc: "JSON", missing: "json" } })
+        .run();
+      const expected = await table.getData();
+      assertEquals(expected, [{ id: 1, doc: null, missing: null }, {
+        id: 2,
+        doc: '{"tags":["a","b"],"n":1.0000000000000002}',
+        missing: null,
+      }]);
+      assertEquals(await table.getTypes(), {
+        id: "DOUBLE",
+        doc: "JSON",
+        missing: "JSON",
+      });
+      await table.updateWithJS((rows) => rows, { batchSize }).run();
+      assertEquals(await table.getData(), expected);
+      assertEquals(await table.getTypes(), {
+        id: "DOUBLE",
+        doc: "JSON",
+        missing: "JSON",
+      });
+      await assertRejects(
+        () =>
+          table.updateWithJS((rows) =>
+            rows.map((row) => ({
+              ...row,
+              invalid: row.id === 1 ? { ok: true } : { invalid: undefined },
+            })), { batchSize, columnTypes: { invalid: "JSON" } }).run(),
+        Error,
+        'Column "invalid"',
+      );
+      assertEquals(await table.getData(), expected);
+      assertEquals(await sdb.getTableNames(), ["json_updates"]);
+    } finally {
+      await sdb.close();
+    }
+  });
+}

@@ -741,13 +741,14 @@ will be replaced. To convert the types of an existing table, use the
 ##### Signature
 
 ```typescript
-setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}')>): this;
+setTypes(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "json" | "JSON" | float[${number}] | FLOAT[${number}] | geometry('${string}') | GEOMETRY('${string}')>): this;
 ```
 
 ##### Parameters
 
 - **`types`**: An object specifying the column names and their target data types
-  (JavaScript or SQL types).
+  (JavaScript or SQL types), including JSON, FLOAT[n] vectors, and GEOMETRY with
+  a CRS.
 
 ##### Returns
 
@@ -764,41 +765,33 @@ await table.setTypes({
 }).log();
 ```
 
+```ts
+// Create an empty table with JSON, embedding, and geometry columns.
+await table.setTypes({
+  details: "JSON",
+  embedding: "FLOAT[3]",
+  geom: "GEOMETRY('EPSG:4326')",
+}).log();
+```
+
 #### `loadArray`
 
-Loads an array of JavaScript objects into the table. Types can also be specified
-for individual columns instead of inferred from their values.
+Loads an array of JavaScript objects into the table. Types are inferred for
+numbers, bigints, strings, booleans, and Date values. Array and object cells
+require an explicit supported type in columnTypes. Types can also be specified
+for scalar columns instead of inferred from their values.
 
 JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
 instant is preserved, but JavaScript `Date` does not retain the timezone or
-offset originally used to construct it. String values remain `VARCHAR`; use
-`convert()` to parse them as temporal values.
+offset originally used to construct it.
 
-Array-valued cells are inferred as fixed-size `FLOAT` vectors and use a compact
-placeholder when extracted or logged. Plain nested object cells require an
-explicit geometry type as described below. To load other nested documents,
-stringify them first and use SQL to convert the text to typed lists and structs.
-
-Declare `columnTypes: { geom: "GEOMETRY('EPSG:4326')" }` to ingest GeoJSON
-geometry objects or nulls. Supports Point, LineString, Polygon, their Multi
-variants, and GeometryCollections nested up to 100 levels; Features and
-FeatureCollections must be reduced to geometry objects first. Positions must be
-finite two-dimensional WGS84 [longitude, latitude] coordinates within [-180,
-180] and [-90, 90]. Z/M positions are rejected. The type declaration asserts the
-input CRS; no CRS inference or reprojection occurs. Empty Polygon, Multi
-geometries, and GeometryCollection arrays are allowed; empty Points,
-LineStrings, and polygon rings are rejected. Rings must be closed with at least
-four positions. CRS members are rejected; other metadata (including bbox) is not
-stored in SQL geometry values. Validation and JSON serialization snapshot
-geometries when called, using additional memory proportional to the input.
-Loading stages this text in DuckDB and parses it into geometry before atomically
-replacing the table, requiring temporary database storage and conversion work.
-Logging retains compact geometry placeholders.
+Declare `JSON` for general nested data, `FLOAT[n]` for a fixed-size float
+vector, or `GEOMETRY('EPSG:4326')` for GeoJSON geometries in WGS84.
 
 ##### Signature
 
 ```typescript
-loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "INTEGER" | "BIGINT" | "DOUBLE" | "VARCHAR" | "BOOLEAN" | "DATE" | "TIME" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" | "GEOMETRY('EPSG:4326')" | "geometry('EPSG:4326')" | FLOAT[${number}] | float[${number}]> }): this;
+loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "INTEGER" | "BIGINT" | "DOUBLE" | "VARCHAR" | "BOOLEAN" | "DATE" | "TIME" | "TIMESTAMP" | "TIMESTAMP WITH TIME ZONE" | "GEOMETRY('EPSG:4326')" | "geometry('EPSG:4326')" | "JSON" | "json" | FLOAT[${number}] | float[${number}]> }): this;
 ```
 
 ##### Parameters
@@ -806,9 +799,10 @@ loadArray(rows: Record<string, unknown>[], options?: { columnTypes?: Record<stri
 - **`rows`**: An array of objects, where each object represents a row and its
   properties represent columns.
 - **`options`**: Options for loading the array, captured when called.
-- **`options.columnTypes`**: Types for specific columns; omitted columns are
-  inferred. Values must be compatible with the selected type without losing
-  information.
+- **`options.columnTypes`**: Types for specific columns. Required for array and
+  object cells; omitted scalar columns are inferred, and all-null columns
+  default to VARCHAR. Values must be compatible with the selected type without
+  losing information.
 
 ##### Returns
 
@@ -817,14 +811,7 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-await table.loadArray([{
-  name: "Montreal",
-  geom: { type: "Point", coordinates: [-73.57, 45.50] },
-}], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
-```
-
-```ts
-// Load data from an array of objects
+// Load scalar columns without columnTypes; strings and numbers are inferred.
 const data = [
   { letter: "a", number: 1 },
   { letter: "b", number: 2 },
@@ -833,7 +820,7 @@ await table.loadArray(data).log();
 ```
 
 ```ts
-// Specify a numeric type for an all-null column
+// Choose a numeric type when all-null values provide nothing to infer.
 await table.loadArray(
   [{ name: "A", value: null }, { name: "B", value: null }],
   { columnTypes: { value: "DOUBLE" } },
@@ -841,23 +828,35 @@ await table.loadArray(
 ```
 
 ```ts
-// The offset determines the instant; the loaded TIMESTAMP is returned as
-// the equivalent UTC JavaScript Date.
+// Store the Date as a UTC timestamp with JavaScript's millisecond precision.
+// The original -04:00 offset is not retained.
 await table.loadArray([{
   observedAt: new Date("2024-04-07T13:00:00-04:00"),
 }]).log();
 ```
 
 ```ts
-// Load a nested document as text, then give it SQL list and struct types.
-const documents = sdb.newTable("nested_documents");
-await documents.loadArray([{
-  document: JSON.stringify({ scores: [1, null, 3], details: { count: 2 } }),
-}]).log();
-await sdb.customQuery(`CREATE OR REPLACE TABLE nested_documents AS SELECT
-  from_json(document, '{"scores":["INTEGER"],"details":{"count":"INTEGER"}}') AS document
-  FROM nested_documents`);
-await documents.log();
+// Declare JSON to load nested objects and variable-length arrays directly.
+await table.loadArray([{
+  name: "Station",
+  metadata: { active: true, tags: ["weather", "urban"] },
+  measurements: [1, 2.5, null],
+}], { columnTypes: { metadata: "JSON", measurements: "JSON" } }).log();
+```
+
+```ts
+// Declare FLOAT[3] to store each three-element array as a fixed-size vector.
+await table.loadArray([{ vector: [1, 2, 3] }], {
+  columnTypes: { vector: "FLOAT[3]" },
+}).log();
+```
+
+```ts
+// Declare a geometry type to store WGS84 GeoJSON as a spatial column.
+await table.loadArray([{
+  name: "Montreal",
+  geom: { type: "Point", coordinates: [-73.57, 45.50] },
+}], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
 ```
 
 #### `loadData`
@@ -896,7 +895,8 @@ loadData(files: string | string[], options?: { fileType?: "csv" | "dsv" | "json"
   across multiple files when their structures differ. Missing columns will be
   filled with `NULL` values. Defaults to `false`.
 - **`options.columnTypes`**: An object mapping column names to their expected
-  data types. By default, types are inferred.
+  data types. By default, types are inferred. Geometry types are not supported;
+  use loadGeoData() instead.
 - **`options.columns`**: An array of column names to load. When provided, only
   the specified columns are loaded, reducing memory usage and improving load
   times. Not supported for Excel files — combining `columns` with Excel files
@@ -2661,13 +2661,13 @@ will be automatically removed before conversion.
 ##### Signature
 
 ```typescript
-convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean">, options?: { strict?: boolean; datetimeFormat?: string }): this;
+convert(types: Record<string, "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "json" | "JSON" | float[${number}] | FLOAT[${number}] | geometry('${string}') | GEOMETRY('${string}')>, options?: { strict?: boolean; datetimeFormat?: string }): this;
 ```
 
 ##### Parameters
 
 - **`types`**: An object mapping column names to their target data types for
-  conversion.
+  conversion, including JSON, FLOAT[n] vectors, and GEOMETRY with a CRS.
 - **`options`**: An optional object with configuration options:
 - **`options.strict`**: If `false`, values that cannot be converted will be
   replaced by `NULL` instead of throwing an error. Defaults to `true`.
@@ -2718,6 +2718,21 @@ await table.convert({ column3: "string" }, {
 ```ts
 // Convert 'amount' to float, replacing unconvertible values with NULL
 await table.convert({ amount: "float" }, { strict: false }).log();
+```
+
+```ts
+// Parse JSON, a fixed-size float vector, and WKT geometry from text.
+await table.loadArray([{
+  details: '{"count":3}',
+  embedding: "[0.25,0.5,0.75]",
+  geom: "POINT (-73 45)",
+}])
+  .convert({
+    details: "JSON",
+    embedding: "FLOAT[3]",
+    geom: "GEOMETRY('EPSG:4326')",
+  })
+  .log();
 ```
 
 #### `removeTable`
@@ -2782,14 +2797,15 @@ expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
 ##### Signature
 
 ```typescript
-addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
+addColumn(newColumn: string, type: "integer" | "float" | "number" | "string" | "date" | "time" | "datetime" | "datetimeTz" | "bigint" | "double" | "varchar" | "timestamp" | "timestamp with time zone" | "boolean" | "json" | "JSON" | float[${number}] | FLOAT[${number}] | geometry('${string}') | GEOMETRY('${string}'), definition: string): this;
 ```
 
 ##### Parameters
 
 - **`newColumn`**: The name of the new column to be added.
 - **`type`**: The data type for the new column. Can be a JavaScript type (e.g.,
-  `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`).
+  `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`,
+  `"JSON"`, `"FLOAT[3]"`, `"GEOMETRY('EPSG:4326')"`).
 - **`definition`**: A SQL expression defining how the values for the new column
   should be computed (e.g., `"column1 + column2"`,
   `"ST_Centroid(geom_column)"`).
@@ -2812,6 +2828,23 @@ await table.addColumn(
   "geometry('EPSG:4326')",
   `ST_Centroid("country")`,
 ).log();
+```
+
+```ts
+// Read a number from a JSON object into a new column using dot notation.
+await table.loadArray([{ details: { count: 3 } }], {
+  columnTypes: { details: "JSON" },
+})
+  .addColumn("count", "integer", "details.count")
+  .log();
+```
+
+```ts
+// Create JSON and fixed-size vector columns with DuckDB expressions.
+await table.loadArray([{ count: 3 }])
+  .addColumn("details", "JSON", "json_object('count', count)")
+  .addColumn("embedding", "FLOAT[3]", "[0.25, 0.5, 0.75]")
+  .log();
 ```
 
 #### `extractDatePart`
@@ -3954,6 +3987,15 @@ await table.updateColumn(
 ).log();
 ```
 
+```ts
+// Update an existing column with a value from a JSON object using dot notation.
+await table.loadArray([{ count: 0, details: { count: 3 } }], {
+  columnTypes: { details: "JSON" },
+})
+  .updateColumn("count", "details.count")
+  .log();
+```
+
 #### `ranks`
 
 Assigns ranks to rows in a new column based on the values of a specified column.
@@ -4922,35 +4964,14 @@ Updates data in the table using a JavaScript function. The function receives the
 existing rows as an array of objects and must return the modified rows as an
 array of objects. This method offers high flexibility for data manipulation but
 can be slow for large tables as it involves transferring data between DuckDB and
-JavaScript. Each row is an ordinary object whose keys are the table's column
-names. The callback receives an array of these rows, not a GeoJSON
-FeatureCollection or an array of Features. Ordinary columns stay at the top
-level of each row; they are not moved into a GeoJSON properties object. Each
-geometry column contains a GeoJSON geometry object (for example, { type:
-"Point", coordinates: [-73, 45] }), with SQL nulls exposed as null.
-GeometryCollections contain geometries instead of coordinates. Geometry column
-names are preserved: geom is only an example name, and multiple geometry columns
-are supported. Returned rows use the same structure. Geometry values are
-converted back to SQL geometry; ordinary objects are never inferred as new
-geometry columns without columnTypes. Only geometry type and coordinates (or
-geometries for a GeometryCollection) are stored. Extra members added inside a
-geometry, including properties, id, and bbox, are discarded on a successful
-update. Store attributes on the row instead: row.label becomes a column, whereas
-row.geom.properties does not. Feature and FeatureCollection values in geometry
-columns are rejected; crs members are also rejected. Unlike this row-based
-callback, getGeoData() exports a FeatureCollection: the selected geometry column
-becomes each Feature's geometry and the other columns become properties. Source
-geometry columns must have EPSG:4326 CRS; call
-`reproject("EPSG:4326", { column: "geom" })` first for unknown or different CRS.
-Coordinates use WGS84 longitude–latitude order. Supported geometries follow
-loadArray(): finite two-dimensional coordinates, including GeometryCollections;
-Z/M and representations that lose precision in conversion are rejected. Returned
-rows carry their geometry through filtering, reordering and duplication.
-Spreading a row shares its geometry reference; use structuredClone for
-independent nested edits. Existing SQL types (including all-null geometry
-columns) are retained. Callback and write failures leave the original table
-intact. JavaScript transfer and GeoJSON conversion can be expensive, especially
-in memory for complex geometries.
+JavaScript. Before writing a JavaScript callback, check for an existing SDA
+method that performs the same operation; it will usually be faster and more
+efficient.
+
+If the table has geometry columns, the callback can read and modify their
+GeoJSON geometry objects directly. Extra properties added to these objects are
+ignored; create new columns on the returned rows to store additional attributes.
+All geometry columns must use EPSG:4326; use reproject() first if needed.
 
 ##### Signature
 
@@ -4983,26 +5004,50 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Enrich an ordinary column while retaining geometry.
-await sdb.newTable().loadArray([
-  { name: "Station", geom: { type: "Point", coordinates: [-73, 45] } },
-  { name: "Unknown location", geom: null },
-], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
-  .updateWithJS((rows) => {
-    // rows is an array of ordinary row objects:
-    // [
-    //   { name: "Station", geom: { type: "Point", coordinates: [-73, 45] } },
-    //   { name: "Unknown location", geom: null },
-    // ]
-    // Access attributes with row.name and geometry with row.geom.
-    return rows.map((row) => ({
-      ...row,
-      label: String(row.name).toUpperCase(),
-    }));
-  }).log();
+// Double the value in each row with a JavaScript callback.
+await table.loadArray([{ value: 1 }, { value: 2 }])
+  .updateWithJS((rows) =>
+    rows.map((row) => ({
+      value: Number(row.value) * 2,
+    }))
+  )
+  .log();
 ```
 
 ```ts
+// Process two rows per callback to limit how many rows are handled at once.
+await table.loadArray([{ value: 1 }, { value: 2 }, { value: 3 }])
+  .updateWithJS((rows) =>
+    rows.map((row) => ({
+      value: Number(row.value) * 2,
+    })), { batchSize: 2 })
+  .log();
+```
+
+```ts
+// Add a JSON object column to keep related attributes together.
+await table.loadArray([{ name: "Station" }])
+  .updateWithJS((rows) =>
+    rows.map((row) => ({
+      ...row,
+      details: { active: true, category: "weather" },
+    })), { columnTypes: { details: "JSON" } })
+  .log();
+```
+
+```ts
+// Add a three-element float vector, such as an embedding.
+await table.loadArray([{ name: "Station" }])
+  .updateWithJS((rows) =>
+    rows.map((row) => ({
+      ...row,
+      embedding: [0.25, 0.5, 0.75],
+    })), { columnTypes: { embedding: "FLOAT[3]" } })
+  .log();
+```
+
+```ts
+// Move each point slightly east by editing its longitude.
 await sdb.newTable().loadArray([{
   geom: { type: "Point", coordinates: [-73, 45] },
 }], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } })
@@ -5017,41 +5062,13 @@ await sdb.newTable().loadArray([{
 ```
 
 ```ts
+// Create a geometry column from longitude and latitude values.
 await sdb.newTable().loadArray([{ longitude: -73, latitude: 45 }])
   .updateWithJS((rows) =>
     rows.map((row) => ({
       ...row,
       geom: { type: "Point", coordinates: [row.longitude, row.latitude] },
     })), { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
-```
-
-```ts
-// Extract hostnames with JavaScript's URL parser.
-const table = await sdb
-  .newTable()
-  .loadData("websites.csv")
-  .updateWithJS((rows) => {
-    return rows.map((row) => ({
-      ...row,
-      hostname: typeof row.url === "string" ? new URL(row.url).hostname : null,
-    }));
-  })
-  .log();
-```
-
-```ts
-// Enrich reviews with scores from an external service, 100 at a time.
-const reviews = await table
-  .updateWithJS(async (rows) => {
-    const response = await fetch("https://api.example.com/score", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(rows.map((row) => row.review)),
-    });
-    const scores = await response.json() as number[];
-    return rows.map((row, index) => ({ ...row, score: scores[index] }));
-  }, { batchSize: 100 })
-  .log();
 ```
 
 #### `getSchema`
@@ -6043,15 +6060,16 @@ returned as UTC strings, preserving DuckDB's microsecond precision; JavaScript
 
 Top-level `BIGINT`, `UBIGINT`, `HUGEINT`, and `UHUGEINT` columns are returned as
 JavaScript numbers. Values outside `Number.MIN_SAFE_INTEGER` through
-`Number.MAX_SAFE_INTEGER` throw instead of losing precision. Cast such columns
-to `VARCHAR` to retrieve their exact digits.
+`Number.MAX_SAFE_INTEGER` throw instead of losing precision. Use
+`convert({ columnName: "string" })` before `getData()` to retrieve their exact
+digits as strings.
+
+SQL arrays and lists, including float vectors, return their actual elements as
+JavaScript arrays. Null cells and null elements remain null.
 
 Nested SQL lists and structs become JavaScript arrays and objects. Within them,
 `BIGINT`, `UBIGINT`, `HUGEINT`, `UHUGEINT`, and `DECIMAL` values remain strings
-to preserve precision, even for small integers. Other nested types follow
-DuckDB's JSON conversion; for example, `INTEGER` becomes a number, `BOOLEAN`
-becomes a boolean, and null remains null. No safe-integer range check is applied
-to these nested strings.
+to preserve precision, even for small integers.
 
 ##### Signature
 
@@ -7454,12 +7472,8 @@ console.log(areaBbox);
 
 Returns the table's geospatial data as a GeoJSON FeatureCollection. Each row
 becomes a Feature: the selected geometry column becomes its geometry, and the
-remaining columns become its properties. These properties are constructed from
-table columns, not from metadata inside the stored SQL geometry. Editing the
-returned object does not update the table. To persist edits, use updateWithJS(),
-whose callback receives ordinary row objects with columns as keys and geometry
-objects in geometry cells, rather than Features. If the table has multiple
-geometry columns, you must specify which one to use.
+remaining columns become its properties. If the table has multiple geometry
+columns, you must specify which one to use.
 
 ##### Signature
 
@@ -7525,8 +7539,8 @@ async writeData(file: string, options?: { compression?: boolean; dataAsArrays?: 
   `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This
   can reduce file size for web projects. You can use the `arraysToData` function
   from the
-  [journalism library](https://jsr.io/@nshiab/journalism/doc/~/arraysToData) to
-  convert it back.
+  [journalism-format library](https://jsr.io/@nshiab/journalism-format/doc/~/arraysToData)
+  to convert it back.
 - **`options.formatDates`**: For CSV and JSON files only. If `true`, date and
   timestamp columns will be formatted as ISO 8601 strings (e.g.,
   `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.

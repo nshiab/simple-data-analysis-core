@@ -2,6 +2,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import readMutationRows from "./readMutationRows.ts";
 import { retainRegisteredTables } from "./tableRegistry.ts";
+import { executePreparedArray, prepareArray } from "../methods/loadArray.ts";
 
 /**
  * Generates columns from selected input columns, keeping other SQL values in
@@ -119,10 +120,14 @@ export default async function updateColumnsWithJS(
       if (generated.length !== ids.length) {
         throw new Error("Column generation must return one row per input row.");
       }
-      await batch.loadArray(generated.map((row, i) => ({
-        ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
-        [id]: ids[i],
-      }))).run();
+      // Generated vectors retain this helper's existing inference contract.
+      await executePreparedArray(
+        batch,
+        prepareArray(generated.map((row, i) => ({
+          ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
+          [id]: ids[i],
+        }))),
+      );
       const batchTypes = await batch.getTypes();
       for (const name of outputColumns) {
         const nonNull = generated.some((row) =>

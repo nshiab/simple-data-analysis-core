@@ -21,7 +21,13 @@ export default function convert(
       | "varchar"
       | "timestamp"
       | "timestamp with time zone"
-      | "boolean";
+      | "boolean"
+      | "json"
+      | "JSON"
+      | `float[${number}]`
+      | `FLOAT[${number}]`
+      | `geometry('${string}')`
+      | `GEOMETRY('${string}')`;
   },
   options: {
     strict?: boolean;
@@ -35,6 +41,9 @@ export default function convert(
     method: "convert()",
     parameters: { types, options },
     needsSchema: true,
+    needsSpatial: Object.values(types).some((type) =>
+      type.toLowerCase().startsWith("geometry")
+    ),
     outputSchema: (allTypes) => ({
       ...allTypes,
       ...Object.fromEntries(
@@ -93,6 +102,12 @@ export function convertSelect(
     | "timestamp"
     | "timestamp with time zone"
     | "boolean"
+    | "json"
+    | "JSON"
+    | `float[${number}]`
+    | `FLOAT[${number}]`
+    | `geometry('${string}')`
+    | `GEOMETRY('${string}')`
   )[],
   allColumns: string[],
   allTypes: TableSchema,
@@ -157,6 +172,13 @@ export function convertSelect(
         query += ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds(${
           quoteIdentifier(column)
         }) AS ${quoteIdentifier(column)},`;
+      } else if (
+        options.strict === false && expectedType.startsWith("GEOMETRY")
+      ) {
+        // DuckDB's geometry parser can throw even inside TRY_CAST.
+        query += ` TRY(CAST(${
+          quoteIdentifier(column)
+        } AS ${expectedType})) AS ${quoteIdentifier(column)},`;
       } else if (stringToNumber) {
         // Thousand separators would make the cast fail.
         query += ` ${cast}(REPLACE(${quoteIdentifier(column)}, ',', '') AS ${
@@ -195,6 +217,12 @@ function getDatetimeFormatValues(
     | "timestamp"
     | "timestamp with time zone"
     | "boolean"
+    | "json"
+    | "JSON"
+    | `float[${number}]`
+    | `FLOAT[${number}]`
+    | `geometry('${string}')`
+    | `GEOMETRY('${string}')`
   )[],
   allColumns: string[],
   allTypes: TableSchema,

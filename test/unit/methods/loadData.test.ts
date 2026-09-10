@@ -1067,3 +1067,65 @@ Deno.test("should load JSON records with the records option", async () => {
 
   await sdb.close();
 });
+
+Deno.test("loadData accepts JSON and vector column types", async () => {
+  const file = await Deno.makeTempFile({ suffix: ".csv" });
+  const sdb = new SimpleDB();
+  try {
+    await Deno.writeTextFile(
+      file,
+      'details|embedding\n"{""count"":3}"|[0.25,0.5,0.75]\n',
+    );
+    const table = sdb.newTable().loadData(file, {
+      delim: "|",
+      columnTypes: { details: "JSON", embedding: "FLOAT[3]" },
+    });
+    assertEquals(await table.getTypes(), {
+      details: "JSON",
+      embedding: "FLOAT[3]",
+    });
+    assertEquals(await table.getData(), [{
+      details: '{"count":3}',
+      embedding: [0.25, 0.5, 0.75],
+    }]);
+  } finally {
+    await sdb.close();
+    await Deno.remove(file);
+  }
+});
+
+Deno.test("loadData rejects geometry declarations before loading, regardless of strict mode", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([{ value: 1 }]);
+    await table.getData();
+    for (
+      const type of [
+        "GEOMETRY",
+        "geometry('EPSG:4326')",
+        "  GeOmEtRy('EPSG:3857')",
+      ]
+    ) {
+      for (const strict of [undefined, true, false]) {
+        for (const extension of ["csv", "json", "parquet", "xlsx"]) {
+          const file = `unused.${extension}`;
+          const options = { columnTypes: { geom: type }, strict };
+          assertThrows(
+            () => table.loadData(file, options),
+            Error,
+            "Use loadGeoData() instead.",
+          );
+          assertThrows(
+            () => loadDataQuery(table.name, [file], options),
+            Error,
+            "Use loadGeoData() instead.",
+          );
+        }
+      }
+    }
+    assertEquals(await table.getData(), [{ value: 1 }]);
+    assertEquals(sdb.spatialLoaded, false);
+  } finally {
+    await sdb.close();
+  }
+});

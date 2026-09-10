@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should bind datetime formats containing apostrophes", async () => {
@@ -526,3 +526,105 @@ Deno.test("should convert a column with $ in its name", async () => {
 
   await sdb.close();
 });
+
+for (
+  const [json, vector, geometry] of [
+    ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
+    ["json", "float[3]", "geometry('EPSG:4326')"],
+  ] as const
+) {
+  Deno.test(`convert parses JSON, vector and WKT geometry text (${json})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadArray([
+        {
+          details: '{"count":3}',
+          embedding: "[0.25,0.5,0.75]",
+          geom: "POINT (-73 45)",
+        },
+        { details: null, embedding: null, geom: null },
+      ]).convert({ details: json, embedding: vector, geom: geometry });
+      assertEquals(await table.getTypes(), {
+        details: "JSON",
+        embedding: "FLOAT[3]",
+        geom: "GEOMETRY('EPSG:4326')",
+      });
+      const geo = await table.getGeoData();
+      assertEquals(geo, {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [-73, 45] },
+            properties: {
+              details: '{"count":3}',
+              embedding: [0.25, 0.5, 0.75],
+            },
+          },
+          {
+            type: "Feature",
+            geometry: null,
+            properties: { details: null, embedding: null },
+          },
+        ],
+      });
+      await table.convert({ embedding: "JSON" }).getTypes();
+      table.convert({ details: "string", embedding: "FLOAT[3]" });
+      assertEquals(await table.getGeoData(), geo);
+      assertEquals((await table.getTypes()).details, "VARCHAR");
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("convert replaces invalid JSON, vector and geometry text with null in non-strict mode", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { details: "invalid", embedding: "[1,2]", geom: "invalid" },
+    ]).convert({
+      details: "JSON",
+      embedding: "FLOAT[3]",
+      geom: "GEOMETRY('EPSG:4326')",
+    }, { strict: false });
+    assertEquals(await table.getGeoData(), {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        geometry: null,
+        properties: { details: null, embedding: null },
+      }],
+    });
+    assertEquals(await table.getTypes(), {
+      details: "JSON",
+      embedding: "FLOAT[3]",
+      geom: "GEOMETRY('EPSG:4326')",
+    });
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (
+  const [type, value] of [
+    ["JSON", "invalid"],
+    ["FLOAT[3]", "[1,2]"],
+    ["FLOAT[3]", "[1,bad,3]"],
+    ["GEOMETRY('EPSG:4326')", "invalid"],
+  ] as const
+) {
+  Deno.test(`convert rejects invalid ${type} values and preserves existing data (${value})`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadArray([{ value }]);
+      await table.getData();
+      table.convert({ value: type });
+      await assertRejects(() => table.getTypes());
+      assertEquals(await table.getData(), [{ value }]);
+      assertEquals(await table.getTypes(), { value: "VARCHAR" });
+    } finally {
+      await sdb.close();
+    }
+  });
+}

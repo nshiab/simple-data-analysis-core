@@ -49,7 +49,7 @@ Deno.test("failed generation and staging leave existing data intact", async () =
     await table.loadArray([{ text: "a", vector: [1, 2] }, {
       text: "b",
       vector: [3, 4],
-    }]).run();
+    }], { columnTypes: { vector: "FLOAT[2]" } }).run();
     const types = await table.getTypes();
     for (
       const generate of [

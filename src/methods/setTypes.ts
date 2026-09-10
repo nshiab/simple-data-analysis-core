@@ -24,6 +24,10 @@ export default function setTypes(
       | "timestamp"
       | "timestamp with time zone"
       | "boolean"
+      | "json"
+      | "JSON"
+      | `float[${number}]`
+      | `FLOAT[${number}]`
       | `geometry('${string}')`
       | `GEOMETRY('${string}')`;
   },

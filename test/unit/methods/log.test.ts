@@ -306,3 +306,35 @@ Deno.test("log stringifies nested temporal values instead of treating their cont
     await sdb.close();
   }
 });
+
+Deno.test("log and logBottom retain compact vector labels while getData returns arrays", async () => {
+  const sdb = new SimpleDB();
+  const originalLog = console.log;
+  const lines: string[] = [];
+  try {
+    await sdb.customQuery(`CREATE TABLE logged_vectors AS SELECT
+      [12.5, NULL]::FLOAT[2] AS vector, [12.5, NULL]::FLOAT[] AS list,
+      NULL::FLOAT[2] AS missing`);
+    const table = sdb.newTable("logged_vectors");
+    console.log = (...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    };
+    for (const log of [() => table.log(), () => table.logBottom()]) {
+      lines.length = 0;
+      await log();
+      const text = lines.join("\n");
+      assertEquals(text.includes("<FLOAT[2]>"), true);
+      assertEquals(text.includes("<FLOAT[]>"), true);
+      assertEquals(text.includes("12.5"), false);
+      assertEquals(text.includes("null"), true);
+    }
+    assertEquals(await table.getData(), [{
+      vector: [12.5, null],
+      list: [12.5, null],
+      missing: null,
+    }]);
+  } finally {
+    console.log = originalLog;
+    await sdb.close();
+  }
+});

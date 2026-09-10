@@ -9,6 +9,7 @@ import {
   type DuckDBValue,
 } from "@duckdb/node-api";
 import prepareGeometry from "../helpers/prepareGeometry.ts";
+import prepareJSON from "../helpers/prepareJSON.ts";
 import geometryFromJSON from "../helpers/geometryFromJSON.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -28,7 +29,7 @@ export default function loadArray(
     );
   }
 
-  const prepared = prepareArray(rows, options.columnTypes);
+  const prepared = prepareArray(rows, options.columnTypes, true);
 
   queueOp(simpleTable, {
     kind: "barrier",
@@ -48,6 +49,7 @@ type PreparedArray = {
 export function prepareArray(
   rows: { [key: string]: unknown }[],
   columnTypes: { [key: string]: string } = {},
+  requireExplicitNestedTypes = false,
 ): PreparedArray {
   const keys = Object.keys(rows[0]);
   const overrides = new Map<string, string>();
@@ -56,6 +58,10 @@ export function prepareArray(
       throw new Error(
         `Unknown column ${JSON.stringify(key)} in loadArray columnTypes.`,
       );
+    }
+    if (type.toUpperCase() === "JSON") {
+      overrides.set(key, "JSON");
+      continue;
     }
     if (/^geometry/i.test(type)) {
       if (!/^geometry\('EPSG:4326'\)$/i.test(type)) {
@@ -69,9 +75,7 @@ export function prepareArray(
       continue;
     }
     try {
-      const normalized = /^FLOAT\[[1-9]\d*\]$/i.test(type)
-        ? type.toUpperCase()
-        : parseType(type as Parameters<typeof parseType>[0]);
+      const normalized = parseType(type as Parameters<typeof parseType>[0]);
       parseDuckDBType(normalized);
       overrides.set(key, normalized);
     } catch {
@@ -101,6 +105,20 @@ export function prepareArray(
         columnData[j] = prepareTypedValue(rows[j][key], override, key, j + 1);
       }
       continue;
+    }
+    if (requireExplicitNestedTypes) {
+      for (let j = 0; j < rows.length; j++) {
+        const cell = rows[j][key];
+        if (
+          cell !== null && typeof cell === "object" && !(cell instanceof Date)
+        ) {
+          throw new Error(
+            `Column ${JSON.stringify(key)}, row ${
+              j + 1
+            }: array and object cells require an explicit columnTypes entry. Use JSON for nested data, FLOAT[n] for fixed-size vectors, or GEOMETRY('EPSG:4326') for GeoJSON geometries.`,
+          );
+        }
+      }
     }
     const value = firstNonNullValue[i];
     const type = typeof value;
@@ -164,11 +182,12 @@ export async function executePreparedArray(
   const { keys, types, columnsData, rowCount } = prepared;
 
   const hasGeometry = types.includes("GEOMETRY('EPSG:4326')");
-  const staged = hasGeometry
+  const needsConversion = hasGeometry || types.includes("JSON");
+  const staged = needsConversion
     ? `__sda_array_${crypto.randomUUID().replaceAll("-", "")}`
     : simpleTable.name;
   const storageTypes = types.map((type) =>
-    type.startsWith("GEOMETRY") ? "VARCHAR" : type
+    type.startsWith("GEOMETRY") || type === "JSON" ? "VARCHAR" : type
   );
   if (hasGeometry && !simpleTable.sdb.spatialLoaded) {
     await simpleTable.sdb.customQuery(
@@ -178,7 +197,7 @@ export async function executePreparedArray(
   }
   try {
     await simpleTable.sdb.customQuery(
-      `CREATE ${hasGeometry ? "TEMP" : "OR REPLACE"} TABLE ${
+      `CREATE ${needsConversion ? "TEMP" : "OR REPLACE"} TABLE ${
         quoteIdentifier(staged)
       }(${
         keys.map((key, i) => `${quoteIdentifier(key)} ${storageTypes[i]}`).join(
@@ -207,7 +226,7 @@ export async function executePreparedArray(
     } finally {
       appender.closeSync();
     }
-    if (!hasGeometry) return;
+    if (!needsConversion) return;
     // CTAS is atomic: conversion must finish before the destination is replaced.
     await simpleTable.sdb.customQuery(
       `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} AS SELECT ${
@@ -216,12 +235,14 @@ export async function executePreparedArray(
             ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
               quoteIdentifier(key)
             }`
+            : types[i] === "JSON"
+            ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
             : quoteIdentifier(key)
         ).join(", ")
       } FROM ${quoteIdentifier(staged)}`,
     );
   } finally {
-    if (hasGeometry) {
+    if (needsConversion) {
       await simpleTable.sdb.customQuery(
         `DROP TABLE IF EXISTS ${quoteIdentifier(staged)}`,
       );
@@ -236,6 +257,7 @@ function prepareTypedValue(
   column: string,
   row: number,
 ): DuckDBValue {
+  if (type === "JSON") return prepareJSON(value, column, row);
   if (type === "GEOMETRY('EPSG:4326')") {
     return prepareGeometry(value, column, row);
   }

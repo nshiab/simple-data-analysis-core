@@ -783,8 +783,11 @@ Deno.test("persistent VSS indexes retain definitions and physical indexes after 
     const first = db({ file });
     const table = first.newTable("vectors").loadArray([{
       id: 1,
-      embedding: [0.1, 0.2, 0.3],
-    }]).createVssIndex("embedding", { M: 8 });
+      embedding: [0.1, 0.2, 0.3].map(Math.fround),
+    }], { columnTypes: { embedding: "FLOAT[3]" } }).createVssIndex(
+      "embedding",
+      { M: 8 },
+    );
     await first.close();
     const second = db({ file, readOnly: true });
     const restored = await second.getTable("vectors");
