@@ -5,6 +5,7 @@ import { ensureTableRegistered, getRegisteredTables } from "./tableRegistry.ts";
 import { markTableChanged } from "./tableGeneration.ts";
 import {
   assertCacheTableMutation,
+  captureCacheTableOperation,
   recordCacheTableOperation,
   recordCacheTableReferences,
 } from "./cacheTableDependencies.ts";
@@ -26,10 +27,10 @@ export default function queueOp(
       `${op.method} cannot queue work because its SimpleDB is ${sdb.lifecycleState}.`,
     );
   }
-  let capturedOp: PendingOpInput = {
+  let capturedOp: PendingOpInput = captureCacheTableOperation({
     ...op,
     parameters: op.parameters === null ? null : structuredClone(op.parameters),
-  };
+  });
   if (capturedOp.kind === "fusable" || capturedOp.kind === "source") {
     capturedOp = {
       ...capturedOp,

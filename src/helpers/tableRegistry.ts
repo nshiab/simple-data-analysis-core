@@ -2,6 +2,7 @@ import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { markTableChanged } from "./tableGeneration.ts";
 import { recordCacheTableCreation } from "./cacheTableDependencies.ts";
+import foldIdentifier from "./foldIdentifier.ts";
 
 const registries = new WeakMap<object, SimpleTable[]>();
 
@@ -45,9 +46,7 @@ export function registerTable<Table extends SimpleTable>(
   }
 
   const tables = getMutableTables(simpleDB);
-  if (tables.some((registeredTable) => registeredTable.name === table.name)) {
-    throw new Error(`Table ${table.name} already exists.`);
-  }
+  assertTableNameAvailable(simpleDB, table.name);
   tables.push(table);
   recordCacheTableCreation(table);
 }
@@ -58,8 +57,23 @@ export function ensureTableRegistered<Table extends SimpleTable>(
 ): void {
   const tables = getMutableTables(simpleDB);
   if (!tables.includes(table)) {
-    tables.push(table);
-    recordCacheTableCreation(table);
+    registerTable(simpleDB, table);
+  }
+}
+
+/** Prevents distinct handles from owning the same DuckDB table name. */
+export function assertTableNameAvailable(
+  simpleDB: SimpleDB,
+  name: string,
+  renamedTable?: SimpleTable,
+): void {
+  const normalizedName = foldIdentifier(name);
+  if (
+    getRegisteredTables(simpleDB).some((table) =>
+      table !== renamedTable && foldIdentifier(table.name) === normalizedName
+    )
+  ) {
+    throw new Error(`Table ${name} already exists.`);
   }
 }
 

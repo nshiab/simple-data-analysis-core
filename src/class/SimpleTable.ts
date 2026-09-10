@@ -325,6 +325,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Renames the current table.
+   * The new name must not belong to another registered table, ignoring ASCII letter case.
    *
    * @param name - The new name for the table.
    * @returns A promise that resolves to the renamed table.

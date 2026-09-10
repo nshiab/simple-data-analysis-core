@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import referencedTables from "./referencedTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import type { PendingOp } from "./pendingOps.ts";
+import type { PendingOp, PendingOpInput } from "./pendingOps.ts";
 import {
   getAsyncOperationFrame,
   runWhileDrainingAsyncOperationFrame,
@@ -38,6 +38,36 @@ type CacheComputation = {
 };
 
 const dependencyContext = new AsyncLocalStorage<CacheComputation[]>();
+
+/** Keeps deferred callbacks in their originating cache scope across observers. */
+export function captureCacheTableOperation(op: PendingOpInput): PendingOpInput {
+  if (op.kind === "barrier" || op.kind === "asyncBarrier") {
+    return { ...op, execute: bindCacheContext(op.execute) };
+  }
+  if (op.kind === "source") {
+    return { ...op, buildSelect: bindCacheContext(op.buildSelect) };
+  }
+  return {
+    ...op,
+    buildSelect: bindCacheContext(op.buildSelect),
+    outputSchema: op.outputSchema === undefined
+      ? undefined
+      : bindCacheContext(op.outputSchema),
+    values: typeof op.values === "function"
+      ? bindCacheContext(op.values)
+      : op.values,
+  };
+}
+
+function bindCacheContext<Args extends unknown[], Result>(
+  callback: (...args: Args) => Result,
+): (...args: Args) => Result {
+  // Capture only the cache scope: a snapshot of all AsyncLocalStorage stores
+  // would also capture stale flush exemptions and async operation frames.
+  // An empty scope keeps unrelated work out of the observer's cache callback.
+  const frames = dependencyContext.getStore() ?? [];
+  return (...args) => dependencyContext.run(frames, () => callback(...args));
+}
 
 /** Rejects mutations before they can queue work or execute SQL. */
 export function assertCacheTableMutation(table: SimpleTable): void {

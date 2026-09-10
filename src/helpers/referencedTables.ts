@@ -1,6 +1,7 @@
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import scanSQL from "./scanSQL.ts";
+import foldIdentifier from "./foldIdentifier.ts";
 import { getRegisteredTables } from "./tableRegistry.ts";
 
 /**
@@ -29,8 +30,4 @@ export default function referencedTables(
   return getRegisteredTables(sdb).filter((table) =>
     identifiers.has(foldIdentifier(table.name))
   );
-}
-
-function foldIdentifier(identifier: string): string {
-  return identifier.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
 }

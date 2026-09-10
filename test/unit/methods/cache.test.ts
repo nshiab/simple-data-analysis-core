@@ -1675,3 +1675,187 @@ Deno.test("cache cleanup does not drain unrelated work in an enclosing async bar
     await sdb.close();
   }
 });
+
+Deno.test("cache cleanup preserves existing tables with case-conflicting handles", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardCaseSource").loadArray([{ value: 1 }]);
+    const output = sdb.newTable("guardCaseOutput");
+    await source.run();
+    await assertRejects(() =>
+      output.cache(() => {
+        sdb.newTable(source.name.toUpperCase());
+      })
+    );
+    assertEquals(await source.getData(), [{ value: 1 }]);
+    assertEquals(sdb.getTables(), [source, output]);
+    assertEquals(await sdb.getTableNames(), [source.name]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (const kind of ["asyncBarrier", "updateWithJS"] as const) {
+  Deno.test(`cache guards ${kind} mutations flushed by a concurrent observer`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const source = sdb.newTable(`guardConcurrentSource_${kind}`).loadArray([
+        { value: 1 },
+      ]);
+      const output = sdb.newTable(`guardConcurrentOutput_${kind}`).loadArray([
+        { value: 2 },
+      ]);
+      const entered = Promise.withResolvers<void>();
+      const resume = Promise.withResolvers<void>();
+      const computation = output.cache(async (table) => {
+        if (kind === "asyncBarrier") {
+          queueAsyncBarrier(table, {
+            method: "concurrentMutation()",
+            parameters: null,
+            execute: async () => {
+              await Promise.resolve();
+              source.filter("value = 99");
+            },
+          });
+        } else {
+          table.updateWithJS((rows) => {
+            source.filter("value = 99");
+            return rows;
+          });
+        }
+        entered.resolve();
+        await resume.promise;
+      });
+      await entered.promise;
+      try {
+        await assertRejects(
+          () => output.getData(),
+          Error,
+          "cannot modify pre-existing table",
+        );
+      } finally {
+        resume.resolve();
+        await computation;
+      }
+      assertEquals(await source.getData(), [{ value: 1 }]);
+      assertEquals(await output.getData(), [{ value: 2 }]);
+      assertEquals(sdb.getTables(), [source, output]);
+      assertEquals(sdb.pendingCount, 0);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("cache tracks dependencies read by a concurrent observer's async barrier", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardConcurrentReadSource").loadArray([
+      { value: 1 },
+    ]);
+    const output = sdb.newTable("guardConcurrentReadOutput");
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let executions = 0;
+    const compute = async (table: SimpleTable) => {
+      queueAsyncBarrier(table, {
+        method: "concurrentRead()",
+        parameters: null,
+        execute: async () => {
+          executions++;
+          table.loadArray(await source.getData());
+        },
+      });
+      entered.resolve();
+      await resume.promise;
+    };
+    const computation = output.cache(compute);
+    await entered.promise;
+    try {
+      assertEquals(await output.getData(), [{ value: 1 }]);
+    } finally {
+      resume.resolve();
+      await computation;
+    }
+    await output.cache(compute);
+    assertEquals(executions, 1);
+    source.loadArray([{ value: 3 }]);
+    await output.cache(compute);
+    assertEquals(executions, 2);
+    assertEquals(await output.getData(), [{ value: 3 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleans up temporary tables created by a concurrent observer's barrier", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardConcurrentCleanupOutput").loadArray([
+      { value: 1 },
+    ]);
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const computation = output.cache(async (table) => {
+      queueAsyncBarrier(table, {
+        method: "concurrentTemporaryTable()",
+        parameters: null,
+        execute: async () => {
+          await sdb.newTable("guardConcurrentCleanupLocal").loadArray([
+            { value: 2 },
+          ]).run();
+        },
+      });
+      entered.resolve();
+      await resume.promise;
+    });
+    await entered.promise;
+    try {
+      await output.run();
+    } finally {
+      resume.resolve();
+      await assertRejects(() => computation, Error, "did not remove it");
+    }
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(await sdb.getTableNames(), [output.name]);
+    assertEquals(await output.getData(), [{ value: 1 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache does not guard unrelated barriers queued outside its callback", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardUnrelatedSource").loadArray([{
+      value: 1,
+    }]);
+    const output = sdb.newTable("guardUnrelatedOutput").loadArray([{
+      value: 2,
+    }]);
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const computation = output.cache(async () => {
+      entered.resolve();
+      await resume.promise;
+    });
+    await entered.promise;
+    queueAsyncBarrier(source, {
+      method: "unrelatedMutation()",
+      parameters: null,
+      execute: async () => {
+        await Promise.resolve();
+        source.loadArray([{ value: 3 }]);
+      },
+    });
+    resume.resolve();
+    await computation;
+    assertEquals(await source.getData(), [{ value: 3 }]);
+    assertEquals(await output.getData(), [{ value: 2 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
