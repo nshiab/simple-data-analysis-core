@@ -200,6 +200,10 @@ chainable, define them on a `SimpleTable` subclass, give them a return type of
 create tables should always use `this.sdb.newTable()` so they also return your
 extended table type.
 
+Builders return `this` synchronously; their queued work runs when an observer
+such as `getData()`, `log()`, or `run()` is called. Observers execute pending
+work across the database in program order.
+
 ```ts
 import {
   SimpleDB as CoreDB,
@@ -261,3 +265,16 @@ already drained by an observer inside the callback remain applied;
 This differs from a failure while executing queued builders: during replay, the
 failing table's remaining chain is aborted, but unexecuted work for other tables
 is requeued for their next observation.
+
+Other useful helpers, imported from `@nshiab/simple-data-analysis-core/helpers`:
+
+- `updateColumnsWithJS()`: enrich selected columns asynchronously in bounded
+  batches inside `queueAsyncBarrier()`, preserving untouched columns, including
+  geometry. Return one result per input row, in the same order.
+- `queryDB()` with `mergeOptions()`: execute SQL with the library's logging and
+  diagnostic settings. Queries flush queued work before running.
+- `quoteIdentifier()`: quote table and column names safely when constructing
+  SQL.
+
+See the [exported helpers](src/helpers/index.ts) for the complete list and links
+to their documentation and examples. Helpers outside that list are internal.
