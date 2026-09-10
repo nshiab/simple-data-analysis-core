@@ -1,3 +1,4 @@
+import { assertCacheTableMutation } from "../helpers/cacheTableDependencies.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -22,6 +23,12 @@ export default async function selectTables(
   const tablesToBeSelected = selected.map((
     t,
   ) => t instanceof SimpleTable ? t.name : t);
+
+  for (const table of simpleDB.getTables()) {
+    if (!tablesToBeSelected.includes(table.name)) {
+      assertCacheTableMutation(table);
+    }
+  }
 
   const existingTables = await simpleDB.getTableNames();
   const missingTables = tablesToBeSelected.filter((table) =>

@@ -29,6 +29,7 @@ import {
 } from "../helpers/cacheDatabase.ts";
 import type { IndexDefinition } from "../helpers/indexDefinitions.ts";
 import {
+  assertCacheTableMutation,
   cacheTableDependenciesMatch,
   type CacheTableDependency,
   captureCacheTableDependencies,
@@ -75,6 +76,7 @@ export default async function cache<Table extends SimpleTable>(
 ) {
   // If cache() is itself called from another cache computation, the outer
   // computation depends on the table produced here.
+  assertCacheTableMutation(table);
   recordCacheTableAccess(table);
   options.verbose &&
     console.log(`\ncache() for ${table.name}`);
@@ -279,10 +281,6 @@ async function runAndWrite<Table extends SimpleTable>(
     table,
     async () => {
       await compute(table);
-      // run() only queues the sync builders in the user's callback; the actual
-      // computation happens at the flush, so it must be included in the timing
-      // that decides how much the cache saves on later hits.
-      await flushAllTables(table.sdb);
     },
   );
   const end = Date.now();

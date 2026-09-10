@@ -3,7 +3,11 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import type { PendingOpInput } from "./pendingOps.ts";
 import { ensureTableRegistered, getRegisteredTables } from "./tableRegistry.ts";
 import { markTableChanged } from "./tableGeneration.ts";
-import { recordCacheTableReferences } from "./cacheTableDependencies.ts";
+import {
+  assertCacheTableMutation,
+  recordCacheTableOperation,
+  recordCacheTableReferences,
+} from "./cacheTableDependencies.ts";
 import { captureAsyncOperation } from "./asyncOperationContext.ts";
 
 /**
@@ -15,6 +19,7 @@ export default function queueOp(
   simpleTable: SimpleTable,
   op: PendingOpInput,
 ): void {
+  assertCacheTableMutation(simpleTable);
   const sdb = simpleTable.sdb;
   if (sdb.lifecycleState !== "open") {
     throw new Error(
@@ -55,6 +60,7 @@ export default function queueOp(
     ...capturedOp,
     sequence: sdb.opSequence++,
   };
+  recordCacheTableOperation(simpleTable, queuedOp);
   if (captureAsyncOperation(sdb, { table: simpleTable, op: queuedOp })) {
     return;
   }

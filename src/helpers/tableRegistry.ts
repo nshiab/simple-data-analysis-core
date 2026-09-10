@@ -1,6 +1,7 @@
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { markTableChanged } from "./tableGeneration.ts";
+import { recordCacheTableCreation } from "./cacheTableDependencies.ts";
 
 const registries = new WeakMap<object, SimpleTable[]>();
 
@@ -48,6 +49,7 @@ export function registerTable<Table extends SimpleTable>(
     throw new Error(`Table ${table.name} already exists.`);
   }
   tables.push(table);
+  recordCacheTableCreation(table);
 }
 
 export function ensureTableRegistered<Table extends SimpleTable>(
@@ -57,6 +59,7 @@ export function ensureTableRegistered<Table extends SimpleTable>(
   const tables = getMutableTables(simpleDB);
   if (!tables.includes(table)) {
     tables.push(table);
+    recordCacheTableCreation(table);
   }
 }
 

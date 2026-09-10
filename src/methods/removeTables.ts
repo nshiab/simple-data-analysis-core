@@ -1,3 +1,4 @@
+import { assertCacheTableMutation } from "../helpers/cacheTableDependencies.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -22,6 +23,15 @@ export default async function removeTables(
     ),
     "removeTables()",
   );
+
+  const names = tablesToBeRemoved.map((table) =>
+    (table instanceof SimpleTable ? table.name : table).toLowerCase()
+  );
+  for (const table of simpleDB.getTables()) {
+    if (names.includes(table.name.toLowerCase())) {
+      assertCacheTableMutation(table);
+    }
+  }
 
   await queryDB(
     simpleDB,

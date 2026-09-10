@@ -1,3 +1,4 @@
+import { assertCacheTableMutation } from "../helpers/cacheTableDependencies.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -7,6 +8,7 @@ import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
 export default async function removeTable(
   simpleTable: SimpleTable,
 ) {
+  assertCacheTableMutation(simpleTable);
   await queryDB(
     simpleTable,
     `DROP TABLE ${quoteIdentifier(simpleTable.name)};`,

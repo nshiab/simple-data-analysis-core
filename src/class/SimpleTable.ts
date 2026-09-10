@@ -6784,7 +6784,12 @@ export default class SimpleTable extends Simple {
    * `compute` may modify only the table being cached. Other tables that existed
    * before `compute` must remain read-only. Temporary tables may be created and
    * modified inside `compute`, but they must be removed before it finishes
-   * because a cache hit does not run `compute` again.
+   * because a cache hit does not run `compute` again. Tracked mutations of
+   * other pre-existing tables are rejected before they queue work or execute
+   * SQL, including inside nested cache callbacks. On failure, pending work
+   * queued by the callback is discarded and its temporary tables are removed.
+   * Changes to the cached table already executed by an observer are not rolled
+   * back. These protections do not track SQL issued through `customQuery()`.
    *
    * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
    * @param options - An optional object with configuration options:
