@@ -257,3 +257,7 @@ The callback must await all asynchronous work that can queue builders. If it
 rejects, captured builders that have not already run are discarded. Builders
 already drained by an observer inside the callback remain applied;
 `queueAsyncBarrier()` does not provide database rollback.
+
+This differs from a failure while executing queued builders: during replay, the
+failing table's remaining chain is aborted, but unexecuted work for other tables
+is requeued for their next observation.

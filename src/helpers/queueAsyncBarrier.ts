@@ -13,6 +13,10 @@ import queueOp from "./queueOp.ts";
  * drained are discarded. Operations drained by an observer inside `execute`
  * remain applied; an asynchronous barrier does not provide database rollback.
  *
+ * This differs from a failure while executing queued builders: during replay,
+ * the failing table's remaining chain is aborted, but unexecuted work for other
+ * tables is requeued for their next observation.
+ *
  * @param simpleTable - The table whose chain owns the asynchronous work.
  * @param operation - The asynchronous extension operation to queue.
  * @param operation.method - The public method name used for diagnostics.
