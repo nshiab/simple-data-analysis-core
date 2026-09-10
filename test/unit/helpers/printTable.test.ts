@@ -1,8 +1,7 @@
 import { assertEquals } from "@std/assert";
 import printTable from "../../../src/helpers/printTable.ts";
 
-// We capture console.log output to verify the function works without crashing.
-// Full visual output testing is not feasible in unit tests.
+// Capture console output to check rendering and layout.
 
 Deno.test("printTable - empty data shows message", () => {
   const logs: string[] = [];
@@ -155,4 +154,71 @@ Deno.test("printTable - box-drawing characters", () => {
   assertEquals(allOutput.includes("┼"), true); // junction
   assertEquals(allOutput.includes("│"), true); // vertical bar
   assertEquals(allOutput.includes("─"), true); // horizontal bar
+});
+
+function captureTable(
+  data: { [key: string]: unknown }[],
+  options?: Parameters<typeof printTable>[1],
+): string[] {
+  const logs: string[] = [];
+  const originalLog = console.log;
+  try {
+    console.log = (...args: unknown[]) => logs.push(String(args[0]));
+    printTable(data, options);
+  } finally {
+    console.log = originalLog;
+  }
+  // Strip the renderer's ANSI colors before checking the table layout.
+  // deno-lint-ignore no-control-regex
+  return logs.map((line) => line.replace(/\x1b\[[0-9;]*m/g, ""));
+}
+
+Deno.test("printTable - long headers wrap at the default ceiling with aligned columns", () => {
+  const header = "x".repeat(80);
+  const logs = captureTable([{ [header]: "value", id: 1 }]);
+  assertEquals(logs, [
+    `┌${"─".repeat(77)}┬─────┐`,
+    `│ ${"x".repeat(75)} │ id  │`,
+    `│ xxxxx${" ".repeat(71)}│     │`,
+    `├${"─".repeat(77)}┼─────┤`,
+    `│ value${" ".repeat(71)}│ 1   │`,
+    `└${"─".repeat(77)}┴─────┘`,
+  ]);
+});
+
+Deno.test("printTable - multiline headers size by their longest line and preserve blank lines", () => {
+  const logs = captureTable([{ "a\n\nbb\n": "x", id: 1 }]);
+  assertEquals(logs, [
+    "┌─────┬─────┐",
+    "│ a   │ id  │",
+    "│     │     │",
+    "│ bb  │     │",
+    "│     │     │",
+    "├─────┼─────┤",
+    "│ x   │ 1   │",
+    "└─────┴─────┘",
+  ]);
+});
+
+Deno.test("printTable - headers and cells share word wrapping and align with wrapped types", () => {
+  const header = "first second\nabcdefghijk";
+  const logs = captureTable([
+    { [header]: "VARCHAR/string", id: "INTEGER/number" },
+    { [header]: header, id: 1 },
+  ], { maxColumnWidth: 10, typesRowIndex: 0 });
+  assertEquals(logs, [
+    "┌────────────┬────────────┐",
+    "│ first      │ id         │",
+    "│ second     │            │",
+    "│ abcdefghij │            │",
+    "│ k          │            │",
+    "│ VARCHAR/st │ INTEGER/nu │",
+    "│ ring       │ mber       │",
+    "├────────────┼────────────┤",
+    "│ first      │ 1          │",
+    "│ second     │            │",
+    "│ abcdefghij │            │",
+    "│ k          │            │",
+    "└────────────┴────────────┘",
+  ]);
 });

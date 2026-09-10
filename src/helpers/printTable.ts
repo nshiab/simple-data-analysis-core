@@ -3,15 +3,16 @@ import wrapString from "./wrapString.ts";
 
 /**
  * Prints a formatted table to the console with support for word wrapping
- * within cells. Unlike `console.table()`, this function properly handles
- * multi-line content within cells, making it ideal for displaying data with
- * long text values.
+ * within headers and cells. Unlike `console.table()`, this function properly
+ * handles multi-line content, making it ideal for displaying data with long
+ * column names and text values.
  *
  * @param data - An array of objects representing the rows of the table. Each
  *   object should have string keys.
  * @param options - Optional configuration for table rendering.
  * @param options.maxColumnWidth - The maximum width for any column (default:
- *   `75`). Values exceeding this width will be wrapped at word boundaries.
+ *   `75`). Headers and values exceeding this width will be wrapped at word
+ *   boundaries.
  * @param options.minColumnWidth - The minimum width for any column (default:
  *   `3`).
  * @param options.typesRowIndex - The index of a row that contains type
@@ -79,7 +80,7 @@ export default function printTable(
   // First, seed widths from header names.
   const columnWidths: { [key: string]: number } = {};
   for (const col of columns) {
-    columnWidths[col] = col.length;
+    columnWidths[col] = Math.max(...col.split("\n").map((line) => line.length));
   }
 
   // Format every cell, track the longest raw line per column, and
@@ -113,36 +114,20 @@ export default function printTable(
     );
   }
 
-  // Wrap pre-formatted strings into multi-line cells
-  const wrappedData: { [key: string]: string[] }[] = [];
-
-  for (let r = 0; r < formattedData.length; r++) {
-    const wrappedRow: { [key: string]: string[] } = {};
-
-    for (let c = 0; c < columns.length; c++) {
-      const col = columns[c];
-      const value = formattedData[r][c];
-      const width = columnWidths[col];
-
-      // Split by existing newlines, then wrap each part
-      const lines = value.split("\n");
-      const allWrappedLines: string[] = [];
-
-      for (const line of lines) {
-        if (line.length <= width) {
-          allWrappedLines.push(line);
-        } else {
-          // Wrap long lines at word boundaries
-          const wrapped = wrapString(line, width);
-          allWrappedLines.push(...wrapped.split("\n"));
-        }
-      }
-
-      wrappedRow[col] = allWrappedLines.length > 0 ? allWrappedLines : [""];
-    }
-
-    wrappedData.push(wrappedRow);
-  }
+  // Use the same newline and word wrapping rules for headers and cells.
+  const wrapCell = (value: string, width: number): string[] => {
+    const lines = value.split("\n").flatMap((line) =>
+      line.length <= width ? [line] : wrapString(line, width).split("\n")
+    );
+    return lines.length > 0 ? lines : [""];
+  };
+  const wrappedHeaders = columns.map((col) => wrapCell(col, columnWidths[col]));
+  const wrappedData = formattedData.map((row) =>
+    Object.fromEntries(columns.map((col, c) => [
+      col,
+      wrapCell(row[c], columnWidths[col]),
+    ]))
+  );
 
   // ANSI color codes (matching Deno's console colors)
   const colors = {
@@ -197,15 +182,20 @@ export default function printTable(
   // Print top border
   console.log(createTopBorder());
 
-  // Print header row (bold)
-  const headerParts = columns.map((col) =>
-    ` ${colors.bold}${pad(col, columnWidths[col])}${colors.reset} `
-  );
-  console.log(
-    colors.grey + "│" + colors.reset +
-      headerParts.join(colors.grey + "│" + colors.reset) + colors.grey + "│" +
-      colors.reset,
-  );
+  // Print each header line in bold, padding shorter headers to the same height.
+  const headerHeight = Math.max(...wrappedHeaders.map((lines) => lines.length));
+  for (let lineIdx = 0; lineIdx < headerHeight; lineIdx++) {
+    const headerParts = columns.map((col, c) =>
+      ` ${colors.bold}${
+        pad(wrappedHeaders[c][lineIdx] ?? "", columnWidths[col])
+      }${colors.reset} `
+    );
+    console.log(
+      colors.grey + "│" + colors.reset +
+        headerParts.join(colors.grey + "│" + colors.reset) + colors.grey + "│" +
+        colors.reset,
+    );
+  }
 
   // Detect if any row has word wrapping (spans multiple lines)
   let hasWordWrapping = false;
