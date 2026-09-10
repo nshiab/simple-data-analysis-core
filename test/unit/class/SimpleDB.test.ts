@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
@@ -959,6 +959,46 @@ Deno.test("default JS mode combines obvious concatenation and logical OR across 
       ),
       [{ text: "abc", items: [true, false], castText: "true!", allowed: true }],
     );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("table registration rejects case-insensitive name collisions", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("registeredSource").loadArray([{ value: 1 }]);
+    assertThrows(
+      () => sdb.newTable("REGISTEREDSOURCE"),
+      Error,
+      "already exists",
+    );
+    assertEquals(sdb.getTables(), [table]);
+    assertEquals(await table.getData(), [{ value: 1 }]);
+    await table.removeTable();
+    const replacement = sdb.newTable("REGISTEREDSOURCE").loadArray([
+      { value: 2 },
+    ]);
+    assertThrows(
+      () => table.loadArray([{ value: 3 }]),
+      Error,
+      "already exists",
+    );
+    assertEquals(sdb.getTables(), [replacement]);
+    assertEquals(await replacement.getData(), [{ value: 2 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("table registration preserves DuckDB's distinct non-ASCII names", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const upper = sdb.newTable("É").loadArray([{ value: 1 }]);
+    const lower = sdb.newTable("é").loadArray([{ value: 2 }]);
+    assertEquals(await upper.getData(), [{ value: 1 }]);
+    assertEquals(await lower.getData(), [{ value: 2 }]);
   } finally {
     await sdb.close();
   }

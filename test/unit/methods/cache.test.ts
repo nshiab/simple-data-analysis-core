@@ -1,6 +1,12 @@
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+  assertThrows,
+} from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import queueAsyncBarrier from "../../../src/helpers/queueAsyncBarrier.ts";
 import {
   existsSync,
   readdirSync,
@@ -773,6 +779,9 @@ Deno.test("should reject tables created inside the computation that are not remo
     'Call removeTable() on "cacheLeakedLocalTable" before the callback finishes to avoid downstream errors',
   );
 
+  assertEquals(sdb.getTables().map((table) => table.name), [output.name]);
+  assertEquals(await sdb.getTableNames(), []);
+
   await sdb.close();
 });
 Deno.test("should reject mutations of tables that existed before the computation", async () => {
@@ -791,6 +800,9 @@ Deno.test("should reject mutations of tables that existed before the computation
     Error,
     'cache() called on "cacheMutatedDependencyOutput" cannot modify pre-existing table "cacheMutatedDependencySource"',
   );
+
+  assertEquals(await source.getData(), [{ value: 1 }, { value: 2 }]);
+  assertEquals(sdb.pendingCount, 0);
 
   await sdb.close();
 });
@@ -1330,6 +1342,519 @@ Deno.test("table names in SQL literals and comments do not invalidate caches", a
     await output.cache(compute);
     assertEquals(runs, 1);
     assertEquals(await output.getData(), [{ value: 1 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache rejects mutations before queuing work on multiple dependencies", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardOutput");
+    const sources = ["guardSourceA", "guardSourceB"].map((name) =>
+      sdb.newTable(name).loadArray([{ value: 1 }, { value: 2 }])
+    );
+    await output.cache(async (table) => {
+      for (const source of sources) {
+        assertThrows(
+          () => {
+            source.filter("value = 2");
+          },
+          Error,
+          "cannot modify pre-existing table",
+        );
+        assertEquals(source.pendingOps.length, 0);
+        assertEquals(await source.getData(), [{ value: 1 }, { value: 2 }]);
+      }
+      table.loadArray([{ value: 3 }]).filter("value = 3");
+    });
+    assertEquals(await output.getData(), [{ value: 3 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache rejects async removal and rename before changing dependencies", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardAsyncSource").loadArray([{ value: 1 }]);
+    const output = sdb.newTable("guardAsyncOutput").loadArray([{ value: 2 }]);
+    const mutations = [
+      () => source.removeTable(),
+      () => source.renameTable("guardRenamedSource"),
+      () => sdb.removeTables(source.name.toUpperCase()),
+      () => sdb.removeTables([output, source]),
+      () => sdb.removeTables("all"),
+      () => sdb.selectTables(output),
+    ];
+    for (const mutation of mutations) {
+      await assertRejects(
+        () =>
+          output.cache(async () => {
+            // No part of a bulk removal may run before all targets are checked.
+            await mutation();
+          }),
+        Error,
+        "cannot modify pre-existing table",
+      );
+      assertEquals(source.name, "guardAsyncSource");
+      assertEquals(await source.getData(), [{ value: 1 }]);
+      assertEquals(await output.getData(), [{ value: 2 }]);
+      assertEquals(sdb.getTables(), [source, output]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleans up materialized and queued temporary tables after rejection", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardCleanupOutput").loadArray([{ value: 1 }]);
+    await assertRejects(
+      () =>
+        output.cache(async (table) => {
+          const local = sdb.newTable("guardMaterializedLocal").loadArray([{
+            value: 2,
+          }]);
+          await local.getData();
+          await local.renameTable("guardRenamedLocal");
+          sdb.newTable("guardQueuedLocal").loadArray([{ value: 3 }]);
+          table.filter("value = 99");
+        }),
+      Error,
+      "did not remove them",
+    );
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(await sdb.getTableNames(), [output.name]);
+    assertEquals(await output.getData(), [{ value: 1 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache does not execute leaked temporary table builders", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardUnexecutedOutput");
+    let executions = 0;
+    await assertRejects(
+      () =>
+        output.cache(() => {
+          sdb.newTable("guardUnexecutedLocal").loadArray([{ value: 1 }])
+            .updateWithJS((rows) => {
+              executions++;
+              return rows;
+            });
+        }),
+      Error,
+      "did not remove it",
+    );
+    assertEquals(executions, 0);
+    assertEquals(await sdb.getTableNames(), []);
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleans up temporary tables and pending work when compute throws", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardThrownOutput").loadArray([{ value: 1 }]);
+    await assertRejects(
+      () =>
+        output.cache(async (table) => {
+          await sdb.newTable("guardThrownLocal").loadArray([{ value: 2 }])
+            .run();
+          table.filter("value = 99");
+          throw new Error("callback failed");
+        }),
+      Error,
+      "callback failed",
+    );
+    assertEquals(await output.getData(), [{ value: 1 }]);
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(await sdb.getTableNames(), [output.name]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("nested cache callbacks respect both inner and outer mutation guards", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardNestedSource").loadArray([{ value: 1 }]);
+    const output = sdb.newTable("guardNestedOutput").loadArray([{ value: 2 }]);
+    await output.cache(async (table) => {
+      const local = sdb.newTable("guardNestedLocal");
+      await assertRejects(
+        () =>
+          local.cache(() => {
+            source.filter("value = 99");
+          }),
+        Error,
+        'cache() called on "guardNestedOutput"',
+      );
+      await assertRejects(
+        () =>
+          local.cache(() => {
+            table.filter("value = 99");
+          }),
+        Error,
+        'cache() called on "guardNestedLocal"',
+      );
+      await local.cache((inner) => {
+        inner.loadArray([{ value: 3 }]);
+      });
+      table.loadArray(await local.getData());
+      await local.removeTable();
+    });
+    assertEquals(await source.getData(), [{ value: 1 }]);
+    assertEquals(await output.getData(), [{ value: 3 }]);
+    assertEquals(sdb.getTables(), [source, output]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("nested cache cannot replace a dependency with a cache hit", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardNestedHitSource");
+    const compute = (table: SimpleTable) => {
+      table.loadArray([{ value: 1 }]);
+    };
+    await source.cache(compute);
+    const output = sdb.newTable("guardNestedHitOutput");
+    await assertRejects(
+      () =>
+        output.cache(async () => {
+          await source.cache(compute);
+        }),
+      Error,
+      "cannot modify pre-existing table",
+    );
+    assertEquals(await source.getData(), [{ value: 1 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache guards mutations issued while flushing an async barrier", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardBarrierSource").loadArray([{ value: 1 }]);
+    const output = sdb.newTable("guardBarrierOutput").loadArray([{ value: 2 }]);
+    await assertRejects(
+      () =>
+        output.cache((table) => {
+          queueAsyncBarrier(table, {
+            method: "guardBarrier()",
+            parameters: null,
+            execute: async () => {
+              await Promise.resolve();
+              source.filter("value = 99");
+            },
+          });
+        }),
+      Error,
+      "cannot modify pre-existing table",
+    );
+    assertEquals(await source.getData(), [{ value: 1 }]);
+    assertEquals(await output.getData(), [{ value: 2 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleans up temporary tables created during the final flush", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardFinalFlushOutput");
+    await assertRejects(
+      () =>
+        output.cache((table) => {
+          queueAsyncBarrier(table, {
+            method: "guardFinalFlush()",
+            parameters: null,
+            execute: async () => {
+              await sdb.newTable("guardFinalFlushLocal").loadArray([{
+                value: 1,
+              }]).run();
+            },
+          });
+        }),
+      Error,
+      "did not remove it",
+    );
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(await sdb.getTableNames(), []);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache failure inside an async barrier discards captured work", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardEnclosingBarrierOutput").loadArray([{
+      value: 1,
+    }]);
+    queueAsyncBarrier(output, {
+      method: "guardEnclosingBarrier()",
+      parameters: null,
+      execute: async () => {
+        await assertRejects(
+          () =>
+            output.cache((table) => {
+              table.filter("value = 99");
+              sdb.newTable("guardEnclosingBarrierLocal").loadArray([{
+                value: 2,
+              }]);
+            }),
+          Error,
+          "did not remove it",
+        );
+        assertEquals(await output.getData(), [{ value: 1 }]);
+      },
+    });
+    await output.run();
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(await sdb.getTableNames(), [output.name]);
+    assertEquals(await output.getData(), [{ value: 1 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleanup does not drain unrelated work in an enclosing async barrier", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardIndependentOutput");
+    const other = sdb.newTable("guardIndependentOther");
+    let executions = 0;
+    queueAsyncBarrier(output, {
+      method: "guardIndependent()",
+      parameters: null,
+      execute: async () => {
+        const entered = Promise.withResolvers<void>();
+        const resume = Promise.withResolvers<void>();
+        const computation = output.cache(async () => {
+          sdb.newTable("guardIndependentLocal").loadArray([{ value: 1 }]);
+          entered.resolve();
+          await resume.promise;
+        });
+        await entered.promise;
+        queueAsyncBarrier(other, {
+          method: "independentWork()",
+          parameters: null,
+          execute: async () => {
+            executions++;
+            await Promise.resolve();
+          },
+        });
+        resume.resolve();
+        await assertRejects(() => computation, Error, "did not remove it");
+        assertEquals(executions, 0);
+        await other.run();
+        assertEquals(executions, 1);
+      },
+    });
+    await output.run();
+    assertEquals(sdb.getTables(), [output, other]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleanup preserves existing tables with case-conflicting handles", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardCaseSource").loadArray([{ value: 1 }]);
+    const output = sdb.newTable("guardCaseOutput");
+    await source.run();
+    await assertRejects(() =>
+      output.cache(() => {
+        sdb.newTable(source.name.toUpperCase());
+      })
+    );
+    assertEquals(await source.getData(), [{ value: 1 }]);
+    assertEquals(sdb.getTables(), [source, output]);
+    assertEquals(await sdb.getTableNames(), [source.name]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (const kind of ["asyncBarrier", "updateWithJS"] as const) {
+  Deno.test(`cache guards ${kind} mutations flushed by a concurrent observer`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const source = sdb.newTable(`guardConcurrentSource_${kind}`).loadArray([
+        { value: 1 },
+      ]);
+      const output = sdb.newTable(`guardConcurrentOutput_${kind}`).loadArray([
+        { value: 2 },
+      ]);
+      const entered = Promise.withResolvers<void>();
+      const resume = Promise.withResolvers<void>();
+      const computation = output.cache(async (table) => {
+        if (kind === "asyncBarrier") {
+          queueAsyncBarrier(table, {
+            method: "concurrentMutation()",
+            parameters: null,
+            execute: async () => {
+              await Promise.resolve();
+              source.filter("value = 99");
+            },
+          });
+        } else {
+          table.updateWithJS((rows) => {
+            source.filter("value = 99");
+            return rows;
+          });
+        }
+        entered.resolve();
+        await resume.promise;
+      });
+      await entered.promise;
+      try {
+        await assertRejects(
+          () => output.getData(),
+          Error,
+          "cannot modify pre-existing table",
+        );
+      } finally {
+        resume.resolve();
+        await computation;
+      }
+      assertEquals(await source.getData(), [{ value: 1 }]);
+      assertEquals(await output.getData(), [{ value: 2 }]);
+      assertEquals(sdb.getTables(), [source, output]);
+      assertEquals(sdb.pendingCount, 0);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("cache tracks dependencies read by a concurrent observer's async barrier", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardConcurrentReadSource").loadArray([
+      { value: 1 },
+    ]);
+    const output = sdb.newTable("guardConcurrentReadOutput");
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let executions = 0;
+    const compute = async (table: SimpleTable) => {
+      queueAsyncBarrier(table, {
+        method: "concurrentRead()",
+        parameters: null,
+        execute: async () => {
+          executions++;
+          table.loadArray(await source.getData());
+        },
+      });
+      entered.resolve();
+      await resume.promise;
+    };
+    const computation = output.cache(compute);
+    await entered.promise;
+    try {
+      assertEquals(await output.getData(), [{ value: 1 }]);
+    } finally {
+      resume.resolve();
+      await computation;
+    }
+    await output.cache(compute);
+    assertEquals(executions, 1);
+    source.loadArray([{ value: 3 }]);
+    await output.cache(compute);
+    assertEquals(executions, 2);
+    assertEquals(await output.getData(), [{ value: 3 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache cleans up temporary tables created by a concurrent observer's barrier", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const output = sdb.newTable("guardConcurrentCleanupOutput").loadArray([
+      { value: 1 },
+    ]);
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const computation = output.cache(async (table) => {
+      queueAsyncBarrier(table, {
+        method: "concurrentTemporaryTable()",
+        parameters: null,
+        execute: async () => {
+          await sdb.newTable("guardConcurrentCleanupLocal").loadArray([
+            { value: 2 },
+          ]).run();
+        },
+      });
+      entered.resolve();
+      await resume.promise;
+    });
+    await entered.promise;
+    try {
+      await output.run();
+    } finally {
+      resume.resolve();
+      await assertRejects(() => computation, Error, "did not remove it");
+    }
+    assertEquals(sdb.getTables(), [output]);
+    assertEquals(await sdb.getTableNames(), [output.name]);
+    assertEquals(await output.getData(), [{ value: 1 }]);
+    assertEquals(sdb.pendingCount, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("cache does not guard unrelated barriers queued outside its callback", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("guardUnrelatedSource").loadArray([{
+      value: 1,
+    }]);
+    const output = sdb.newTable("guardUnrelatedOutput").loadArray([{
+      value: 2,
+    }]);
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const computation = output.cache(async () => {
+      entered.resolve();
+      await resume.promise;
+    });
+    await entered.promise;
+    queueAsyncBarrier(source, {
+      method: "unrelatedMutation()",
+      parameters: null,
+      execute: async () => {
+        await Promise.resolve();
+        source.loadArray([{ value: 3 }]);
+      },
+    });
+    resume.resolve();
+    await computation;
+    assertEquals(await source.getData(), [{ value: 3 }]);
+    assertEquals(await output.getData(), [{ value: 2 }]);
+    assertEquals(sdb.pendingCount, 0);
   } finally {
     await sdb.close();
   }

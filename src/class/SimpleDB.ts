@@ -558,6 +558,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
 
   /**
    * Creates a new SimpleTable instance within the database.
+   * The name must be unique among registered tables, ignoring ASCII letter case.
    *
    * @param name - The name of the new table. If not provided, a default name is generated (e.g., "table1").
    * @returns A new table instance.
