@@ -132,6 +132,7 @@ import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
 import crossJoin from "../methods/crossJoin.ts";
+import addId from "../methods/addId.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2384,6 +2385,50 @@ export default class SimpleTable extends Simple {
     definition: string,
   ): this {
     addColumn(this, newColumn, type, definition);
+    return this;
+  }
+
+  /**
+   * Adds a unique, non-null ID for each row in the current table. IDs start at
+   * `0` and identify rows within this table, including rows with identical
+   * contents. Without a prefix, the new column has DuckDB type `BIGINT`. When
+   * a prefix is supplied, the new column has type `VARCHAR` and contains the
+   * exact prefix followed by the row number. An empty prefix therefore creates
+   * the strings `"0"`, `"1"`, and so on.
+   *
+   * Generate IDs once and preserve the resulting column for later joins. IDs
+   * are not globally unique: separate tables can generate the same IDs, even
+   * with the same prefix. Regenerating IDs after changing the input or row
+   * order does not guarantee that IDs remain attached to the same records.
+   * Prefer an existing trustworthy ID when one is available.
+   *
+   * @param newColumn - The name of the new ID column.
+   * @param options - An optional object with configuration options.
+   * @param options.prefix - Text to place before each row number. Supplying this option, including an empty string, creates string IDs.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
+   *
+   * @example
+   * ```ts
+   * // Add numeric IDs: 0, 1, 2, ...
+   * await table
+   *   .addId("edgeId")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Add string IDs: "flight-0", "flight-1", "flight-2", ...
+   * await flights
+   *   .addId("edgeId", { prefix: "flight-" })
+   *   .log();
+   * ```
+   */
+  addId(
+    newColumn: string,
+    options: { prefix?: string } = {},
+  ): this {
+    addId(this, newColumn, options);
     return this;
   }
 
