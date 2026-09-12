@@ -1,0 +1,51 @@
+method,case,scenario,outcome
+neighbors,empty,empty,empty start-node schema
+neighbors,unknown-start,baseline,empty start-node schema
+neighbors,empty-start-array,baseline,error
+neighbors,duplicate-starts,baseline,error
+neighbors,duplicate-zero-starts,numeric,error
+degree,empty,empty,empty node-incoming-outgoing schema
+degree,weight-with-neighbor-count,degree-weight,error
+commonNeighbors,empty,empty,empty node schema
+commonNeighbors,unknown-node,baseline,empty node schema
+commonNeighbors,identical-nodes,baseline,error
+reachable,empty,empty,empty start-node schema
+reachable,unknown-start,baseline,empty start-node schema
+reachable,empty-start-array,baseline,error
+reachable,duplicate-starts,baseline,error
+distances,empty,empty,empty start-node-distance schema
+distances,unknown-start,baseline,empty start-node-distance schema
+distances,empty-start-array,baseline,error
+distances,duplicate-starts,baseline,error
+shortestPath,empty,empty,empty route schema
+shortestPath,unknown-endpoint,baseline,empty route schema
+shortestPath,disconnected-A-G,baseline,empty route schema
+shortestPath,identical-endpoints,baseline,error
+shortestPath,identical-unknown-endpoints,baseline,error
+paths,empty,empty,empty route schema
+paths,unknown-endpoint,baseline,empty route schema
+paths,disconnected-A-G,baseline,empty route schema
+paths,identical-endpoints,baseline,error
+paths,identical-unknown-endpoints,baseline,error
+connectedComponents,empty,empty,empty node-componentId schema
+findCycles,empty,empty,empty route schema
+findCycles,single-outgoing,single,empty route schema
+findCycles,single-incoming,single,empty route schema
+findCycles,single-both,single,empty route schema
+findCycles,undirected-triangle-outgoing,undirected-triangle,empty route schema
+findCycles,undirected-triangle-incoming,undirected-triangle,empty route schema
+findCycles,missing-direction,triangle,error
+findCycles,invalid-direction,triangle,error
+topologicalSort,empty,empty,empty node-order schema
+topologicalSort,cycle,cycle,error
+topologicalSort,self-loop,self-loop,error
+neighbors,single-sink-outgoing,single,empty start-node schema
+reachable,single-loop-no-start,single-loop,empty start-node schema
+topologicalSort,single-loop,single-loop,error
+shortestPath,missing-edge-id-column,without-edge-id,error
+paths,missing-edge-id-column,without-edge-id,error
+findCycles,missing-edge-id-column,without-edge-id,error
+shortestPath,boolean-edge-id,unsupported-types,error
+neighbors,date-source,unsupported-types,error
+distances,string-weight,unsupported-types,error
+neighbors,string-start-on-numeric-column,numeric,error

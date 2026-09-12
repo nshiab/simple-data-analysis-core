@@ -1,0 +1,4 @@
+case,pathId,step,edgeId,source,target,weight,distance
+numeric-0-10-weighted,0,1,0,0,10,1,1
+numeric-0-10-weighted,1,1,1,0,2,0,0
+numeric-0-10-weighted,1,2,2,2,10,1,1

@@ -1,0 +1,4 @@
+edgeId,source,target,weight
+0,0,10,1
+1,0,2,0
+2,2,10,1
