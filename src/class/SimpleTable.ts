@@ -134,6 +134,7 @@ import replace from "../methods/replace.ts";
 import crossJoin from "../methods/crossJoin.ts";
 import addId from "../methods/addId.ts";
 import neighbors from "../methods/neighbors.ts";
+import reachable from "../methods/reachable.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2536,6 +2537,144 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return neighbors(this, source, target, start, options);
+  }
+
+  /**
+   * Finds every node reachable from one or more starting nodes. Outgoing
+   * traversal follows `source` to `target`, incoming traversal follows
+   * connections in reverse, and both traversal uses either orientation. Each
+   * start is evaluated independently, without a hop limit. Cycles and
+   * self-connections are valid and do not repeat result rows. The result has
+   * fixed `start` and `node` columns, sorted in ascending order by `start`,
+   * then `node`.
+   *
+   * Existing starts are included by default, once each. Set `includeStart` to
+   * `false` to omit only that row's own start, even if a cycle reaches it
+   * again. Unknown starts produce no rows. Endpoint IDs must be non-null
+   * strings or whole numbers in compatible columns. Empty start arrays and
+   * duplicate starts throw an error. String matching is case-sensitive, and
+   * numeric and string IDs are not interchangeable.
+   *
+   * This input branches at A, converges at D, and has an edge back to A:
+   *
+   * | origin | destination |
+   * | --- | --- |
+   * | A | B |
+   * | A | C |
+   * | B | D |
+   * | C | D |
+   * | D | A |
+   *
+   * Omitting `direction` follows outgoing connections and includes A. The
+   * named output preserves the input table:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .reachable("origin", "destination", "A", {
+   *     outputTable: "reachableFromA",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | A |
+   * | A | B |
+   * | A | C |
+   * | A | D |
+   *
+   * On a fresh copy of the same input, `includeStart: false` removes A even
+   * though the cycle leads back to it:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .reachable("origin", "destination", "A", { includeStart: false })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | B |
+   * | A | C |
+   * | A | D |
+   *
+   * On a fresh copy, incoming traversal from B follows edges in reverse:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .reachable("origin", "destination", "B", { direction: "incoming" })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | B | A |
+   * | B | B |
+   * | B | C |
+   * | B | D |
+   *
+   * On a fresh copy, both-direction traversal treats each connection as
+   * traversable in either orientation:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .reachable("origin", "destination", "B", { direction: "both" })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | B | A |
+   * | B | B |
+   * | B | C |
+   * | B | D |
+   *
+   * On a fresh copy, multiple starts may reach the same node and keep separate
+   * memberships:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .reachable("origin", "destination", ["B", "A"])
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | A |
+   * | A | B |
+   * | A | C |
+   * | A | D |
+   * | B | A |
+   * | B | B |
+   * | B | C |
+   * | B | D |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param start - One starting node ID or an array of distinct starting node IDs.
+   * @param options - An optional object with traversal and result configuration.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.includeStart - Whether to include each known start in its own result. Defaults to `true`.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  reachable(
+    source: string,
+    target: string,
+    start: string | number | bigint | (string | number | bigint)[],
+    options: {
+      direction?: "outgoing" | "incoming" | "both";
+      includeStart?: boolean;
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return reachable(this, source, target, start, options);
   }
 
   /**

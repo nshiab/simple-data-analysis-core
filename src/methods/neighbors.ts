@@ -1,9 +1,11 @@
-import getGraphEndpointColumns from "../helpers/getGraphEndpointColumns.ts";
-import foldIdentifier from "../helpers/foldIdentifier.ts";
 import prepareGraphStarts, {
   type GraphId,
   type PreparedGraphStarts,
 } from "../helpers/prepareGraphStarts.ts";
+import prepareGraphTraversal, {
+  type GraphDirection,
+  validateGraphStarts,
+} from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
@@ -95,34 +97,13 @@ function validateStarts(
   target: string,
   starts: PreparedGraphStarts,
 ) {
-  const endpoints = getGraphEndpointColumns(
+  return validateGraphStarts(
     schema,
     source,
     target,
+    starts,
     "neighbors()",
   );
-  if (endpoints.family !== starts.family) {
-    throw new TypeError(
-      `neighbors() start contains ${starts.family} IDs, but endpoint columns ${
-        quoteIdentifier(endpoints.source)
-      } and ${
-        quoteIdentifier(endpoints.target)
-      } contain ${endpoints.family} IDs.`,
-    );
-  }
-  if (endpoints.floating) {
-    for (const value of starts.numericValues) {
-      const converted = endpoints.idType === "FLOAT"
-        ? Math.fround(Number(value))
-        : Number(value);
-      if (!Number.isFinite(converted) || BigInt(converted) !== value) {
-        throw new TypeError(
-          `neighbors() start contains ${value}n, which ${endpoints.idType} cannot represent exactly.`,
-        );
-      }
-    }
-  }
-  return endpoints;
 }
 
 function neighborsSelect(
@@ -131,58 +112,48 @@ function neighborsSelect(
   source: string,
   target: string,
   starts: PreparedGraphStarts,
-  direction: "outgoing" | "incoming" | "both",
+  direction: GraphDirection,
 ): string {
-  const endpoints = validateStarts(schema, source, target, starts);
-  const sourceColumn = quoteIdentifier(endpoints.source);
-  const targetColumn = quoteIdentifier(endpoints.target);
-  // A standalone operation reads the physical input directly. Internal CTEs
-  // must not shadow that relation, including case-insensitive SQL names.
-  const relation = (name: string) =>
-    quoteIdentifier(
-      foldIdentifier(input) === quoteIdentifier(name) ? `${name}_1` : name,
-    );
-  const startsRelation = relation("graph_starts");
-  const matchesRelation = relation("neighbor_matches");
-  const idType = endpoints.idType;
-  const cast = (expression: string) => `CAST(${expression} AS ${idType})`;
-  const key = endpoints.family === "string"
-    ? (expression: string) => `ENCODE(${cast(expression)})`
-    : cast;
-  const values = starts.values.map(() => `(TRY_CAST(? AS ${idType}))`).join(
-    ", ",
+  const prepared = prepareGraphTraversal(
+    input,
+    schema,
+    source,
+    target,
+    starts,
+    "neighbors()",
   );
-  const branch = (from: string, to: string) =>
-    `SELECT ${cast(from)} AS ${quoteIdentifier("start")}, ${cast(to)} AS ${
-      quoteIdentifier("node")
-    }, ${key(from)} AS ${quoteIdentifier("__start_key")}, ${key(to)} AS ${
-      quoteIdentifier("__node_key")
-    }
-      FROM ${input} AS ${quoteIdentifier("edges")}
-      INNER JOIN ${startsRelation} AS ${quoteIdentifier("starts")}
-        ON ${key(from)} = ${
-      key(
-        `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`,
-      )
-    }`;
-  const outgoing = branch(
-    `${quoteIdentifier("edges")}.${sourceColumn}`,
-    `${quoteIdentifier("edges")}.${targetColumn}`,
-  );
-  const incoming = branch(
-    `${quoteIdentifier("edges")}.${targetColumn}`,
-    `${quoteIdentifier("edges")}.${sourceColumn}`,
-  );
-  const matches = direction === "outgoing"
-    ? outgoing
-    : direction === "incoming"
-    ? incoming
-    : `${outgoing}\nUNION ALL\n${incoming}`;
+  const relations = prepared.relationNames([
+    "graph_starts",
+    "graph_edges",
+    "neighbor_matches",
+  ]);
+  const startsRelation = relations.graph_starts;
+  const edgesRelation = relations.graph_edges;
+  const matchesRelation = relations.neighbor_matches;
 
   return `WITH ${startsRelation}(${quoteIdentifier("start")}) AS (
-      VALUES ${values}
+      VALUES ${prepared.startValues}
+    ), ${edgesRelation} AS (
+      ${prepared.edges(direction)}
     ), ${matchesRelation} AS (
-      ${matches}
+      SELECT ${quoteIdentifier("starts")}.${quoteIdentifier("start")},
+        ${quoteIdentifier("edges")}.${quoteIdentifier("__to")} AS ${
+    quoteIdentifier("node")
+  },
+        ${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")} AS ${
+    quoteIdentifier("__start_key")
+  },
+        ${quoteIdentifier("edges")}.${quoteIdentifier("__to_key")} AS ${
+    quoteIdentifier("__node_key")
+  }
+      FROM ${edgesRelation} AS ${quoteIdentifier("edges")}
+      INNER JOIN ${startsRelation} AS ${quoteIdentifier("starts")}
+        ON ${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")} =
+          ${
+    prepared.key(
+      `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`,
+    )
+  }
     )
     SELECT ${quoteIdentifier("start")}, ${quoteIdentifier("node")}
     FROM (
