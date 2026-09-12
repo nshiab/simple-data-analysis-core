@@ -133,6 +133,7 @@ import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
 import crossJoin from "../methods/crossJoin.ts";
 import addId from "../methods/addId.ts";
+import neighbors from "../methods/neighbors.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2430,6 +2431,111 @@ export default class SimpleTable extends Simple {
   ): this {
     addId(this, newColumn, options);
     return this;
+  }
+
+  /**
+   * Finds the distinct nodes directly connected to one or more starting nodes.
+   * Outgoing traversal follows `source` to `target`, incoming traversal follows
+   * connections in reverse, and both traversal uses either orientation. The
+   * result always has fixed `start` and `node` columns, sorted in ascending
+   * order by `start`, then `node`.
+   *
+   * Endpoint IDs must be non-null strings or whole numbers. The source and
+   * target columns must use compatible ID types. Unknown starting IDs and
+   * starts with no neighbors in the selected direction produce no rows.
+   * A self-connection includes the starting node once. Empty start arrays and
+   * duplicate starting IDs throw an error. String IDs match case-sensitively;
+   * numeric and string IDs are not interchangeable.
+   *
+   * This input contains a duplicate connection and one incoming connection to
+   * A:
+   *
+   * | origin | destination |
+   * | --- | --- |
+   * | A | B |
+   * | A | B |
+   * | C | A |
+   *
+   * Both-direction traversal deduplicates A's neighbors:
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .neighbors("origin", "destination", "A", { direction: "both" })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | B |
+   * | A | C |
+   *
+   * On a fresh copy of the same input, omitting `direction` follows outgoing
+   * connections:
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .neighbors("origin", "destination", "A")
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | B |
+   *
+   * On a fresh copy of the same input, incoming traversal follows connections
+   * in reverse:
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .neighbors("origin", "destination", "A", { direction: "incoming" })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | C |
+   *
+   * Multiple starts are evaluated independently. For this input:
+   *
+   * | source | target | cost |
+   * | --- | --- | ---: |
+   * | Montreal | Ottawa | 2 |
+   * | Ottawa | Toronto | 3 |
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .neighbors("source", "target", ["Montreal", "Ottawa"])
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | Montreal | Ottawa |
+   * | Ottawa | Toronto |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param start - One starting node ID or an array of distinct starting node IDs.
+   * @param options - An optional object with traversal and result configuration.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  neighbors(
+    source: string,
+    target: string,
+    start: string | number | bigint | (string | number | bigint)[],
+    options: {
+      direction?: "outgoing" | "incoming" | "both";
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return neighbors(this, source, target, start, options);
   }
 
   /**
