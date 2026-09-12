@@ -139,6 +139,7 @@ import distances from "../methods/distances.ts";
 import shortestPath from "../methods/shortestPath.ts";
 import paths from "../methods/paths.ts";
 import connectedComponents from "../methods/connectedComponents.ts";
+import topologicalSort from "../methods/topologicalSort.ts";
 import degree from "../methods/degree.ts";
 import commonNeighbors from "../methods/commonNeighbors.ts";
 import findCycles from "../methods/findCycles.ts";
@@ -3006,6 +3007,89 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return connectedComponents(this, source, target, options);
+  }
+
+  /**
+   * Orders every node in a directed acyclic graph so each prerequisite appears
+   * before its dependents. Each row in the input means `source` must come
+   * before `target`. If a dataset stores dependent -> prerequisite instead,
+   * pass those columns in reverse to obtain execution order.
+   *
+   * The result has fixed `node` and `order` columns. Order values start at one,
+   * and at each step the smallest currently eligible ID is selected. Strings
+   * use case-sensitive byte ordering and numbers use numeric ordering. Nodes
+   * are discovered only from the two endpoint columns, including nodes that
+   * appear only as targets.
+   *
+   * Endpoint IDs must be non-null strings or whole numbers in compatible
+   * columns. A directed cycle, including a self-connection, prevents a complete
+   * dependency order and causes the method to throw.
+   *
+   * This dinner plan uses custom column names. `prerequisite` contains what
+   * must happen before the corresponding `task`:
+   *
+   * | prerequisite | task |
+   * | --- | --- |
+   * | Buy ingredients | Cook dinner |
+   * | Cook dinner | Eat dinner |
+   * | Set table | Eat dinner |
+   *
+   * Omitting options overwrites the input with the dependency order:
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .topologicalSort("prerequisite", "task")
+   *   .log();
+   * ```
+   *
+   * | node | order |
+   * | --- | ---: |
+   * | Buy ingredients | 1 |
+   * | Cook dinner | 2 |
+   * | Set table | 3 |
+   * | Eat dinner | 4 |
+   *
+   * This separate graph has a two-step dependency chain:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | B |
+   * | B | C |
+   *
+   * Store the result in a named table to preserve the input for other graph
+   * operations:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .topologicalSort("source", "target", {
+   *     outputTable: "dependencyOrder",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | node | order |
+   * | --- | ---: |
+   * | A | 1 |
+   * | B | 2 |
+   * | C | 3 |
+   *
+   * @param source - The name of the prerequisite endpoint column.
+   * @param target - The name of the dependent endpoint column.
+   * @param options - An optional object with result configuration.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  topologicalSort(
+    source: string,
+    target: string,
+    options: {
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return topologicalSort(this, source, target, options);
   }
 
   /**
