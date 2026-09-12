@@ -10,10 +10,12 @@ export type PreparedGraphStarts = {
 export default function prepareGraphStarts(
   start: GraphId | GraphId[],
   method: string,
+  argument = "start",
+  scalar = false,
 ): PreparedGraphStarts {
   const starts = Array.isArray(start) ? [...start] : [start];
   if (starts.length === 0) {
-    throw new TypeError(`${method} start must not be an empty array.`);
+    throw new TypeError(`${method} ${argument} must not be an empty array.`);
   }
 
   let family: "string" | "numeric" | undefined;
@@ -30,12 +32,14 @@ export default function prepareGraphStarts(
       : undefined;
     if (valueFamily === undefined) {
       throw new TypeError(
-        `${method} start must be a string, a whole number, or an array of those values.`,
+        scalar
+          ? `${method} ${argument} must be a string or a whole number.`
+          : `${method} ${argument} must be a string, a whole number, or an array of those values.`,
       );
     }
     if (family !== undefined && family !== valueFamily) {
       throw new TypeError(
-        `${method} start must not mix string and numeric IDs.`,
+        `${method} ${argument} must not mix string and numeric IDs.`,
       );
     }
     family = valueFamily;
@@ -44,7 +48,7 @@ export default function prepareGraphStarts(
     if (typeof value === "number") {
       if (!Number.isSafeInteger(value)) {
         throw new TypeError(
-          `${method} start contains ${value}, which is not a safe whole number. Use a bigint for exact integer IDs outside JavaScript's safe integer range.`,
+          `${method} ${argument} contains ${value}, which is not a safe whole number. Use a bigint for exact integer IDs outside JavaScript's safe integer range.`,
         );
       }
       encoded = BigInt(value).toString();
@@ -69,7 +73,7 @@ export default function prepareGraphStarts(
 
   if (duplicates.length > 0) {
     throw new TypeError(
-      `${method} start contains duplicate IDs: ${
+      `${method} ${argument} contains duplicate IDs: ${
         duplicates.map(formatGraphId).join(", ")
       }.`,
     );

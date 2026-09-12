@@ -140,6 +140,7 @@ import shortestPath from "../methods/shortestPath.ts";
 import paths from "../methods/paths.ts";
 import connectedComponents from "../methods/connectedComponents.ts";
 import degree from "../methods/degree.ts";
+import commonNeighbors from "../methods/commonNeighbors.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2651,6 +2652,123 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return degree(this, source, target, options);
+  }
+
+  /**
+   * Finds the distinct nodes that neighbor two requested nodes. Outgoing
+   * traversal follows `source` to `target`, incoming traversal follows
+   * connections in reverse, and both traversal uses either orientation. The
+   * result has one fixed `node` column, sorted in ascending order.
+   *
+   * Endpoint IDs must be non-null strings or whole numbers in compatible
+   * columns. The two requested node IDs must be distinct and use the endpoint
+   * ID type. If either ID is unknown, or the nodes have no shared neighbors,
+   * the result has no rows. Parallel connections do not duplicate a node.
+   * Self-connections are valid, so either requested node can itself be shared.
+   * String IDs match case-sensitively; numeric and string IDs are not
+   * interchangeable.
+   *
+   * This input uses custom endpoint names and duplicate connections:
+   *
+   * | origin | destination |
+   * | --- | --- |
+   * | A | C |
+   * | A | C |
+   * | B | C |
+   * | B | C |
+   *
+   * Omitting options finds each shared outgoing neighbor once:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .commonNeighbors("origin", "destination", "A", "B")
+   *   .log();
+   * ```
+   *
+   * | node |
+   * | --- |
+   * | C |
+   *
+   * On this fresh input, A is an outgoing neighbor of both requested nodes:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | A |
+   * | B | A |
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .commonNeighbors("source", "target", "A", "B")
+   *   .log();
+   * ```
+   *
+   * | node |
+   * | --- |
+   * | A |
+   *
+   * This fresh input has one shared incoming neighbor and one shared outgoing
+   * neighbor:
+   *
+   * | from | to |
+   * | --- | --- |
+   * | A | B |
+   * | A | C |
+   * | B | D |
+   * | C | D |
+   *
+   * Incoming traversal finds A:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .commonNeighbors("from", "to", "B", "C", {
+   *     direction: "incoming",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | node |
+   * | --- |
+   * | A |
+   *
+   * On another fresh copy, both-direction traversal finds A and D:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .commonNeighbors("from", "to", "B", "C", { direction: "both" })
+   *   .log();
+   * ```
+   *
+   * | node |
+   * | --- |
+   * | A |
+   * | D |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param nodeA - The first node ID whose neighbor membership will be compared.
+   * @param nodeB - The distinct second node ID whose neighbor membership will be compared.
+   * @param options - An optional object with traversal and result configuration.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  commonNeighbors(
+    source: string,
+    target: string,
+    nodeA: string | number | bigint,
+    nodeB: string | number | bigint,
+    options: {
+      direction?: "outgoing" | "incoming" | "both";
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return commonNeighbors(this, source, target, nodeA, nodeB, options);
   }
 
   /**

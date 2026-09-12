@@ -26,6 +26,7 @@ export default function prepareGraphTraversal(
   target: string,
   starts: PreparedGraphStarts,
   method: string,
+  argument = "start",
 ): PreparedGraphTraversal {
   const endpoints = validateGraphStarts(
     schema,
@@ -33,6 +34,7 @@ export default function prepareGraphTraversal(
     target,
     starts,
     method,
+    argument,
   );
   return {
     ...prepareGraphSqlFromEndpoints(input, endpoints),
@@ -100,11 +102,13 @@ export function validateGraphStarts(
   target: string,
   starts: PreparedGraphStarts,
   method: string,
+  argument = "start",
 ): GraphEndpointColumns {
   const endpoints = getGraphEndpointColumns(schema, source, target, method);
+  const verb = argument === "start" ? "contains" : "contain";
   if (endpoints.family !== starts.family) {
     throw new TypeError(
-      `${method} start contains ${starts.family} IDs, but endpoint columns ${
+      `${method} ${argument} ${verb} ${starts.family} IDs, but endpoint columns ${
         quoteIdentifier(endpoints.source)
       } and ${
         quoteIdentifier(endpoints.target)
@@ -118,7 +122,7 @@ export function validateGraphStarts(
         : Number(value);
       if (!Number.isFinite(converted) || BigInt(converted) !== value) {
         throw new TypeError(
-          `${method} start contains ${value}n, which ${endpoints.idType} cannot represent exactly.`,
+          `${method} ${argument} ${verb} ${value}n, which ${endpoints.idType} cannot represent exactly.`,
         );
       }
     }
