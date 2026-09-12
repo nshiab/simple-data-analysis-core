@@ -9,7 +9,7 @@ import quoteIdentifier from "./quoteIdentifier.ts";
 export type GraphDirection = "outgoing" | "incoming" | "both";
 
 type PreparedGraphTraversal = {
-  edges: (direction: GraphDirection) => string;
+  edges: (direction: GraphDirection, selections?: string[]) => string;
   endpoints: GraphEndpointColumns;
   key: (expression: string) => string;
   relationNames: (names: string[]) => Record<string, string>;
@@ -39,29 +39,32 @@ export default function prepareGraphTraversal(
   const key = endpoints.family === "string"
     ? (expression: string) => `ENCODE(${cast(expression)})`
     : cast;
-  const edge = (from: string, to: string) =>
+  const edge = (from: string, to: string, selections: string[]) =>
     `SELECT ${cast(from)} AS ${quoteIdentifier("__from")},
         ${cast(to)} AS ${quoteIdentifier("__to")},
         ${key(from)} AS ${quoteIdentifier("__from_key")},
-        ${key(to)} AS ${quoteIdentifier("__to_key")}
+        ${key(to)} AS ${quoteIdentifier("__to_key")}${
+      selections.length === 0
+        ? ""
+        : `,\n        ${selections.join(",\n        ")}`
+    }
       FROM ${input} AS ${quoteIdentifier("edges")}`;
   const sourceReference = `${quoteIdentifier("edges")}.${sourceColumn}`;
   const targetReference = `${quoteIdentifier("edges")}.${targetColumn}`;
-  const outgoing = edge(sourceReference, targetReference);
-  const incoming = edge(targetReference, sourceReference);
-
   return {
     endpoints,
     key,
     startValues: starts.values.map(() => `(TRY_CAST(? AS ${idType}))`).join(
       ", ",
     ),
-    edges: (direction) =>
+    edges: (direction, selections = []) =>
       direction === "outgoing"
-        ? outgoing
+        ? edge(sourceReference, targetReference, selections)
         : direction === "incoming"
-        ? incoming
-        : `${outgoing}\nUNION ALL\n${incoming}`,
+        ? edge(targetReference, sourceReference, selections)
+        : `${edge(sourceReference, targetReference, selections)}\nUNION ALL\n${
+          edge(targetReference, sourceReference, selections)
+        }`,
     relationNames: (names) => uniqueRelationNames(input, names),
   };
 }

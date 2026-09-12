@@ -135,6 +135,7 @@ import crossJoin from "../methods/crossJoin.ts";
 import addId from "../methods/addId.ts";
 import neighbors from "../methods/neighbors.ts";
 import reachable from "../methods/reachable.ts";
+import distances from "../methods/distances.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2675,6 +2676,139 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return reachable(this, source, target, start, options);
+  }
+
+  /**
+   * Finds the minimum distance from one or more starting nodes to every node
+   * reachable from each start. Without `weight`, distance counts connections.
+   * With `weight`, distance is the minimum sum of the selected edge weights.
+   * Outgoing traversal follows `source` to `target`, incoming traversal follows
+   * connections in reverse, and both traversal uses either orientation. The
+   * result has fixed `start`, `node`, and `distance` columns, sorted by `start`,
+   * then `node`.
+   *
+   * Each known start is included at distance zero. Unknown starts and
+   * unreachable nodes produce no rows. Endpoint IDs must be non-null strings
+   * or whole numbers in compatible columns. Supplied weights must be non-null,
+   * finite, non-negative numbers. Empty start arrays and duplicate starts throw
+   * an error.
+   *
+   * This input has custom endpoint names and a route from A to C:
+   *
+   * | origin | destination | minutes |
+   * | --- | --- | ---: |
+   * | A | B | 4 |
+   * | B | C | 1 |
+   * | D | B | 2 |
+   *
+   * Omitting `weight` and `direction` follows outgoing connections and counts
+   * hops:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .distances("origin", "destination", "A")
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | A | A | 0 |
+   * | A | B | 1 |
+   * | A | C | 2 |
+   *
+   * On a fresh copy of the same input, selecting `minutes` minimizes the total
+   * edge weight:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .distances("origin", "destination", "A", { weight: "minutes" })
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | A | A | 0 |
+   * | A | B | 4 |
+   * | A | C | 5 |
+   *
+   * On a fresh copy, incoming traversal follows connections in reverse:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .distances("origin", "destination", "C", { direction: "incoming" })
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | C | A | 2 |
+   * | C | B | 1 |
+   * | C | C | 0 |
+   * | C | D | 2 |
+   *
+   * On a fresh copy, both-direction traversal treats each connection as
+   * traversable in either orientation:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .distances("origin", "destination", "A", { direction: "both" })
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | A | A | 0 |
+   * | A | B | 1 |
+   * | A | C | 2 |
+   * | A | D | 2 |
+   *
+   * On a fresh copy, multiple starts are evaluated independently. The named
+   * output preserves the input table:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .distances("origin", "destination", ["D", "A"], {
+   *     weight: "minutes",
+   *     outputTable: "travelTimes",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | A | A | 0 |
+   * | A | B | 4 |
+   * | A | C | 5 |
+   * | D | B | 2 |
+   * | D | C | 3 |
+   * | D | D | 0 |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param start - One starting node ID or an array of distinct starting node IDs.
+   * @param options - An optional object with traversal and result configuration.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  distances(
+    source: string,
+    target: string,
+    start: string | number | bigint | (string | number | bigint)[],
+    options: {
+      direction?: "outgoing" | "incoming" | "both";
+      weight?: string;
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return distances(this, source, target, start, options);
   }
 
   /**
