@@ -1,0 +1,10 @@
+case,pathId,step,edgeId,source,target,weight,distance
+numeric-cycle-outgoing,0,1,10,0,2,1,1
+numeric-cycle-outgoing,0,2,2,2,10,1,2
+numeric-cycle-outgoing,0,3,1,10,0,1,3
+numeric-cycle-incoming,0,1,1,0,10,1,1
+numeric-cycle-incoming,0,2,2,10,2,1,2
+numeric-cycle-incoming,0,3,10,2,0,1,3
+numeric-cycle-both,0,1,1,0,10,1,1
+numeric-cycle-both,0,2,2,10,2,1,2
+numeric-cycle-both,0,3,10,2,0,1,3

@@ -1,0 +1,17 @@
+case,node,order
+baseline,A,1
+baseline,B,2
+baseline,C,3
+baseline,D,4
+baseline,E,5
+baseline,F,6
+baseline,G,7
+parallel,A,1
+parallel,B,2
+parallel,C,3
+single,A,1
+single,B,2
+string-ids,001,1
+string-ids,1,2
+string-ids,A,3
+string-ids,a,4
