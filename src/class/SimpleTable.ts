@@ -136,6 +136,7 @@ import addId from "../methods/addId.ts";
 import neighbors from "../methods/neighbors.ts";
 import reachable from "../methods/reachable.ts";
 import distances from "../methods/distances.ts";
+import shortestPath from "../methods/shortestPath.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2809,6 +2810,173 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return distances(this, source, target, start, options);
+  }
+
+  /**
+   * Finds every tied shortest simple route between two different nodes.
+   * Without `weight`, route cost counts connections. With `weight`, route cost
+   * is the sum of the selected edge weights. Outgoing traversal follows
+   * `source` to `target`, incoming traversal follows connections in reverse,
+   * and both traversal uses either orientation.
+   *
+   * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
+   * `weight`, and `distance` columns. Each row is one traversed connection;
+   * `step` starts at one, `weight` is that connection's cost, and `distance` is
+   * the running route cost. Endpoints show traversal orientation. Routes are
+   * sorted by their typed edge-ID sequences and numbered from zero.
+   *
+   * Endpoint and edge IDs must be non-null strings or whole numbers, and edge
+   * IDs must be unique. Weights must be non-null, finite, and non-negative.
+   * Unknown or disconnected endpoints produce an empty result. `start` and
+   * `end` must differ; use `distances()` for a zero-distance result and
+   * `findCycles()` to find loops. Self-connections in the input remain valid
+   * but cannot occur in a simple route between different endpoints.
+   *
+   * The method returns every tie without a result or hop cap. Enumerating many
+   * tied simple routes can take a long time and consume substantial memory.
+   *
+   * This input branches at A and converges at E. It uses an existing edge ID:
+   *
+   * | edgeId | source | target |
+   * | --- | --- | --- |
+   * | E1 | A | B |
+   * | E2 | A | C |
+   * | E3 | B | D |
+   * | E4 | C | D |
+   * | E5 | D | E |
+   *
+   * Omitting options follows outgoing connections and returns both tied
+   * three-hop routes:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .shortestPath("source", "target", "edgeId", "A", "E")
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | E1 | A | B | 1 | 1 |
+   * | 0 | 2 | E3 | B | D | 1 | 2 |
+   * | 0 | 3 | E5 | D | E | 1 | 3 |
+   * | 1 | 1 | E2 | A | C | 1 | 1 |
+   * | 1 | 2 | E4 | C | D | 1 | 2 |
+   * | 1 | 3 | E5 | D | E | 1 | 3 |
+   *
+   * This fresh input has no edge-ID column:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | B |
+   * | B | E |
+   *
+   * Create and preserve IDs before routing. The separate result table keeps
+   * the prepared input available for joining on `edgeId`:
+   *
+   * @example
+   * ```ts
+   * await unnumberedConnections
+   *   .addId("edgeId", { prefix: "edge-" })
+   *   .shortestPath("source", "target", "edgeId", "A", "E", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | edge-0 | A | B | 1 | 1 |
+   * | 0 | 2 | edge-1 | B | E | 1 | 2 |
+   *
+   * This weighted input uses custom column names and has a direct edge and a
+   * cheaper three-edge route. Result column names remain fixed:
+   *
+   * | flightId | origin | destination | minutes |
+   * | --- | --- | --- | ---: |
+   * | F1 | A | E | 10 |
+   * | F2 | A | B | 1 |
+   * | F3 | B | D | 1 |
+   * | F4 | D | E | 1 |
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .shortestPath("origin", "destination", "flightId", "A", "E", {
+   *     weight: "minutes",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F2 | A | B | 1 | 1 |
+   * | 0 | 2 | F3 | B | D | 1 | 2 |
+   * | 0 | 3 | F4 | D | E | 1 | 3 |
+   *
+   * On the same preserved flights input, omitting `weight` selects the direct
+   * one-hop route:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .shortestPath("origin", "destination", "flightId", "A", "E", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | A | E | 1 | 1 |
+   *
+   * Incoming traversal reverses the displayed endpoints while preserving the
+   * original edge ID. For this fresh input:
+   *
+   * | edgeId | source | target |
+   * | --- | --- | --- |
+   * | F1 | A | B |
+   *
+   * @example
+   * ```ts
+   * await reverseExample
+   *   .shortestPath("source", "target", "edgeId", "B", "A", {
+   *     direction: "incoming",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | B | A | 1 | 1 |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param edgeId - The name of the column uniquely identifying each connection (edge).
+   * @param start - The starting node ID.
+   * @param end - The ending node ID, which must differ from `start`.
+   * @param options - An optional object with traversal and result configuration.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  shortestPath(
+    source: string,
+    target: string,
+    edgeId: string,
+    start: string | number | bigint,
+    end: string | number | bigint,
+    options: {
+      direction?: "outgoing" | "incoming" | "both";
+      weight?: string;
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return shortestPath(this, source, target, edgeId, start, end, options);
   }
 
   /**
