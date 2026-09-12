@@ -139,6 +139,7 @@ import distances from "../methods/distances.ts";
 import shortestPath from "../methods/shortestPath.ts";
 import paths from "../methods/paths.ts";
 import connectedComponents from "../methods/connectedComponents.ts";
+import degree from "../methods/degree.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2541,6 +2542,115 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return neighbors(this, source, target, start, options);
+  }
+
+  /**
+   * Counts the incoming and outgoing connections for every node found in the
+   * source and target columns. By default, parallel connection rows are counted
+   * separately. Set `count` to `"neighbors"` to count distinct adjacent nodes
+   * instead. Select a numeric `weight` to sum edge weights; weighted sums operate
+   * on edges and cannot be combined with neighbor counting.
+   *
+   * The result has fixed `node`, `incoming`, and `outgoing` columns, sorted by
+   * node. A self-connection contributes once to both incoming and outgoing.
+   * Endpoint IDs must be non-null strings or whole numbers in compatible
+   * columns. Supplied weights must be non-null, finite, and non-negative.
+   *
+   * This input uses custom endpoint names and has two parallel flights:
+   *
+   * | origin | destination | passengers |
+   * | --- | --- | ---: |
+   * | Montreal | Toronto | 100 |
+   * | Montreal | Toronto | 200 |
+   * | Montreal | Vancouver | 50 |
+   *
+   * Omitting options counts edge rows and overwrites the input table:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .degree("origin", "destination")
+   *   .log();
+   * ```
+   *
+   * | node | incoming | outgoing |
+   * | --- | ---: | ---: |
+   * | Montreal | 0 | 3 |
+   * | Toronto | 2 | 0 |
+   * | Vancouver | 1 | 0 |
+   *
+   * On a fresh copy, neighbor counting deduplicates the two Toronto flights:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .degree("origin", "destination", { count: "neighbors" })
+   *   .log();
+   * ```
+   *
+   * | node | incoming | outgoing |
+   * | --- | ---: | ---: |
+   * | Montreal | 0 | 2 |
+   * | Toronto | 1 | 0 |
+   * | Vancouver | 1 | 0 |
+   *
+   * On another fresh copy, selecting `passengers` sums edge weights. The
+   * named output keeps the original flights available for other operations:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .degree("origin", "destination", {
+   *     weight: "passengers",
+   *     outputTable: "passengerTotals",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | node | incoming | outgoing |
+   * | --- | ---: | ---: |
+   * | Montreal | 0 | 350 |
+   * | Toronto | 300 | 0 |
+   * | Vancouver | 50 | 0 |
+   *
+   * A self-connection is counted once in each direction. For this input:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | A |
+   * | A | B |
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .degree("source", "target")
+   *   .log();
+   * ```
+   *
+   * | node | incoming | outgoing |
+   * | --- | ---: | ---: |
+   * | A | 1 | 2 |
+   * | B | 1 | 0 |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param options - An optional object with counting and result configuration.
+   * @param options.count - Whether to count connection rows (`"edges"`) or distinct adjacent nodes (`"neighbors"`). Defaults to `"edges"`.
+   * @param options.weight - The name of the numeric edge-weight column to sum. This requires edge counting.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  degree(
+    source: string,
+    target: string,
+    options: {
+      count?: "edges" | "neighbors";
+      weight?: string;
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return degree(this, source, target, options);
   }
 
   /**
