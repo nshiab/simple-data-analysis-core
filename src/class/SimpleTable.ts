@@ -137,6 +137,7 @@ import neighbors from "../methods/neighbors.ts";
 import reachable from "../methods/reachable.ts";
 import distances from "../methods/distances.ts";
 import shortestPath from "../methods/shortestPath.ts";
+import paths from "../methods/paths.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2977,6 +2978,172 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return shortestPath(this, source, target, edgeId, start, end, options);
+  }
+
+  /**
+   * Enumerates every simple route between two different nodes. A simple route
+   * does not repeat a node. Outgoing traversal follows `source` to `target`,
+   * incoming traversal follows connections in reverse, and both traversal
+   * uses either orientation.
+   *
+   * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
+   * `weight`, and `distance` columns. Each row is one traversed connection;
+   * `step` starts at one, `weight` is that connection's cost, and `distance` is
+   * the running route cost. Without `weight`, every connection costs one.
+   * Endpoints show traversal orientation. Routes are sorted by their typed
+   * edge-ID sequences and numbered from zero; rows are ordered by `pathId`,
+   * then `step`. Preserving graph data, edge IDs, and options preserves these
+   * route IDs even if input rows are reordered. Changing the graph may renumber
+   * routes.
+   *
+   * Endpoint and edge IDs must be non-null strings or whole numbers, and edge
+   * IDs must be unique. Weights must be non-null, finite, and non-negative.
+   * Unknown or disconnected endpoints produce an empty result. `start` and
+   * `end` must differ; use `distances()` for a zero-distance result and
+   * `findCycles()` to find loops. Self-connections are valid input but cannot
+   * appear in a simple route between different endpoints.
+   *
+   * The method has no result or hop cap. Enumerating all simple routes can take
+   * a long time and consume substantial memory, especially in dense graphs.
+   *
+   * This fresh input branches at A and converges at D. It uses existing edge
+   * IDs:
+   *
+   * | edgeId | source | target |
+   * | --- | --- | --- |
+   * | E1 | A | B |
+   * | E2 | A | C |
+   * | E3 | B | D |
+   * | E4 | C | D |
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .paths("source", "target", "edgeId", "A", "D", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | E1 | A | B | 1 | 1 |
+   * | 0 | 2 | E3 | B | D | 1 | 2 |
+   * | 1 | 1 | E2 | A | C | 1 | 1 |
+   * | 1 | 2 | E4 | C | D | 1 | 2 |
+   *
+   * This fresh input has no edge-ID column:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | B |
+   * | B | D |
+   *
+   * Create and preserve IDs before routing. The separate result table keeps
+   * the prepared input available for joining on `edgeId`:
+   *
+   * @example
+   * ```ts
+   * await unnumberedConnections
+   *   .addId("edgeId", { prefix: "edge-" })
+   *   .paths("source", "target", "edgeId", "A", "D", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | edge-0 | A | B | 1 | 1 |
+   * | 0 | 2 | edge-1 | B | D | 1 | 2 |
+   *
+   * This weighted input uses custom column names. The direct flight costs ten,
+   * while the two-leg flight costs three:
+   *
+   * | flightId | origin | destination | minutes |
+   * | --- | --- | --- | ---: |
+   * | F1 | A | D | 10 |
+   * | F2 | A | B | 1 |
+   * | F3 | B | D | 2 |
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .paths("origin", "destination", "flightId", "A", "D", {
+   *     weight: "minutes",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | A | D | 10 | 10 |
+   * | 1 | 1 | F2 | A | B | 1 | 1 |
+   * | 1 | 2 | F3 | B | D | 2 | 3 |
+   *
+   * Omitting `weight` returns the same routes but counts connections:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .paths("origin", "destination", "flightId", "A", "D", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | A | D | 1 | 1 |
+   * | 1 | 1 | F2 | A | B | 1 | 1 |
+   * | 1 | 2 | F3 | B | D | 1 | 2 |
+   *
+   * Incoming traversal reverses displayed endpoints while preserving the
+   * original edge IDs and weights:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .paths("origin", "destination", "flightId", "D", "A", {
+   *     direction: "incoming",
+   *     weight: "minutes",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | D | A | 10 | 10 |
+   * | 1 | 1 | F3 | D | B | 2 | 2 |
+   * | 1 | 2 | F2 | B | A | 1 | 3 |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param edgeId - The name of the column uniquely identifying each connection (edge).
+   * @param start - The starting node ID.
+   * @param end - The ending node ID, which must differ from `start`.
+   * @param options - An optional object with traversal and result configuration.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  paths(
+    source: string,
+    target: string,
+    edgeId: string,
+    start: string | number | bigint,
+    end: string | number | bigint,
+    options: {
+      direction?: "outgoing" | "incoming" | "both";
+      weight?: string;
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return paths(this, source, target, edgeId, start, end, options);
   }
 
   /**

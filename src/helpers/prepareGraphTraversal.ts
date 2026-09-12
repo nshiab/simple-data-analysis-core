@@ -8,7 +8,7 @@ import quoteIdentifier from "./quoteIdentifier.ts";
 
 export type GraphDirection = "outgoing" | "incoming" | "both";
 
-type PreparedGraphTraversal = {
+export type PreparedGraphTraversal = {
   edges: (direction: GraphDirection, selections?: string[]) => string;
   endpoints: GraphEndpointColumns;
   key: (expression: string) => string;
