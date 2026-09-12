@@ -1,6 +1,6 @@
 # Shared graph fixtures
 
-These files are the hand-checkable oracle for the native graph methods planned
+These files are the hand-checkable oracle for the native graph methods specified
 in issues #166–#175. They contain data and expected answers only; no expected
 result was produced by a graph implementation.
 
@@ -168,5 +168,8 @@ the original edge IDs are preserved.
 
 Correctness fixtures stay deliberately small. `benchmarks/graphs/workloads.ts`
 builds DuckDB SQL for separately generated deep-chain, binary-branching, and
-dense directed datasets. Future graph benchmarks should create those datasets
-outside the timed operation and use no timing assertions in unit tests.
+dense directed datasets. `deno task benchmark-graphs` creates those datasets
+outside the timed operation. See the
+[benchmark methodology](../../../benchmarks/graphs/README.md) and
+[local observations](../../../benchmarks/graphs/results.md). Unit tests use no
+timing assertions.
