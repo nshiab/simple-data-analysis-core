@@ -16,6 +16,8 @@ export type PreparedGraphTraversal = {
   startValues: string;
 };
 
+export type PreparedGraphSql = Omit<PreparedGraphTraversal, "startValues">;
+
 /** Prepares exact-ID SQL shared by graph traversal methods. */
 export default function prepareGraphTraversal(
   input: string,
@@ -32,6 +34,31 @@ export default function prepareGraphTraversal(
     starts,
     method,
   );
+  return {
+    ...prepareGraphSqlFromEndpoints(input, endpoints),
+    startValues: starts.values.map(() => `(TRY_CAST(? AS ${endpoints.idType}))`)
+      .join(", "),
+  };
+}
+
+/** Prepares exact-ID edge SQL for graph methods without starting nodes. */
+export function prepareGraphSql(
+  input: string,
+  schema: TableSchema,
+  source: string,
+  target: string,
+  method: string,
+): PreparedGraphSql {
+  return prepareGraphSqlFromEndpoints(
+    input,
+    getGraphEndpointColumns(schema, source, target, method),
+  );
+}
+
+function prepareGraphSqlFromEndpoints(
+  input: string,
+  endpoints: GraphEndpointColumns,
+): PreparedGraphSql {
   const sourceColumn = quoteIdentifier(endpoints.source);
   const targetColumn = quoteIdentifier(endpoints.target);
   const idType = endpoints.idType;
@@ -54,9 +81,6 @@ export default function prepareGraphTraversal(
   return {
     endpoints,
     key,
-    startValues: starts.values.map(() => `(TRY_CAST(? AS ${idType}))`).join(
-      ", ",
-    ),
     edges: (direction, selections = []) =>
       direction === "outgoing"
         ? edge(sourceReference, targetReference, selections)

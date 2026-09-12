@@ -138,6 +138,7 @@ import reachable from "../methods/reachable.ts";
 import distances from "../methods/distances.ts";
 import shortestPath from "../methods/shortestPath.ts";
 import paths from "../methods/paths.ts";
+import connectedComponents from "../methods/connectedComponents.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -2678,6 +2679,104 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return reachable(this, source, target, start, options);
+  }
+
+  /**
+   * Finds the connected groups formed by all node IDs in the source and target
+   * columns. Weak connectivity, the default, ignores connection direction.
+   * Strong connectivity groups nodes only when each can reach every other node
+   * by following source-to-target connections.
+   *
+   * The result has fixed `node` and `componentId` columns, with one row per
+   * node. Components are numbered from zero by their smallest member, and rows
+   * are sorted by node. Component IDs belong to this result and may change when
+   * the graph changes. Endpoint IDs must be non-null strings or whole numbers
+   * in compatible columns.
+   *
+   * This input uses custom endpoint names and contains two separate groups:
+   *
+   * | origin | destination |
+   * | --- | --- |
+   * | A | B |
+   * | C | D |
+   *
+   * Omitting options finds weak components and overwrites the input table. The
+   * destination-only nodes B and D are included:
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .connectedComponents("origin", "destination")
+   *   .log();
+   * ```
+   *
+   * | node | componentId |
+   * | --- | ---: |
+   * | A | 0 |
+   * | B | 0 |
+   * | C | 1 |
+   * | D | 1 |
+   *
+   * This fresh directed chain is one weak component:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | B |
+   * | B | C |
+   *
+   * A separate output table preserves the graph for comparing modes:
+   *
+   * @example
+   * ```ts
+   * await graph
+   *   .connectedComponents("source", "target", { outputTable: true })
+   *   .log();
+   * ```
+   *
+   * | node | componentId |
+   * | --- | ---: |
+   * | A | 0 |
+   * | B | 0 |
+   * | C | 0 |
+   *
+   * On the same preserved chain, strong connectivity puts each node in its own
+   * component because no pair can reach one another in both directions:
+   *
+   * @example
+   * ```ts
+   * await graph
+   *   .connectedComponents("source", "target", {
+   *     mode: "strong",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | node | componentId |
+   * | --- | ---: |
+   * | A | 0 |
+   * | B | 1 |
+   * | C | 2 |
+   *
+   * Adding C -> A to the chain makes A, B, and C one strong component.
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param options - An optional object with component and result configuration.
+   * @param options.mode - Whether to find `"weak"` or `"strong"` components. Defaults to `"weak"`.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  connectedComponents(
+    source: string,
+    target: string,
+    options: {
+      mode?: "weak" | "strong";
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return connectedComponents(this, source, target, options);
   }
 
   /**
