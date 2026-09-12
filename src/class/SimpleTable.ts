@@ -141,6 +141,7 @@ import paths from "../methods/paths.ts";
 import connectedComponents from "../methods/connectedComponents.ts";
 import degree from "../methods/degree.ts";
 import commonNeighbors from "../methods/commonNeighbors.ts";
+import findCycles from "../methods/findCycles.ts";
 import addRowNumber from "../methods/addRowNumber.ts";
 import addColumn from "../methods/addColumn.ts";
 import extractDatePart from "../methods/extractDatePart.ts";
@@ -3471,6 +3472,256 @@ export default class SimpleTable extends Simple {
     } = {},
   ): SimpleTable {
     return paths(this, source, target, edgeId, start, end, options);
+  }
+
+  /**
+   * Enumerates every simple cycle in the calling edge table. A simple cycle
+   * repeats only its closing node and never reuses an edge. Outgoing traversal
+   * follows stored source-to-target orientation, incoming traversal reverses
+   * every connection, and both traversal treats connections as undirected.
+   * The `direction` argument is required.
+   *
+   * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
+   * `weight`, and `distance` columns. Each row is one real connection,
+   * including the closing connection. `step` starts at one; `weight` is the
+   * connection cost, and `distance` is the running cycle cost. Without a
+   * weight column, each connection costs one.
+   *
+   * Cycles start at their smallest node. Outgoing and incoming preserve their
+   * traversal orientation. Both chooses the orientation with the smaller
+   * typed edge-ID sequence and merges its reverse. Cycles are then sorted by
+   * typed edge-ID sequence and numbered from zero. Different edge combinations
+   * remain separate even when their node sequences match. Preserving graph
+   * data, edge IDs, direction, and options preserves these IDs when input rows
+   * are reordered; changing the graph may renumber them.
+   *
+   * Endpoint and edge IDs must be non-null strings or whole numbers, and edge
+   * IDs must be unique. Weights must be non-null, finite, and non-negative.
+   * A self-connection is a one-step cycle in every mode. In both mode, two
+   * distinct parallel connections form one two-step cycle, but one connection
+   * is never traversed out and back to manufacture a cycle.
+   *
+   * The method has no result or hop cap. Enumerating all simple cycles can take
+   * a long time and consume substantial memory, especially in dense graphs.
+   *
+   * This directed triangle uses existing edge IDs:
+   *
+   * | edgeId | source | target |
+   * | --- | --- | --- |
+   * | E1 | A | B |
+   * | E2 | B | C |
+   * | E3 | C | A |
+   *
+   * Outgoing traversal follows the stored orientation:
+   *
+   * @example
+   * ```ts
+   * await triangle
+   *   .findCycles("source", "target", "edgeId", "outgoing", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | E1 | A | B | 1 | 1 |
+   * | 0 | 2 | E2 | B | C | 1 | 2 |
+   * | 0 | 3 | E3 | C | A | 1 | 3 |
+   *
+   * Incoming traversal reverses the displayed endpoints and cumulative order:
+   *
+   * @example
+   * ```ts
+   * await triangle
+   *   .findCycles("source", "target", "edgeId", "incoming", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | E3 | A | C | 1 | 1 |
+   * | 0 | 2 | E2 | C | B | 1 | 2 |
+   * | 0 | 3 | E1 | B | A | 1 | 3 |
+   *
+   * Both traversal merges the reverse and chooses E1, E2, E3:
+   *
+   * @example
+   * ```ts
+   * await triangle
+   *   .findCycles("source", "target", "edgeId", "both", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | E1 | A | B | 1 | 1 |
+   * | 0 | 2 | E2 | B | C | 1 | 2 |
+   * | 0 | 3 | E3 | C | A | 1 | 3 |
+   *
+   * A triangle whose third connection is also stored from A has an undirected
+   * cycle, while outgoing and incoming return the same empty typed schema:
+   *
+   * | edgeId | source | target |
+   * | --- | --- | --- |
+   * | E1 | A | B |
+   * | E2 | B | C |
+   * | E3 | A | C |
+   *
+   * @example
+   * ```ts
+   * await undirectedTriangle
+   *   .findCycles("source", "target", "edgeId", "both", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | E1 | A | B | 1 | 1 |
+   * | 0 | 2 | E2 | B | C | 1 | 2 |
+   * | 0 | 3 | E3 | C | A | 1 | 3 |
+   *
+   * @example
+   * ```ts
+   * await undirectedTriangle
+   *   .findCycles("source", "target", "edgeId", "outgoing", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   *
+   * @example
+   * ```ts
+   * await undirectedTriangle
+   *   .findCycles("source", "target", "edgeId", "incoming", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   *
+   * Parallel connections remain distinct and can close a two-step cycle in
+   * both mode. A self-connection remains a separate one-step cycle:
+   *
+   * | edgeId | source | target | cost |
+   * | --- | --- | --- | ---: |
+   * | P1 | A | B | 1 |
+   * | P2 | A | B | 2 |
+   * | L1 | C | C | 4 |
+   *
+   * @example
+   * ```ts
+   * await parallelAndLoop
+   *   .findCycles("source", "target", "edgeId", "both", {
+   *     weight: "cost",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | L1 | C | C | 4 | 4 |
+   * | 1 | 1 | P1 | A | B | 1 | 1 |
+   * | 1 | 2 | P2 | B | A | 2 | 3 |
+   *
+   * This weighted example uses custom column names. Weighted and unweighted
+   * calls return the same cycles and columns; only costs differ:
+   *
+   * | flightId | origin | destination | minutes |
+   * | --- | --- | --- | ---: |
+   * | F1 | A | B | 1 |
+   * | F2 | B | C | 2 |
+   * | F3 | C | A | 3 |
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .findCycles("origin", "destination", "flightId", "outgoing", {
+   *     weight: "minutes",
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | A | B | 1 | 1 |
+   * | 0 | 2 | F2 | B | C | 2 | 3 |
+   * | 0 | 3 | F3 | C | A | 3 | 6 |
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .findCycles("origin", "destination", "flightId", "outgoing", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F1 | A | B | 1 | 1 |
+   * | 0 | 2 | F2 | B | C | 1 | 2 |
+   * | 0 | 3 | F3 | C | A | 1 | 3 |
+   *
+   * A fresh input without edge IDs can create and preserve them before cycle
+   * enumeration:
+   *
+   * | source | target |
+   * | --- | --- |
+   * | A | B |
+   * | B | C |
+   * | C | A |
+   *
+   * @example
+   * ```ts
+   * await unnumberedConnections
+   *   .addId("edgeId", { prefix: "edge-" })
+   *   .findCycles("source", "target", "edgeId", "outgoing", {
+   *     outputTable: true,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | distance |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | edge-0 | A | B | 1 | 1 |
+   * | 0 | 2 | edge-1 | B | C | 1 | 2 |
+   * | 0 | 3 | edge-2 | C | A | 1 | 3 |
+   *
+   * @param source - The name of the column containing each connection's source node ID.
+   * @param target - The name of the column containing each connection's target node ID.
+   * @param edgeId - The name of the column uniquely identifying each connection (edge).
+   * @param direction - The required traversal mode: `"outgoing"`, `"incoming"`, or `"both"`.
+   * @param options - An optional object with cost and result configuration.
+   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @returns The result table, so methods can be chained.
+   * @category Graph Operations
+   */
+  findCycles(
+    source: string,
+    target: string,
+    edgeId: string,
+    direction: "outgoing" | "incoming" | "both",
+    options: {
+      weight?: string;
+      outputTable?: string | boolean;
+    } = {},
+  ): SimpleTable {
+    return findCycles(this, source, target, edgeId, direction, options);
   }
 
   /**
