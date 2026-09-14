@@ -7778,16 +7778,19 @@ await summary.log();
 
 #### `log`
 
-Logs a specified number of rows from the table to the console. By default, the
-first 10 rows are logged. You can optionally log the column types and filter the
-data based on conditions. SQL dates and timestamps retain their native precision
-for display, including temporal infinities. Lists and objects are stringified
-using the same nested representations as `getData()`, then truncated according
-to `charsToLog`. Unsafe top-level large integers throw, just as with
-`getData()`. Type annotations describe the SQL type and the JavaScript
-extraction type before display formatting; nulls do not determine the column's
-annotation. Colors reflect the SQL value's meaning, so exact decimal strings use
-numeric coloring. Column width is independent of the content truncation budget.
+Logs up to a specified number of rows from the table to the console. By default,
+the first 10 rows are logged. You can optionally log the column types and filter
+the data based on conditions. The footer reports the total number of matching
+rows and, only when some rows are omitted, the number actually shown (for
+example, `100 rows in total / showing 15 rows`). SQL dates and timestamps retain
+their native precision for display, including temporal infinities. Lists and
+objects are stringified using the same nested representations as `getData()`,
+then truncated according to `charsToLog`. Unsafe top-level large integers throw,
+just as with `getData()`. Type annotations describe the SQL type and the
+JavaScript extraction type before display formatting; nulls do not determine the
+column's annotation. Colors reflect the SQL value's meaning, so exact decimal
+strings use numeric coloring. Column width is independent of the content
+truncation budget.
 
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support
 JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
@@ -7803,8 +7806,8 @@ async log(options?: "all" | number | { count?: number | "all"; types?: boolean; 
 
 - **`options`**: Either the number of rows to log (a specific number or `"all"`)
   or an object with configuration options:
-- **`options.count`**: The number of rows to log. Defaults to 10 or the value
-  set in the SimpleDB instance. Use `"all"` to log all rows.
+- **`options.count`**: The maximum number of rows to log. Defaults to 10 or the
+  value set in the SimpleDB instance. Use `"all"` to log all rows.
 - **`options.types`**: Whether to log the column types along with the data.
   Defaults to the value set in the SimpleDB instance.
 - **`options.conditions`**: A SQL `WHERE` clause condition to filter the data

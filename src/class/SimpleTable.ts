@@ -6875,8 +6875,10 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
+   * Logs up to a specified number of rows from the table to the console. By default, the first 10 rows are logged.
    * You can optionally log the column types and filter the data based on conditions.
+   * The footer reports the total number of matching rows and, only when some rows
+   * are omitted, the number actually shown (for example, `100 rows in total / showing 15 rows`).
    * SQL dates and timestamps retain their native precision for display, including
    * temporal infinities. Lists and objects are stringified using the same nested
    * representations as `getData()`, then truncated according to `charsToLog`.
@@ -6889,7 +6891,7 @@ export default class SimpleTable extends Simple {
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
-   * @param options.count - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
+   * @param options.count - The maximum number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
    * @param options.types - Whether to log the column types along with the data. Defaults to the value set in the SimpleDB instance.
    * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
    * @returns A promise that resolves to the table, so methods can be chained.
