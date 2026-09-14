@@ -7,6 +7,8 @@ import buildUmapGraph, { scalar } from "../helpers/buildUmapGraph.ts";
 import fitUmapCurve from "../helpers/fitUmapCurve.ts";
 import optimizeUmapLayout from "../helpers/optimizeUmapLayout.ts";
 import { initialUmapCoordinates } from "../helpers/umapRandom.ts";
+import appendColumnBatches from "../helpers/appendColumnBatches.ts";
+import { DOUBLE, INTEGER } from "@duckdb/node-api";
 
 type Options = NonNullable<Parameters<SimpleTable["umap"]>[1]>;
 
@@ -195,17 +197,20 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     await connection.run(
       `CREATE TEMP TABLE ${layout} (vertex INTEGER,x DOUBLE,y DOUBLE)`,
     );
-    const appender = await connection.createAppender(layoutName);
-    try {
-      for (let vertex = 0; vertex < count; vertex++) {
-        appender.appendInteger(vertex);
-        appender.appendDouble(coordinates[2 * vertex]);
-        appender.appendDouble(coordinates[2 * vertex + 1]);
-        appender.endRow();
-      }
-    } finally {
-      appender.closeSync();
-    }
+    await appendColumnBatches(
+      connection,
+      layoutName,
+      [INTEGER, DOUBLE, DOUBLE],
+      count,
+      (column, start, end) =>
+        Array.from(
+          { length: end - start },
+          (_, row) =>
+            column === 0
+              ? start + row
+              : coordinates[2 * (start + row) + column - 1],
+        ),
+    );
     // Publish in one statement: failed fits never add partial columns. Existing
     // native indexes must be restored because CREATE OR REPLACE drops them.
     const indexes = (await connection.runAndReadAll(

@@ -33,13 +33,22 @@ export default async function buildUmapGraph(
     `SELECT source,target,weight FROM ${names.graph} ORDER BY source,target`,
   );
   let edge = 0;
-  for await (const chunk of rows.yieldRowsJs()) {
-    for (const row of chunk) {
-      source[edge] = Number(row[0]);
-      target[edge] = Number(row[1]);
-      weight[edge] = Number(row[2]);
-      edge++;
-    }
+  while (true) {
+    const chunk = await rows.fetchChunk();
+    if (!chunk || chunk.rowCount === 0) break;
+    chunk.visitColumnValues(
+      0,
+      (value, row) => source[edge + row] = Number(value),
+    );
+    chunk.visitColumnValues(
+      1,
+      (value, row) => target[edge + row] = Number(value),
+    );
+    chunk.visitColumnValues(
+      2,
+      (value, row) => weight[edge + row] = Number(value),
+    );
+    edge += chunk.rowCount;
   }
   if (edge !== edges) throw new Error("Graph changed during transfer.");
   return { source, target, weight };
