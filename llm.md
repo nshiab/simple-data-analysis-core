@@ -4093,22 +4093,30 @@ await table.quantiles("sales", 4, "salesQuartile").log();
 
 #### `bins`
 
-Assigns bins for specified column values based on an interval size.
+Adds numeric start and end columns for bins of the specified interval size. Each
+bin includes its start and excludes its end: `start <= value < end`. A value
+exactly on an end boundary belongs to the next bin. Null source values produce
+null in both output columns.
 
 ##### Signature
 
 ```typescript
-bins(column: string, interval: number, newColumn: string, options?: { startValue?: number }): this;
+bins(column: string, interval: number, startColumn: string, endColumn: string, options?: { startValue?: number }): this;
 ```
 
 ##### Parameters
 
-- **`column`**: The column containing values from which bins will be computed.
-- **`interval`**: The interval size for binning the values.
-- **`newColumn`**: The name of the new column where the bins will be stored.
+- **`column`**: The numeric column containing values from which bins will be
+  computed.
+- **`interval`**: The finite, positive interval size for binning the values.
+- **`startColumn`**: The required name of the new numeric column containing
+  inclusive bin starts.
+- **`endColumn`**: The required name of the new numeric column containing
+  exclusive bin ends. Must differ from startColumn.
 - **`options`**: An optional object with configuration options:
-- **`options.startValue`**: The starting value for binning. Defaults to the
-  minimum value in the specified column.
+- **`options.startValue`**: The finite starting value for binning, no greater
+  than the minimum source value. Defaults to the minimum value in the specified
+  column.
 
 ##### Returns
 
@@ -4117,15 +4125,15 @@ The table, so methods can be chained.
 ##### Examples
 
 ```ts
-// Assigns a bin for each row in a new 'bins' column based on 'column1' values, with an interval of 10.
-// If the minimum value in 'column1' is 5, the bins will follow this pattern: "[5-14]", "[15-24]", etc.
-await table.bins("column1", 10, "bins").log();
+// If the minimum is 5, bins have boundaries 5 and 15, 15 and 25, etc.
+await table.bins("column1", 10, "binStart", "binEnd").log();
 ```
 
 ```ts
-// Assigns bins starting at a specific value (0) with an interval of 10.
-// The bins will follow this pattern: "[0-9]", "[10-19]", "[20-29]", etc.
-await table.bins("column1", 10, "bins", { startValue: 0 }).log();
+// Bins start at 0: a value of 10 has binStart 10 and binEnd 20.
+await table
+  .bins("column1", 10, "binStart", "binEnd", { startValue: 0 })
+  .log();
 ```
 
 #### `rowProportions`
