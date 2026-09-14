@@ -78,11 +78,8 @@ export default async function log(
     const showing = displayedRows < rowCount
       ? ` / showing ${formatNumber(displayedRows)} rows`
       : "";
-    const charsToLog = typeof simpleTable.charsToLog === "number"
-      ? ` (charsToLog: ${simpleTable.charsToLog})`
-      : "";
     console.log(
-      `${formatNumber(rowCount)} rows in total${showing}${charsToLog}`,
+      `${formatNumber(rowCount)} rows in total${showing}`,
     );
   }
   return;
