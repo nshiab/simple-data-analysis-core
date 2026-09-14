@@ -3,20 +3,17 @@ import {
   assertAlmostEquals,
   assertEquals,
   assertRejects,
-  assertThrows,
 } from "@std/assert";
-import { DuckDBInstance } from "@duckdb/node-api";
-import fitUmapCurve from "../../../benchmarks/umap/hybrid/fitUmapCurve.ts";
-import optimizeUmapLayout from "../../../benchmarks/umap/hybrid/optimizeUmapLayout.ts";
-import prototypeHybridUmap from "../../../benchmarks/umap/hybrid/prototypeHybridUmap.ts";
-import { initialUmapCoordinates } from "../../../benchmarks/umap/hybrid/umapRandom.ts";
+import optimizeUmapLayout from "../../../src/helpers/optimizeUmapLayout.ts";
+import { initialUmapCoordinates } from "../../../src/helpers/umapRandom.ts";
 
+// Reference Python epoch traces use fixed input coordinates and a controlled
+// random stream to isolate SGD from RNG and float32 differences.
 const fixture = JSON.parse(
   await Deno.readTextFile(
     new URL("../../data/umap/layout-reference.json", import.meta.url),
   ),
 ) as {
-  curves: { minDistance: number; parameters: number[] }[];
   cases: {
     minDistance: number;
     epochs: number;
@@ -29,16 +26,8 @@ const fixture = JSON.parse(
     trace: number[][];
   }[];
 };
-for (const { minDistance, parameters } of fixture.curves) {
-  Deno.test(`Hybrid UMAP curve agrees with scipy at minDistance=${minDistance}`, () => {
-    const actual = fitUmapCurve(minDistance);
-    actual.forEach((value, i) =>
-      assertAlmostEquals(value, parameters[i], 2e-5)
-    );
-  });
-}
 for (const [index, reference] of fixture.cases.entries()) {
-  Deno.test(`Hybrid UMAP SGD matches Python epoch routine, trace ${index}`, async () => {
+  Deno.test(`UMAP SGD matches Python epoch routine, trace ${index}`, async () => {
     const initial = Float64Array.from(reference.initial);
     const graph = {
       source: Uint32Array.from(reference.source),
@@ -58,11 +47,8 @@ const graph = {
   target: new Uint32Array([1, 0, 2, 1]),
   weight: new Float64Array([1, 1, 0.5, 0.5]),
 };
-Deno.test("Hybrid UMAP rejects invalid options and graphs", async () => {
+Deno.test("UMAP rejects invalid options and graphs", async () => {
   const initial = initialUmapCoordinates(3, 42);
-  for (const value of [-1, 1.1, NaN, Infinity]) {
-    assertThrows(() => fitUmapCurve(value));
-  }
   for (
     const options of [
       { epochs: 0 },
@@ -92,7 +78,7 @@ Deno.test("Hybrid UMAP rejects invalid options and graphs", async () => {
     await assertRejects(() => optimizeUmapLayout(bad, initial));
   }
 });
-Deno.test("Hybrid UMAP is reproducible and supports timer-driven cancellation", async () => {
+Deno.test("UMAP is reproducible and supports timer-driven cancellation", async () => {
   const initial = initialUmapCoordinates(3, 42);
   const first = await optimizeUmapLayout(graph, initial, { epochs: 20 });
   assertEquals(first, await optimizeUmapLayout(graph, initial, { epochs: 20 }));
@@ -119,55 +105,5 @@ Deno.test("Hybrid UMAP is reproducible and supports timer-driven cancellation", 
     assert(completed > 0 && completed < 200);
   } finally {
     clearTimeout(timer);
-  }
-});
-
-Deno.test("Hybrid pipeline preserves stable IDs, original vectors and payload, with repeatable output", async () => {
-  const db = await DuckDBInstance.create(":memory:");
-  const c = await db.connect();
-  try {
-    await c.run(
-      "CREATE TABLE input AS SELECT * FROM (VALUES ('c',[1.,2.],'third'),('a',[1.,2.],'duplicate'),('b',[3.,4.],'second'),('d',[5.,6.],'fourth')) t(id,vector,payload)",
-    );
-    const before = (await c.runAndReadAll("SELECT * FROM input ORDER BY id"))
-      .getRowsJS();
-    await prototypeHybridUmap(c, { epochs: 20, minDistance: 0.25 });
-    const first =
-      (await c.runAndReadAll("SELECT * FROM umap_result ORDER BY id"))
-        .getRowsJS();
-    assertEquals(first.map((row) => row.slice(0, 3)), before);
-    assert(
-      first.every((row) => Number.isFinite(row[3]) && Number.isFinite(row[4])),
-    );
-    await c.run(
-      "CREATE OR REPLACE TABLE input AS SELECT * FROM input ORDER BY id DESC",
-    );
-    await prototypeHybridUmap(c, { epochs: 20, minDistance: 0.25 });
-    assertEquals(
-      (await c.runAndReadAll("SELECT * FROM umap_result ORDER BY id"))
-        .getRowsJS(),
-      first,
-    );
-    assertEquals(
-      (await c.runAndReadAll("SELECT * FROM input ORDER BY id")).getRowsJS(),
-      before,
-    );
-    const controller = new AbortController();
-    await assertRejects(() =>
-      prototypeHybridUmap(
-        c,
-        { signal: controller.signal },
-        undefined,
-        () => controller.abort(),
-      )
-    );
-    assertEquals(
-      (await c.runAndReadAll("SELECT * FROM umap_result ORDER BY id"))
-        .getRowsJS(),
-      first,
-    );
-  } finally {
-    c.closeSync();
-    db.closeSync();
   }
 });

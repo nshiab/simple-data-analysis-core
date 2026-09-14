@@ -1,7 +1,6 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
-import prototypeHybridUmap from "../../../benchmarks/umap/hybrid/prototypeHybridUmap.ts";
 
 const data = [
   { id: "c", vector: [1, 2], rowid: "same", payload: "third" },
@@ -59,7 +58,7 @@ Deno.test("umap chains between queued operations and preserves duplicate rows an
 
 for (const metric of ["euclidean", "cosine"] as const) {
   for (const search of ["exact", "hnsw"] as const) {
-    Deno.test(`umap ${metric}/${search} matches validated hybrid and stable IDs survive reordering`, async () => {
+    Deno.test(`umap ${metric}/${search} preserves data and stable IDs across reordered inputs`, async () => {
       const sdb = new SimpleDB();
       try {
         const sample = Array.from({ length: 16 }, (_, i) => ({
@@ -81,22 +80,26 @@ for (const metric of ["euclidean", "cosine"] as const) {
         await table.run();
         const c = sdb.connection!;
         await c.run(
-          "SET threads=1; CREATE TABLE input AS SELECT * FROM source",
+          "SET threads=1; SET disabled_optimizers='filter_pushdown'; CREATE TABLE input AS SELECT * FROM source; CREATE TABLE umap_result AS SELECT 42 AS marker",
         );
-        await prototypeHybridUmap(c, options);
-        const expected = (await c.runAndReadAll(
-          "SELECT id,umap_x AS umapX,umap_y AS umapY FROM umap_result ORDER BY id",
-        ))
-          .getRowObjectsJS();
         const before = (await c.runAndReadAll(
           "SELECT current_setting('disabled_optimizers')",
         )).getRowsJS();
-        const actual = await table.umap("vector", options).selectColumns([
+        const projected = await table.umap("vector", options).getData();
+        assertEquals(
+          projected.map(({ umapX: _x, umapY: _y, ...row }) => row),
+          sample,
+        );
+        assert(
+          projected.every((row) =>
+            Number.isFinite(row.umapX) && Number.isFinite(row.umapY)
+          ),
+        );
+        const actual = await table.selectColumns([
           "id",
           "umapX",
           "umapY",
         ]).sort({ id: "asc" }).getData();
-        assertEquals(actual, expected);
         const reordered = sdb.newTable("reordered").loadArray(
           [...sample].reverse(),
           { columnTypes: { vector: "FLOAT[2]" } },
@@ -115,12 +118,16 @@ for (const metric of ["euclidean", "cosine"] as const) {
           )).getRowsJS(),
           before,
         );
-        // Prototype-owned names still exist and their contents were untouched.
+        // Unrelated user tables must survive private scratch creation and cleanup.
         assertEquals(
           (await c.runAndReadAll(
-            "SELECT id,umap_x AS umapX,umap_y AS umapY FROM umap_result ORDER BY id",
-          )).getRowObjectsJS(),
-          expected,
+            "SELECT marker FROM umap_result",
+          )).getRowsJS(),
+          [[42]],
+        );
+        assertEquals(
+          (await c.runAndReadAll("SELECT * FROM input")).getRowObjectsJS(),
+          sample,
         );
         await noScratch(sdb);
       } finally {

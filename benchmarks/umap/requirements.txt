@@ -1,9 +1,0 @@
-# Development validation only; no additions to SDA's runtime dependencies.
-umap-learn==0.5.9.post2
-numpy==1.26.4
-scipy==1.15.3
-scikit-learn==1.6.1
-numba==0.61.2
-pynndescent==0.5.13
-duckdb==1.5.0
-matplotlib==3.10.8
