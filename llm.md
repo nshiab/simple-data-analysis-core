@@ -1457,17 +1457,6 @@ Adds a two-dimensional UMAP projection of a numeric embedding column. DuckDB
 computes neighbors and the fuzzy graph; TypeScript optimizes the coordinates
 without copying the input vectors into JavaScript.
 
-Requires at least three rows with equally sized, finite, nonempty numeric lists
-or arrays. Cosine distance additionally requires nonzero vectors. Preserves row
-order and original column values and types. Output column names must be new.
-Failed or cancelled fits leave the source table intact.
-
-A fixed seed repeats the layout for the same ordered input and neighbor graph.
-Supply a unique, non-null `idColumn` to keep vertex ordering stable after
-reordering rows. Approximate neighbors and results can vary between DuckDB
-versions or configurations. Coordinates are exploratory, not a measure of global
-distance or evidence of distinct clusters.
-
 ##### Signature
 
 ```typescript
