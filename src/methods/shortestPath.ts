@@ -7,7 +7,7 @@ import {
   prepareGraphRouteEndpoints,
   prepareGraphRouteSql,
   validateGraphRouteInputs,
-} from "../helpers/prepareGraphRoute.ts";
+} from "../helpers/prepareGraphRouteSql.ts";
 import type { GraphDirection } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";

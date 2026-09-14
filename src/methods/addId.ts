@@ -1,4 +1,5 @@
 import assertNewColumns from "../helpers/assertNewColumns.ts";
+import foldIdentifier from "../helpers/foldIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -26,9 +27,6 @@ export default function addId(
     parameters: { newColumn, options },
     execute: async () => {
       const types = await simpleTable.getTypes();
-      // DuckDB identifiers are ASCII case-insensitive even when quoted.
-      const foldIdentifier = (name: string) =>
-        name.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
       const existingColumn = Object.keys(types).find((column) =>
         foldIdentifier(column) === foldIdentifier(newColumn)
       );

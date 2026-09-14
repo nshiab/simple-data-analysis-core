@@ -3,7 +3,7 @@ import getGraphEdgeIdColumn from "../helpers/getGraphEdgeIdColumn.ts";
 import getGraphEndpointColumns from "../helpers/getGraphEndpointColumns.ts";
 import getGraphWeightColumn from "../helpers/getGraphWeightColumn.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
-import { graphRouteResultSelect } from "../helpers/prepareGraphRoute.ts";
+import { graphRouteResultSelect } from "../helpers/prepareGraphRouteSql.ts";
 import {
   type GraphDirection,
   prepareGraphSql,
