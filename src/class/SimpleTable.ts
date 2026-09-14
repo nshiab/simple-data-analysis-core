@@ -3517,9 +3517,6 @@ export default class SimpleTable extends Simple {
    * A value exactly on an end boundary belongs to the next bin. Null source
    * values produce null in both output columns.
    *
-   * This replaces the former single string-label output. Migrate calls from
-   * `bins(column, interval, "bin")` to `bins(column, interval, "binStart", "binEnd")`.
-   *
    * @param column - The numeric column containing values from which bins will be computed.
    * @param interval - The finite, positive interval size for binning the values.
    * @param startColumn - The required name of the new numeric column containing inclusive bin starts.
