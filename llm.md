@@ -1456,22 +1456,39 @@ await table.createVssIndex("embedding_column", {
 Adds a two-dimensional UMAP projection of a numeric embedding column. DuckDB
 computes neighbors and the fuzzy graph; TypeScript optimizes the coordinates
 without copying the input vectors into JavaScript. Results are added as `umapX`
-and `umapY`. Neighbor search is selected automatically.
+and `umapY`, keeping all existing columns (including the embedding column),
+their values and types, and the input row order. Neighbor search is selected
+automatically.
 
-`neighbors` controls how many nearby points influence the layout: smaller values
-emphasize local groups, while larger values show broader structure. `metric`
-defines similarity: Euclidean compares distance, while cosine compares
-direction. `minDistance` controls how tightly points can group together in the
-projection; smaller values allow tighter groups.
+The defaults are a starting point for exploration. To adjust the projection:
 
-`epochs` is the number of passes used to refine the coordinates. More passes
-allow more refinement but take longer. `seed` is an integer that controls the
-random choices during optimization. Keep the seed and input row order fixed when
-comparing repeated runs.
-
-`learningRate` controls the size of coordinate adjustments. `negativeSamples`
-controls how many randomly selected points are used to push unrelated points
-apart; increasing it adds work.
+- `neighbors` (default `15`): How many nearby points influence the layout.
+  Smaller values emphasize local detail but can fragment groups. Larger values
+  emphasize broader structure, can hide local detail, and generally require more
+  time and memory.
+- `metric` (default `"euclidean"`): How similarity is measured. Euclidean
+  compares distance, including differences in vector magnitude. Cosine compares
+  direction, ignoring magnitude. Choose according to what makes vectors similar
+  in your data; neither is universally better.
+- `epochs` (default `200`): How many passes refine the coordinates. Fewer passes
+  finish sooner but may leave the layout unfinished. More passes allow further
+  refinement and take longer, with diminishing returns.
+- `seed` (default `42`): An integer controlling random initialization and
+  optimization choices. Larger or smaller numbers do not mean better results or
+  more work. Keep it and the input row order fixed when comparing repeated runs;
+  changing it explores another layout.
+- `minDistance` (default `0.1`): How tightly points can group in the projection.
+  Smaller values allow tighter clumps; larger values spread points out. This
+  changes the layout's appearance, not an accuracy level or the number of
+  optimization passes.
+- `learningRate` (default `1`): The initial size of coordinate adjustments.
+  Smaller values make gentler adjustments and may need more epochs. Larger
+  values make bigger adjustments but can overshoot useful positions. This does
+  not change the number of passes.
+- `negativeSamples` (default `5`): How many random points are sampled for
+  repulsion per attractive update. Smaller values reduce work and repulsion;
+  larger values increase both, tending to separate unrelated points more
+  strongly. More samples do not guarantee a better projection.
 
 ##### Signature
 
