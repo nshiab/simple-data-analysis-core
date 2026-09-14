@@ -1473,10 +1473,6 @@ The defaults are a starting point for exploration. To adjust the projection:
 - `epochs` (default `200`): How many passes refine the coordinates. Fewer passes
   finish sooner but may leave the layout unfinished. More passes allow further
   refinement and take longer, with diminishing returns.
-- `seed` (default `42`): An integer controlling random initialization and
-  optimization choices. Larger or smaller numbers do not mean better results or
-  more work. Keep it and the input row order fixed when comparing repeated runs;
-  changing it explores another layout.
 - `minDistance` (default `0.1`): How tightly points can group in the projection.
   Smaller values allow tighter clumps; larger values spread points out. This
   changes the layout's appearance, not an accuracy level or the number of
