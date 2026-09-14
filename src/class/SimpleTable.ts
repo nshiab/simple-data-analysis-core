@@ -1,3 +1,4 @@
+import umap from "../methods/umap.ts";
 import logBottom from "../methods/logBottom.ts";
 import log from "../methods/log.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
@@ -1077,6 +1078,79 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     createVssIndex(this, column, options);
+    return this;
+  }
+
+  /**
+   * Adds a two-dimensional UMAP projection of a numeric embedding column.
+   * DuckDB computes neighbors and the fuzzy graph; TypeScript optimizes the
+   * coordinates without copying the input vectors into JavaScript.
+   *
+   * Requires at least three rows with equally sized, finite, nonempty numeric
+   * lists or arrays. Cosine distance additionally requires nonzero vectors.
+   * Preserves row order and original column values and types. Output column
+   * names must be new. Failed or cancelled fits leave the source table intact.
+   *
+   * A fixed seed repeats the layout for the same ordered input and neighbor
+   * graph. Supply a unique, non-null `idColumn` to keep vertex ordering stable
+   * after reordering rows. Approximate neighbors and results can vary between
+   * DuckDB versions or configurations. Coordinates are exploratory, not a
+   * measure of global distance or evidence of distinct clusters.
+   *
+   * @param column - The column containing numeric vector embeddings.
+   * @param options - Optional projection settings.
+   * @param options.xColumn - New x-coordinate column. Defaults to "umapX".
+   * @param options.yColumn - New y-coordinate column. Defaults to "umapY".
+   * @param options.idColumn - Unique, non-null column used to order vertices reproducibly. Defaults to input row order.
+   * @param options.neighbors - Neighborhood size, including the point itself. Integer of at least 2, clamped to row count minus one. Defaults to 15.
+   * @param options.metric - Input distance metric: "euclidean" or "cosine". Defaults to "euclidean".
+   * @param options.search - "auto" uses exact neighbors up to 1,000 rows and HNSW above that; "exact" always uses quadratic distance work; "hnsw" requests approximate neighbors, with a bounded exact fallback up to 1,000 rows if DuckDB cannot use its index join. HNSW installs and loads DuckDB's VSS extension and requires FLOAT-representable vector norms. Defaults to "auto".
+   * @param options.epochs - Positive integer number of optimization epochs. Defaults to 200.
+   * @param options.seed - Unsigned 32-bit random seed. Defaults to 42.
+   * @param options.minDistance - Minimum separation parameter between 0 and 1, with spread fixed at 1. Smaller values favor tighter groups. Defaults to 0.1.
+   * @param options.learningRate - Finite, positive initial learning rate. Defaults to 1.
+   * @param options.negativeSamples - Positive integer number of repulsive samples per positive edge. Defaults to 5.
+   * @param options.signal - Optional signal to cancel graph construction or optimization before publishing results.
+   * @returns The table, so methods can be chained.
+   * @category Vector Search
+   *
+   * @example
+   * ```ts
+   * await table.umap("embedding", {
+   *   metric: "cosine",
+   *   idColumn: "id",
+   *   seed: 42,
+   * }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table.umap("embedding", {
+   *   xColumn: "x",
+   *   yColumn: "y",
+   *   neighbors: 30,
+   *   minDistance: 0.25,
+   * }).selectColumns(["label", "x", "y"]).log();
+   * ```
+   */
+  umap(
+    column: string,
+    options: {
+      xColumn?: string;
+      yColumn?: string;
+      idColumn?: string;
+      neighbors?: number;
+      metric?: "euclidean" | "cosine";
+      search?: "auto" | "exact" | "hnsw";
+      epochs?: number;
+      seed?: number;
+      minDistance?: number;
+      learningRate?: number;
+      negativeSamples?: number;
+      signal?: AbortSignal;
+    } = {},
+  ): this {
+    umap(this, column, options);
     return this;
   }
 

@@ -156,6 +156,16 @@ try {
       emptyTypes.geom !== "GEOMETRY('EPSG:4326')") {
     throw new Error("Expected JSON, vector and geometry schema creation");
   }
+  const projection = await sdb.newTable("umap_smoke").loadArray([
+    { id: 1, vector: [1, 2] },
+    { id: 2, vector: [2, 3] },
+    { id: 3, vector: [4, 5] },
+  ], { columnTypes: { vector: "FLOAT[2]" } })
+    .umap("vector", { epochs: 10, seed: 42 }).getData();
+  if (projection.length !== 3 || !projection.every((row) =>
+    Number.isFinite(row.umapX) && Number.isFinite(row.umapY) && row.vector.length === 2)) {
+    throw new Error("Expected finite UMAP coordinates and preserved embeddings");
+  }
 } finally {
   await sdb.close();
 }`;

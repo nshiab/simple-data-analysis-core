@@ -1,0 +1,2890 @@
+{
+  "environment": {
+    "timestamp": "2026-09-14T17:32:49.882Z",
+    "cpu": "Apple M4 Max",
+    "logicalCpus": 16,
+    "memoryBytes": 68719476736,
+    "os": "darwin",
+    "arch": "aarch64",
+    "deno": "2.9.6",
+    "threads": 1,
+    "memoryLimit": "1GB",
+    "tempLimit": "2GB",
+    "vss": "b833341",
+    "reference": {
+      "umap-learn": "0.5.9.post2",
+      "numpy": "1.26.4",
+      "scipy": "1.15.3",
+      "scikit-learn": "1.6.1",
+      "numba": "0.61.2",
+      "pynndescent": "0.5.13",
+      "duckdb": "1.5.0",
+      "matplotlib": "3.10.8"
+    }
+  },
+  "inputParquetSHA256": {
+    "movies.parquet": "c42882104a94bcf6673f3f0148f8badd0a0d5e91a3e101be19fc4819a0ddb92d",
+    "swiss.parquet": "250e02910b35406901e9a9de89c6691ee0c5b2da7d55c0a1ba340afa3a80d0f7",
+    "blobs.parquet": "f7e443726f870870c8343ca290e896e285d5369fea69f673b5d8fdec7c6356f8"
+  },
+  "moviesSource": {
+    "url": "https://huggingface.co/datasets/MongoDB/embedded_movies/resolve/271a09d81ba8ff768f538bbc51ee40a497b8e5c7/sample_mflix.embedded_movies.json",
+    "revision": "271a09d81ba8ff768f538bbc51ee40a497b8e5c7",
+    "sha256": "c420fc051ffc6adff5ebf38fb87cdaaa051983898c1383ead077d9321ff71b34",
+    "rows": 1000,
+    "dimensions": 1536,
+    "selectedSourceRows": [
+      852,
+      184,
+      1261,
+      67,
+      220,
+      494,
+      430,
+      240,
+      218,
+      49,
+      677,
+      843,
+      618,
+      361,
+      1425,
+      984,
+      807,
+      873,
+      271,
+      1199,
+      259,
+      428,
+      605,
+      277,
+      1212,
+      1118,
+      810,
+      620,
+      1047,
+      247,
+      1226,
+      1149,
+      582,
+      464,
+      724,
+      705,
+      1333,
+      865,
+      51,
+      1454,
+      168,
+      1096,
+      838,
+      1270,
+      363,
+      261,
+      949,
+      591,
+      528,
+      893,
+      429,
+      309,
+      123,
+      965,
+      654,
+      882,
+      203,
+      1131,
+      549,
+      1141,
+      1284,
+      778,
+      1034,
+      588,
+      1370,
+      192,
+      339,
+      1031,
+      289,
+      1098,
+      1357,
+      29,
+      486,
+      76,
+      904,
+      65,
+      1148,
+      583,
+      1102,
+      1349,
+      859,
+      551,
+      1065,
+      478,
+      869,
+      1043,
+      770,
+      493,
+      1220,
+      44,
+      59,
+      23,
+      1405,
+      381,
+      115,
+      342,
+      1140,
+      398,
+      1068,
+      433,
+      270,
+      755,
+      1262,
+      1111,
+      737,
+      1300,
+      365,
+      1321,
+      78,
+      244,
+      1169,
+      1144,
+      680,
+      818,
+      416,
+      141,
+      70,
+      15,
+      1197,
+      1042,
+      1024,
+      1231,
+      931,
+      767,
+      578,
+      422,
+      886,
+      846,
+      526,
+      303,
+      1170,
+      1313,
+      427,
+      752,
+      844,
+      1202,
+      274,
+      439,
+      350,
+      722,
+      922,
+      451,
+      978,
+      43,
+      1345,
+      1052,
+      332,
+      916,
+      101,
+      107,
+      306,
+      1032,
+      175,
+      239,
+      987,
+      405,
+      674,
+      128,
+      771,
+      351,
+      926,
+      462,
+      613,
+      1046,
+      1210,
+      668,
+      32,
+      1200,
+      425,
+      344,
+      353,
+      1350,
+      764,
+      1157,
+      322,
+      741,
+      1119,
+      163,
+      1259,
+      1061,
+      1277,
+      374,
+      231,
+      1085,
+      297,
+      1022,
+      1166,
+      367,
+      649,
+      1108,
+      710,
+      63,
+      660,
+      1421,
+      861,
+      1251,
+      1403,
+      584,
+      1163,
+      198,
+      543,
+      1209,
+      918,
+      538,
+      534,
+      30,
+      56,
+      1188,
+      1462,
+      411,
+      1466,
+      415,
+      966,
+      812,
+      1322,
+      426,
+      358,
+      596,
+      310,
+      802,
+      99,
+      479,
+      275,
+      1058,
+      601,
+      948,
+      1230,
+      1110,
+      889,
+      754,
+      602,
+      482,
+      937,
+      720,
+      1181,
+      1249,
+      1443,
+      983,
+      962,
+      497,
+      236,
+      924,
+      573,
+      923,
+      506,
+      1408,
+      432,
+      1467,
+      208,
+      1461,
+      817,
+      535,
+      237,
+      58,
+      1185,
+      324,
+      371,
+      701,
+      939,
+      1187,
+      629,
+      787,
+      1053,
+      1133,
+      780,
+      678,
+      233,
+      423,
+      196,
+      1236,
+      81,
+      1379,
+      1216,
+      111,
+      1253,
+      925,
+      944,
+      1432,
+      1242,
+      628,
+      570,
+      354,
+      682,
+      1092,
+      316,
+      1460,
+      997,
+      1296,
+      394,
+      567,
+      560,
+      946,
+      522,
+      874,
+      1413,
+      998,
+      254,
+      1074,
+      643,
+      1451,
+      714,
+      1301,
+      86,
+      1470,
+      265,
+      626,
+      1456,
+      1219,
+      1316,
+      514,
+      707,
+      221,
+      113,
+      736,
+      561,
+      174,
+      908,
+      1354,
+      1155,
+      973,
+      943,
+      285,
+      1428,
+      420,
+      1175,
+      31,
+      532,
+      210,
+      930,
+      1114,
+      1416,
+      1305,
+      1465,
+      899,
+      188,
+      382,
+      964,
+      1366,
+      1055,
+      83,
+      1426,
+      48,
+      155,
+      979,
+      1120,
+      1049,
+      1037,
+      774,
+      1206,
+      1453,
+      485,
+      179,
+      1330,
+      1223,
+      380,
+      481,
+      782,
+      1156,
+      1176,
+      346,
+      816,
+      453,
+      566,
+      571,
+      607,
+      243,
+      898,
+      1372,
+      819,
+      1302,
+      1040,
+      1395,
+      527,
+      921,
+      845,
+      370,
+      54,
+      1128,
+      548,
+      312,
+      1196,
+      109,
+      847,
+      100,
+      413,
+      664,
+      266,
+      1400,
+      296,
+      544,
+      907,
+      672,
+      377,
+      286,
+      1411,
+      715,
+      126,
+      1449,
+      292,
+      529,
+      700,
+      669,
+      355,
+      170,
+      806,
+      1440,
+      1174,
+      209,
+      1260,
+      140,
+      1063,
+      1289,
+      1360,
+      1167,
+      661,
+      1288,
+      1018,
+      199,
+      619,
+      597,
+      1116,
+      1323,
+      1258,
+      10,
+      147,
+      989,
+      282,
+      298,
+      590,
+      291,
+      471,
+      575,
+      1023,
+      1375,
+      1463,
+      129,
+      792,
+      331,
+      323,
+      855,
+      1112,
+      704,
+      135,
+      1099,
+      477,
+      974,
+      435,
+      733,
+      631,
+      599,
+      1245,
+      158,
+      1435,
+      1269,
+      788,
+      799,
+      1352,
+      1272,
+      917,
+      1121,
+      942,
+      614,
+      1327,
+      1217,
+      1439,
+      438,
+      1244,
+      96,
+      1399,
+      1192,
+      1054,
+      1368,
+      410,
+      615,
+      585,
+      156,
+      598,
+      621,
+      447,
+      513,
+      867,
+      1075,
+      390,
+      1027,
+      1458,
+      1317,
+      1250,
+      617,
+      558,
+      490,
+      1343,
+      308,
+      461,
+      691,
+      552,
+      610,
+      1213,
+      706,
+      829,
+      772,
+      757,
+      352,
+      744,
+      124,
+      178,
+      287,
+      1418,
+      1218,
+      294,
+      327,
+      630,
+      834,
+      88,
+      938,
+      892,
+      554,
+      634,
+      1362,
+      670,
+      906,
+      290,
+      1393,
+      808,
+      348,
+      1048,
+      1387,
+      665,
+      576,
+      458,
+      1013,
+      333,
+      727,
+      1299,
+      745,
+      1364,
+      328,
+      318,
+      1132,
+      967,
+      12,
+      171,
+      260,
+      1146,
+      824,
+      765,
+      138,
+      589,
+      809,
+      1441,
+      139,
+      1286,
+      836,
+      224,
+      756,
+      409,
+      325,
+      299,
+      1030,
+      711,
+      1311,
+      1365,
+      909,
+      1389,
+      503,
+      1376,
+      3,
+      1386,
+      467,
+      321,
+      5,
+      936,
+      999,
+      721,
+      39,
+      542,
+      242,
+      136,
+      1165,
+      743,
+      650,
+      1050,
+      1340,
+      581,
+      1010,
+      1142,
+      1412,
+      376,
+      314,
+      442,
+      319,
+      1105,
+      762,
+      424,
+      553,
+      594,
+      1265,
+      1089,
+      1195,
+      1420,
+      227,
+      1198,
+      777,
+      940,
+      1177,
+      66,
+      1007,
+      579,
+      950,
+      211,
+      988,
+      793,
+      536,
+      1041,
+      636,
+      85,
+      1324,
+      982,
+      1446,
+      1094,
+      1325,
+      1107,
+      1374,
+      1067,
+      273,
+      695,
+      362,
+      622,
+      2,
+      6,
+      311,
+      1246,
+      901,
+      1450,
+      215,
+      1471,
+      27,
+      1221,
+      1091,
+      651,
+      638,
+      796,
+      1087,
+      624,
+      813,
+      256,
+      25,
+      336,
+      572,
+      47,
+      106,
+      349,
+      55,
+      1342,
+      213,
+      120,
+      1125,
+      1009,
+      72,
+      1193,
+      693,
+      45,
+      1240,
+      523,
+      900,
+      759,
+      1137,
+      841,
+      533,
+      603,
+      465,
+      781,
+      1308,
+      746,
+      910,
+      60,
+      849,
+      92,
+      666,
+      679,
+      194,
+      280,
+      359,
+      519,
+      1103,
+      1113,
+      182,
+      1394,
+      110,
+      42,
+      1211,
+      204,
+      785,
+      52,
+      545,
+      953,
+      858,
+      820,
+      1346,
+      183,
+      137,
+      932,
+      80,
+      1190,
+      105,
+      541,
+      712,
+      480,
+      165,
+      248,
+      307,
+      446,
+      718,
+      334,
+      97,
+      730,
+      1205,
+      905,
+      102,
+      434,
+      1309,
+      1315,
+      1424,
+      1334,
+      302,
+      1239,
+      1201,
+      388,
+      235,
+      1222,
+      267,
+      305,
+      117,
+      1189,
+      673,
+      249,
+      1073,
+      1320,
+      71,
+      94,
+      811,
+      33,
+      1080,
+      448,
+      445,
+      716,
+      958,
+      1164,
+      864,
+      1005,
+      77,
+      84,
+      798,
+      82,
+      457,
+      881,
+      676,
+      945,
+      1057,
+      436,
+      644,
+      887,
+      1006,
+      1172,
+      404,
+      1280,
+      1079,
+      952,
+      104,
+      609,
+      963,
+      1001,
+      894,
+      62,
+      281,
+      1303,
+      238,
+      223,
+      145,
+      1373,
+      373,
+      118,
+      1106,
+      250,
+      1417,
+      9,
+      449,
+      708,
+      255,
+      593,
+      389,
+      1004,
+      1178,
+      557,
+      1329,
+      1455,
+      460,
+      723,
+      1356,
+      144,
+      501,
+      1078,
+      739,
+      1359,
+      731,
+      539,
+      177,
+      1419,
+      697,
+      903,
+      1029,
+      839,
+      862,
+      1464,
+      7,
+      826,
+      667,
+      1161,
+      357,
+      783,
+      993,
+      329,
+      1035,
+      1145,
+      1097,
+      258,
+      1225,
+      372,
+      1083,
+      888,
+      142,
+      525,
+      1117,
+      968,
+      1101,
+      1398,
+      440,
+      531,
+      1179,
+      226,
+      1173,
+      228,
+      1391,
+      1274,
+      212,
+      79,
+      148,
+      814,
+      985,
+      885,
+      671,
+      1134,
+      555,
+      1444,
+      133,
+      1088,
+      823,
+      408,
+      990,
+      507,
+      1160,
+      504,
+      994,
+      347,
+      386,
+      0,
+      360,
+      828,
+      1410,
+      475,
+      1422,
+      57,
+      637,
+      1283,
+      1033,
+      915,
+      172,
+      450,
+      125,
+      941,
+      530,
+      857,
+      713,
+      90,
+      1423,
+      181,
+      875,
+      1026,
+      786,
+      414,
+      251,
+      69,
+      803,
+      131,
+      300,
+      986,
+      326,
+      1452,
+      1093,
+      499,
+      976,
+      832,
+      364,
+      495,
+      1415,
+      338,
+      421,
+      164,
+      28,
+      516,
+      193,
+      933,
+      1336,
+      1335,
+      169,
+      167,
+      652,
+      173,
+      518,
+      1191,
+      1159,
+      912,
+      491,
+      73,
+      1229,
+      587,
+      750,
+      657,
+      842,
+      234,
+      732,
+      214,
+      162,
+      132,
+      1084,
+      222,
+      1204,
+      934,
+      185,
+      41,
+      692,
+      108,
+      38,
+      568,
+      1409,
+      1243,
+      1414,
+      483,
+      468,
+      890,
+      947,
+      24,
+      970,
+      1000,
+      68,
+      884,
+      1341,
+      366,
+      505,
+      850,
+      1291,
+      383,
+      734,
+      717,
+      1310,
+      454,
+      264,
+      75,
+      914,
+      232,
+      444,
+      395,
+      611,
+      176,
+      18,
+      1287,
+      1036,
+      341,
+      1066,
+      879,
+      595,
+      61,
+      1237,
+      272,
+      1208,
+      872,
+      1100,
+      1381,
+      278,
+      1138,
+      694,
+      368,
+      1355,
+      36,
+      735,
+      1307,
+      662,
+      1295,
+      1326,
+      977,
+      547
+    ],
+    "license": "apache-2.0"
+  },
+  "observations": [
+    {
+      "job": {
+        "name": "swiss-exact",
+        "input": "benchmarks/.work/umap/reference/swiss.parquet",
+        "output": "benchmarks/.work/umap/swiss-exact",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "euclidean",
+          "search": "exact",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "swiss-exact",
+        "status": "ok",
+        "count": 1000,
+        "dimensions": 384,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 15886,
+        "lastBatchGradientRows": 34036,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 5394522,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 86016000
+          },
+          "neighbors": {
+            "duckdbBytes": 6482010,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 89227264
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 8239194,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 98058240
+          },
+          "layout": {
+            "duckdbBytes": 16238682,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 191627264
+          }
+        },
+        "sparseGraphPayloadBytes": 254176,
+        "stages": {
+          "validation": 8.383083,
+          "neighbors": 194.95162500000004,
+          "fuzzyGraph": 77.78295799999995,
+          "layout": 3573.408084
+        },
+        "milliseconds": 3858.226125,
+        "processMilliseconds": 3870.608833,
+        "peakRssBytes": 192462848,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 2.003985945686626e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 1.9952526659471914,
+        "referenceOptimizerSeconds": 0.2383482080185786,
+        "referenceFullSeconds": 0.4903609589673579,
+        "initial": {
+          "trustworthiness": 0.5006998476383951,
+          "neighborOverlap": 0.010400000000000003
+        },
+        "sql": {
+          "trustworthiness": 0.9806080243778568,
+          "neighborOverlap": 0.7256
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.9981315388522093,
+          "neighborOverlap": 0.7613
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.9983223971559168,
+          "neighborOverlap": 0.763
+        },
+        "rhoMaxAbsoluteError": 1.1663835008945966e-07,
+        "sigmaMaxAbsoluteError": 7.62939453125e-06
+      }
+    },
+    {
+      "job": {
+        "name": "blobs-exact",
+        "input": "benchmarks/.work/umap/reference/blobs.parquet",
+        "output": "benchmarks/.work/umap/blobs-exact",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "euclidean",
+          "search": "exact",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "blobs-exact",
+        "status": "ok",
+        "count": 1000,
+        "dimensions": 384,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 20260,
+        "lastBatchGradientRows": 39130,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 5394522,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 86147072
+          },
+          "neighbors": {
+            "duckdbBytes": 6482010,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 89309184
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 9025626,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 98156544
+          },
+          "layout": {
+            "duckdbBytes": 19646554,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 203276288
+          }
+        },
+        "sparseGraphPayloadBytes": 324160,
+        "stages": {
+          "validation": 8.40462500000001,
+          "neighbors": 188.939,
+          "fuzzyGraph": 77.78999999999996,
+          "layout": 3863.1538330000003
+        },
+        "milliseconds": 4142.174208,
+        "processMilliseconds": 4155.803584,
+        "peakRssBytes": 204128256,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 2.2604206404430727e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0016219590324908495,
+        "referenceOptimizerSeconds": 0.2675615830812603,
+        "referenceFullSeconds": 0.5669690420618281,
+        "initial": {
+          "trustworthiness": 0.5045051295073641,
+          "neighborOverlap": 0.007600000000000001
+        },
+        "sql": {
+          "trustworthiness": 0.9600588115794819,
+          "neighborOverlap": 0.33730000000000004
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.9576590147282885,
+          "neighborOverlap": 0.31010000000000004
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.9605534789233113,
+          "neighborOverlap": 0.3245
+        },
+        "rhoMaxAbsoluteError": 1.1788807530166423e-07,
+        "sigmaMaxAbsoluteError": 3.814697265625e-06
+      }
+    },
+    {
+      "job": {
+        "name": "swiss-hnsw-scalar-sort",
+        "input": "benchmarks/.work/umap/reference/swiss.parquet",
+        "output": "benchmarks/.work/umap/swiss-hnsw-scalar-sort",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "swiss-hnsw-scalar-sort",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 384,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 15886,
+        "lastBatchGradientRows": 34036,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 5394522,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 87965696
+          },
+          "neighbors": {
+            "duckdbBytes": 9164890,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 174014464
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 10922074,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 185761792
+          },
+          "layout": {
+            "duckdbBytes": 18921562,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 255836160
+          }
+        },
+        "sparseGraphPayloadBytes": 254176,
+        "stages": {
+          "validation": 9.268875000000008,
+          "neighbors": 99.34158300000001,
+          "fuzzyGraph": 84.14079200000003,
+          "layout": 4096.823916
+        },
+        "milliseconds": 4293.466333,
+        "processMilliseconds": 4306.3935839999995,
+        "peakRssBytes": 256606208,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 2.003985945686626e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0016086670802906156,
+        "referenceOptimizerSeconds": 0.23819841700606048,
+        "referenceFullSeconds": 0.4855913750361651,
+        "initial": {
+          "trustworthiness": 0.5006998476383951,
+          "neighborOverlap": 0.010400000000000003
+        },
+        "sql": {
+          "trustworthiness": 0.9806080243778568,
+          "neighborOverlap": 0.7256
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.9981315388522093,
+          "neighborOverlap": 0.7613
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.9983223971559168,
+          "neighborOverlap": 0.763
+        },
+        "rhoMaxAbsoluteError": 1.1663835008945966e-07,
+        "sigmaMaxAbsoluteError": 7.62939453125e-06
+      }
+    },
+    {
+      "job": {
+        "name": "blobs-hnsw-scalar-sort",
+        "input": "benchmarks/.work/umap/reference/blobs.parquet",
+        "output": "benchmarks/.work/umap/blobs-hnsw-scalar-sort",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "blobs-hnsw-scalar-sort",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 384,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 20260,
+        "lastBatchGradientRows": 39130,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 5394522,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 86163456
+          },
+          "neighbors": {
+            "duckdbBytes": 9164890,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 175439872
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 11708506,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 180617216
+          },
+          "layout": {
+            "duckdbBytes": 22329434,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 237125632
+          }
+        },
+        "sparseGraphPayloadBytes": 324160,
+        "stages": {
+          "validation": 8.690042000000005,
+          "neighbors": 96.47250000000003,
+          "fuzzyGraph": 78.316417,
+          "layout": 3921.284417
+        },
+        "milliseconds": 4108.738625,
+        "processMilliseconds": 4122.461375,
+        "peakRssBytes": 237862912,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 2.2604206404430727e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0016197080258280039,
+        "referenceOptimizerSeconds": 0.2669847080251202,
+        "referenceFullSeconds": 0.518301667063497,
+        "initial": {
+          "trustworthiness": 0.5045051295073641,
+          "neighborOverlap": 0.007600000000000001
+        },
+        "sql": {
+          "trustworthiness": 0.9600588115794819,
+          "neighborOverlap": 0.33730000000000004
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.9576590147282885,
+          "neighborOverlap": 0.31010000000000004
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.9605534789233113,
+          "neighborOverlap": 0.3245
+        },
+        "rhoMaxAbsoluteError": 1.1788807530166423e-07,
+        "sigmaMaxAbsoluteError": 3.814697265625e-06
+      }
+    },
+    {
+      "job": {
+        "name": "movies-optimizer-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "graph": "benchmarks/.work/umap/reference/movies-graph.csv",
+        "output": "benchmarks/.work/umap/movies-optimizer-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-optimizer-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 42354,
+        "memory": {
+          "layout": {
+            "duckdbBytes": 32634972,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 215957504
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "layout": 4379.465042000001
+        },
+        "milliseconds": 4425.758625,
+        "processMilliseconds": 4447.758375,
+        "peakRssBytes": 216547328,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 0,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.002423499943688512,
+        "referenceOptimizerSeconds": 0.28895791701506823,
+        "referenceFullSeconds": 1.0415865830145776,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.8298248857287963,
+          "neighborOverlap": 0.2696
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.8178808532249873,
+          "neighborOverlap": 0.24720000000000003
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8184343321482986,
+          "neighborOverlap": 0.24870000000000003
+        }
+      }
+    },
+    {
+      "job": {
+        "name": "movies-exact-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-exact-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-exact-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 42360,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 137068544
+          },
+          "neighbors": {
+            "duckdbBytes": 20375644,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 142278656
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22919260,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 157908992
+          },
+          "layout": {
+            "duckdbBytes": 34064476,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 222232576
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "validation": 26.798249999999996,
+          "neighbors": 1377.6617919999999,
+          "fuzzyGraph": 89.1550000000002,
+          "layout": 4218.308875000001
+        },
+        "milliseconds": 5722.603042000001,
+        "processMilliseconds": 5747.17875,
+        "peakRssBytes": 229195776,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 7.1864927796427835e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.001838417025282979,
+        "referenceOptimizerSeconds": 0.2870954170357436,
+        "referenceFullSeconds": 1.0019302919972688,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.8368085322498731,
+          "neighborOverlap": 0.27020000000000005
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.817325749111224,
+          "neighborOverlap": 0.24930000000000002
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8184343321482986,
+          "neighborOverlap": 0.24870000000000003
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 1.1920928955078125e-07
+      }
+    },
+    {
+      "job": {
+        "name": "movies-hnsw-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-hnsw-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200,
+          "search": "hnsw"
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-hnsw-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 42360,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 144326656
+          },
+          "neighbors": {
+            "duckdbBytes": 27777116,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 454852608
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 30320732,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 461389824
+          },
+          "layout": {
+            "duckdbBytes": 41465948,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 506331136
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "validation": 30.224540999999988,
+          "neighbors": 387.692875,
+          "fuzzyGraph": 96.98262499999998,
+          "layout": 4444.688375
+        },
+        "milliseconds": 4970.601958,
+        "processMilliseconds": 4995.692166,
+        "peakRssBytes": 506331136,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 7.1864927796427835e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0019870420219376683,
+        "referenceOptimizerSeconds": 0.2883108329260722,
+        "referenceFullSeconds": 1.0044882079819217,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.8368085322498731,
+          "neighborOverlap": 0.27020000000000005
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.817325749111224,
+          "neighborOverlap": 0.24930000000000002
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8184343321482986,
+          "neighborOverlap": 0.24870000000000003
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 1.1920928955078125e-07
+      }
+    },
+    {
+      "job": {
+        "name": "movies-local-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-local-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200,
+          "neighbors": 5,
+          "minDistance": 0
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-local-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 5,
+        "settings": {
+          "neighbors": 5,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 6754,
+        "lastBatchGradientRows": 24462,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 137166848
+          },
+          "neighbors": {
+            "duckdbBytes": 20375644,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 142049280
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22394972,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 152240128
+          },
+          "layout": {
+            "duckdbBytes": 30394460,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 212893696
+          }
+        },
+        "sparseGraphPayloadBytes": 108064,
+        "stages": {
+          "validation": 28.027125000000012,
+          "neighbors": 1373.2757080000001,
+          "fuzzyGraph": 68.57049999999981,
+          "layout": 3204.7287920000003
+        },
+        "milliseconds": 4684.993665999999,
+        "processMilliseconds": 4705.819958,
+        "peakRssBytes": 212893696,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 1.741032605528936e-05,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0018612089334055781,
+        "referenceOptimizerSeconds": 0.16174845804926008,
+        "referenceFullSeconds": 0.8770644579781219,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.7616748603351955,
+          "neighborOverlap": 0.23460000000000003
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.8386227526663281,
+          "neighborOverlap": 0.28579999999999994
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8406393092940578,
+          "neighborOverlap": 0.285
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 4.76837158203125e-07
+      }
+    },
+    {
+      "job": {
+        "name": "movies-broad-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-broad-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200,
+          "neighbors": 30,
+          "minDistance": 0.5
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-broad-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 30,
+        "settings": {
+          "neighbors": 30,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.5,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 47016,
+        "lastBatchGradientRows": 52234,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 137101312
+          },
+          "neighbors": {
+            "duckdbBytes": 21162076,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 141361152
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 24754268,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 151912448
+          },
+          "layout": {
+            "duckdbBytes": 37472348,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 230916096
+          }
+        },
+        "sparseGraphPayloadBytes": 752256,
+        "stages": {
+          "validation": 28.760291000000024,
+          "neighbors": 1385.5749999999998,
+          "fuzzyGraph": 114.15879100000006,
+          "layout": 5187.492958
+        },
+        "milliseconds": 6726.630916,
+        "processMilliseconds": 6755.3391249999995,
+        "peakRssBytes": 238026752,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 2.421577053990376e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.002262959023937583,
+        "referenceOptimizerSeconds": 0.379192459047772,
+        "referenceFullSeconds": 1.0940442909486592,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.7908446927374302,
+          "neighborOverlap": 0.18460000000000001
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.7726475368207212,
+          "neighborOverlap": 0.15970000000000004
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.7687037074657186,
+          "neighborOverlap": 0.1669
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 5.960464477539063e-08
+      }
+    },
+    {
+      "job": {
+        "name": "movies-batches-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-batches-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200,
+          "batches": 8
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-batches-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 8,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 5425,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 137379840
+          },
+          "neighbors": {
+            "duckdbBytes": 20375644,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 141819904
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22919260,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 151715840
+          },
+          "layout": {
+            "duckdbBytes": 29345884,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 196411392
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "validation": 28.209125,
+          "neighbors": 1389.305542,
+          "fuzzyGraph": 85.71412499999997,
+          "layout": 12778.815125
+        },
+        "milliseconds": 14293.240167,
+        "processMilliseconds": 14317.611417,
+        "peakRssBytes": 202752000,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 7.1864927796427835e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.002031042007729411,
+        "referenceOptimizerSeconds": 0.28838095790706575,
+        "referenceFullSeconds": 1.0027233749860898,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.8319712544438802,
+          "neighborOverlap": 0.27229999999999993
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.817325749111224,
+          "neighborOverlap": 0.24930000000000002
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8184343321482986,
+          "neighborOverlap": 0.24870000000000003
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 1.1920928955078125e-07
+      }
+    },
+    {
+      "job": {
+        "name": "movies-rate-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-rate-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200,
+          "learningRate": 1
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-rate-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 42360,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 136134656
+          },
+          "neighbors": {
+            "duckdbBytes": 20375644,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 141344768
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22919260,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 152059904
+          },
+          "layout": {
+            "duckdbBytes": 34064476,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 216514560
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "validation": 28.388458000000014,
+          "neighbors": 1374.784167,
+          "fuzzyGraph": 88.79025000000001,
+          "layout": 4003.110334
+        },
+        "milliseconds": 5505.442167,
+        "processMilliseconds": 5529.450959000001,
+        "peakRssBytes": 224198656,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 7.1864927796427835e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0020254169357940555,
+        "referenceOptimizerSeconds": 0.28953045804519206,
+        "referenceFullSeconds": 1.0061172910500318,
+        "initial": {
+          "trustworthiness": 0.49783890299644495,
+          "neighborOverlap": 0.0081
+        },
+        "sql": {
+          "trustworthiness": 0.8076298628745556,
+          "neighborOverlap": 0.2298
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.817325749111224,
+          "neighborOverlap": 0.24930000000000002
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8184343321482986,
+          "neighborOverlap": 0.24870000000000003
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 1.1920928955078125e-07
+      }
+    },
+    {
+      "job": {
+        "name": "movies-seed-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-seed-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200,
+          "seed": 99
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-seed-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 99,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 42360,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 136691712
+          },
+          "neighbors": {
+            "duckdbBytes": 20375644,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 141000704
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22919260,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 157990912
+          },
+          "layout": {
+            "duckdbBytes": 34064476,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 233275392
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "validation": 28.07941600000001,
+          "neighbors": 1363.165458,
+          "fuzzyGraph": 83.4292919999998,
+          "layout": 4539.084708
+        },
+        "milliseconds": 6024.436,
+        "processMilliseconds": 6049.755375000001,
+        "peakRssBytes": 240271360,
+        "duckdb": "v1.5.5"
+      },
+      "quality": {
+        "umapVersion": "0.5.9.post2",
+        "graphMaxAbsoluteError": 7.1864927796427835e-06,
+        "graphEdgeRecall": 1.0,
+        "graphEdgePrecision": 1.0,
+        "jitWarmupSeconds": 0.0020515829091891646,
+        "referenceOptimizerSeconds": 0.28949387499596924,
+        "referenceFullSeconds": 1.0114380420418456,
+        "initial": {
+          "trustworthiness": 0.5004181818181819,
+          "neighborOverlap": 0.0105
+        },
+        "sql": {
+          "trustworthiness": 0.8277852717115287,
+          "neighborOverlap": 0.2714
+        },
+        "referenceSameGraph": {
+          "trustworthiness": 0.823657592686643,
+          "neighborOverlap": 0.2454
+        },
+        "referenceDefault": {
+          "trustworthiness": 0.8197663788725241,
+          "neighborOverlap": 0.2496
+        },
+        "rhoMaxAbsoluteError": 7.441720351053505e-09,
+        "sigmaMaxAbsoluteError": 1.1920928955078125e-07
+      }
+    },
+    {
+      "job": {
+        "name": "movies-repeat-canonical",
+        "input": "benchmarks/.work/umap/reference/movies.parquet",
+        "output": "benchmarks/.work/umap/movies-repeat-canonical",
+        "timeoutSeconds": 30,
+        "options": {
+          "metric": "cosine",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "movies-repeat-canonical",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1536,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "cosine",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 23028,
+        "lastBatchGradientRows": 42360,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 19288156,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 136626176
+          },
+          "neighbors": {
+            "duckdbBytes": 20375644,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 141705216
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22919260,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 154910720
+          },
+          "layout": {
+            "duckdbBytes": 34064476,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 221593600
+          }
+        },
+        "sparseGraphPayloadBytes": 368448,
+        "stages": {
+          "validation": 27.744124999999997,
+          "neighbors": 1386.364791,
+          "fuzzyGraph": 91.10054100000025,
+          "layout": 4326.980083
+        },
+        "milliseconds": 5842.684749999999,
+        "processMilliseconds": 5867.055375,
+        "peakRssBytes": 229195776,
+        "duckdb": "v1.5.5"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "scale-1000-128-scalar-sort",
+        "rows": 1000,
+        "dimensions": 128,
+        "output": "benchmarks/.work/umap/scale-1000-128-scalar-sort",
+        "timeoutSeconds": 120,
+        "options": {
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "scale-1000-128-scalar-sort",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 128,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 19154,
+        "lastBatchGradientRows": 38740,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 2195456,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 77463552
+          },
+          "neighbors": {
+            "duckdbBytes": 4917248,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 113213440
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 7460864,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 120995840
+          },
+          "layout": {
+            "duckdbBytes": 18081792,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 211615744
+          }
+        },
+        "sparseGraphPayloadBytes": 306464,
+        "stages": {
+          "validation": 4.749832999999995,
+          "neighbors": 68.650125,
+          "fuzzyGraph": 79.38462499999997,
+          "layout": 4058.3481249999995
+        },
+        "milliseconds": 4213.831125000001,
+        "processMilliseconds": 4226.314708,
+        "peakRssBytes": 212369408,
+        "duckdb": "v1.5.5"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "scale-1000-1024-scalar-sort",
+        "rows": 1000,
+        "dimensions": 1024,
+        "output": "benchmarks/.work/umap/scale-1000-1024-scalar-sort",
+        "timeoutSeconds": 120,
+        "options": {
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "scale-1000-1024-scalar-sort",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 1000,
+        "dimensions": 1024,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 19470,
+        "lastBatchGradientRows": 38658,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 13205504,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 124452864
+          },
+          "neighbors": {
+            "duckdbBytes": 19597312,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 320176128
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 22140928,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 324714496
+          },
+          "layout": {
+            "duckdbBytes": 32761856,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 367591424
+          }
+        },
+        "sparseGraphPayloadBytes": 311520,
+        "stages": {
+          "validation": 21.015541999999982,
+          "neighbors": 190.174667,
+          "fuzzyGraph": 87.690584,
+          "layout": 4165.373208
+        },
+        "milliseconds": 4472.104792,
+        "processMilliseconds": 4503.711,
+        "peakRssBytes": 367591424,
+        "duckdb": "v1.5.5"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "scale-10000-128-scalar-sort",
+        "rows": 10000,
+        "dimensions": 128,
+        "output": "benchmarks/.work/umap/scale-10000-128-scalar-sort",
+        "timeoutSeconds": 120,
+        "options": {
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "scale-10000-128-scalar-sort",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 10000,
+        "dimensions": 128,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 210616,
+        "lastBatchGradientRows": 400746,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 17399808,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 99647488
+          },
+          "neighbors": {
+            "duckdbBytes": 33005568,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 295796736
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 44986368,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 307363840
+          },
+          "layout": {
+            "duckdbBytes": 96501760,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 995459072
+          }
+        },
+        "sparseGraphPayloadBytes": 3369856,
+        "stages": {
+          "validation": 21.268042000000037,
+          "neighbors": 1064.868125,
+          "fuzzyGraph": 417.6379589999999,
+          "layout": 38555.637667
+        },
+        "milliseconds": 40069.165334,
+        "processMilliseconds": 40142.650625,
+        "peakRssBytes": 995459072,
+        "duckdb": "v1.5.5"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "scale-10000-1024-scalar-sort",
+        "rows": 10000,
+        "dimensions": 1024,
+        "output": "benchmarks/.work/umap/scale-10000-1024-scalar-sort",
+        "timeoutSeconds": 120,
+        "options": {
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "scale-10000-1024-scalar-sort",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 10000,
+        "dimensions": 1024,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "hnsw",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 217056,
+        "lastBatchGradientRows": 410232,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 126976000,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 320552960
+          },
+          "neighbors": {
+            "duckdbBytes": 25403392,
+            "spilledBytes": 146898944,
+            "processPeakRssBytes": 1288568832
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 38170624,
+            "spilledBytes": 146374656,
+            "processPeakRssBytes": 1292386304
+          },
+          "layout": {
+            "duckdbBytes": 92569600,
+            "spilledBytes": 146374656,
+            "processPeakRssBytes": 1731002368
+          }
+        },
+        "sparseGraphPayloadBytes": 3472896,
+        "stages": {
+          "validation": 159.60429099999993,
+          "neighbors": 5280.233875,
+          "fuzzyGraph": 378.2786670000005,
+          "layout": 39572.639875
+        },
+        "milliseconds": 45484.896582999994,
+        "processMilliseconds": 45744.06625,
+        "peakRssBytes": 1731002368,
+        "duckdb": "v1.5.5"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "scale-100000-128-scalar-sort",
+        "rows": 100000,
+        "dimensions": 128,
+        "output": "benchmarks/.work/umap/scale-100000-128-scalar-sort",
+        "timeoutSeconds": 120,
+        "options": {
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "scale-100000-128-scalar-sort",
+        "status": "failed",
+        "completedEpochs": 2,
+        "stages": {
+          "validation": 184.02779199999992,
+          "neighbors": 39711.630291999994,
+          "fuzzyGraph": 3643.101834000001
+        },
+        "memory": {
+          "validation": {
+            "duckdbBytes": 162103296,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 299335680
+          },
+          "neighbors": {
+            "duckdbBytes": 288858112,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 619642880
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 383152128,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 721043456
+          }
+        },
+        "processMilliseconds": 45771.564875,
+        "peakRssBytes": 1956020224,
+        "error": "Out of Memory Error: failed to allocate data of size 2.0 KiB (953.6 MiB/953.6 MiB used)\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "scale-100000-1024-scalar-sort",
+        "rows": 100000,
+        "dimensions": 1024,
+        "output": "benchmarks/.work/umap/scale-100000-1024-scalar-sort",
+        "timeoutSeconds": 120,
+        "options": {
+          "search": "hnsw",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "scale-100000-1024-scalar-sort",
+        "status": "failed",
+        "completedEpochs": 0,
+        "stages": {
+          "validation": 1828.5695
+        },
+        "memory": {
+          "validation": {
+            "duckdbBytes": 835289088,
+            "spilledBytes": 416088064,
+            "processPeakRssBytes": 1148813312
+          }
+        },
+        "processMilliseconds": 101393.49958300001,
+        "peakRssBytes": 1845624832,
+        "error": "Out of Memory Error: failed to offload data block of size 256.0 KiB (1.8 GiB/1.8 GiB used).\nThis limit was set by the 'max_temp_directory_size' setting.\nBy default, this setting utilizes the available disk space on the drive where the 'temp_directory' is located.\nYou can adjust this setting, by using (for example) PRAGMA max_temp_directory_size='10GiB'\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "exact-10000-128",
+        "rows": 10000,
+        "dimensions": 128,
+        "output": "benchmarks/.work/umap/exact-10000-128",
+        "timeoutSeconds": 60,
+        "options": {
+          "search": "exact",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "exact-10000-128",
+        "status": "ok",
+        "completedEpochs": 200,
+        "count": 10000,
+        "dimensions": 128,
+        "neighbors": 15,
+        "settings": {
+          "neighbors": 15,
+          "metric": "euclidean",
+          "search": "exact",
+          "epochs": 200,
+          "seed": 42,
+          "minDistance": 0.1,
+          "learningRate": 0.1,
+          "negativeSamples": 5,
+          "batches": 1,
+          "exactBatchSize": 32
+        },
+        "graphEdges": 210592,
+        "lastBatchGradientRows": 400744,
+        "memory": {
+          "validation": {
+            "duckdbBytes": 17399808,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 99893248
+          },
+          "neighbors": {
+            "duckdbBytes": 22419456,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 119914496
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 34400256,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 148701184
+          },
+          "layout": {
+            "duckdbBytes": 85915648,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 916570112
+          }
+        },
+        "sparseGraphPayloadBytes": 3369472,
+        "stages": {
+          "validation": 20.633375,
+          "neighbors": 6716.262583,
+          "fuzzyGraph": 463.08108300000004,
+          "layout": 40676.109459
+        },
+        "milliseconds": 47885.599667,
+        "processMilliseconds": 47959.131333000005,
+        "peakRssBytes": 916570112,
+        "duckdb": "v1.5.5"
+      },
+      "quality": null
+    },
+    {
+      "job": {
+        "name": "exact-10000-1024",
+        "rows": 10000,
+        "dimensions": 1024,
+        "output": "benchmarks/.work/umap/exact-10000-1024",
+        "timeoutSeconds": 60,
+        "options": {
+          "search": "exact",
+          "epochs": 200
+        }
+      },
+      "result": {
+        "event": "result",
+        "name": "exact-10000-1024",
+        "status": "failed",
+        "completedEpochs": 24,
+        "stages": {
+          "validation": 165.739666,
+          "neighbors": 54673.515709,
+          "fuzzyGraph": 418.34945800000423
+        },
+        "memory": {
+          "validation": {
+            "duckdbBytes": 126976000,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 319913984
+          },
+          "neighbors": {
+            "duckdbBytes": 131995648,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 323207168
+          },
+          "fuzzyGraph": {
+            "duckdbBytes": 144238592,
+            "spilledBytes": 0,
+            "processPeakRssBytes": 323207168
+          }
+        },
+        "processMilliseconds": 60003.470459000004,
+        "peakRssBytes": 984760320,
+        "error": "INTERRUPT Error: Interrupted!"
+      },
+      "quality": null
+    }
+  ],
+  "beforeScalarSort": [
+    {
+      "event": "result",
+      "name": "movies-hnsw",
+      "status": "ok",
+      "count": 1000,
+      "dimensions": 1536,
+      "neighbors": 15,
+      "settings": {
+        "neighbors": 15,
+        "metric": "cosine",
+        "search": "hnsw",
+        "epochs": 200,
+        "seed": 42,
+        "minDistance": 0.1,
+        "learningRate": 0.1,
+        "negativeSamples": 5,
+        "batches": 1,
+        "exactBatchSize": 32
+      },
+      "graphEdges": 23028,
+      "lastBatchGradientRows": 42360,
+      "memory": {
+        "validation": {
+          "duckdbBytes": 19288156,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 136380416
+        },
+        "neighbors": {
+          "duckdbBytes": 26951772,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 1017511936
+        },
+        "fuzzyGraph": {
+          "duckdbBytes": 29495388,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 1021181952
+        },
+        "layout": {
+          "duckdbBytes": 40640604,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 1056997376
+        }
+      },
+      "sparseGraphPayloadBytes": 368448,
+      "stages": {
+        "validation": 32.07583299999999,
+        "neighbors": 635.651791,
+        "fuzzyGraph": 85.70687500000008,
+        "layout": 4205.825834
+      },
+      "milliseconds": 4970.5536250000005,
+      "processMilliseconds": 4995.00825,
+      "peakRssBytes": 1056997376,
+      "duckdb": "v1.5.5"
+    },
+    {
+      "event": "result",
+      "name": "scale-10000-128",
+      "status": "ok",
+      "count": 10000,
+      "dimensions": 128,
+      "neighbors": 15,
+      "settings": {
+        "neighbors": 15,
+        "metric": "euclidean",
+        "search": "hnsw",
+        "epochs": 200,
+        "seed": 42,
+        "minDistance": 0.1,
+        "learningRate": 0.1,
+        "negativeSamples": 5,
+        "batches": 1,
+        "exactBatchSize": 32
+      },
+      "graphEdges": 210616,
+      "lastBatchGradientRows": 400746,
+      "memory": {
+        "validation": {
+          "duckdbBytes": 17399808,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 99647488
+        },
+        "neighbors": {
+          "duckdbBytes": 28510208,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 630898688
+        },
+        "fuzzyGraph": {
+          "duckdbBytes": 40491008,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 635437056
+        },
+        "layout": {
+          "duckdbBytes": 92006400,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 1323810816
+        }
+      },
+      "sparseGraphPayloadBytes": 3369856,
+      "stages": {
+        "validation": 20.93300000000005,
+        "neighbors": 1235.207291,
+        "fuzzyGraph": 401.2241670000001,
+        "layout": 38967.575542
+      },
+      "milliseconds": 40634.425333,
+      "processMilliseconds": 40708.302958,
+      "peakRssBytes": 1323810816,
+      "duckdb": "v1.5.5"
+    },
+    {
+      "event": "result",
+      "name": "scale-10000-1024",
+      "status": "failed",
+      "completedEpochs": 0,
+      "stages": {
+        "validation": 149.13270799999998
+      },
+      "memory": {
+        "validation": {
+          "duckdbBytes": 126976000,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 320454656
+        }
+      },
+      "processMilliseconds": 5556.696457999999,
+      "peakRssBytes": 1241251840,
+      "error": "Out of Memory Error: could not allocate block of size 256.0 KiB (953.4 MiB/953.6 MiB used)\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+    },
+    {
+      "event": "result",
+      "name": "scale-100000-128",
+      "status": "failed",
+      "completedEpochs": 0,
+      "stages": {
+        "validation": 190.74220799999995
+      },
+      "memory": {
+        "validation": {
+          "duckdbBytes": 162103296,
+          "spilledBytes": 0,
+          "processPeakRssBytes": 303071232
+        }
+      },
+      "processMilliseconds": 37696.022750000004,
+      "peakRssBytes": 1180696576,
+      "error": "Out of Memory Error: failed to offload data block of size 256.0 KiB (1.8 GiB/1.8 GiB used).\nThis limit was set by the 'max_temp_directory_size' setting.\nBy default, this setting utilizes the available disk space on the drive where the 'temp_directory' is located.\nYou can adjust this setting, by using (for example) PRAGMA max_temp_directory_size='10GiB'\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+    },
+    {
+      "event": "result",
+      "name": "scale-100000-1024",
+      "status": "failed",
+      "completedEpochs": 0,
+      "stages": {
+        "validation": 1855.4292920000003
+      },
+      "memory": {
+        "validation": {
+          "duckdbBytes": 835289088,
+          "spilledBytes": 415956992,
+          "processPeakRssBytes": 1122893824
+        }
+      },
+      "processMilliseconds": 97822.40625,
+      "peakRssBytes": 1866039296,
+      "error": "Out of Memory Error: failed to offload data block of size 256.0 KiB (1.8 GiB/1.8 GiB used).\nThis limit was set by the 'max_temp_directory_size' setting.\nBy default, this setting utilizes the available disk space on the drive where the 'temp_directory' is located.\nYou can adjust this setting, by using (for example) PRAGMA max_temp_directory_size='10GiB'\n\nPossible solutions:\n* Reducing the number of threads (SET threads=X)\n* Disabling insertion-order preservation (SET preserve_insertion_order=false)\n* Increasing the memory limit (SET memory_limit='...GB')\n\nSee also https://duckdb.org/docs/stable/guides/performance/how_to_tune_workloads"
+    }
+  ],
+  "graphComparison10000x128": {
+    "exactEdges": 210592,
+    "hnswEdges": 210616,
+    "edgeRecall": 0.9996011244491718,
+    "edgePrecision": 0.9994872184449425
+  }
+}
