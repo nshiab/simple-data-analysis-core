@@ -35,7 +35,7 @@ Deno.test("should log a table with 100 rows in options", async () => {
     await table.log({ count: 100 });
     assertEquals(
       output.at(-1),
-      `${await table.getRowCount()} rows in total (charsToLog: 75)`,
+      `${await table.getRowCount()} rows in total`,
     );
   } finally {
     console.log = originalLog;
@@ -374,7 +374,7 @@ Deno.test("log footer describes actual displayed rows and matching totals", asyn
     for (const [options, footer] of cases) {
       lines.length = 0;
       await table.log(options);
-      assertEquals(lines.at(-1), `${footer} (charsToLog: 20)`);
+      assertEquals(lines.at(-1), footer);
     }
   } finally {
     console.log = originalLog;
