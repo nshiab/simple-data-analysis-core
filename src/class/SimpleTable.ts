@@ -1,3 +1,4 @@
+import umap from "../methods/umap.ts";
 import logBottom from "../methods/logBottom.ts";
 import log from "../methods/log.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
@@ -1077,6 +1078,84 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     createVssIndex(this, column, options);
+    return this;
+  }
+
+  /**
+   * Adds a two-dimensional UMAP projection of a numeric embedding column.
+   * DuckDB computes neighbors and the fuzzy graph; TypeScript optimizes the
+   * coordinates without copying the input vectors into JavaScript. Results are
+   * added as `umapX` and `umapY`, keeping all existing columns (including the
+   * embedding column), their values and types, and the input row order.
+   * Neighbor search is selected automatically.
+   *
+   * The defaults are a starting point for exploration. To adjust the projection:
+   *
+   * - `neighbors` (default `15`): How many nearby points influence the layout.
+   *   Smaller values emphasize local detail but can fragment groups. Larger
+   *   values emphasize broader structure, can hide local detail, and generally
+   *   require more time and memory.
+   * - `metric` (default `"euclidean"`): How similarity is measured. Euclidean
+   *   compares distance, including differences in vector magnitude. Cosine
+   *   compares direction, ignoring magnitude. Choose according to what makes
+   *   vectors similar in your data; neither is universally better.
+   * - `epochs` (default `200`): How many passes refine the coordinates. Fewer
+   *   passes finish sooner but may leave the layout unfinished. More passes
+   *   allow further refinement and take longer, with diminishing returns.
+   * - `minDistance` (default `0.1`): How tightly points can group in the
+   *   projection. Smaller values allow tighter clumps; larger values spread
+   *   points out. This changes the layout's appearance, not an accuracy level
+   *   or the number of optimization passes.
+   * - `learningRate` (default `1`): The initial size of coordinate adjustments.
+   *   Smaller values make gentler adjustments and may need more epochs. Larger
+   *   values make bigger adjustments but can overshoot useful positions. This
+   *   does not change the number of passes.
+   * - `negativeSamples` (default `5`): How many random points are sampled for
+   *   repulsion per attractive update. Smaller values reduce work and
+   *   repulsion; larger values increase both, tending to separate unrelated
+   *   points more strongly. More samples do not guarantee a better projection.
+   *
+   * @param column - The column containing numeric vector embeddings.
+   * @param options - Optional projection settings.
+   * @param options.neighbors - Neighborhood size, including the point itself. Integer of at least 2, clamped to row count minus one. Defaults to 15.
+   * @param options.metric - Input distance metric: "euclidean" or "cosine". Defaults to "euclidean".
+   * @param options.epochs - Integer number of refinement passes, at least 1. Defaults to 200.
+   * @param options.seed - Integer used to initialize random choices. Defaults to 42.
+   * @param options.minDistance - Grouping distance parameter between 0 and 1. Defaults to 0.1.
+   * @param options.learningRate - Finite, positive initial learning rate. Defaults to 1.
+   * @param options.negativeSamples - Integer number of samples used to separate unrelated points, at least 1. Defaults to 5.
+   * @returns The table, so methods can be chained.
+   * @category Vector Search
+   *
+   * @example
+   * ```ts
+   * await table.umap("embedding", {
+   *   metric: "cosine",
+   *   seed: 42,
+   * }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table.umap("embedding", {
+   *   neighbors: 30,
+   *   minDistance: 0.25,
+   * }).selectColumns(["label", "umapX", "umapY"]).log();
+   * ```
+   */
+  umap(
+    column: string,
+    options: {
+      neighbors?: number;
+      metric?: "euclidean" | "cosine";
+      epochs?: number;
+      seed?: number;
+      minDistance?: number;
+      learningRate?: number;
+      negativeSamples?: number;
+    } = {},
+  ): this {
+    umap(this, column, options);
     return this;
   }
 
