@@ -1100,9 +1100,7 @@ export default class SimpleTable extends Simple {
    *
    * `learningRate` controls the size of coordinate adjustments. `negativeSamples`
    * controls how many randomly selected points are used to push unrelated points
-   * apart; increasing it adds work. To cancel a running fit, pass an
-   * `AbortController`'s signal through `signal`, then call the controller's
-   * `abort()` method.
+   * apart; increasing it adds work.
    *
    * @param column - The column containing numeric vector embeddings.
    * @param options - Optional projection settings.
@@ -1113,7 +1111,6 @@ export default class SimpleTable extends Simple {
    * @param options.minDistance - Grouping distance parameter between 0 and 1. Defaults to 0.1.
    * @param options.learningRate - Finite, positive initial learning rate. Defaults to 1.
    * @param options.negativeSamples - Integer number of samples used to separate unrelated points, at least 1. Defaults to 5.
-   * @param options.signal - Optional signal to cancel graph construction or optimization before publishing results.
    * @returns The table, so methods can be chained.
    * @category Vector Search
    *
@@ -1143,7 +1140,6 @@ export default class SimpleTable extends Simple {
       minDistance?: number;
       learningRate?: number;
       negativeSamples?: number;
-      signal?: AbortSignal;
     } = {},
   ): this {
     umap(this, column, options);

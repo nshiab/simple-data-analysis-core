@@ -2,7 +2,7 @@ import {
   assert,
   assertAlmostEquals,
   assertEquals,
-  assertRejects,
+  assertThrows,
 } from "@std/assert";
 import optimizeUmapLayout from "../../../src/helpers/optimizeUmapLayout.ts";
 import { initialUmapCoordinates } from "../../../src/helpers/umapRandom.ts";
@@ -27,14 +27,14 @@ const fixture = JSON.parse(
   }[];
 };
 for (const [index, reference] of fixture.cases.entries()) {
-  Deno.test(`UMAP SGD matches Python epoch routine, trace ${index}`, async () => {
+  Deno.test(`UMAP SGD matches Python epoch routine, trace ${index}`, () => {
     const initial = Float64Array.from(reference.initial);
     const graph = {
       source: Uint32Array.from(reference.source),
       target: Uint32Array.from(reference.target),
       weight: Float64Array.from(reference.weight),
     };
-    const output = await optimizeUmapLayout(graph, initial, reference);
+    const output = optimizeUmapLayout(graph, initial, reference);
     output.forEach((value, i) =>
       assertAlmostEquals(value, reference.trace.at(-1)![i], 2e-8)
     );
@@ -47,7 +47,7 @@ const graph = {
   target: new Uint32Array([1, 0, 2, 1]),
   weight: new Float64Array([1, 1, 0.5, 0.5]),
 };
-Deno.test("UMAP rejects invalid options and graphs", async () => {
+Deno.test("UMAP rejects invalid options and graphs", () => {
   const initial = initialUmapCoordinates(3, 42);
   for (
     const options of [
@@ -60,10 +60,10 @@ Deno.test("UMAP rejects invalid options and graphs", async () => {
       { minDistance: NaN },
     ]
   ) {
-    await assertRejects(() => optimizeUmapLayout(graph, initial, options));
+    assertThrows(() => optimizeUmapLayout(graph, initial, options));
   }
-  await assertRejects(() => optimizeUmapLayout(graph, new Float64Array(3)));
-  await assertRejects(() =>
+  assertThrows(() => optimizeUmapLayout(graph, new Float64Array(3)));
+  assertThrows(() =>
     optimizeUmapLayout(graph, new Float64Array([NaN, 0, 1, 2, 3, 4]))
   );
   for (
@@ -75,35 +75,16 @@ Deno.test("UMAP rejects invalid options and graphs", async () => {
       { ...graph, weight: new Float64Array(4) },
     ]
   ) {
-    await assertRejects(() => optimizeUmapLayout(bad, initial));
+    assertThrows(() => optimizeUmapLayout(bad, initial));
   }
 });
-Deno.test("UMAP is reproducible and supports timer-driven cancellation", async () => {
+Deno.test("UMAP is reproducible with a fixed seed", () => {
   const initial = initialUmapCoordinates(3, 42);
-  const first = await optimizeUmapLayout(graph, initial, { epochs: 20 });
-  assertEquals(first, await optimizeUmapLayout(graph, initial, { epochs: 20 }));
-  const other = await optimizeUmapLayout(graph, initial, {
+  const first = optimizeUmapLayout(graph, initial, { epochs: 20 });
+  assertEquals(first, optimizeUmapLayout(graph, initial, { epochs: 20 }));
+  const other = optimizeUmapLayout(graph, initial, {
     epochs: 20,
     seed: 99,
   });
   assert(first.some((value, i) => value !== other[i]));
-  const controller = new AbortController();
-  let completed = 0;
-  const timer = setTimeout(() => controller.abort(), 0);
-  try {
-    await assertRejects(
-      () =>
-        optimizeUmapLayout(graph, initial, {
-          epochs: 200,
-          signal: controller.signal,
-          onEpoch: (epoch) => {
-            completed = epoch;
-          },
-        }),
-      DOMException,
-    );
-    assert(completed > 0 && completed < 200);
-  } finally {
-    clearTimeout(timer);
-  }
 });

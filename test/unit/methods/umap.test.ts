@@ -220,36 +220,6 @@ Deno.test("umap rejects too few rows, including empty typed input", async () => 
   }
 });
 
-Deno.test("umap cancellation preserves data and cleans scratch", async () => {
-  const sdb = new SimpleDB();
-  try {
-    const table = sdb.newTable().loadArray(data, {
-      columnTypes: { vector: "FLOAT[2]" },
-    });
-    const before = await table.getData();
-    await assertRejects(() =>
-      table.umap("vector", { signal: AbortSignal.abort() }).run()
-    );
-    assertEquals(await table.getData(), before);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 50);
-    try {
-      await assertRejects(() =>
-        table.umap("vector", { epochs: 100000, signal: controller.signal })
-          .run()
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-    assertEquals(await table.getData(), before);
-    await noScratch(sdb);
-    // A cancelled fit must not poison the connection or subsequent fits.
-    await table.umap("vector", { epochs: 10 }).run();
-  } finally {
-    await sdb.close();
-  }
-});
-
 Deno.test("umap preserves native indexes and typed payloads", async () => {
   const sdb = new SimpleDB();
   try {

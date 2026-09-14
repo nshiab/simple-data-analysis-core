@@ -1471,14 +1471,12 @@ comparing repeated runs.
 
 `learningRate` controls the size of coordinate adjustments. `negativeSamples`
 controls how many randomly selected points are used to push unrelated points
-apart; increasing it adds work. To cancel a running fit, pass an
-`AbortController`'s signal through `signal`, then call the controller's
-`abort()` method.
+apart; increasing it adds work.
 
 ##### Signature
 
 ```typescript
-umap(column: string, options?: { neighbors?: number; metric?: "euclidean" | "cosine"; epochs?: number; seed?: number; minDistance?: number; learningRate?: number; negativeSamples?: number; signal?: AbortSignal }): this;
+umap(column: string, options?: { neighbors?: number; metric?: "euclidean" | "cosine"; epochs?: number; seed?: number; minDistance?: number; learningRate?: number; negativeSamples?: number }): this;
 ```
 
 ##### Parameters
@@ -1498,8 +1496,6 @@ umap(column: string, options?: { neighbors?: number; metric?: "euclidean" | "cos
   to 1.
 - **`options.negativeSamples`**: Integer number of samples used to separate
   unrelated points, at least 1. Defaults to 5.
-- **`options.signal`**: Optional signal to cancel graph construction or
-  optimization before publishing results.
 
 ##### Returns
 

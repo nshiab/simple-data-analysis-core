@@ -7,7 +7,7 @@ import { umapRandom } from "./umapRandom.ts";
 // Implements reference Euclidean UMAP SGD: scheduled attractive edges, sampled
 // repulsion, clipped gradients, symmetric attractive updates, linear decay.
 // Algorithm: https://umap-learn.readthedocs.io/en/latest/how_umap_works.html
-export default async function optimizeUmapLayout(
+export default function optimizeUmapLayout(
   graph: { source: Uint32Array; target: Uint32Array; weight: Float64Array },
   initial: Float64Array,
   options: {
@@ -16,20 +16,15 @@ export default async function optimizeUmapLayout(
     minDistance?: number;
     learningRate?: number;
     negativeSamples?: number;
-    signal?: AbortSignal;
-    onEpoch?: (epoch: number) => void | Promise<void>;
   } = {},
-): Promise<Float64Array> {
+): Float64Array {
   const {
     epochs = 200,
     seed = 42,
     minDistance = 0.1,
     learningRate = 1,
     negativeSamples = 5,
-    signal,
-    onEpoch,
   } = options;
-  signal?.throwIfAborted();
   if (
     !Number.isSafeInteger(epochs) || epochs < 1 ||
     !Number.isSafeInteger(negativeSamples) || negativeSamples < 1
@@ -90,7 +85,6 @@ export default async function optimizeUmapLayout(
   const clip = (gradient: number) => Math.max(-4, Math.min(4, gradient));
   let alpha = learningRate;
   for (let epoch = 0; epoch < epochs; epoch++) {
-    signal?.throwIfAborted();
     for (let edge = 0; edge < weight.length; edge++) {
       if (nextPositive[edge] > epoch) continue;
       const u = source[edge] * 2, v = target[edge] * 2;
@@ -127,13 +121,7 @@ export default async function optimizeUmapLayout(
       nextNegative[edge] += draws * negativePeriod;
     }
     alpha = learningRate * (1 - epoch / epochs);
-    await onEpoch?.(epoch + 1);
-    // Yield to timers so AbortSignal cancellation works during CPU-bound fits.
-    if ((epoch + 1) % 5 === 0) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    }
   }
-  signal?.throwIfAborted();
   for (const value of coordinates) {
     if (!Number.isFinite(value)) {
       throw new Error("UMAP optimization produced a non-finite coordinate.");

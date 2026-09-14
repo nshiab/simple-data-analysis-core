@@ -15,14 +15,12 @@ export default function umap(
   column: string,
   options: Options = {},
 ) {
-  // Signals are live cancellation handles, not cloneable operation settings.
-  const { signal, ...configuration } = options;
-  const settings = structuredClone(configuration);
+  const settings = structuredClone(options);
   queueOp(table, {
     kind: "barrier",
     method: "umap()",
     parameters: { column, options: settings },
-    execute: () => execute(table, column, { ...settings, signal }),
+    execute: () => execute(table, column, settings),
   });
 }
 
@@ -35,9 +33,7 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     minDistance = 0.1,
     learningRate = 1,
     negativeSamples = 5,
-    signal,
   } = options;
-  signal?.throwIfAborted();
   for (
     const [key, value] of Object.entries({ neighbors, epochs, negativeSamples })
   ) {
@@ -111,10 +107,7 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     ...Object.entries(names)
       .filter(([key]) => key !== "hnsw").map(([, value]) => value),
   ];
-  const interrupt = () => connection.interrupt();
-  signal?.addEventListener("abort", interrupt, { once: true });
   try {
-    signal?.throwIfAborted();
     // Retain payloads in native DuckDB types. A private ordinal distinguishes
     // duplicate rows and is independent of any user column named rowid.
     await connection.run(`CREATE TEMP TABLE ${snapshot} AS
@@ -167,7 +160,6 @@ async function execute(table: SimpleTable, column: string, options: Options) {
         "Vector norms overflow, or cosine distance received a zero vector.",
       );
     }
-    signal?.throwIfAborted();
     const graph = await buildUmapGraph(
       connection,
       {
@@ -180,7 +172,6 @@ async function execute(table: SimpleTable, column: string, options: Options) {
         search: count <= 1000 ? "exact" : "hnsw",
       },
       names,
-      signal,
     );
     // Release index and vector scratch before allocating optimizer state.
     for (
@@ -196,10 +187,10 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       await connection.run(`DROP TABLE IF EXISTS ${relation}`);
     }
     await connection.run(`ALTER TABLE ${names.rows} DROP COLUMN vec`);
-    const coordinates = await optimizeUmapLayout(
+    const coordinates = optimizeUmapLayout(
       graph,
       initialUmapCoordinates(count, seed),
-      { epochs, seed, minDistance, learningRate, negativeSamples, signal },
+      { epochs, seed, minDistance, learningRate, negativeSamples },
     );
     await connection.run(
       `CREATE TEMP TABLE ${layout} (vertex INTEGER,x DOUBLE,y DOUBLE)`,
@@ -215,7 +206,6 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     } finally {
       appender.closeSync();
     }
-    signal?.throwIfAborted();
     // Publish in one statement: failed fits never add partial columns. Existing
     // native indexes must be restored because CREATE OR REPLACE drops them.
     const indexes = (await connection.runAndReadAll(
@@ -235,22 +225,17 @@ async function execute(table: SimpleTable, column: string, options: Options) {
         mergeOptions(table, {
           table: table.name,
           method: "umap()",
-          parameters: { column, options: { ...options, signal: undefined } },
+          parameters: { column, options },
           noClean: true,
         }),
       );
       for (const sql of indexes) await connection.run(sql);
-      signal?.throwIfAborted();
       await connection.run("COMMIT");
     } catch (error) {
       await connection.run("ROLLBACK");
       throw error;
     }
-  } catch (error) {
-    signal?.throwIfAborted();
-    throw error;
   } finally {
-    signal?.removeEventListener("abort", interrupt);
     for (const relation of scratch) {
       await connection.run(`DROP TABLE IF EXISTS ${relation}`);
     }

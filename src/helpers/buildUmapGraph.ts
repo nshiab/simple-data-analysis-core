@@ -22,13 +22,9 @@ export default async function buildUmapGraph(
   input: { count: number; dimensions: number; neighbors: number },
   options: { metric: "euclidean" | "cosine"; search: "exact" | "hnsw" },
   names: UmapTables,
-  signal?: AbortSignal,
 ) {
-  signal?.throwIfAborted();
-  await buildNeighbors(connection, input, options, names, signal);
-  signal?.throwIfAborted();
-  await buildFuzzyGraph(connection, input.neighbors, names, signal);
-  signal?.throwIfAborted();
+  await buildNeighbors(connection, input, options, names);
+  await buildFuzzyGraph(connection, input.neighbors, names);
   const edges = await scalar(connection, `SELECT count(*) FROM ${names.graph}`);
   const source = new Uint32Array(edges),
     target = new Uint32Array(edges),
@@ -38,7 +34,6 @@ export default async function buildUmapGraph(
   );
   let edge = 0;
   for await (const chunk of rows.yieldRowsJs()) {
-    signal?.throwIfAborted();
     for (const row of chunk) {
       source[edge] = Number(row[0]);
       target[edge] = Number(row[1]);
@@ -55,7 +50,6 @@ async function buildNeighbors(
   input: { count: number; dimensions: number; neighbors: number },
   options: { metric: "euclidean" | "cosine"; search: "exact" | "hnsw" },
   names: UmapTables,
-  signal?: AbortSignal,
 ) {
   const { count, dimensions, neighbors } = input;
   const distance = options.metric === "cosine"
@@ -74,7 +68,6 @@ async function buildNeighbors(
     // O(n²d) work, but only a bounded source batch and top-k heaps, never a
     // materialized n×n matrix. Include target id in the key for stable ties.
     for (let offset = 0; offset < count; offset += 32) {
-      signal?.throwIfAborted();
       const query = `SELECT source, item.target, item.distance FROM (
         SELECT a.vertex AS source,
           min_by(struct_pack(target := b.vertex, distance := ${exactDistance}),
@@ -160,7 +153,6 @@ async function buildNeighbors(
               search: "exact",
             },
             names,
-            signal,
           );
         }
         throw new Error(
@@ -206,7 +198,6 @@ async function buildFuzzyGraph(
   connection: DuckDBConnection,
   neighbors: number,
   names: UmapTables,
-  signal?: AbortSignal,
 ) {
   // Smooth-kNN with local_connectivity=1, bandwidth=1, 64 bisection steps,
   // tolerance 1e-5 and the reference's 1e-3 minimum-distance scale.
@@ -215,7 +206,6 @@ async function buildFuzzyGraph(
       avg(distance) AS mean_distance, 0::DOUBLE AS lo, 'Infinity'::DOUBLE AS hi,
       1::DOUBLE AS sigma, false AS done FROM ${names.knn} GROUP BY source`);
   for (let iteration = 0; iteration < 64; iteration++) {
-    signal?.throwIfAborted();
     await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.scales} AS
       WITH sums AS (
         SELECT s.*, (SELECT sum(CASE WHEN n.distance <= s.rho THEN 1
