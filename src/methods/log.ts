@@ -74,12 +74,15 @@ export default async function log(
         ) as { count: string }[])[0].count,
       )
       : await simpleTable.getRowCount();
+    const displayedRows = data.length;
+    const showing = displayedRows < rowCount
+      ? ` / showing ${formatNumber(displayedRows)} rows`
+      : "";
+    const charsToLog = typeof simpleTable.charsToLog === "number"
+      ? ` (charsToLog: ${simpleTable.charsToLog})`
+      : "";
     console.log(
-      `${formatNumber(rowCount)} rows in total ${`(count: ${count}${
-        typeof simpleTable.charsToLog === "number"
-          ? `, charsToLog: ${simpleTable.charsToLog}`
-          : ""
-      })`}`,
+      `${formatNumber(rowCount)} rows in total${showing}${charsToLog}`,
     );
   }
   return;

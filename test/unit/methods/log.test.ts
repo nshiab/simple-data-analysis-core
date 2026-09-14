@@ -33,7 +33,10 @@ Deno.test("should log a table with 100 rows in options", async () => {
       output.push(args.map(String).join(" "));
     };
     await table.log({ count: 100 });
-    assertEquals(output.some((line) => line.includes("count: 100")), true);
+    assertEquals(
+      output.at(-1),
+      `${await table.getRowCount()} rows in total (charsToLog: 75)`,
+    );
   } finally {
     console.log = originalLog;
   }
@@ -333,6 +336,46 @@ Deno.test("log and logBottom retain compact vector labels while getData returns 
       list: [12.5, null],
       missing: null,
     }]);
+  } finally {
+    console.log = originalLog;
+    await sdb.close();
+  }
+});
+
+Deno.test("log footer describes actual displayed rows and matching totals", async () => {
+  const sdb = new SimpleDB({ rowsToLog: 5, charsToLog: 20 });
+  const originalLog = console.log;
+  const lines: string[] = [];
+  try {
+    const table = sdb.newTable("footer").loadArray(
+      Array.from({ length: 11 }, (_, value) => ({ value })),
+    );
+    console.log = (...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    };
+    const cases: [Parameters<typeof table.log>[0], string][] = [
+      [15, "11 rows in total"],
+      [11, "11 rows in total"],
+      [5, "11 rows in total / showing 5 rows"],
+      [0, "11 rows in total / showing 0 rows"],
+      [{ count: 15 }, "11 rows in total"],
+      [{ count: 5, types: true }, "11 rows in total / showing 5 rows"],
+      [undefined, "11 rows in total / showing 5 rows"],
+      ["all", "11 rows in total"],
+      [{ count: "all" }, "11 rows in total"],
+      [{ count: 15, conditions: "value < 3" }, "3 rows in total"],
+      [
+        { count: 2, conditions: "value < 3" },
+        "3 rows in total / showing 2 rows",
+      ],
+      [{ count: "all", conditions: "value < 3" }, "3 rows in total"],
+      [{ count: 15, conditions: "value < 0" }, "0 rows in total"],
+    ];
+    for (const [options, footer] of cases) {
+      lines.length = 0;
+      await table.log(options);
+      assertEquals(lines.at(-1), `${footer} (charsToLog: 20)`);
+    }
   } finally {
     console.log = originalLog;
     await sdb.close();
