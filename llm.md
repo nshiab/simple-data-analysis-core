@@ -1455,40 +1455,49 @@ await table.createVssIndex("embedding_column", {
 
 Adds a two-dimensional UMAP projection of a numeric embedding column. DuckDB
 computes neighbors and the fuzzy graph; TypeScript optimizes the coordinates
-without copying the input vectors into JavaScript.
+without copying the input vectors into JavaScript. Results are added as `umapX`
+and `umapY`. Neighbor search is selected automatically.
+
+`neighbors` controls how many nearby points influence the layout: smaller values
+emphasize local groups, while larger values show broader structure. `metric`
+defines similarity: Euclidean compares distance, while cosine compares
+direction. `minDistance` controls how tightly points can group together in the
+projection; smaller values allow tighter groups.
+
+`epochs` is the number of passes used to refine the coordinates. More passes
+allow more refinement but take longer. `seed` is an integer that controls the
+random choices during optimization. Keep the seed and input row order fixed when
+comparing repeated runs.
+
+`learningRate` controls the size of coordinate adjustments. `negativeSamples`
+controls how many randomly selected points are used to push unrelated points
+apart; increasing it adds work. To cancel a running fit, pass an
+`AbortController`'s signal through `signal`, then call the controller's
+`abort()` method.
 
 ##### Signature
 
 ```typescript
-umap(column: string, options?: { xColumn?: string; yColumn?: string; idColumn?: string; neighbors?: number; metric?: "euclidean" | "cosine"; search?: "auto" | "exact" | "hnsw"; epochs?: number; seed?: number; minDistance?: number; learningRate?: number; negativeSamples?: number; signal?: AbortSignal }): this;
+umap(column: string, options?: { neighbors?: number; metric?: "euclidean" | "cosine"; epochs?: number; seed?: number; minDistance?: number; learningRate?: number; negativeSamples?: number; signal?: AbortSignal }): this;
 ```
 
 ##### Parameters
 
 - **`column`**: The column containing numeric vector embeddings.
 - **`options`**: Optional projection settings.
-- **`options.xColumn`**: New x-coordinate column. Defaults to "umapX".
-- **`options.yColumn`**: New y-coordinate column. Defaults to "umapY".
-- **`options.idColumn`**: Unique, non-null column used to order vertices
-  reproducibly. Defaults to input row order.
 - **`options.neighbors`**: Neighborhood size, including the point itself.
   Integer of at least 2, clamped to row count minus one. Defaults to 15.
 - **`options.metric`**: Input distance metric: "euclidean" or "cosine". Defaults
   to "euclidean".
-- **`options.search`**: "auto" uses exact neighbors up to 1,000 rows and HNSW
-  above that; "exact" always uses quadratic distance work; "hnsw" requests
-  approximate neighbors, with a bounded exact fallback up to 1,000 rows if
-  DuckDB cannot use its index join. HNSW installs and loads DuckDB's VSS
-  extension and requires FLOAT-representable vector norms. Defaults to "auto".
-- **`options.epochs`**: Positive integer number of optimization epochs. Defaults
-  to 200.
-- **`options.seed`**: Unsigned 32-bit random seed. Defaults to 42.
-- **`options.minDistance`**: Minimum separation parameter between 0 and 1, with
-  spread fixed at 1. Smaller values favor tighter groups. Defaults to 0.1.
+- **`options.epochs`**: Integer number of refinement passes, at least 1.
+  Defaults to 200.
+- **`options.seed`**: Integer used to initialize random choices. Defaults to 42.
+- **`options.minDistance`**: Grouping distance parameter between 0 and 1.
+  Defaults to 0.1.
 - **`options.learningRate`**: Finite, positive initial learning rate. Defaults
   to 1.
-- **`options.negativeSamples`**: Positive integer number of repulsive samples
-  per positive edge. Defaults to 5.
+- **`options.negativeSamples`**: Integer number of samples used to separate
+  unrelated points, at least 1. Defaults to 5.
 - **`options.signal`**: Optional signal to cancel graph construction or
   optimization before publishing results.
 
@@ -1501,18 +1510,15 @@ The table, so methods can be chained.
 ```ts
 await table.umap("embedding", {
   metric: "cosine",
-  idColumn: "id",
   seed: 42,
 }).log();
 ```
 
 ```ts
 await table.umap("embedding", {
-  xColumn: "x",
-  yColumn: "y",
   neighbors: 30,
   minDistance: 0.25,
-}).selectColumns(["label", "x", "y"]).log();
+}).selectColumns(["label", "umapX", "umapY"]).log();
 ```
 
 #### `bm25`

@@ -28,12 +28,8 @@ export default function umap(
 
 async function execute(table: SimpleTable, column: string, options: Options) {
   const {
-    xColumn = "umapX",
-    yColumn = "umapY",
-    idColumn,
     neighbors = 15,
     metric = "euclidean",
-    search = "auto",
     epochs = 200,
     seed = 42,
     minDistance = 0.1,
@@ -51,7 +47,7 @@ async function execute(table: SimpleTable, column: string, options: Options) {
   }
   if (neighbors < 2) throw new Error("neighbors must be at least 2.");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
-    throw new Error("seed must be an unsigned 32-bit integer.");
+    throw new Error("seed must be an integer between 0 and 4294967295.");
   }
   if (!Number.isFinite(learningRate) || learningRate <= 0) {
     throw new Error("learningRate must be finite and positive.");
@@ -59,9 +55,6 @@ async function execute(table: SimpleTable, column: string, options: Options) {
   fitUmapCurve(minDistance);
   if (!["euclidean", "cosine"].includes(metric)) {
     throw new Error("metric must be euclidean or cosine.");
-  }
-  if (!["auto", "exact", "hnsw"].includes(search)) {
-    throw new Error("search must be auto, exact or hnsw.");
   }
   const types = await table.getTypes();
   const columns = Object.keys(types);
@@ -71,16 +64,9 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     return found;
   };
   const vector = resolve(column);
-  const id = idColumn === undefined ? undefined : resolve(idColumn);
-  if (
-    !xColumn.length || !yColumn.length || xColumn.includes("\0") ||
-    yColumn.includes("\0") || xColumn.toLowerCase() === yColumn.toLowerCase() ||
-    columns.some((c) =>
-      [xColumn.toLowerCase(), yColumn.toLowerCase()].includes(c.toLowerCase())
-    )
-  ) {
+  if (columns.some((c) => ["umapx", "umapy"].includes(c.toLowerCase()))) {
     throw new Error(
-      "UMAP output columns must be distinct, nonempty new column names.",
+      "UMAP output columns umapX and umapY must not already exist.",
     );
   }
   if (
@@ -138,17 +124,6 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       throw new Error("UMAP requires between 3 and 2147483647 rows.");
     }
     if (
-      id !== undefined &&
-      await scalar(
-          connection,
-          `SELECT count(DISTINCT ${q(id)}) FROM ${snapshot} WHERE ${
-            q(id)
-          } IS NOT NULL`,
-        ) !== count
-    ) {
-      throw new Error("UMAP idColumn must be unique and non-null.");
-    }
-    if (
       await scalar(
         connection,
         `SELECT count(*) FROM ${snapshot}
@@ -176,9 +151,7 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       `SELECT len(${q(vector)}) FROM ${snapshot} LIMIT 1`,
     );
     await connection.run(`CREATE TEMP TABLE ${names.rows} AS
-      SELECT (row_number() OVER (ORDER BY ${
-      id === undefined ? ordinal : q(id)
-    })-1)::INTEGER AS vertex,
+      SELECT (row_number() OVER (ORDER BY ${ordinal})-1)::INTEGER AS vertex,
         ${ordinal} AS ordinal, ${
       q(vector)
     }::DOUBLE[${dimensions}] AS vec FROM ${snapshot}`);
@@ -204,7 +177,7 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       },
       {
         metric,
-        search: search === "auto" ? (count <= 1000 ? "exact" : "hnsw") : search,
+        search: count <= 1000 ? "exact" : "hnsw",
       },
       names,
       signal,
@@ -254,9 +227,9 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       await queryDB(
         table,
         `CREATE OR REPLACE ${sourceTemporary ? "TEMP " : ""}TABLE ${source} AS
-        SELECT ${columns.map((c) => `s.${q(c)}`).join(",")}, l.x AS ${
-          q(xColumn)
-        }, l.y AS ${q(yColumn)}
+        SELECT ${
+          columns.map((c) => `s.${q(c)}`).join(",")
+        }, l.x AS "umapX", l.y AS "umapY"
         FROM ${snapshot} s JOIN ${names.rows} r ON s.${ordinal}=r.ordinal
         JOIN ${layout} l ON r.vertex=l.vertex ORDER BY s.${ordinal}`,
         mergeOptions(table, {

@@ -25,31 +25,29 @@ async function noScratch(sdb: SimpleDB) {
 Deno.test("umap chains between queued operations and preserves duplicate rows and types", async () => {
   const sdb = new SimpleDB();
   try {
-    const options = { epochs: 20, xColumn: 'x"axis', yColumn: "y axis" };
+    const options = { epochs: 20 };
     const table = sdb.newTable('source"table').loadArray([...data, data[0]], {
       columnTypes: { vector: "FLOAT[2]" },
     });
     assertEquals(table.umap("VECTOR", options), table);
-    options.xColumn = "changed_after_queueing";
+    options.epochs = 0;
     const other = sdb.newTable("other").loadArray([{ value: 1 }]);
     const [rows, otherRows] = await Promise.all([
       table.getData(),
       other.getData(),
     ]);
     assertEquals(otherRows, [{ value: 1 }]);
-    assertEquals(rows.map(({ 'x"axis': _x, "y axis": _y, ...rest }) => rest), [
+    assertEquals(rows.map(({ umapX: _x, umapY: _y, ...rest }) => rest), [
       ...data,
       data[0],
     ]);
     assert(
-      rows.every((r) =>
-        Number.isFinite(r['x"axis']) && Number.isFinite(r["y axis"])
-      ),
+      rows.every((r) => Number.isFinite(r.umapX) && Number.isFinite(r.umapY)),
     );
     assertEquals((await table.getTypes()).vector, "FLOAT[2]");
-    assertEquals((await table.getTypes())['x"axis'], "DOUBLE");
-    await table.selectColumns(['x"axis', "y axis"]).run();
-    assertEquals(Object.keys(await table.getTypes()), ['x"axis', "y axis"]);
+    assertEquals((await table.getTypes()).umapX, "DOUBLE");
+    await table.selectColumns(["umapX", "umapY"]).run();
+    assertEquals(Object.keys(await table.getTypes()), ["umapX", "umapY"]);
     await noScratch(sdb);
   } finally {
     await sdb.close();
@@ -57,11 +55,11 @@ Deno.test("umap chains between queued operations and preserves duplicate rows an
 });
 
 for (const metric of ["euclidean", "cosine"] as const) {
-  for (const search of ["exact", "hnsw"] as const) {
-    Deno.test(`umap ${metric}/${search} preserves data and stable IDs across reordered inputs`, async () => {
+  for (const count of [16, 1001]) {
+    Deno.test(`umap ${metric} with ${count} rows preserves data and repeats with the same input order`, async () => {
       const sdb = new SimpleDB();
       try {
-        const sample = Array.from({ length: 16 }, (_, i) => ({
+        const sample = Array.from({ length: count }, (_, i) => ({
           id: i,
           vector: [i % 3, i + 1],
           payload: `row ${i}`,
@@ -69,10 +67,8 @@ for (const metric of ["euclidean", "cosine"] as const) {
         const options = {
           neighbors: 5,
           metric,
-          search,
           epochs: 20,
           minDistance: 0.25,
-          idColumn: "id",
         };
         const table = sdb.newTable("source").loadArray(sample, {
           columnTypes: { vector: "FLOAT[2]" },
@@ -105,11 +101,12 @@ for (const metric of ["euclidean", "cosine"] as const) {
           { columnTypes: { vector: "FLOAT[2]" } },
         );
         assertEquals(
-          await reordered.umap("vector", options).selectColumns([
-            "id",
-            "umapX",
-            "umapY",
-          ]).sort({ id: "asc" }).getData(),
+          await reordered.sort({ id: "asc" }).umap("vector", options)
+            .selectColumns([
+              "id",
+              "umapX",
+              "umapY",
+            ]).sort({ id: "asc" }).getData(),
           actual,
         );
         assertEquals(
@@ -145,11 +142,6 @@ for (
     [{ learningRate: Infinity }, "learningRate"],
     [{ seed: 2 ** 32 }, "seed"],
     [{ minDistance: 1.1 }, "minDistance"],
-    [{ xColumn: "VECTOR" }, "output columns"],
-    [{ xColumn: "Y", yColumn: "y" }, "output columns"],
-    [{ xColumn: "" }, "output columns"],
-    [{ idColumn: "rowid" }, "unique and non-null"],
-    [{ idColumn: "missing" }, "does not exist"],
   ] as [Options, string][]
 ) {
   Deno.test(`umap rejects ${JSON.stringify(options)} without changing data`, async () => {
@@ -183,7 +175,6 @@ for (
     ["[[1,2],[3,4]]", {}, "numeric LIST or ARRAY"],
     ["[0.,0.]", { metric: "cosine" }, "zero vector"],
     ["[1e200,1e200]", {}, "overflow"],
-    ["[1e30,1e30]", { search: "hnsw" }, "FLOAT norms"],
   ] as [string, Options, string][]
 ) {
   Deno.test(`umap validates vectors: ${expression}`, async () => {
@@ -348,13 +339,13 @@ Deno.test("umap preserves JSON, exact decimals, big integers and geometry CRS", 
   }
 });
 
-Deno.test("umap HNSW handles three rows with a bounded exact fallback", async () => {
+Deno.test("umap handles three rows with automatic neighbor search", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = await sdb.newTable().loadArray(data.slice(0, 3), {
       columnTypes: { vector: "FLOAT[2]" },
     })
-      .umap("vector", { search: "hnsw", epochs: 10 }).getData();
+      .umap("vector", { epochs: 10 }).getData();
     assertEquals(rows.length, 3);
     assert(
       rows.every((row) =>
@@ -372,10 +363,10 @@ Deno.test("umap supports temporary source tables and HNSW in file databases", as
   const sdb = new SimpleDB({ file: `${directory}/umap.duckdb` });
   try {
     await sdb.customQuery(
-      `CREATE TEMP TABLE source AS SELECT [i,i+1] AS vector FROM range(16) t(i)`,
+      `CREATE TEMP TABLE source AS SELECT [i,i+1] AS vector FROM range(1001) t(i)`,
     );
     const table = sdb.newTable("source");
-    await table.umap("vector", { search: "hnsw", epochs: 10, neighbors: 5 })
+    await table.umap("vector", { epochs: 10, neighbors: 5 })
       .run();
     assertEquals(
       (await sdb.connection!.runAndReadAll(
@@ -387,7 +378,6 @@ Deno.test("umap supports temporary source tables and HNSW in file databases", as
       columnTypes: { vector: "FLOAT[2]" },
     });
     await persistent.umap("vector", {
-      search: "hnsw",
       epochs: 10,
       neighbors: 2,
     }).run();
@@ -395,5 +385,64 @@ Deno.test("umap supports temporary source tables and HNSW in file databases", as
   } finally {
     await sdb.close();
     await Deno.remove(directory, { recursive: true });
+  }
+});
+
+for (const column of ["umapX", "umapY", "UMAPX", "umapy"]) {
+  Deno.test(`umap rejects an existing ${column} column without changing data`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadArray(
+        data.map((row) => ({ ...row, [column]: 7 })),
+        {
+          columnTypes: { vector: "FLOAT[2]" },
+        },
+      );
+      const before = await table.getData();
+      await assertRejects(
+        () => table.umap("vector").run(),
+        Error,
+        "output columns",
+      );
+      assertEquals(await table.getData(), before);
+      await noScratch(sdb);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("umap rejects a missing embedding column", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray(data, {
+      columnTypes: { vector: "FLOAT[2]" },
+    });
+    const before = await table.getData();
+    await assertRejects(
+      () => table.umap("missing").run(),
+      Error,
+      "does not exist",
+    );
+    assertEquals(await table.getData(), before);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("umap validates FLOAT norms for automatic indexed search on larger tables", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(
+      "CREATE TABLE source AS SELECT [1e30,1e30] AS vector FROM range(1001)",
+    );
+    const table = sdb.newTable("source");
+    const before = await table.getTypes();
+    await assertRejects(() => table.umap("vector").run(), Error, "FLOAT norms");
+    assertEquals(await table.getTypes(), before);
+    assertEquals(await table.getRowCount(), 1001);
+    await noScratch(sdb);
+  } finally {
+    await sdb.close();
   }
 });

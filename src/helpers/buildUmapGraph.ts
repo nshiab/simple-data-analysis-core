@@ -164,7 +164,7 @@ async function buildNeighbors(
           );
         }
         throw new Error(
-          "VSS did not produce HNSW_INDEX_JOIN; refusing an unbounded all-pairs fallback. Use search: 'exact' if quadratic work is acceptable.",
+          "UMAP could not use DuckDB's vector index for neighbor search.",
         );
       }
       // Exclude self AFTER index search, then stable-sort candidates and keep k-1.
