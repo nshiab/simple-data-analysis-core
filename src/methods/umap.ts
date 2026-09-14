@@ -3,10 +3,11 @@ import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queryDB from "../helpers/queryDB.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
-import buildUmapGraph, { scalar } from "../helpers/buildUmapGraph.ts";
-import fitUmapCurve from "../helpers/fitUmapCurve.ts";
+import buildUmapGraph from "../helpers/buildUmapGraph.ts";
+import prepareUmapLayoutOptions from "../helpers/prepareUmapLayoutOptions.ts";
+import readScalarNumber from "../helpers/readScalarNumber.ts";
 import optimizeUmapLayout from "../helpers/optimizeUmapLayout.ts";
-import { initialUmapCoordinates } from "../helpers/umapRandom.ts";
+import initialUmapCoordinates from "../helpers/initialUmapCoordinates.ts";
 import appendColumnBatches from "../helpers/appendColumnBatches.ts";
 import { DOUBLE, INTEGER } from "@duckdb/node-api";
 
@@ -27,30 +28,11 @@ export default function umap(
 }
 
 async function execute(table: SimpleTable, column: string, options: Options) {
-  const {
-    neighbors = 15,
-    metric = "euclidean",
-    epochs = 200,
-    seed = 42,
-    minDistance = 0.1,
-    learningRate = 1,
-    negativeSamples = 5,
-  } = options;
-  for (
-    const [key, value] of Object.entries({ neighbors, epochs, negativeSamples })
-  ) {
-    if (!Number.isSafeInteger(value) || value < 1) {
-      throw new Error(`${key} must be a positive safe integer.`);
-    }
+  const { neighbors = 15, metric = "euclidean" } = options;
+  if (!Number.isSafeInteger(neighbors) || neighbors < 2) {
+    throw new Error("neighbors must be a safe integer of at least 2.");
   }
-  if (neighbors < 2) throw new Error("neighbors must be at least 2.");
-  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
-    throw new Error("seed must be an integer between 0 and 4294967295.");
-  }
-  if (!Number.isFinite(learningRate) || learningRate <= 0) {
-    throw new Error("learningRate must be finite and positive.");
-  }
-  fitUmapCurve(minDistance);
+  const layoutOptions = prepareUmapLayoutOptions(options);
   if (!["euclidean", "cosine"].includes(metric)) {
     throw new Error("metric must be euclidean or cosine.");
   }
@@ -114,12 +96,15 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     // duplicate rows and is independent of any user column named rowid.
     await connection.run(`CREATE TEMP TABLE ${snapshot} AS
       SELECT *, row_number() OVER () - 1 AS ${ordinal} FROM ${source}`);
-    const count = await scalar(connection, `SELECT count(*) FROM ${snapshot}`);
+    const count = await readScalarNumber(
+      connection,
+      `SELECT count(*) FROM ${snapshot}`,
+    );
     if (count < 3 || count > 0x7fffffff) {
       throw new Error("UMAP requires between 3 and 2147483647 rows.");
     }
     if (
-      await scalar(
+      await readScalarNumber(
         connection,
         `SELECT count(*) FROM ${snapshot}
       WHERE ${q(vector)} IS NULL OR len(${q(vector)})=0
@@ -134,14 +119,14 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       );
     }
     if (
-      await scalar(
+      await readScalarNumber(
         connection,
         `SELECT count(DISTINCT len(${q(vector)})) FROM ${snapshot}`,
       ) !== 1
     ) {
       throw new Error("Vectors must have equal dimensions.");
     }
-    const dimensions = await scalar(
+    const dimensions = await readScalarNumber(
       connection,
       `SELECT len(${q(vector)}) FROM ${snapshot} LIMIT 1`,
     );
@@ -151,7 +136,7 @@ async function execute(table: SimpleTable, column: string, options: Options) {
       q(vector)
     }::DOUBLE[${dimensions}] AS vec FROM ${snapshot}`);
     if (
-      await scalar(
+      await readScalarNumber(
         connection,
         `SELECT count(*) FROM ${names.rows}
       WHERE NOT isfinite(array_inner_product(vec,vec)) OR array_inner_product(vec,vec)>1e300
@@ -191,8 +176,8 @@ async function execute(table: SimpleTable, column: string, options: Options) {
     await connection.run(`ALTER TABLE ${names.rows} DROP COLUMN vec`);
     const coordinates = optimizeUmapLayout(
       graph,
-      initialUmapCoordinates(count, seed),
-      { epochs, seed, minDistance, learningRate, negativeSamples },
+      initialUmapCoordinates(count, layoutOptions.seed),
+      layoutOptions,
     );
     await connection.run(
       `CREATE TEMP TABLE ${layout} (vertex INTEGER,x DOUBLE,y DOUBLE)`,

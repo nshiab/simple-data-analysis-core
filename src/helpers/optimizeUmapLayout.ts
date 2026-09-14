@@ -1,5 +1,5 @@
-import fitUmapCurve from "./fitUmapCurve.ts";
-import { umapRandom } from "./umapRandom.ts";
+import type prepareUmapLayoutOptions from "./prepareUmapLayoutOptions.ts";
+import umapRandom from "./umapRandom.ts";
 
 // Internal interface. Graph entries are directed, in a stable order; the fuzzy
 // union graph supplies both orientations. Coordinates are interleaved x,y.
@@ -10,35 +10,10 @@ import { umapRandom } from "./umapRandom.ts";
 export default function optimizeUmapLayout(
   graph: { source: Uint32Array; target: Uint32Array; weight: Float64Array },
   initial: Float64Array,
-  options: {
-    epochs?: number;
-    seed?: number;
-    minDistance?: number;
-    learningRate?: number;
-    negativeSamples?: number;
-  } = {},
+  options: ReturnType<typeof prepareUmapLayoutOptions>,
 ): Float64Array {
-  const {
-    epochs = 200,
-    seed = 42,
-    minDistance = 0.1,
-    learningRate = 1,
-    negativeSamples = 5,
-  } = options;
-  if (
-    !Number.isSafeInteger(epochs) || epochs < 1 ||
-    !Number.isSafeInteger(negativeSamples) || negativeSamples < 1
-  ) {
-    throw new Error(
-      "epochs and negativeSamples must be positive safe integers.",
-    );
-  }
-  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
-    throw new Error("seed must be an unsigned 32-bit integer.");
-  }
-  if (!Number.isFinite(learningRate) || learningRate <= 0) {
-    throw new Error("learningRate must be finite and positive.");
-  }
+  const { epochs, seed, learningRate, negativeSamples, curve: [a, b] } =
+    options;
   const count = initial.length / 2;
   if (!Number.isInteger(count) || count < 3 || count > 0xffffffff) {
     throw new Error(
@@ -67,7 +42,6 @@ export default function optimizeUmapLayout(
     maximum = Math.max(maximum, weight[edge]);
   }
   if (!maximum) throw new Error("Graph must contain a positive edge.");
-  const [a, b] = fitUmapCurve(minDistance);
   const period = new Float64Array(weight.length);
   const nextPositive = new Float64Array(weight.length);
   const nextNegative = new Float64Array(weight.length);

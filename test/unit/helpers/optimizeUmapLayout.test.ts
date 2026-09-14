@@ -5,7 +5,8 @@ import {
   assertThrows,
 } from "@std/assert";
 import optimizeUmapLayout from "../../../src/helpers/optimizeUmapLayout.ts";
-import { initialUmapCoordinates } from "../../../src/helpers/umapRandom.ts";
+import initialUmapCoordinates from "../../../src/helpers/initialUmapCoordinates.ts";
+import prepareUmapLayoutOptions from "../../../src/helpers/prepareUmapLayoutOptions.ts";
 
 // Reference Python epoch traces use fixed input coordinates and a controlled
 // random stream to isolate SGD from RNG and float32 differences.
@@ -34,7 +35,11 @@ for (const [index, reference] of fixture.cases.entries()) {
       target: Uint32Array.from(reference.target),
       weight: Float64Array.from(reference.weight),
     };
-    const output = optimizeUmapLayout(graph, initial, reference);
+    const output = optimizeUmapLayout(
+      graph,
+      initial,
+      prepareUmapLayoutOptions(reference),
+    );
     output.forEach((value, i) =>
       assertAlmostEquals(value, reference.trace.at(-1)![i], 2e-8)
     );
@@ -47,24 +52,12 @@ const graph = {
   target: new Uint32Array([1, 0, 2, 1]),
   weight: new Float64Array([1, 1, 0.5, 0.5]),
 };
-Deno.test("UMAP rejects invalid options and graphs", () => {
+Deno.test("UMAP rejects invalid coordinates and graphs", () => {
   const initial = initialUmapCoordinates(3, 42);
-  for (
-    const options of [
-      { epochs: 0 },
-      { epochs: 1.1 },
-      { seed: 2 ** 32 },
-      { seed: -1 },
-      { learningRate: Infinity },
-      { negativeSamples: 0 },
-      { minDistance: NaN },
-    ]
-  ) {
-    assertThrows(() => optimizeUmapLayout(graph, initial, options));
-  }
-  assertThrows(() => optimizeUmapLayout(graph, new Float64Array(3)));
+  const options = prepareUmapLayoutOptions();
+  assertThrows(() => optimizeUmapLayout(graph, new Float64Array(3), options));
   assertThrows(() =>
-    optimizeUmapLayout(graph, new Float64Array([NaN, 0, 1, 2, 3, 4]))
+    optimizeUmapLayout(graph, new Float64Array([NaN, 0, 1, 2, 3, 4]), options)
   );
   for (
     const bad of [
@@ -75,16 +68,31 @@ Deno.test("UMAP rejects invalid options and graphs", () => {
       { ...graph, weight: new Float64Array(4) },
     ]
   ) {
-    assertThrows(() => optimizeUmapLayout(bad, initial));
+    assertThrows(() => optimizeUmapLayout(bad, initial, options));
   }
 });
 Deno.test("UMAP is reproducible with a fixed seed", () => {
   const initial = initialUmapCoordinates(3, 42);
-  const first = optimizeUmapLayout(graph, initial, { epochs: 20 });
-  assertEquals(first, optimizeUmapLayout(graph, initial, { epochs: 20 }));
-  const other = optimizeUmapLayout(graph, initial, {
-    epochs: 20,
-    seed: 99,
-  });
+  const first = optimizeUmapLayout(
+    graph,
+    initial,
+    prepareUmapLayoutOptions({ epochs: 20 }),
+  );
+  assertEquals(
+    first,
+    optimizeUmapLayout(
+      graph,
+      initial,
+      prepareUmapLayoutOptions({ epochs: 20 }),
+    ),
+  );
+  const other = optimizeUmapLayout(
+    graph,
+    initial,
+    prepareUmapLayoutOptions({
+      epochs: 20,
+      seed: 99,
+    }),
+  );
   assert(first.some((value, i) => value !== other[i]));
 });

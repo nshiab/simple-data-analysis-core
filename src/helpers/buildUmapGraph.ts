@@ -1,4 +1,5 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
+import readScalarNumber from "./readScalarNumber.ts";
 
 // All relation names are private, already-quoted SQL identifiers supplied by
 // the owning UMAP operation. No input vectors cross the JS boundary.
@@ -13,10 +14,6 @@ export type UmapTables = {
   graph: string;
 };
 
-export async function scalar(connection: DuckDBConnection, sql: string) {
-  return Number((await connection.runAndReadAll(sql)).getRowsJS()[0][0]);
-}
-
 export default async function buildUmapGraph(
   connection: DuckDBConnection,
   input: { count: number; dimensions: number; neighbors: number },
@@ -25,7 +22,10 @@ export default async function buildUmapGraph(
 ) {
   await buildNeighbors(connection, input, options, names);
   await buildFuzzyGraph(connection, input.neighbors, names);
-  const edges = await scalar(connection, `SELECT count(*) FROM ${names.graph}`);
+  const edges = await readScalarNumber(
+    connection,
+    `SELECT count(*) FROM ${names.graph}`,
+  );
   const source = new Uint32Array(edges),
     target = new Uint32Array(edges),
     weight = new Float64Array(edges);
@@ -72,7 +72,6 @@ async function buildNeighbors(
   await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.knn}
     (source INTEGER, target INTEGER, distance DOUBLE);
     INSERT INTO ${names.knn} SELECT vertex, vertex, 0 FROM ${names.rows}`);
-  let plan = "";
   if (options.search === "exact") {
     // O(n²d) work, but only a bounded source batch and top-k heaps, never a
     // materialized n×n matrix. Include target id in the key for stable ties.
@@ -86,11 +85,6 @@ async function buildNeighbors(
         WHERE a.vertex >= ${offset} AND a.vertex < ${offset + 32}
           AND a.vertex != b.vertex GROUP BY a.vertex
       ), UNNEST(closest) AS t(item)`;
-      if (!plan) {
-        plan = JSON.stringify(
-          (await connection.runAndReadAll(`EXPLAIN ${query}`)).getRowsJS(),
-        );
-      }
       await connection.run(`INSERT INTO ${names.knn} ${query}`);
     }
   } else {
@@ -98,7 +92,7 @@ async function buildNeighbors(
       CREATE OR REPLACE TEMP TABLE ${names.search} AS
       SELECT vertex, vec::FLOAT[${dimensions}] AS vec FROM ${names.rows} ORDER BY vertex`);
     if (
-      await scalar(
+      await readScalarNumber(
         connection,
         `SELECT count(*) FROM ${names.search} WHERE
         NOT isfinite(array_inner_product(vec,vec))
@@ -146,7 +140,7 @@ async function buildNeighbors(
       const candidates = `SELECT q.source,q.target,${exactDistance} AS distance
         FROM (${query}) q JOIN ${names.rows} a ON q.source=a.vertex
         JOIN ${names.rows} b ON q.target=b.vertex WHERE q.source != q.target`;
-      plan = JSON.stringify(
+      const plan = JSON.stringify(
         (await connection.runAndReadAll(`EXPLAIN ${candidates}`)).getRowsJS(),
       );
       if (!plan.includes("HNSW_INDEX_JOIN")) {
@@ -183,7 +177,7 @@ async function buildNeighbors(
     }
   }
   if (
-    await scalar(connection, `SELECT count(*) FROM ${names.knn}`) !==
+    await readScalarNumber(connection, `SELECT count(*) FROM ${names.knn}`) !==
       count * neighbors
   ) {
     throw new Error(
@@ -191,7 +185,7 @@ async function buildNeighbors(
     );
   }
   if (
-    await scalar(
+    await readScalarNumber(
       connection,
       `SELECT count(*) FROM ${names.knn} WHERE NOT isfinite(distance)`,
     )
@@ -200,7 +194,6 @@ async function buildNeighbors(
   }
   // Cosine roundoff can produce a tiny negative distance.
   await connection.run(`UPDATE ${names.knn} SET distance=greatest(0,distance)`);
-  return plan;
 }
 
 async function buildFuzzyGraph(
