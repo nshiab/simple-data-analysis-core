@@ -1,0 +1,16 @@
+case,start,node
+baseline-A-outgoing,A,B
+baseline-A-outgoing,A,C
+baseline-D-incoming,D,B
+baseline-D-incoming,D,C
+baseline-D-both,D,B
+baseline-D-both,D,C
+baseline-D-both,D,E
+baseline-A-F-unknown-outgoing,A,B
+baseline-A-F-unknown-outgoing,A,C
+baseline-A-F-unknown-outgoing,F,G
+parallel-A-outgoing,A,B
+self-loop-A-outgoing,A,A
+self-loop-A-outgoing,A,B
+custom-B-outgoing,B,C
+single-loop-A-outgoing,A,A
