@@ -23,6 +23,21 @@ async function execute(
   column: string,
   newColumn: string,
 ): Promise<void> {
+  const overwrite = foldIdentifier(column) === foldIdentifier(newColumn);
+  if (!overwrite) {
+    const sourceColumns = Object.keys(await table.getTypes());
+    if (
+      sourceColumns.some((name) =>
+        foldIdentifier(name) === foldIdentifier(newColumn)
+      )
+    ) {
+      throw new Error(
+        `normalizeVector() cannot create ${
+          quoteIdentifier(newColumn)
+        } because that column already exists. Remove it first or choose a different name.`,
+      );
+    }
+  }
   const prepared = await prepareNumericFeatures(
     table,
     { kind: "vector", column },
@@ -47,19 +62,6 @@ async function execute(
     const sourceColumn = prepared.sourceColumns.find((name) =>
       foldIdentifier(name) === foldIdentifier(column)
     )!;
-    const existingDestination = prepared.sourceColumns.find((name) =>
-      foldIdentifier(name) === foldIdentifier(newColumn)
-    );
-    const overwrite = existingDestination !== undefined &&
-      foldIdentifier(existingDestination) === foldIdentifier(sourceColumn);
-    if (existingDestination !== undefined && !overwrite) {
-      throw new Error(
-        `normalizeVector() cannot create ${
-          q(newColumn)
-        } because that column already exists. Remove it first or choose a different name.`,
-      );
-    }
-
     await connection.run(
       `CREATE TEMP TABLE ${q(statsName)} AS
        SELECT ordinal::BIGINT AS ${dimension}, min(value)::DOUBLE AS ${minimum},

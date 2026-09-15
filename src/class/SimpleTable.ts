@@ -3319,6 +3319,11 @@ export default class SimpleTable extends Simple {
    * DOUBLE can lose precision. A dimension whose converted values are all
    * equal cannot be normalized and causes the operation to fail.
    *
+   * Existing DuckDB indexes are preserved. Overwriting an indexed FLOAT
+   * vector with DOUBLE fails if its HNSW index cannot support that type;
+   * publish to a new column or remove the incompatible index first. Failures
+   * leave the source values, types, and indexes intact.
+   *
    * Scaling changes the relative contribution of vector dimensions and is an
    * explicit modeling choice. Algorithms such as HDBSCAN do not universally
    * require values in `[0, 1]`.

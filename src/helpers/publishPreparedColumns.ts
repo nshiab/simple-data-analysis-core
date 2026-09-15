@@ -96,7 +96,6 @@ export default async function publishPreparedColumns(
       ON p.${q(prepared.rowIdColumn)} = r.${q(options.result.rowIdColumn)}`;
 
   await connection.run("BEGIN TRANSACTION");
-  let outputCreated = false;
   try {
     await queryDB(
       table,
@@ -113,7 +112,6 @@ export default async function publishPreparedColumns(
         noClean: true,
       }),
     );
-    outputCreated = true;
     for (const sql of indexes) {
       try {
         await connection.run(sql);
@@ -133,17 +131,8 @@ export default async function publishPreparedColumns(
       // DuckDB may already abort the transaction after an index-build error.
       // Preserve the publication error that explains why the operation failed.
     }
-    if (
-      outputCreated && indexes.length > 0 &&
-      !(error instanceof Error &&
-        error.message.includes("could not restore an existing DuckDB index"))
-    ) {
-      const detail = error instanceof Error ? ` ${error.message}` : "";
-      throw new Error(
-        `${options.method} could not restore an existing DuckDB index while publishing its output. Remove or rebuild indexes that do not support the output column types.${detail}`,
-        { cause: error },
-      );
-    }
+    // UNIQUE violations can be deferred until COMMIT, which may also fail for
+    // unrelated reasons. Preserve that diagnostic instead of blaming indexes.
     throw error;
   }
 }
@@ -177,6 +166,15 @@ function validateOutputs(
       continue;
     }
     const replacement = foldIdentifier(output.replace);
+    if (outputName !== replacement) {
+      throw new Error(
+        `Internal publication output ${
+          quoteIdentifier(output.name)
+        } must match its replacement column ${
+          quoteIdentifier(output.replace)
+        }.`,
+      );
+    }
     if (
       !sourceColumns.some((column) => foldIdentifier(column) === replacement)
     ) {

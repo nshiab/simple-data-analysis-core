@@ -139,6 +139,54 @@ Deno.test("normalizeVector preserves typed payloads and intentionally replaces t
   }
 });
 
+Deno.test("normalizeVector scales subnormal and asymmetric extreme ranges", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
+      (1, [0, -1e-323, -5e-324, -1.7976931348623157e308,
+        -8.988465674311579e307, 8.988465674311579e307]::DOUBLE[6]),
+      (2, [5e-324, -5e-324, 0, 0, 0, 1.3482698511467367e308]::DOUBLE[6]),
+      (3, [1e-323, 0, 1e-323, 8.988465674311579e307,
+        1.7976931348623157e308, 1.7976931348623157e308]::DOUBLE[6])
+    ) rows(id,features)`);
+    const table = sdb.newTable("source");
+    await table.normalizeVector("features", "scaled").run();
+    const data = await table.getData();
+    assertVectorAlmostEquals(data[0].scaled, [0, 0, 0, 0, 0, 0]);
+    assertVectorAlmostEquals(data[1].scaled, [
+      0.5,
+      0.5,
+      1 / 3,
+      2 / 3,
+      1 / 3,
+      0.5,
+    ]);
+    assertVectorAlmostEquals(data[2].scaled, [1, 1, 1, 1, 1, 1]);
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("normalizeVector rejects destination collisions before preparing vector values", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT
+      NULL::DOUBLE[1] AS features, 42 AS "Existing"`);
+    const table = sdb.newTable("source");
+    const before = await table.getData();
+    await assertRejects(
+      () => table.normalizeVector("features", "EXISTING").run(),
+      Error,
+      "column already exists",
+    );
+    assertEquals(await table.getData(), before);
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("normalizeVector follows ASCII identifier matching while keeping Unicode names distinct", async () => {
   const sdb = new SimpleDB();
   try {
@@ -442,6 +490,20 @@ Deno.test("normalizeVector rolls back an overwrite when an HNSW index cannot sup
     );
     assertEquals(await table.getData(), before);
     assertEquals((await table.getTypes()).features, "FLOAT[2]");
+    assertEquals(table.indexes, indexDefinitions);
+    assertEquals(
+      (await sdb.connection!.runAndReadAll(
+        "SELECT index_name FROM duckdb_indexes()",
+      )).getRowsJS(),
+      [["vss_cosine_index_source"]],
+    );
+    await table.normalizeVector("features", "scaled").run();
+    assertEquals((await table.getTypes()).features, "FLOAT[2]");
+    assertEquals((await table.getTypes()).scaled, "DOUBLE[2]");
+    assertEquals(
+      (await table.getData()).map(({ scaled: _scaled, ...row }) => row),
+      before,
+    );
     assertEquals(table.indexes, indexDefinitions);
     assertEquals(
       (await sdb.connection!.runAndReadAll(
