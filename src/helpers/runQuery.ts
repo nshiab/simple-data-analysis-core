@@ -166,9 +166,22 @@ export default async function runQuery(
         for (let j = 0; j < columnCount; j++) {
           const columnName = columnNames[j];
           const converter = converters[j];
-          chunk.visitColumnValues(j, (value, rowIndex) => {
-            rows[base + rowIndex][columnName] = converter(value);
-          });
+          if (columnName === "__proto__") {
+            // This valid SQL identifier must define data, not invoke Node's
+            // legacy Object.prototype setter. Keep ordinary columns fast.
+            chunk.visitColumnValues(j, (value, rowIndex) => {
+              Object.defineProperty(rows[base + rowIndex], columnName, {
+                value: converter(value),
+                enumerable: true,
+                configurable: true,
+                writable: true,
+              });
+            });
+          } else {
+            chunk.visitColumnValues(j, (value, rowIndex) => {
+              rows[base + rowIndex][columnName] = converter(value);
+            });
+          }
         }
       }
       return rows;

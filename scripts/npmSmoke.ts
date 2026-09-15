@@ -166,6 +166,55 @@ try {
     Number.isFinite(row.umapX) && Number.isFinite(row.umapY) && row.vector.length === 2)) {
     throw new Error("Expected finite UMAP coordinates and preserved embeddings");
   }
+  const multivariate = sdb.newTable("multivariate_smoke").loadArray([
+    { id: 1, x: 1, y: 2 },
+    { id: 2, x: 2, y: 1 },
+    { id: 3, x: 4, y: 5 },
+    { id: 4, x: 5, y: 4 },
+    { id: 5, x: 8, y: 9 },
+  ])
+    .rowToVector(["x", "y"], "features", { type: "double" })
+    .normalizeVector("features", "scaled")
+    .mahalanobis(["x", "y"], "distance")
+    .hdbscan("scaled", "cluster", {
+      minClusterSize: 2, minSamples: 1, labels: "string",
+      probabilityColumn: "membership", outlierScoreColumn: "outlier",
+    });
+  const multivariateRows = await multivariate.getData();
+  const multivariateTypes = await multivariate.getTypes();
+  if (multivariateRows.length !== 5 || multivariateTypes.features !== "DOUBLE[2]" ||
+      multivariateTypes.scaled !== "DOUBLE[2]" || multivariateTypes.cluster !== "VARCHAR" ||
+      !multivariateRows.every((row, index) => row.id === index + 1 &&
+        row.features[0] === row.x && row.features[1] === row.y &&
+        row.scaled.every((value) => Number.isFinite(value) && value >= 0 && value <= 1) &&
+        Number.isFinite(row.distance) && Number.isFinite(row.membership) &&
+        Number.isFinite(row.outlier) &&
+        (row.cluster === "noise" || row.cluster.startsWith("cluster-")))) {
+    throw new Error("Expected multivariate methods to compose and preserve source rows");
+  }
+  await sdb.customQuery('CREATE TABLE prototype_smoke AS SELECT i::DOUBLE AS "__proto__" FROM range(3) rows(i)');
+  const prototypeTable = sdb.newTable("prototype_smoke")
+    .rowToVector(["__proto__"], "features")
+    .normalizeVector("features", "features")
+    .mahalanobis(["__proto__"], "distance");
+  const prototypeTypes = await prototypeTable.getTypes();
+  const prototypeRows = await prototypeTable.getData();
+  if (!Object.hasOwn(prototypeTypes, "__proto__") || prototypeTypes["__proto__"] !== "DOUBLE" ||
+      !prototypeRows.every((row, index) => Object.hasOwn(row, "__proto__") &&
+        row["__proto__"] === index && Object.getPrototypeOf(row) === Object.prototype) ||
+      JSON.stringify(prototypeRows) !== JSON.stringify([
+        { ["__proto__"]: 0, features: [0], distance: 1 },
+        { ["__proto__"]: 1, features: [0.5], distance: 0 },
+        { ["__proto__"]: 2, features: [1], distance: 1 },
+      ])) {
+    throw new Error("Expected prototype-named numeric columns to work across multivariate methods");
+  }
+  await sdb.customQuery('CREATE TABLE prototype_payload_smoke AS SELECT {retained: true} AS "__proto__"');
+  const [prototypePayload] = await sdb.newTable("prototype_payload_smoke").getData();
+  if (!Object.hasOwn(prototypePayload, "__proto__") || !prototypePayload["__proto__"].retained ||
+      Object.getPrototypeOf(prototypePayload) !== Object.prototype) {
+    throw new Error("Expected prototype-named payload columns to preserve data and row prototypes");
+  }
 } finally {
   await sdb.close();
 }`;

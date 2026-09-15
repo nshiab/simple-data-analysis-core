@@ -3,15 +3,15 @@ export default function extractTypes(
     [key: string]: unknown;
   }[] | null,
 ) {
-  const typesObj: { [key: string]: string } = {};
-
-  if (types) {
-    for (const t of types as { [key: string]: string }[]) {
-      if (t.column_name) {
-        typesObj[t.column_name] = t.column_type;
-      }
-    }
-  }
-
-  return typesObj;
+  const rows = (types ?? []) as {
+    column_name: string;
+    column_type: string;
+  }[];
+  // Define own properties so valid names such as __proto__ do not invoke
+  // Object.prototype setters in Node.js.
+  return Object.fromEntries(
+    rows.filter((row) => row.column_name).map((
+      row,
+    ) => [row.column_name, row.column_type]),
+  );
 }

@@ -52,7 +52,9 @@ export default async function prepareNumericFeatures(
   const rejectNulls = options.rejectNulls ?? true;
   const rejectNonFinite = options.rejectNonFinite ?? true;
   const types = await table.getTypes();
-  const sourceColumns = Object.keys(types);
+  // Object.keys(types) sorts integer-like identifiers, which would reorder
+  // source columns when algorithms publish from this snapshot.
+  const sourceColumns = await table.getColumns();
   const resolveColumn = (requested: string): string => {
     const resolved = sourceColumns.find((column) =>
       foldIdentifier(column) === foldIdentifier(requested)

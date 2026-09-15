@@ -545,3 +545,32 @@ Deno.test("mahalanobis numerical failure aborts later queued operations and perm
     await sdb.close();
   }
 });
+
+Deno.test("multivariate chaining preserves physical column order for integer-like identifiers", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
+      (1,2,'first'), (2,1,'second'), (4,5,'third'), (5,4,'fourth')
+    ) rows("2","1",payload)`);
+    const table = sdb.newTable("source");
+    const before = await table.getData();
+    assertEquals(await table.getColumns(), ["2", "1", "payload"]);
+    await table.rowToVector(["2", "1"], "0")
+      .normalizeVector("0", "0")
+      .mahalanobis("0", "3").run();
+    assertEquals(await table.getColumns(), ["2", "1", "payload", "0", "3"]);
+    const data = await table.getData();
+    assertEquals(
+      data.map(({ "0": _vector, "3": _distance, ...row }) => row),
+      before,
+    );
+    assertAlmostEquals(
+      data.reduce((sum, row) => sum + Number(row["3"]) ** 2, 0),
+      6,
+      1e-11,
+    );
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
