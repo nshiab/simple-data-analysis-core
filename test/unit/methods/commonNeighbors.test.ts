@@ -368,12 +368,12 @@ Deno.test("commonNeighbors validates scalar arguments and options before queuing
     assertThrows(
       () => table.commonNeighbors(1 as unknown as string, "target", "A", "B"),
       TypeError,
-      "commonNeighbors() source must be a string.",
+      "commonNeighbors() sourceColumn must be a string.",
     );
     assertThrows(
       () => table.commonNeighbors("source", 1 as unknown as string, "A", "B"),
       TypeError,
-      "commonNeighbors() target must be a string.",
+      "commonNeighbors() targetColumn must be a string.",
     );
     assertThrows(
       () => table.commonNeighbors("source", "target", "A", "B", null as never),

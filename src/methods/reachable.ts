@@ -19,16 +19,16 @@ type ReachableOptions = {
 
 export default function reachable(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
-  start: GraphId | GraphId[],
+  sourceColumn: string,
+  targetColumn: string,
+  startNodes: GraphId | GraphId[],
   options: ReachableOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("reachable() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("reachable() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("reachable() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("reachable() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -59,14 +59,18 @@ export default function reachable(
     );
   }
 
-  const preparedStarts = prepareGraphStarts(start, "reachable()");
+  const preparedStarts = prepareGraphStarts(
+    startNodes,
+    "reachable()",
+    "startNodes",
+  );
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
   const includeStart = options.includeStart ?? true;
   const parameters = {
-    source,
-    target,
-    start: structuredClone(start),
+    sourceColumn,
+    targetColumn,
+    startNodes: structuredClone(startNodes),
     options,
   };
 
@@ -75,15 +79,15 @@ export default function reachable(
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateStarts(schema, source, target, preparedStarts);
+      validateStarts(schema, sourceColumn, targetColumn, preparedStarts);
       return preparedStarts.values;
     },
     buildSelect: (input, schema) =>
       reachableSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
         direction,
         includeStart,
@@ -91,8 +95,8 @@ export default function reachable(
     outputSchema: (schema) => {
       const endpoints = validateStarts(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
       );
       return { start: endpoints.idType, node: endpoints.idType };
@@ -112,6 +116,7 @@ function validateStarts(
     target,
     starts,
     "reachable()",
+    "startNodes",
   );
 }
 
@@ -131,6 +136,7 @@ function reachableSelect(
     target,
     starts,
     "reachable()",
+    "startNodes",
   );
   const relations = prepared.relationNames([
     "graph_start_values",

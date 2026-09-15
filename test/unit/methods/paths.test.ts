@@ -271,7 +271,7 @@ Deno.test("paths validates arguments and schema cheaply", async () => {
     assertThrows(
       () => table.paths(1 as unknown as string, "target", "edgeId", "A", "B"),
       TypeError,
-      "paths() source must be a string",
+      "paths() sourceColumn must be a string",
     );
     assertThrows(
       () => table.paths("source", "target", 1 as unknown as string, "A", "B"),

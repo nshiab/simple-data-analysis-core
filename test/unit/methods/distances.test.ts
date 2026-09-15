@@ -603,27 +603,27 @@ Deno.test("distances validates arguments and schema cheaply", async () => {
     assertThrows(
       () => table.distances("source", "target", []),
       TypeError,
-      "distances() start must not be an empty array.",
+      "distances() startNodes must not be an empty array.",
     );
     assertThrows(
       () => table.distances("source", "target", ["A", "A"]),
       TypeError,
-      'distances() start contains duplicate IDs: "A".',
+      'distances() startNodes contains duplicate IDs: "A".',
     );
     assertThrows(
       () => table.distances("source", "target", [0, 0n]),
       TypeError,
-      "distances() start contains duplicate IDs: 0n.",
+      "distances() startNodes contains duplicate IDs: 0n.",
     );
     assertThrows(
       () => table.distances(1 as unknown as string, "target", "A"),
       TypeError,
-      "distances() source must be a string.",
+      "distances() sourceColumn must be a string.",
     );
     assertThrows(
       () => table.distances("source", 1 as unknown as string, "A"),
       TypeError,
-      "distances() target must be a string.",
+      "distances() targetColumn must be a string.",
     );
     assertThrows(
       () =>
@@ -693,7 +693,7 @@ Deno.test("distances validates arguments and schema cheaply", async () => {
     await assertRejects(
       () => numeric.distances("source", "target", "0").run(),
       TypeError,
-      "start contains string IDs",
+      "startNodes contain string IDs",
     );
   } finally {
     await sdb.close();

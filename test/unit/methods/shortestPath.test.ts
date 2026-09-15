@@ -595,7 +595,7 @@ Deno.test("shortestPath validates arguments and schema cheaply", async () => {
           "B",
         ),
       TypeError,
-      "shortestPath() source must be a string.",
+      "shortestPath() sourceColumn must be a string.",
     );
     assertThrows(
       () =>

@@ -368,12 +368,12 @@ Deno.test("topologicalSort validates arguments and schema cheaply", async () => 
     assertThrows(
       () => table.topologicalSort(1 as unknown as string, "target"),
       TypeError,
-      "topologicalSort() source must be a string.",
+      "topologicalSort() sourceColumn must be a string.",
     );
     assertThrows(
       () => table.topologicalSort("source", 1 as unknown as string),
       TypeError,
-      "topologicalSort() target must be a string.",
+      "topologicalSort() targetColumn must be a string.",
     );
     assertThrows(
       () => table.topologicalSort("source", "target", null as never),

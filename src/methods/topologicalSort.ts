@@ -12,15 +12,15 @@ type TopologicalSortOptions = {
 
 export default function topologicalSort(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   options: TopologicalSortOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("topologicalSort() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("topologicalSort() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("topologicalSort() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("topologicalSort() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -38,20 +38,20 @@ export default function topologicalSort(
   }
 
   options = structuredClone(options);
-  const parameters = { source, target, options };
+  const parameters = { sourceColumn, targetColumn, options };
 
   const result = queueGraphResult(simpleTable, {
     method: "topologicalSort()",
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateEndpoints(schema, source, target);
+      validateEndpoints(schema, sourceColumn, targetColumn);
       return [];
     },
     buildSelect: (input, schema) =>
-      topologicalSortSelect(input, schema, source, target),
+      topologicalSortSelect(input, schema, sourceColumn, targetColumn),
     outputSchema: (schema) => ({
-      node: validateEndpoints(schema, source, target).idType,
+      node: validateEndpoints(schema, sourceColumn, targetColumn).idType,
       order: "BIGINT",
     }),
   });

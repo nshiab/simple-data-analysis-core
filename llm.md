@@ -2895,8 +2895,8 @@ await flights
 #### `neighbors`
 
 Finds the distinct nodes directly connected to one or more starting nodes.
-Outgoing traversal follows `source` to `target`, incoming traversal follows
-connections in reverse, and both traversal uses either orientation. The result
+Outgoing follows connections from source to target, incoming follows them from
+target to source, and both follows connections in either direction. The result
 always has fixed `start` and `node` columns, sorted in ascending order by
 `start`, then `node`.
 
@@ -2920,16 +2920,17 @@ Both-direction traversal deduplicates A's neighbors:
 ##### Signature
 
 ```typescript
-neighbors(source: string, target: string, start: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; outputTable?: string | boolean }): SimpleTable;
+neighbors(sourceColumn: string, targetColumn: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
-- **`start`**: One starting node ID or an array of distinct starting node IDs.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
+- **`startNodes`**: One starting node ID or an array of distinct starting node
+  IDs.
 - **`options`**: An optional object with traversal and result configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
@@ -3024,15 +3025,15 @@ Omitting options counts edge rows and overwrites the input table:
 ##### Signature
 
 ```typescript
-degree(source: string, target: string, options?: { count?: "edges" | "neighbors"; weight?: string; outputTable?: string | boolean }): SimpleTable;
+degree(sourceColumn: string, targetColumn: string, options?: { count?: "edges" | "neighbors"; weight?: string; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
 - **`options`**: An optional object with counting and result configuration.
 - **`options.count`**: Whether to count connection rows (`"edges"`) or distinct
   adjacent nodes (`"neighbors"`). Defaults to `"edges"`.
@@ -3112,10 +3113,10 @@ await connections
 
 #### `commonNeighbors`
 
-Finds the distinct nodes that neighbor two requested nodes. Outgoing traversal
-follows `source` to `target`, incoming traversal follows connections in reverse,
-and both traversal uses either orientation. The result has one fixed `node`
-column, sorted in ascending order.
+Finds the distinct nodes that neighbor two requested nodes. Outgoing follows
+connections from source to target, incoming follows them from target to source,
+and both follows connections in either direction. The result has one fixed
+`node` column, sorted in ascending order.
 
 Endpoint IDs must be non-null strings or whole numbers in compatible columns.
 The two requested node IDs must be distinct and use the endpoint ID type. If
@@ -3138,15 +3139,15 @@ Omitting options finds each shared outgoing neighbor once:
 ##### Signature
 
 ```typescript
-commonNeighbors(source: string, target: string, nodeA: string | number | bigint, nodeB: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; outputTable?: string | boolean }): SimpleTable;
+commonNeighbors(sourceColumn: string, targetColumn: string, nodeA: string | number | bigint, nodeB: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
 - **`nodeA`**: The first node ID whose neighbor membership will be compared.
 - **`nodeB`**: The distinct second node ID whose neighbor membership will be
   compared.
@@ -3230,9 +3231,9 @@ await connections
 
 #### `reachable`
 
-Finds every node reachable from one or more starting nodes. Outgoing traversal
-follows `source` to `target`, incoming traversal follows connections in reverse,
-and both traversal uses either orientation. Each start is evaluated
+Finds every node reachable from one or more starting nodes. Outgoing follows
+connections from source to target, incoming follows them from target to source,
+and both follows connections in either direction. Each start is evaluated
 independently, without a hop limit. Cycles and self-connections are valid and do
 not repeat result rows. The result has fixed `start` and `node` columns, sorted
 in ascending order by `start`, then `node`.
@@ -3260,16 +3261,17 @@ output preserves the input table:
 ##### Signature
 
 ```typescript
-reachable(source: string, target: string, start: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; includeStart?: boolean; outputTable?: string | boolean }): SimpleTable;
+reachable(sourceColumn: string, targetColumn: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; includeStart?: boolean; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
-- **`start`**: One starting node ID or an array of distinct starting node IDs.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
+- **`startNodes`**: One starting node ID or an array of distinct starting node
+  IDs.
 - **`options`**: An optional object with traversal and result configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
@@ -3392,15 +3394,15 @@ destination-only nodes B and D are included:
 ##### Signature
 
 ```typescript
-connectedComponents(source: string, target: string, options?: { mode?: "weak" | "strong"; outputTable?: string | boolean }): SimpleTable;
+connectedComponents(sourceColumn: string, targetColumn: string, options?: { mode?: "weak" | "strong"; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
 - **`options`**: An optional object with component and result configuration.
 - **`options.mode`**: Whether to find `"weak"` or `"strong"` components.
   Defaults to `"weak"`.
@@ -3471,9 +3473,9 @@ Adding C -> A to the chain makes A, B, and C one strong component.
 #### `topologicalSort`
 
 Orders every node in a directed acyclic graph so each prerequisite appears
-before its dependents. Each row in the input means `source` must come before
-`target`. If a dataset stores dependent -> prerequisite instead, pass those
-columns in reverse to obtain execution order.
+before its dependents. Each row in the input means the source node must come
+before the target node. If a dataset stores dependent -> prerequisite instead,
+pass those columns in reverse to obtain execution order.
 
 The result has fixed `node` and `order` columns. Order values start at one, and
 at each step the smallest currently eligible ID is selected. Strings use
@@ -3499,13 +3501,13 @@ Omitting options overwrites the input with the dependency order:
 ##### Signature
 
 ```typescript
-topologicalSort(source: string, target: string, options?: { outputTable?: string | boolean }): SimpleTable;
+topologicalSort(sourceColumn: string, targetColumn: string, options?: { outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the prerequisite endpoint column.
-- **`target`**: The name of the dependent endpoint column.
+- **`sourceColumn`**: The name of the prerequisite endpoint column.
+- **`targetColumn`**: The name of the dependent endpoint column.
 - **`options`**: An optional object with result configuration.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
@@ -3559,8 +3561,8 @@ await connections
 Finds the minimum distance from one or more starting nodes to every node
 reachable from each start. Without `weight`, distance counts connections. With
 `weight`, distance is the minimum sum of the selected edge weights. Outgoing
-traversal follows `source` to `target`, incoming traversal follows connections
-in reverse, and both traversal uses either orientation. The result has fixed
+follows connections from source to target, incoming follows them from target to
+source, and both follows connections in either direction. The result has fixed
 `start`, `node`, and `distance` columns, sorted by `start`, then `node`.
 
 Each known start is included at distance zero. Unknown starts and unreachable
@@ -3581,16 +3583,17 @@ Omitting `weight` and `direction` follows outgoing connections and counts hops:
 ##### Signature
 
 ```typescript
-distances(source: string, target: string, start: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
+distances(sourceColumn: string, targetColumn: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
-- **`start`**: One starting node ID or an array of distinct starting node IDs.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
+- **`startNodes`**: One starting node ID or an array of distinct starting node
+  IDs.
 - **`options`**: An optional object with traversal and result configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
@@ -3689,9 +3692,9 @@ await connections
 
 Finds every tied shortest simple route between two different nodes. Without
 `weight`, route cost counts connections. With `weight`, route cost is the sum of
-the selected edge weights. Outgoing traversal follows `source` to `target`,
-incoming traversal follows connections in reverse, and both traversal uses
-either orientation.
+the selected edge weights. Outgoing follows connections from source to target,
+incoming follows them from target to source, and both follows connections in
+either direction.
 
 The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`, `weight`,
 and `distance` columns. Each row is one traversed connection; `step` starts at
@@ -3725,15 +3728,15 @@ routes:
 ##### Signature
 
 ```typescript
-shortestPath(source: string, target: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
+shortestPath(sourceColumn: string, targetColumn: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
 - **`edgeId`**: The name of the column uniquely identifying each connection
   (edge).
 - **`start`**: The starting node ID.
@@ -3855,9 +3858,9 @@ await reverseExample
 #### `paths`
 
 Enumerates every simple route between two different nodes. A simple route does
-not repeat a node. Outgoing traversal follows `source` to `target`, incoming
-traversal follows connections in reverse, and both traversal uses either
-orientation.
+not repeat a node. Outgoing follows connections from source to target, incoming
+follows them from target to source, and both follows connections in either
+direction.
 
 The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`, `weight`,
 and `distance` columns. Each row is one traversed connection; `step` starts at
@@ -3890,15 +3893,15 @@ This fresh input branches at A and converges at D. It uses existing edge IDs:
 ##### Signature
 
 ```typescript
-paths(source: string, target: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
+paths(sourceColumn: string, targetColumn: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
 - **`edgeId`**: The name of the column uniquely identifying each connection
   (edge).
 - **`start`**: The starting node ID.
@@ -4060,15 +4063,15 @@ Outgoing traversal follows the stored orientation:
 ##### Signature
 
 ```typescript
-findCycles(source: string, target: string, edgeId: string, direction: "outgoing" | "incoming" | "both", options?: { weight?: string; outputTable?: string | boolean }): SimpleTable;
+findCycles(sourceColumn: string, targetColumn: string, edgeId: string, direction: "outgoing" | "incoming" | "both", options?: { weight?: string; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
 
-- **`source`**: The name of the column containing each connection's source node
-  ID.
-- **`target`**: The name of the column containing each connection's target node
-  ID.
+- **`sourceColumn`**: The name of the column containing each connection's source
+  node ID.
+- **`targetColumn`**: The name of the column containing each connection's target
+  node ID.
 - **`edgeId`**: The name of the column uniquely identifying each connection
   (edge).
 - **`direction`**: The required traversal mode: `"outgoing"`, `"incoming"`, or

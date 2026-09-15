@@ -272,7 +272,7 @@ Deno.test("findCycles validates required arguments and schema without data audit
           "outgoing",
         ),
       TypeError,
-      "source must be a string",
+      "sourceColumn must be a string",
     );
     assertThrows(
       () =>

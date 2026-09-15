@@ -2439,11 +2439,11 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds the distinct nodes directly connected to one or more starting nodes.
-   * Outgoing traversal follows `source` to `target`, incoming traversal follows
-   * connections in reverse, and both traversal uses either orientation. The
-   * result always has fixed `start` and `node` columns, sorted in ascending
-   * order by `start`, then `node`.
+   * Finds the distinct nodes directly connected to one or more starting
+   * nodes. Outgoing follows connections from source to target, incoming
+   * follows them from target to source, and both follows connections in
+   * either direction. The result always has fixed `start` and `node` columns,
+   * sorted in ascending order by `start`, then `node`.
    *
    * Endpoint IDs must be non-null strings or whole numbers. The source and
    * target columns must use compatible ID types. Unknown starting IDs and
@@ -2522,9 +2522,9 @@ export default class SimpleTable extends Simple {
    * | Montreal | Ottawa |
    * | Ottawa | Toronto |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
-   * @param start - One starting node ID or an array of distinct starting node IDs.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
+   * @param startNodes - One starting node ID or an array of distinct starting node IDs.
    * @param options - An optional object with traversal and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
@@ -2532,15 +2532,15 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   neighbors(
-    source: string,
-    target: string,
-    start: string | number | bigint | (string | number | bigint)[],
+    sourceColumn: string,
+    targetColumn: string,
+    startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return neighbors(this, source, target, start, options);
+    return neighbors(this, sourceColumn, targetColumn, startNodes, options);
   }
 
   /**
@@ -2631,8 +2631,8 @@ export default class SimpleTable extends Simple {
    * | A | 1 | 2 |
    * | B | 1 | 0 |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param options - An optional object with counting and result configuration.
    * @param options.count - Whether to count connection rows (`"edges"`) or distinct adjacent nodes (`"neighbors"`). Defaults to `"edges"`.
    * @param options.weight - The name of the numeric edge-weight column to sum. This requires edge counting.
@@ -2641,21 +2641,21 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   degree(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     options: {
       count?: "edges" | "neighbors";
       weight?: string;
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return degree(this, source, target, options);
+    return degree(this, sourceColumn, targetColumn, options);
   }
 
   /**
    * Finds the distinct nodes that neighbor two requested nodes. Outgoing
-   * traversal follows `source` to `target`, incoming traversal follows
-   * connections in reverse, and both traversal uses either orientation. The
+   * follows connections from source to target, incoming follows them from
+   * target to source, and both follows connections in either direction. The
    * result has one fixed `node` column, sorted in ascending order.
    *
    * Endpoint IDs must be non-null strings or whole numbers in compatible
@@ -2746,8 +2746,8 @@ export default class SimpleTable extends Simple {
    * | A |
    * | D |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param nodeA - The first node ID whose neighbor membership will be compared.
    * @param nodeB - The distinct second node ID whose neighbor membership will be compared.
    * @param options - An optional object with traversal and result configuration.
@@ -2757,8 +2757,8 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   commonNeighbors(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     nodeA: string | number | bigint,
     nodeB: string | number | bigint,
     options: {
@@ -2766,13 +2766,20 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return commonNeighbors(this, source, target, nodeA, nodeB, options);
+    return commonNeighbors(
+      this,
+      sourceColumn,
+      targetColumn,
+      nodeA,
+      nodeB,
+      options,
+    );
   }
 
   /**
    * Finds every node reachable from one or more starting nodes. Outgoing
-   * traversal follows `source` to `target`, incoming traversal follows
-   * connections in reverse, and both traversal uses either orientation. Each
+   * follows connections from source to target, incoming follows them from
+   * target to source, and both follows connections in either direction. Each
    * start is evaluated independently, without a hop limit. Cycles and
    * self-connections are valid and do not repeat result rows. The result has
    * fixed `start` and `node` columns, sorted in ascending order by `start`,
@@ -2884,9 +2891,9 @@ export default class SimpleTable extends Simple {
    * | B | C |
    * | B | D |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
-   * @param start - One starting node ID or an array of distinct starting node IDs.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
+   * @param startNodes - One starting node ID or an array of distinct starting node IDs.
    * @param options - An optional object with traversal and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.includeStart - Whether to include each known start in its own result. Defaults to `true`.
@@ -2895,16 +2902,16 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   reachable(
-    source: string,
-    target: string,
-    start: string | number | bigint | (string | number | bigint)[],
+    sourceColumn: string,
+    targetColumn: string,
+    startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
       includeStart?: boolean;
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return reachable(this, source, target, start, options);
+    return reachable(this, sourceColumn, targetColumn, startNodes, options);
   }
 
   /**
@@ -2986,8 +2993,8 @@ export default class SimpleTable extends Simple {
    *
    * Adding C -> A to the chain makes A, B, and C one strong component.
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param options - An optional object with component and result configuration.
    * @param options.mode - Whether to find `"weak"` or `"strong"` components. Defaults to `"weak"`.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
@@ -2995,21 +3002,22 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   connectedComponents(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     options: {
       mode?: "weak" | "strong";
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return connectedComponents(this, source, target, options);
+    return connectedComponents(this, sourceColumn, targetColumn, options);
   }
 
   /**
-   * Orders every node in a directed acyclic graph so each prerequisite appears
-   * before its dependents. Each row in the input means `source` must come
-   * before `target`. If a dataset stores dependent -> prerequisite instead,
-   * pass those columns in reverse to obtain execution order.
+   * Orders every node in a directed acyclic graph so each prerequisite
+   * appears before its dependents. Each row in the input means the source
+   * node must come before the target node. If a dataset stores dependent ->
+   * prerequisite instead, pass those columns in reverse to obtain execution
+   * order.
    *
    * The result has fixed `node` and `order` columns. Order values start at one,
    * and at each step the smallest currently eligible ID is selected. Strings
@@ -3071,31 +3079,31 @@ export default class SimpleTable extends Simple {
    * | B | 2 |
    * | C | 3 |
    *
-   * @param source - The name of the prerequisite endpoint column.
-   * @param target - The name of the dependent endpoint column.
+   * @param sourceColumn - The name of the prerequisite endpoint column.
+   * @param targetColumn - The name of the dependent endpoint column.
    * @param options - An optional object with result configuration.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
    */
   topologicalSort(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     options: {
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return topologicalSort(this, source, target, options);
+    return topologicalSort(this, sourceColumn, targetColumn, options);
   }
 
   /**
    * Finds the minimum distance from one or more starting nodes to every node
    * reachable from each start. Without `weight`, distance counts connections.
    * With `weight`, distance is the minimum sum of the selected edge weights.
-   * Outgoing traversal follows `source` to `target`, incoming traversal follows
-   * connections in reverse, and both traversal uses either orientation. The
-   * result has fixed `start`, `node`, and `distance` columns, sorted by `start`,
-   * then `node`.
+   * Outgoing follows connections from source to target, incoming follows them
+   * from target to source, and both follows connections in either direction.
+   * The result has fixed `start`, `node`, and `distance` columns, sorted by
+   * `start`, then `node`.
    *
    * Each known start is included at distance zero. Unknown starts and
    * unreachable nodes produce no rows. Endpoint IDs must be non-null strings
@@ -3198,9 +3206,9 @@ export default class SimpleTable extends Simple {
    * | D | C | 3 |
    * | D | D | 0 |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
-   * @param start - One starting node ID or an array of distinct starting node IDs.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
+   * @param startNodes - One starting node ID or an array of distinct starting node IDs.
    * @param options - An optional object with traversal and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
@@ -3209,24 +3217,24 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   distances(
-    source: string,
-    target: string,
-    start: string | number | bigint | (string | number | bigint)[],
+    sourceColumn: string,
+    targetColumn: string,
+    startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
       weight?: string;
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return distances(this, source, target, start, options);
+    return distances(this, sourceColumn, targetColumn, startNodes, options);
   }
 
   /**
    * Finds every tied shortest simple route between two different nodes.
-   * Without `weight`, route cost counts connections. With `weight`, route cost
-   * is the sum of the selected edge weights. Outgoing traversal follows
-   * `source` to `target`, incoming traversal follows connections in reverse,
-   * and both traversal uses either orientation.
+   * Without `weight`, route cost counts connections. With `weight`, route
+   * cost is the sum of the selected edge weights. Outgoing follows
+   * connections from source to target, incoming follows them from target to
+   * source, and both follows connections in either direction.
    *
    * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
    * `weight`, and `distance` columns. Each row is one traversed connection;
@@ -3361,8 +3369,8 @@ export default class SimpleTable extends Simple {
    * | ---: | ---: | --- | --- | --- | ---: | ---: |
    * | 0 | 1 | F1 | B | A | 1 | 1 |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
    * @param start - The starting node ID.
    * @param end - The ending node ID, which must differ from `start`.
@@ -3374,8 +3382,8 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   shortestPath(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     edgeId: string,
     start: string | number | bigint,
     end: string | number | bigint,
@@ -3385,14 +3393,22 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return shortestPath(this, source, target, edgeId, start, end, options);
+    return shortestPath(
+      this,
+      sourceColumn,
+      targetColumn,
+      edgeId,
+      start,
+      end,
+      options,
+    );
   }
 
   /**
    * Enumerates every simple route between two different nodes. A simple route
-   * does not repeat a node. Outgoing traversal follows `source` to `target`,
-   * incoming traversal follows connections in reverse, and both traversal
-   * uses either orientation.
+   * does not repeat a node. Outgoing follows connections from source to
+   * target, incoming follows them from target to source, and both follows
+   * connections in either direction.
    *
    * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
    * `weight`, and `distance` columns. Each row is one traversed connection;
@@ -3527,8 +3543,8 @@ export default class SimpleTable extends Simple {
    * | 1 | 1 | F3 | D | B | 2 | 2 |
    * | 1 | 2 | F2 | B | A | 1 | 3 |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
    * @param start - The starting node ID.
    * @param end - The ending node ID, which must differ from `start`.
@@ -3540,8 +3556,8 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   paths(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     edgeId: string,
     start: string | number | bigint,
     end: string | number | bigint,
@@ -3551,7 +3567,7 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return paths(this, source, target, edgeId, start, end, options);
+    return paths(this, sourceColumn, targetColumn, edgeId, start, end, options);
   }
 
   /**
@@ -3781,8 +3797,8 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | edge-1 | B | C | 1 | 2 |
    * | 0 | 3 | edge-2 | C | A | 1 | 3 |
    *
-   * @param source - The name of the column containing each connection's source node ID.
-   * @param target - The name of the column containing each connection's target node ID.
+   * @param sourceColumn - The name of the column containing each connection's source node ID.
+   * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
    * @param direction - The required traversal mode: `"outgoing"`, `"incoming"`, or `"both"`.
    * @param options - An optional object with cost and result configuration.
@@ -3792,8 +3808,8 @@ export default class SimpleTable extends Simple {
    * @category Graph Operations
    */
   findCycles(
-    source: string,
-    target: string,
+    sourceColumn: string,
+    targetColumn: string,
     edgeId: string,
     direction: "outgoing" | "incoming" | "both",
     options: {
@@ -3801,7 +3817,14 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return findCycles(this, source, target, edgeId, direction, options);
+    return findCycles(
+      this,
+      sourceColumn,
+      targetColumn,
+      edgeId,
+      direction,
+      options,
+    );
   }
 
   /**

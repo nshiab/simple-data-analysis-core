@@ -20,18 +20,18 @@ type ShortestPathOptions = {
 
 export default function shortestPath(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   edgeId: string,
   start: GraphId,
   end: GraphId,
   options: ShortestPathOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("shortestPath() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("shortestPath() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("shortestPath() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("shortestPath() targetColumn must be a string.");
   }
   if (typeof edgeId !== "string") {
     throw new TypeError("shortestPath() edgeId must be a string.");
@@ -66,8 +66,8 @@ export default function shortestPath(
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
   const parameters = {
-    source,
-    target,
+    sourceColumn,
+    targetColumn,
     edgeId,
     start,
     end,
@@ -81,8 +81,8 @@ export default function shortestPath(
     values: (schema) => {
       validateGraphRouteInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         endpoints,
         options.weight,
@@ -94,8 +94,8 @@ export default function shortestPath(
       shortestPathSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         endpoints,
         direction,
@@ -104,8 +104,8 @@ export default function shortestPath(
     outputSchema: (schema) => {
       const validated = validateGraphRouteInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         endpoints,
         options.weight,

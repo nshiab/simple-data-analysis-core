@@ -12,15 +12,15 @@ type ConnectedComponentsOptions = {
 
 export default function connectedComponents(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   options: ConnectedComponentsOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("connectedComponents() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("connectedComponents() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("connectedComponents() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("connectedComponents() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -47,20 +47,26 @@ export default function connectedComponents(
 
   options = structuredClone(options);
   const mode = options.mode ?? "weak";
-  const parameters = { source, target, options };
+  const parameters = { sourceColumn, targetColumn, options };
 
   return queueGraphResult(simpleTable, {
     method: "connectedComponents()",
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateEndpoints(schema, source, target);
+      validateEndpoints(schema, sourceColumn, targetColumn);
       return [];
     },
     buildSelect: (input, schema) =>
-      connectedComponentsSelect(input, schema, source, target, mode),
+      connectedComponentsSelect(
+        input,
+        schema,
+        sourceColumn,
+        targetColumn,
+        mode,
+      ),
     outputSchema: (schema) => ({
-      node: validateEndpoints(schema, source, target).idType,
+      node: validateEndpoints(schema, sourceColumn, targetColumn).idType,
       componentId: "BIGINT",
     }),
   });

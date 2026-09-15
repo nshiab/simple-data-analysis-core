@@ -418,22 +418,22 @@ Deno.test("reachable validates starts and options before queuing", async () => {
     assertThrows(
       () => table.reachable("source", "target", []),
       TypeError,
-      "reachable() start must not be an empty array.",
+      "reachable() startNodes must not be an empty array.",
     );
     assertThrows(
       () => table.reachable("source", "target", ["A", "A"]),
       TypeError,
-      'reachable() start contains duplicate IDs: "A".',
+      'reachable() startNodes contains duplicate IDs: "A".',
     );
     assertThrows(
       () => table.reachable("source", "target", [0, 0n]),
       TypeError,
-      "reachable() start contains duplicate IDs: 0n.",
+      "reachable() startNodes contains duplicate IDs: 0n.",
     );
     assertThrows(
       () => table.reachable("source", "target", ["1", 1]),
       TypeError,
-      "reachable() start must not mix string and numeric IDs.",
+      "reachable() startNodes must not mix string and numeric IDs.",
     );
     assertThrows(
       () => table.reachable("source", "target", Number.MAX_SAFE_INTEGER + 1),
@@ -478,12 +478,12 @@ Deno.test("reachable validates starts and options before queuing", async () => {
     assertThrows(
       () => table.reachable(1 as unknown as string, "target", "A"),
       TypeError,
-      "reachable() source must be a string.",
+      "reachable() sourceColumn must be a string.",
     );
     assertThrows(
       () => table.reachable("source", 1 as unknown as string, "A"),
       TypeError,
-      "reachable() target must be a string.",
+      "reachable() targetColumn must be a string.",
     );
     assertEquals(table.pendingOps.length, 0);
   } finally {
@@ -522,7 +522,7 @@ Deno.test("reachable rejects missing, unsupported, and incompatible endpoint typ
     await assertRejects(
       () => numeric.reachable("source", "target", "0").run(),
       Error,
-      "start contains string IDs",
+      "startNodes contain string IDs",
     );
 
     const lossy = sdb.newTable("lossy");

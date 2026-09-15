@@ -20,18 +20,18 @@ type PathsOptions = {
 
 export default function paths(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   edgeId: string,
   start: GraphId,
   end: GraphId,
   options: PathsOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("paths() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("paths() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("paths() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("paths() targetColumn must be a string.");
   }
   if (typeof edgeId !== "string") {
     throw new TypeError("paths() edgeId must be a string.");
@@ -66,8 +66,8 @@ export default function paths(
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
   const parameters = {
-    source,
-    target,
+    sourceColumn,
+    targetColumn,
     edgeId,
     start,
     end,
@@ -81,8 +81,8 @@ export default function paths(
     values: (schema) => {
       validateGraphRouteInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         endpoints,
         options.weight,
@@ -94,8 +94,8 @@ export default function paths(
       pathsSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         endpoints,
         direction,
@@ -104,8 +104,8 @@ export default function paths(
     outputSchema: (schema) => {
       const validated = validateGraphRouteInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         endpoints,
         options.weight,

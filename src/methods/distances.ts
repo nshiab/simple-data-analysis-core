@@ -20,16 +20,16 @@ type DistancesOptions = {
 
 export default function distances(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
-  start: GraphId | GraphId[],
+  sourceColumn: string,
+  targetColumn: string,
+  startNodes: GraphId | GraphId[],
   options: DistancesOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("distances() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("distances() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("distances() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("distances() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -57,13 +57,17 @@ export default function distances(
     );
   }
 
-  const preparedStarts = prepareGraphStarts(start, "distances()");
+  const preparedStarts = prepareGraphStarts(
+    startNodes,
+    "distances()",
+    "startNodes",
+  );
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
   const parameters = {
-    source,
-    target,
-    start: structuredClone(start),
+    sourceColumn,
+    targetColumn,
+    startNodes: structuredClone(startNodes),
     options,
   };
 
@@ -74,8 +78,8 @@ export default function distances(
     values: (schema) => {
       validateDistanceInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
         options.weight,
       );
@@ -85,8 +89,8 @@ export default function distances(
       distancesSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
         direction,
         options.weight,
@@ -94,8 +98,8 @@ export default function distances(
     outputSchema: (schema) => {
       const validated = validateDistanceInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
         options.weight,
       );
@@ -121,6 +125,7 @@ function validateDistanceInputs(
     target,
     starts,
     "distances()",
+    "startNodes",
   );
   const distanceType = weight === undefined
     ? "BIGINT"
@@ -144,6 +149,7 @@ function distancesSelect(
     target,
     starts,
     "distances()",
+    "startNodes",
   );
   const weightColumn = weight === undefined
     ? undefined

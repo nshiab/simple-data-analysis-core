@@ -347,12 +347,12 @@ Deno.test("connectedComponents validates arguments before queuing", async () => 
     assertThrows(
       () => table.connectedComponents(1 as unknown as string, "target"),
       TypeError,
-      "connectedComponents() source must be a string.",
+      "connectedComponents() sourceColumn must be a string.",
     );
     assertThrows(
       () => table.connectedComponents("source", 1 as unknown as string),
       TypeError,
-      "connectedComponents() target must be a string.",
+      "connectedComponents() targetColumn must be a string.",
     );
     assertThrows(
       () =>

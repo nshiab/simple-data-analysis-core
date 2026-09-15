@@ -280,22 +280,22 @@ Deno.test("neighbors validates starts and options before queuing", async () => {
     assertThrows(
       () => table.neighbors("source", "target", []),
       TypeError,
-      "neighbors() start must not be an empty array.",
+      "neighbors() startNodes must not be an empty array.",
     );
     assertThrows(
       () => table.neighbors("source", "target", ["A", "A"]),
       TypeError,
-      'neighbors() start contains duplicate IDs: "A".',
+      'neighbors() startNodes contains duplicate IDs: "A".',
     );
     assertThrows(
       () => table.neighbors("source", "target", [0, 0n]),
       TypeError,
-      "neighbors() start contains duplicate IDs: 0n.",
+      "neighbors() startNodes contains duplicate IDs: 0n.",
     );
     assertThrows(
       () => table.neighbors("source", "target", ["1", 1]),
       TypeError,
-      "neighbors() start must not mix string and numeric IDs.",
+      "neighbors() startNodes must not mix string and numeric IDs.",
     );
     assertThrows(
       () => table.neighbors("source", "target", Number.MAX_SAFE_INTEGER + 1),
@@ -347,7 +347,7 @@ Deno.test("neighbors rejects missing, unsupported, and incompatible endpoint typ
     await assertRejects(
       () => numeric.neighbors("source", "target", "0").run(),
       Error,
-      "start contains string IDs",
+      "startNodes contain string IDs",
     );
 
     const lossy = sdb.newTable("lossy");

@@ -14,15 +14,15 @@ type DegreeOptions = {
 
 export default function degree(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   options: DegreeOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("degree() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("degree() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("degree() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("degree() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -58,20 +58,25 @@ export default function degree(
   options = structuredClone(options);
   const count = options.count ?? "edges";
   const weight = options.weight;
-  const parameters = { source, target, options };
+  const parameters = { sourceColumn, targetColumn, options };
 
   return queueGraphResult(simpleTable, {
     method: "degree()",
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateInputs(schema, source, target, weight);
+      validateInputs(schema, sourceColumn, targetColumn, weight);
       return [];
     },
     buildSelect: (input, schema) =>
-      degreeSelect(input, schema, source, target, count, weight),
+      degreeSelect(input, schema, sourceColumn, targetColumn, count, weight),
     outputSchema: (schema) => {
-      const validated = validateInputs(schema, source, target, weight);
+      const validated = validateInputs(
+        schema,
+        sourceColumn,
+        targetColumn,
+        weight,
+      );
       return {
         node: validated.idType,
         incoming: validated.degreeType,

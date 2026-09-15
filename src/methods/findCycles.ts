@@ -18,17 +18,17 @@ type FindCyclesOptions = {
 
 export default function findCycles(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   edgeId: string,
   direction: GraphDirection,
   options: FindCyclesOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("findCycles() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("findCycles() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("findCycles() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("findCycles() targetColumn must be a string.");
   }
   if (typeof edgeId !== "string") {
     throw new TypeError("findCycles() edgeId must be a string.");
@@ -60,7 +60,7 @@ export default function findCycles(
   }
 
   options = structuredClone(options);
-  const parameters = { source, target, edgeId, direction, options };
+  const parameters = { sourceColumn, targetColumn, edgeId, direction, options };
 
   return queueGraphResult(simpleTable, {
     method: "findCycles()",
@@ -69,8 +69,8 @@ export default function findCycles(
     values: (schema) => {
       validateFindCyclesInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         options.weight,
       );
@@ -80,8 +80,8 @@ export default function findCycles(
       findCyclesSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         direction,
         options.weight,
@@ -89,8 +89,8 @@ export default function findCycles(
     outputSchema: (schema) => {
       const validated = validateFindCyclesInputs(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         edgeId,
         options.weight,
       );

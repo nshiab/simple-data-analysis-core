@@ -18,17 +18,17 @@ type CommonNeighborsOptions = {
 
 export default function commonNeighbors(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
+  sourceColumn: string,
+  targetColumn: string,
   nodeA: GraphId,
   nodeB: GraphId,
   options: CommonNeighborsOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("commonNeighbors() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("commonNeighbors() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("commonNeighbors() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("commonNeighbors() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -56,27 +56,27 @@ export default function commonNeighbors(
   const nodes = prepareNodes(nodeA, nodeB);
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
-  const parameters = { source, target, nodeA, nodeB, options };
+  const parameters = { sourceColumn, targetColumn, nodeA, nodeB, options };
 
   return queueGraphResult(simpleTable, {
     method: "commonNeighbors()",
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateNodes(schema, source, target, nodes);
+      validateNodes(schema, sourceColumn, targetColumn, nodes);
       return nodes.values;
     },
     buildSelect: (input, schema) =>
       commonNeighborsSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         nodes,
         direction,
       ),
     outputSchema: (schema) => ({
-      node: validateNodes(schema, source, target, nodes).idType,
+      node: validateNodes(schema, sourceColumn, targetColumn, nodes).idType,
     }),
   });
 }

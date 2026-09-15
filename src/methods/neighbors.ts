@@ -18,16 +18,16 @@ type NeighborsOptions = {
 
 export default function neighbors(
   simpleTable: SimpleTable,
-  source: string,
-  target: string,
-  start: GraphId | GraphId[],
+  sourceColumn: string,
+  targetColumn: string,
+  startNodes: GraphId | GraphId[],
   options: NeighborsOptions = {},
 ): SimpleTable {
-  if (typeof source !== "string") {
-    throw new TypeError("neighbors() source must be a string.");
+  if (typeof sourceColumn !== "string") {
+    throw new TypeError("neighbors() sourceColumn must be a string.");
   }
-  if (typeof target !== "string") {
-    throw new TypeError("neighbors() target must be a string.");
+  if (typeof targetColumn !== "string") {
+    throw new TypeError("neighbors() targetColumn must be a string.");
   }
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
@@ -52,13 +52,17 @@ export default function neighbors(
     );
   }
 
-  const preparedStarts = prepareGraphStarts(start, "neighbors()");
+  const preparedStarts = prepareGraphStarts(
+    startNodes,
+    "neighbors()",
+    "startNodes",
+  );
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
   const parameters = {
-    source,
-    target,
-    start: structuredClone(start),
+    sourceColumn,
+    targetColumn,
+    startNodes: structuredClone(startNodes),
     options,
   };
 
@@ -67,23 +71,23 @@ export default function neighbors(
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateStarts(schema, source, target, preparedStarts);
+      validateStarts(schema, sourceColumn, targetColumn, preparedStarts);
       return preparedStarts.values;
     },
     buildSelect: (input, schema) =>
       neighborsSelect(
         input,
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
         direction,
       ),
     outputSchema: (schema) => {
       const endpoints = validateStarts(
         schema,
-        source,
-        target,
+        sourceColumn,
+        targetColumn,
         preparedStarts,
       );
       return { start: endpoints.idType, node: endpoints.idType };
@@ -103,6 +107,7 @@ function validateStarts(
     target,
     starts,
     "neighbors()",
+    "startNodes",
   );
 }
 
@@ -121,6 +126,7 @@ function neighborsSelect(
     target,
     starts,
     "neighbors()",
+    "startNodes",
   );
   const relations = prepared.relationNames([
     "graph_starts",

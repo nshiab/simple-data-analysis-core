@@ -499,12 +499,12 @@ Deno.test("degree validates arguments before queuing", async () => {
     assertThrows(
       () => table.degree(1 as unknown as string, "target"),
       TypeError,
-      "degree() source must be a string.",
+      "degree() sourceColumn must be a string.",
     );
     assertThrows(
       () => table.degree("source", 1 as unknown as string),
       TypeError,
-      "degree() target must be a string.",
+      "degree() targetColumn must be a string.",
     );
     assertThrows(
       () => table.degree("source", "target", null as never),
