@@ -226,6 +226,16 @@ Deno.test("mahalanobis rejects invalid scalar and vector rows with actionable di
       columns: "features" as string | string[],
       messages: ["equal dimensions"],
     },
+    {
+      sql: "CREATE TABLE source (features DOUBLE[2])",
+      columns: "features" as string | string[],
+      messages: ["n=0 and d=2"],
+    },
+    {
+      sql: "CREATE TABLE source (features DOUBLE[])",
+      columns: "features" as string | string[],
+      messages: ["could not determine a vector dimension"],
+    },
   ];
   for (const { sql, columns, messages } of invalidCases) {
     const sdb = new SimpleDB();
@@ -448,6 +458,87 @@ Deno.test("mahalanobis rolls back publication and cleans scratch state after com
         "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
       )).getRowsJS(),
       [["source_id"]],
+    );
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("mahalanobis preserves quoted vectors, exact typed payloads, and HNSW indexes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT id,
+      [x,y]::FLOAT[2] AS "Feature "" values",
+      (9007199254740992::BIGINT + id) AS row_id,
+      (123456789.123456789::DECIMAL(18,9) + id) AS distance,
+      '{"value":[1,2]}'::JSON AS weight,
+      DATE '2020-01-01' + id AS origin,
+      {'feature': id, 'value': 'retained'} AS observation
+      FROM (VALUES (3,1,2), (1,2,1), (4,4,5), (2,5,4)) rows(id,x,y)`);
+    const table = sdb.newTable("source");
+    await table.createVssIndex('Feature " values').run();
+    const typesBefore = await table.getTypes();
+    const indexesBefore = structuredClone(table.indexes);
+    const sourceQuery = `SELECT id, "Feature "" values", row_id::VARCHAR,
+      distance::VARCHAR, weight::VARCHAR, origin::VARCHAR, observation
+      FROM source`;
+    const before = (await sdb.connection!.runAndReadAll(sourceQuery))
+      .getRowsJS();
+    await table.mahalanobis('FEATURE " VALUES', 'Computed " distance').run();
+    assertEquals(
+      (await sdb.connection!.runAndReadAll(sourceQuery)).getRowsJS(),
+      before,
+    );
+    assertEquals(await table.getTypes(), {
+      ...typesBefore,
+      'Computed " distance': "DOUBLE",
+    });
+    const distances = (await sdb.connection!.runAndReadAll(
+      'SELECT "Computed "" distance" FROM source',
+    )).getRowsJS().map((row) => Number(row[0]));
+    assert(distances.every(Number.isFinite));
+    assertAlmostEquals(
+      distances.reduce((sum, distance) => sum + distance ** 2, 0),
+      6,
+      1e-11,
+    );
+    assertEquals(table.indexes, indexesBefore);
+    assertEquals(
+      (await sdb.connection!.runAndReadAll(
+        "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
+      )).getRowsJS(),
+      [["vss_cosine_index_source"]],
+    );
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("mahalanobis numerical failure aborts later queued operations and permits retry", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS
+      SELECT i AS id, [i, 2*i]::DOUBLE[2] AS features
+      FROM range(4) rows(i)`);
+    const table = sdb.newTable("source");
+    const before = await table.getData();
+    const typesBefore = await table.getTypes();
+    await assertRejects(
+      () =>
+        table.mahalanobis("features", "distance")
+          .selectColumns(["distance"]).run(),
+      Error,
+      "linearly dependent",
+    );
+    assertEquals(await table.getData(), before);
+    assertEquals(await table.getTypes(), typesBefore);
+    assertEquals(await scratchRelations(sdb), []);
+    await table.mahalanobis(["id"], "distance").run();
+    assertClose(
+      (await table.getData()).map((row) => Number(row.distance)),
+      [1.5, 0.5, 0.5, 1.5].map((value) => value / Math.sqrt(5 / 3)),
     );
     assertEquals(await scratchRelations(sdb), []);
   } finally {

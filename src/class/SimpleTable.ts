@@ -3368,12 +3368,15 @@ export default class SimpleTable extends Simple {
    * The dataset must have more observations than feature dimensions (`n > d`).
    * This is necessary but does not guarantee an invertible covariance matrix:
    * constant or linearly dependent features also cause the operation to fail.
-   * Null, non-finite, empty, or inconsistent vectors fail the whole operation
-   * without creating the output column.
+   * Numerically unstable covariance is rejected too; rescale extreme feature
+   * units or remove nearly dependent features before retrying. Null or
+   * non-finite feature values, empty vectors, and inconsistent vector lengths
+   * fail the whole operation without creating the output column.
    *
    * @param columns - A numeric vector column, or numeric scalar columns in
    * feature-dimension order.
-   * @param newColumn - The name of the DOUBLE distance column to create.
+   * @param newColumn - The name of the DOUBLE distance column to create. An
+   * existing column name is rejected.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
