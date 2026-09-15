@@ -24,7 +24,8 @@ export async function writeCacheDatabase(
   await loadIndexExtensions(table, persistedIndexes);
   try {
     await table.sdb.customQuery(
-      `ATTACH '${cleanPath(temporaryFile)}' AS ${cacheDatabase};
+      `ATTACH '${cleanPath(temporaryFile)}' AS ${cacheDatabase}
+        (STORAGE_VERSION 'latest');
       CREATE TABLE ${cacheDatabase}.${quoteIdentifier(table.name)} AS
         SELECT * FROM ${quoteIdentifier(table.name)};`,
     );
