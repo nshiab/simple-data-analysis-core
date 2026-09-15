@@ -86,18 +86,18 @@ arguments, not strings. For empty inputs, load the header-only file with
 explicit string endpoint/edge-ID and numeric weight types so inference does not
 define the test's schema.
 
-| Method                  | Expected file                       | Output after dropping `case`                       |
-| ----------------------- | ----------------------------------- | -------------------------------------------------- |
-| `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                       |
-| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                     |
-| `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                             |
-| `reachable()`           | `expected/reachable.csv`            | `start,node`                                       |
-| `distances()`           | `expected/distances.csv`            | `start,node,distance`                              |
-| `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,edgeId,source,target,weight,distance` |
-| `paths()`               | `expected/paths.csv`                | `pathId,step,edgeId,source,target,weight,distance` |
-| `connectedComponents()` | `expected/connected_components.csv` | `node,componentId`                                 |
-| `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,edgeId,source,target,weight,distance` |
-| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                           |
+| Method                  | Expected file                       | Output after dropping `case`                    |
+| ----------------------- | ----------------------------------- | ----------------------------------------------- |
+| `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                    |
+| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                  |
+| `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                          |
+| `reachable()`           | `expected/reachable.csv`            | `start,node`                                    |
+| `distances()`           | `expected/distances.csv`            | `start,node,distance`                           |
+| `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,edgeId,source,target,weight,total` |
+| `paths()`               | `expected/paths.csv`                | `pathId,step,edgeId,source,target,weight,total` |
+| `connectedComponents()` | `expected/connected_components.csv` | `node,componentId`                              |
+| `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,edgeId,source,target,weight,total` |
+| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                        |
 
 The files under `expected/numeric/` retain numeric identities for neighbors,
 distances, shortest paths, cycle normalization, and topological order. The
@@ -120,16 +120,17 @@ The baseline expectations include these useful checks:
   the method selects the smallest currently eligible ID.
 
 For weighted shortest paths from A to E, `W2/W3/W4` and `W5/W6` both total 3;
-the latter starts with weight 0 and therefore has cumulative distances 0, 3. The
+the latter starts with weight 0 and therefore has cumulative totals 0, 3. The
 unweighted result is only direct edge W1. `paths()` retains all three simple
 routes and their individual totals. The parallel fixture retains P1/P3 and P2/P3
 as separate paths even though their node sequences match.
 
 Route rows represent traversed connections. There is no synthetic start row. A
 two-edge path has two rows, and a cycle contains its real closing edge.
-Unweighted rows still have `weight=1` and cumulative `distance`. Incoming and
-both-direction results report endpoints in traversal order while retaining the
-stored edge ID; for example incoming edge B5 is emitted as E->D.
+Unweighted rows still have `weight=1` and a running sum: `total` for
+`shortestPath()`, `paths()`, and `findCycles()`. Incoming and both-direction
+results report endpoints in traversal order while retaining the stored edge ID;
+for example incoming edge B5 is emitted as E->D.
 
 ## Empty results and inexpensive errors
 

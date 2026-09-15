@@ -1,4 +1,4 @@
-case,pathId,step,edgeId,source,target,weight,distance
+case,pathId,step,edgeId,source,target,weight,total
 baseline-A-E-outgoing,0,1,B1,A,B,1,1
 baseline-A-E-outgoing,0,2,B3,B,D,1,2
 baseline-A-E-outgoing,0,3,B5,D,E,1,3

@@ -3687,10 +3687,11 @@ await connections
 
 #### `shortestPath`
 
-Finds all shortest routes between two different nodes. By default, the shortest
-route uses the fewest connections. Use the `weight` option to find routes with
-the smallest sum of values from a numeric column, such as travel time. When
-several routes tie, all are returned. Routes never repeat a node.
+Finds the shortest route between two different nodes. If several routes tie for
+shortest, all of them are returned. By default, the shortest route uses the
+fewest connections. Use the `weight` option to find the route with the smallest
+sum of values from a numeric column, such as travel time. Routes never repeat a
+node.
 
 The `direction` option lets you follow connections from source to target, from
 target to source, or in either direction. Each connection needs its own unique,
@@ -3698,10 +3699,11 @@ non-null ID in the column named by `edgeId`. You can create these IDs with
 `addId()`.
 
 The result has `pathId`, `step`, `edgeId`, `source`, `target`, `weight`, and
-`distance` columns. Each row is one connection along a route. Steps start at
-one. The source and target show the direction taken along that route. Weight is
-the connection cost, and distance is the running total. Without the `weight`
-option, each connection costs one.
+`total` columns. Each row is one connection along a route. Steps start at one.
+The source and target show the direction taken along that route. The `weight`
+column is the connection cost, and `total` is the sum of those costs up to and
+including the current step. Without the `weight` option, each connection costs
+one.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
@@ -3764,14 +3766,14 @@ await connections
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | E1     | A      | B      |      1 |        1 |
-|      0 |    2 | E3     | B      | D      |      1 |        2 |
-|      0 |    3 | E5     | D      | E      |      1 |        3 |
-|      1 |    1 | E2     | A      | C      |      1 |        1 |
-|      1 |    2 | E4     | C      | D      |      1 |        2 |
-|      1 |    3 | E5     | D      | E      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | E1     | A      | B      |      1 |     1 |
+|      0 |    2 | E3     | B      | D      |      1 |     2 |
+|      0 |    3 | E5     | D      | E      |      1 |     3 |
+|      1 |    1 | E2     | A      | C      |      1 |     1 |
+|      1 |    2 | E4     | C      | D      |      1 |     2 |
+|      1 |    3 | E5     | D      | E      |      1 |     3 |
 
 For an input without connection IDs, use `addId()` first:
 
@@ -3789,10 +3791,10 @@ await unnumberedConnections
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | edge-0 | A      | B      |      1 |        1 |
-|      0 |    2 | edge-1 | B      | E      |      1 |        2 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | edge-0 | A      | B      |      1 |     1 |
+|      0 |    2 | edge-1 | B      | E      |      1 |     2 |
 
 The next two examples each start with these flights. The direct flight takes ten
 minutes; the route through B and D takes three:
@@ -3814,11 +3816,11 @@ await flights
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F2     | A      | B      |      1 |        1 |
-|      0 |    2 | F3     | B      | D      |      1 |        2 |
-|      0 |    3 | F4     | D      | E      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F2     | A      | B      |      1 |     1 |
+|      0 |    2 | F3     | B      | D      |      1 |     2 |
+|      0 |    3 | F4     | D      | E      |      1 |     3 |
 
 Without the `weight` option, the direct flight is shortest because it uses only
 one connection:
@@ -3829,9 +3831,9 @@ await flights
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F1     | A      | E      |      1 |        1 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F1     | A      | E      |      1 |     1 |
 
 With `direction: "incoming"`, connections are followed from target to source.
 For this input:
@@ -3848,9 +3850,9 @@ await reverseExample
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F1     | B      | A      |      1 |        1 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F1     | B      | A      |      1 |     1 |
 
 #### `paths`
 
@@ -3861,11 +3863,11 @@ unique, non-null ID in the column named by `edgeId`. You can create these IDs
 with `addId()`.
 
 The result has `pathId`, `step`, `edgeId`, `source`, `target`, `weight`, and
-`distance` columns. Each row is one connection along a route. Steps start at
-one. The source and target show the direction taken along that route. By
-default, each connection has a weight of one and distance counts the connections
-taken so far. Use the `weight` option to calculate running totals from a numeric
-column instead.
+`total` columns. Each row is one connection along a route. Steps start at one.
+The source and target show the direction taken along that route. The `weight`
+column is the connection cost, and `total` is the sum of those costs up to and
+including the current step. By default, each connection costs one. Use the
+`weight` option to calculate running totals from a numeric column instead.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
@@ -3927,12 +3929,12 @@ await connections
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | E1     | A      | B      |      1 |        1 |
-|      0 |    2 | E3     | B      | D      |      1 |        2 |
-|      1 |    1 | E2     | A      | C      |      1 |        1 |
-|      1 |    2 | E4     | C      | D      |      1 |        2 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | E1     | A      | B      |      1 |     1 |
+|      0 |    2 | E3     | B      | D      |      1 |     2 |
+|      1 |    1 | E2     | A      | C      |      1 |     1 |
+|      1 |    2 | E4     | C      | D      |      1 |     2 |
 
 For an input without connection IDs, use `addId()` first:
 
@@ -3950,10 +3952,10 @@ await unnumberedConnections
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | edge-0 | A      | B      |      1 |        1 |
-|      0 |    2 | edge-1 | B      | D      |      1 |        2 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | edge-0 | A      | B      |      1 |     1 |
+|      0 |    2 | edge-1 | B      | D      |      1 |     2 |
 
 The next three examples each start with these flights. The direct flight takes
 ten minutes; the route through B takes three:
@@ -3974,13 +3976,13 @@ await flights
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F1     | A      | D      |     10 |       10 |
-|      1 |    1 | F2     | A      | B      |      1 |        1 |
-|      1 |    2 | F3     | B      | D      |      2 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F1     | A      | D      |     10 |    10 |
+|      1 |    1 | F2     | A      | B      |      1 |     1 |
+|      1 |    2 | F3     | B      | D      |      2 |     3 |
 
-Without the `weight` option, the same routes are returned and distance counts
+Without the `weight` option, the same routes are returned and total counts
 connections:
 
 ```ts
@@ -3989,11 +3991,11 @@ await flights
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F1     | A      | D      |      1 |        1 |
-|      1 |    1 | F2     | A      | B      |      1 |        1 |
-|      1 |    2 | F3     | B      | D      |      1 |        2 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F1     | A      | D      |      1 |     1 |
+|      1 |    1 | F2     | A      | B      |      1 |     1 |
+|      1 |    2 | F3     | B      | D      |      1 |     2 |
 
 With `direction: "incoming"`, the routes run from D to A. Connection IDs and
 weights are kept, while source and target show the direction taken:
@@ -4007,41 +4009,41 @@ await flights
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F1     | D      | A      |     10 |       10 |
-|      1 |    1 | F3     | D      | B      |      2 |        2 |
-|      1 |    2 | F2     | B      | A      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F1     | D      | A      |     10 |    10 |
+|      1 |    1 | F3     | D      | B      |      2 |     2 |
+|      1 |    2 | F2     | B      | A      |      1 |     3 |
 
 #### `findCycles`
 
 Finds all loops that return to their starting node without repeating any other
-node or reusing a connection. The required `direction` argument specifies
-whether to follow connections from source to target ("outgoing"), from target to
-source ("incoming"), or in either direction ("both").
+node or reusing a connection. The `direction` option lets you follow connections
+from source to target, from target to source, or in either direction. By
+default, connections are followed from source to target.
 
 Each connection needs its own unique, non-null ID in the column named by
 `edgeId`. You can create these IDs with `addId()`. The result has `pathId`,
-`step`, `edgeId`, `source`, `target`, `weight`, and `distance` columns. Each row
-is one connection, including the final connection back to the start. Steps start
-at one. The source and target show the direction taken around the loop.
+`step`, `edgeId`, `source`, `target`, `weight`, and `total` columns. Each row is
+one connection, including the final connection back to the start. Steps start at
+one. The source and target show the direction taken around the loop.
 
-By default, each connection has a weight of one and distance counts the
+By default, each connection has a weight of one and `total` counts the
 connections taken so far. Use the `weight` option to calculate running totals
 from a numeric column instead. Weights must be non-null, finite, and
 non-negative.
 
-Each cycle starts at its smallest node ID. With "both", a cycle and its reverse
-are returned once, choosing the direction with the smaller sequence of
-connection IDs. Cycles are numbered from zero by comparing these sequences
+Each cycle starts at its smallest node ID. With `direction: "both"`, a cycle and
+its reverse are returned once, choosing the direction with the smaller sequence
+of connection IDs. Cycles are numbered from zero by comparing these sequences
 element by element, and rows are sorted by `pathId`, then `step`. Reordering the
 input rows preserves cycle IDs; changing the connections may change them.
 
-A self-connection forms a one-step cycle. With "both", two separate connections
-between the same nodes can form a two-step cycle. A single connection cannot be
-followed out and back to create a cycle. Cycles using different connections
-remain separate, even if they visit the same nodes. If there are no cycles, the
-result has no rows.
+A self-connection forms a one-step cycle. With `direction: "both"`, two separate
+connections between the same nodes can form a two-step cycle. A single
+connection cannot be followed out and back to create a cycle. Cycles using
+different connections remain separate, even if they visit the same nodes. If
+there are no cycles, the result has no rows.
 
 There is no limit on cycle length or the number of cycles returned. Finding all
 cycles can take a long time and use substantial memory.
@@ -4054,12 +4056,12 @@ The next three examples each start with these connections:
 | E2     | B      | C      |
 | E3     | C      | A      |
 
-With "outgoing", connections are followed from source to target:
+By default, connections are followed from source to target:
 
 ##### Signature
 
 ```typescript
-findCycles(sourceColumn: string, targetColumn: string, edgeId: string, direction: "outgoing" | "incoming" | "both", options?: { weight?: string; outputTable?: string | boolean }): SimpleTable;
+findCycles(sourceColumn: string, targetColumn: string, edgeId: string, options?: { direction?: "outgoing" | "incoming" | "both"; weight?: string; outputTable?: string | boolean }): SimpleTable;
 ```
 
 ##### Parameters
@@ -4070,9 +4072,10 @@ findCycles(sourceColumn: string, targetColumn: string, edgeId: string, direction
   node ID.
 - **`edgeId`**: The name of the column uniquely identifying each connection
   (edge).
-- **`direction`**: The direction in which to follow connections: `"outgoing"`,
-  `"incoming"`, or `"both"`.
-- **`options`**: An optional object with cost and result configuration.
+- **`options`**: An optional object with direction, cost, and result
+  configuration.
+- **`options.direction`**: The direction in which to follow connections.
+  Defaults to `"outgoing"`.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
@@ -4087,47 +4090,48 @@ The result table, so methods can be chained.
 
 ```ts
 await triangle
-  .findCycles("source", "target", "edgeId", "outgoing")
+  .findCycles("source", "target", "edgeId")
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | E1     | A      | B      |      1 |        1 |
-|      0 |    2 | E2     | B      | C      |      1 |        2 |
-|      0 |    3 | E3     | C      | A      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | E1     | A      | B      |      1 |     1 |
+|      0 |    2 | E2     | B      | C      |      1 |     2 |
+|      0 |    3 | E3     | C      | A      |      1 |     3 |
 
-With "incoming", connections are followed from target to source:
+With `direction: "incoming"`, connections are followed from target to source:
 
 ```ts
 await triangle
-  .findCycles("source", "target", "edgeId", "incoming")
+  .findCycles("source", "target", "edgeId", { direction: "incoming" })
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | E3     | A      | C      |      1 |        1 |
-|      0 |    2 | E2     | C      | B      |      1 |        2 |
-|      0 |    3 | E1     | B      | A      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | E3     | A      | C      |      1 |     1 |
+|      0 |    2 | E2     | C      | B      |      1 |     2 |
+|      0 |    3 | E1     | B      | A      |      1 |     3 |
 
-With "both", either direction is allowed. This cycle appears once, in the
-direction that starts with E1:
+With `direction: "both"`, either direction is allowed. This cycle appears once,
+in the direction that starts with E1:
 
 ```ts
 await triangle
-  .findCycles("source", "target", "edgeId", "both")
+  .findCycles("source", "target", "edgeId", { direction: "both" })
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | E1     | A      | B      |      1 |        1 |
-|      0 |    2 | E2     | B      | C      |      1 |        2 |
-|      0 |    3 | E3     | C      | A      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | E1     | A      | B      |      1 |     1 |
+|      0 |    2 | E2     | B      | C      |      1 |     2 |
+|      0 |    3 | E3     | C      | A      |      1 |     3 |
 
-Two separate connections between A and B form a cycle with "both". The
-self-connection at C forms another cycle. For this input:
+Two separate connections between A and B form a cycle with `direction:
+"both"`.
+The self-connection at C forms another cycle. For this input:
 
 | edgeId | source | target | cost |
 | ------ | ------ | ------ | ---: |
@@ -4137,20 +4141,21 @@ self-connection at C forms another cycle. For this input:
 
 ```ts
 await parallelAndLoop
-  .findCycles("source", "target", "edgeId", "both", {
+  .findCycles("source", "target", "edgeId", {
+    direction: "both",
     weight: "cost",
   })
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | L1     | C      | C      |      4 |        4 |
-|      1 |    1 | P1     | A      | B      |      1 |        1 |
-|      1 |    2 | P2     | B      | A      |      2 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | L1     | C      | C      |      4 |     4 |
+|      1 |    1 | P1     | A      | B      |      1 |     1 |
+|      1 |    2 | P2     | B      | A      |      2 |     3 |
 
-With the `weight` option, distance is a running total of the selected values.
-For these flights:
+With the `weight` option, total is a running total of the selected values. For
+these flights:
 
 | flightId | origin | destination | minutes |
 | -------- | ------ | ----------- | ------: |
@@ -4160,17 +4165,17 @@ For these flights:
 
 ```ts
 await flights
-  .findCycles("origin", "destination", "flightId", "outgoing", {
+  .findCycles("origin", "destination", "flightId", {
     weight: "minutes",
   })
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | F1     | A      | B      |      1 |        1 |
-|      0 |    2 | F2     | B      | C      |      2 |        3 |
-|      0 |    3 | F3     | C      | A      |      3 |        6 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | F1     | A      | B      |      1 |     1 |
+|      0 |    2 | F2     | B      | C      |      2 |     3 |
+|      0 |    3 | F3     | C      | A      |      3 |     6 |
 
 For an input without connection IDs, use `addId()` first:
 
@@ -4183,15 +4188,15 @@ For an input without connection IDs, use `addId()` first:
 ```ts
 await unnumberedConnections
   .addId("edgeId", { prefix: "edge-" })
-  .findCycles("source", "target", "edgeId", "outgoing")
+  .findCycles("source", "target", "edgeId")
   .log();
 ```
 
-| pathId | step | edgeId | source | target | weight | distance |
-| -----: | ---: | ------ | ------ | ------ | -----: | -------: |
-|      0 |    1 | edge-0 | A      | B      |      1 |        1 |
-|      0 |    2 | edge-1 | B      | C      |      1 |        2 |
-|      0 |    3 | edge-2 | C      | A      |      1 |        3 |
+| pathId | step | edgeId | source | target | weight | total |
+| -----: | ---: | ------ | ------ | ------ | -----: | ----: |
+|      0 |    1 | edge-0 | A      | B      |      1 |     1 |
+|      0 |    2 | edge-1 | B      | C      |      1 |     2 |
+|      0 |    3 | edge-2 | C      | A      |      1 |     3 |
 
 #### `extractDatePart`
 

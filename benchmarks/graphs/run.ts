@@ -129,13 +129,12 @@ function invoke(
     case "commonNeighbors":
       return source.commonNeighbors("source", "target", 0, 1, options);
     case "findCycles":
-      return source.findCycles(
-        "source",
-        "target",
-        "edgeId",
-        variant === "incoming" || variant === "both" ? variant : "outgoing",
-        weighted,
-      );
+      return source.findCycles("source", "target", "edgeId", {
+        ...weighted,
+        direction: variant === "incoming" || variant === "both"
+          ? variant
+          : "outgoing",
+      });
     case "topologicalSort":
       return source.topologicalSort("source", "target", options);
   }

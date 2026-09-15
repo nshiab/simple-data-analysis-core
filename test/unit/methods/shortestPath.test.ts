@@ -33,7 +33,7 @@ function baselineRoutes() {
       source: "A",
       target: "B",
       weight: 1,
-      distance: 1,
+      total: 1,
     },
     {
       pathId: 0,
@@ -42,7 +42,7 @@ function baselineRoutes() {
       source: "B",
       target: "D",
       weight: 1,
-      distance: 2,
+      total: 2,
     },
     {
       pathId: 0,
@@ -51,7 +51,7 @@ function baselineRoutes() {
       source: "D",
       target: "E",
       weight: 1,
-      distance: 3,
+      total: 3,
     },
     {
       pathId: 1,
@@ -60,7 +60,7 @@ function baselineRoutes() {
       source: "A",
       target: "C",
       weight: 1,
-      distance: 1,
+      total: 1,
     },
     {
       pathId: 1,
@@ -69,7 +69,7 @@ function baselineRoutes() {
       source: "C",
       target: "D",
       weight: 1,
-      distance: 2,
+      total: 2,
     },
     {
       pathId: 1,
@@ -78,7 +78,7 @@ function baselineRoutes() {
       source: "D",
       target: "E",
       weight: 1,
-      distance: 3,
+      total: 3,
     },
   ];
 }
@@ -112,7 +112,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "E",
           target: "D",
           weight: 1,
-          distance: 1,
+          total: 1,
         },
         {
           pathId: 0,
@@ -121,7 +121,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "D",
           target: "B",
           weight: 1,
-          distance: 2,
+          total: 2,
         },
         {
           pathId: 0,
@@ -130,7 +130,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "B",
           target: "A",
           weight: 1,
-          distance: 3,
+          total: 3,
         },
         {
           pathId: 1,
@@ -139,7 +139,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "E",
           target: "D",
           weight: 1,
-          distance: 1,
+          total: 1,
         },
         {
           pathId: 1,
@@ -148,7 +148,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "D",
           target: "C",
           weight: 1,
-          distance: 2,
+          total: 2,
         },
         {
           pathId: 1,
@@ -157,7 +157,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "C",
           target: "A",
           weight: 1,
-          distance: 3,
+          total: 3,
         },
       ],
     );
@@ -173,7 +173,7 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
         source: "B",
         target: "A",
         weight: 1,
-        distance: 1,
+        total: 1,
       }],
     );
   } finally {
@@ -194,7 +194,7 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
         source: "A",
         target: "E",
         weight: 1,
-        distance: 1,
+        total: 1,
       }],
     );
     assertEquals(
@@ -210,7 +210,7 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
           source: "A",
           target: "B",
           weight: 1,
-          distance: 1,
+          total: 1,
         },
         {
           pathId: 0,
@@ -219,7 +219,7 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
           source: "B",
           target: "D",
           weight: 1,
-          distance: 2,
+          total: 2,
         },
         {
           pathId: 0,
@@ -228,7 +228,7 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
           source: "D",
           target: "E",
           weight: 1,
-          distance: 3,
+          total: 3,
         },
         {
           pathId: 1,
@@ -237,7 +237,7 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
           source: "A",
           target: "C",
           weight: 0,
-          distance: 0,
+          total: 0,
         },
         {
           pathId: 1,
@@ -246,7 +246,7 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
           source: "C",
           target: "E",
           weight: 3,
-          distance: 3,
+          total: 3,
         },
       ],
     );
@@ -301,7 +301,7 @@ Deno.test("shortestPath enumerates simple routes through cycles and keeps floati
         source: "A",
         target: "B",
         weight: 1,
-        distance: 1,
+        total: 1,
       }],
     );
     assertEquals(
@@ -317,7 +317,7 @@ Deno.test("shortestPath enumerates simple routes through cycles and keeps floati
           source: "A",
           target: "B",
           weight: 0,
-          distance: 0,
+          total: 0,
         },
         {
           pathId: 0,
@@ -326,7 +326,7 @@ Deno.test("shortestPath enumerates simple routes through cycles and keeps floati
           source: "B",
           target: "C",
           weight: 2,
-          distance: 2,
+          total: 2,
         },
       ],
     );
@@ -351,7 +351,7 @@ Deno.test("shortestPath enumerates simple routes through cycles and keeps floati
       [1, "E4"],
     ]);
     assertEquals(
-      tied.filter((row) => row.target === "E").map((row) => row.distance),
+      tied.filter((row) => row.target === "E").map((row) => row.total),
       [
         100000000000000000000,
         100000000000000000000,
@@ -397,7 +397,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
         source: 0,
         target: 10,
         weight: 1,
-        distance: 1,
+        total: 1,
       },
       {
         pathId: 1,
@@ -406,7 +406,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
         source: 0,
         target: 2,
         weight: 0,
-        distance: 0,
+        total: 0,
       },
       {
         pathId: 1,
@@ -415,7 +415,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
         source: 2,
         target: 10,
         weight: 1,
-        distance: 1,
+        total: 1,
       },
     ]);
     assertEquals(await numeric.getTypes(), {
@@ -425,7 +425,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
       source: "BIGINT",
       target: "BIGINT",
       weight: "HUGEINT",
-      distance: "HUGEINT",
+      total: "HUGEINT",
     });
 
     const decimal = sdb.newTable("decimalWeights");
@@ -444,7 +444,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
       source: "VARCHAR",
       target: "VARCHAR",
       weight: "DECIMAL(38,2)",
-      distance: "DECIMAL(38,2)",
+      total: "DECIMAL(38,2)",
     });
     assertEquals(await decimal.getData(), [
       {
@@ -454,7 +454,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
         source: "A",
         target: "B",
         weight: "99999999999999999999.25",
-        distance: "99999999999999999999.25",
+        total: "99999999999999999999.25",
       },
       {
         pathId: 0,
@@ -463,7 +463,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
         source: "B",
         target: "C",
         weight: "0.50",
-        distance: "99999999999999999999.75",
+        total: "99999999999999999999.75",
       },
     ]);
 
@@ -475,7 +475,7 @@ Deno.test("shortestPath preserves numeric ordering and exact accumulators", asyn
     ).shortestPath("source", "target", "edgeId", "A", "C", {
       weight: "weight",
     });
-    assertEquals((await fraction.getData()).map((row) => row.distance), [
+    assertEquals((await fraction.getData()).map((row) => row.total), [
       0.5,
       1.75,
     ]);
@@ -545,7 +545,7 @@ Deno.test("shortestPath preserves the empty schema for unknown and disconnected 
       source: "VARCHAR",
       target: "VARCHAR",
       weight: "DECIMAL(38,3)",
-      distance: "DECIMAL(38,3)",
+      total: "DECIMAL(38,3)",
     });
 
     assertEquals(
@@ -704,7 +704,7 @@ Deno.test("shortestPath supports overwrite, separate outputs, chaining, and snap
       "source",
       "target",
       "weight",
-      "distance",
+      "total",
     ]);
 
     const source = loadScenario(sdb, "preserved", "baseline");
@@ -856,7 +856,7 @@ Deno.test("shortestPath has no implicit hop cap", async () => {
       source: 139,
       target: 140,
       weight: 1,
-      distance: 140,
+      total: 140,
     });
   } finally {
     await sdb.close();
@@ -954,13 +954,13 @@ Deno.test("shortestPath preserves wide numeric edge ordering and accumulated cos
       [1, 2, "3"],
     ]);
     assertEquals(
-      rows.filter((row) => row.step === 2).map((row) => row.distance),
+      rows.filter((row) => row.step === 2).map((row) => row.total),
       [
         "170141183460469231731687303715884105728",
         "170141183460469231731687303715884105728",
       ],
     );
-    assertEquals((await result.getTypes()).distance, "BIGNUM");
+    assertEquals((await result.getTypes()).total, "BIGNUM");
   } finally {
     await sdb.close();
   }
@@ -995,7 +995,7 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
           source: "A",
           target: "B",
           weight: 1,
-          distance: 1,
+          total: 1,
         },
         {
           pathId: 0,
@@ -1004,7 +1004,7 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
           source: "B",
           target: "D",
           weight: 1,
-          distance: 2,
+          total: 2,
         },
         {
           pathId: 0,
@@ -1013,7 +1013,7 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
           source: "D",
           target: "E",
           weight: 1,
-          distance: 3,
+          total: 3,
         },
       ],
     );
@@ -1032,7 +1032,7 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
         source: "A",
         target: "E",
         weight: 1,
-        distance: 1,
+        total: 1,
       }],
     );
   } finally {

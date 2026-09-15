@@ -12,6 +12,7 @@ import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 type FindCyclesOptions = {
+  direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
 };
@@ -21,7 +22,6 @@ export default function findCycles(
   sourceColumn: string,
   targetColumn: string,
   edgeId: string,
-  direction: GraphDirection,
   options: FindCyclesOptions = {},
 ): SimpleTable {
   if (typeof sourceColumn !== "string") {
@@ -34,17 +34,17 @@ export default function findCycles(
     throw new TypeError("findCycles() edgeId must be a string.");
   }
   if (
-    direction !== "outgoing" && direction !== "incoming" &&
-    direction !== "both"
-  ) {
-    throw new TypeError(
-      'findCycles() direction must be "outgoing", "incoming", or "both".',
-    );
-  }
-  if (
     options === null || typeof options !== "object" || Array.isArray(options)
   ) {
     throw new TypeError("findCycles() options must be an object.");
+  }
+  if (
+    options.direction !== undefined &&
+    !["outgoing", "incoming", "both"].includes(options.direction)
+  ) {
+    throw new TypeError(
+      'findCycles() options.direction must be "outgoing", "incoming", or "both".',
+    );
   }
   if (options.weight !== undefined && typeof options.weight !== "string") {
     throw new TypeError("findCycles() options.weight must be a string.");
@@ -60,7 +60,8 @@ export default function findCycles(
   }
 
   options = structuredClone(options);
-  const parameters = { sourceColumn, targetColumn, edgeId, direction, options };
+  const direction = options.direction ?? "outgoing";
+  const parameters = { sourceColumn, targetColumn, edgeId, options };
 
   return queueGraphResult(simpleTable, {
     method: "findCycles()",
@@ -101,7 +102,7 @@ export default function findCycles(
         source: validated.nodeIdType,
         target: validated.nodeIdType,
         weight: validated.distanceType,
-        distance: validated.distanceType,
+        total: validated.distanceType,
       };
     },
   });

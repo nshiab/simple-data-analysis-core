@@ -37,7 +37,7 @@ export function prepareGraphRouteEndpoints(
   }
   if (preparedStart.values[0] === preparedEnd.values[0]) {
     throw new TypeError(
-      `${method} start and end must be different. Use distances() for a zero-distance result or findCycles() to find loops.`,
+      `${method} start and end must be different. Use distances() to measure return routes or findCycles() to find loops.`,
     );
   }
   return {
@@ -148,7 +148,7 @@ export function graphRouteResultSelect(rankedRelation: string): string {
       ${q("route_step")}.${q("source")} AS ${q("source")},
       ${q("route_step")}.${q("target")} AS ${q("target")},
       ${q("route_step")}.${q("weight")} AS ${q("weight")},
-      ${q("route_step")}.${q("distance")} AS ${q("distance")}
+      ${q("route_step")}.${q("distance")} AS ${q("total")}
     FROM ${rankedRelation},
       UNNEST(${q("steps")}) WITH ORDINALITY AS ${q("unnested")}(${
     q("route_step")

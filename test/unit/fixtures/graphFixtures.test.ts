@@ -195,7 +195,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "source",
       "target",
       "weight",
-      "distance",
+      "total",
     ],
     "paths.csv": [
       "case",
@@ -205,7 +205,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "source",
       "target",
       "weight",
-      "distance",
+      "total",
     ],
     "connected_components.csv": ["case", "node", "componentId"],
     "find_cycles.csv": [
@@ -216,7 +216,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "source",
       "target",
       "weight",
-      "distance",
+      "total",
     ],
     "topological_sort.csv": ["case", "node", "componentId", "order"],
   };
@@ -311,7 +311,13 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
         pathRows.forEach((row, i) => {
           assertEquals(Number(row.step), i + 1, `${path}: ${caseName}`);
           distance += Number(row.weight);
-          assertEquals(Number(row.distance), distance, `${path}: ${caseName}`);
+          assertEquals(
+            Number(
+              row.total,
+            ),
+            distance,
+            `${path}: ${caseName}`,
+          );
           assert(row.edgeId.length > 0);
           assert(row.source.length > 0);
           assert(row.target.length > 0);
@@ -471,7 +477,7 @@ Deno.test("graph expectations pin the high-value hand-derived cases", async () =
   );
   assertEquals(
     cycles.filter((row) => row.case === "zero-cycle-weighted").at(-1)
-      ?.distance,
+      ?.total,
     "2",
   );
 

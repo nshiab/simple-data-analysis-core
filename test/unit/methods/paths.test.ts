@@ -95,7 +95,7 @@ Deno.test("paths preserves parallel edges, all weighted alternatives, and cumula
     assertEquals(
       (await unweighted.getData()).filter((row) => row.step === 1).map((
         row,
-      ) => [row.pathId, row.edgeId, row.weight, row.distance]),
+      ) => [row.pathId, row.edgeId, row.weight, row.total]),
       [[0, "W1", 1, 1], [1, "W2", 1, 1], [2, "W5", 1, 1]],
     );
 
@@ -126,7 +126,7 @@ Deno.test("paths uses typed deterministic edge sequences for numeric and string 
       source: "BIGINT",
       target: "BIGINT",
       weight: "HUGEINT",
-      distance: "HUGEINT",
+      total: "HUGEINT",
     });
 
     const edgeRows = [
@@ -167,7 +167,7 @@ Deno.test("paths uses typed deterministic edge sequences for numeric and string 
       [1, 2, "3"],
     ]);
     assertEquals(
-      wideRows.filter((row) => row.step === 2).map((row) => row.distance),
+      wideRows.filter((row) => row.step === 2).map((row) => row.total),
       [
         "170141183460469231731687303715884105728",
         "170141183460469231731687303715884105728",
@@ -190,11 +190,11 @@ Deno.test("paths preserves exact decimal accumulators", async () => {
     const result = table.paths("source", "target", "edgeId", "A", "C", {
       weight: "weight",
     });
-    assertEquals((await result.getData()).map((row) => row.distance), [
+    assertEquals((await result.getData()).map((row) => row.total), [
       "99999999999999999999.25",
       "99999999999999999999.75",
     ]);
-    assertEquals((await result.getTypes()).distance, "DECIMAL(38,2)");
+    assertEquals((await result.getTypes()).total, "DECIMAL(38,2)");
   } finally {
     await sdb.close();
   }
@@ -218,7 +218,7 @@ Deno.test("paths preserves an empty typed result for unknown and disconnected en
       source: "VARCHAR",
       target: "VARCHAR",
       weight: "DECIMAL(38,3)",
-      distance: "DECIMAL(38,3)",
+      total: "DECIMAL(38,3)",
     });
     assertEquals(
       await loadScenario(sdb, "unknown", "baseline")
@@ -359,7 +359,7 @@ Deno.test("paths supports output destinations, snapshots, custom names, and addI
       "source",
       "target",
       "weight",
-      "distance",
+      "total",
     ]);
 
     const source = loadScenario(sdb, "preserved", "baseline");
@@ -447,7 +447,7 @@ Deno.test("paths uses native uncapped simple-route enumeration and avoids relati
     const deep = await sdb.newTable("deepPaths").loadArray(edges)
       .paths("source", "target", "edgeId", 0, 140).getData();
     assertEquals(deep.length, 140);
-    assertEquals(deep.at(-1)?.distance, 140);
+    assertEquals(deep.at(-1)?.total, 140);
   } finally {
     observer.restore();
     await sdb.close();
@@ -524,7 +524,7 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
           source: "A",
           target: "D",
           weight: 10,
-          distance: 10,
+          total: 10,
         },
         {
           pathId: 1,
@@ -533,7 +533,7 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
           source: "A",
           target: "B",
           weight: 1,
-          distance: 1,
+          total: 1,
         },
         {
           pathId: 1,
@@ -542,7 +542,7 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
           source: "B",
           target: "D",
           weight: 2,
-          distance: 3,
+          total: 3,
         },
       ],
     );
@@ -553,7 +553,7 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         "flightId",
         "A",
         "D",
-      ).getData()).map((row) => [row.pathId, row.distance]),
+      ).getData()).map((row) => [row.pathId, row.total]),
       [[0, 1], [1, 1], [1, 2]],
     );
     assertEquals(
@@ -572,7 +572,7 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         row.edgeId,
         row.source,
         row.target,
-        row.distance,
+        row.total,
       ]),
       [
         [0, "F1", "D", "A", 10],
@@ -643,10 +643,10 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
             ? routes
             : routes.filter((route) => cost(route) === minimum);
           const expected = selected.flatMap((route, pathId) => {
-            let distance = 0;
+            let total = 0;
             return route.map((edge, index) => {
               const weight = weighted ? edge.weight : 1;
-              distance += weight;
+              total += weight;
               return {
                 pathId,
                 step: index + 1,
@@ -654,7 +654,7 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
                 source: edge.source,
                 target: edge.target,
                 weight,
-                distance,
+                total,
               };
             });
           });

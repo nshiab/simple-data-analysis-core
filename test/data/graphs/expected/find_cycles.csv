@@ -1,4 +1,4 @@
-case,pathId,step,edgeId,source,target,weight,distance
+case,pathId,step,edgeId,source,target,weight,total
 triangle-outgoing,0,1,T1,A,B,1,1
 triangle-outgoing,0,2,T2,B,C,1,2
 triangle-outgoing,0,3,T3,C,A,1,3

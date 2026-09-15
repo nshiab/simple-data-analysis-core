@@ -118,7 +118,7 @@ export default function shortestPath(
         source: validated.nodeIdType,
         target: validated.nodeIdType,
         weight: validated.distanceType,
-        distance: validated.distanceType,
+        total: validated.distanceType,
       };
     },
   });
