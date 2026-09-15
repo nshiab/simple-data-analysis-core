@@ -544,6 +544,65 @@ Deno.test("distances preserves exact decimal endpoint IDs through recursion", as
   }
 });
 
+Deno.test("distances orders numeric starts and tied nodes by their numeric values", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const direction of ["outgoing", "incoming", "both"] as const) {
+      const rows = [10, 2].flatMap((source) =>
+        [100, 20, -1].map((target) =>
+          direction === "incoming"
+            ? { source: target, target: source, cost: 0 }
+            : { source, target, cost: 0 }
+        )
+      );
+      const expected = [2, 10].flatMap((start) =>
+        (direction === "both" ? [-1, 2, 10, 20, 100] : [-1, 20, 100])
+          .map((node) => ({ start, node, distance: 0 }))
+      );
+      for (const edges of [rows, rows.toReversed()]) {
+        assertEquals(
+          await sdb.newTable().loadArray(edges)
+            .distances("source", "target", [10, 2], {
+              direction,
+              weight: "cost",
+            }).getData(),
+          expected,
+        );
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances distinguishes a zero-cost return from an empty route", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const direction of ["outgoing", "incoming", "both"] as const) {
+      assertEquals(
+        await sdb.newTable().loadArray([
+          { source: "A", target: "B", cost: 0 },
+        ]).distances("source", "target", ["unknown", "B", "A"], {
+          direction,
+          weight: "cost",
+        }).getData(),
+        direction === "both"
+          ? [
+            { start: "A", node: "A", distance: 0 },
+            { start: "A", node: "B", distance: 0 },
+            { start: "B", node: "A", distance: 0 },
+            { start: "B", node: "B", distance: 0 },
+          ]
+          : direction === "outgoing"
+          ? [{ start: "A", node: "B", distance: 0 }]
+          : [{ start: "B", node: "A", distance: 0 }],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("distances preserves exact return routes and zero-cost destinations", async () => {
   const sdb = new SimpleDB();
   try {

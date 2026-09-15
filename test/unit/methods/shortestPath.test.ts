@@ -1039,3 +1039,265 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
     await sdb.close();
   }
 });
+
+Deno.test("shortestPath executes every actual JSDoc example and prints its complete ordered table", async () => {
+  const source = await Deno.readTextFile(
+    new URL("../../../src/class/SimpleTable.ts", import.meta.url),
+  );
+  const documentation = source.slice(
+    source.indexOf(
+      "   * Finds the shortest route between two different nodes.",
+    ),
+    source.indexOf("\n  shortestPath("),
+  ).replace(/^ {3}\* ?/gm, "");
+  const examples = [...documentation.matchAll(
+    /```ts\n([\s\S]*?)```\n\n((?:\|[^\n]*\n)+)/g,
+  )];
+  assertEquals(examples.length, 5);
+  const inputs = [
+    [
+      { edgeId: "E1", source: "A", target: "B" },
+      { edgeId: "E2", source: "A", target: "C" },
+      { edgeId: "E3", source: "B", target: "D" },
+      { edgeId: "E4", source: "C", target: "D" },
+      { edgeId: "E5", source: "D", target: "E" },
+    ],
+    [{ source: "A", target: "B" }, { source: "B", target: "E" }],
+    [
+      { flightId: "F1", origin: "A", destination: "E", minutes: 10 },
+      { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
+      { flightId: "F3", origin: "B", destination: "D", minutes: 1 },
+      { flightId: "F4", origin: "D", destination: "E", minutes: 1 },
+    ],
+    [
+      { flightId: "F1", origin: "A", destination: "E", minutes: 10 },
+      { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
+      { flightId: "F3", origin: "B", destination: "D", minutes: 1 },
+      { flightId: "F4", origin: "D", destination: "E", minutes: 1 },
+    ],
+    [{ edgeId: "F1", source: "A", target: "B" }],
+  ];
+  for (const [index, example] of examples.entries()) {
+    const sdb = new SimpleDB();
+    const originalLog = console.log;
+    const printed: string[] = [];
+    try {
+      const table = sdb.newTable().loadArray(inputs[index]);
+      const execute = new Function(
+        "connections",
+        "unnumberedConnections",
+        "flights",
+        "reverseExample",
+        `return (async () => { ${example[1]} })();`,
+      ) as (...tables: SimpleTable[]) => Promise<void>;
+      console.log = (...values: unknown[]) => {
+        printed.push(values.map(String).join(" "));
+      };
+      await execute(table, table, table, table);
+      const expected = example[2].trim().split("\n")
+        .filter((line) => !line.startsWith("| ---"))
+        .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
+      const actual = printed
+        // Strip the intentional ANSI colors emitted by log().
+        // deno-lint-ignore no-control-regex
+        .map((line) => line.replace(/\x1b\[[0-9;]*m/g, ""))
+        .filter((line) => line.startsWith("│"))
+        .map((line) => line.split("│").slice(1, -1).map((cell) => cell.trim()))
+        .filter((cells) => cells[0] === "pathId" || /^\d+$/.test(cells[0]));
+      assertEquals(actual, expected, `JSDoc example ${index + 1}`);
+      assertEquals(
+        (await table.getData()).map((row) => Object.values(row).map(String)),
+        expected.slice(1),
+      );
+    } finally {
+      console.log = originalLog;
+      await sdb.close();
+    }
+  }
+});
+
+Deno.test("shortestPath returns all zero-cost simple routes through a cycle", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = await sdb.newTable().loadArray([
+      { edgeId: "AB", source: "A", target: "B", cost: 0 },
+      { edgeId: "AC", source: "A", target: "C", cost: 0 },
+      { edgeId: "AD", source: "A", target: "D", cost: 0 },
+      { edgeId: "BC", source: "B", target: "C", cost: 0 },
+      { edgeId: "BD", source: "B", target: "D", cost: 0 },
+      { edgeId: "CB", source: "C", target: "B", cost: 0 },
+      { edgeId: "CD", source: "C", target: "D", cost: 0 },
+      { edgeId: "BB", source: "B", target: "B", cost: 0 },
+    ]).shortestPath("source", "target", "edgeId", "A", "D", {
+      weight: "cost",
+    }).getData();
+    const paths = [
+      ["AB", "BC", "CD"],
+      ["AB", "BD"],
+      ["AC", "CB", "BD"],
+      ["AC", "CD"],
+      ["AD"],
+    ];
+    assertEquals(
+      rows,
+      paths.flatMap((edges, pathId) =>
+        edges.map((edgeId, index) => ({
+          pathId,
+          step: index + 1,
+          edgeId,
+          source: edgeId[0],
+          target: edgeId[1],
+          weight: 0,
+          total: 0,
+        }))
+      ),
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath does not truncate many parallel tied routes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const edges = Array.from({ length: 1025 }, (_, edgeId) => ({
+      edgeId,
+      source: "A",
+      target: "B",
+    }));
+    const rows = await sdb.newTable().loadArray(edges.toReversed())
+      .shortestPath("source", "target", "edgeId", "A", "B").getData();
+    assertEquals(
+      rows,
+      edges.map((edge) => ({
+        pathId: edge.edgeId,
+        step: 1,
+        ...edge,
+        weight: 1,
+        total: 1,
+      })),
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath selects exact decimal ties beyond JavaScript number precision", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("decimalSelection");
+    await sdb.customQuery(`CREATE TABLE decimalSelection AS
+      SELECT * FROM (VALUES
+        ('E0', 'A', 'C', 99999999999999999999.75::DECIMAL(22,2)),
+        ('E1', 'A', 'B', 99999999999999999999.25::DECIMAL(22,2)),
+        ('E2', 'B', 'C', 0.25::DECIMAL(22,2)),
+        ('E3', 'A', 'C', 99999999999999999999.50::DECIMAL(22,2))
+      ) edges(edgeId, source, target, weight)`);
+    assertEquals(
+      await table.shortestPath("source", "target", "edgeId", "A", "C", {
+        weight: "weight",
+      }).getData(),
+      [
+        {
+          pathId: 0,
+          step: 1,
+          edgeId: "E1",
+          source: "A",
+          target: "B",
+          weight: "99999999999999999999.25",
+          total: "99999999999999999999.25",
+        },
+        {
+          pathId: 0,
+          step: 2,
+          edgeId: "E2",
+          source: "B",
+          target: "C",
+          weight: "0.25",
+          total: "99999999999999999999.50",
+        },
+        {
+          pathId: 1,
+          step: 1,
+          edgeId: "E3",
+          source: "A",
+          target: "C",
+          weight: "99999999999999999999.50",
+          total: "99999999999999999999.50",
+        },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath retains FLOAT ties when later addition rounds different prefixes equally", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("floatSelection");
+    await sdb.customQuery(`CREATE TABLE floatSelection AS
+      SELECT * FROM (VALUES
+        ('E1', 'A', 'B', 1::FLOAT),
+        ('E2', 'A', 'C', 1::FLOAT),
+        ('E3', 'C', 'B', 1::FLOAT),
+        ('E4', 'B', 'E', 33554432::FLOAT)
+      ) edges(edgeId, source, target, weight)`);
+    const result = table.shortestPath("source", "target", "edgeId", "A", "E", {
+      weight: "weight",
+    });
+    assertEquals(
+      await result.getData(),
+      [
+        {
+          pathId: 0,
+          step: 1,
+          edgeId: "E1",
+          source: "A",
+          target: "B",
+          weight: 1,
+          total: 1,
+        },
+        {
+          pathId: 0,
+          step: 2,
+          edgeId: "E4",
+          source: "B",
+          target: "E",
+          weight: 33554432,
+          total: 33554432,
+        },
+        {
+          pathId: 1,
+          step: 1,
+          edgeId: "E2",
+          source: "A",
+          target: "C",
+          weight: 1,
+          total: 1,
+        },
+        {
+          pathId: 1,
+          step: 2,
+          edgeId: "E3",
+          source: "C",
+          target: "B",
+          weight: 1,
+          total: 2,
+        },
+        {
+          pathId: 1,
+          step: 3,
+          edgeId: "E4",
+          source: "B",
+          target: "E",
+          weight: 33554432,
+          total: 33554432,
+        },
+      ],
+    );
+    assertEquals((await result.getTypes()).total, "FLOAT");
+  } finally {
+    await sdb.close();
+  }
+});

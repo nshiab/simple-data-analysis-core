@@ -620,7 +620,7 @@ Deno.test("commonNeighbors internal relations do not shadow input table names", 
   }
 });
 
-Deno.test("commonNeighbors JSDoc examples return their displayed outputs", async () => {
+Deno.test("commonNeighbors JSDoc examples execute their exact chains and displayed outputs", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -631,29 +631,45 @@ Deno.test("commonNeighbors JSDoc examples return their displayed outputs", async
       { origin: "D", destination: "A" },
       { origin: "D", destination: "B" },
     ];
-    for (const direction of [undefined, "incoming", "both"] as const) {
-      const table = sdb.newTable().loadArray(rows);
-      const result = direction === undefined
-        ? table.commonNeighbors("origin", "destination", "A", "B")
-        : table.commonNeighbors("origin", "destination", "A", "B", {
-          direction,
-        });
-      assertEquals(
-        await result.getData(),
-        direction === "incoming"
-          ? [{ node: "D" }]
-          : direction === "both"
-          ? [{ node: "C" }, { node: "D" }]
-          : [{ node: "C" }],
-      );
+    {
+      const connections = sdb.newTable().loadArray(rows);
+      await connections
+        .commonNeighbors("origin", "destination", "A", "B")
+        .log();
+      assertEquals(await connections.getData(), [{ node: "C" }]);
+      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
     }
-    assertEquals(
-      await sdb.newTable().loadArray([
+    {
+      const connections = sdb.newTable().loadArray(rows);
+      await connections
+        .commonNeighbors("origin", "destination", "A", "B", {
+          direction: "incoming",
+        })
+        .log();
+      assertEquals(await connections.getData(), [{ node: "D" }]);
+      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+    }
+    {
+      const connections = sdb.newTable().loadArray(rows);
+      await connections
+        .commonNeighbors("origin", "destination", "A", "B", {
+          direction: "both",
+        })
+        .log();
+      assertEquals(await connections.getData(), [{ node: "C" }, { node: "D" }]);
+      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+    }
+    {
+      const connections = sdb.newTable().loadArray([
         { source: "A", target: "A" },
         { source: "B", target: "A" },
-      ]).commonNeighbors("source", "target", "A", "B").getData(),
-      [{ node: "A" }],
-    );
+      ]);
+      await connections
+        .commonNeighbors("source", "target", "A", "B")
+        .log();
+      assertEquals(await connections.getData(), [{ node: "A" }]);
+      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+    }
   } finally {
     await sdb.close();
   }

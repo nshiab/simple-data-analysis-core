@@ -676,3 +676,157 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
     await sdb.close();
   }
 });
+
+Deno.test("paths runs all five JSDoc examples with their full ordered output", async () => {
+  const examples = [
+    {
+      input: [
+        { edgeId: "E1", source: "A", target: "B" },
+        { edgeId: "E2", source: "A", target: "C" },
+        { edgeId: "E3", source: "B", target: "D" },
+        { edgeId: "E4", source: "C", target: "D" },
+      ],
+      run: async (connections: SimpleTable) => {
+        await connections
+          .paths("source", "target", "edgeId", "A", "D")
+          .log();
+      },
+      expected: [
+        [0, 1, "E1", "A", "B", 1, 1],
+        [0, 2, "E3", "B", "D", 1, 2],
+        [1, 1, "E2", "A", "C", 1, 1],
+        [1, 2, "E4", "C", "D", 1, 2],
+      ],
+    },
+    {
+      input: [
+        { source: "A", target: "B" },
+        { source: "B", target: "D" },
+      ],
+      run: async (unnumberedConnections: SimpleTable) => {
+        await unnumberedConnections
+          .addId("edgeId", { prefix: "edge-" })
+          .paths("source", "target", "edgeId", "A", "D")
+          .log();
+      },
+      expected: [
+        [0, 1, "edge-0", "A", "B", 1, 1],
+        [0, 2, "edge-1", "B", "D", 1, 2],
+      ],
+    },
+    ...[
+      {
+        run: async (flights: SimpleTable) => {
+          await flights
+            .paths("origin", "destination", "flightId", "A", "D", {
+              weight: "minutes",
+            })
+            .log();
+        },
+        expected: [
+          [0, 1, "F1", "A", "D", 10, 10],
+          [1, 1, "F2", "A", "B", 1, 1],
+          [1, 2, "F3", "B", "D", 2, 3],
+        ],
+      },
+      {
+        run: async (flights: SimpleTable) => {
+          await flights
+            .paths("origin", "destination", "flightId", "A", "D")
+            .log();
+        },
+        expected: [
+          [0, 1, "F1", "A", "D", 1, 1],
+          [1, 1, "F2", "A", "B", 1, 1],
+          [1, 2, "F3", "B", "D", 1, 2],
+        ],
+      },
+      {
+        run: async (flights: SimpleTable) => {
+          await flights
+            .paths("origin", "destination", "flightId", "D", "A", {
+              direction: "incoming",
+              weight: "minutes",
+            })
+            .log();
+        },
+        expected: [
+          [0, 1, "F1", "D", "A", 10, 10],
+          [1, 1, "F3", "D", "B", 2, 2],
+          [1, 2, "F2", "B", "A", 1, 3],
+        ],
+      },
+    ].map((example) => ({
+      ...example,
+      input: [
+        { flightId: "F1", origin: "A", destination: "D", minutes: 10 },
+        { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
+        { flightId: "F3", origin: "B", destination: "D", minutes: 2 },
+      ],
+    })),
+  ];
+  for (const example of examples) {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadArray(example.input);
+      await example.run(table);
+      const columns = [
+        "pathId",
+        "step",
+        "edgeId",
+        "source",
+        "target",
+        "weight",
+        "total",
+      ];
+      assertEquals(await table.getColumns(), columns);
+      assertEquals(
+        await table.getData(),
+        example.expected.map((values) =>
+          Object.fromEntries(
+            columns.map((column, index) => [column, values[index]]),
+          )
+        ),
+      );
+    } finally {
+      await sdb.close();
+    }
+  }
+});
+
+Deno.test("paths includes every parallel-edge combination without a route-count cap", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const edges = Array.from({ length: 9 }, (_, source) => [
+      { edgeId: source * 2, source, target: source + 1 },
+      { edgeId: source * 2 + 1, source, target: source + 1 },
+    ]).flat();
+    const table = sdb.newTable().loadArray(edges);
+    const result = table.paths("source", "target", "edgeId", 0, 9, {
+      outputTable: true,
+    });
+    const expected = Array.from(
+      { length: 512 },
+      (_, pathId) =>
+        Array.from({ length: 9 }, (_, source) => ({
+          pathId,
+          step: source + 1,
+          edgeId: source * 2 + ((pathId >> (8 - source)) & 1),
+          source,
+          target: source + 1,
+          weight: 1,
+          total: source + 1,
+        })),
+    ).flat();
+    assertEquals(await result.getData(), expected);
+    assertEquals(await table.getData(), edges);
+    assertEquals(
+      await table.paths("source", "target", "edgeId", -1, 9, {
+        outputTable: true,
+      }).getData(),
+      [],
+    );
+  } finally {
+    await sdb.close();
+  }
+});

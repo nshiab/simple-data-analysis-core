@@ -140,6 +140,31 @@ Deno.test("reachable scalar and singleton-array calls are equivalent", async () 
   }
 });
 
+Deno.test("reachable preserves empty and quoted string IDs with quoted endpoint columns", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { 'from"node': "", "to node": "O'Reilly" },
+      { 'from"node': "O'Reilly", "to node": 'quote"node' },
+      { 'from"node': 'quote"node', "to node": "" },
+    ]);
+    assertEquals(
+      await table.reachable('from"node', "to node", ["O'Reilly", ""])
+        .getData(),
+      [
+        { start: "", node: "" },
+        { start: "", node: "O'Reilly" },
+        { start: "", node: 'quote"node' },
+        { start: "O'Reilly", node: "" },
+        { start: "O'Reilly", node: "O'Reilly" },
+        { start: "O'Reilly", node: 'quote"node' },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("reachable evaluates shuffled starts independently and omits unknown starts", async () => {
   const sdb = new SimpleDB();
   try {

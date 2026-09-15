@@ -448,6 +448,7 @@ Deno.test("neighbors JSDoc examples return their complete displayed outputs", as
       const result = direction === undefined
         ? table.neighbors("origin", "destination", "A")
         : table.neighbors("origin", "destination", "A", { direction });
+      await result.log();
       assertEquals(
         await result.getData(),
         direction === "incoming"
@@ -461,14 +462,65 @@ Deno.test("neighbors JSDoc examples return their complete displayed outputs", as
       { source: "Montreal", target: "Ottawa", cost: 2 },
       { source: "Ottawa", target: "Toronto", cost: 3 },
     ]);
+    await table.neighbors("source", "target", ["Montreal", "Ottawa"])
+      .log();
     assertEquals(
-      await table.neighbors("source", "target", ["Montreal", "Ottawa"])
-        .getData(),
+      await table.getData(),
       [
         { start: "Montreal", node: "Ottawa" },
         { start: "Ottawa", node: "Toronto" },
       ],
     );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("neighbors binds unusual string IDs and quotes endpoint names", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { 'from "node"': "O'Brien", "select": "" },
+      { 'from "node"': "O'Brien", "select": "" },
+      { 'from "node"': "", "select": "O'Brien" },
+      { 'from "node"': "O'Brien", "select": "O'Brien" },
+      { 'from "node"': "unrelated", "select": "farther" },
+    ]);
+    for (const direction of ["outgoing", "incoming", "both"] as const) {
+      assertEquals(
+        await table.neighbors('from "node"', "select", ["O'Brien", ""], {
+          direction,
+          outputTable: true,
+        }).getData(),
+        [
+          { start: "", node: "O'Brien" },
+          { start: "O'Brien", node: "" },
+          { start: "O'Brien", node: "O'Brien" },
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("neighbors accepts the same endpoint column and keeps each self-connection once", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { node: "B" },
+      { node: "A" },
+      { node: "A" },
+    ]);
+    for (const direction of ["outgoing", "incoming", "both"] as const) {
+      assertEquals(
+        await table.neighbors("node", "node", ["B", "unknown", "A"], {
+          direction,
+          outputTable: true,
+        }).getData(),
+        [{ start: "A", node: "A" }, { start: "B", node: "B" }],
+      );
+    }
   } finally {
     await sdb.close();
   }

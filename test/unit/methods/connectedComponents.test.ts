@@ -582,47 +582,62 @@ Deno.test("connectedComponents weak mode scales through a deep chain", async () 
   }
 });
 
-Deno.test("connectedComponents JSDoc examples return their displayed outputs", async () => {
-  const sdb = new SimpleDB();
+Deno.test("connectedComponents executes all three complete JSDoc examples", async () => {
+  const firstDb = new SimpleDB();
   try {
-    assertEquals(
-      await sdb.newTable().loadArray([
-        { origin: "A", destination: "B" },
-        { origin: "C", destination: "D" },
-      ]).connectedComponents("origin", "destination").getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 0 },
-        { node: "C", componentId: 1 },
-        { node: "D", componentId: 1 },
-      ],
-    );
-
-    const graph = () =>
-      sdb.newTable().loadArray([
-        { source: "A", target: "B" },
-        { source: "B", target: "C" },
-      ]);
-    assertEquals(
-      await graph().connectedComponents("source", "target").getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 0 },
-        { node: "C", componentId: 0 },
-      ],
-    );
-    assertEquals(
-      await graph().connectedComponents("source", "target", {
-        mode: "strong",
-      }).getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 1 },
-        { node: "C", componentId: 2 },
-      ],
-    );
+    const table = firstDb.newTable().loadArray([
+      { origin: "A", destination: "B" },
+      { origin: "C", destination: "D" },
+    ]);
+    await table
+      .connectedComponents("origin", "destination")
+      .log();
+    assertEquals(await table.getData(), [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "C", componentId: 1 },
+      { node: "D", componentId: 1 },
+    ]);
   } finally {
-    await sdb.close();
+    await firstDb.close();
+  }
+
+  const secondDb = new SimpleDB();
+  try {
+    const graph = secondDb.newTable().loadArray([
+      { source: "A", target: "B" },
+      { source: "B", target: "C" },
+    ]);
+    await graph
+      .connectedComponents("source", "target")
+      .log();
+    assertEquals(await graph.getData(), [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "C", componentId: 0 },
+    ]);
+  } finally {
+    await secondDb.close();
+  }
+
+  const thirdDb = new SimpleDB();
+  try {
+    const graph = thirdDb.newTable().loadArray([
+      { source: "A", target: "B" },
+      { source: "B", target: "C" },
+    ]);
+    await graph
+      .connectedComponents("source", "target", {
+        mode: "strong",
+      })
+      .log();
+    assertEquals(await graph.getData(), [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 1 },
+      { node: "C", componentId: 2 },
+    ]);
+  } finally {
+    await thirdDb.close();
   }
 });
 
@@ -709,6 +724,104 @@ Deno.test("connectedComponents preserves strict string labels in both modes", as
         ],
       );
     }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents closes the documented chain into one strong group", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = await sdb.newTable().loadArray([
+      { source: "A", target: "B" },
+      { source: "B", target: "C" },
+      { source: "C", target: "A" },
+    ]).connectedComponents("source", "target", { mode: "strong" }).getData();
+    assertEquals(rows, [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "C", componentId: 0 },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents preserves compatible numeric endpoint types and quoted names", async () => {
+  const cases = [
+    ["TINYINT", "SMALLINT", "SMALLINT"],
+    ["INTEGER", "UINTEGER", "BIGINT"],
+    ["FLOAT", "DOUBLE", "DOUBLE"],
+    ["DECIMAL(8,2)", "DECIMAL(10,3)", "DECIMAL(10,3)"],
+    ["BIGNUM", "BIGINT", "BIGNUM"],
+  ];
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const [index, [sourceType, targetType, outputType]] of cases.entries()
+    ) {
+      const table = sdb.newTable(`compatibleComponentTypes${index}`);
+      await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+        SELECT source::${sourceType} AS "From Node",
+          target::${targetType} AS "To""Node"
+        FROM (VALUES (10, 20), (20, 10), (-2, 0), (0, 0))
+          edges(source, target)`);
+      for (const mode of ["weak", "strong"] as const) {
+        const result = table.connectedComponents("from node", 'to"node', {
+          mode,
+          outputTable: true,
+        });
+        assertEquals(await result.getTypes(), {
+          node: outputType,
+          componentId: "BIGINT",
+        });
+        assertEquals(await result.convert({ node: "number" }).getData(), [
+          { node: -2, componentId: 0 },
+          { node: 0, componentId: mode === "weak" ? 0 : 1 },
+          { node: 10, componentId: mode === "weak" ? 1 : 2 },
+          { node: 20, componentId: mode === "weak" ? 1 : 2 },
+        ]);
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents keeps one-way bridges between strong groups separate", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { source: 20, target: 30 },
+      { source: 30, target: 20 },
+      { source: 30, target: 2 },
+      { source: 2, target: 10 },
+      { source: 10, target: 2 },
+      { source: 10, target: -1 },
+      { source: 40, target: 30 },
+      { source: 40, target: 30 },
+      { source: 100, target: 100 },
+    ]);
+    const strong = table.connectedComponents("source", "target", {
+      mode: "strong",
+      outputTable: true,
+    });
+    assertEquals(await strong.getData(), [
+      { node: -1, componentId: 0 },
+      { node: 2, componentId: 1 },
+      { node: 10, componentId: 1 },
+      { node: 20, componentId: 2 },
+      { node: 30, componentId: 2 },
+      { node: 40, componentId: 3 },
+      { node: 100, componentId: 4 },
+    ]);
+    assertEquals(
+      await table.connectedComponents("source", "target").getData(),
+      [-1, 2, 10, 20, 30, 40, 100].map((node) => ({
+        node,
+        componentId: node === 100 ? 1 : 0,
+      })),
+    );
   } finally {
     await sdb.close();
   }

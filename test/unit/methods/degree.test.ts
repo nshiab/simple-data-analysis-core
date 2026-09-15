@@ -799,18 +799,22 @@ Deno.test("degree JSDoc examples return their displayed outputs", async () => {
   ];
   const sdb = new SimpleDB();
   try {
+    const edgeFlights = sdb.newTable().loadArray(rows);
+    await edgeFlights.degree("origin", "destination").log();
     assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .degree("origin", "destination").getData(),
+      await edgeFlights.getData(),
       [
         { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
         { node: "Toronto", incoming: 2, outgoing: 1, total: 3 },
         { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
+    const neighborFlights = sdb.newTable().loadArray(rows);
+    await neighborFlights.degree("origin", "destination", {
+      count: "neighbors",
+    }).log();
     assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .degree("origin", "destination", { count: "neighbors" }).getData(),
+      await neighborFlights.getData(),
       [
         { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
         { node: "Toronto", incoming: 1, outgoing: 1, total: 2 },
@@ -818,26 +822,92 @@ Deno.test("degree JSDoc examples return their displayed outputs", async () => {
       ],
     );
     const flights = sdb.newTable("degreeExampleFlights").loadArray(rows);
+    await flights.degree("origin", "destination", { weight: "passengers" })
+      .log();
     assertEquals(
-      await flights.degree("origin", "destination", {
-        weight: "passengers",
-      }).getData(),
+      await flights.getData(),
       [
         { node: "Montreal", incoming: 150, outgoing: 350, total: 500 },
         { node: "Toronto", incoming: 300, outgoing: 150, total: 450 },
         { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
       ],
     );
+    const connections = sdb.newTable().loadArray([
+      { source: "A", target: "A" },
+      { source: "A", target: "B" },
+    ]);
+    await connections.degree("source", "target").log();
     assertEquals(
-      await sdb.newTable().loadArray([
-        { source: "A", target: "A" },
-        { source: "A", target: "B" },
-      ]).degree("source", "target").getData(),
+      await connections.getData(),
       [
         { node: "A", incoming: 1, outgoing: 2, total: 3 },
         { node: "B", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("degree orders compatible whole-number endpoint types numerically", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const [sourceType, targetType] of [
+        ["SMALLINT", "BIGINT"],
+        ["FLOAT", "DOUBLE"],
+        ["DECIMAL(12,2)", "INTEGER"],
+        ["BIGNUM", "BIGINT"],
+      ]
+    ) {
+      const table = sdb.newTable();
+      await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+        SELECT source::${sourceType} AS source, target::${targetType} AS target
+        FROM (VALUES (-2, 10), (2, -2), (10, 2)) edges(source, target)`);
+      // Cast only after degree has sorted, so a lexical sort cannot pass.
+      const result = table.degree("source", "target")
+        .convert({ node: "double" });
+      assertEquals(await result.getData(), [
+        { node: -2, incoming: 1, outgoing: 1, total: 2 },
+        { node: 2, incoming: 1, outgoing: 1, total: 2 },
+        { node: 10, incoming: 1, outgoing: 1, total: 2 },
+      ]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("degree supports quoted columns and one column serving both endpoints", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = [
+      { 'Node "ID"': "A", 'Edge "Weight"': 0.25 },
+      { 'Node "ID"': "A", 'Edge "Weight"': 0.75 },
+      { 'Node "ID"': "B", 'Edge "Weight"': 0 },
+    ];
+    for (
+      const [options, expected] of [
+        [{}, [
+          { node: "A", incoming: 2, outgoing: 2, total: 4 },
+          { node: "B", incoming: 1, outgoing: 1, total: 2 },
+        ]],
+        [{ count: "neighbors" }, [
+          { node: "A", incoming: 1, outgoing: 1, total: 2 },
+          { node: "B", incoming: 1, outgoing: 1, total: 2 },
+        ]],
+        [{ count: "edges", weight: 'edge "weight"' }, [
+          { node: "A", incoming: 1, outgoing: 1, total: 2 },
+          { node: "B", incoming: 0, outgoing: 0, total: 0 },
+        ]],
+      ] as const
+    ) {
+      assertEquals(
+        await sdb.newTable().loadArray(rows)
+          .degree('node "id"', 'NODE "ID"', options).getData(),
+        [...expected],
+      );
+    }
   } finally {
     await sdb.close();
   }

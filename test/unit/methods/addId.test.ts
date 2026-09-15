@@ -6,6 +6,63 @@ import {
 } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("addId runs both JSDoc examples with complete ordered results", async () => {
+  const sdb = new SimpleDB();
+  try {
+    // The examples reference existing tables without displaying their input.
+    const input = [
+      { source: "A", target: "B" },
+      { source: "A", target: "B" },
+      { source: "B", target: "C" },
+    ];
+    const table = sdb.newTable().loadArray(input);
+    const flights = sdb.newTable().loadArray(input);
+
+    await table
+      .addId("edgeId")
+      .log();
+    await flights
+      .addId("edgeId", { prefix: "flight-" })
+      .log();
+
+    assertEquals(await table.getData(), [
+      { source: "A", target: "B", edgeId: 0 },
+      { source: "A", target: "B", edgeId: 1 },
+      { source: "B", target: "C", edgeId: 2 },
+    ]);
+    assertEquals(await flights.getData(), [
+      { source: "A", target: "B", edgeId: "flight-0" },
+      { source: "A", target: "B", edgeId: "flight-1" },
+      { source: "B", target: "C", edgeId: "flight-2" },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("addId restarts at zero in separate tables, including duplicate null rows", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const prefix of [undefined, "same-"]) {
+      for (let tableIndex = 0; tableIndex < 2; tableIndex++) {
+        const table = sdb.newTable().loadArray([
+          { value: null },
+          { value: "present" },
+          { value: null },
+        ]).addId("id", { prefix });
+
+        assertEquals(await table.getData(), [
+          { value: null, id: prefix === undefined ? 0 : "same-0" },
+          { value: "present", id: prefix === undefined ? 1 : "same-1" },
+          { value: null, id: prefix === undefined ? 2 : "same-2" },
+        ]);
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("addId adds numeric IDs to every row, including duplicate rows", async () => {
   const sdb = new SimpleDB();
   try {

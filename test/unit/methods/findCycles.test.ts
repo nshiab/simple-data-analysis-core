@@ -758,3 +758,126 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
     await sdb.close();
   }
 });
+
+Deno.test("findCycles executes all six JSDoc examples with their displayed rows", async () => {
+  const sdb = new SimpleDB();
+  const triangleRows = [
+    { edgeId: "E1", source: "A", target: "B" },
+    { edgeId: "E2", source: "B", target: "C" },
+    { edgeId: "E3", source: "C", target: "A" },
+  ];
+  const expectedRows = (
+    rows: [number, number, string, string, string, number, number][],
+  ) =>
+    rows.map(([pathId, step, edgeId, source, target, weight, total]) => ({
+      pathId,
+      step,
+      edgeId,
+      source,
+      target,
+      weight,
+      total,
+    }));
+  const forwardRows = expectedRows([
+    [0, 1, "E1", "A", "B", 1, 1],
+    [0, 2, "E2", "B", "C", 1, 2],
+    [0, 3, "E3", "C", "A", 1, 3],
+  ]);
+  try {
+    {
+      const triangle = sdb.newTable("doc_cycles_outgoing").loadArray(
+        triangleRows,
+      );
+      await triangle
+        .findCycles("source", "target", "edgeId")
+        .log();
+      assertEquals(await triangle.getData(), forwardRows);
+    }
+    {
+      const triangle = sdb.newTable("doc_cycles_incoming").loadArray(
+        triangleRows,
+      );
+      await triangle
+        .findCycles("source", "target", "edgeId", { direction: "incoming" })
+        .log();
+      assertEquals(
+        await triangle.getData(),
+        expectedRows([
+          [0, 1, "E3", "A", "C", 1, 1],
+          [0, 2, "E2", "C", "B", 1, 2],
+          [0, 3, "E1", "B", "A", 1, 3],
+        ]),
+      );
+    }
+    {
+      const triangle = sdb.newTable("doc_cycles_both").loadArray(triangleRows);
+      await triangle
+        .findCycles("source", "target", "edgeId", { direction: "both" })
+        .log();
+      assertEquals(await triangle.getData(), forwardRows);
+    }
+    {
+      const parallelAndLoop = sdb.newTable("doc_cycles_parallel").loadArray([
+        { edgeId: "P1", source: "A", target: "B", cost: 1 },
+        { edgeId: "P2", source: "A", target: "B", cost: 2 },
+        { edgeId: "L1", source: "C", target: "C", cost: 4 },
+      ]);
+      await parallelAndLoop
+        .findCycles("source", "target", "edgeId", {
+          direction: "both",
+          weight: "cost",
+        })
+        .log();
+      assertEquals(
+        await parallelAndLoop.getData(),
+        expectedRows([
+          [0, 1, "L1", "C", "C", 4, 4],
+          [1, 1, "P1", "A", "B", 1, 1],
+          [1, 2, "P2", "B", "A", 2, 3],
+        ]),
+      );
+    }
+    {
+      const flights = sdb.newTable("doc_cycles_flights").loadArray([
+        { flightId: "F1", origin: "A", destination: "B", minutes: 1 },
+        { flightId: "F2", origin: "B", destination: "C", minutes: 2 },
+        { flightId: "F3", origin: "C", destination: "A", minutes: 3 },
+      ]);
+      await flights
+        .findCycles("origin", "destination", "flightId", {
+          weight: "minutes",
+        })
+        .log();
+      assertEquals(
+        await flights.getData(),
+        expectedRows([
+          [0, 1, "F1", "A", "B", 1, 1],
+          [0, 2, "F2", "B", "C", 2, 3],
+          [0, 3, "F3", "C", "A", 3, 6],
+        ]),
+      );
+    }
+    {
+      const unnumberedConnections = sdb.newTable("doc_cycles_generated")
+        .loadArray([
+          { source: "A", target: "B" },
+          { source: "B", target: "C" },
+          { source: "C", target: "A" },
+        ]);
+      await unnumberedConnections
+        .addId("edgeId", { prefix: "edge-" })
+        .findCycles("source", "target", "edgeId")
+        .log();
+      assertEquals(
+        await unnumberedConnections.getData(),
+        expectedRows([
+          [0, 1, "edge-0", "A", "B", 1, 1],
+          [0, 2, "edge-1", "B", "C", 1, 2],
+          [0, 3, "edge-2", "C", "A", 1, 3],
+        ]),
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});

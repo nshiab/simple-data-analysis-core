@@ -650,34 +650,123 @@ Deno.test("topologicalSort internal relations do not shadow input table names", 
   }
 });
 
-Deno.test("topologicalSort JSDoc examples return their displayed outputs", async () => {
-  const sdb = new SimpleDB();
-  try {
-    assertEquals(
-      await sdb.newTable("connections").loadArray([
+Deno.test("topologicalSort executes both complete JSDoc examples and displays ordered rows", async () => {
+  const examples = [
+    {
+      edges: [
         { source: "A", target: "B" },
         { source: "B", target: "C" },
         { source: "D", target: "C" },
-      ]).topologicalSort("source", "target").getData(),
-      [
+      ],
+      expected: [
         { node: "A", componentId: 0, order: 1 },
         { node: "B", componentId: 0, order: 2 },
         { node: "D", componentId: 0, order: 3 },
         { node: "C", componentId: 0, order: 4 },
       ],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray([
+    },
+    {
+      edges: [
         { source: "A", target: "D" },
         { source: "B", target: "C" },
-      ]).topologicalSort("source", "target").getData(),
-      [
+      ],
+      expected: [
         { node: "A", componentId: 0, order: 1 },
         { node: "D", componentId: 0, order: 2 },
         { node: "B", componentId: 1, order: 1 },
         { node: "C", componentId: 1, order: 2 },
       ],
-    );
+    },
+  ];
+  for (const { edges, expected } of examples) {
+    const sdb = new SimpleDB();
+    const originalLog = console.log;
+    const displayed: string[] = [];
+    try {
+      const table = sdb.newTable().loadArray(edges);
+      console.log = (...args: unknown[]) => {
+        displayed.push(args.map(String).join(" "));
+        originalLog(...args);
+      };
+      await table
+        .topologicalSort("source", "target")
+        .log();
+      console.log = originalLog;
+      assertEquals(await table.getData(), expected);
+      const displayedCells = displayed
+        .map((line) =>
+          line.split("\x1b").map((part) => part.replace(/^\[[0-9;]*m/, ""))
+            .join("")
+        )
+        .filter((line) => line.startsWith("│"))
+        .map((line) => line.split("│").slice(1, -1).map((cell) => cell.trim()));
+      assertEquals(displayedCells, [
+        ["node", "componentId", "order"],
+        ...expected.map(({ node, componentId, order }) => [
+          node,
+          String(componentId),
+          String(order),
+        ]),
+      ]);
+    } finally {
+      console.log = originalLog;
+      await sdb.close();
+    }
+  }
+});
+
+Deno.test("topologicalSort retains exact decimal components and fractional ready-node order", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("decimalTopological");
+    await sdb.customQuery(`CREATE TABLE "decimalTopological" AS
+      SELECT source::DECIMAL(38, 2) AS source,
+        target::DECIMAL(38, 2) AS target
+      FROM (VALUES
+        ('9007199254740995.01', '9007199254740997.01'),
+        ('9007199254740993.01', '9007199254740997.01'),
+        ('-0.25', '2.50'), ('-0.50', '10.50'), ('2.50', '10.50')
+      ) edges(source, target)`);
+    table.topologicalSort("source", "target");
+    assertEquals(await table.getTypes(), {
+      node: "DECIMAL(38,2)",
+      componentId: "BIGINT",
+      order: "BIGINT",
+    });
+    assertEquals(await table.convert({ node: "string" }).getData(), [
+      { node: "-0.50", componentId: 0, order: 1 },
+      { node: "-0.25", componentId: 0, order: 2 },
+      { node: "2.50", componentId: 0, order: 3 },
+      { node: "10.50", componentId: 0, order: 4 },
+      { node: "9007199254740993.01", componentId: 1, order: 1 },
+      { node: "9007199254740995.01", componentId: 1, order: 2 },
+      { node: "9007199254740997.01", componentId: 1, order: 3 },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("topologicalSort rejects cycles in preserved outputs despite empty downstream results", async () => {
+  const edges = [
+    { source: "A", target: "B" },
+    { source: "C", target: "D" },
+    { source: "D", target: "C" },
+  ];
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable().loadArray(edges);
+    for (const outputTable of [true, "namedCyclicTopological"] as const) {
+      const result = source.topologicalSort("source", "target", {
+        outputTable,
+      });
+      await assertRejects(
+        () => result.filter("componentId = 0").selectRows(0).getData(),
+        Error,
+        "contains a directed cycle",
+      );
+      assertEquals(await source.getData(), edges);
+    }
   } finally {
     await sdb.close();
   }
