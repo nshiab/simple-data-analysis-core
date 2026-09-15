@@ -501,19 +501,20 @@ Deno.test("paths output records its source as a cache dependency", async () => {
 Deno.test("paths custom-column weighted JSDoc examples match their tables", async () => {
   const sdb = new SimpleDB();
   try {
-    const flights = sdb.newTable("flights").loadArray([
-      { flightId: "F1", origin: "A", destination: "D", minutes: 10 },
-      { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
-      { flightId: "F3", origin: "B", destination: "D", minutes: 2 },
-    ]);
+    const flights = () =>
+      sdb.newTable().loadArray([
+        { flightId: "F1", origin: "A", destination: "D", minutes: 10 },
+        { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
+        { flightId: "F3", origin: "B", destination: "D", minutes: 2 },
+      ]);
     assertEquals(
-      await flights.paths(
+      await flights().paths(
         "origin",
         "destination",
         "flightId",
         "A",
         "D",
-        { weight: "minutes", outputTable: true },
+        { weight: "minutes" },
       ).getData(),
       [
         {
@@ -546,18 +547,17 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
       ],
     );
     assertEquals(
-      (await flights.paths(
+      (await flights().paths(
         "origin",
         "destination",
         "flightId",
         "A",
         "D",
-        { outputTable: true },
       ).getData()).map((row) => [row.pathId, row.distance]),
       [[0, 1], [1, 1], [1, 2]],
     );
     assertEquals(
-      (await flights.paths(
+      (await flights().paths(
         "origin",
         "destination",
         "flightId",
@@ -566,7 +566,6 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         {
           direction: "incoming",
           weight: "minutes",
-          outputTable: true,
         },
       ).getData()).map((row) => [
         row.pathId,

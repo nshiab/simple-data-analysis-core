@@ -40,7 +40,7 @@ topologicalSort,empty,empty,empty node-order schema
 topologicalSort,cycle,cycle,error
 topologicalSort,self-loop,self-loop,error
 neighbors,single-sink-outgoing,single,empty start-node schema
-reachable,single-loop-no-start,single-loop,empty start-node schema
+reachable,single-B-default,single,empty start-node schema
 topologicalSort,single-loop,single-loop,error
 shortestPath,missing-edge-id-column,without-edge-id,error
 paths,missing-edge-id-column,without-edge-id,error

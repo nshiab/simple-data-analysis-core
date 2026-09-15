@@ -46,9 +46,8 @@ Additional scenarios in `edges.csv`:
 
 - `single-loop`: `J1: A->A (0)` is a complete single-node graph with a real
   zero-weight connection. It has degree 1 in each direction (weighted degree 0),
-  one component, and one one-step cycle in every direction. With
-  `includeStart:
-  false`, reachable returns no rows.
+  one component, and one one-step cycle in every direction. Reachable returns A
+  because the self-connection leads back to it.
 - `parallel-equal`: `V1: A->B (1)`, `V2: A->B (1)`, `V3: B->C (5)` has two
   weighted shortest routes at cost 6, preserving both edge identities.
 
@@ -82,10 +81,10 @@ literal string `unknown`, absent from both endpoint columns. Multi-start cases
 use `["F", "unknown", "A"]` to check sorting independently of argument order.
 `weighted-A-outgoing` and `fraction-weight-A-outgoing` in distances select the
 `weight` column; route/cycle cases select it only with a `-weighted` suffix.
-`zero-cycle-weighted` uses outgoing direction. `no-start` means
-`includeStart: false`. Numeric cases use numeric arguments, not strings. For
-empty inputs, load the header-only file with explicit string endpoint/edge-ID
-and numeric weight types so inference does not define the test's schema.
+`zero-cycle-weighted` uses outgoing direction. Numeric cases use numeric
+arguments, not strings. For empty inputs, load the header-only file with
+explicit string endpoint/edge-ID and numeric weight types so inference does not
+define the test's schema.
 
 | Method                  | Expected file                       | Output after dropping `case`                       |
 | ----------------------- | ----------------------------------- | -------------------------------------------------- |
@@ -107,8 +106,8 @@ column.
 
 The baseline expectations include these useful checks:
 
-- `reachable("source", "target", "A")` yields A, B, C, D, E;
-  `includeStart: false` yields B, C, D, E.
+- `reachable("source", "target", "A")` yields B, C, D, E. A is included only
+  when connections lead back to it, as in the cycle scenario.
 - Distances from A are A=0, B=1, C=1, D=2, E=3.
 - B and C have outgoing common neighbor D, incoming common neighbor A, and
   both-direction common neighbors A and D.

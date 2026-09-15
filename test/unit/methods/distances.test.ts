@@ -890,7 +890,6 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
       await sdb.newTable().loadArray(edges)
         .distances("origin", "destination", ["D", "A"], {
           weight: "minutes",
-          outputTable: "travelTimes",
         }).getData(),
       [
         { start: "A", node: "A", distance: 0 },

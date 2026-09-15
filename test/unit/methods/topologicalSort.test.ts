@@ -592,26 +592,6 @@ Deno.test("topologicalSort JSDoc examples return their displayed outputs", async
         { node: "Eat dinner", order: 4 },
       ],
     );
-
-    const connections = sdb.newTable("documentedTopologicalOutput")
-      .loadArray([
-        { source: "A", target: "B" },
-        { source: "B", target: "C" },
-      ]);
-    assertEquals(
-      await connections.topologicalSort("source", "target", {
-        outputTable: "dependencyOrder",
-      }).getData(),
-      [
-        { node: "A", order: 1 },
-        { node: "B", order: 2 },
-        { node: "C", order: 3 },
-      ],
-    );
-    assertEquals(await connections.getData(), [
-      { source: "A", target: "B" },
-      { source: "B", target: "C" },
-    ]);
   } finally {
     await sdb.close();
   }

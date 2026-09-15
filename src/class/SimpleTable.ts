@@ -2654,20 +2654,18 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds the distinct nodes that neighbor two requested nodes. Outgoing
-   * follows connections from source to target, incoming follows them from
-   * target to source, and both follows connections in either direction. The
-   * result has one fixed `node` column, sorted in ascending order.
+   * Finds the neighbors shared by two different nodes. The `direction` option
+   * lets you find neighbors from source to target, from target to source, or
+   * in either direction. The result has one `node` column, sorted in
+   * ascending order.
    *
-   * Endpoint IDs must be non-null strings or whole numbers in compatible
-   * columns. The two requested node IDs must be distinct and use the endpoint
-   * ID type. If either ID is unknown, or the nodes have no shared neighbors,
-   * the result has no rows. Parallel connections do not duplicate a node.
-   * Self-connections are valid, so either requested node can itself be shared.
-   * String IDs match case-sensitively; numeric and string IDs are not
-   * interchangeable.
+   * If either node ID is unknown, or the nodes have no shared neighbors, the
+   * result has no rows. Each shared neighbor appears once, even if
+   * connections are repeated. A self-connection can make one of the requested
+   * nodes a shared neighbor. Using the same ID for both requested nodes
+   * throws an error.
    *
-   * This input uses custom endpoint names and duplicate connections:
+   * The next three examples each start with this data:
    *
    * | origin | destination |
    * | --- | --- |
@@ -2675,8 +2673,11 @@ export default class SimpleTable extends Simple {
    * | A | C |
    * | B | C |
    * | B | C |
+   * | D | A |
+   * | D | B |
    *
-   * Omitting options finds each shared outgoing neighbor once:
+   * By default, the method finds shared neighbors from source to target. Both
+   * A and B connect to C:
    *
    * @example
    * ```ts
@@ -2689,7 +2690,39 @@ export default class SimpleTable extends Simple {
    * | --- |
    * | C |
    *
-   * On this fresh input, A is an outgoing neighbor of both requested nodes:
+   * C appears only once, even though the input repeats the connections.
+   *
+   * With `direction: "incoming"`, the method follows connections from target
+   * to source. D connects to both A and B:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .commonNeighbors("origin", "destination", "A", "B", { direction: "incoming" })
+   *   .log();
+   * ```
+   *
+   * | node |
+   * | --- |
+   * | D |
+   *
+   * With `direction: "both"`, the method finds shared neighbors in either
+   * direction:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .commonNeighbors("origin", "destination", "A", "B", { direction: "both" })
+   *   .log();
+   * ```
+   *
+   * | node |
+   * | --- |
+   * | C |
+   * | D |
+   *
+   * A self-connection can make a requested node a shared neighbor. For this
+   * input, A is a neighbor of both itself and B:
    *
    * | source | target |
    * | --- | --- |
@@ -2707,51 +2740,11 @@ export default class SimpleTable extends Simple {
    * | --- |
    * | A |
    *
-   * This fresh input has one shared incoming neighbor and one shared outgoing
-   * neighbor:
-   *
-   * | from | to |
-   * | --- | --- |
-   * | A | B |
-   * | A | C |
-   * | B | D |
-   * | C | D |
-   *
-   * Incoming traversal finds A:
-   *
-   * @example
-   * ```ts
-   * await connections
-   *   .commonNeighbors("from", "to", "B", "C", {
-   *     direction: "incoming",
-   *     outputTable: true,
-   *   })
-   *   .log();
-   * ```
-   *
-   * | node |
-   * | --- |
-   * | A |
-   *
-   * On another fresh copy, both-direction traversal finds A and D:
-   *
-   * @example
-   * ```ts
-   * await connections
-   *   .commonNeighbors("from", "to", "B", "C", { direction: "both" })
-   *   .log();
-   * ```
-   *
-   * | node |
-   * | --- |
-   * | A |
-   * | D |
-   *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
-   * @param nodeA - The first node ID whose neighbor membership will be compared.
-   * @param nodeB - The distinct second node ID whose neighbor membership will be compared.
-   * @param options - An optional object with traversal and result configuration.
+   * @param nodeA - The first node ID.
+   * @param nodeB - The second node ID, which must differ from `nodeA`.
+   * @param options - An optional object with direction and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -2778,22 +2771,21 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds every node reachable from one or more starting nodes. Outgoing
-   * follows connections from source to target, incoming follows them from
-   * target to source, and both follows connections in either direction. Each
-   * start is evaluated independently, without a hop limit. Cycles and
-   * self-connections are valid and do not repeat result rows. The result has
-   * fixed `start` and `node` columns, sorted in ascending order by `start`,
+   * Finds all nodes you can reach from one or more starting nodes, following
+   * one or more connections. The `direction` option lets you follow
+   * connections from source to target, from target to source, or in either
+   * direction. The result has `start` and `node` columns, sorted by `start`,
    * then `node`.
    *
-   * Existing starts are included by default, once each. Set `includeStart` to
-   * `false` to omit only that row's own start, even if a cycle reaches it
-   * again. Unknown starts produce no rows. Endpoint IDs must be non-null
-   * strings or whole numbers in compatible columns. Empty start arrays and
-   * duplicate starts throw an error. String matching is case-sensitive, and
-   * numeric and string IDs are not interchangeable.
+   * A starting node appears in its own results only if following connections
+   * leads back to it, such as a self-connection or a cycle. Each reachable
+   * node appears only once per start. With `direction: "both"`, following
+   * the same connection out and back also reaches the starting node.
    *
-   * This input branches at A, converges at D, and has an edge back to A:
+   * Unknown starting IDs and starts with no connections to follow produce
+   * no rows. Empty start arrays and duplicate starting IDs throw an error.
+   *
+   * The next four examples each start with this data:
    *
    * | origin | destination |
    * | --- | --- |
@@ -2803,15 +2795,13 @@ export default class SimpleTable extends Simple {
    * | C | D |
    * | D | A |
    *
-   * Omitting `direction` follows outgoing connections and includes A. The
-   * named output preserves the input table:
+   * By default, the method follows connections from source to target. A
+   * appears in its own results because A → B → D → A leads back to it:
    *
    * @example
    * ```ts
    * await connections
-   *   .reachable("origin", "destination", "A", {
-   *     outputTable: "reachableFromA",
-   *   })
+   *   .reachable("origin", "destination", "A")
    *   .log();
    * ```
    *
@@ -2822,23 +2812,8 @@ export default class SimpleTable extends Simple {
    * | A | C |
    * | A | D |
    *
-   * On a fresh copy of the same input, `includeStart: false` removes A even
-   * though the cycle leads back to it:
-   *
-   * @example
-   * ```ts
-   * await connections
-   *   .reachable("origin", "destination", "A", { includeStart: false })
-   *   .log();
-   * ```
-   *
-   * | start | node |
-   * | --- | --- |
-   * | A | B |
-   * | A | C |
-   * | A | D |
-   *
-   * On a fresh copy, incoming traversal from B follows edges in reverse:
+   * With `direction: "incoming"`, connections are followed from target to
+   * source. Starting at B:
    *
    * @example
    * ```ts
@@ -2854,8 +2829,8 @@ export default class SimpleTable extends Simple {
    * | B | C |
    * | B | D |
    *
-   * On a fresh copy, both-direction traversal treats each connection as
-   * traversable in either orientation:
+   * With `direction: "both"`, connections can be followed in either
+   * direction:
    *
    * @example
    * ```ts
@@ -2871,8 +2846,7 @@ export default class SimpleTable extends Simple {
    * | B | C |
    * | B | D |
    *
-   * On a fresh copy, multiple starts may reach the same node and keep separate
-   * memberships:
+   * With multiple starting nodes, each has its own results:
    *
    * @example
    * ```ts
@@ -2895,9 +2869,8 @@ export default class SimpleTable extends Simple {
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param startNodes - One starting node ID or an array of distinct starting node IDs.
-   * @param options - An optional object with traversal and result configuration.
+   * @param options - An optional object with direction and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
-   * @param options.includeStart - Whether to include each known start in its own result. Defaults to `true`.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -2908,7 +2881,6 @@ export default class SimpleTable extends Simple {
     startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
-      includeStart?: boolean;
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
@@ -2916,26 +2888,26 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds the connected groups formed by all node IDs in the source and target
-   * columns. Weak connectivity, the default, ignores connection direction.
-   * Strong connectivity groups nodes only when each can reach every other node
-   * by following source-to-target connections.
+   * Groups nodes that are connected to one another, directly or through other
+   * nodes. By default, connection direction is ignored. With the `mode`
+   * option set to "strong", nodes belong to the same group only if each can
+   * reach all the others by following connections from source to target.
    *
-   * The result has fixed `node` and `componentId` columns, with one row per
-   * node. Components are numbered from zero by their smallest member, and rows
-   * are sorted by node. Component IDs belong to this result and may change when
-   * the graph changes. Endpoint IDs must be non-null strings or whole numbers
-   * in compatible columns.
+   * The result has `node` and `componentId` columns, with one row per node,
+   * sorted by node. Groups are numbered from zero in order of their smallest
+   * node ID. Group IDs can change when the connections change. An empty input
+   * produces no rows.
    *
-   * This input uses custom endpoint names and contains two separate groups:
+   * For the first example, we start with this data:
    *
    * | origin | destination |
    * | --- | --- |
    * | A | B |
    * | C | D |
    *
-   * Omitting options finds weak components and overwrites the input table. The
-   * destination-only nodes B and D are included:
+   * By default, the method groups connected nodes without considering
+   * direction. B and D are included even though they only appear as
+   * destinations:
    *
    * @example
    * ```ts
@@ -2951,19 +2923,19 @@ export default class SimpleTable extends Simple {
    * | C | 1 |
    * | D | 1 |
    *
-   * This fresh directed chain is one weak component:
+   * The next two examples each start with this chain of connections:
    *
    * | source | target |
    * | --- | --- |
    * | A | B |
    * | B | C |
    *
-   * A separate output table preserves the graph for comparing modes:
+   * By default, all three nodes belong to the same group:
    *
    * @example
    * ```ts
    * await graph
-   *   .connectedComponents("source", "target", { outputTable: true })
+   *   .connectedComponents("source", "target")
    *   .log();
    * ```
    *
@@ -2973,15 +2945,14 @@ export default class SimpleTable extends Simple {
    * | B | 0 |
    * | C | 0 |
    *
-   * On the same preserved chain, strong connectivity puts each node in its own
-   * component because no pair can reach one another in both directions:
+   * With the `mode` option set to "strong", each node forms its own group. A
+   * can reach B and C, but neither can get back to A:
    *
    * @example
    * ```ts
    * await graph
    *   .connectedComponents("source", "target", {
    *     mode: "strong",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -2992,7 +2963,8 @@ export default class SimpleTable extends Simple {
    * | B | 1 |
    * | C | 2 |
    *
-   * Adding C -> A to the chain makes A, B, and C one strong component.
+   * Adding C -> A would let every node reach the others, so all three would
+   * belong to the same group in "strong" mode too.
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
@@ -3014,24 +2986,20 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Orders every node in a directed acyclic graph so each prerequisite
-   * appears before its dependents. Each row in the input means the source
-   * node must come before the target node. If a dataset stores dependent ->
-   * prerequisite instead, pass those columns in reverse to obtain execution
-   * order.
+   * Orders nodes so each prerequisite comes before the nodes that depend on
+   * it. Each input row means the source node must come before the target
+   * node. For example, buying ingredients must come before cooking dinner.
    *
-   * The result has fixed `node` and `order` columns. Order values start at one,
-   * and at each step the smallest currently eligible ID is selected. Strings
-   * use case-sensitive byte ordering and numbers use numeric ordering. Nodes
-   * are discovered only from the two endpoint columns, including nodes that
-   * appear only as targets.
+   * The result has `node` and `order` columns, sorted by `order`, starting at
+   * one. When several nodes are ready, the method chooses the smallest node
+   * ID first. All nodes in the source and target columns are included.
    *
-   * Endpoint IDs must be non-null strings or whole numbers in compatible
-   * columns. A directed cycle, including a self-connection, prevents a complete
-   * dependency order and causes the method to throw.
+   * If dependencies form a loop, there is no valid order and the method
+   * throws an error. A node depending on itself also causes an error. An
+   * empty input produces no rows.
    *
-   * This dinner plan uses custom column names. `prerequisite` contains what
-   * must happen before the corresponding `task`:
+   * For this example, we start with a dinner plan. Each prerequisite must
+   * happen before its corresponding task:
    *
    * | prerequisite | task |
    * | --- | --- |
@@ -3039,7 +3007,7 @@ export default class SimpleTable extends Simple {
    * | Cook dinner | Eat dinner |
    * | Set table | Eat dinner |
    *
-   * Omitting options overwrites the input with the dependency order:
+   * The method puts the tasks in an order that satisfies those requirements:
    *
    * @example
    * ```ts
@@ -3055,33 +3023,8 @@ export default class SimpleTable extends Simple {
    * | Set table | 3 |
    * | Eat dinner | 4 |
    *
-   * This separate graph has a two-step dependency chain:
-   *
-   * | source | target |
-   * | --- | --- |
-   * | A | B |
-   * | B | C |
-   *
-   * Store the result in a named table to preserve the input for other graph
-   * operations:
-   *
-   * @example
-   * ```ts
-   * await connections
-   *   .topologicalSort("source", "target", {
-   *     outputTable: "dependencyOrder",
-   *   })
-   *   .log();
-   * ```
-   *
-   * | node | order |
-   * | --- | ---: |
-   * | A | 1 |
-   * | B | 2 |
-   * | C | 3 |
-   *
-   * @param sourceColumn - The name of the prerequisite endpoint column.
-   * @param targetColumn - The name of the dependent endpoint column.
+   * @param sourceColumn - The name of the column containing each prerequisite node ID.
+   * @param targetColumn - The name of the column containing each dependent node ID.
    * @param options - An optional object with result configuration.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3098,21 +3041,21 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds the minimum distance from one or more starting nodes to every node
-   * reachable from each start. Without `weight`, distance counts connections.
-   * With `weight`, distance is the minimum sum of the selected edge weights.
-   * Outgoing follows connections from source to target, incoming follows them
-   * from target to source, and both follows connections in either direction.
-   * The result has fixed `start`, `node`, and `distance` columns, sorted by
-   * `start`, then `node`.
+   * Finds the shortest distance from each starting node to every node it can
+   * reach. By default, distance is the number of connections along the
+   * shortest route. Use the `weight` option to find the smallest sum of
+   * values from a numeric column, such as travel time.
    *
-   * Each known start is included at distance zero. Unknown starts and
-   * unreachable nodes produce no rows. Endpoint IDs must be non-null strings
-   * or whole numbers in compatible columns. Supplied weights must be non-null,
-   * finite, non-negative numbers. Empty start arrays and duplicate starts throw
-   * an error.
+   * The `direction` option lets you follow connections from source to target,
+   * from target to source, or in either direction. The result has `start`,
+   * `node`, and `distance` columns, sorted by `start`, then `node`.
    *
-   * This input has custom endpoint names and a route from A to C:
+   * Each known starting node is included at distance zero. Unknown starting
+   * IDs and nodes that cannot be reached produce no rows. Empty start arrays
+   * and duplicate starting IDs throw an error. Weights must be non-null,
+   * finite, and non-negative.
+   *
+   * The following examples each start with this data:
    *
    * | origin | destination | minutes |
    * | --- | --- | ---: |
@@ -3120,8 +3063,8 @@ export default class SimpleTable extends Simple {
    * | B | C | 1 |
    * | D | B | 2 |
    *
-   * Omitting `weight` and `direction` follows outgoing connections and counts
-   * hops:
+   * By default, the method follows connections from source to target and
+   * counts how many connections are needed:
    *
    * @example
    * ```ts
@@ -3136,8 +3079,7 @@ export default class SimpleTable extends Simple {
    * | A | B | 1 |
    * | A | C | 2 |
    *
-   * On a fresh copy of the same input, selecting `minutes` minimizes the total
-   * edge weight:
+   * With `weight: "minutes"`, distance is the shortest total travel time:
    *
    * @example
    * ```ts
@@ -3152,7 +3094,8 @@ export default class SimpleTable extends Simple {
    * | A | B | 4 |
    * | A | C | 5 |
    *
-   * On a fresh copy, incoming traversal follows connections in reverse:
+   * With `direction: "incoming"`, connections are followed from target to
+   * source. Starting at C:
    *
    * @example
    * ```ts
@@ -3168,8 +3111,8 @@ export default class SimpleTable extends Simple {
    * | C | C | 0 |
    * | C | D | 2 |
    *
-   * On a fresh copy, both-direction traversal treats each connection as
-   * traversable in either orientation:
+   * With `direction: "both"`, connections can be followed in either
+   * direction:
    *
    * @example
    * ```ts
@@ -3185,15 +3128,13 @@ export default class SimpleTable extends Simple {
    * | A | C | 2 |
    * | A | D | 2 |
    *
-   * On a fresh copy, multiple starts are evaluated independently. The named
-   * output preserves the input table:
+   * An array of starting nodes gives separate distances for each start:
    *
    * @example
    * ```ts
    * await connections
    *   .distances("origin", "destination", ["D", "A"], {
    *     weight: "minutes",
-   *     outputTable: "travelTimes",
    *   })
    *   .log();
    * ```
@@ -3210,9 +3151,9 @@ export default class SimpleTable extends Simple {
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param startNodes - One starting node ID or an array of distinct starting node IDs.
-   * @param options - An optional object with traversal and result configuration.
+   * @param options - An optional object with direction and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
-   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -3231,29 +3172,37 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds every tied shortest simple route between two different nodes.
-   * Without `weight`, route cost counts connections. With `weight`, route
-   * cost is the sum of the selected edge weights. Outgoing follows
-   * connections from source to target, incoming follows them from target to
-   * source, and both follows connections in either direction.
+   * Finds all shortest routes between two different nodes. By default, the
+   * shortest route uses the fewest connections. Use the `weight` option to
+   * find routes with the smallest sum of values from a numeric column, such
+   * as travel time. When several routes tie, all are returned. Routes never
+   * repeat a node.
    *
-   * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
-   * `weight`, and `distance` columns. Each row is one traversed connection;
-   * `step` starts at one, `weight` is that connection's cost, and `distance` is
-   * the running route cost. Endpoints show traversal orientation. Routes are
-   * sorted by their typed edge-ID sequences and numbered from zero.
+   * The `direction` option lets you follow connections from source to target,
+   * from target to source, or in either direction. Each connection needs its
+   * own unique, non-null ID in the column named by `edgeId`. You can create
+   * these IDs with `addId()`.
    *
-   * Endpoint and edge IDs must be non-null strings or whole numbers, and edge
-   * IDs must be unique. Weights must be non-null, finite, and non-negative.
-   * Unknown or disconnected endpoints produce an empty result. `start` and
-   * `end` must differ; use `distances()` for a zero-distance result and
-   * `findCycles()` to find loops. Self-connections in the input remain valid
-   * but cannot occur in a simple route between different endpoints.
+   * The result has `pathId`, `step`, `edgeId`, `source`, `target`, `weight`,
+   * and `distance` columns. Each row is one connection along a route. Steps
+   * start at one. The source and target show the direction taken along that
+   * route. Weight is the connection cost, and distance is the running total.
+   * Without the `weight` option, each connection costs one.
    *
-   * The method returns every tie without a result or hop cap. Enumerating many
-   * tied simple routes can take a long time and consume substantial memory.
+   * Routes are numbered from zero by comparing their sequences of connection
+   * IDs, element by element. Rows are sorted by `pathId`, then `step`.
+   * Reordering the input rows preserves route IDs; changing the connections
+   * may change them.
    *
-   * This input branches at A and converges at E. It uses an existing edge ID:
+   * Unknown IDs or nodes with no route between them produce no rows. The
+   * start and end must differ. Self-connections cannot appear in a route
+   * because a route never repeats a node. Weights must be non-null, finite,
+   * and non-negative.
+   *
+   * There is no limit on route length or the number of tied routes returned.
+   * Finding many tied routes can take a long time and use substantial memory.
+   *
+   * For the first example, each connection already has an ID:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |
@@ -3263,8 +3212,8 @@ export default class SimpleTable extends Simple {
    * | E4 | C | D |
    * | E5 | D | E |
    *
-   * Omitting options follows outgoing connections and returns both tied
-   * three-hop routes:
+   * By default, the method finds routes from source to target with the fewest
+   * connections. Two routes from A to E tie at three connections each:
    *
    * @example
    * ```ts
@@ -3282,23 +3231,20 @@ export default class SimpleTable extends Simple {
    * | 1 | 2 | E4 | C | D | 1 | 2 |
    * | 1 | 3 | E5 | D | E | 1 | 3 |
    *
-   * This fresh input has no edge-ID column:
+   * For an input without connection IDs, use `addId()` first:
    *
    * | source | target |
    * | --- | --- |
    * | A | B |
    * | B | E |
    *
-   * Create and preserve IDs before routing. The separate result table keeps
-   * the prepared input available for joining on `edgeId`:
+   * The generated IDs identify the connections in the result:
    *
    * @example
    * ```ts
    * await unnumberedConnections
    *   .addId("edgeId", { prefix: "edge-" })
-   *   .shortestPath("source", "target", "edgeId", "A", "E", {
-   *     outputTable: true,
-   *   })
+   *   .shortestPath("source", "target", "edgeId", "A", "E")
    *   .log();
    * ```
    *
@@ -3307,8 +3253,8 @@ export default class SimpleTable extends Simple {
    * | 0 | 1 | edge-0 | A | B | 1 | 1 |
    * | 0 | 2 | edge-1 | B | E | 1 | 2 |
    *
-   * This weighted input uses custom column names and has a direct edge and a
-   * cheaper three-edge route. Result column names remain fixed:
+   * The next two examples each start with these flights. The direct flight
+   * takes ten minutes; the route through B and D takes three:
    *
    * | flightId | origin | destination | minutes |
    * | --- | --- | --- | ---: |
@@ -3317,12 +3263,14 @@ export default class SimpleTable extends Simple {
    * | F3 | B | D | 1 |
    * | F4 | D | E | 1 |
    *
+   * With `weight: "minutes"`, the route with the shortest travel time is
+   * chosen:
+   *
    * @example
    * ```ts
    * await flights
    *   .shortestPath("origin", "destination", "flightId", "A", "E", {
    *     weight: "minutes",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -3333,15 +3281,13 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | F3 | B | D | 1 | 2 |
    * | 0 | 3 | F4 | D | E | 1 | 3 |
    *
-   * On the same preserved flights input, omitting `weight` selects the direct
-   * one-hop route:
+   * Without the `weight` option, the direct flight is shortest because it
+   * uses only one connection:
    *
    * @example
    * ```ts
    * await flights
-   *   .shortestPath("origin", "destination", "flightId", "A", "E", {
-   *     outputTable: true,
-   *   })
+   *   .shortestPath("origin", "destination", "flightId", "A", "E")
    *   .log();
    * ```
    *
@@ -3349,8 +3295,8 @@ export default class SimpleTable extends Simple {
    * | ---: | ---: | --- | --- | --- | ---: | ---: |
    * | 0 | 1 | F1 | A | E | 1 | 1 |
    *
-   * Incoming traversal reverses the displayed endpoints while preserving the
-   * original edge ID. For this fresh input:
+   * With `direction: "incoming"`, connections are followed from target to
+   * source. For this input:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |
@@ -3361,7 +3307,6 @@ export default class SimpleTable extends Simple {
    * await reverseExample
    *   .shortestPath("source", "target", "edgeId", "B", "A", {
    *     direction: "incoming",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -3375,9 +3320,9 @@ export default class SimpleTable extends Simple {
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
    * @param start - The starting node ID.
    * @param end - The ending node ID, which must differ from `start`.
-   * @param options - An optional object with traversal and result configuration.
+   * @param options - An optional object with direction and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
-   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -3406,33 +3351,33 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Enumerates every simple route between two different nodes. A simple route
-   * does not repeat a node. Outgoing follows connections from source to
-   * target, incoming follows them from target to source, and both follows
-   * connections in either direction.
+   * Finds all routes between two different nodes without repeating a node
+   * along a route. The `direction` option lets you follow connections from
+   * source to target, from target to source, or in either direction. Each
+   * connection needs its own unique, non-null ID in the column named by
+   * `edgeId`. You can create these IDs with `addId()`.
    *
-   * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
-   * `weight`, and `distance` columns. Each row is one traversed connection;
-   * `step` starts at one, `weight` is that connection's cost, and `distance` is
-   * the running route cost. Without `weight`, every connection costs one.
-   * Endpoints show traversal orientation. Routes are sorted by their typed
-   * edge-ID sequences and numbered from zero; rows are ordered by `pathId`,
-   * then `step`. Preserving graph data, edge IDs, and options preserves these
-   * route IDs even if input rows are reordered. Changing the graph may renumber
-   * routes.
+   * The result has `pathId`, `step`, `edgeId`, `source`, `target`, `weight`,
+   * and `distance` columns. Each row is one connection along a route. Steps
+   * start at one. The source and target show the direction taken along that
+   * route. By default, each connection has a weight of one and distance
+   * counts the connections taken so far. Use the `weight` option to calculate
+   * running totals from a numeric column instead.
    *
-   * Endpoint and edge IDs must be non-null strings or whole numbers, and edge
-   * IDs must be unique. Weights must be non-null, finite, and non-negative.
-   * Unknown or disconnected endpoints produce an empty result. `start` and
-   * `end` must differ; use `distances()` for a zero-distance result and
-   * `findCycles()` to find loops. Self-connections are valid input but cannot
-   * appear in a simple route between different endpoints.
+   * Routes are numbered from zero by comparing their sequences of connection
+   * IDs, element by element. Rows are sorted by `pathId`, then `step`.
+   * Reordering the input rows preserves route IDs; changing the connections
+   * may change them.
    *
-   * The method has no result or hop cap. Enumerating all simple routes can take
-   * a long time and consume substantial memory, especially in dense graphs.
+   * Unknown IDs or nodes with no route between them produce no rows. The
+   * start and end must differ. Self-connections cannot appear in a route
+   * because a route never repeats a node. Weights must be non-null, finite,
+   * and non-negative.
    *
-   * This fresh input branches at A and converges at D. It uses existing edge
-   * IDs:
+   * There is no limit on route length or the number of routes returned.
+   * Finding all routes can take a long time and use substantial memory.
+   *
+   * For the first example, we start with these connections:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |
@@ -3441,12 +3386,13 @@ export default class SimpleTable extends Simple {
    * | E3 | B | D |
    * | E4 | C | D |
    *
+   * By default, connections are followed from source to target. Both routes
+   * from A to D are returned:
+   *
    * @example
    * ```ts
    * await connections
-   *   .paths("source", "target", "edgeId", "A", "D", {
-   *     outputTable: true,
-   *   })
+   *   .paths("source", "target", "edgeId", "A", "D")
    *   .log();
    * ```
    *
@@ -3457,23 +3403,20 @@ export default class SimpleTable extends Simple {
    * | 1 | 1 | E2 | A | C | 1 | 1 |
    * | 1 | 2 | E4 | C | D | 1 | 2 |
    *
-   * This fresh input has no edge-ID column:
+   * For an input without connection IDs, use `addId()` first:
    *
    * | source | target |
    * | --- | --- |
    * | A | B |
    * | B | D |
    *
-   * Create and preserve IDs before routing. The separate result table keeps
-   * the prepared input available for joining on `edgeId`:
+   * The generated IDs identify the connections in the result:
    *
    * @example
    * ```ts
    * await unnumberedConnections
    *   .addId("edgeId", { prefix: "edge-" })
-   *   .paths("source", "target", "edgeId", "A", "D", {
-   *     outputTable: true,
-   *   })
+   *   .paths("source", "target", "edgeId", "A", "D")
    *   .log();
    * ```
    *
@@ -3482,8 +3425,8 @@ export default class SimpleTable extends Simple {
    * | 0 | 1 | edge-0 | A | B | 1 | 1 |
    * | 0 | 2 | edge-1 | B | D | 1 | 2 |
    *
-   * This weighted input uses custom column names. The direct flight costs ten,
-   * while the two-leg flight costs three:
+   * The next three examples each start with these flights. The direct flight
+   * takes ten minutes; the route through B takes three:
    *
    * | flightId | origin | destination | minutes |
    * | --- | --- | --- | ---: |
@@ -3491,12 +3434,14 @@ export default class SimpleTable extends Simple {
    * | F2 | A | B | 1 |
    * | F3 | B | D | 2 |
    *
+   * With `weight: "minutes"`, both routes are returned with their travel
+   * times:
+   *
    * @example
    * ```ts
    * await flights
    *   .paths("origin", "destination", "flightId", "A", "D", {
    *     weight: "minutes",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -3507,14 +3452,13 @@ export default class SimpleTable extends Simple {
    * | 1 | 1 | F2 | A | B | 1 | 1 |
    * | 1 | 2 | F3 | B | D | 2 | 3 |
    *
-   * Omitting `weight` returns the same routes but counts connections:
+   * Without the `weight` option, the same routes are returned and distance
+   * counts connections:
    *
    * @example
    * ```ts
    * await flights
-   *   .paths("origin", "destination", "flightId", "A", "D", {
-   *     outputTable: true,
-   *   })
+   *   .paths("origin", "destination", "flightId", "A", "D")
    *   .log();
    * ```
    *
@@ -3524,8 +3468,8 @@ export default class SimpleTable extends Simple {
    * | 1 | 1 | F2 | A | B | 1 | 1 |
    * | 1 | 2 | F3 | B | D | 1 | 2 |
    *
-   * Incoming traversal reverses displayed endpoints while preserving the
-   * original edge IDs and weights:
+   * With `direction: "incoming"`, the routes run from D to A. Connection IDs
+   * and weights are kept, while source and target show the direction taken:
    *
    * @example
    * ```ts
@@ -3533,7 +3477,6 @@ export default class SimpleTable extends Simple {
    *   .paths("origin", "destination", "flightId", "D", "A", {
    *     direction: "incoming",
    *     weight: "minutes",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -3549,9 +3492,9 @@ export default class SimpleTable extends Simple {
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
    * @param start - The starting node ID.
    * @param end - The ending node ID, which must differ from `start`.
-   * @param options - An optional object with traversal and result configuration.
+   * @param options - An optional object with direction and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
-   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -3572,36 +3515,41 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Enumerates every simple cycle in the calling edge table. A simple cycle
-   * repeats only its closing node and never reuses an edge. Outgoing traversal
-   * follows stored source-to-target orientation, incoming traversal reverses
-   * every connection, and both traversal treats connections as undirected.
-   * The `direction` argument is required.
+   * Finds all loops that return to their starting node without repeating any
+   * other node or reusing a connection. The required `direction` argument
+   * specifies whether to follow connections from source to target
+   * ("outgoing"), from target to source ("incoming"), or in either direction
+   * ("both").
    *
-   * The result has fixed `pathId`, `step`, `edgeId`, `source`, `target`,
-   * `weight`, and `distance` columns. Each row is one real connection,
-   * including the closing connection. `step` starts at one; `weight` is the
-   * connection cost, and `distance` is the running cycle cost. Without a
-   * weight column, each connection costs one.
+   * Each connection needs its own unique, non-null ID in the column named by
+   * `edgeId`. You can create these IDs with `addId()`. The result has
+   * `pathId`, `step`, `edgeId`, `source`, `target`, `weight`, and `distance`
+   * columns. Each row is one connection, including the final connection back
+   * to the start. Steps start at one. The source and target show the
+   * direction taken around the loop.
    *
-   * Cycles start at their smallest node. Outgoing and incoming preserve their
-   * traversal orientation. Both chooses the orientation with the smaller
-   * typed edge-ID sequence and merges its reverse. Cycles are then sorted by
-   * typed edge-ID sequence and numbered from zero. Different edge combinations
-   * remain separate even when their node sequences match. Preserving graph
-   * data, edge IDs, direction, and options preserves these IDs when input rows
-   * are reordered; changing the graph may renumber them.
+   * By default, each connection has a weight of one and distance counts the
+   * connections taken so far. Use the `weight` option to calculate running
+   * totals from a numeric column instead. Weights must be non-null, finite,
+   * and non-negative.
    *
-   * Endpoint and edge IDs must be non-null strings or whole numbers, and edge
-   * IDs must be unique. Weights must be non-null, finite, and non-negative.
-   * A self-connection is a one-step cycle in every mode. In both mode, two
-   * distinct parallel connections form one two-step cycle, but one connection
-   * is never traversed out and back to manufacture a cycle.
+   * Each cycle starts at its smallest node ID. With "both", a cycle and its
+   * reverse are returned once, choosing the direction with the smaller
+   * sequence of connection IDs. Cycles are numbered from zero by comparing
+   * these sequences element by element, and rows are sorted by `pathId`, then
+   * `step`. Reordering the input rows preserves cycle IDs; changing the
+   * connections may change them.
    *
-   * The method has no result or hop cap. Enumerating all simple cycles can take
-   * a long time and consume substantial memory, especially in dense graphs.
+   * A self-connection forms a one-step cycle. With "both", two separate
+   * connections between the same nodes can form a two-step cycle. A single
+   * connection cannot be followed out and back to create a cycle. Cycles
+   * using different connections remain separate, even if they visit the same
+   * nodes. If there are no cycles, the result has no rows.
    *
-   * This directed triangle uses existing edge IDs:
+   * There is no limit on cycle length or the number of cycles returned.
+   * Finding all cycles can take a long time and use substantial memory.
+   *
+   * The next three examples each start with these connections:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |
@@ -3609,14 +3557,12 @@ export default class SimpleTable extends Simple {
    * | E2 | B | C |
    * | E3 | C | A |
    *
-   * Outgoing traversal follows the stored orientation:
+   * With "outgoing", connections are followed from source to target:
    *
    * @example
    * ```ts
    * await triangle
-   *   .findCycles("source", "target", "edgeId", "outgoing", {
-   *     outputTable: true,
-   *   })
+   *   .findCycles("source", "target", "edgeId", "outgoing")
    *   .log();
    * ```
    *
@@ -3626,14 +3572,12 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | E2 | B | C | 1 | 2 |
    * | 0 | 3 | E3 | C | A | 1 | 3 |
    *
-   * Incoming traversal reverses the displayed endpoints and cumulative order:
+   * With "incoming", connections are followed from target to source:
    *
    * @example
    * ```ts
    * await triangle
-   *   .findCycles("source", "target", "edgeId", "incoming", {
-   *     outputTable: true,
-   *   })
+   *   .findCycles("source", "target", "edgeId", "incoming")
    *   .log();
    * ```
    *
@@ -3643,14 +3587,13 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | E2 | C | B | 1 | 2 |
    * | 0 | 3 | E1 | B | A | 1 | 3 |
    *
-   * Both traversal merges the reverse and chooses E1, E2, E3:
+   * With "both", either direction is allowed. This cycle appears once, in the
+   * direction that starts with E1:
    *
    * @example
    * ```ts
    * await triangle
-   *   .findCycles("source", "target", "edgeId", "both", {
-   *     outputTable: true,
-   *   })
+   *   .findCycles("source", "target", "edgeId", "both")
    *   .log();
    * ```
    *
@@ -3660,56 +3603,8 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | E2 | B | C | 1 | 2 |
    * | 0 | 3 | E3 | C | A | 1 | 3 |
    *
-   * A triangle whose third connection is also stored from A has an undirected
-   * cycle, while outgoing and incoming return the same empty typed schema:
-   *
-   * | edgeId | source | target |
-   * | --- | --- | --- |
-   * | E1 | A | B |
-   * | E2 | B | C |
-   * | E3 | A | C |
-   *
-   * @example
-   * ```ts
-   * await undirectedTriangle
-   *   .findCycles("source", "target", "edgeId", "both", {
-   *     outputTable: true,
-   *   })
-   *   .log();
-   * ```
-   *
-   * | pathId | step | edgeId | source | target | weight | distance |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | E1 | A | B | 1 | 1 |
-   * | 0 | 2 | E2 | B | C | 1 | 2 |
-   * | 0 | 3 | E3 | C | A | 1 | 3 |
-   *
-   * @example
-   * ```ts
-   * await undirectedTriangle
-   *   .findCycles("source", "target", "edgeId", "outgoing", {
-   *     outputTable: true,
-   *   })
-   *   .log();
-   * ```
-   *
-   * | pathId | step | edgeId | source | target | weight | distance |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   *
-   * @example
-   * ```ts
-   * await undirectedTriangle
-   *   .findCycles("source", "target", "edgeId", "incoming", {
-   *     outputTable: true,
-   *   })
-   *   .log();
-   * ```
-   *
-   * | pathId | step | edgeId | source | target | weight | distance |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   *
-   * Parallel connections remain distinct and can close a two-step cycle in
-   * both mode. A self-connection remains a separate one-step cycle:
+   * Two separate connections between A and B form a cycle with "both". The
+   * self-connection at C forms another cycle. For this input:
    *
    * | edgeId | source | target | cost |
    * | --- | --- | --- | ---: |
@@ -3722,7 +3617,6 @@ export default class SimpleTable extends Simple {
    * await parallelAndLoop
    *   .findCycles("source", "target", "edgeId", "both", {
    *     weight: "cost",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -3733,8 +3627,8 @@ export default class SimpleTable extends Simple {
    * | 1 | 1 | P1 | A | B | 1 | 1 |
    * | 1 | 2 | P2 | B | A | 2 | 3 |
    *
-   * This weighted example uses custom column names. Weighted and unweighted
-   * calls return the same cycles and columns; only costs differ:
+   * With the `weight` option, distance is a running total of the selected
+   * values. For these flights:
    *
    * | flightId | origin | destination | minutes |
    * | --- | --- | --- | ---: |
@@ -3747,7 +3641,6 @@ export default class SimpleTable extends Simple {
    * await flights
    *   .findCycles("origin", "destination", "flightId", "outgoing", {
    *     weight: "minutes",
-   *     outputTable: true,
    *   })
    *   .log();
    * ```
@@ -3758,23 +3651,7 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | F2 | B | C | 2 | 3 |
    * | 0 | 3 | F3 | C | A | 3 | 6 |
    *
-   * @example
-   * ```ts
-   * await flights
-   *   .findCycles("origin", "destination", "flightId", "outgoing", {
-   *     outputTable: true,
-   *   })
-   *   .log();
-   * ```
-   *
-   * | pathId | step | edgeId | source | target | weight | distance |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | A | B | 1 | 1 |
-   * | 0 | 2 | F2 | B | C | 1 | 2 |
-   * | 0 | 3 | F3 | C | A | 1 | 3 |
-   *
-   * A fresh input without edge IDs can create and preserve them before cycle
-   * enumeration:
+   * For an input without connection IDs, use `addId()` first:
    *
    * | source | target |
    * | --- | --- |
@@ -3786,9 +3663,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * await unnumberedConnections
    *   .addId("edgeId", { prefix: "edge-" })
-   *   .findCycles("source", "target", "edgeId", "outgoing", {
-   *     outputTable: true,
-   *   })
+   *   .findCycles("source", "target", "edgeId", "outgoing")
    *   .log();
    * ```
    *
@@ -3801,9 +3676,9 @@ export default class SimpleTable extends Simple {
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
-   * @param direction - The required traversal mode: `"outgoing"`, `"incoming"`, or `"both"`.
+   * @param direction - The direction in which to follow connections: `"outgoing"`, `"incoming"`, or `"both"`.
    * @param options - An optional object with cost and result configuration.
-   * @param options.weight - The name of the numeric edge-weight column. If omitted, each connection has a cost of one.
+   * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations

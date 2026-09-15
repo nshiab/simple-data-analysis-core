@@ -33,7 +33,6 @@ Deno.test("reachable defaults to outgoing and supports every direction", async (
       .reachable("source", "target", "B", { direction: "both" });
 
     const expectedOutgoing = [
-      { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
       { start: "A", node: "D" },
@@ -46,7 +45,6 @@ Deno.test("reachable defaults to outgoing and supports every direction", async (
       { start: "E", node: "B" },
       { start: "E", node: "C" },
       { start: "E", node: "D" },
-      { start: "E", node: "E" },
     ]);
     assertEquals(await both.getData(), [
       { start: "B", node: "A" },
@@ -60,15 +58,15 @@ Deno.test("reachable defaults to outgoing and supports every direction", async (
   }
 });
 
-Deno.test("reachable includes known sinks and source-only nodes", async () => {
+Deno.test("reachable returns no rows when the start has no connections in the chosen direction", async () => {
   const sdb = new SimpleDB();
   try {
     const sink = loadScenario(sdb, "sink", "baseline")
       .reachable("source", "target", "E");
     const sourceOnly = loadScenario(sdb, "sourceOnly", "baseline")
       .reachable("source", "target", "F", { direction: "incoming" });
-    assertEquals(await sink.getData(), [{ start: "E", node: "E" }]);
-    assertEquals(await sourceOnly.getData(), [{ start: "F", node: "F" }]);
+    assertEquals(await sink.getData(), []);
+    assertEquals(await sourceOnly.getData(), []);
   } finally {
     await sdb.close();
   }
@@ -84,7 +82,7 @@ Deno.test("reachable sorts shuffled multi-start results in every direction", asy
   const nodes = {
     outgoing: { A: ["B", "C"], C: [] },
     incoming: { A: [], C: ["A", "B"] },
-    both: { A: ["B", "C"], C: ["A", "B"] },
+    both: { A: ["A", "B", "C"], C: ["A", "B", "C"] },
   };
   try {
     for (const direction of ["outgoing", "incoming", "both"] as const) {
@@ -96,7 +94,6 @@ Deno.test("reachable sorts shuffled multi-start results in every direction", asy
           await sdb.newTable().loadArray(rows)
             .reachable("source", "target", ["C", "unknown", "A"], {
               direction,
-              includeStart: false,
             }).getData(),
           expected,
         );
@@ -118,7 +115,7 @@ Deno.test("reachable follows a chain beyond common recursive hop limits", async 
     assertEquals(
       await sdb.newTable().loadArray(rows)
         .reachable("source", "target", 0).getData(),
-      Array.from({ length: length + 1 }, (_, node) => ({ start: 0, node })),
+      Array.from({ length }, (_, index) => ({ start: 0, node: index + 1 })),
     );
   } finally {
     await sdb.close();
@@ -152,12 +149,10 @@ Deno.test("reachable evaluates shuffled starts independently and omits unknown s
     starts[0] = "changed-after-call";
 
     assertEquals(await table.getData(), [
-      { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
       { start: "A", node: "D" },
       { start: "A", node: "E" },
-      { start: "F", node: "F" },
       { start: "F", node: "G" },
     ]);
   } finally {
@@ -165,19 +160,19 @@ Deno.test("reachable evaluates shuffled starts independently and omits unknown s
   }
 });
 
-Deno.test("reachable includeStart false excludes only each own start through cycles", async () => {
+Deno.test("reachable includes each start reached again through a cycle", async () => {
   const sdb = new SimpleDB();
   try {
     const table = loadScenario(sdb, "perStart", "cycle")
-      .reachable("source", "target", ["B", "unknown", "A"], {
-        includeStart: false,
-      });
+      .reachable("source", "target", ["B", "unknown", "A"]);
     assertEquals(await table.getData(), [
+      { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
       { start: "A", node: "D" },
       { start: "A", node: "E" },
       { start: "B", node: "A" },
+      { start: "B", node: "B" },
       { start: "B", node: "C" },
       { start: "B", node: "D" },
       { start: "B", node: "E" },
@@ -191,22 +186,22 @@ Deno.test("reachable terminates on cycles and deduplicates convergence and paral
   const sdb = new SimpleDB();
   try {
     const cycle = loadScenario(sdb, "cycle", "cycle")
-      .reachable("source", "target", "A", { includeStart: false });
+      .reachable("source", "target", "A");
     const parallel = loadScenario(sdb, "parallel", "parallel")
       .reachable("source", "target", "A");
     const selfLoop = loadScenario(sdb, "selfLoop", "self-loop")
-      .reachable("source", "target", "A", { includeStart: true });
+      .reachable("source", "target", "A");
     const singleLoop = loadScenario(sdb, "singleLoop", "single-loop")
-      .reachable("source", "target", "A", { includeStart: false });
+      .reachable("source", "target", "A");
 
     assertEquals(await cycle.getData(), [
+      { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
       { start: "A", node: "D" },
       { start: "A", node: "E" },
     ]);
     assertEquals(await parallel.getData(), [
-      { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
     ]);
@@ -214,7 +209,47 @@ Deno.test("reachable terminates on cycles and deduplicates convergence and paral
       { start: "A", node: "A" },
       { start: "A", node: "B" },
     ]);
-    assertEquals(await singleLoop.getData(), []);
+    assertEquals(await singleLoop.getData(), [{ start: "A", node: "A" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable includes only starts that connections actually lead back to", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const edges = [
+      { source: "A", target: "B" },
+      { source: "B", target: "C" },
+      { source: "C", target: "B" },
+      { source: "C", target: "D" },
+    ];
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const rows = direction === "outgoing"
+        ? edges
+        : edges.map(({ source, target }) => ({
+          source: target,
+          target: source,
+        }));
+      assertEquals(
+        await sdb.newTable().loadArray(rows)
+          .reachable("source", "target", ["D", "B", "A"], { direction })
+          .getData(),
+        [
+          { start: "A", node: "B" },
+          { start: "A", node: "C" },
+          { start: "A", node: "D" },
+          { start: "B", node: "B" },
+          { start: "B", node: "C" },
+          { start: "B", node: "D" },
+        ],
+      );
+    }
+    assertEquals(
+      await sdb.newTable().loadArray([{ source: "A", target: "B" }])
+        .reachable("source", "target", "A", { direction: "both" }).getData(),
+      [{ start: "A", node: "A" }, { start: "A", node: "B" }],
+    );
   } finally {
     await sdb.close();
   }
@@ -247,7 +282,6 @@ Deno.test("reachable supports overwrite and source-preserving output tables", as
     assertEquals(generated.name.startsWith("table"), true);
     assertEquals(generated.name === source.name, false);
     assertEquals(await generated.getData(), [
-      { start: "F", node: "F" },
       { start: "F", node: "G" },
     ]);
     assertEquals(await source.getRowCount(), 6);
@@ -262,18 +296,15 @@ Deno.test("reachable snapshots starts and options before queued execution", asyn
     const starts = ["E"];
     const options: {
       direction: "incoming" | "outgoing";
-      includeStart: boolean;
       outputTable: string;
     } = {
       direction: "incoming",
-      includeStart: false,
       outputTable: "incomingSnapshot",
     };
     const result = loadScenario(sdb, "snapshots", "baseline")
       .reachable("source", "target", starts, options);
     starts[0] = "A";
     options.direction = "outgoing";
-    options.includeStart = true;
     options.outputTable = "changed";
 
     assertEquals(result.name, "incomingSnapshot");
@@ -295,7 +326,6 @@ Deno.test("reachable uses fixed output names and preserves empty schemas", async
       .loadData("test/data/graphs/custom-columns.csv")
       .reachable("ORIGIN", "Destination", "A");
     assertEquals(await custom.getData(), [
-      { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
     ]);
@@ -328,10 +358,8 @@ Deno.test("reachable supports numeric zero, numeric ordering, and wide exact int
       .loadData("test/data/graphs/numeric.csv")
       .reachable("source", "target", [2, 0]);
     assertEquals(await numeric.getData(), [
-      { start: 0, node: 0 },
       { start: 0, node: 2 },
       { start: 0, node: 10 },
-      { start: 2, node: 2 },
       { start: 2, node: 10 },
     ]);
     assertEquals(await numeric.getTypes(), { start: "BIGINT", node: "BIGINT" });
@@ -345,7 +373,6 @@ Deno.test("reachable supports numeric zero, numeric ordering, and wide exact int
     wide.reachable("source", "target", 9007199254740993n)
       .convert({ start: "string", node: "string" });
     assertEquals(await wide.getData(), [
-      { start: "9007199254740993", node: "9007199254740993" },
       { start: "9007199254740993", node: "9007199254740995" },
     ]);
 
@@ -355,7 +382,6 @@ Deno.test("reachable supports numeric zero, numeric ordering, and wide exact int
     assertEquals(
       await bounded.reachable("source", "target", [128, 0]).getData(),
       [
-        { start: 0, node: 0 },
         { start: 0, node: 1 },
       ],
     );
@@ -379,7 +405,6 @@ Deno.test("reachable preserves exact decimal endpoint types through recursion", 
       node: "DECIMAL(20,0)",
     });
     assertEquals(await table.getData(), [
-      { start: "9007199254740993", node: "9007199254740993" },
       { start: "9007199254740993", node: "9007199254740995" },
     ]);
   } finally {
@@ -398,12 +423,10 @@ Deno.test("reachable preserves binary recursion and ordering under endpoint coll
     assertEquals(
       await table.reachable("source", "target", ["a", "A"]).getData(),
       [
-        { start: "A", node: "A" },
         { start: "A", node: "C" },
         { start: "A", node: "b" },
         { start: "a", node: "B" },
         { start: "a", node: "D" },
-        { start: "a", node: "a" },
       ],
     );
   } finally {
@@ -447,14 +470,6 @@ Deno.test("reachable validates starts and options before queuing", async () => {
         }),
       TypeError,
       'reachable() options.direction must be "outgoing", "incoming", or "both".',
-    );
-    assertThrows(
-      () =>
-        table.reachable("source", "target", "A", {
-          includeStart: "yes" as unknown as boolean,
-        }),
-      TypeError,
-      "reachable() options.includeStart must be a boolean.",
     );
     assertThrows(
       () =>
@@ -590,7 +605,6 @@ Deno.test("reachable output records its source as a cache dependency", async () 
     const output = firstSdb.newTable(outputName);
     await output.cache(compute(source));
     assertEquals(await output.getData(), [
-      { start: "A", node: "A" },
       { start: "A", node: "B" },
     ]);
   } finally {
@@ -605,7 +619,6 @@ Deno.test("reachable output records its source as a cache dependency", async () 
     await output.cache(compute(source));
     assertEquals(computationRuns, 2);
     assertEquals(await output.getData(), [
-      { start: "A", node: "A" },
       { start: "A", node: "C" },
     ]);
   } finally {
@@ -631,7 +644,6 @@ Deno.test("reachable internal relations do not shadow input table names", async 
       assertEquals(
         await table.reachable("source", "target", "A").getData(),
         [
-          { start: "A", node: "A" },
           { start: "A", node: "B" },
         ],
       );
@@ -651,7 +663,6 @@ Deno.test("reachable preserves queued source and output operation order", async 
     });
     source.loadArray([{ source: "A", target: "C" }]);
     assertEquals(await result.getData(), [
-      { start: "A", node: "A" },
       { start: "A", node: "B" },
     ]);
     assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
@@ -705,16 +716,8 @@ Deno.test("reachable JSDoc examples return their complete displayed outputs", as
   try {
     assertEquals(
       await sdb.newTable().loadArray(edges)
-        .reachable("origin", "destination", "A", {
-          outputTable: "reachableFromA",
-        }).getData(),
+        .reachable("origin", "destination", "A").getData(),
       allFromA,
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(edges)
-        .reachable("origin", "destination", "A", { includeStart: false })
-        .getData(),
-      allFromA.slice(1),
     );
     assertEquals(
       await sdb.newTable().loadArray(edges)

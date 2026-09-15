@@ -13,7 +13,6 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 type ReachableOptions = {
   direction?: GraphDirection;
-  includeStart?: boolean;
   outputTable?: string | boolean;
 };
 
@@ -44,12 +43,6 @@ export default function reachable(
     );
   }
   if (
-    options.includeStart !== undefined &&
-    typeof options.includeStart !== "boolean"
-  ) {
-    throw new TypeError("reachable() options.includeStart must be a boolean.");
-  }
-  if (
     options.outputTable !== undefined &&
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
@@ -66,7 +59,6 @@ export default function reachable(
   );
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
-  const includeStart = options.includeStart ?? true;
   const parameters = {
     sourceColumn,
     targetColumn,
@@ -90,7 +82,6 @@ export default function reachable(
         targetColumn,
         preparedStarts,
         direction,
-        includeStart,
       ),
     outputSchema: (schema) => {
       const endpoints = validateStarts(
@@ -127,7 +118,6 @@ function reachableSelect(
   target: string,
   starts: PreparedGraphStarts,
   direction: GraphDirection,
-  includeStart: boolean,
 ): string {
   const prepared = prepareGraphTraversal(
     input,
@@ -142,17 +132,14 @@ function reachableSelect(
     "graph_start_values",
     "graph_starts",
     "graph_edges",
-    "graph_nodes",
     "graph_reachable",
   ]);
   const startValuesRelation = relations.graph_start_values;
   const startsRelation = relations.graph_starts;
   const edgesRelation = relations.graph_edges;
-  const nodesRelation = relations.graph_nodes;
   const reachableRelation = relations.graph_reachable;
   const start = `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`;
   const startKey = `${quoteIdentifier("starts")}.${quoteIdentifier("__key")}`;
-  const nodeKey = `${quoteIdentifier("nodes")}.${quoteIdentifier("__key")}`;
   const reachedStart = `${quoteIdentifier("reached")}.${
     quoteIdentifier("start")
   }`;
@@ -180,22 +167,14 @@ function reachableSelect(
       FROM ${startValuesRelation}
     ), ${edgesRelation} AS (
       ${prepared.edges(direction)}
-    ), ${nodesRelation} AS (
-      SELECT ${quoteIdentifier("__from")} AS ${quoteIdentifier("node")},
-        ${quoteIdentifier("__from_key")} AS ${quoteIdentifier("__key")}
-      FROM ${edgesRelation}
-      UNION
-      SELECT ${quoteIdentifier("__to")} AS ${quoteIdentifier("node")},
-        ${quoteIdentifier("__to_key")} AS ${quoteIdentifier("__key")}
-      FROM ${edgesRelation}
     ), ${reachableRelation}(
       ${quoteIdentifier("start")}, ${quoteIdentifier("node")},
       ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")}
     ) AS (
-      SELECT ${start}, ${start}, ${startKey}, ${startKey}
+      SELECT ${start}, ${edgeTo}, ${startKey}, ${edgeToKey}
       FROM ${startsRelation} AS ${quoteIdentifier("starts")}
-      INNER JOIN ${nodesRelation} AS ${quoteIdentifier("nodes")}
-        ON ${startKey} = ${nodeKey}
+      INNER JOIN ${edgesRelation} AS ${quoteIdentifier("edges")}
+        ON ${startKey} = ${edgeFromKey}
       UNION
       SELECT ${reachedStart}, ${edgeTo}, ${reachedStartKey}, ${edgeToKey}
       FROM ${reachableRelation} AS ${quoteIdentifier("reached")}
@@ -204,13 +183,6 @@ function reachableSelect(
     )
     SELECT ${quoteIdentifier("start")}, ${quoteIdentifier("node")}
     FROM ${reachableRelation}
-    ${
-    includeStart
-      ? ""
-      : `WHERE ${quoteIdentifier("__start_key")} <> ${
-        quoteIdentifier("__node_key")
-      }`
-  }
     ORDER BY ${quoteIdentifier("__start_key")}, ${
     quoteIdentifier("__node_key")
   }`;

@@ -969,14 +969,15 @@ Deno.test("shortestPath preserves wide numeric edge ordering and accumulated cos
 Deno.test("shortestPath custom-column weighted JSDoc examples match their tables", async () => {
   const sdb = new SimpleDB();
   try {
-    const flights = sdb.newTable("flights").loadArray([
-      { flightId: "F1", origin: "A", destination: "E", minutes: 10 },
-      { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
-      { flightId: "F3", origin: "B", destination: "D", minutes: 1 },
-      { flightId: "F4", origin: "D", destination: "E", minutes: 1 },
-    ]);
+    const flights = () =>
+      sdb.newTable().loadArray([
+        { flightId: "F1", origin: "A", destination: "E", minutes: 10 },
+        { flightId: "F2", origin: "A", destination: "B", minutes: 1 },
+        { flightId: "F3", origin: "B", destination: "D", minutes: 1 },
+        { flightId: "F4", origin: "D", destination: "E", minutes: 1 },
+      ]);
     assertEquals(
-      await flights.shortestPath(
+      await flights().shortestPath(
         "origin",
         "destination",
         "flightId",
@@ -984,7 +985,6 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
         "E",
         {
           weight: "minutes",
-          outputTable: true,
         },
       ).getData(),
       [
@@ -1018,15 +1018,12 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
       ],
     );
     assertEquals(
-      await flights.shortestPath(
+      await flights().shortestPath(
         "origin",
         "destination",
         "flightId",
         "A",
         "E",
-        {
-          outputTable: true,
-        },
       ).getData(),
       [{
         pathId: 0,

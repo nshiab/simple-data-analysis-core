@@ -598,14 +598,13 @@ Deno.test("connectedComponents JSDoc examples return their displayed outputs", a
       ],
     );
 
-    const graph = sdb.newTable("componentExample").loadArray([
-      { source: "A", target: "B" },
-      { source: "B", target: "C" },
-    ]);
+    const graph = () =>
+      sdb.newTable().loadArray([
+        { source: "A", target: "B" },
+        { source: "B", target: "C" },
+      ]);
     assertEquals(
-      await graph.connectedComponents("source", "target", {
-        outputTable: true,
-      }).getData(),
+      await graph().connectedComponents("source", "target").getData(),
       [
         { node: "A", componentId: 0 },
         { node: "B", componentId: 0 },
@@ -613,9 +612,8 @@ Deno.test("connectedComponents JSDoc examples return their displayed outputs", a
       ],
     );
     assertEquals(
-      await graph.connectedComponents("source", "target", {
+      await graph().connectedComponents("source", "target", {
         mode: "strong",
-        outputTable: true,
       }).getData(),
       [
         { node: "A", componentId: 0 },

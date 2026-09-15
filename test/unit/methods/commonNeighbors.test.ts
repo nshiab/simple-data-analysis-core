@@ -623,41 +623,36 @@ Deno.test("commonNeighbors internal relations do not shadow input table names", 
 Deno.test("commonNeighbors JSDoc examples return their displayed outputs", async () => {
   const sdb = new SimpleDB();
   try {
-    assertEquals(
-      await sdb.newTable().loadArray([
-        { origin: "A", destination: "C" },
-        { origin: "A", destination: "C" },
-        { origin: "B", destination: "C" },
-        { origin: "B", destination: "C" },
-      ]).commonNeighbors("origin", "destination", "A", "B").getData(),
-      [{ node: "C" }],
-    );
+    const rows = [
+      { origin: "A", destination: "C" },
+      { origin: "A", destination: "C" },
+      { origin: "B", destination: "C" },
+      { origin: "B", destination: "C" },
+      { origin: "D", destination: "A" },
+      { origin: "D", destination: "B" },
+    ];
+    for (const direction of [undefined, "incoming", "both"] as const) {
+      const table = sdb.newTable().loadArray(rows);
+      const result = direction === undefined
+        ? table.commonNeighbors("origin", "destination", "A", "B")
+        : table.commonNeighbors("origin", "destination", "A", "B", {
+          direction,
+        });
+      assertEquals(
+        await result.getData(),
+        direction === "incoming"
+          ? [{ node: "D" }]
+          : direction === "both"
+          ? [{ node: "C" }, { node: "D" }]
+          : [{ node: "C" }],
+      );
+    }
     assertEquals(
       await sdb.newTable().loadArray([
         { source: "A", target: "A" },
         { source: "B", target: "A" },
       ]).commonNeighbors("source", "target", "A", "B").getData(),
       [{ node: "A" }],
-    );
-    const rows = [
-      { from: "A", to: "B" },
-      { from: "A", to: "C" },
-      { from: "B", to: "D" },
-      { from: "C", to: "D" },
-    ];
-    const source = sdb.newTable("commonNeighborsExample").loadArray(rows);
-    assertEquals(
-      await source.commonNeighbors("from", "to", "B", "C", {
-        direction: "incoming",
-        outputTable: true,
-      }).getData(),
-      [{ node: "A" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .commonNeighbors("from", "to", "B", "C", { direction: "both" })
-        .getData(),
-      [{ node: "A" }, { node: "D" }],
     );
   } finally {
     await sdb.close();
