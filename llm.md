@@ -1453,12 +1453,12 @@ await table.createVssIndex("embedding_column", {
 
 #### `umap`
 
-Adds a two-dimensional UMAP projection of a numeric embedding column. DuckDB
-computes neighbors and the fuzzy graph; TypeScript optimizes the coordinates
-without copying the input vectors into JavaScript. Results are added as `umapX`
-and `umapY`, keeping all existing columns (including the embedding column),
-their values and types, and the input row order. Neighbor search is selected
-automatically.
+Reduces numeric vectors, such as embeddings, to a two-dimensional UMAP
+projection. The resulting coordinates are added as `umapX` and `umapY`, while
+all existing columns (including the source vector column), their values and
+types, and the input row order are preserved. DuckDB computes neighbors and the
+fuzzy graph; TypeScript optimizes the coordinates without copying the input
+vectors into JavaScript. Neighbor search is selected automatically.
 
 The defaults are a starting point for exploration. To adjust the projection:
 
@@ -1528,6 +1528,96 @@ await table.umap("embedding", {
   neighbors: 30,
   minDistance: 0.25,
 }).selectColumns(["label", "umapX", "umapY"]).log();
+```
+
+#### `hdbscan`
+
+Clusters multivariate numeric rows with HDBSCAN and appends categorical cluster
+labels. Pass one numeric LIST or fixed-size ARRAY column, or an array of numeric
+scalar columns. Scalar columns may have mixed numeric types. Internal DOUBLE
+conversion can lose precision for large integers and exact decimals; all source
+columns and their types remain unchanged. Nulls, non-finite values, empty
+vectors, inconsistent dimensions, and zero-norm cosine vectors reject the whole
+operation.
+
+Exact clustering is the default. Set `approximate: true` to use DuckDB's HNSW
+candidate search with deterministic connectivity repair; approximation can
+change clusters, noise, membership strengths, and outlier scores. Repeated
+approximate runs can change partitions and noise assignments for unchanged
+ordered inputs. Exact mode evaluates all row pairs and can be expensive for
+large inputs; row count never enables approximation. Equal mutual-reachability
+weights use deterministic endpoint ordering; tied boundary assignments and
+scores can differ from Python hdbscan. `minSamples` counts other points and
+defaults to `minClusterSize`, matching Python hdbscan and differing from
+scikit-learn's built-in HDBSCAN count. Excess-of-mass selection is used
+internally. Allowing a single cluster permits root selection but can still leave
+early departures as noise.
+
+HDBSCAN uses feature values as supplied. Different units can dominate Euclidean
+distance. Scalar features can be prepared explicitly with `normalize()` or
+`zScore()`; vector dimensions can be min-max scaled with `normalizeVector()`.
+Scaling is optional, and HDBSCAN does not require the range `[0, 1]` or
+unit-length vectors.
+
+Membership values measure cluster strength rather than a calibrated probability
+of correctness; noise has strength zero. Larger GLOSH values indicate more
+outlier-like observations and are not simply one minus membership strength.
+Numeric cluster IDs have no ordinal meaning and may change when data or settings
+change. Numeric labels are `-1` for noise and `0`, `1`, and so on for clusters;
+string labels are `"noise"`, `"cluster-0"`, `"cluster-1"`, and so on. When a
+point's reference cluster maximum density is infinite, outlier scores use finite
+limiting values: points that depart at finite density receive `1`, and points
+that remain to infinite density receive `0`.
+
+##### Signature
+
+```typescript
+hdbscan(columns: string | string[], newColumn: string, options?: { minClusterSize?: number; minSamples?: number; metric?: "euclidean" | "cosine"; allowSingleCluster?: boolean; approximate?: boolean; labels?: "number" | "string"; probabilityColumn?: string; outlierScoreColumn?: string }): this;
+```
+
+##### Parameters
+
+- **`columns`**: A numeric vector column, or numeric scalar columns in
+  feature-dimension order.
+- **`newColumn`**: The cluster-label column to create.
+- **`options`**: HDBSCAN clustering and output settings.
+- **`options.minClusterSize`**: Safe integer from `2` through the row count.
+  Defaults to `5`.
+- **`options.minSamples`**: Other points used for core distance. Defaults to
+  `minClusterSize`. Must be a positive safe integer smaller than the row count.
+- **`options.metric`**: Distance metric. Defaults to `"euclidean"`.
+- **`options.allowSingleCluster`**: Permit selection of the root cluster.
+  Defaults to `true`.
+- **`options.approximate`**: Opt into approximate HNSW candidates. Defaults to
+  `false`.
+- **`options.labels`**: Store labels as `INTEGER` numbers or `VARCHAR` strings.
+  Defaults to `"number"`.
+- **`options.probabilityColumn`**: Optional DOUBLE membership-strength output
+  column.
+- **`options.outlierScoreColumn`**: Optional DOUBLE GLOSH outlier-score output
+  column.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+await table
+  .hdbscan(["height", "weight"], "cluster", {
+    minClusterSize: 5,
+    probabilityColumn: "membership",
+    outlierScoreColumn: "outlierScore",
+  })
+  .log();
+```
+
+```ts
+await table
+  .normalizeVector("features", "scaledFeatures")
+  .hdbscan("scaledFeatures", "cluster", { labels: "string" })
+  .log();
 ```
 
 #### `bm25`
@@ -3794,6 +3884,150 @@ await table.rowToText(
 await table
   .convert({ age: "string", salary: "string" })
   .rowToText(["name", "age", "salary"], "profile").log();
+```
+
+#### `rowToVector`
+
+Combines numeric scalar columns into a fixed-size DuckDB vector. The input
+column order determines the vector dimension order, and null values remain null
+vector elements.
+
+When all input columns have the same numeric type, that type is preserved. Mixed
+numeric types require an explicit `type` option. Casting exact decimals or large
+integers to FLOAT or DOUBLE can lose precision.
+
+##### Signature
+
+```typescript
+rowToVector(columns: string[], newColumn: string, options?: { type?: "float" | "double" }): this;
+```
+
+##### Parameters
+
+- **`columns`**: Numeric scalar columns to combine, in vector dimension order.
+- **`newColumn`**: The name of the vector column to create.
+- **`options`**: Optional vector element type settings.
+- **`options.type`**: Cast every element to `"float"` or `"double"`. Required
+  when the input column types differ.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+await table
+  .rowToVector(["height", "weight"], "measurements")
+  .log();
+```
+
+```ts
+await table
+  .rowToVector(["count", "score"], "features", { type: "double" })
+  .log();
+```
+
+#### `normalizeVector`
+
+Scales each dimension of a numeric vector column independently to the range
+`[0, 1]` across all rows. All first elements are scaled together, all second
+elements together, and so on. This is different from scaling each row to unit
+length.
+
+The input may be a numeric LIST or fixed-size ARRAY. The output is a fixed-size
+DOUBLE ARRAY. Converting large integers and exact decimals to DOUBLE can lose
+precision. A dimension whose converted values are all equal cannot be normalized
+and causes the operation to fail.
+
+Existing DuckDB indexes are preserved. Overwriting an indexed FLOAT vector with
+DOUBLE fails if its HNSW index cannot support that type; publish to a new column
+or remove the incompatible index first. Failures leave the source values, types,
+and indexes intact.
+
+Scaling changes the relative contribution of vector dimensions and is an
+explicit modeling choice. Algorithms such as HDBSCAN do not universally require
+values in `[0, 1]`.
+
+##### Signature
+
+```typescript
+normalizeVector(column: string, newColumn: string): this;
+```
+
+##### Parameters
+
+- **`column`**: The numeric vector column to normalize.
+- **`newColumn`**: The output column. Use the source column's name to overwrite
+  it atomically with the normalized DOUBLE vector.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+await table
+  .normalizeVector("features", "scaledFeatures")
+  .log();
+```
+
+```ts
+await table
+  .normalizeVector("features", "features")
+  .log();
+```
+
+#### `mahalanobis`
+
+Calculates each row's ordinary Mahalanobis distance from the dataset centroid
+and stores it in a new DOUBLE column. The covariance matrix is estimated from
+the same dataset using sample covariance (`n - 1`).
+
+Pass one numeric LIST or fixed-size ARRAY column, or pass an array of one or
+more numeric scalar columns. Scalar columns may use different numeric types.
+Inputs are converted privately to DOUBLE for calculation, which can lose
+precision for large integers and exact decimals; source columns and their types
+remain unchanged.
+
+The dataset must have more observations than feature dimensions (`n > d`). This
+is necessary but does not guarantee an invertible covariance matrix: constant or
+linearly dependent features also cause the operation to fail. Numerically
+unstable covariance is rejected too; rescale extreme feature units or remove
+nearly dependent features before retrying. Null or non-finite feature values,
+empty vectors, and inconsistent vector lengths fail the whole operation without
+creating the output column.
+
+##### Signature
+
+```typescript
+mahalanobis(columns: string | string[], newColumn: string): this;
+```
+
+##### Parameters
+
+- **`columns`**: A numeric vector column, or numeric scalar columns in
+  feature-dimension order.
+- **`newColumn`**: The name of the DOUBLE distance column to create. An existing
+  column name is rejected.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+await table
+  .mahalanobis(["height", "weight"], "distance")
+  .log();
+```
+
+```ts
+await table
+  .mahalanobis("features", "distance")
+  .log();
 ```
 
 #### `unnest`
