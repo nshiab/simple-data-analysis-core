@@ -1,14 +1,13 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
 import readScalarNumber from "./readScalarNumber.ts";
+import buildVectorNeighbors, {
+  type VectorNeighborTables,
+} from "./buildVectorNeighbors.ts";
 
 // All relation names are private, already-quoted SQL identifiers supplied by
 // the owning UMAP operation. No input vectors cross the JS boundary.
-export type UmapTables = {
-  rows: string;
+export type UmapTables = Omit<VectorNeighborTables, "neighbors"> & {
   knn: string;
-  search: string;
-  hnsw: string;
-  candidates: string;
   scales: string;
   directed: string;
   graph: string;
@@ -20,7 +19,16 @@ export default async function buildUmapGraph(
   options: { metric: "euclidean" | "cosine"; search: "exact" | "hnsw" },
   names: UmapTables,
 ) {
-  await buildNeighbors(connection, input, options, names);
+  await buildVectorNeighbors(
+    connection,
+    {
+      count: input.count,
+      dimensions: input.dimensions,
+      neighborCount: input.neighbors,
+    },
+    { ...options, includeSelf: true },
+    { ...names, neighbors: names.knn },
+  );
   await buildFuzzyGraph(connection, input.neighbors, names);
   const edges = await readScalarNumber(
     connection,
@@ -52,148 +60,6 @@ export default async function buildUmapGraph(
   }
   if (edge !== edges) throw new Error("Graph changed during transfer.");
   return { source, target, weight };
-}
-
-async function buildNeighbors(
-  connection: DuckDBConnection,
-  input: { count: number; dimensions: number; neighbors: number },
-  options: { metric: "euclidean" | "cosine"; search: "exact" | "hnsw" },
-  names: UmapTables,
-) {
-  const { count, dimensions, neighbors } = input;
-  const distance = options.metric === "cosine"
-    ? "array_cosine_distance"
-    : "array_distance";
-  // Exact duplicates must have zero cosine distance. Positive roundoff would
-  // otherwise change rho to that error instead of the next distinct neighbor.
-  const exactDistance = options.metric === "cosine"
-    ? "CASE WHEN a.vec=b.vec THEN 0 ELSE greatest(0,array_cosine_distance(a.vec,b.vec)) END"
-    : "array_distance(a.vec,b.vec)";
-  await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.knn}
-    (source INTEGER, target INTEGER, distance DOUBLE);
-    INSERT INTO ${names.knn} SELECT vertex, vertex, 0 FROM ${names.rows}`);
-  if (options.search === "exact") {
-    // O(n²d) work, but only a bounded source batch and top-k heaps, never a
-    // materialized n×n matrix. Include target id in the key for stable ties.
-    for (let offset = 0; offset < count; offset += 32) {
-      const query = `SELECT source, item.target, item.distance FROM (
-        SELECT a.vertex AS source,
-          min_by(struct_pack(target := b.vertex, distance := ${exactDistance}),
-            struct_pack(distance := ${exactDistance}, target := b.vertex),
-            ${neighbors - 1}) AS closest
-        FROM ${names.rows} a CROSS JOIN ${names.rows} b
-        WHERE a.vertex >= ${offset} AND a.vertex < ${offset + 32}
-          AND a.vertex != b.vertex GROUP BY a.vertex
-      ), UNNEST(closest) AS t(item)`;
-      await connection.run(`INSERT INTO ${names.knn} ${query}`);
-    }
-  } else {
-    await connection.run(`INSTALL vss; LOAD vss;
-      CREATE OR REPLACE TEMP TABLE ${names.search} AS
-      SELECT vertex, vec::FLOAT[${dimensions}] AS vec FROM ${names.rows} ORDER BY vertex`);
-    if (
-      await readScalarNumber(
-        connection,
-        `SELECT count(*) FROM ${names.search} WHERE
-        NOT isfinite(array_inner_product(vec,vec))
-        ${
-          options.metric === "cosine"
-            ? "OR array_inner_product(vec,vec)=0"
-            : ""
-        }`,
-      )
-    ) {
-      throw new Error(
-        "HNSW requires vectors with finite FLOAT norms (and nonzero cosine norms).",
-      );
-    }
-    await connection.run(
-      `CREATE INDEX ${names.hnsw} ON ${names.search} USING HNSW(vec)
-      WITH (metric='${options.metric === "cosine" ? "cosine" : "l2sq"}',
-        ef_construction=128, ef_search=128, M=16)`,
-    );
-    const previous = String(
-      (await connection.runAndReadAll(
-        "SELECT current_setting('disabled_optimizers')",
-      )).getRowsJS()[0][0],
-    );
-    // The shipped VSS optimizer recognizes the window form of a lateral top-k.
-    // DuckDB 1.5.5's top_n_window_elimination otherwise hides that pattern.
-    const disabled = [
-      ...new Set([
-        ...previous.split(",").filter(Boolean),
-        "top_n_window_elimination",
-      ]),
-    ].join(",");
-    try {
-      await connection.run(
-        `SET disabled_optimizers='${disabled.replaceAll("'", "''")}'`,
-      );
-      const query = `SELECT a.vertex AS source, b.vertex AS target, b.distance
-        FROM ${names.search} a, LATERAL (
-          SELECT vertex, ${distance}(vec,a.vec) AS distance FROM ${names.search}
-          ORDER BY distance LIMIT ${Math.min(neighbors + 1, count - 1)}
-        ) b`;
-      // Materialize ONLY ids and scalar distances before ranking. Keeping the
-      // vector joins inside the window query makes DuckDB carry two full DOUBLE
-      // vectors per candidate through the sort (O(n*k*d) scratch memory).
-      const candidates = `SELECT q.source,q.target,${exactDistance} AS distance
-        FROM (${query}) q JOIN ${names.rows} a ON q.source=a.vertex
-        JOIN ${names.rows} b ON q.target=b.vertex WHERE q.source != q.target`;
-      const plan = JSON.stringify(
-        (await connection.runAndReadAll(`EXPLAIN ${candidates}`)).getRowsJS(),
-      );
-      if (!plan.includes("HNSW_INDEX_JOIN")) {
-        // The optimizer can retain a correlated cross product for tiny or
-        // duplicate-heavy inputs. Only small inputs may use our bounded exact
-        // implementation; never execute the unbounded candidate query.
-        if (count <= 1000) {
-          return await buildNeighbors(
-            connection,
-            input,
-            {
-              ...options,
-              search: "exact",
-            },
-            names,
-          );
-        }
-        throw new Error(
-          "UMAP could not use DuckDB's vector index for neighbor search.",
-        );
-      }
-      // Exclude self AFTER index search, then stable-sort candidates and keep k-1.
-      // Recompute candidate distances in DOUBLE to isolate ANN candidate error.
-      await connection.run(
-        `CREATE OR REPLACE TEMP TABLE ${names.candidates} AS ${candidates};
-        INSERT INTO ${names.knn} SELECT source,target,distance FROM ${names.candidates}
-        QUALIFY row_number() OVER (PARTITION BY source
-          ORDER BY distance,target) <= ${neighbors - 1}`,
-      );
-    } finally {
-      await connection.run(
-        `SET disabled_optimizers='${previous.replaceAll("'", "''")}'`,
-      );
-    }
-  }
-  if (
-    await readScalarNumber(connection, `SELECT count(*) FROM ${names.knn}`) !==
-      count * neighbors
-  ) {
-    throw new Error(
-      "Neighbor search did not return the required number of neighbors.",
-    );
-  }
-  if (
-    await readScalarNumber(
-      connection,
-      `SELECT count(*) FROM ${names.knn} WHERE NOT isfinite(distance)`,
-    )
-  ) {
-    throw new Error("Distance computation returned a non-finite value.");
-  }
-  // Cosine roundoff can produce a tiny negative distance.
-  await connection.run(`UPDATE ${names.knn} SET distance=greatest(0,distance)`);
 }
 
 async function buildFuzzyGraph(

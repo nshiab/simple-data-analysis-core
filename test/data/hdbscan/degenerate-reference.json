@@ -1,0 +1,828 @@
+{
+  "generator": "test/data/hdbscan/generate_degenerate_reference.py",
+  "python": "3.13.7",
+  "packages": {
+    "hdbscan": "0.8.44",
+    "numpy": "2.2.6",
+    "scikit-learn": "1.7.1",
+    "scipy": "1.16.1",
+    "joblib": "1.6.0",
+    "threadpoolctl": "3.6.0",
+    "cloudpickle": "3.1.2"
+  },
+  "settings": {
+    "min_cluster_size": 3,
+    "min_samples": 1,
+    "metric": "euclidean",
+    "algorithm": "generic",
+    "alpha": 1.0,
+    "approx_min_span_tree": false,
+    "gen_min_span_tree": true,
+    "cluster_selection_method": "eom",
+    "cluster_selection_epsilon": 0.0,
+    "cluster_selection_persistence": 0.0,
+    "max_cluster_size": 0,
+    "cluster_selection_epsilon_max": "Infinity",
+    "match_reference_implementation": false
+  },
+  "fixedTraversalProbe": {
+    "condensedTree": [
+      [
+        6,
+        7,
+        1.0,
+        3
+      ],
+      [
+        6,
+        8,
+        1.0,
+        3
+      ],
+      [
+        7,
+        0,
+        2.0,
+        1
+      ],
+      [
+        7,
+        9,
+        2.0,
+        2
+      ],
+      [
+        8,
+        3,
+        3.0,
+        1
+      ],
+      [
+        8,
+        4,
+        3.0,
+        1
+      ],
+      [
+        8,
+        5,
+        3.0,
+        1
+      ],
+      [
+        9,
+        1,
+        10.0,
+        1
+      ],
+      [
+        9,
+        2,
+        10.0,
+        1
+      ]
+    ],
+    "referenceGlosh": [
+      0.8,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "nonfiniteEncoding": "Explicit strings, never bare nonstandard JSON NaN/Infinity",
+  "cases": [
+    {
+      "epsilon": 0.0,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          0.0
+        ],
+        [
+          0.0
+        ],
+        [
+          0.0
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        "NaN",
+        "NaN"
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.0,
+          1
+        ],
+        [
+          6,
+          3,
+          "Infinity",
+          1
+        ],
+        [
+          6,
+          0,
+          "Infinity",
+          1
+        ],
+        [
+          6,
+          1,
+          "Infinity",
+          1
+        ],
+        [
+          6,
+          2,
+          "Infinity",
+          1
+        ]
+      ],
+      "proposedFiniteGlosh": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      "deviation": "Finite point lambda / infinite reference descendant maximum: score 1; infinite point lambda: score 0. Preserve all finite 0.8.44 scores and its corrected reverse-tree propagation.",
+      "perturbationKind": "duplicates"
+    },
+    {
+      "epsilon": 0.0,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          0.0
+        ],
+        [
+          0.0
+        ],
+        [
+          0.0
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": false,
+      "labels": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        "NaN",
+        "NaN"
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.0,
+          1
+        ],
+        [
+          6,
+          3,
+          "Infinity",
+          1
+        ],
+        [
+          6,
+          0,
+          "Infinity",
+          1
+        ],
+        [
+          6,
+          1,
+          "Infinity",
+          1
+        ],
+        [
+          6,
+          2,
+          "Infinity",
+          1
+        ]
+      ],
+      "proposedFiniteGlosh": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      "deviation": "Finite point lambda / infinite reference descendant maximum: score 1; infinite point lambda: score 0. Preserve all finite 0.8.44 scores and its corrected reverse-tree propagation.",
+      "perturbationKind": "duplicates"
+    },
+    {
+      "epsilon": 0.0078125,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          0.0078125
+        ],
+        [
+          0.015625
+        ],
+        [
+          0.0234375
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.992,
+        0.9991319444444444
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.024,
+          1
+        ],
+        [
+          6,
+          3,
+          128.0,
+          1
+        ],
+        [
+          6,
+          0,
+          128.0,
+          1
+        ],
+        [
+          6,
+          1,
+          128.0,
+          1
+        ],
+        [
+          6,
+          2,
+          128.0,
+          1
+        ]
+      ],
+      "perturbationKind": "dyadic"
+    },
+    {
+      "epsilon": 6.103515625e-05,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          6.103515625e-05
+        ],
+        [
+          0.0001220703125
+        ],
+        [
+          0.00018310546875
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.9999389536658324,
+        0.9999932183159722
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.0001831390025029,
+          1
+        ],
+        [
+          6,
+          3,
+          16384.0,
+          1
+        ],
+        [
+          6,
+          0,
+          16384.0,
+          1
+        ],
+        [
+          6,
+          1,
+          16384.0,
+          1
+        ],
+        [
+          6,
+          2,
+          16384.0,
+          1
+        ]
+      ],
+      "perturbationKind": "dyadic"
+    },
+    {
+      "epsilon": 9.5367431640625e-07,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          9.5367431640625e-07
+        ],
+        [
+          1.9073486328125e-06
+        ],
+        [
+          2.86102294921875e-06
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.9999990463229551,
+        0.999999894036187
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.0000028610311347,
+          1
+        ],
+        [
+          6,
+          3,
+          1048576.0,
+          1
+        ],
+        [
+          6,
+          0,
+          1048576.0,
+          1
+        ],
+        [
+          6,
+          1,
+          1048576.0,
+          1
+        ],
+        [
+          6,
+          2,
+          1048576.0,
+          1
+        ]
+      ],
+      "perturbationKind": "dyadic"
+    }
+  ],
+  "decimalBoundaryCases": [
+    {
+      "epsilon": 0.01,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          0.01
+        ],
+        [
+          0.02
+        ],
+        [
+          0.03
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        1.4210854715202004e-16,
+        0.9896907216494846,
+        0.9988888888888888
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.0309278350515465,
+          1
+        ],
+        [
+          6,
+          3,
+          99.99999999999999,
+          1
+        ],
+        [
+          6,
+          0,
+          100.0,
+          1
+        ],
+        [
+          6,
+          1,
+          100.0,
+          1
+        ],
+        [
+          6,
+          2,
+          100.0,
+          1
+        ]
+      ],
+      "comparisonNote": "Decimal near-tie label/membership evidence only: sklearn Gram arithmetic and native difference distances can straddle the exact root threshold. Do not demand identical root labels; finite GLOSH comparisons remain useful."
+    },
+    {
+      "epsilon": 0.0001,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          0.0001
+        ],
+        [
+          0.0002
+        ],
+        [
+          0.00030000000000000003
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.9998999699909973,
+        0.9999888888888888
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.000300090027008,
+          1
+        ],
+        [
+          6,
+          0,
+          10000.0,
+          1
+        ],
+        [
+          6,
+          1,
+          10000.0,
+          1
+        ],
+        [
+          6,
+          2,
+          10000.0,
+          1
+        ],
+        [
+          6,
+          3,
+          10000.0,
+          1
+        ]
+      ],
+      "comparisonNote": "Decimal near-tie label/membership evidence only: sklearn Gram arithmetic and native difference distances can straddle the exact root threshold. Do not demand identical root labels; finite GLOSH comparisons remain useful."
+    },
+    {
+      "epsilon": 1e-06,
+      "vectors": [
+        [
+          0.0
+        ],
+        [
+          1e-06
+        ],
+        [
+          2e-06
+        ],
+        [
+          3e-06
+        ],
+        [
+          1.0
+        ],
+        [
+          10.0
+        ]
+      ],
+      "allowSingleCluster": true,
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        -1,
+        -1
+      ],
+      "probabilities": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "referenceGlosh": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.9999989999969999,
+        0.9999998888888889
+      ],
+      "condensedTree": [
+        [
+          6,
+          5,
+          0.1111111111111111,
+          1
+        ],
+        [
+          6,
+          4,
+          1.000003000009,
+          1
+        ],
+        [
+          6,
+          3,
+          1000000.0,
+          1
+        ],
+        [
+          6,
+          0,
+          1000000.0,
+          1
+        ],
+        [
+          6,
+          1,
+          1000000.0,
+          1
+        ],
+        [
+          6,
+          2,
+          1000000.0,
+          1
+        ]
+      ],
+      "comparisonNote": "Decimal near-tie label/membership evidence only: sklearn Gram arithmetic and native difference distances can straddle the exact root threshold. Do not demand identical root labels; finite GLOSH comparisons remain useful."
+    }
+  ],
+  "largeOffsetDistanceEvidence": {
+    "vectors": [
+      [
+        1000000000000.0,
+        1000000000000.0
+      ],
+      [
+        1000000000001.0,
+        1000000000000.0
+      ]
+    ],
+    "stableDifferenceDistance": 1.0,
+    "sklearnPairwiseDistance": 0.0,
+    "explanation": "Use ordinary distance from coordinate differences. Squared-norm/dot subtraction can cancel a nonzero large-offset separation to zero. Native DuckDB array_distance was independently checked to return 1 for this pair."
+  }
+}
