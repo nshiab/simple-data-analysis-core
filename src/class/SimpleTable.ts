@@ -129,6 +129,7 @@ import bins from "../methods/bins.ts";
 import round from "../methods/round.ts";
 import addNoise from "../methods/addNoise.ts";
 import rowToText from "../methods/rowToText.ts";
+import rowToVector from "../methods/rowToVector.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
@@ -3262,6 +3263,47 @@ export default class SimpleTable extends Simple {
     newColumn: string,
   ): this {
     rowToText(this, columns, newColumn);
+    return this;
+  }
+
+  /**
+   * Combines numeric scalar columns into a fixed-size DuckDB vector. The input
+   * column order determines the vector dimension order, and null values remain
+   * null vector elements.
+   *
+   * When all input columns have the same numeric type, that type is preserved.
+   * Mixed numeric types require an explicit `type` option. Casting exact
+   * decimals or large integers to FLOAT or DOUBLE can lose precision.
+   *
+   * @param columns - Numeric scalar columns to combine, in vector dimension order.
+   * @param newColumn - The name of the vector column to create.
+   * @param options - Optional vector element type settings.
+   * @param options.type - Cast every element to `"float"` or `"double"`. Required when the input column types differ.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .rowToVector(["height", "weight"], "measurements")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .rowToVector(["count", "score"], "features", { type: "double" })
+   *   .log();
+   * ```
+   */
+  rowToVector(
+    columns: string[],
+    newColumn: string,
+    options: {
+      type?: "float" | "double";
+    } = {},
+  ): this {
+    rowToVector(this, columns, newColumn, options);
     return this;
   }
 
