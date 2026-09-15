@@ -1,4 +1,5 @@
 import type SimpleTable from "../class/SimpleTable.ts";
+import foldIdentifier from "./foldIdentifier.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 
 const NUMERIC_SCALAR_TYPE =
@@ -54,7 +55,7 @@ export default async function prepareNumericFeatures(
   const sourceColumns = Object.keys(types);
   const resolveColumn = (requested: string): string => {
     const resolved = sourceColumns.find((column) =>
-      column.toLowerCase() === requested.toLowerCase()
+      foldIdentifier(column) === foldIdentifier(requested)
     );
     if (resolved === undefined) {
       throw new Error(
@@ -69,7 +70,7 @@ export default async function prepareNumericFeatures(
   };
 
   let selectedColumns: string[];
-  let vectorType: { fixedDimensions?: number } | undefined;
+  let vectorType: { elementType: string; fixedDimensions?: number } | undefined;
   if (input.kind === "scalars") {
     if (input.columns.length === 0) {
       throw new Error(
@@ -127,11 +128,11 @@ export default async function prepareNumericFeatures(
   try {
     const tableDetails = (await connection.runAndReadAll(
       `SELECT table_oid, temporary FROM duckdb_tables()
-       WHERE lower(table_name) = lower($1)
+       WHERE translate(table_name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = $1
          AND schema_name = current_schema()
          AND database_name IN (current_database(), 'temp')
        ORDER BY temporary DESC LIMIT 1`,
-      [table.name],
+      [foldIdentifier(table.name)],
     )).getRowsJS()[0];
     if (tableDetails === undefined) {
       throw new Error(
@@ -152,11 +153,14 @@ export default async function prepareNumericFeatures(
         connection,
         source,
         selectedColumns,
+        types,
         options.method,
         { rejectNulls, rejectNonFinite },
       );
       vectorExpression = `[${
-        selectedColumns.map((column) => `${quoteIdentifier(column)}::DOUBLE`)
+        selectedColumns.map((column) =>
+          castToDouble(quoteIdentifier(column), types[column])
+        )
           .join(", ")
       }]::DOUBLE[${dimensions}]`;
     } else {
@@ -181,6 +185,7 @@ export default async function prepareNumericFeatures(
         connection,
         source,
         column,
+        vectorType!.elementType,
         options.method,
         { rejectNulls, rejectNonFinite },
       );
@@ -215,7 +220,11 @@ export default async function prepareNumericFeatures(
           } contains ${distinctDimensions} different lengths.`,
         );
       }
-      vectorExpression = `${quotedColumn}::DOUBLE[${dimensions}]`;
+      vectorExpression = vectorType!.elementType === "BIGNUM"
+        ? `list_transform(${quotedColumn}, value -> ${
+          castToDouble("value", "BIGNUM")
+        })::DOUBLE[${dimensions}]`
+        : `${quotedColumn}::DOUBLE[${dimensions}]`;
     }
 
     await connection.run(
@@ -244,18 +253,19 @@ export default async function prepareNumericFeatures(
 
 function parseNumericVectorType(
   type: string,
-): { fixedDimensions?: number } | undefined {
+): { elementType: string; fixedDimensions?: number } | undefined {
   const match = /^(.+)\[(\d*)\]$/.exec(type);
   if (match === null || !isNumericScalarType(match[1])) return undefined;
-  if (match[2] === "") return {};
+  const elementType = match[1];
+  if (match[2] === "") return { elementType };
   const fixedDimensions = Number(match[2]);
-  return fixedDimensions > 0 ? { fixedDimensions } : undefined;
+  return fixedDimensions > 0 ? { elementType, fixedDimensions } : undefined;
 }
 
 function findDuplicate(columns: string[]): string | undefined {
   const seen = new Set<string>();
   for (const column of columns) {
-    const folded = column.toLowerCase();
+    const folded = foldIdentifier(column);
     if (seen.has(folded)) return column;
     seen.add(folded);
   }
@@ -266,16 +276,18 @@ async function rejectInvalidScalarRows(
   connection: SimpleTable["connection"],
   source: string,
   columns: string[],
+  types: { [column: string]: string },
   method: string,
   validation: { rejectNulls: boolean; rejectNonFinite: boolean },
 ) {
   const predicates = columns.map((column) => {
     const value = quoteIdentifier(column);
+    const converted = castToDouble(value, types[column], true);
     const checks: string[] = [];
     if (validation.rejectNulls) checks.push(`${value} IS NULL`);
     if (validation.rejectNonFinite) {
       checks.push(
-        `(${value} IS NOT NULL AND (TRY_CAST(${value} AS DOUBLE) IS NULL OR NOT isfinite(TRY_CAST(${value} AS DOUBLE))))`,
+        `(${value} IS NOT NULL AND (${converted} IS NULL OR NOT isfinite(${converted})))`,
       );
     }
     return checks.length === 0 ? "FALSE" : `(${checks.join(" OR ")})`;
@@ -310,6 +322,7 @@ async function rejectInvalidVectorRows(
   connection: SimpleTable["connection"],
   source: string,
   column: string,
+  elementType: string,
   method: string,
   validation: { rejectNulls: boolean; rejectNonFinite: boolean },
 ) {
@@ -323,7 +336,9 @@ async function rejectInvalidVectorRows(
   }
   if (validation.rejectNonFinite) {
     checks.push(
-      `(${vector} IS NOT NULL AND COALESCE(NOT list_bool_and(list_transform(${vector}, value -> value IS NULL OR COALESCE(isfinite(TRY_CAST(value AS DOUBLE)), FALSE))), FALSE))`,
+      `(${vector} IS NOT NULL AND COALESCE(NOT list_bool_and(list_transform(${vector}, value -> value IS NULL OR COALESCE(isfinite(${
+        castToDouble("value", elementType, true)
+      }), FALSE))), FALSE))`,
     );
   }
   if (checks.length === 0) return;
@@ -338,4 +353,10 @@ async function rejectInvalidVectorRows(
       quoteIdentifier(column)
     } has ${invalidRows} invalid row${invalidRows === 1 ? "" : "s"}.`,
   );
+}
+
+/** BIGNUM's direct DOUBLE conversion can throw even inside DuckDB TRY_CAST. */
+function castToDouble(value: string, type: string, tryCast = false): string {
+  const convertible = type === "BIGNUM" ? `CAST(${value} AS VARCHAR)` : value;
+  return `${tryCast ? "TRY_CAST" : "CAST"}(${convertible} AS DOUBLE)`;
 }

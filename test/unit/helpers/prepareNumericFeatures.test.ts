@@ -262,3 +262,166 @@ Deno.test("prepareNumericFeatures supports empty fixed ARRAY input and diagnoses
     await sdb.close();
   }
 });
+
+Deno.test("prepareNumericFeatures preserves quoted Unicode source columns in a file-backed database", async () => {
+  const directory = await Deno.makeTempDir();
+  const sdb = new SimpleDB({ file: `${directory}/features.duckdb` });
+  try {
+    await sdb.customQuery(`CREATE TABLE "Ä" AS SELECT
+      0.1234567890123456789::DECIMAL(38,19) AS "ä",
+      7::INTEGER AS "Ä", 'keep' AS "quoted\"\"column"`);
+    // The similarly named temporary table must not change sourceTemporary.
+    await sdb.customQuery('CREATE TEMP TABLE "ä" AS SELECT 99 AS unrelated');
+    const table = sdb.newTable("Ä");
+    const before = await table.getTypes();
+    const prepared = await prepareNumericFeatures(table, {
+      kind: "scalars",
+      columns: ["ä", "Ä"],
+    }, { method: "analysis()" });
+    try {
+      assertEquals(prepared.sourceTemporary, false);
+      assertEquals(prepared.sourceColumns, ["ä", "Ä", 'quoted"column']);
+      const q = quoteIdentifier;
+      assertEquals(
+        (await sdb.connection!.runAndReadAll(
+          `SELECT "ä"::VARCHAR, "Ä", "quoted""column", ${
+            q(prepared.vectorColumn)
+          }[1], ${q(prepared.vectorColumn)}[2]
+         FROM ${q(prepared.relation)}`,
+        )).getRowsJS(),
+        [["0.1234567890123456789", 7, "keep", 0.12345678901234568, 7]],
+      );
+      assertEquals(await table.getTypes(), before);
+    } finally {
+      await prepared.cleanup();
+    }
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+    await Deno.remove(directory, { recursive: true });
+  }
+});
+
+Deno.test("prepareNumericFeatures diagnoses out-of-range BIGNUM scalars and vector elements", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT
+      CASE WHEN i=0 THEN 5::BIGNUM ELSE concat('1', repeat('0',400))::BIGNUM END AS huge
+      FROM range(3) rows(i)`);
+    await sdb.customQuery("ALTER TABLE source ADD COLUMN listed BIGNUM[]");
+    await sdb.customQuery("ALTER TABLE source ADD COLUMN fixed BIGNUM[1]");
+    await sdb.customQuery(
+      "UPDATE source SET listed=[huge], fixed=[huge]::BIGNUM[1]",
+    );
+    const table = sdb.newTable("source");
+    const before = await table.getTypes();
+    for (
+      const input of [
+        { kind: "scalars", columns: ["huge"] },
+        { kind: "vector", column: "listed" },
+        { kind: "vector", column: "fixed" },
+      ] as const
+    ) {
+      const error = await assertRejects(() =>
+        prepareNumericFeatures(
+          table,
+          input.kind === "scalars"
+            ? { kind: "scalars", columns: [...input.columns] }
+            : input,
+          { method: "analysis()" },
+        )
+      );
+      assert(error instanceof Error);
+      assert(error.message.includes("2 invalid rows"));
+      assert(
+        error.message.includes(
+          input.kind === "scalars" ? '"huge"' : quoteIdentifier(input.column),
+        ),
+      );
+      assertEquals(await scratchRelations(sdb), []);
+    }
+    assertEquals(await table.getTypes(), before);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("prepareNumericFeatures converts representable BIGNUM scalars, ARRAYs, and LISTs", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT
+      9007199254740993::BIGNUM AS huge,
+      [9007199254740993::BIGNUM] AS listed,
+      [9007199254740993::BIGNUM]::BIGNUM[1] AS fixed`);
+    const table = sdb.newTable("source");
+    for (const column of ["huge", "listed", "fixed"]) {
+      const prepared = await prepareNumericFeatures(
+        table,
+        column === "huge"
+          ? { kind: "scalars", columns: [column] }
+          : { kind: "vector", column },
+        { method: "analysis()" },
+      );
+      try {
+        const q = quoteIdentifier;
+        assertEquals(
+          (await sdb.connection!.runAndReadAll(
+            `SELECT huge::VARCHAR, ${q(prepared.vectorColumn)}[1] FROM ${
+              q(prepared.relation)
+            }`,
+          )).getRowsJS(),
+          [["9007199254740993", 9007199254740992]],
+        );
+      } finally {
+        await prepared.cleanup();
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("prepareNumericFeatures applies null and finite validation independently", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT
+      NULL::DOUBLE AS missing, 'Infinity'::DOUBLE AS infinite,
+      [NULL::DOUBLE]::DOUBLE[1] AS missing_element,
+      NULL::DOUBLE[1] AS missing_vector,
+      ['-Infinity'::DOUBLE] AS infinite_vector`);
+    const table = sdb.newTable("source");
+    for (
+      const column of [
+        "missing",
+        "infinite",
+        "missing_element",
+        "missing_vector",
+        "infinite_vector",
+      ]
+    ) {
+      const input = column === "missing" || column === "infinite"
+        ? { kind: "scalars" as const, columns: [column] }
+        : { kind: "vector" as const, column };
+      const allowNull = column.startsWith("missing");
+      const prepared = await prepareNumericFeatures(table, input, {
+        method: "analysis()",
+        rejectNulls: !allowNull,
+        rejectNonFinite: allowNull,
+      });
+      await prepared.cleanup();
+      await assertRejects(
+        () =>
+          prepareNumericFeatures(table, input, {
+            method: "analysis()",
+            rejectNulls: allowNull,
+            rejectNonFinite: !allowNull,
+          }),
+        Error,
+        "1 invalid row",
+      );
+      assertEquals(await scratchRelations(sdb), []);
+    }
+  } finally {
+    await sdb.close();
+  }
+});

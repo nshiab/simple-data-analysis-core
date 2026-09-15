@@ -201,3 +201,120 @@ Deno.test("rowToVector rejects invalid arguments and columns", async () => {
     await sdb.close();
   }
 });
+
+Deno.test("rowToVector casts each mixed decimal and integer input before combining", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT
+      0.125::DECIMAL(38,38) AS fraction, 123::HUGEINT AS integer`);
+    const table = sdb.newTable("source");
+    await table.rowToVector(["fraction", "integer"], "vector", {
+      type: "double",
+    }).run();
+    assertEquals(
+      (await sdb.connection!.runAndReadAll(
+        "SELECT vector[1], vector[2], fraction::VARCHAR, integer::VARCHAR FROM source",
+      )).getRowsJS(),
+      [[0.125, 123, ".12500000000000000000000000000000000000", "123"]],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("rowToVector matches ASCII identifiers while keeping Unicode names distinct", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(
+      'CREATE TABLE source AS SELECT 1 AS "Ä", 2 AS "ä", 3 AS "É"',
+    );
+    const table = sdb.newTable("source");
+    await table.rowToVector(["ä", "Ä"], "é").run();
+    assertEquals(await table.getData(), [{ Ä: 1, ä: 2, É: 3, é: [2, 1] }]);
+    await assertRejects(
+      () => table.rowToVector(["constructor"], "missing").run(),
+      Error,
+      'the column "constructor" does not exist',
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("rowToVector preserves every matching DuckDB integer width and BIGNUM", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("source");
+    for (
+      const type of [
+        "TINYINT",
+        "SMALLINT",
+        "INTEGER",
+        "BIGINT",
+        "HUGEINT",
+        "UTINYINT",
+        "USMALLINT",
+        "UINTEGER",
+        "UBIGINT",
+        "UHUGEINT",
+        "BIGNUM",
+        "DOUBLE",
+      ]
+    ) {
+      await sdb.customQuery(
+        `CREATE OR REPLACE TABLE source AS SELECT 1::${type} AS a, 2::${type} AS b`,
+      );
+      await table.rowToVector(["b", "a"], "vector").run();
+      assertEquals((await table.getTypes()).vector, `${type}[2]`);
+      assertEquals(
+        (await sdb.connection!.runAndReadAll(
+          "SELECT vector[1]::INTEGER, vector[2]::INTEGER FROM source",
+        )).getRowsJS(),
+        [[2, 1]],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("rowToVector conversion failure preserves source data and aborts later queued output", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("source").loadArray([{ huge: 1e100, small: 2 }]);
+    await table.run();
+    const types = await table.getTypes();
+    await assertRejects(() =>
+      table.rowToVector(["huge"], "overflow", {
+        type: "float",
+      }).rowToVector(["small"], "later").run()
+    );
+    assertEquals(await table.getTypes(), types);
+    assertEquals(await table.getData(), [{ huge: 1e100, small: 2 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("rowToVector supports explicit FLOAT and DOUBLE conversion from BIGNUM", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery("CREATE TABLE source AS SELECT 123::BIGNUM AS value");
+    const table = sdb.newTable("source");
+    await table.rowToVector(["value"], "floats", { type: "float" })
+      .rowToVector(["value"], "doubles", { type: "double" }).run();
+    assertEquals(await table.getTypes(), {
+      value: "BIGNUM",
+      floats: "FLOAT[1]",
+      doubles: "DOUBLE[1]",
+    });
+    assertEquals(
+      (await sdb.connection!.runAndReadAll(
+        "SELECT value::VARCHAR, floats[1], doubles[1] FROM source",
+      )).getRowsJS(),
+      [["123", 123, 123]],
+    );
+  } finally {
+    await sdb.close();
+  }
+});

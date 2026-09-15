@@ -1,5 +1,5 @@
 import type SimpleTable from "../class/SimpleTable.ts";
-import assertColumnsExist from "../helpers/assertColumnsExist.ts";
+import foldIdentifier from "../helpers/foldIdentifier.ts";
 import { isNumericScalarType } from "../helpers/prepareNumericFeatures.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -52,7 +52,15 @@ export default function rowToVector(
       );
       const resolved = resolveColumns(schema, columns);
       return `SELECT *, [${
-        resolved.map(quoteIdentifier).join(", ")
+        resolved.map((column) => {
+          const value = quoteIdentifier(column);
+          // DuckDB does not implement a direct BIGNUM-to-FLOAT cast.
+          const convertible =
+            schema[column] === "BIGNUM" && elementType === "FLOAT"
+              ? `${value}::VARCHAR`
+              : value;
+          return `${convertible}::${elementType}`;
+        }).join(", ")
       }]::${elementType}[${columns.length}] AS ${
         quoteIdentifier(newColumn)
       } FROM ${input}`;
@@ -67,7 +75,7 @@ function resolveElementType(
   options: { type?: "float" | "double" },
 ): string {
   const existingOutput = Object.keys(schema).find((column) =>
-    column.toLowerCase() === newColumn.toLowerCase()
+    foldIdentifier(column) === foldIdentifier(newColumn)
   );
   if (existingOutput !== undefined) {
     throw new Error(
@@ -76,15 +84,6 @@ function resolveElementType(
       } already exists. Remove it first or choose a different name for the new column.`,
     );
   }
-  assertColumnsExist(
-    Object.fromEntries(
-      Object.keys(schema).map((
-        column,
-      ) => [column.toLowerCase(), schema[column]]),
-    ),
-    columns.map((column) => column.toLowerCase()),
-    "rowToVector()",
-  );
   const resolved = resolveColumns(schema, columns);
   const nonNumeric = resolved.filter((column) =>
     !isNumericScalarType(schema[column])
@@ -115,17 +114,28 @@ function resolveElementType(
 
 function resolveColumns(schema: TableSchema, columns: string[]): string[] {
   const available = Object.keys(schema);
-  return columns.map((requested) =>
+  const resolved = columns.map((requested) =>
     available.find((column) =>
-      column.toLowerCase() === requested.toLowerCase()
-    ) ?? requested
+      foldIdentifier(column) === foldIdentifier(requested)
+    )
   );
+  const missing = columns.filter((_, index) => resolved[index] === undefined);
+  if (missing.length > 0) {
+    throw new Error(
+      `rowToVector() the column${missing.length > 1 ? "s" : ""} ${
+        missing.map(quoteIdentifier).join(", ")
+      } ${
+        missing.length > 1 ? "do" : "does"
+      } not exist. Check for typos, or load the data first.`,
+    );
+  }
+  return resolved as string[];
 }
 
 function findDuplicate(columns: string[]): string | undefined {
   const seen = new Set<string>();
   for (const column of columns) {
-    const folded = column.toLowerCase();
+    const folded = foldIdentifier(column);
     if (seen.has(folded)) return column;
     seen.add(folded);
   }
