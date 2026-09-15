@@ -81,6 +81,24 @@ function estimateInverseOneNorm(
     vector[index] = 1;
     previousIndex = index;
   }
+  // The all-positive initial vector can be an eigenvector that causes Hager's
+  // iteration to stop at the *smallest* inverse eigenvalue (for example an
+  // equicorrelation matrix). Higham's alternating, increasing-magnitude probe
+  // prevents that failure; normalize by its 1-norm to retain a lower estimate.
+  // Reference: https://www.netlib.org/lapack/double/dlacon.f (final stage).
+  const alternating = Float64Array.from(
+    { length: dimensions },
+    (_, i) => (i % 2 === 0 ? 1 : -1) * (1 + i / Math.max(1, dimensions - 1)),
+  );
+  const alternatingNorm = alternating.reduce(
+    (sum, value) => sum + Math.abs(value),
+    0,
+  );
+  const solved = solveCorrelation(cholesky, dimensions, alternating);
+  estimate = Math.max(
+    estimate,
+    solved.reduce((sum, value) => sum + Math.abs(value), 0) / alternatingNorm,
+  );
   return estimate;
 }
 
@@ -227,16 +245,27 @@ export function covarianceWhitening(
 ): Float64Array {
   const { dimensions, scales, cholesky } = factor;
   const whitening = new Float64Array(dimensions * dimensions);
+  // Invert the triangular correlation factor first, then apply feature units.
+  // Keeping units out of the recurrence avoids repeated underflow/rounding of
+  // the same coefficient, and visits only the nonzero triangle.
   for (let column = 0; column < dimensions; column++) {
-    for (let row = 0; row < dimensions; row++) {
+    for (let row = column; row < dimensions; row++) {
       let value = row === column ? 1 : 0;
-      for (let k = 0; k < row; k++) {
+      for (let k = column; k < row; k++) {
         value -= cholesky[row * dimensions + k] *
-          whitening[k * dimensions + column] * scales[column];
+          whitening[k * dimensions + column];
       }
-      whitening[row * dimensions + column] = row < column
-        ? 0
-        : value / cholesky[row * dimensions + row] / scales[column];
+      whitening[row * dimensions + column] = value /
+        cholesky[row * dimensions + row];
+    }
+    for (let row = column; row < dimensions; row++) {
+      const index = row * dimensions + column;
+      whitening[index] /= scales[column];
+      if (!Number.isFinite(whitening[index])) {
+        throw singularCovariance(
+          "the whitening transform produced a non-finite value",
+        );
+      }
     }
   }
   return whitening;

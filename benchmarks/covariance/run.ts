@@ -1,4 +1,5 @@
 import { dirname } from "node:path";
+import { cpus, totalmem } from "node:os";
 
 type Result = {
   rows: number;
@@ -11,8 +12,9 @@ type Result = {
   modelMatrixBytes: number;
   refactorMatrixBytes: number;
   temporaryWhiteningBytes: number;
-  distanceSqlUtf8Bytes: number;
-  distanceSqlUtf16Bytes: number;
+  nativeWhiteningPayloadBytes: number;
+  nativeCenteredPayloadBytes: number;
+  factorTransientPeakMatrixBytes: number;
   reciprocalCondition: number;
   finiteDistances: number;
   relativeIdentityError: number;
@@ -45,17 +47,6 @@ const timeLimitMilliseconds = 10 * 60 * 1_000;
 const memoryLimitBytes = 8 * 1024 ** 3;
 const worker = new URL("worker.ts", import.meta.url);
 
-async function commandText(command: string, args: string[]) {
-  try {
-    const result = await new Deno.Command(command, { args }).output();
-    return result.success
-      ? new TextDecoder().decode(result.stdout).trim()
-      : "unavailable";
-  } catch {
-    return "unavailable";
-  }
-}
-
 async function rss(pid: number): Promise<number | undefined> {
   try {
     const result = await new Deno.Command("ps", {
@@ -72,6 +63,7 @@ async function rss(pid: number): Promise<number | undefined> {
 }
 
 async function runCase(input: { rows: number; dimensions: number }) {
+  const started = performance.now();
   const child = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -83,16 +75,22 @@ async function runCase(input: { rows: number; dimensions: number }) {
     stdout: "piped",
     stderr: "piped",
   }).spawn();
+  let exited = false;
+  let finished = started;
+  void child.status.then(() => {
+    exited = true;
+    finished = performance.now();
+  });
   let settled = false;
   const outputPromise = child.output().finally(() => settled = true);
-  const started = performance.now();
   let peakRssBytes = 0;
   let limited: Result["status"] | undefined;
   while (!settled) {
     const currentRss = await rss(child.pid);
     if (currentRss === undefined) {
+      if (exited || settled) break;
       try {
-        child.kill("SIGTERM");
+        child.kill("SIGKILL");
       } catch {
         // The worker may have exited while the unavailable sample was read.
       }
@@ -103,12 +101,15 @@ async function runCase(input: { rows: number; dimensions: number }) {
     }
     peakRssBytes = Math.max(peakRssBytes, currentRss);
     if (peakRssBytes > memoryLimitBytes) limited = "memory-limited";
-    if (performance.now() - started > timeLimitMilliseconds) {
+    if (
+      limited === undefined &&
+      performance.now() - started > timeLimitMilliseconds
+    ) {
       limited = "time-limited";
     }
     if (limited !== undefined) {
       try {
-        child.kill("SIGTERM");
+        child.kill("SIGKILL");
       } catch {
         // The process may have completed between the sample and the signal.
       }
@@ -117,16 +118,29 @@ async function runCase(input: { rows: number; dimensions: number }) {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   const result = await outputPromise;
-  const elapsedMilliseconds = performance.now() - started;
+  const elapsedMilliseconds = finished - started;
   const stdout = new TextDecoder().decode(result.stdout).trim();
   const stderr = new TextDecoder().decode(result.stderr).trim();
+  const phases: Record<string, unknown>[] = [];
+  const errors: string[] = [];
+  for (const line of stderr.split("\n").filter(Boolean)) {
+    try {
+      const record = JSON.parse(line) as Record<string, unknown>;
+      if (typeof record.phase === "string") phases.push(record);
+      else errors.push(line);
+    } catch {
+      errors.push(line);
+    }
+  }
+  const error = errors.join("\n");
   if (limited !== undefined) {
     return {
       ...input,
       peakRssBytes,
       elapsedMilliseconds,
       status: limited,
-      error: stderr,
+      phases,
+      error,
     };
   }
   if (!result.success) {
@@ -135,25 +149,33 @@ async function runCase(input: { rows: number; dimensions: number }) {
       peakRssBytes,
       elapsedMilliseconds,
       status: "failed",
-      error: stderr,
+      phases,
+      error,
     };
   }
+  const record = JSON.parse(stdout) as Record<string, number>;
+  // OS process high-water RSS covers sub-sampling-interval native allocation
+  // peaks in successful workers; sampled RSS remains the live stopping rule.
+  peakRssBytes = Math.max(peakRssBytes, record.processHighWaterRssBytes);
   return {
     ...(JSON.parse(stdout) as Omit<
       Result,
       "peakRssBytes" | "elapsedMilliseconds" | "status"
     >),
+    phases,
     peakRssBytes,
     elapsedMilliseconds,
-    status: "completed" as const,
+    status: peakRssBytes > memoryLimitBytes
+      ? "memory-limited" as const
+      : "completed" as const,
   };
 }
 
 const hardware = {
   platform: `${Deno.build.os}-${Deno.build.arch}`,
-  cpu: await commandText("sysctl", ["-n", "machdep.cpu.brand_string"]),
-  memoryBytes: Number(await commandText("sysctl", ["-n", "hw.memsize"])) ||
-    "unavailable",
+  cpu: cpus()[0]?.model ?? "unavailable",
+  logicalCpuCount: cpus().length,
+  memoryBytes: totalmem(),
   denoVersion: Deno.version.deno,
   v8Version: Deno.version.v8,
 };
@@ -163,13 +185,30 @@ if (await rss(Deno.pid) === undefined) {
   );
 }
 const results = [];
+await Deno.mkdir(dirname(output), { recursive: true });
 for (const input of quick ? quickCases : fullCases) {
   console.error(`covariance rows=${input.rows} dimensions=${input.dimensions}`);
-  results.push(await runCase(input));
+  const result = await runCase(input);
+  results.push(result);
+  // Persist each completed or limited case so a later interrupted sweep does
+  // not erase earlier evidence.
+  await Deno.writeTextFile(
+    output,
+    JSON.stringify(
+      {
+        hardware,
+        quick,
+        threads: 1,
+        dataset: "deterministic trigonometric features plus basis perturbation",
+        timeLimitMilliseconds,
+        memoryLimitBytes,
+        rssSamplingMilliseconds: 250,
+        results,
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+  console.error(JSON.stringify(result));
 }
-await Deno.mkdir(dirname(output), { recursive: true });
-await Deno.writeTextFile(
-  output,
-  JSON.stringify({ hardware, quick, results }, null, 2) + "\n",
-);
 console.log(output);

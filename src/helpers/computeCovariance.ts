@@ -43,12 +43,13 @@ export default async function computeCovariance(
 
   const meanRows = (await connection.runAndReadAll(
     `SELECT feature - 1 AS feature, first(origin) AS origin,
-      avg(value - origin) AS mean_offset FROM (${offsets})
+      avg(value - origin) AS mean_offset, max(abs(value - origin)) AS magnitude FROM (${offsets})
       GROUP BY feature ORDER BY feature`,
   )).getRowsJS();
   if (meanRows.length !== dimensions) {
     throw new Error("Covariance aggregation returned an incomplete centroid.");
   }
+  const magnitudes = new Float64Array(dimensions);
   const means = new Float64Array(dimensions);
   const origins = new Float64Array(dimensions);
   const meanOffsets = new Float64Array(dimensions);
@@ -62,6 +63,15 @@ export default async function computeCovariance(
     ) {
       throw new Error("Covariance aggregation returned a non-finite centroid.");
     }
+    const magnitude = Number(row[3]);
+    if (!Number.isFinite(magnitude) || magnitude <= 0) {
+      throw new Error(
+        `Covariance is singular or numerically unstable (feature ${
+          feature + 1
+        } has constant values or an unrepresentable range). Constant columns, linearly dependent features, or too few observations are common causes. Remove redundant features or provide more observations.`,
+      );
+    }
+    magnitudes[feature] = magnitude;
     origins[feature] = origin;
     meanOffsets[feature] = meanOffset;
     means[feature] = origin + meanOffset;
@@ -71,9 +81,16 @@ export default async function computeCovariance(
   // covar_samp divides centered cross-products by n - 1. Subtracting a native
   // per-feature anchor first avoids cancellation in E[x*y] - E[x]E[y] and
   // retains small deviations when a feature has a large common offset.
+  // Divide by each feature's observed magnitude before accumulating products.
+  // Otherwise the n-1 cross-product sum can overflow even when the final sample
+  // covariance is finite (e.g. [0, 1e154, 2e154], whose variance is 1e308).
   const result = await connection.stream(
     `WITH features AS MATERIALIZED (
-        SELECT observation, feature, value - origin AS value FROM (${offsets})
+        SELECT observation, feature, (value - origin) /
+          array_extract([${
+      magnitudes.join(",")
+    }]::DOUBLE[${dimensions}], feature) AS value
+        FROM (${offsets})
       )
       SELECT a.feature - 1 AS row, b.feature - 1 AS column,
         covar_samp(a.value, b.value) AS covariance
@@ -94,7 +111,10 @@ export default async function computeCovariance(
     for (let i = 0; i < chunk.rowCount; i++) {
       const row = rows[i];
       const column = columns[i];
-      const value = entries[i];
+      // Restore units using the larger magnitude first to avoid prematurely
+      // underflowing a finite cross-covariance between very different units.
+      const value = entries[i] * Math.max(magnitudes[row], magnitudes[column]) *
+        Math.min(magnitudes[row], magnitudes[column]);
       covariance[row * dimensions + column] = value;
       covariance[column * dimensions + row] = value;
       values++;

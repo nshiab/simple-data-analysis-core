@@ -108,3 +108,41 @@ Deno.test("covariance solve validates matrix and vector dimensions", () => {
   assertThrows(() => solveCovariance(factor, []));
   assertThrows(() => solveCovariance(factor, [Infinity]));
 });
+
+Deno.test("whitening remains equivalent to solves under extreme feature units", () => {
+  const factor = factorCovariance([1e-300, 0.25, 0.25, 1e300], 2);
+  const delta = [1e-150, 1e150];
+  const transformed = multiply(covarianceWhitening(factor), delta);
+  // For correlation 1/4 and equal standardized deviations, d² = 2/(1+1/4).
+  assertAlmostEquals(
+    transformed.reduce((sum, value) => sum + value * value, 0),
+    1.6,
+    1e-14,
+  );
+});
+
+Deno.test("instability decisions are unchanged by feature units", () => {
+  for (const scale of [1e-150, 1, 1e150]) {
+    const correlation = 1 - 1e-15;
+    assertThrows(
+      () =>
+        factorCovariance([
+          scale * scale,
+          correlation,
+          correlation,
+          1 / scale / scale,
+        ], 2),
+      Error,
+      "numerically unstable",
+    );
+  }
+  for (const covariance of [[1, NaN, NaN, 1], [Infinity, 0, 0, 1]]) {
+    assertThrows(() => factorCovariance(covariance, 2), Error, "non-finite");
+  }
+});
+
+Deno.test("condition estimator checks beyond the initial positive eigenvector", () => {
+  // Exact inverse 1-norm is 1/(1-r); correlation 1-norm is 1+r.
+  const factor = factorCovariance([1, 0.6, 0.6, 1], 2);
+  assertAlmostEquals(factor.reciprocalCondition, 0.25, 1e-14);
+});

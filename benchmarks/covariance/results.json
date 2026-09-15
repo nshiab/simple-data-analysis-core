@@ -1,0 +1,276 @@
+{
+  "hardware": {
+    "platform": "darwin-aarch64",
+    "cpu": "Apple M4 Max",
+    "logicalCpuCount": 16,
+    "memoryBytes": 68719476736,
+    "denoVersion": "2.9.6",
+    "v8Version": "15.0.245.2-rusty"
+  },
+  "quick": false,
+  "threads": 1,
+  "dataset": "deterministic trigonometric features plus basis perturbation",
+  "timeLimitMilliseconds": 600000,
+  "memoryLimitBytes": 8589934592,
+  "rssSamplingMilliseconds": 250,
+  "results": [
+    {
+      "rows": 100000,
+      "dimensions": 8,
+      "covarianceMilliseconds": 140.62212499999998,
+      "matrixMilliseconds": 0.043834000000003925,
+      "distanceMilliseconds": 54.93095900000003,
+      "afterCovarianceRssBytes": 136921088,
+      "processHighWaterRssBytes": 137986048,
+      "sourceVectorPayloadBytes": 6400000,
+      "modelMatrixBytes": 1280,
+      "refactorMatrixBytes": 1088,
+      "temporaryWhiteningBytes": 512,
+      "nativeWhiteningPayloadBytes": 512,
+      "nativeCenteredPayloadBytes": 6400000,
+      "factorTransientPeakMatrixBytes": 1600,
+      "reciprocalCondition": 0.9752989613504928,
+      "finiteDistances": 100000,
+      "squaredDistanceSum": 799992.0000000052,
+      "expectedSquaredDistanceSum": 799992,
+      "relativeIdentityError": 6.548427337038454e-15,
+      "duckdbVersion": "v1.5.5",
+      "phases": [
+        {
+          "phase": "source-ready",
+          "elapsedMilliseconds": 182.704333
+        },
+        {
+          "phase": "covariance",
+          "covarianceMilliseconds": 140.62212499999998
+        },
+        {
+          "phase": "factor",
+          "matrixMilliseconds": 0.043834000000003925
+        },
+        {
+          "phase": "distance",
+          "distanceMilliseconds": 54.93095900000003
+        }
+      ],
+      "peakRssBytes": 137986048,
+      "elapsedMilliseconds": 388.66116600000004,
+      "status": "completed"
+    },
+    {
+      "rows": 20000,
+      "dimensions": 32,
+      "covarianceMilliseconds": 216.28975,
+      "matrixMilliseconds": 0.23937499999999545,
+      "distanceMilliseconds": 104.359667,
+      "afterCovarianceRssBytes": 126877696,
+      "processHighWaterRssBytes": 129122304,
+      "sourceVectorPayloadBytes": 5120000,
+      "modelMatrixBytes": 17408,
+      "refactorMatrixBytes": 16640,
+      "temporaryWhiteningBytes": 8192,
+      "nativeWhiteningPayloadBytes": 8192,
+      "nativeCenteredPayloadBytes": 5120000,
+      "factorTransientPeakMatrixBytes": 24832,
+      "reciprocalCondition": 0.869799584205365,
+      "finiteDistances": 20000,
+      "squaredDistanceSum": 639968.0000000013,
+      "expectedSquaredDistanceSum": 639968,
+      "relativeIdentityError": 2.000988393320108e-15,
+      "duckdbVersion": "v1.5.5",
+      "phases": [
+        {
+          "phase": "source-ready",
+          "elapsedMilliseconds": 167.723291
+        },
+        {
+          "phase": "covariance",
+          "covarianceMilliseconds": 216.28975
+        },
+        {
+          "phase": "factor",
+          "matrixMilliseconds": 0.23937499999999545
+        },
+        {
+          "phase": "distance",
+          "distanceMilliseconds": 104.359667
+        }
+      ],
+      "peakRssBytes": 129122304,
+      "elapsedMilliseconds": 501.15575,
+      "status": "completed"
+    },
+    {
+      "rows": 4096,
+      "dimensions": 128,
+      "covarianceMilliseconds": 523.6868750000001,
+      "matrixMilliseconds": 0.49354200000004766,
+      "distanceMilliseconds": 388.00233300000014,
+      "afterCovarianceRssBytes": 118079488,
+      "processHighWaterRssBytes": 163102720,
+      "sourceVectorPayloadBytes": 4194304,
+      "modelMatrixBytes": 266240,
+      "refactorMatrixBytes": 263168,
+      "temporaryWhiteningBytes": 131072,
+      "nativeWhiteningPayloadBytes": 131072,
+      "nativeCenteredPayloadBytes": 4194304,
+      "factorTransientPeakMatrixBytes": 394240,
+      "reciprocalCondition": 0.27149712497483786,
+      "finiteDistances": 4096,
+      "squaredDistanceSum": 524159.9999999991,
+      "expectedSquaredDistanceSum": 524160,
+      "relativeIdentityError": 1.6657412120383301e-15,
+      "duckdbVersion": "v1.5.5",
+      "phases": [
+        {
+          "phase": "source-ready",
+          "elapsedMilliseconds": 144.996834
+        },
+        {
+          "phase": "covariance",
+          "covarianceMilliseconds": 523.6868750000001
+        },
+        {
+          "phase": "factor",
+          "matrixMilliseconds": 0.49354200000004766
+        },
+        {
+          "phase": "distance",
+          "distanceMilliseconds": 388.00233300000014
+        }
+      ],
+      "peakRssBytes": 163102720,
+      "elapsedMilliseconds": 1067.3347909999998,
+      "status": "completed"
+    },
+    {
+      "rows": 1536,
+      "dimensions": 384,
+      "covarianceMilliseconds": 1674.324167,
+      "matrixMilliseconds": 7.262583000000177,
+      "distanceMilliseconds": 1305.589334,
+      "afterCovarianceRssBytes": 155353088,
+      "processHighWaterRssBytes": 335265792,
+      "sourceVectorPayloadBytes": 4718592,
+      "modelMatrixBytes": 2371584,
+      "refactorMatrixBytes": 2362368,
+      "temporaryWhiteningBytes": 1179648,
+      "nativeWhiteningPayloadBytes": 1179648,
+      "nativeCenteredPayloadBytes": 4718592,
+      "factorTransientPeakMatrixBytes": 3542016,
+      "reciprocalCondition": 0.003473576191701335,
+      "finiteDistances": 1536,
+      "squaredDistanceSum": 589439.9999999998,
+      "expectedSquaredDistanceSum": 589440,
+      "relativeIdentityError": 3.9500312780583204e-16,
+      "duckdbVersion": "v1.5.5",
+      "phases": [
+        {
+          "phase": "source-ready",
+          "elapsedMilliseconds": 171.393083
+        },
+        {
+          "phase": "covariance",
+          "covarianceMilliseconds": 1674.324167
+        },
+        {
+          "phase": "factor",
+          "matrixMilliseconds": 7.262583000000177
+        },
+        {
+          "phase": "distance",
+          "distanceMilliseconds": 1305.589334
+        }
+      ],
+      "peakRssBytes": 335265792,
+      "elapsedMilliseconds": 3183.848708,
+      "status": "completed"
+    },
+    {
+      "rows": 1024,
+      "dimensions": 768,
+      "covarianceMilliseconds": 4473.353917,
+      "matrixMilliseconds": 58.90679199999977,
+      "distanceMilliseconds": 17742.097416999997,
+      "afterCovarianceRssBytes": 204472320,
+      "processHighWaterRssBytes": 472317952,
+      "sourceVectorPayloadBytes": 6291456,
+      "modelMatrixBytes": 9461760,
+      "refactorMatrixBytes": 9443328,
+      "temporaryWhiteningBytes": 4718592,
+      "nativeWhiteningPayloadBytes": 4718592,
+      "nativeCenteredPayloadBytes": 6291456,
+      "factorTransientPeakMatrixBytes": 14161920,
+      "reciprocalCondition": 5.675934653838893e-7,
+      "finiteDistances": 1024,
+      "squaredDistanceSum": 785663.9999999804,
+      "expectedSquaredDistanceSum": 785664,
+      "relativeIdentityError": 2.4893305620373402e-14,
+      "duckdbVersion": "v1.5.5",
+      "phases": [
+        {
+          "phase": "source-ready",
+          "elapsedMilliseconds": 205.0145
+        },
+        {
+          "phase": "covariance",
+          "covarianceMilliseconds": 4473.353917
+        },
+        {
+          "phase": "factor",
+          "matrixMilliseconds": 58.90679199999977
+        },
+        {
+          "phase": "distance",
+          "distanceMilliseconds": 17742.097416999997
+        }
+      ],
+      "peakRssBytes": 472317952,
+      "elapsedMilliseconds": 22496.816208,
+      "status": "completed"
+    },
+    {
+      "rows": 2048,
+      "dimensions": 1536,
+      "covarianceMilliseconds": 36288.798208,
+      "matrixMilliseconds": 449.78520800000115,
+      "distanceMilliseconds": 84409.24562500001,
+      "afterCovarianceRssBytes": 510525440,
+      "processHighWaterRssBytes": 1283506176,
+      "sourceVectorPayloadBytes": 25165824,
+      "modelMatrixBytes": 37797888,
+      "refactorMatrixBytes": 37761024,
+      "temporaryWhiteningBytes": 18874368,
+      "nativeWhiteningPayloadBytes": 18874368,
+      "nativeCenteredPayloadBytes": 25165824,
+      "factorTransientPeakMatrixBytes": 56635392,
+      "reciprocalCondition": 1.3640166113037067e-7,
+      "finiteDistances": 2048,
+      "squaredDistanceSum": 3144191.9999980116,
+      "expectedSquaredDistanceSum": 3144192,
+      "relativeIdentityError": 6.323957623465891e-13,
+      "duckdbVersion": "v1.5.5",
+      "phases": [
+        {
+          "phase": "source-ready",
+          "elapsedMilliseconds": 716.068333
+        },
+        {
+          "phase": "covariance",
+          "covarianceMilliseconds": 36288.798208
+        },
+        {
+          "phase": "factor",
+          "matrixMilliseconds": 449.78520800000115
+        },
+        {
+          "phase": "distance",
+          "distanceMilliseconds": 84409.24562500001
+        }
+      ],
+      "peakRssBytes": 1283506176,
+      "elapsedMilliseconds": 121887.83141700001,
+      "status": "completed"
+    }
+  ]
+}
