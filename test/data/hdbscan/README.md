@@ -82,3 +82,31 @@ finite 0.8.44 scores and its corrected reverse-tree maximum propagation must
 still match. Do not replace every infinite internal lambda with an arbitrary
 large number, reject valid duplicate-heavy inputs, or silently turn Python NaN
 into JSON null.
+
+## Euclidean rounding and finite-limit perturbations
+
+The primary `cases` in `degenerate-reference.json` use exact duplicates and
+**dyadic** perturbations: epsilon `2^-7`, `2^-14`, and `2^-20`. These powers of
+two and the nearby coordinates are exactly representable. The current native
+DuckDB distance implementation matches the pinned Python labels, memberships,
+and finite GLOSH scores on all five primary cases. Their two tail scores
+converge to the proposed finite limit of `1`.
+
+The original decimal epsilon probes (`0.01`, `0.0001`, `0.000001`) remain under
+`decimalBoundaryCases`. Their labels and memberships are evidence of rounding at
+an exact root-selection threshold, not strict cross-runtime expectations.
+Sklearn's squared-norm/dot Euclidean calculation and DuckDB's native distance
+can place the same apparent decimal tie on opposite sides of that threshold.
+Their finite GLOSH values remain useful for comparisons with a numerical
+tolerance. Do not hide this evidence or introduce arbitrary threshold epsilons
+to force matching labels.
+
+SDA retains native `array_distance` instead of reproducing the squared-norm/dot
+formula. `largeOffsetDistanceEvidence` demonstrates why: `[1e12,1e12]` and
+`[1e12+1,1e12]` have distance `1`, which Python `math.dist` and DuckDB 1.5.5
+both return. Pinned sklearn `pairwise_distances` returns `0` because subtracting
+large, nearly equal squared norms loses the separation. Copying that formula
+would turn distinct observations into duplicates and can alter clustering. The
+hierarchy and score rules should match the pinned package for the same metric
+graph; incidental distance-arithmetic differences are evaluated separately, with
+native stable distance retained.
