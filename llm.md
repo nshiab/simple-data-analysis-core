@@ -2894,20 +2894,16 @@ await flights
 
 #### `neighbors`
 
-Finds the distinct nodes directly connected to one or more starting nodes.
-Outgoing follows connections from source to target, incoming follows them from
-target to source, and both follows connections in either direction. The result
-always has fixed `start` and `node` columns, sorted in ascending order by
-`start`, then `node`.
+Finds the distinct nodes directly connected to one or more starting nodes. The
+`direction` option lets you find neighbors from source to target, from target to
+source, or in either direction. The result has `start` and `node` columns,
+sorted in ascending order by `start`, then `node`.
 
-Endpoint IDs must be non-null strings or whole numbers. The source and target
-columns must use compatible ID types. Unknown starting IDs and starts with no
-neighbors in the selected direction produce no rows. A self-connection includes
-the starting node once. Empty start arrays and duplicate starting IDs throw an
-error. String IDs match case-sensitively; numeric and string IDs are not
-interchangeable.
+Unknown starting IDs and starts with no neighbors in the selected direction
+produce no rows. A self-connection includes the starting node once. Empty start
+arrays and duplicate starting IDs throw an error.
 
-This input contains a duplicate connection and one incoming connection to A:
+The next three examples each start with this data:
 
 | origin | destination |
 | ------ | ----------- |
@@ -2915,7 +2911,7 @@ This input contains a duplicate connection and one incoming connection to A:
 | A      | B           |
 | C      | A           |
 
-Both-direction traversal deduplicates A's neighbors:
+By default, the method finds neighbors from source to target:
 
 ##### Signature
 
@@ -2931,7 +2927,7 @@ neighbors(sourceColumn: string, targetColumn: string, startNodes: string | numbe
   node ID.
 - **`startNodes`**: One starting node ID or an array of distinct starting node
   IDs.
-- **`options`**: An optional object with traversal and result configuration.
+- **`options`**: An optional object with direction and result configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
@@ -2946,20 +2942,6 @@ The result table, so methods can be chained.
 
 ```ts
 await table
-  .neighbors("origin", "destination", "A", { direction: "both" })
-  .log();
-```
-
-| start | node |
-| ----- | ---- |
-| A     | B    |
-| A     | C    |
-
-On a fresh copy of the same input, omitting `direction` follows outgoing
-connections:
-
-```ts
-await table
   .neighbors("origin", "destination", "A")
   .log();
 ```
@@ -2968,8 +2950,10 @@ await table
 | ----- | ---- |
 | A     | B    |
 
-On a fresh copy of the same input, incoming traversal follows connections in
-reverse:
+B appears only once, even though the input has two connections from A to B.
+
+With `direction: "incoming"`, the method finds neighbors from target to source.
+Here, C connects to A:
 
 ```ts
 await table
@@ -2979,6 +2963,19 @@ await table
 
 | start | node |
 | ----- | ---- |
+| A     | C    |
+
+With `direction: "both"`, the method finds neighbors in either direction:
+
+```ts
+await table
+  .neighbors("origin", "destination", "A", { direction: "both" })
+  .log();
+```
+
+| start | node |
+| ----- | ---- |
+| A     | B    |
 | A     | C    |
 
 Multiple starts are evaluated independently. For this input:

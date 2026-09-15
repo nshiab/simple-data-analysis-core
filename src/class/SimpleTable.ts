@@ -2439,21 +2439,17 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds the distinct nodes directly connected to one or more starting
-   * nodes. Outgoing follows connections from source to target, incoming
-   * follows them from target to source, and both follows connections in
-   * either direction. The result always has fixed `start` and `node` columns,
-   * sorted in ascending order by `start`, then `node`.
+   * Finds the distinct nodes directly connected to one or more starting nodes.
+   * The `direction` option lets you find neighbors from source to target,
+   * from target to source, or in either direction. The result has `start` and
+   * `node` columns, sorted in ascending order by `start`, then `node`.
    *
-   * Endpoint IDs must be non-null strings or whole numbers. The source and
-   * target columns must use compatible ID types. Unknown starting IDs and
-   * starts with no neighbors in the selected direction produce no rows.
+   * Unknown starting IDs and starts with no neighbors in the selected
+   * direction produce no rows.
    * A self-connection includes the starting node once. Empty start arrays and
-   * duplicate starting IDs throw an error. String IDs match case-sensitively;
-   * numeric and string IDs are not interchangeable.
+   * duplicate starting IDs throw an error.
    *
-   * This input contains a duplicate connection and one incoming connection to
-   * A:
+   * The next three examples each start with this data:
    *
    * | origin | destination |
    * | --- | --- |
@@ -2461,22 +2457,7 @@ export default class SimpleTable extends Simple {
    * | A | B |
    * | C | A |
    *
-   * Both-direction traversal deduplicates A's neighbors:
-   *
-   * @example
-   * ```ts
-   * await table
-   *   .neighbors("origin", "destination", "A", { direction: "both" })
-   *   .log();
-   * ```
-   *
-   * | start | node |
-   * | --- | --- |
-   * | A | B |
-   * | A | C |
-   *
-   * On a fresh copy of the same input, omitting `direction` follows outgoing
-   * connections:
+   * By default, the method finds neighbors from source to target:
    *
    * @example
    * ```ts
@@ -2489,8 +2470,10 @@ export default class SimpleTable extends Simple {
    * | --- | --- |
    * | A | B |
    *
-   * On a fresh copy of the same input, incoming traversal follows connections
-   * in reverse:
+   * B appears only once, even though the input has two connections from A to B.
+   *
+   * With `direction: "incoming"`, the method finds neighbors from target to
+   * source. Here, C connects to A:
    *
    * @example
    * ```ts
@@ -2501,6 +2484,20 @@ export default class SimpleTable extends Simple {
    *
    * | start | node |
    * | --- | --- |
+   * | A | C |
+   *
+   * With `direction: "both"`, the method finds neighbors in either direction:
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .neighbors("origin", "destination", "A", { direction: "both" })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | B |
    * | A | C |
    *
    * Multiple starts are evaluated independently. For this input:
@@ -2525,7 +2522,7 @@ export default class SimpleTable extends Simple {
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param startNodes - One starting node ID or an array of distinct starting node IDs.
-   * @param options - An optional object with traversal and result configuration.
+   * @param options - An optional object with direction and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
