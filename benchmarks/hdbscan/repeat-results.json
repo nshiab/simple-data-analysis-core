@@ -1,0 +1,136 @@
+{
+  "hardware": {
+    "platform": "darwin-aarch64",
+    "cpu": "Apple M4 Max",
+    "logicalCpuCount": 16,
+    "memoryBytes": 68719476736,
+    "denoVersion": "2.9.6",
+    "v8Version": "15.0.245.2-rusty"
+  },
+  "threads": 8,
+  "dataset": "deterministic eight-group trigonometric vectors",
+  "scope": "public hdbscan() from numeric feature preparation through graph construction, hierarchy, scoring, and atomic publication",
+  "purpose": "Independent second approximate run of each completed 100,000-row case; worker and parameters unchanged. Full watchdog output retained.",
+  "results": [
+    {
+      "status": "completed",
+      "elapsedSeconds": 2.3681955829961225,
+      "peakRssBytes": 456654848,
+      "rssSamples": 9,
+      "rssSamplingIntervalSeconds": 0.25,
+      "measurementError": null,
+      "exitCode": 0,
+      "command": [
+        "deno",
+        "run",
+        "-A",
+        "benchmarks/hdbscan/worker.ts",
+        "--rows",
+        "100000",
+        "--dimensions",
+        "4",
+        "--metric",
+        "euclidean",
+        "--approximate",
+        "true",
+        "--payload",
+        "narrow",
+        "--min-cluster-size",
+        "25",
+        "--min-samples",
+        "15"
+      ],
+      "stdout": "{\"rows\":100000,\"dimensions\":4,\"metric\":\"euclidean\",\"approximate\":true,\"payload\":\"narrow\",\"minClusterSize\":25,\"minSamples\":15,\"publicMethodMilliseconds\":2031.1777499999998,\"processHighWaterRssBytes\":540655616,\"sourceVectorPayloadBytes\":3200000,\"rowCount\":100000,\"orderedRows\":100000,\"finiteMembership\":100000,\"finiteOutliers\":100000,\"noiseRows\":4085,\"clusterCount\":58,\"scratchObjects\":0,\"duckdbVersion\":\"v1.5.5\"}",
+      "stderr": "{\"phase\":\"source-ready\"}\n{\"phase\":\"public-method\",\"publicMethodMilliseconds\":2031.1777499999998}",
+      "host": {
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "machine": "arm64",
+        "logicalCpuCount": 16
+      },
+      "limits": {
+        "timeoutSeconds": 600,
+        "maxRssBytes": 8589934592
+      }
+    },
+    {
+      "status": "completed",
+      "elapsedSeconds": 10.73041716706939,
+      "peakRssBytes": 1206550528,
+      "rssSamples": 41,
+      "rssSamplingIntervalSeconds": 0.25,
+      "measurementError": null,
+      "exitCode": 0,
+      "command": [
+        "deno",
+        "run",
+        "-A",
+        "benchmarks/hdbscan/worker.ts",
+        "--rows",
+        "100000",
+        "--dimensions",
+        "128",
+        "--metric",
+        "cosine",
+        "--approximate",
+        "true",
+        "--payload",
+        "narrow",
+        "--min-cluster-size",
+        "25",
+        "--min-samples",
+        "15"
+      ],
+      "stdout": "{\"rows\":100000,\"dimensions\":128,\"metric\":\"cosine\",\"approximate\":true,\"payload\":\"narrow\",\"minClusterSize\":25,\"minSamples\":15,\"publicMethodMilliseconds\":8333.233834,\"processHighWaterRssBytes\":1351188480,\"sourceVectorPayloadBytes\":102400000,\"rowCount\":100000,\"orderedRows\":100000,\"finiteMembership\":100000,\"finiteOutliers\":100000,\"noiseRows\":20184,\"clusterCount\":351,\"scratchObjects\":0,\"duckdbVersion\":\"v1.5.5\"}",
+      "stderr": "{\"phase\":\"source-ready\"}\n{\"phase\":\"public-method\",\"publicMethodMilliseconds\":8333.233834}",
+      "host": {
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "machine": "arm64",
+        "logicalCpuCount": 16
+      },
+      "limits": {
+        "timeoutSeconds": 600,
+        "maxRssBytes": 8589934592
+      }
+    },
+    {
+      "status": "completed",
+      "elapsedSeconds": 10.44138654100243,
+      "peakRssBytes": 2173435904,
+      "rssSamples": 40,
+      "rssSamplingIntervalSeconds": 0.25,
+      "measurementError": null,
+      "exitCode": 0,
+      "command": [
+        "deno",
+        "run",
+        "-A",
+        "benchmarks/hdbscan/worker.ts",
+        "--rows",
+        "100000",
+        "--dimensions",
+        "128",
+        "--metric",
+        "euclidean",
+        "--approximate",
+        "true",
+        "--payload",
+        "wide",
+        "--min-cluster-size",
+        "25",
+        "--min-samples",
+        "15"
+      ],
+      "stdout": "{\"rows\":100000,\"dimensions\":128,\"metric\":\"euclidean\",\"approximate\":true,\"payload\":\"wide\",\"minClusterSize\":25,\"minSamples\":15,\"publicMethodMilliseconds\":7899.637042,\"processHighWaterRssBytes\":2425454592,\"sourceVectorPayloadBytes\":102400000,\"rowCount\":100000,\"orderedRows\":100000,\"finiteMembership\":100000,\"finiteOutliers\":100000,\"noiseRows\":753,\"clusterCount\":44,\"scratchObjects\":0,\"payloadHash\":\"11331315840288268780\",\"duckdbVersion\":\"v1.5.5\"}",
+      "stderr": "{\"phase\":\"source-ready\"}\n{\"phase\":\"public-method\",\"publicMethodMilliseconds\":7899.637042}",
+      "host": {
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "machine": "arm64",
+        "logicalCpuCount": 16
+      },
+      "limits": {
+        "timeoutSeconds": 600,
+        "maxRssBytes": 8589934592
+      }
+    }
+  ]
+}

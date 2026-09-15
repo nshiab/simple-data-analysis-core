@@ -1,0 +1,144 @@
+{
+  "hardware": {
+    "platform": "darwin-aarch64",
+    "cpu": "Apple M4 Max",
+    "logicalCpuCount": 16,
+    "memoryBytes": 68719476736,
+    "denoVersion": "2.9.6",
+    "v8Version": "15.0.245.2-rusty"
+  },
+  "quick": false,
+  "threads": 8,
+  "scope": "public hdbscan() from numeric feature preparation through graph construction, hierarchy, scoring, and atomic publication",
+  "dataset": "deterministic eight-group trigonometric vectors",
+  "approximateConstants": {
+    "candidateNeighbors": "max(minSamples, 15)",
+    "representativesPerComponent": 8,
+    "anchorPrimMaximumComponents": 256
+  },
+  "timeLimitMilliseconds": 600000,
+  "memoryLimitBytes": 8589934592,
+  "rssSamplingMilliseconds": 250,
+  "results": [
+    {
+      "rows": 100000,
+      "dimensions": 4,
+      "metric": "euclidean",
+      "approximate": true,
+      "payload": "narrow",
+      "minClusterSize": 25,
+      "minSamples": 15,
+      "publicMethodMilliseconds": 1981.714542,
+      "processHighWaterRssBytes": 530071552,
+      "sourceVectorPayloadBytes": 3200000,
+      "rowCount": 100000,
+      "orderedRows": 100000,
+      "finiteMembership": 100000,
+      "finiteOutliers": 100000,
+      "noiseRows": 3089,
+      "clusterCount": 52,
+      "scratchObjects": 0,
+      "duckdbVersion": "v1.5.5",
+      "peakRssBytes": 530071552,
+      "elapsedMilliseconds": 2349.106541951187,
+      "status": "completed",
+      "phases": [
+        {
+          "phase": "source-ready"
+        },
+        {
+          "phase": "public-method",
+          "publicMethodMilliseconds": 1981.714542
+        }
+      ],
+      "rssSamples": 9
+    },
+    {
+      "rows": 100000,
+      "dimensions": 128,
+      "metric": "cosine",
+      "approximate": true,
+      "payload": "narrow",
+      "minClusterSize": 25,
+      "minSamples": 15,
+      "publicMethodMilliseconds": 8721.397375,
+      "processHighWaterRssBytes": 1350320128,
+      "sourceVectorPayloadBytes": 102400000,
+      "rowCount": 100000,
+      "orderedRows": 100000,
+      "finiteMembership": 100000,
+      "finiteOutliers": 100000,
+      "noiseRows": 22405,
+      "clusterCount": 420,
+      "scratchObjects": 0,
+      "duckdbVersion": "v1.5.5",
+      "peakRssBytes": 1350320128,
+      "elapsedMilliseconds": 11260.255666915327,
+      "status": "completed",
+      "phases": [
+        {
+          "phase": "source-ready"
+        },
+        {
+          "phase": "public-method",
+          "publicMethodMilliseconds": 8721.397375
+        }
+      ],
+      "rssSamples": 43
+    },
+    {
+      "rows": 100000,
+      "dimensions": 128,
+      "metric": "euclidean",
+      "approximate": true,
+      "payload": "wide",
+      "minClusterSize": 25,
+      "minSamples": 15,
+      "publicMethodMilliseconds": 7842.945167,
+      "processHighWaterRssBytes": 2488303616,
+      "sourceVectorPayloadBytes": 102400000,
+      "rowCount": 100000,
+      "orderedRows": 100000,
+      "finiteMembership": 100000,
+      "finiteOutliers": 100000,
+      "noiseRows": 0,
+      "clusterCount": 8,
+      "scratchObjects": 0,
+      "payloadHash": "11331315840288268780",
+      "duckdbVersion": "v1.5.5",
+      "peakRssBytes": 2488303616,
+      "elapsedMilliseconds": 10469.791040988639,
+      "status": "completed",
+      "phases": [
+        {
+          "phase": "source-ready"
+        },
+        {
+          "phase": "public-method",
+          "publicMethodMilliseconds": 7842.945167
+        }
+      ],
+      "rssSamples": 40
+    },
+    {
+      "rows": 100000,
+      "dimensions": 4,
+      "metric": "euclidean",
+      "approximate": false,
+      "payload": "narrow",
+      "minClusterSize": 25,
+      "minSamples": 15,
+      "peakRssBytes": 292732928,
+      "elapsedMilliseconds": 600014.7071250249,
+      "status": "time-limited",
+      "phases": [
+        {
+          "phase": "source-ready"
+        }
+      ],
+      "error": "",
+      "rssSamples": 2300,
+      "workerExitCode": -15
+    }
+  ]
+}
