@@ -1,4 +1,5 @@
 import umap from "../methods/umap.ts";
+import hdbscan from "../methods/hdbscan.ts";
 import logBottom from "../methods/logBottom.ts";
 import log from "../methods/log.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
@@ -1160,6 +1161,91 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     umap(this, column, options);
+    return this;
+  }
+
+  /**
+   * Clusters multivariate numeric rows with HDBSCAN and appends categorical
+   * cluster labels. Pass one numeric LIST or fixed-size ARRAY column, or an
+   * array of numeric scalar columns. Scalar columns may have mixed numeric
+   * types. Internal DOUBLE conversion can lose precision for large integers
+   * and exact decimals; all source columns and their types remain unchanged.
+   *
+   * Exact clustering is the default. Set `approximate: true` to use DuckDB's
+   * HNSW candidate search with deterministic connectivity repair; approximation
+   * can change clusters, noise, membership strengths, and outlier scores.
+   * `minSamples` counts other points and defaults to `minClusterSize`, matching
+   * Python hdbscan and differing from scikit-learn's built-in HDBSCAN count.
+   * Excess-of-mass selection is used internally. Allowing a single cluster
+   * permits root selection but can still leave early departures as noise.
+   *
+   * HDBSCAN uses feature values as supplied. Different units can dominate
+   * Euclidean distance. Scalar features can be prepared explicitly with
+   * `normalize()` or `zScore()`; vector dimensions can be min-max scaled with
+   * `normalizeVector()`. Scaling is optional, and HDBSCAN does not require the
+   * range `[0, 1]` or unit-length vectors.
+   *
+   * Membership values measure cluster strength rather than a calibrated
+   * probability of correctness; noise has strength zero. Larger GLOSH values
+   * indicate more outlier-like observations and are not simply one minus
+   * membership strength. Numeric cluster IDs have no ordinal meaning and may
+   * change when data or settings change.
+   *
+   * @param columns - A numeric vector column, or numeric scalar columns in
+   * feature-dimension order.
+   * @param newColumn - The cluster-label column to create.
+   * @param options - HDBSCAN clustering and output settings.
+   * @param options.minClusterSize - Minimum cluster size. Defaults to `5`.
+   * @param options.minSamples - Other points used for core distance. Defaults
+   * to `minClusterSize`.
+   * @param options.metric - Distance metric. Defaults to `"euclidean"`.
+   * @param options.allowSingleCluster - Permit selection of the root cluster.
+   * Defaults to `true`.
+   * @param options.approximate - Opt into approximate HNSW candidates. Defaults
+   * to `false`.
+   * @param options.labels - Store labels as `INTEGER` numbers or `VARCHAR`
+   * strings. Defaults to `"number"`.
+   * @param options.probabilityColumn - Optional DOUBLE membership-strength
+   * output column.
+   * @param options.outlierScoreColumn - Optional DOUBLE GLOSH outlier-score
+   * output column.
+   * @returns The table, so methods can be chained.
+   * @category Vector Search
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .hdbscan(["height", "weight"], "cluster", {
+   *     minClusterSize: 5,
+   *     probabilityColumn: "membership",
+   *     outlierScoreColumn: "outlierScore",
+   *   })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .normalizeVector("features", "scaledFeatures")
+   *   .hdbscan("scaledFeatures", "cluster", { labels: "string" })
+   *   .log();
+   * ```
+   */
+  hdbscan(
+    columns: string | string[],
+    newColumn: string,
+    options: {
+      minClusterSize?: number;
+      minSamples?: number;
+      metric?: "euclidean" | "cosine";
+      allowSingleCluster?: boolean;
+      approximate?: boolean;
+      labels?: "number" | "string";
+      probabilityColumn?: string;
+      outlierScoreColumn?: string;
+    } = {},
+  ): this {
+    hdbscan(this, columns, newColumn, options);
     return this;
   }
 
