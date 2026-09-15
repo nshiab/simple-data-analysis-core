@@ -1,3 +1,4 @@
+import buildWeakGraphComponentsSql from "../helpers/buildWeakGraphComponentsSql.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import getGraphEndpointColumns from "../helpers/getGraphEndpointColumns.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
@@ -52,6 +53,7 @@ export default function topologicalSort(
       topologicalSortSelect(input, schema, sourceColumn, targetColumn),
     outputSchema: (schema) => ({
       node: validateEndpoints(schema, sourceColumn, targetColumn).idType,
+      componentId: "BIGINT",
       order: "BIGINT",
     }),
   });
@@ -94,11 +96,19 @@ function topologicalSortSelect(
     "graph_nodes",
     "graph_topological_order",
     "graph_topological_result",
+    "graph_component_edges",
+    "graph_component_labels",
+    "graph_component_roots",
+    "graph_ordered_nodes",
   ]);
   const edges = relations.graph_edges;
   const nodes = relations.graph_nodes;
   const ordering = relations.graph_topological_order;
   const result = relations.graph_topological_result;
+  const componentEdges = relations.graph_component_edges;
+  const labels = relations.graph_component_labels;
+  const roots = relations.graph_component_roots;
+  const orderedNodes = relations.graph_ordered_nodes;
   const q = quoteIdentifier;
 
   return `WITH RECURSIVE ${edges} AS (
@@ -111,7 +121,14 @@ function topologicalSortSelect(
       SELECT ${q("__to")} AS ${q("node")},
         ${q("__to_key")} AS ${q("__key")}
       FROM ${edges}
-    ), ${ordering}(
+    ), ${componentEdges} AS (
+      SELECT * FROM ${edges}
+      UNION ALL
+      SELECT ${q("__to")}, ${q("__from")},
+        ${q("__to_key")}, ${q("__from_key")}
+      FROM ${edges}
+    ), ${buildWeakGraphComponentsSql(componentEdges, nodes, labels, roots)},
+    ${ordering}(
       ${q("node")}, ${q("__key")}, ${q("order")}, ${q("__ordered")}
     ) AS (
       SELECT ${q("eligible")}.${q("node")},
@@ -166,9 +183,21 @@ function topologicalSortSelect(
         ELSE list(${q("node")} ORDER BY ${q("order")})
       END AS ${q("__nodes")}
       FROM ${ordering}
+    ), ${orderedNodes} AS (
+      SELECT unnest(${q("__nodes")}) AS ${q("node")},
+        generate_subscripts(${q("__nodes")}, 1) AS ${q("__order")}
+      FROM ${result}
     )
-    SELECT unnest(${q("__nodes")}) AS ${q("node")},
-      CAST(generate_subscripts(${q("__nodes")}, 1) AS BIGINT) AS ${q("order")}
-    FROM ${result}
-    ORDER BY ${q("order")}`;
+    SELECT ${q("ordered")}.${q("node")}, ${q("roots")}.${q("componentId")},
+      row_number() OVER (
+        PARTITION BY ${q("roots")}.${q("componentId")}
+        ORDER BY ${q("ordered")}.${q("__order")}
+      ) AS ${q("order")}
+    FROM ${orderedNodes} AS ${q("ordered")}
+    INNER JOIN ${labels} AS ${q("labels")}
+      ON ${prepared.key(`${q("ordered")}.${q("node")}`)} =
+        ${q("labels")}.${q("__node_key")}
+    INNER JOIN ${roots} AS ${q("roots")}
+      ON ${q("labels")}.${q("__root_key")} = ${q("roots")}.${q("__root_key")}
+    ORDER BY ${q("componentId")}, ${q("order")}`;
 }

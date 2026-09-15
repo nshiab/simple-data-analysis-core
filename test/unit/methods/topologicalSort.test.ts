@@ -63,28 +63,46 @@ function topologicalOracle(edges: Edge[]): Id[] {
   return result;
 }
 
+function groupedTopologicalOracle(edges: Edge[]) {
+  const unseen = new Set(
+    edges.flatMap(({ source, target }) => [source, target]),
+  );
+  const groups: Set<Id>[] = [];
+  while (unseen.size > 0) {
+    const start = [...unseen].toSorted(compareIds)[0];
+    const group = new Set<Id>([start]);
+    const pending = [start];
+    unseen.delete(start);
+    while (pending.length > 0) {
+      const node = pending.pop()!;
+      for (const { source, target } of edges) {
+        const neighbor = source === node
+          ? target
+          : target === node
+          ? source
+          : undefined;
+        if (neighbor !== undefined && unseen.delete(neighbor)) {
+          group.add(neighbor);
+          pending.push(neighbor);
+        }
+      }
+    }
+    groups.push(group);
+  }
+  return groups.flatMap((group, componentId) =>
+    topologicalOracle(edges.filter(({ source }) => group.has(source)))
+      .map((node, index) => ({ node, componentId, order: index + 1 }))
+  );
+}
+
 function assertTopologicalResult(
   edges: Edge[],
   rows: Record<string, unknown>[],
 ) {
-  const nodes = rows.map((row) => row.node as Id);
-  assertEquals(nodes, topologicalOracle(edges));
-  assertEquals(new Set(nodes).size, nodes.length);
-  assertEquals(
-    rows.map((row) => row.order),
-    rows.map((_, index) => index + 1),
-  );
-  const positions = new Map(nodes.map((node, index) => [node, index]));
+  assertEquals(rows, groupedTopologicalOracle(edges));
+  const positions = new Map(rows.map((row, index) => [row.node, index]));
   for (const { source, target } of edges) {
-    const sourcePosition = positions.get(source);
-    const targetPosition = positions.get(target);
-    assertEquals(sourcePosition !== undefined, true);
-    assertEquals(targetPosition !== undefined, true);
-    assertEquals(
-      sourcePosition! < targetPosition!,
-      true,
-      `${source} -> ${target}`,
-    );
+    assertEquals(positions.get(source)! < positions.get(target)!, true);
   }
 }
 
@@ -134,6 +152,37 @@ Deno.test("topologicalSort selects the smallest eligible ID at every step", asyn
   }
 });
 
+Deno.test("topologicalSort groups independent nodes and restarts orders", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const scenarios: Edge[][] = [
+      [{ source: "A", target: "D" }, { source: "B", target: "C" }],
+      [{ source: "Z", target: "A" }, { source: "B", target: "C" }],
+      [{ source: 10, target: 20 }, { source: 2, target: 30 }],
+      [{ source: "10", target: "20" }, { source: "2", target: "30" }],
+    ];
+    for (const edges of scenarios) {
+      for (const rows of [edges, edges.toReversed()]) {
+        const source = sdb.newTable().loadArray(rows);
+        const actual = await source.topologicalSort("source", "target", {
+          outputTable: true,
+        }).getData();
+        assertTopologicalResult(edges, actual);
+        const components = await source.connectedComponents("source", "target")
+          .getData();
+        const ids = new Map(
+          components.map((row) => [row.node, row.componentId]),
+        );
+        for (const row of actual) {
+          assertEquals(row.componentId, ids.get(row.node));
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("topologicalSort orders numeric IDs numerically and preserves wide identities", async () => {
   const edges: Edge[] = [
     { source: 10, target: 20 },
@@ -147,14 +196,18 @@ Deno.test("topologicalSort orders numeric IDs numerically and preserves wide ide
       .topologicalSort("source", "target");
     const rows = await numeric.getData();
     assertEquals(rows, [
-      { node: -3, order: 1 },
-      { node: 0, order: 2 },
-      { node: 2, order: 3 },
-      { node: 10, order: 4 },
-      { node: 20, order: 5 },
+      { node: -3, componentId: 0, order: 1 },
+      { node: 0, componentId: 0, order: 2 },
+      { node: 2, componentId: 0, order: 3 },
+      { node: 10, componentId: 0, order: 4 },
+      { node: 20, componentId: 0, order: 5 },
     ]);
     assertTopologicalResult(edges, rows);
-    assertEquals(await numeric.getTypes(), { node: "DOUBLE", order: "BIGINT" });
+    assertEquals(await numeric.getTypes(), {
+      node: "DOUBLE",
+      componentId: "BIGINT",
+      order: "BIGINT",
+    });
 
     const wide = sdb.newTable("wideTopological");
     await sdb.customQuery(`CREATE TABLE "wideTopological" AS
@@ -165,11 +218,11 @@ Deno.test("topologicalSort orders numeric IDs numerically and preserves wide ide
       ) edges(source, target)`);
     wide.topologicalSort("source", "target").convert({ node: "string" });
     assertEquals(await wide.getData(), [
-      { node: "0", order: 1 },
-      { node: "1", order: 2 },
-      { node: "9007199254740993", order: 3 },
-      { node: "9007199254740995", order: 4 },
-      { node: "9007199254740997", order: 5 },
+      { node: "0", componentId: 0, order: 1 },
+      { node: "1", componentId: 0, order: 2 },
+      { node: "9007199254740993", componentId: 1, order: 1 },
+      { node: "9007199254740995", componentId: 1, order: 2 },
+      { node: "9007199254740997", componentId: 1, order: 3 },
     ]);
   } finally {
     await sdb.close();
@@ -187,12 +240,12 @@ Deno.test("topologicalSort preserves binary string identity under collations", a
     assertEquals(
       await table.topologicalSort("source", "target").getData(),
       [
-        { node: "001", order: 1 },
-        { node: "1", order: 2 },
-        { node: "A", order: 3 },
-        { node: "Z", order: 4 },
-        { node: "a", order: 5 },
-        { node: "z", order: 6 },
+        { node: "001", componentId: 0, order: 1 },
+        { node: "1", componentId: 0, order: 2 },
+        { node: "A", componentId: 1, order: 1 },
+        { node: "Z", componentId: 1, order: 2 },
+        { node: "a", componentId: 2, order: 1 },
+        { node: "z", componentId: 2, order: 2 },
       ],
     );
   } finally {
@@ -207,11 +260,11 @@ Deno.test("topologicalSort uses fixed output names and keeps typed empty results
       .loadData("test/data/graphs/custom-columns.csv")
       .topologicalSort("ORIGIN", "Destination");
     assertEquals(await custom.getData(), [
-      { node: "A", order: 1 },
-      { node: "B", order: 2 },
-      { node: "C", order: 3 },
+      { node: "A", componentId: 0, order: 1 },
+      { node: "B", componentId: 0, order: 2 },
+      { node: "C", componentId: 0, order: 3 },
     ]);
-    assertEquals(await custom.getColumns(), ["node", "order"]);
+    assertEquals(await custom.getColumns(), ["node", "componentId", "order"]);
 
     const empty = sdb.newTable("emptyTopological");
     await sdb.customQuery(
@@ -219,7 +272,11 @@ Deno.test("topologicalSort uses fixed output names and keeps typed empty results
     );
     empty.topologicalSort("source", "target");
     assertEquals(await empty.getData(), []);
-    assertEquals(await empty.getTypes(), { node: "VARCHAR", order: "BIGINT" });
+    assertEquals(await empty.getTypes(), {
+      node: "VARCHAR",
+      componentId: "BIGINT",
+      order: "BIGINT",
+    });
 
     const numericEmpty = sdb.newTable("emptyNumericTopological");
     await sdb.customQuery(
@@ -229,6 +286,7 @@ Deno.test("topologicalSort uses fixed output names and keeps typed empty results
     assertEquals(await numericEmpty.getData(), []);
     assertEquals(await numericEmpty.getTypes(), {
       node: "BIGINT",
+      componentId: "BIGINT",
       order: "BIGINT",
     });
   } finally {
@@ -245,7 +303,11 @@ Deno.test("topologicalSort supports overwrite and source-preserving outputs", as
       defaultOverwrite.topologicalSort("source", "target"),
       defaultOverwrite,
     );
-    assertEquals(await defaultOverwrite.getColumns(), ["node", "order"]);
+    assertEquals(await defaultOverwrite.getColumns(), [
+      "node",
+      "componentId",
+      "order",
+    ]);
 
     const explicitOverwrite = sdb.newTable("explicitTopological")
       .loadArray([{ source: "A", target: "B" }]);
@@ -263,7 +325,11 @@ Deno.test("topologicalSort supports overwrite and source-preserving outputs", as
       outputTable: "namedTopological",
     }).filter("node = 'B'");
     assertEquals(named.name, "namedTopological");
-    assertEquals(await named.getData(), [{ node: "B", order: 2 }]);
+    assertEquals(await named.getData(), [{
+      node: "B",
+      componentId: 0,
+      order: 2,
+    }]);
     assertEquals(await source.getData(), [{ source: "A", target: "B" }]);
 
     const generated = source.topologicalSort("source", "target", {
@@ -438,8 +504,8 @@ Deno.test("topologicalSort snapshots options and rejects output collisions", asy
     options.outputTable = "changed";
     assertEquals(result.name, "topologicalSnapshot");
     assertEquals(await result.getData(), [
-      { node: "A", order: 1 },
-      { node: "B", order: 2 },
+      { node: "A", componentId: 0, order: 1 },
+      { node: "B", componentId: 0, order: 2 },
     ]);
 
     const source = sdb.newTable("topologicalCollisionSource")
@@ -470,8 +536,8 @@ Deno.test("topologicalSort preserves queued source and output operation order", 
     });
     source.loadArray([{ source: "A", target: "C" }]);
     assertEquals(await result.getData(), [
-      { node: "A", order: 1 },
-      { node: "B", order: 2 },
+      { node: "A", componentId: 0, order: 1 },
+      { node: "B", componentId: 0, order: 2 },
     ]);
     assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
   } finally {
@@ -511,10 +577,10 @@ Deno.test("topologicalSort output records its source as a cache dependency", asy
     await output.cache(compute(source));
     assertEquals(computationRuns, 2);
     assertEquals(await output.getData(), [
-      { node: "A", order: 1 },
-      { node: "B", order: 2 },
-      { node: "C", order: 3 },
-      { node: "D", order: 4 },
+      { node: "A", componentId: 0, order: 1 },
+      { node: "B", componentId: 0, order: 2 },
+      { node: "C", componentId: 1, order: 1 },
+      { node: "D", componentId: 1, order: 2 },
     ]);
   } finally {
     await secondSdb.close();
@@ -534,7 +600,7 @@ Deno.test("topologicalSort uses one native sorting computation without path enum
       .topologicalSort("source", "target")
       .getData();
     assertEquals(result.length, 141);
-    assertEquals(result.at(-1), { node: 140, order: 141 });
+    assertEquals(result.at(-1), { node: 140, componentId: 0, order: 141 });
 
     const queries = observer.queries.filter((entry) =>
       entry.query.includes("graph_topological_result")
@@ -561,13 +627,21 @@ Deno.test("topologicalSort internal relations do not shadow input table names", 
         "GRAPH_NODES",
         "graph_topological_order",
         "GRAPH_TOPOLOGICAL_RESULT",
+        "graph_component_edges",
+        "graph_component_labels",
+        "graph_component_roots",
+        "graph_ordered_nodes",
       ].entries()
     ) {
       assertEquals(
         await sdb.newTable(name).loadArray([
           { source: "A", target: "B" },
         ]).topologicalSort("source", "target").getData(),
-        [{ node: "A", order: 1 }, { node: "B", order: 2 }],
+        [{ node: "A", componentId: 0, order: 1 }, {
+          node: "B",
+          componentId: 0,
+          order: 2,
+        }],
         `relation ${index}`,
       );
     }
@@ -580,16 +654,28 @@ Deno.test("topologicalSort JSDoc examples return their displayed outputs", async
   const sdb = new SimpleDB();
   try {
     assertEquals(
-      await sdb.newTable("dinnerPlan").loadArray([
-        { prerequisite: "Buy ingredients", task: "Cook dinner" },
-        { prerequisite: "Cook dinner", task: "Eat dinner" },
-        { prerequisite: "Set table", task: "Eat dinner" },
-      ]).topologicalSort("prerequisite", "task").getData(),
+      await sdb.newTable("connections").loadArray([
+        { source: "A", target: "B" },
+        { source: "B", target: "C" },
+        { source: "D", target: "C" },
+      ]).topologicalSort("source", "target").getData(),
       [
-        { node: "Buy ingredients", order: 1 },
-        { node: "Cook dinner", order: 2 },
-        { node: "Set table", order: 3 },
-        { node: "Eat dinner", order: 4 },
+        { node: "A", componentId: 0, order: 1 },
+        { node: "B", componentId: 0, order: 2 },
+        { node: "D", componentId: 0, order: 3 },
+        { node: "C", componentId: 0, order: 4 },
+      ],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray([
+        { source: "A", target: "D" },
+        { source: "B", target: "C" },
+      ]).topologicalSort("source", "target").getData(),
+      [
+        { node: "A", componentId: 0, order: 1 },
+        { node: "D", componentId: 0, order: 2 },
+        { node: "B", componentId: 1, order: 1 },
+        { node: "C", componentId: 1, order: 2 },
       ],
     );
   } finally {

@@ -69,4 +69,35 @@ ordering, and the queued result materializes before subsequent table operations
 so even an empty downstream filter or zero-row limit cannot suppress cycle
 errors. Upstream preparation can fuse into the sorting statement; downstream
 operations start a new statement. The benchmark measures the complete sort
-materialization.
+materialization, including weak component labeling. Component IDs match the
+default `connectedComponents()` method. The final result is grouped by component
+and its order restarts at one within each group. Labeling propagates the
+smallest node ID through each group, so long chains require more rounds than
+shallow or densely connected graphs.
+
+## Cost of adding component IDs
+
+A local comparison on 2026-09-15 measured the implementation at `95154d3`
+against the version adding component IDs and per-component order. Both used the
+same current dependencies, one DuckDB thread, a 1 GB memory limit, and the same
+preloaded input table. Each case had two warm-up runs per version and five
+measured runs, alternating which version ran first. Unlike the profiled
+benchmark above, profiling was disabled. Times include queuing and result
+materialization; input creation, row-count checks, and cleanup were outside
+timing.
+
+| Input           | Before (median ms) | With components (median ms) | Change |
+| --------------- | -----------------: | --------------------------: | -----: |
+| chain-128       |               35.5 |                        57.2 | +61.2% |
+| chain-1000      |              856.2 |                      1055.9 | +23.3% |
+| branching-1023  |              879.2 |                       885.6 |  +0.7% |
+| dense-dag-100   |               38.0 |                        39.1 |  +3.0% |
+| 50-chains-of-20 |              869.9 |                       865.4 |  -0.5% |
+
+Chains connect consecutive numeric IDs. The branching graph is a binary tree;
+the dense DAG has every connection from a lower to a higher ID (4,950
+connections). The final case has 50 disconnected chains of 20 nodes each.
+
+These timings show noticeable overhead on long chains, with little difference on
+the other tested shapes. Differences of a few percent may be measurement noise.
+This is a local sample, not a performance guarantee for other datasets.

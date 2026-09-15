@@ -97,7 +97,7 @@ define the test's schema.
 | `paths()`               | `expected/paths.csv`                | `pathId,step,edgeId,source,target,weight,distance` |
 | `connectedComponents()` | `expected/connected_components.csv` | `node,componentId`                                 |
 | `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,edgeId,source,target,weight,distance` |
-| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,order`                                       |
+| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                           |
 
 The files under `expected/numeric/` retain numeric identities for neighbors,
 distances, shortest paths, cycle normalization, and topological order. The
@@ -113,8 +113,9 @@ The baseline expectations include these useful checks:
   both-direction common neighbors A and D.
 - Weak components are `{A,B,C,D,E}` and `{F,G}`. Every baseline node is its own
   strong component because the graph is acyclic.
-- The exact topological order is A, B, C, D, E, F, G. It follows the smallest
-  currently eligible ID rule, rather than sorting the final node list.
+- The exact topological order is A, B, C, D, E, F, G. Component 0 has A–E with
+  orders 1–5, and component 1 has F–G with orders 1–2. Within each component,
+  the method selects the smallest currently eligible ID.
 
 For weighted shortest paths from A to E, `W2/W3/W4` and `W5/W6` both total 3;
 the latter starts with weight 0 and therefore has cumulative distances 0, 3. The

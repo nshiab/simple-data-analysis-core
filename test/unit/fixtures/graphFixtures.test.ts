@@ -218,7 +218,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "weight",
       "distance",
     ],
-    "topological_sort.csv": ["case", "node", "order"],
+    "topological_sort.csv": ["case", "node", "componentId", "order"],
   };
   for (const [file, schema] of Object.entries(schemas)) {
     const fixture = await readCsv(`${root}/expected/${file}`);
@@ -231,7 +231,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "distances.csv": ["case", "start", "node", "distance"],
       "shortest_path.csv": schemas["shortest_path.csv"],
       "find_cycles.csv": schemas["find_cycles.csv"],
-      "topological_sort.csv": ["case", "node", "order"],
+      "topological_sort.csv": ["case", "node", "componentId", "order"],
     })
   ) {
     assertEquals(
@@ -510,8 +510,14 @@ Deno.test("component labels and topological orders follow deterministic rules", 
       connections.flatMap((row) => [row.source, row.target]),
     );
     assertEquals(rows.length, remaining.size, scenario);
-    for (const [i, row] of rows.entries()) {
+    const ids = new Map(rows.map((row) => [row.node, row.componentId]));
+    for (const edge of connections) {
+      assertEquals(ids.get(edge.source), ids.get(edge.target), scenario);
+    }
+    const counts = new Map<string, number>();
+    for (const row of rows) {
       const eligible = [...remaining].filter((node) =>
+        ids.get(node) === row.componentId &&
         !connections.some((edge) =>
           edge.target === node && remaining.has(edge.source)
         )
@@ -521,7 +527,9 @@ Deno.test("component labels and topological orders follow deterministic rules", 
         eligible[0],
         `${scenario}: smallest eligible node`,
       );
-      assertEquals(Number(row.order), i + 1, scenario);
+      const order = (counts.get(row.componentId) ?? 0) + 1;
+      assertEquals(Number(row.order), order, scenario);
+      counts.set(row.componentId, order);
       remaining.delete(row.node);
     }
     assertEquals(remaining.size, 0, scenario);

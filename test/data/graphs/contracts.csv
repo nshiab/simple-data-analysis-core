@@ -36,7 +36,7 @@ findCycles,undirected-triangle-outgoing,undirected-triangle,empty route schema
 findCycles,undirected-triangle-incoming,undirected-triangle,empty route schema
 findCycles,missing-direction,triangle,error
 findCycles,invalid-direction,triangle,error
-topologicalSort,empty,empty,empty node-order schema
+topologicalSort,empty,empty,empty node-componentId-order schema
 topologicalSort,cycle,cycle,error
 topologicalSort,self-loop,self-loop,error
 neighbors,single-sink-outgoing,single,empty start-node schema
