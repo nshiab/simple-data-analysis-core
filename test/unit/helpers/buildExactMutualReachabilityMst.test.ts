@@ -23,7 +23,7 @@ const fixture = JSON.parse(
   }[];
 };
 
-assertEquals(fixture.packages.hdbscan, "0.8.40");
+assertEquals(fixture.packages.hdbscan, "0.8.44");
 assertEquals(fixture.referenceSettings.algorithm, "generic");
 assertEquals(fixture.referenceSettings.approx_min_span_tree, false);
 

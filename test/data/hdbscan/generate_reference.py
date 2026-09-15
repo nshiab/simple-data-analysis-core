@@ -8,12 +8,34 @@ distance matrix and `approx_min_span_tree=False` disables its approximation.
 import importlib.metadata
 import json
 import platform
+from pathlib import Path
 
 import hdbscan
 import numpy as np
-import scipy
-import sklearn
 from sklearn.metrics import pairwise_distances
+
+
+EXPECTED_PACKAGES = dict(
+    line.strip().split("==")
+    for line in Path(__file__).with_name("requirements.txt").read_text().splitlines()
+    if line.strip()
+)
+PACKAGES = {name: importlib.metadata.version(name) for name in EXPECTED_PACKAGES}
+if PACKAGES != EXPECTED_PACKAGES:
+    raise RuntimeError(f"Install the pinned requirements before generating fixtures: {PACKAGES}")
+SETTINGS = {
+    "algorithm": "generic",
+    "alpha": 1.0,
+    "approx_min_span_tree": False,
+    "gen_min_span_tree": True,
+    "cluster_selection_method": "eom",
+    "allow_single_cluster": True,
+    "cluster_selection_epsilon": 0.0,
+    "cluster_selection_persistence": 0.0,
+    "cluster_selection_epsilon_max": float("inf"),
+    "max_cluster_size": 0,
+    "match_reference_implementation": False,
+}
 
 
 CASES = [
@@ -70,15 +92,11 @@ def generate(case):
         min_cluster_size=case["minClusterSize"],
         min_samples=case["minSamples"],
         metric=case["metric"],
-        algorithm="generic",
-        approx_min_span_tree=False,
-        gen_min_span_tree=True,
-        cluster_selection_method="eom",
-        allow_single_cluster=True,
+        **SETTINGS,
     ).fit(vectors)
     distances = pairwise_distances(vectors, metric=case["metric"])
     # The zero self-distance is rank 0, so index minSamples is the requested
-    # minSamples-th other point. This matches hdbscan 0.8.40 reachability code.
+    # minSamples-th other point. This matches hdbscan 0.8.44 reachability code.
     core_distances = np.partition(
         distances, case["minSamples"], axis=1
     )[:, case["minSamples"]]
@@ -95,19 +113,9 @@ def generate(case):
 result = {
     "generator": "test/data/hdbscan/generate_reference.py",
     "python": platform.python_version(),
-    "packages": {
-        "hdbscan": importlib.metadata.version("hdbscan"),
-        "numpy": np.__version__,
-        "scipy": scipy.__version__,
-        "scikit-learn": sklearn.__version__,
-    },
-    "referenceSettings": {
-        "algorithm": "generic",
-        "approx_min_span_tree": False,
-        "gen_min_span_tree": True,
-        "cluster_selection_method": "eom",
-        "allow_single_cluster": True,
-    },
+    "packages": PACKAGES,
+    # Infinity is a setting, not a numeric result; keep the artifact strict JSON.
+    "referenceSettings": {**SETTINGS, "cluster_selection_epsilon_max": "Infinity"},
     "cases": [generate(case) for case in CASES],
 }
-print(json.dumps(result, indent=2, sort_keys=True))
+print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
