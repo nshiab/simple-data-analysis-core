@@ -164,17 +164,14 @@ function distancesSelect(
     "graph_start_values",
     "graph_starts",
     "graph_edges",
-    "graph_nodes",
     "graph_distances",
   ]);
   const startValuesRelation = relations.graph_start_values;
   const startsRelation = relations.graph_starts;
   const edgesRelation = relations.graph_edges;
-  const nodesRelation = relations.graph_nodes;
   const distancesRelation = relations.graph_distances;
   const start = `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`;
   const startKey = `${quoteIdentifier("starts")}.${quoteIdentifier("__key")}`;
-  const nodeKey = `${quoteIdentifier("nodes")}.${quoteIdentifier("__key")}`;
   const reachedStart = `${quoteIdentifier("reached")}.${
     quoteIdentifier("start")
   }`;
@@ -215,14 +212,6 @@ function distancesSelect(
       `${edgeWeight} AS ${quoteIdentifier("__weight")}`,
     ])
   }
-    ), ${nodesRelation} AS (
-      SELECT ${quoteIdentifier("__from")} AS ${quoteIdentifier("node")},
-        ${quoteIdentifier("__from_key")} AS ${quoteIdentifier("__key")}
-      FROM ${edgesRelation}
-      UNION
-      SELECT ${quoteIdentifier("__to")} AS ${quoteIdentifier("node")},
-        ${quoteIdentifier("__to_key")} AS ${quoteIdentifier("__key")}
-      FROM ${edgesRelation}
     ), ${distancesRelation}(
       ${quoteIdentifier("start")}, ${quoteIdentifier("node")},
       ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")},
@@ -230,11 +219,12 @@ function distancesSelect(
     ) USING KEY(
       ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")}
     ) AS (
-      SELECT ${start}, ${start}, ${startKey}, ${startKey},
-        CAST(0 AS ${distanceType}) AS ${quoteIdentifier("distance")}
+      SELECT ${start}, ${edgeTo}, ${startKey}, ${edgeToKey},
+        MIN(${edgeCost}) AS ${quoteIdentifier("distance")}
       FROM ${startsRelation} AS ${quoteIdentifier("starts")}
-      INNER JOIN ${nodesRelation} AS ${quoteIdentifier("nodes")}
-        ON ${startKey} = ${nodeKey}
+      INNER JOIN ${edgesRelation} AS ${quoteIdentifier("edges")}
+        ON ${startKey} = ${edgeFromKey}
+      GROUP BY ${start}, ${edgeTo}, ${startKey}, ${edgeToKey}
       UNION
       SELECT ${reachedStart}, ${edgeTo}, ${reachedStartKey}, ${edgeToKey},
         MIN(${candidateDistance}) AS ${quoteIdentifier("distance")}
@@ -256,6 +246,6 @@ function distancesSelect(
       ${quoteIdentifier("distance")}
     FROM ${distancesRelation}
     ORDER BY ${quoteIdentifier("__start_key")}, ${
-    quoteIdentifier("__node_key")
-  }`;
+    quoteIdentifier("distance")
+  }, ${quoteIdentifier("__node_key")}`;
 }

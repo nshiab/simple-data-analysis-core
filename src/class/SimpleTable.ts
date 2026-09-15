@@ -3074,20 +3074,27 @@ export default class SimpleTable extends Simple {
 
   /**
    * Finds the shortest distance from each starting node to every node it can
-   * reach. By default, distance is the number of connections along the
-   * shortest route. Use the `weight` option to find the smallest sum of
-   * values from a numeric column, such as travel time.
+   * reach by following one or more connections. By default, distance is the
+   * number of connections along the shortest route. Use the `weight` option
+   * to find the smallest sum of values from a numeric column, such as travel
+   * time.
    *
    * The `direction` option lets you follow connections from source to target,
    * from target to source, or in either direction. The result has `start`,
-   * `node`, and `distance` columns, sorted by `start`, then `node`.
+   * `node`, and `distance` columns, sorted by `start`, then by increasing
+   * `distance`, then by `node` to break ties. The closest nodes appear first
+   * for each start.
    *
-   * Each known starting node is included at distance zero. Unknown starting
-   * IDs and nodes that cannot be reached produce no rows. Empty start arrays
-   * and duplicate starting IDs throw an error. Weights must be non-null,
-   * finite, and non-negative.
+   * A starting node appears in its own results only when a self-connection
+   * or a route leads back to it. Its distance is the shortest actual return
+   * route, using at least one connection. With `direction: "both"`, this
+   * can mean following the same connection out and back.
    *
-   * The following examples each start with this data:
+   * Unknown starting IDs and starts with no connections to follow produce
+   * no rows. Empty start arrays and duplicate starting IDs throw an error.
+   * Weights must be non-null, finite, and non-negative.
+   *
+   * The next five examples each start with this data:
    *
    * | origin | destination | minutes |
    * | --- | --- | ---: |
@@ -3107,7 +3114,6 @@ export default class SimpleTable extends Simple {
    *
    * | start | node | distance |
    * | --- | --- | ---: |
-   * | A | A | 0 |
    * | A | B | 1 |
    * | A | C | 2 |
    *
@@ -3122,7 +3128,6 @@ export default class SimpleTable extends Simple {
    *
    * | start | node | distance |
    * | --- | --- | ---: |
-   * | A | A | 0 |
    * | A | B | 4 |
    * | A | C | 5 |
    *
@@ -3138,9 +3143,8 @@ export default class SimpleTable extends Simple {
    *
    * | start | node | distance |
    * | --- | --- | ---: |
-   * | C | A | 2 |
    * | C | B | 1 |
-   * | C | C | 0 |
+   * | C | A | 2 |
    * | C | D | 2 |
    *
    * With `direction: "both"`, connections can be followed in either
@@ -3155,10 +3159,13 @@ export default class SimpleTable extends Simple {
    *
    * | start | node | distance |
    * | --- | --- | ---: |
-   * | A | A | 0 |
    * | A | B | 1 |
+   * | A | A | 2 |
    * | A | C | 2 |
    * | A | D | 2 |
+   *
+   * A appears at distance 2 because A → B → A follows a connection out
+   * and back.
    *
    * An array of starting nodes gives separate distances for each start:
    *
@@ -3173,12 +3180,34 @@ export default class SimpleTable extends Simple {
    *
    * | start | node | distance |
    * | --- | --- | ---: |
-   * | A | A | 0 |
    * | A | B | 4 |
    * | A | C | 5 |
    * | D | B | 2 |
    * | D | C | 3 |
-   * | D | D | 0 |
+   *
+   * A direct self-connection and a longer return route can both lead back
+   * to the start. This example uses different data:
+   *
+   * | origin | destination | minutes |
+   * | --- | --- | ---: |
+   * | A | A | 10 |
+   * | A | B | 2 |
+   * | B | A | 3 |
+   *
+   * The shortest return to A takes 5 minutes through B, compared with
+   * 10 minutes for the direct self-connection:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .distances("origin", "destination", "A", { weight: "minutes" })
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | A | B | 2 |
+   * | A | A | 5 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.

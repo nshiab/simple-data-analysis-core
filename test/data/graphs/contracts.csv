@@ -49,3 +49,4 @@ shortestPath,boolean-edge-id,unsupported-types,error
 neighbors,date-source,unsupported-types,error
 distances,string-weight,unsupported-types,error
 neighbors,string-start-on-numeric-column,numeric,error
+distances,single-B-outgoing,single,empty start-node-distance schema

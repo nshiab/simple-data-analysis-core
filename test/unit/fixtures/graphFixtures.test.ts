@@ -383,7 +383,7 @@ Deno.test("membership and component expectations are explicitly sorted", async (
     const [file, columns] of [
       ["neighbors.csv", ["start", "node"]],
       ["reachable.csv", ["start", "node"]],
-      ["distances.csv", ["start", "node"]],
+      ["distances.csv", ["start", "distance", "node"]],
       ["degree.csv", ["node"]],
       ["common_neighbors.csv", ["node"]],
       ["connected_components.csv", ["node"]],
@@ -399,7 +399,11 @@ Deno.test("membership and component expectations are explicitly sorted", async (
             if (difference) return difference;
           }
           for (const column of columns) {
-            const comparison = compareIds(left[column], right[column]);
+            const comparison = compareIds(
+              left[column],
+              right[column],
+              column === "distance",
+            );
             if (comparison) return comparison;
           }
           return 0;
@@ -415,6 +419,8 @@ Deno.test("membership and component expectations are explicitly sorted", async (
     const rows = (await readCsv(`${root}/expected/numeric/${file}`)).rows;
     const columns = file === "topological_sort.csv"
       ? ["order"]
+      : file === "distances.csv"
+      ? ["start", "distance", "node"]
       : ["start", "node"];
     for (const [caseName, caseRows] of Map.groupBy(rows, (row) => row.case)) {
       assertEquals(
@@ -451,7 +457,6 @@ Deno.test("graph expectations pin the high-value hand-derived cases", async () =
   assertEquals(
     distances.filter((row) => row.case === "baseline-A-outgoing"),
     [
-      { case: "baseline-A-outgoing", start: "A", node: "A", distance: "0" },
       { case: "baseline-A-outgoing", start: "A", node: "B", distance: "1" },
       { case: "baseline-A-outgoing", start: "A", node: "C", distance: "1" },
       { case: "baseline-A-outgoing", start: "A", node: "D", distance: "2" },

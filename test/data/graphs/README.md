@@ -108,7 +108,9 @@ The baseline expectations include these useful checks:
 
 - `reachable("source", "target", "A")` yields B, C, D, E. A is included only
   when connections lead back to it, as in the cycle scenario.
-- Distances from A are A=0, B=1, C=1, D=2, E=3.
+- Distances from A are B=1, C=1, D=2, E=3. A start appears in its own results
+  only when connections lead back to it, with the shortest actual return
+  distance. Results are sorted by start, distance, then node.
 - B and C have outgoing common neighbor D, incoming common neighbor A, and
   both-direction common neighbors A and D.
 - Weak components are `{A,B,C,D,E}` and `{F,G}`. Every baseline node is its own
