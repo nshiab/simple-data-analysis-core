@@ -19,7 +19,7 @@ type Status =
 type Result = Case & {
   publicMethodMilliseconds?: number;
   processHighWaterRssBytes?: number;
-  peakRssBytes: number;
+  peakRssBytes: number | null;
   elapsedMilliseconds: number;
   status: Status;
   phases: Record<string, unknown>[];
@@ -162,7 +162,7 @@ async function runCase(input: Case): Promise<Result> {
     }
   }
   const elapsedMilliseconds = bounded.elapsedSeconds * 1_000;
-  let peakRssBytes = bounded.peakRssBytes ?? 0;
+  let peakRssBytes = bounded.peakRssBytes;
   if (bounded.status !== "completed") {
     return {
       ...input,
@@ -180,7 +180,7 @@ async function runCase(input: Case): Promise<Result> {
     typeof record.processHighWaterRssBytes === "number"
       ? record.processHighWaterRssBytes
       : 0;
-  peakRssBytes = Math.max(peakRssBytes, processHighWaterRssBytes);
+  peakRssBytes = Math.max(peakRssBytes ?? 0, processHighWaterRssBytes);
   return {
     ...input,
     ...record,

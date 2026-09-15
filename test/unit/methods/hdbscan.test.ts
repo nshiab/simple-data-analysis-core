@@ -864,3 +864,39 @@ Deno.test("hdbscan rolls back all outputs and cleans scratch after commit failur
     await sdb.close();
   }
 });
+
+Deno.test("hdbscan validates output identifiers before feature preparation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(
+      "CREATE TABLE source AS SELECT NULL::DOUBLE[1] AS features",
+    );
+    const table = sdb.newTable("source");
+    const before = await table.getData();
+    for (
+      const [name, options] of [
+        ["", {}],
+        ["bad\0name", {}],
+        ["cluster", { probabilityColumn: "" }],
+        ["cluster", { outlierScoreColumn: "bad\0name" }],
+      ] as const
+    ) {
+      await assertRejects(
+        () => table.hdbscan("features", name, options).run(),
+        Error,
+        "non-empty strings without null characters",
+      );
+      assertEquals(await table.getData(), before);
+      assertEquals(await scratchRelations(sdb), []);
+    }
+    await assertRejects(
+      () => table.hdbscan("features", undefined as never).run(),
+      Error,
+      "newColumn must be a string",
+    );
+    assertEquals(await table.getData(), before);
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});

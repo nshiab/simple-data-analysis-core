@@ -27,6 +27,15 @@ export default async function clusterHdbscan(
   probabilities: Float64Array;
   outlierScores: Float64Array;
 }> {
+  // Leaves and internal nodes share the signed Int32 hierarchy namespace.
+  if (
+    !Number.isSafeInteger(options.count) || options.count < 2 ||
+    options.count > 0x40000000
+  ) {
+    throw new Error(
+      "HDBSCAN hierarchy requires between 2 and 1073741824 rows so all 2*n-1 node identifiers fit signed INTEGER state.",
+    );
+  }
   const edges = await readMst(connection, mst, options.count);
   const linkage = buildSingleLinkage(edges, options.count);
   const tree = condenseTree(linkage, options.count, options.minClusterSize);

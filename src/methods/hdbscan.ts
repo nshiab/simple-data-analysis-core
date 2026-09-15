@@ -44,6 +44,9 @@ async function execute(
     outlierScoreColumn,
   } = options;
   const minSamples = options.minSamples ?? minClusterSize;
+  if (typeof newColumn !== "string") {
+    throw new Error("hdbscan() newColumn must be a string.");
+  }
   if (!Number.isSafeInteger(minClusterSize) || minClusterSize < 2) {
     throw new Error(
       "hdbscan() minClusterSize must be a safe integer of at least 2.",
@@ -116,9 +119,9 @@ async function execute(
         `hdbscan() requires at least 2 rows, but the input has ${prepared.rowCount}.`,
       );
     }
-    if (prepared.rowCount > 0x7fffffff) {
+    if (prepared.rowCount > 0x40000000) {
       throw new Error(
-        "hdbscan() supports at most 2147483647 rows because internal vertex identifiers use INTEGER.",
+        "hdbscan() supports at most 1073741824 rows because its 2*n-1 hierarchy nodes use signed INTEGER identifiers.",
       );
     }
     if (minSamples >= prepared.rowCount) {
@@ -265,9 +268,9 @@ async function execute(
     });
   } finally {
     for (
-      const relation of Object.entries(names).reverse().flatMap(([key, value]) =>
-        key === "hnsw" ? [] : [value]
-      )
+      const relation of Object.entries(names).reverse().flatMap((
+        [key, value],
+      ) => key === "hnsw" ? [] : [value])
     ) {
       await connection.run(`DROP TABLE IF EXISTS ${quoteIdentifier(relation)}`);
     }
@@ -281,6 +284,11 @@ function validateOutputNames(
 ): void {
   const seen = new Map<string, string>();
   for (const name of outputNames) {
+    if (name.length === 0 || name.includes("\0")) {
+      throw new Error(
+        "hdbscan() output column names must be non-empty strings without null characters.",
+      );
+    }
     const folded = foldIdentifier(name);
     const source = sourceColumns.find((column) =>
       foldIdentifier(column) === folded

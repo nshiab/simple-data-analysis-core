@@ -1170,10 +1170,17 @@ export default class SimpleTable extends Simple {
    * array of numeric scalar columns. Scalar columns may have mixed numeric
    * types. Internal DOUBLE conversion can lose precision for large integers
    * and exact decimals; all source columns and their types remain unchanged.
+   * Nulls, non-finite values, empty vectors, inconsistent dimensions, and
+   * zero-norm cosine vectors reject the whole operation.
    *
    * Exact clustering is the default. Set `approximate: true` to use DuckDB's
    * HNSW candidate search with deterministic connectivity repair; approximation
    * can change clusters, noise, membership strengths, and outlier scores.
+   * Repeated approximate runs can change partitions and noise assignments for
+   * unchanged ordered inputs. Exact mode evaluates all row pairs and can be
+   * expensive for large inputs; row count never enables approximation.
+   * Equal mutual-reachability weights use deterministic endpoint ordering;
+   * tied boundary assignments and scores can differ from Python hdbscan.
    * `minSamples` counts other points and defaults to `minClusterSize`, matching
    * Python hdbscan and differing from scikit-learn's built-in HDBSCAN count.
    * Excess-of-mass selection is used internally. Allowing a single cluster
@@ -1190,14 +1197,21 @@ export default class SimpleTable extends Simple {
    * indicate more outlier-like observations and are not simply one minus
    * membership strength. Numeric cluster IDs have no ordinal meaning and may
    * change when data or settings change.
+   * Numeric labels are `-1` for noise and `0`, `1`, and so on for clusters;
+   * string labels are `"noise"`, `"cluster-0"`, `"cluster-1"`, and so on.
+   * When a point's reference cluster maximum density is infinite, outlier
+   * scores use finite limiting values: points that depart at finite density
+   * receive `1`, and points that remain to infinite density receive `0`.
    *
    * @param columns - A numeric vector column, or numeric scalar columns in
    * feature-dimension order.
    * @param newColumn - The cluster-label column to create.
    * @param options - HDBSCAN clustering and output settings.
-   * @param options.minClusterSize - Minimum cluster size. Defaults to `5`.
+   * @param options.minClusterSize - Safe integer from `2` through the row count.
+   * Defaults to `5`.
    * @param options.minSamples - Other points used for core distance. Defaults
-   * to `minClusterSize`.
+   * to `minClusterSize`. Must be a positive safe integer smaller than the row
+   * count.
    * @param options.metric - Distance metric. Defaults to `"euclidean"`.
    * @param options.allowSingleCluster - Permit selection of the root cluster.
    * Defaults to `true`.

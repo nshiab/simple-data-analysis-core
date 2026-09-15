@@ -198,3 +198,79 @@ Deno.test("representative repair uses the adjacent-anchor chain beyond 256 compo
     db.closeSync();
   }
 });
+
+Deno.test("HDBSCAN validates the full hierarchy identifier range before allocation", async () => {
+  const db = await DuckDBInstance.create(":memory:");
+  const connection = await db.connect();
+  try {
+    await assertRejects(
+      () =>
+        clusterHdbscan(connection, '"unused"', {
+          count: 0x40000001,
+          minClusterSize: 2,
+          allowSingleCluster: true,
+        }),
+      Error,
+      "all 2*n-1 node identifiers fit signed INTEGER state",
+    );
+  } finally {
+    connection.closeSync();
+    db.closeSync();
+  }
+});
+
+const tieReferences = JSON.parse(
+  await Deno.readTextFile(
+    new URL("../../data/hdbscan/quality-tie-reference.json", import.meta.url),
+  ),
+) as {
+  packages: { hdbscan: string };
+  cases: {
+    name: string;
+    count: number;
+    minClusterSize: number;
+    allowSingleCluster: boolean;
+    mst: number[][];
+    expected: {
+      labels: number[];
+      probabilities: number[];
+      outlierScores: number[];
+    };
+  }[];
+};
+for (const reference of tieReferences.cases) {
+  Deno.test(`HDBSCAN matches Python on the same ordered tied MST: ${reference.name}`, async () => {
+    assertEquals(tieReferences.packages.hdbscan, "0.8.44");
+    const db = await DuckDBInstance.create(":memory:");
+    const connection = await db.connect();
+    try {
+      // SQL insertion order must not change SDA's documented endpoint tie rule.
+      for (const edges of [reference.mst, reference.mst.toReversed()]) {
+        await connection.run(`CREATE OR REPLACE TEMP TABLE mst AS
+          SELECT source::INTEGER AS source,target::INTEGER AS target,distance::DOUBLE AS distance
+          FROM (VALUES ${
+          edges.map((edge) => `(${edge.join(",")})`).join(",")
+        }) t(source,target,distance)`);
+        const actual = await clusterHdbscan(connection, '"mst"', reference);
+        assertEquals(Array.from(actual.labels), reference.expected.labels);
+        actual.probabilities.forEach((value, index) =>
+          assertAlmostEquals(
+            value,
+            reference.expected.probabilities[index],
+            1e-12,
+          )
+        );
+        actual.outlierScores.forEach((value, index) =>
+          assertAlmostEquals(
+            value,
+            reference.expected.outlierScores[index],
+            1e-12,
+          )
+        );
+      }
+    } finally {
+      connection.closeSync();
+      db.closeSync();
+    }
+  });
+}
