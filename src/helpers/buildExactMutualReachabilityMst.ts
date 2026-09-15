@@ -1,6 +1,7 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
 import readScalarNumber from "./readScalarNumber.ts";
 import vectorDistanceExpression from "./vectorDistanceExpression.ts";
+import validateVectorRowIds from "./validateVectorRowIds.ts";
 
 /** Private, already-quoted relation names owned and cleaned up by the caller. */
 export type MutualReachabilityTables = {
@@ -19,6 +20,8 @@ export type MutualReachabilityTables = {
  * point. Prim's algorithm retains one frontier edge per unvisited point. This
  * costs O(n²d) distance work, O(n) stored algorithm state, and O(n) sequential
  * DuckDB statements; it is intended as the exact correctness baseline.
+ * All supplied scratch names are already quoted, distinct, and caller-owned;
+ * the caller must drop them in finally on both success and failure.
  */
 export default async function buildExactMutualReachabilityMst(
   connection: DuckDBConnection,
@@ -39,6 +42,7 @@ export default async function buildExactMutualReachabilityMst(
       `minSamples must be a safe integer between 1 and ${count - 1}.`,
     );
   }
+  await validateVectorRowIds(connection, names.rows, count);
   if (
     await readScalarNumber(
       connection,
@@ -62,9 +66,10 @@ export default async function buildExactMutualReachabilityMst(
     await connection.run(`INSERT INTO ${names.coreDistances}
       SELECT source,max(item.distance)::DOUBLE AS distance FROM (
         SELECT a.vertex AS source,
+          CASE WHEN bool_and(isfinite(${distance})) THEN
           min_by(struct_pack(target := b.vertex,distance := ${distance}),
             struct_pack(distance := ${distance},target := b.vertex),
-            ${minSamples}) AS closest
+            ${minSamples}) ELSE error('Distance computation returned a non-finite value.') END AS closest
         FROM ${names.rows} a CROSS JOIN ${names.rows} b
         WHERE a.vertex >= ${offset} AND a.vertex < ${offset + 32}
           AND a.vertex != b.vertex GROUP BY a.vertex
@@ -112,6 +117,11 @@ export default async function buildExactMutualReachabilityMst(
     const vertex = Number(chosen[0]);
     const parent = Number(chosen[1]);
     const edgeDistance = Number(chosen[2]);
+    if (!Number.isFinite(edgeDistance)) {
+      throw new Error(
+        "Exact mutual-reachability MST returned a non-finite distance.",
+      );
+    }
     await connection.run(`INSERT INTO ${names.mst} VALUES
       (${Math.min(vertex, parent)},${
       Math.max(vertex, parent)

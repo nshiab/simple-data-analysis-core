@@ -29,9 +29,10 @@ updates. Its purpose is correctness and small exact inputs; the measurements
 below determine whether it is practical at larger sizes.
 
 `inspectGraphConnectivity()` streams only edge ids into a union-find. An
-approximate HDBSCAN implementation can use it to reject a disconnected HNSW
-candidate graph. A connected candidate graph is necessary but does not prove
-that it contains the exact mutual-reachability MST.
+approximate HDBSCAN implementation can use it to detect a disconnected HNSW
+candidate graph before repairing its connectivity. A connected candidate graph
+is necessary but does not prove that it contains the exact mutual-reachability
+MST.
 
 ## Scalable strategy under evaluation
 
@@ -42,33 +43,56 @@ The proposed opt-in approximate strategy is:
 3. Derive approximate core distances from the requested other-point rank.
 4. Symmetrize candidate edges and calculate mutual-reachability weights in
    DuckDB.
-5. Check connectivity before spanning-tree construction. If disconnected, retry
-   with a larger, documented candidate-count bound whose O(nk) cost is explicit.
-   This bound is an algorithm choice, not the benchmark's 8 GiB stopping rule.
-   Fixed-k graphs can naturally remain disconnected when dense, well-separated
-   groups contain more than k rows, so disconnection by itself is not a reason
-   to reject the dataset.
-6. For components that remain separate, calculate component centroids in DuckDB,
-   build a small centroid MST, and bridge each selected component pair using
-   actual rows. Select a bounded deterministic set of rows closest to the other
-   component's centroid on each side, evaluate all cross-sample distances and
-   mutual-reachability weights in DuckDB, and add the cheapest actual edge. Keep
-   vectors in DuckDB and cap both representatives per component and total bridge
-   work by deterministic candidate counts. If the component count or required
-   state exceeds those bounds, fail with an actionable error rather than
-   creating infinity-weight links.
-7. Build the connected candidate MST and continue hierarchy construction.
+5. Check connectivity before spanning-tree construction. Start with
+   `k = min(n-1, max(minSamples, 15))`. A single optional widening to
+   `min(n-1, 2*k)` is a tuning candidate for #192, not an established benefit;
+   release the previous search index and candidate scratch before rebuilding.
+   Always derive core distances from rank `minSamples-1`, even when k is larger.
+6. Repair remaining components with actual-point representatives. A concrete
+   bounded prototype policy for #192 is at most r=8 representatives per
+   component, chosen at evenly spaced ranks in vertex-id order (including its
+   smallest vertex id, the anchor). Keep representative vectors in DuckDB. For
+   c<=256 components, run Prim on the complete graph of actual anchor points to
+   choose c-1 component pairs. For larger c, order anchors by their first
+   feature and then vertex id and pair adjacent components in a chain. This
+   fallback needs no all-component distance matrix and always connects the
+   components. It is deliberately approximate and can create poor links when the
+   first coordinate does not reflect separation.
+7. For each selected component pair, compute the at most r² actual point
+   distances and mutual-reachability weights in DuckDB. Add the lightest edge,
+   breaking ties by `(min(source,target),max(source,target))`. Validate every
+   computed distance as finite; never insert infinity links. Anchors and
+   representatives are actual input rows, so cosine never encounters a new
+   zero-vector centroid when each input vector is valid. Recheck connectivity,
+   then build the connected candidate MST and continue hierarchy construction.
 
-This costs O(nkd) candidate reranking, O(nk) edge state, and approximately O(nd)
-HNSW index storage, with constants controlled by DuckDB VSS. With c components
-and at most r representatives per side, bridging stores O(cd + cr) summaries and
-evaluates O(c r² d) distances after the centroid MST chooses c-1 component
-pairs. It is approximate even when connected: HNSW can miss the true
+The constants 15, 8, and 256 above make a concrete **provisional prototype**,
+not a validated final search policy or a public limit. #192 must measure and
+adjust them against clustering quality and end-to-end resource use. An input
+whose components exceed 256 still uses the linear chain fallback.
+
+This costs O(nkd) candidate reranking and O(nk) edge state. HNSW additionally
+stores FLOAT vectors and index links: O(nd+nM) state with DuckDB-controlled
+constants. Representatives retain at most min(n, cr) row ids, with vectors in
+DuckDB. The component-pair plan uses O(c) algorithm state and O(c²d) distance
+work only when c<=256; beyond that it uses an O(c log c) ordering. Evaluating
+selected bridges costs O(c r² d), with O(c) final bridge edges. Selecting
+representatives requires scanning/grouping the n component memberships and
+sorting by vertex id; it does not compute distances from every point to every
+component. Small-component anchor Prim can also evaluate distances in DuckDB
+without transferring vectors to JavaScript.
+
+This remains approximate even when connected: HNSW can miss the true
 `minSamples`-th neighbor, changing core distances; the candidate graph can omit
-a cheaper MST edge; and representative bridges can be heavier than the true
-cross-component edge. It must remain behind `approximate: true`; row count must
-never activate it implicitly. Issue #192 must measure how these errors affect
-partitions, noise, membership strength, and GLOSH before the mode can ship.
+a cheaper MST edge; anchor-based component pairing or its chain fallback can
+miss the best component pairs; and representative bridges can be heavier than
+the true cross-component edge. It must remain behind `approximate: true`; row
+count must never activate it implicitly. No bridge implementation or final
+approximate-clustering quality claim is delivered by #191. Issue #192 must
+compare partitions independent of label numbering, noise, membership strength,
+and GLOSH before approximate mode ships, including adversarial cases where
+representative bridges miss the exact cross-component minimum and where cosine
+component centroids cancel to zero.
 
 Exact alternatives considered were a materialized complete graph, a SQL-scan
 Prim implementation, and Boruvka-style component scans. A complete graph has
@@ -93,8 +117,11 @@ UMAP snapshot behavior. Eight DuckDB threads are used.
 
 Each 100,000-row case is launched through `run_bounded.py`. The wrapper polls
 the Deno process RSS, which includes in-process DuckDB native allocations, and
-terminates a case at 600 elapsed seconds or 8 GiB RSS. Only one large case runs
-at a time.
+terminates a case at 600 elapsed seconds or an observed 8 GiB RSS. Sampling
+occurs every 0.25 seconds and can miss short-lived memory peaks. The reviewed
+wrapper stops with `measurement-failed` if RSS cannot be read for a live worker;
+it never silently disables the memory stop rule. Only one large case runs at a
+time.
 
 ```sh
 python3 benchmarks/hdbscan-feasibility/run_bounded.py \
@@ -115,7 +142,14 @@ duplicates, ties, different densities, and noise.
 
 Runs used a 16-core Apple M4 Max MacBook Pro with 64 GiB memory, macOS 26.6.2,
 Deno 2.9.6, DuckDB 1.5.5, and eight DuckDB threads. Exact values and component
-sizes are in `results-2026-09-15.json`.
+sizes are in `results-2026-09-15.json`. These historical runs used the source
+snapshot captured in commit `5c1936f`, before the review fixes. The original
+wrapper silently ignored RSS sampling failures and did not record sample counts
+or errors. Its recorded peaks are observed samples, not exact peaks; continuous
+enforcement of the RSS stopping rule cannot be verified retrospectively. The
+corrected wrapper and helper validation have not been rerun at 100,000 rows.
+Treat these measurements as provisional feasibility evidence, not certified
+resource bounds or timings for the reviewed version.
 
 |    Rows | Dimensions | Metric    | Search / payload   | Status       |  Elapsed | Peak RSS | Candidate components |
 | ------: | ---------: | --------- | ------------------ | ------------ | -------: | -------: | -------------------: |
@@ -124,9 +158,9 @@ sizes are in `results-2026-09-15.json`.
 | 100,000 |        128 | Euclidean | HNSW / wide        | completed    |   5.40 s | 4.91 GiB |                    7 |
 | 100,000 |          4 | Euclidean | exact MST / narrow | time-limited | 600.10 s | 0.28 GiB |                  n/a |
 
-The exact 100,000-row baseline did not complete within ten minutes. It stayed
-well below the memory bound, confirming the intended linear stored state, but
-the O(n²d) work and sequential frontier updates are not a practical 100,000-row
+The exact 100,000-row baseline did not complete within ten minutes. It stayed at
+a low observed RSS, consistent with the intended linear stored state, but the
+O(n²d) work and sequential frontier updates are not a practical 100,000-row
 strategy. The architectural decision is to retain it as the exact baseline and
 default semantic path, with its cost documented; no row-count threshold may
 silently switch to HNSW. A faster exact implementation would require new
@@ -139,7 +173,9 @@ rather than input validation. Increasing k raises O(nk) edge state and may push
 the 128-dimensional cases past the 8 GiB bound: k=15 already reached 4.46 GiB
 narrow and 4.91 GiB with a wide snapshot. Bounded widening is useful for small
 gaps, but deterministic representative-component bridges are the provisional
-scalable policy after the memory budget is reached.
+scalable policy after the single candidate-widening attempt, if that attempt is
+retained. This policy has bounded candidate counts and does not use benchmark
+stopping rules as library limits.
 
 At 2,000 rows, 15-neighbor HNSW recall against exact search was 1.0 for
 4-dimensional Euclidean data and 0.9946 for 32-dimensional cosine data. Three

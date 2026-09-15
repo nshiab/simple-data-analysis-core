@@ -9,8 +9,13 @@ export default async function inspectGraphConnectivity(
   edges: string,
   vertexCount: number,
 ): Promise<{ componentCount: number; sizes: number[] }> {
-  if (!Number.isSafeInteger(vertexCount) || vertexCount < 1) {
-    throw new Error("Graph vertex count must be a positive safe integer.");
+  if (
+    !Number.isSafeInteger(vertexCount) || vertexCount < 1 ||
+    vertexCount > 2147483647
+  ) {
+    throw new Error(
+      "Graph vertex count must fit a positive INTEGER vertex count.",
+    );
   }
   const parent = new Int32Array(vertexCount);
   const sizes = new Int32Array(vertexCount).fill(1);
@@ -29,9 +34,12 @@ export default async function inspectGraphConnectivity(
     const sources = chunk.getColumnVector(0);
     const targets = chunk.getColumnVector(1);
     for (let row = 0; row < chunk.rowCount; row++) {
-      const source = Number(sources.getItem(row));
-      const target = Number(targets.getItem(row));
+      const sourceValue = sources.getItem(row);
+      const targetValue = targets.getItem(row);
+      const source = Number(sourceValue);
+      const target = Number(targetValue);
       if (
+        sourceValue === null || targetValue === null ||
         !Number.isSafeInteger(source) || source < 0 || source >= vertexCount ||
         !Number.isSafeInteger(target) || target < 0 || target >= vertexCount
       ) {

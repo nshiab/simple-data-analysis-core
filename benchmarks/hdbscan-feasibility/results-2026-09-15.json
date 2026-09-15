@@ -107,7 +107,15 @@
       "peakRssBytes": 5272436736,
       "edges": 1500000,
       "edgeHash": "8234526502178847091",
-      "components": [99486, 391, 30, 29, 25, 20, 19]
+      "components": [
+        99486,
+        391,
+        30,
+        29,
+        25,
+        20,
+        19
+      ]
     },
     {
       "status": "time-limited",
@@ -150,5 +158,11 @@
         "2906298460182244139"
       ]
     }
-  ]
+  ],
+  "provenance": {
+    "sourceSnapshot": "5c1936f",
+    "reviewStatus": "Historical runs predate review fixes; not rerun at 100000 rows.",
+    "rssMeasurement": "Sampled process RSS every 0.25 seconds; observed peaks may miss transient peaks.",
+    "rssEnforcement": "Original watchdog ignored sampling errors and recorded no sample/error counts. Continuous enforcement cannot be verified retrospectively. Reviewed watchdog fails closed."
+  }
 }

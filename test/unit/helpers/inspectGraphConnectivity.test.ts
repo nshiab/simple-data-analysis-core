@@ -63,11 +63,14 @@ Deno.test("graph connectivity rejects invalid edge ids", async () => {
     await connection.run(
       'CREATE TEMP TABLE edges AS SELECT 0::INTEGER AS "source",3::INTEGER AS "target"',
     );
-    await assertRejects(
-      () => inspectGraphConnectivity(connection, '"edges"', 3),
-      Error,
-      "invalid vertex id",
-    );
+    for (const target of ["3", "NULL", "-1"]) {
+      await connection.run(`UPDATE edges SET target=${target}`);
+      await assertRejects(
+        () => inspectGraphConnectivity(connection, '"edges"', 3),
+        Error,
+        "invalid vertex id",
+      );
+    }
   } finally {
     connection.closeSync();
     db.closeSync();

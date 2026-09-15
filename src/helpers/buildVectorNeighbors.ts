@@ -1,6 +1,7 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
 import readScalarNumber from "./readScalarNumber.ts";
 import vectorDistanceExpression from "./vectorDistanceExpression.ts";
+import validateVectorRowIds from "./validateVectorRowIds.ts";
 
 /** Private, already-quoted relation names owned and cleaned up by the caller. */
 export type VectorNeighborTables = {
@@ -29,6 +30,8 @@ type NeighborOptions = {
  * `neighborCount` is the number of rows produced per source. When `includeSelf`
  * is true, the source is rank 0 and consumes one of those rows. Otherwise all
  * rows are other points. Ranks are zero-based and ties use target id order.
+ * Input rows have unique contiguous `vertex` ids from 0 through count-1 and
+ * validated, non-null, fixed-size DOUBLE `vec` values.
  *
  * The caller owns every supplied scratch relation and must drop them after
  * success or failure. Approximate search only approximates candidate retrieval;
@@ -42,6 +45,10 @@ export default async function buildVectorNeighbors(
   names: VectorNeighborTables,
 ): Promise<void> {
   const { count, dimensions, neighborCount } = input;
+  await validateVectorRowIds(connection, names.rows, count);
+  if (!Number.isSafeInteger(dimensions) || dimensions < 1) {
+    throw new Error("Vector dimensions must be a positive safe integer.");
+  }
   const maximum = count - (options.includeSelf ? 0 : 1);
   if (
     !Number.isSafeInteger(neighborCount) || neighborCount < 1 ||
@@ -89,18 +96,13 @@ export default async function buildVectorNeighbors(
     if (options.search === "exact") {
       // O(n²d) work with a bounded source batch and top-k heaps. The full
       // distance matrix is never materialized.
-      for (let offset = 0; offset < count; offset += 32) {
-        const query = `SELECT source,item.target,item.distance FROM (
-          SELECT a.vertex AS source,
-            min_by(struct_pack(target := b.vertex, distance := ${exactDistance}),
-              struct_pack(distance := ${exactDistance}, target := b.vertex),
-              ${otherCount}) AS closest
-          FROM ${names.rows} a CROSS JOIN ${names.rows} b
-          WHERE a.vertex >= ${offset} AND a.vertex < ${offset + 32}
-            AND a.vertex != b.vertex GROUP BY a.vertex
-        ), UNNEST(closest) AS t(item)`;
-        await connection.run(`INSERT INTO ${names.candidates} ${query}`);
-      }
+      await buildExactCandidates(
+        connection,
+        input,
+        names,
+        exactDistance,
+        otherCount,
+      );
     } else {
       await buildHnswCandidates(
         connection,
@@ -112,6 +114,15 @@ export default async function buildVectorNeighbors(
         otherCount,
       );
     }
+  }
+
+  if (
+    await readScalarNumber(
+      connection,
+      `SELECT count(*) FROM ${names.candidates} WHERE distance IS NULL OR NOT isfinite(distance)`,
+    )
+  ) {
+    throw new Error("Distance computation returned a non-finite value.");
   }
 
   const selfRows = options.includeSelf
@@ -185,7 +196,7 @@ async function buildHnswCandidates(
     // Preserve UMAP's established candidate budget when self is included.
     // Excluding self needs one extra result because HNSW normally returns it.
     const candidateCount = options.includeSelf
-      ? Math.min(neighborCount + 1, count - 1)
+      ? Math.max(otherCount + 1, Math.min(neighborCount + 1, count - 1))
       : Math.min(otherCount + 1, count);
     const query = `SELECT a.vertex AS source,b.vertex AS target,b.distance
       FROM ${names.search} a,LATERAL (
@@ -214,9 +225,7 @@ async function buildHnswCandidates(
         "DuckDB could not use its vector index for neighbor search.",
       );
     }
-    await connection.run(`INSERT INTO ${names.candidates} ${candidates}
-      QUALIFY row_number() OVER (PARTITION BY source ORDER BY distance,target)
-        <= ${otherCount}`);
+    await connection.run(`INSERT INTO ${names.candidates} ${candidates}`);
   } finally {
     await connection.run(
       `SET disabled_optimizers='${previous.replaceAll("'", "''")}'`,
@@ -234,9 +243,10 @@ async function buildExactCandidates(
   for (let offset = 0; offset < input.count; offset += 32) {
     const query = `SELECT source,item.target,item.distance FROM (
       SELECT a.vertex AS source,
+        CASE WHEN bool_and(isfinite(${exactDistance})) THEN
         min_by(struct_pack(target := b.vertex,distance := ${exactDistance}),
           struct_pack(distance := ${exactDistance},target := b.vertex),
-          ${otherCount}) AS closest
+          ${otherCount}) ELSE error('Distance computation returned a non-finite value.') END AS closest
       FROM ${names.rows} a CROSS JOIN ${names.rows} b
       WHERE a.vertex >= ${offset} AND a.vertex < ${offset + 32}
         AND a.vertex != b.vertex GROUP BY a.vertex
