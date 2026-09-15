@@ -2542,25 +2542,31 @@ export default class SimpleTable extends Simple {
 
   /**
    * Counts the incoming and outgoing connections for every node found in the
-   * source and target columns. By default, parallel connection rows are counted
-   * separately. Set `count` to `"neighbors"` to count distinct adjacent nodes
-   * instead. Select a numeric `weight` to sum edge weights; weighted sums operate
-   * on edges and cannot be combined with neighbor counting.
+   * source and target columns. By default, each input row is counted separately,
+   * even when several rows connect the same two nodes. Set the `count` option to
+   * `"neighbors"` to count distinct neighboring nodes instead. Use the `weight`
+   * option to sum values from a numeric column instead of counting connections.
+   * The `weight` option cannot be combined with `count: "neighbors"`.
    *
-   * The result has fixed `node`, `incoming`, and `outgoing` columns, sorted by
-   * node. A self-connection contributes once to both incoming and outgoing.
+   * The result has `node`, `incoming`, `outgoing`, and `total` columns. The
+   * `total` is the sum of `incoming` and `outgoing`. Results are sorted by
+   * highest total first, then by node in ascending order when totals are equal.
+   * A self-connection contributes once to incoming and once to outgoing, so
+   * it contributes twice to the total. With `count: "neighbors"`, a neighbor
+   * connected in both directions also contributes once in each direction.
    * Endpoint IDs must be non-null strings or whole numbers in compatible
    * columns. Supplied weights must be non-null, finite, and non-negative.
    *
-   * This input uses custom endpoint names and has two parallel flights:
+   * The next three examples each start with these flights:
    *
    * | origin | destination | passengers |
    * | --- | --- | ---: |
    * | Montreal | Toronto | 100 |
    * | Montreal | Toronto | 200 |
    * | Montreal | Vancouver | 50 |
+   * | Toronto | Montreal | 150 |
    *
-   * Omitting options counts edge rows and overwrites the input table:
+   * By default, the method counts connections and overwrites the input table:
    *
    * @example
    * ```ts
@@ -2569,13 +2575,14 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | incoming | outgoing |
-   * | --- | ---: | ---: |
-   * | Montreal | 0 | 3 |
-   * | Toronto | 2 | 0 |
-   * | Vancouver | 1 | 0 |
+   * | node | incoming | outgoing | total |
+   * | --- | ---: | ---: | ---: |
+   * | Montreal | 1 | 3 | 4 |
+   * | Toronto | 2 | 1 | 3 |
+   * | Vancouver | 1 | 0 | 1 |
    *
-   * On a fresh copy, neighbor counting deduplicates the two Toronto flights:
+   * With `count: "neighbors"`, the two Montreal-to-Toronto flights count as
+   * one outgoing neighbor for Montreal:
    *
    * @example
    * ```ts
@@ -2584,30 +2591,27 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | incoming | outgoing |
-   * | --- | ---: | ---: |
-   * | Montreal | 0 | 2 |
-   * | Toronto | 1 | 0 |
-   * | Vancouver | 1 | 0 |
+   * | node | incoming | outgoing | total |
+   * | --- | ---: | ---: | ---: |
+   * | Montreal | 1 | 2 | 3 |
+   * | Toronto | 1 | 1 | 2 |
+   * | Vancouver | 1 | 0 | 1 |
    *
-   * On another fresh copy, selecting `passengers` sums edge weights. The
-   * named output keeps the original flights available for other operations:
+   * With `weight: "passengers"`, the method adds passenger counts for each
+   * city's incoming and outgoing flights:
    *
    * @example
    * ```ts
    * await flights
-   *   .degree("origin", "destination", {
-   *     weight: "passengers",
-   *     outputTable: "passengerTotals",
-   *   })
+   *   .degree("origin", "destination", { weight: "passengers" })
    *   .log();
    * ```
    *
-   * | node | incoming | outgoing |
-   * | --- | ---: | ---: |
-   * | Montreal | 0 | 350 |
-   * | Toronto | 300 | 0 |
-   * | Vancouver | 50 | 0 |
+   * | node | incoming | outgoing | total |
+   * | --- | ---: | ---: | ---: |
+   * | Montreal | 150 | 350 | 500 |
+   * | Toronto | 300 | 150 | 450 |
+   * | Vancouver | 50 | 0 | 50 |
    *
    * A self-connection is counted once in each direction. For this input:
    *
@@ -2623,10 +2627,10 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | incoming | outgoing |
-   * | --- | ---: | ---: |
-   * | A | 1 | 2 |
-   * | B | 1 | 0 |
+   * | node | incoming | outgoing | total |
+   * | --- | ---: | ---: | ---: |
+   * | A | 1 | 2 | 3 |
+   * | B | 1 | 0 | 1 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.

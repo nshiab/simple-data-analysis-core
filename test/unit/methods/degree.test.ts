@@ -68,7 +68,12 @@ Deno.test("degree matches every shared fixture oracle case", async () => {
         await expectedCase(oracle, caseName),
         caseName,
       );
-      assertEquals(await actual.getColumns(), ["node", "incoming", "outgoing"]);
+      assertEquals(await actual.getColumns(), [
+        "node",
+        "incoming",
+        "outgoing",
+        "total",
+      ]);
     }
   } finally {
     await sdb.close();
@@ -88,40 +93,40 @@ Deno.test("degree distinguishes edge, neighbor, and weighted counts", async () =
       await sdb.newTable().loadArray(rows)
         .degree("source", "target").getData(),
       [
-        { node: "Montreal", incoming: 1, outgoing: 3 },
-        { node: "Ottawa", incoming: 0, outgoing: 1 },
-        { node: "Toronto", incoming: 2, outgoing: 0 },
-        { node: "Vancouver", incoming: 1, outgoing: 0 },
+        { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
+        { node: "Toronto", incoming: 2, outgoing: 0, total: 2 },
+        { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
+        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
     assertEquals(
       await sdb.newTable().loadArray(rows)
         .degree("source", "target", { count: "edges" }).getData(),
       [
-        { node: "Montreal", incoming: 1, outgoing: 3 },
-        { node: "Ottawa", incoming: 0, outgoing: 1 },
-        { node: "Toronto", incoming: 2, outgoing: 0 },
-        { node: "Vancouver", incoming: 1, outgoing: 0 },
+        { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
+        { node: "Toronto", incoming: 2, outgoing: 0, total: 2 },
+        { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
+        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
     assertEquals(
       await sdb.newTable().loadArray(rows)
         .degree("source", "target", { count: "neighbors" }).getData(),
       [
-        { node: "Montreal", incoming: 1, outgoing: 2 },
-        { node: "Ottawa", incoming: 0, outgoing: 1 },
-        { node: "Toronto", incoming: 1, outgoing: 0 },
-        { node: "Vancouver", incoming: 1, outgoing: 0 },
+        { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
+        { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
+        { node: "Toronto", incoming: 1, outgoing: 0, total: 1 },
+        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
     assertEquals(
       await sdb.newTable().loadArray(rows)
         .degree("source", "target", { weight: "passengers" }).getData(),
       [
-        { node: "Montreal", incoming: 25, outgoing: 350 },
-        { node: "Ottawa", incoming: 0, outgoing: 25 },
-        { node: "Toronto", incoming: 300, outgoing: 0 },
-        { node: "Vancouver", incoming: 50, outgoing: 0 },
+        { node: "Montreal", incoming: 25, outgoing: 350, total: 375 },
+        { node: "Toronto", incoming: 300, outgoing: 0, total: 300 },
+        { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
+        { node: "Ottawa", incoming: 0, outgoing: 25, total: 25 },
       ],
     );
   } finally {
@@ -136,13 +141,13 @@ Deno.test("degree handles sources, sinks, convergence, disconnection, and self-l
       await loadScenario(sdb, "baselineDegree", "baseline")
         .degree("source", "target").getData(),
       [
-        { node: "A", incoming: 0, outgoing: 2 },
-        { node: "B", incoming: 1, outgoing: 1 },
-        { node: "C", incoming: 1, outgoing: 1 },
-        { node: "D", incoming: 2, outgoing: 1 },
-        { node: "E", incoming: 1, outgoing: 0 },
-        { node: "F", incoming: 0, outgoing: 1 },
-        { node: "G", incoming: 1, outgoing: 0 },
+        { node: "D", incoming: 2, outgoing: 1, total: 3 },
+        { node: "A", incoming: 0, outgoing: 2, total: 2 },
+        { node: "B", incoming: 1, outgoing: 1, total: 2 },
+        { node: "C", incoming: 1, outgoing: 1, total: 2 },
+        { node: "E", incoming: 1, outgoing: 0, total: 1 },
+        { node: "F", incoming: 0, outgoing: 1, total: 1 },
+        { node: "G", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
     assertEquals(
@@ -151,8 +156,8 @@ Deno.test("degree handles sources, sinks, convergence, disconnection, and self-l
         { source: "A", target: "B", weight: 0 },
       ]).degree("source", "target", { weight: "weight" }).getData(),
       [
-        { node: "A", incoming: 2.5, outgoing: 2.5 },
-        { node: "B", incoming: 0, outgoing: 0 },
+        { node: "A", incoming: 2.5, outgoing: 2.5, total: 5.0 },
+        { node: "B", incoming: 0, outgoing: 0, total: 0 },
       ],
     );
   } finally {
@@ -172,11 +177,11 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
       ) edges(source, target)`);
     ids.degree("source", "target").convert({ node: "string" });
     assertEquals(await ids.getData(), [
-      { node: "0", incoming: 0, outgoing: 2 },
-      { node: "2", incoming: 1, outgoing: 0 },
-      { node: "10", incoming: 1, outgoing: 0 },
-      { node: "9007199254740993", incoming: 1, outgoing: 0 },
-      { node: "9007199254740995", incoming: 0, outgoing: 1 },
+      { node: "0", incoming: 0, outgoing: 2, total: 2 },
+      { node: "2", incoming: 1, outgoing: 0, total: 1 },
+      { node: "10", incoming: 1, outgoing: 0, total: 1 },
+      { node: "9007199254740993", incoming: 1, outgoing: 0, total: 1 },
+      { node: "9007199254740995", incoming: 0, outgoing: 1, total: 1 },
     ]);
 
     const decimal = sdb.newTable("decimalDegreeWeights");
@@ -190,10 +195,11 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
       node: "VARCHAR",
       incoming: "DECIMAL(38,3)",
       outgoing: "DECIMAL(38,3)",
+      total: "DECIMAL(38,3)",
     });
     assertEquals(await decimal.getData(), [
-      { node: "A", incoming: "0.000", outgoing: "0.325" },
-      { node: "B", incoming: "0.325", outgoing: "0.000" },
+      { node: "A", incoming: "0.000", outgoing: "0.325", total: "0.325" },
+      { node: "B", incoming: "0.325", outgoing: "0.000", total: "0.325" },
     ]);
 
     const integers = sdb.newTable("largeDegreeWeights");
@@ -203,10 +209,20 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
         ('A', 'B', 2::BIGINT)
       ) edges(source, target, weight)`);
     integers.degree("source", "target", { weight: "weight" })
-      .convert({ incoming: "string", outgoing: "string" });
+      .convert({ incoming: "string", outgoing: "string", total: "string" });
     assertEquals(await integers.getData(), [
-      { node: "A", incoming: "0", outgoing: "9007199254740995" },
-      { node: "B", incoming: "9007199254740995", outgoing: "0" },
+      {
+        node: "A",
+        incoming: "0",
+        outgoing: "9007199254740995",
+        total: "9007199254740995",
+      },
+      {
+        node: "B",
+        incoming: "9007199254740995",
+        outgoing: "0",
+        total: "9007199254740995",
+      },
     ]);
 
     const maximumHugeint = "170141183460469231731687303715884105727";
@@ -222,10 +238,21 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
       node: "VARCHAR",
       incoming: "BIGNUM",
       outgoing: "BIGNUM",
+      total: "BIGNUM",
     });
     assertEquals(await hugeints.getData(), [
-      { node: "A", incoming: "0", outgoing: doubledHugeint },
-      { node: "B", incoming: doubledHugeint, outgoing: "0" },
+      {
+        node: "A",
+        incoming: "0",
+        outgoing: doubledHugeint,
+        total: doubledHugeint,
+      },
+      {
+        node: "B",
+        incoming: doubledHugeint,
+        outgoing: "0",
+        total: doubledHugeint,
+      },
     ]);
 
     const largeBignum = "100000000000000000000000000000000000000000000000001";
@@ -241,10 +268,21 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
       node: "VARCHAR",
       incoming: "BIGNUM",
       outgoing: "BIGNUM",
+      total: "BIGNUM",
     });
     assertEquals(await bignums.getData(), [
-      { node: "A", incoming: "0", outgoing: doubledBignum },
-      { node: "B", incoming: doubledBignum, outgoing: "0" },
+      {
+        node: "A",
+        incoming: "0",
+        outgoing: doubledBignum,
+        total: doubledBignum,
+      },
+      {
+        node: "B",
+        incoming: doubledBignum,
+        outgoing: "0",
+        total: doubledBignum,
+      },
     ]);
   } finally {
     await sdb.close();
@@ -280,12 +318,13 @@ Deno.test("degree retains FLOAT and DOUBLE weighted sum semantics", async () => 
         node: "VARCHAR",
         incoming: "DOUBLE",
         outgoing: "DOUBLE",
+        total: "DOUBLE",
       });
       assertEquals(await result.getData(), [
-        { node: "A", incoming: 0, outgoing: sum },
-        { node: "B", incoming: sum, outgoing: 0 },
-        { node: "C", incoming: 0, outgoing: 16777217 },
-        { node: "D", incoming: 16777217, outgoing: 0 },
+        { node: "C", incoming: 0, outgoing: 16777217, total: 16777217 },
+        { node: "D", incoming: 16777217, outgoing: 0, total: 16777217 },
+        { node: "A", incoming: 0, outgoing: sum, total: sum },
+        { node: "B", incoming: sum, outgoing: 0, total: sum },
       ]);
       const empty = table.filter("false")
         .degree("source", "target", { weight: "weight" });
@@ -294,6 +333,7 @@ Deno.test("degree retains FLOAT and DOUBLE weighted sum semantics", async () => 
         node: "VARCHAR",
         incoming: "DOUBLE",
         outgoing: "DOUBLE",
+        total: "DOUBLE",
       });
     }
   } finally {
@@ -310,14 +350,14 @@ Deno.test("degree uses byte-sensitive string identity despite collations", async
     ); INSERT INTO "collatedDegree" VALUES
       ('a', 'b'), ('A', 'B'), ('001', '1'), (' A', 'A'), ('é', 'é')`);
     assertEquals(await table.degree("source", "target").getData(), [
-      { node: " A", incoming: 0, outgoing: 1 },
-      { node: "001", incoming: 0, outgoing: 1 },
-      { node: "1", incoming: 1, outgoing: 0 },
-      { node: "A", incoming: 1, outgoing: 1 },
-      { node: "B", incoming: 1, outgoing: 0 },
-      { node: "a", incoming: 0, outgoing: 1 },
-      { node: "b", incoming: 1, outgoing: 0 },
-      { node: "é", incoming: 1, outgoing: 1 },
+      { node: "A", incoming: 1, outgoing: 1, total: 2 },
+      { node: "é", incoming: 1, outgoing: 1, total: 2 },
+      { node: " A", incoming: 0, outgoing: 1, total: 1 },
+      { node: "001", incoming: 0, outgoing: 1, total: 1 },
+      { node: "1", incoming: 1, outgoing: 0, total: 1 },
+      { node: "B", incoming: 1, outgoing: 0, total: 1 },
+      { node: "a", incoming: 0, outgoing: 1, total: 1 },
+      { node: "b", incoming: 1, outgoing: 0, total: 1 },
     ]);
   } finally {
     await sdb.close();
@@ -336,10 +376,10 @@ Deno.test("degree distinct neighbors preserve collated IDs and parallel self-loo
     assertEquals(
       await table.degree("source", "target", { count: "neighbors" }).getData(),
       [
-        { node: "A", incoming: 1, outgoing: 3 },
-        { node: "B", incoming: 2, outgoing: 0 },
-        { node: "a", incoming: 0, outgoing: 1 },
-        { node: "b", incoming: 1, outgoing: 0 },
+        { node: "A", incoming: 1, outgoing: 3, total: 4 },
+        { node: "B", incoming: 2, outgoing: 0, total: 2 },
+        { node: "a", incoming: 0, outgoing: 1, total: 1 },
+        { node: "b", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
   } finally {
@@ -378,11 +418,16 @@ Deno.test("degree keeps fixed custom output names and typed empty schemas", asyn
     const custom = sdb.newTable("customDegree")
       .loadData("test/data/graphs/custom-columns.csv")
       .degree("ORIGIN", "Destination", { weight: "COST" });
-    assertEquals(await custom.getColumns(), ["node", "incoming", "outgoing"]);
+    assertEquals(await custom.getColumns(), [
+      "node",
+      "incoming",
+      "outgoing",
+      "total",
+    ]);
     assertEquals(await custom.getData(), [
-      { node: "A", incoming: 0, outgoing: 1 },
-      { node: "B", incoming: 1, outgoing: 2 },
-      { node: "C", incoming: 2, outgoing: 0 },
+      { node: "B", incoming: 1, outgoing: 2, total: 3 },
+      { node: "C", incoming: 2, outgoing: 0, total: 2 },
+      { node: "A", incoming: 0, outgoing: 1, total: 1 },
     ]);
 
     const empty = sdb.newTable("emptyDegree");
@@ -395,6 +440,7 @@ Deno.test("degree keeps fixed custom output names and typed empty schemas", asyn
       node: "BIGINT",
       incoming: "BIGINT",
       outgoing: "BIGINT",
+      total: "BIGINT",
     });
     const weighted = empty.degree("source", "target", {
       weight: "weight",
@@ -405,6 +451,7 @@ Deno.test("degree keeps fixed custom output names and typed empty schemas", asyn
       node: "BIGINT",
       incoming: "DECIMAL(38,2)",
       outgoing: "DECIMAL(38,2)",
+      total: "DECIMAL(38,2)",
     });
   } finally {
     await sdb.close();
@@ -424,6 +471,7 @@ Deno.test("degree supports every output destination and chaining", async () => {
       "node",
       "incoming",
       "outgoing",
+      "total",
     ]);
 
     const explicitOverwrite = sdb.newTable("explicitDegree")
@@ -444,6 +492,7 @@ Deno.test("degree supports every output destination and chaining", async () => {
       node: "B",
       incoming: 1,
       outgoing: 0,
+      total: 1,
     }]);
     assertEquals(await source.getData(), [{ source: "A", target: "B" }]);
 
@@ -474,8 +523,8 @@ Deno.test("degree snapshots options and preserves queued source order", async ()
     options.outputTable = "changed";
     assertEquals(snapshot.name, "degreeSnapshot");
     assertEquals(await snapshot.getData(), [
-      { node: "A", incoming: 0, outgoing: 1 },
-      { node: "B", incoming: 1, outgoing: 0 },
+      { node: "A", incoming: 0, outgoing: 1, total: 1 },
+      { node: "B", incoming: 1, outgoing: 0, total: 1 },
     ]);
 
     const source = sdb.newTable("changingDegreeSource")
@@ -483,10 +532,68 @@ Deno.test("degree snapshots options and preserves queued source order", async ()
     const result = source.degree("source", "target", { outputTable: true });
     source.loadArray([{ source: "A", target: "C" }]);
     assertEquals(await result.getData(), [
-      { node: "A", incoming: 0, outgoing: 1 },
-      { node: "B", incoming: 1, outgoing: 0 },
+      { node: "A", incoming: 0, outgoing: 1, total: 1 },
+      { node: "B", incoming: 1, outgoing: 0, total: 1 },
     ]);
     assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("degree totals include both directions and remain available to chained operations", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = [
+      { source: "Z", target: "A", weight: 2 },
+      { source: "Z", target: "A", weight: 3 },
+      { source: "A", target: "Z", weight: 4 },
+      { source: "Z", target: "Z", weight: 5 },
+      { source: "B", target: "A", weight: 1 },
+    ];
+    for (
+      const [options, expected] of [
+        [{}, [
+          { node: "Z", incoming: 2, outgoing: 3, total: 5 },
+          { node: "A", incoming: 3, outgoing: 1, total: 4 },
+        ]],
+        [{ count: "neighbors" }, [
+          { node: "Z", incoming: 2, outgoing: 2, total: 4 },
+          { node: "A", incoming: 2, outgoing: 1, total: 3 },
+        ]],
+        [{ weight: "weight" }, [
+          { node: "Z", incoming: 9, outgoing: 10, total: 19 },
+          { node: "A", incoming: 6, outgoing: 4, total: 10 },
+        ]],
+      ] as const
+    ) {
+      const result = sdb.newTable().loadArray(rows)
+        .degree("source", "target", options)
+        .filter("total >= 3")
+        .selectColumns(["node", "incoming", "outgoing", "total"]);
+      assertEquals(await result.getData(), [...expected]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("degree sorts large exact totals without rounding", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("largeExactDegreeTotals");
+    await sdb.customQuery(`CREATE TABLE "largeExactDegreeTotals" AS
+      SELECT * FROM (VALUES
+        ('A', 'A', 9007199254740992::BIGINT),
+        ('B', 'B', 9007199254740993::BIGINT)
+      ) edges(source, target, weight)`);
+    table.degree("source", "target", { weight: "weight" })
+      .selectColumns(["node", "total"])
+      .convert({ total: "string" });
+    assertEquals(await table.getData(), [
+      { node: "B", total: "18014398509481986" },
+      { node: "A", total: "18014398509481984" },
+    ]);
   } finally {
     await sdb.close();
   }
@@ -648,9 +755,9 @@ Deno.test("degree output records its source as a cache dependency", async () => 
     await output.cache(compute(source));
     assertEquals(computationRuns, 2);
     assertEquals(await output.getData(), [
-      { node: "A", incoming: 0, outgoing: 2 },
-      { node: "B", incoming: 1, outgoing: 0 },
-      { node: "C", incoming: 1, outgoing: 0 },
+      { node: "A", incoming: 0, outgoing: 2, total: 2 },
+      { node: "B", incoming: 1, outgoing: 0, total: 1 },
+      { node: "C", incoming: 1, outgoing: 0, total: 1 },
     ]);
   } finally {
     await secondSdb.close();
@@ -688,6 +795,7 @@ Deno.test("degree JSDoc examples return their displayed outputs", async () => {
     { origin: "Montreal", destination: "Toronto", passengers: 100 },
     { origin: "Montreal", destination: "Toronto", passengers: 200 },
     { origin: "Montreal", destination: "Vancouver", passengers: 50 },
+    { origin: "Toronto", destination: "Montreal", passengers: 150 },
   ];
   const sdb = new SimpleDB();
   try {
@@ -695,30 +803,29 @@ Deno.test("degree JSDoc examples return their displayed outputs", async () => {
       await sdb.newTable().loadArray(rows)
         .degree("origin", "destination").getData(),
       [
-        { node: "Montreal", incoming: 0, outgoing: 3 },
-        { node: "Toronto", incoming: 2, outgoing: 0 },
-        { node: "Vancouver", incoming: 1, outgoing: 0 },
+        { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
+        { node: "Toronto", incoming: 2, outgoing: 1, total: 3 },
+        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
     assertEquals(
       await sdb.newTable().loadArray(rows)
         .degree("origin", "destination", { count: "neighbors" }).getData(),
       [
-        { node: "Montreal", incoming: 0, outgoing: 2 },
-        { node: "Toronto", incoming: 1, outgoing: 0 },
-        { node: "Vancouver", incoming: 1, outgoing: 0 },
+        { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
+        { node: "Toronto", incoming: 1, outgoing: 1, total: 2 },
+        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
     const flights = sdb.newTable("degreeExampleFlights").loadArray(rows);
     assertEquals(
       await flights.degree("origin", "destination", {
         weight: "passengers",
-        outputTable: "passengerTotals",
       }).getData(),
       [
-        { node: "Montreal", incoming: 0, outgoing: 350 },
-        { node: "Toronto", incoming: 300, outgoing: 0 },
-        { node: "Vancouver", incoming: 50, outgoing: 0 },
+        { node: "Montreal", incoming: 150, outgoing: 350, total: 500 },
+        { node: "Toronto", incoming: 300, outgoing: 150, total: 450 },
+        { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
       ],
     );
     assertEquals(
@@ -727,8 +834,8 @@ Deno.test("degree JSDoc examples return their displayed outputs", async () => {
         { source: "A", target: "B" },
       ]).degree("source", "target").getData(),
       [
-        { node: "A", incoming: 1, outgoing: 2 },
-        { node: "B", incoming: 1, outgoing: 0 },
+        { node: "A", incoming: 1, outgoing: 2, total: 3 },
+        { node: "B", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
   } finally {

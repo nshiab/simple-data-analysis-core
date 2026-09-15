@@ -4,7 +4,7 @@ neighbors,unknown-start,baseline,empty start-node schema
 neighbors,empty-start-array,baseline,error
 neighbors,duplicate-starts,baseline,error
 neighbors,duplicate-zero-starts,numeric,error
-degree,empty,empty,empty node-incoming-outgoing schema
+degree,empty,empty,empty node-incoming-outgoing-total schema
 degree,weight-with-neighbor-count,degree-weight,error
 commonNeighbors,empty,empty,empty node schema
 commonNeighbors,unknown-node,baseline,empty node schema

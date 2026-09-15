@@ -81,6 +81,7 @@ export default function degree(
         node: validated.idType,
         incoming: validated.degreeType,
         outgoing: validated.degreeType,
+        total: validated.degreeType,
       };
     },
   });
@@ -147,6 +148,8 @@ function degreeSelect(
       : "COUNT(*)";
   };
   const zero = `CAST(0 AS ${degreeType})`;
+  const incomingDegree = `COALESCE(${q("incoming")}.${q("incoming")}, ${zero})`;
+  const outgoingDegree = `COALESCE(${q("outgoing")}.${q("outgoing")}, ${zero})`;
 
   return `WITH ${edges} AS (
       ${
@@ -176,12 +179,15 @@ function degreeSelect(
       GROUP BY ${q("__from_key")}
     )
     SELECT ${q("nodes")}.${q("node")},
-      COALESCE(${q("incoming")}.${q("incoming")}, ${zero}) AS ${q("incoming")},
-      COALESCE(${q("outgoing")}.${q("outgoing")}, ${zero}) AS ${q("outgoing")}
+      ${incomingDegree} AS ${q("incoming")},
+      ${outgoingDegree} AS ${q("outgoing")},
+      CAST(${incomingDegree} + ${outgoingDegree} AS ${degreeType}) AS ${
+    q("total")
+  }
     FROM ${nodes} AS ${q("nodes")}
     LEFT JOIN ${incoming} AS ${q("incoming")}
       ON ${q("nodes")}.${q("__key")} = ${q("incoming")}.${q("__key")}
     LEFT JOIN ${outgoing} AS ${q("outgoing")}
       ON ${q("nodes")}.${q("__key")} = ${q("outgoing")}.${q("__key")}
-    ORDER BY ${q("nodes")}.${q("__key")}`;
+    ORDER BY ${q("total")} DESC, ${q("nodes")}.${q("__key")}`;
 }

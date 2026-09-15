@@ -90,7 +90,7 @@ and numeric weight types so inference does not define the test's schema.
 | Method                  | Expected file                       | Output after dropping `case`                       |
 | ----------------------- | ----------------------------------- | -------------------------------------------------- |
 | `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                       |
-| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing`                           |
+| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                     |
 | `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                             |
 | `reachable()`           | `expected/reachable.csv`            | `start,node`                                       |
 | `distances()`           | `expected/distances.csv`            | `start,node,distance`                              |
@@ -152,8 +152,10 @@ leading-zero removal, or rounding.
 ## Determinism
 
 All ordinary results are sorted by the contract: `start,node` for multi-start
-methods; `node` for degree, common neighbors, and components; `pathId,step` for
-routes/cycles; and `order` for topological sorting.
+methods; descending `total`, then ascending `node` for degree; `node` for common
+neighbors and components; `pathId,step` for routes/cycles; and `order` for
+topological sorting. Degree totals add incoming and outgoing values, so a
+self-connection contributes twice.
 
 Routes are sorted by their typed edge-ID sequence and numbered from pathId 0;
 steps begin at 1. Components are numbered by sorted smallest member. Directed

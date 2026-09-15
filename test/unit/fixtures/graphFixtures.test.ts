@@ -183,7 +183,7 @@ Deno.test("graph preparation fixtures accept numeric and prefixed addId identiti
 Deno.test("every planned graph method has an exact expected-result schema", async () => {
   const schemas: Record<string, string[]> = {
     "neighbors.csv": ["case", "start", "node"],
-    "degree.csv": ["case", "node", "incoming", "outgoing"],
+    "degree.csv": ["case", "node", "incoming", "outgoing", "total"],
     "common_neighbors.csv": ["case", "node"],
     "reachable.csv": ["case", "start", "node"],
     "distances.csv": ["case", "start", "node", "distance"],
@@ -394,6 +394,10 @@ Deno.test("membership and component expectations are explicitly sorted", async (
       assertEquals(
         caseRows,
         caseRows.toSorted((left, right) => {
+          if (file === "degree.csv") {
+            const difference = Number(right.total) - Number(left.total);
+            if (difference) return difference;
+          }
           for (const column of columns) {
             const comparison = compareIds(left[column], right[column]);
             if (comparison) return comparison;
@@ -439,6 +443,7 @@ Deno.test("graph expectations pin the high-value hand-derived cases", async () =
       node: "B",
       incoming: "350",
       outgoing: "0",
+      total: "350",
     },
   );
 
