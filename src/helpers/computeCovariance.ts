@@ -33,8 +33,8 @@ export default async function computeCovariance(
   const rowId = quoteIdentifier(input.rowIdColumn);
   const vector = quoteIdentifier(input.vectorColumn);
   const expanded = `SELECT r.${rowId} AS observation,
-      feature::INTEGER AS feature,
-      array_extract(r.${vector}, feature)::DOUBLE AS value
+      f.feature::INTEGER AS feature,
+      array_extract(r.${vector}, f.feature)::DOUBLE AS value
     FROM ${relation} r CROSS JOIN range(1, ${dimensions + 1}) f(feature)`;
   const offsets = `SELECT observation, feature, value,
       first_value(value) OVER (PARTITION BY feature ORDER BY observation
@@ -61,7 +61,9 @@ export default async function computeCovariance(
       !Number.isSafeInteger(feature) || !Number.isFinite(origin) ||
       !Number.isFinite(meanOffset)
     ) {
-      throw new Error("Covariance aggregation returned a non-finite centroid.");
+      throw new Error(
+        "Covariance is numerically unstable because centroid aggregation produced a non-finite result. Rescale features or remove dimensions whose range cannot be represented as DOUBLE.",
+      );
     }
     const magnitude = Number(row[3]);
     if (!Number.isFinite(magnitude) || magnitude <= 0) {

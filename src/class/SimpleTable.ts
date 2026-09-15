@@ -131,6 +131,7 @@ import addNoise from "../methods/addNoise.ts";
 import rowToText from "../methods/rowToText.ts";
 import rowToVector from "../methods/rowToVector.ts";
 import normalizeVector from "../methods/normalizeVector.ts";
+import mahalanobis from "../methods/mahalanobis.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
@@ -3350,6 +3351,48 @@ export default class SimpleTable extends Simple {
    */
   normalizeVector(column: string, newColumn: string): this {
     normalizeVector(this, column, newColumn);
+    return this;
+  }
+
+  /**
+   * Calculates each row's ordinary Mahalanobis distance from the dataset
+   * centroid and stores it in a new DOUBLE column. The covariance matrix is
+   * estimated from the same dataset using sample covariance (`n - 1`).
+   *
+   * Pass one numeric LIST or fixed-size ARRAY column, or pass an array of one
+   * or more numeric scalar columns. Scalar columns may use different numeric
+   * types. Inputs are converted privately to DOUBLE for calculation, which can
+   * lose precision for large integers and exact decimals; source columns and
+   * their types remain unchanged.
+   *
+   * The dataset must have more observations than feature dimensions (`n > d`).
+   * This is necessary but does not guarantee an invertible covariance matrix:
+   * constant or linearly dependent features also cause the operation to fail.
+   * Null, non-finite, empty, or inconsistent vectors fail the whole operation
+   * without creating the output column.
+   *
+   * @param columns - A numeric vector column, or numeric scalar columns in
+   * feature-dimension order.
+   * @param newColumn - The name of the DOUBLE distance column to create.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .mahalanobis(["height", "weight"], "distance")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .mahalanobis("features", "distance")
+   *   .log();
+   * ```
+   */
+  mahalanobis(columns: string | string[], newColumn: string): this {
+    mahalanobis(this, columns, newColumn);
     return this;
   }
 
