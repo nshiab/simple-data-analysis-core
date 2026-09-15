@@ -1,7 +1,7 @@
 # The Simple Data Analysis (Core) Library
 
 - Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.0.8`
+- Version: `2.0.9`
 
 To install the library with Deno, use:
 
@@ -1453,12 +1453,12 @@ await table.createVssIndex("embedding_column", {
 
 #### `umap`
 
-Adds a two-dimensional UMAP projection of a numeric embedding column. DuckDB
-computes neighbors and the fuzzy graph; TypeScript optimizes the coordinates
-without copying the input vectors into JavaScript. Results are added as `umapX`
-and `umapY`, keeping all existing columns (including the embedding column),
-their values and types, and the input row order. Neighbor search is selected
-automatically.
+Reduces numeric vectors, such as embeddings, to a two-dimensional UMAP
+projection. The resulting coordinates are added as `umapX` and `umapY`, while
+all existing columns (including the source vector column), their values and
+types, and the input row order are preserved. DuckDB computes neighbors and the
+fuzzy graph; TypeScript optimizes the coordinates without copying the input
+vectors into JavaScript. Neighbor search is selected automatically.
 
 The defaults are a starting point for exploration. To adjust the projection:
 
