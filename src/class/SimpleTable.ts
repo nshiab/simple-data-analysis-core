@@ -130,6 +130,7 @@ import round from "../methods/round.ts";
 import addNoise from "../methods/addNoise.ts";
 import rowToText from "../methods/rowToText.ts";
 import rowToVector from "../methods/rowToVector.ts";
+import normalizeVector from "../methods/normalizeVector.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
@@ -3304,6 +3305,46 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     rowToVector(this, columns, newColumn, options);
+    return this;
+  }
+
+  /**
+   * Scales each dimension of a numeric vector column independently to the
+   * range `[0, 1]` across all rows. All first elements are scaled together,
+   * all second elements together, and so on. This is different from scaling
+   * each row to unit length.
+   *
+   * The input may be a numeric LIST or fixed-size ARRAY. The output is a
+   * fixed-size DOUBLE ARRAY. Converting large integers and exact decimals to
+   * DOUBLE can lose precision. A dimension whose converted values are all
+   * equal cannot be normalized and causes the operation to fail.
+   *
+   * Scaling changes the relative contribution of vector dimensions and is an
+   * explicit modeling choice. Algorithms such as HDBSCAN do not universally
+   * require values in `[0, 1]`.
+   *
+   * @param column - The numeric vector column to normalize.
+   * @param newColumn - The output column. Use the source column's name to
+   * overwrite it atomically with the normalized DOUBLE vector.
+   * @returns The table, so methods can be chained.
+   * @category Vector Operations
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .normalizeVector("features", "scaledFeatures")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .normalizeVector("features", "features")
+   *   .log();
+   * ```
+   */
+  normalizeVector(column: string, newColumn: string): this {
+    normalizeVector(this, column, newColumn);
     return this;
   }
 
