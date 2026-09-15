@@ -18,8 +18,7 @@ export default function addId(
     throw new TypeError("addId() options.prefix must be a string.");
   }
 
-  // IDs follow the materialized row order. rowid is unavailable on the output
-  // of a fused step, so this operation executes as a barrier.
+  // Materialize preceding operations so IDs follow their resulting row order.
   options = structuredClone(options);
   queueOp(simpleTable, {
     kind: "barrier",
@@ -36,7 +35,9 @@ export default function addId(
         "addId()",
       );
 
-      const rowNumber = "(ROW_NUMBER() OVER(ORDER BY rowid) - 1)";
+      // An empty window preserves scan order without referencing rowid, which
+      // may be shadowed by a user column.
+      const rowNumber = "(ROW_NUMBER() OVER () - 1)";
       const id = options.prefix === undefined
         ? rowNumber
         : `CONCAT(?, CAST(${rowNumber} AS VARCHAR))`;
@@ -46,7 +47,7 @@ export default function addId(
           quoteIdentifier(simpleTable.name)
         } AS SELECT *, ${id} AS ${quoteIdentifier(newColumn)} FROM ${
           quoteIdentifier(simpleTable.name)
-        } ORDER BY rowid`,
+        }`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "addId()",

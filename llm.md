@@ -2853,16 +2853,11 @@ await table.loadArray([{ count: 3 }])
 
 Adds a unique, non-null ID for each row in the current table. IDs start at `0`
 and identify rows within this table, including rows with identical contents.
-Without a prefix, the new column has DuckDB type `BIGINT`. When a prefix is
-supplied, the new column has type `VARCHAR` and contains the exact prefix
-followed by the row number. An empty prefix therefore creates the strings `"0"`,
-`"1"`, and so on.
+Without a prefix, the new column contains numbers. When a prefix is supplied,
+the new column contains strings with the exact prefix followed by the row
+number. An empty prefix therefore creates the strings `"0"`, `"1"`, and so on.
 
-Generate IDs once and preserve the resulting column for later joins. IDs are not
-globally unique: separate tables can generate the same IDs, even with the same
-prefix. Regenerating IDs after changing the input or row order does not
-guarantee that IDs remain attached to the same records. Prefer an existing
-trustworthy ID when one is available.
+IDs are not globally unique: separate tables can generate the same IDs.
 
 ##### Signature
 

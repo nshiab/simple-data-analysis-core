@@ -138,6 +138,33 @@ Deno.test("addId chains across queued operations and subsequent reads", async ()
   }
 });
 
+Deno.test("addId preserves sorted rows when an input column shadows rowid", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const column of ["rowid", "RoWiD"]) {
+      for (const prefix of [undefined, "", "edge-"]) {
+        const rows = Array.from({ length: 12 }, (_, value) => ({
+          [column]: 12 - value,
+          value,
+        }));
+        const table = sdb.newTable().loadArray([...rows].reverse());
+
+        table.sort({ value: "asc" }).addId("id", { prefix });
+
+        assertEquals(
+          await table.getData(),
+          rows.map((row, index) => ({
+            ...row,
+            id: prefix === undefined ? index : `${prefix}${index}`,
+          })),
+        );
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("addId rejects an existing column", async () => {
   const sdb = new SimpleDB();
   try {
