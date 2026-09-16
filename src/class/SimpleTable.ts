@@ -2792,7 +2792,14 @@ export default class SimpleTable extends Simple {
    * `strictOrdering` controls whether equal-time connections may be
    * consecutive. Every valid connection remains eligible as the first step.
    * Chronological traversal supports `"outgoing"` and `"incoming"`, but not
-   * `"both"`.
+   * `"both"`. Incoming traversal finds actual earlier predecessors, applying
+   * the same physical end-to-start comparison while searching backward.
+   *
+   * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
+   * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
+   * precision. Zoned timestamps represent absolute instants and cannot be
+   * combined with a naive date or timestamp column. Connections with null or
+   * infinite selected times, or an end before their start, are excluded.
    *
    * The next four examples each start with this data:
    *
@@ -2879,6 +2886,14 @@ export default class SimpleTable extends Simple {
    * Here, A → B arrives at 10:00, so the 09:00 connection to C is unavailable,
    * while the 11:00 connection to D meets the one-hour minimum gap:
    *
+   * | origin | destination | departureTime | arrivalTime |
+   * | --- | --- | --- | --- |
+   * | A | B | 2025-01-01 08:00 | 2025-01-01 10:00 |
+   * | B | C | 2025-01-01 09:00 | 2025-01-01 10:00 |
+   * | B | D | 2025-01-01 11:00 | 2025-01-01 12:00 |
+   *
+   * The departure and arrival columns are timestamps:
+   *
    * @example
    * ```ts
    * await flights
@@ -2902,7 +2917,7 @@ export default class SimpleTable extends Simple {
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Supplying this or `endTimeColumn` enables chronological traversal.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Supplying this or `startTimeColumn` enables chronological traversal.
-   * @param options.minGapMs - The inclusive minimum time between consecutive connections, in milliseconds. Defaults to `0`. Requires a chronological column.
+   * @param options.minGapMs - The inclusive minimum time between consecutive connections, in milliseconds. Must be finite, non-negative, at most `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological column.
    * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a chronological column.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
