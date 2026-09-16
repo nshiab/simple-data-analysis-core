@@ -8,6 +8,10 @@ import {
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import {
+  enumerateChronologicalRoutes,
+  type ReferenceChronologicalEvent,
+} from "../../helpers/enumerateChronologicalRoutes.ts";
 
 function loadScenario(
   sdb: SimpleDB,
@@ -22,6 +26,58 @@ function loadScenario(
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(columns);
+}
+
+const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
+
+function chronologicalRows<EdgeId>(
+  events: ReferenceChronologicalEvent<string, EdgeId>[],
+) {
+  return events.map((event) => ({
+    edgeId: event.edgeId,
+    source: event.source,
+    target: event.target,
+    startTime: event.startTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.endTime)),
+  }));
+}
+
+function referencePathRows(
+  events: ReferenceChronologicalEvent<string, number>[],
+  start: string,
+  end: string,
+  direction: "incoming" | "outgoing",
+  minGap: bigint,
+  strictOrdering: boolean,
+) {
+  const routes = enumerateChronologicalRoutes(events, start, {
+    direction,
+    end,
+    maxSteps: Math.max(events.length, 1),
+    minGap,
+    strictOrdering,
+  }).toSorted((left, right) => {
+    for (let index = 0; index < Math.min(left.length, right.length); index++) {
+      const difference = left[index].event.edgeId - right[index].event.edgeId;
+      if (difference !== 0) return difference;
+    }
+    return left.length - right.length;
+  });
+  return routes.flatMap((route, pathId) =>
+    route.map((routeStep, index) => ({
+      pathId,
+      step: index + 1,
+      edgeId: routeStep.event.edgeId,
+      source: routeStep.source,
+      target: routeStep.target,
+      weight: 1,
+      total: index + 1,
+    }))
+  );
 }
 
 Deno.test("paths returns every simple route in all traversal directions", async () => {
@@ -467,7 +523,7 @@ Deno.test("paths output records its source as a cache dependency", async () => {
       "edgeId",
       "A",
       "C",
-      { outputTable: true },
+      { outputTable: true, startTimeColumn: "time" },
     );
     output.loadArray(await result.getData());
     await result.removeTable();
@@ -476,8 +532,18 @@ Deno.test("paths output records its source as a cache dependency", async () => {
   const firstSdb = new SimpleDB();
   try {
     const source = firstSdb.newTable(sourceName).loadArray([
-      { edgeId: "E1", source: "A", target: "B" },
-      { edgeId: "E2", source: "B", target: "C" },
+      {
+        edgeId: "E1",
+        source: "A",
+        target: "B",
+        time: new Date(chronologicalBase),
+      },
+      {
+        edgeId: "E2",
+        source: "B",
+        target: "C",
+        time: new Date(chronologicalBase + 1000),
+      },
     ]);
     await firstSdb.newTable(outputName).cache(compute(source));
   } finally {
@@ -487,7 +553,12 @@ Deno.test("paths output records its source as a cache dependency", async () => {
   const secondSdb = new SimpleDB();
   try {
     const source = secondSdb.newTable(sourceName).loadArray([
-      { edgeId: "E3", source: "A", target: "C" },
+      {
+        edgeId: "E3",
+        source: "A",
+        target: "C",
+        time: new Date(chronologicalBase),
+      },
     ]);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
@@ -580,6 +651,74 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         [1, "F2", "B", "A", 3],
       ],
     );
+
+    const scheduledFlights = () =>
+      sdb.newTable().loadArray([
+        {
+          flightId: "F1",
+          origin: "A",
+          destination: "B",
+          departureTime: new Date("2025-01-01T08:00:00Z"),
+          arrivalTime: new Date("2025-01-01T10:00:00Z"),
+          minutes: 2,
+        },
+        {
+          flightId: "F2",
+          origin: "B",
+          destination: "C",
+          departureTime: new Date("2025-01-01T09:00:00Z"),
+          arrivalTime: new Date("2025-01-01T10:00:00Z"),
+          minutes: 9,
+        },
+        {
+          flightId: "F3",
+          origin: "B",
+          destination: "D",
+          departureTime: new Date("2025-01-01T11:00:00Z"),
+          arrivalTime: new Date("2025-01-01T12:00:00Z"),
+          minutes: 3,
+        },
+      ]);
+    for (
+      const [start, end, direction, expected] of [
+        ["A", "D", "outgoing", [
+          [0, 1, "F1", "A", "B", 2, 2],
+          [0, 2, "F3", "B", "D", 3, 5],
+        ]],
+        ["D", "A", "incoming", [
+          [0, 1, "F3", "D", "B", 3, 3],
+          [0, 2, "F1", "B", "A", 2, 5],
+        ]],
+      ] as const
+    ) {
+      const result = scheduledFlights().paths(
+        "origin",
+        "destination",
+        "flightId",
+        start,
+        end,
+        {
+          direction,
+          startTimeColumn: "departureTime",
+          endTimeColumn: "arrivalTime",
+          minGapMs: 60 * 60 * 1000,
+          weight: "minutes",
+        },
+      );
+      await result.log();
+      assertEquals(
+        (await result.getData()).map((row) => [
+          row.pathId,
+          row.step,
+          row.edgeId,
+          row.source,
+          row.target,
+          row.weight,
+          row.total,
+        ]),
+        expected.map((row) => [...row]),
+      );
+    }
   } finally {
     await sdb.close();
   }
@@ -825,6 +964,389 @@ Deno.test("paths includes every parallel-edge combination without a route-count 
         outputTable: true,
       }).getData(),
       [],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("paths chronological traversal keeps first events and enforces both-column connections", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const flights = [
+      {
+        edgeId: "F1",
+        source: "A",
+        target: "B",
+        startTime: new Date("2025-01-01T08:00:00Z"),
+        endTime: new Date("2025-01-01T10:00:00Z"),
+      },
+      {
+        edgeId: "F2",
+        source: "B",
+        target: "C",
+        startTime: new Date("2025-01-01T09:00:00Z"),
+        endTime: new Date("2025-01-01T10:00:00Z"),
+      },
+      {
+        edgeId: "F3",
+        source: "B",
+        target: "D",
+        startTime: new Date("2025-01-01T11:00:00Z"),
+        endTime: new Date("2025-01-01T12:00:00Z"),
+      },
+    ];
+    assertEquals(
+      await sdb.newTable().loadArray(flights)
+        .paths("source", "target", "edgeId", "A", "D", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 60 * 60 * 1000,
+        }).getData(),
+      [
+        {
+          pathId: 0,
+          step: 1,
+          edgeId: "F1",
+          source: "A",
+          target: "B",
+          weight: 1,
+          total: 1,
+        },
+        {
+          pathId: 0,
+          step: 2,
+          edgeId: "F3",
+          source: "B",
+          target: "D",
+          weight: 1,
+          total: 2,
+        },
+      ],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray(flights)
+        .paths("source", "target", "edgeId", "A", "C", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 60 * 60 * 1000,
+        }).getData(),
+      [],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray([flights[0]])
+        .paths("source", "target", "edgeId", "A", "B", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: Number.MAX_SAFE_INTEGER,
+        }).getData(),
+      [{
+        pathId: 0,
+        step: 1,
+        edgeId: "F1",
+        source: "A",
+        target: "B",
+        weight: 1,
+        total: 1,
+      }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("paths chronological traversal supports timestamp fallbacks and ordering boundaries", async () => {
+  const sdb = new SimpleDB();
+  const equal = [
+    {
+      edgeId: "E1",
+      source: "A",
+      target: "B",
+      startTime: new Date(chronologicalBase),
+      endTime: new Date(chronologicalBase),
+    },
+    {
+      edgeId: "E2",
+      source: "B",
+      target: "C",
+      startTime: new Date(chronologicalBase),
+      endTime: new Date(chronologicalBase),
+    },
+  ];
+  try {
+    for (const column of ["startTimeColumn", "endTimeColumn"] as const) {
+      assertEquals(
+        await sdb.newTable().loadArray(equal)
+          .paths("source", "target", "edgeId", "A", "C", {
+            [column]: column === "startTimeColumn" ? "startTime" : "endTime",
+          }).getData(),
+        [],
+      );
+      assertEquals(
+        (await sdb.newTable().loadArray(equal)
+          .paths("source", "target", "edgeId", "A", "C", {
+            [column]: column === "startTimeColumn" ? "startTime" : "endTime",
+            strictOrdering: false,
+          }).getData()).map((row) => row.edgeId),
+        ["E1", "E2"],
+      );
+    }
+
+    const boundary = [
+      { ...equal[0], endTime: new Date(chronologicalBase + 1000) },
+      {
+        ...equal[1],
+        startTime: new Date(chronologicalBase + 2000),
+        endTime: new Date(chronologicalBase + 3000),
+      },
+    ];
+    assertEquals(
+      (await sdb.newTable().loadArray(boundary)
+        .paths("source", "target", "edgeId", "A", "C", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 1000,
+        }).getData()).map((row) => row.edgeId),
+      ["E1", "E2"],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("paths chronological traversal preserves incoming orientation, parallel IDs, weights, and invalid-row policy", async () => {
+  const sdb = new SimpleDB();
+  const rows = [
+    {
+      edgeId: "F1",
+      source: "A",
+      target: "B",
+      weight: 2,
+      startTime: new Date(chronologicalBase + 1000),
+      endTime: new Date(chronologicalBase + 2000),
+    },
+    {
+      edgeId: "F1-copy",
+      source: "A",
+      target: "B",
+      weight: 4,
+      startTime: new Date(chronologicalBase + 1000),
+      endTime: new Date(chronologicalBase + 2000),
+    },
+    {
+      edgeId: "F2",
+      source: "B",
+      target: "C",
+      weight: 3,
+      startTime: new Date(chronologicalBase + 3000),
+      endTime: new Date(chronologicalBase + 4000),
+    },
+    {
+      edgeId: "invalid",
+      source: "A",
+      target: "C",
+      weight: 1,
+      startTime: null,
+      endTime: new Date(chronologicalBase),
+    },
+  ];
+  const expected = [
+    [0, 1, "F2", "C", "B", 3, 3],
+    [0, 2, "F1", "B", "A", 2, 5],
+    [1, 1, "F2", "C", "B", 3, 3],
+    [1, 2, "F1-copy", "B", "A", 4, 7],
+  ];
+  try {
+    for (const ordered of [rows, rows.toReversed()]) {
+      const result = await sdb.newTable().loadArray(ordered)
+        .paths("source", "target", "edgeId", "C", "A", {
+          direction: "incoming",
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 1000,
+          weight: "weight",
+        }).getData();
+      assertEquals(
+        result.map((row) => [
+          row.pathId,
+          row.step,
+          row.edgeId,
+          row.source,
+          row.target,
+          row.weight,
+          row.total,
+        ]),
+        expected,
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("paths chronological results match the independent evaluator on generated tiny graphs", async () => {
+  const sdb = new SimpleDB();
+  const nodes = ["A", "B", "C", "D"];
+  try {
+    for (let seed = 0; seed < 8; seed++) {
+      let state = seed + 1;
+      const random = (limit: number) => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return (state >>> 16) % limit;
+      };
+      const generated: ReferenceChronologicalEvent<string, number>[] = [
+        { edgeId: 0, source: "A", target: "D", startTime: 0n, endTime: 0n },
+        ...Array.from({ length: 6 }, (_, offset) => {
+          const startTime = BigInt(random(5));
+          const edgeId = offset + 1;
+          return {
+            edgeId,
+            source: nodes[random(nodes.length)],
+            target: nodes[random(nodes.length)],
+            startTime: (seed + edgeId) % 9 === 0 ? null : startTime,
+            endTime: startTime + ((seed + edgeId) % 7 === 0 ? -1n : 0n),
+          };
+        }),
+      ];
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const start = direction === "outgoing" ? "A" : "D";
+        const end = direction === "outgoing" ? "D" : "A";
+        for (const strictOrdering of [false, true]) {
+          const minGap = BigInt(seed % 2);
+          const expected = referencePathRows(
+            generated,
+            start,
+            end,
+            direction,
+            minGap,
+            strictOrdering,
+          );
+          for (const ordered of [generated, generated.toReversed()]) {
+            assertEquals(
+              await sdb.newTable().loadArray(chronologicalRows(ordered))
+                .paths("source", "target", "edgeId", start, end, {
+                  direction,
+                  startTimeColumn: "startTime",
+                  endTimeColumn: "endTime",
+                  minGapMs: Number(minGap),
+                  strictOrdering,
+                }).getData(),
+              expected,
+              `seed ${seed}, ${direction}, strict=${strictOrdering}`,
+            );
+          }
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("paths chronological traversal preserves nanoseconds and exact endpoint IDs", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("nanosecondPaths");
+    await sdb.customQuery(`CREATE TABLE "nanosecondPaths" AS
+      SELECT * FROM (VALUES
+        (1::BIGINT, 9007199254740993::BIGINT, 9007199254740995::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
+        (2::BIGINT, 9007199254740995::BIGINT, 9007199254740997::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000002')
+      ) edges(edgeId, source, target, time)`);
+    table.paths(
+      "source",
+      "target",
+      "edgeId",
+      9007199254740993n,
+      9007199254740997n,
+      { startTimeColumn: "TIME" },
+    ).convert({ source: "string", target: "string" });
+    assertEquals(await table.getData(), [
+      {
+        pathId: 0,
+        step: 1,
+        edgeId: 1,
+        source: "9007199254740993",
+        target: "9007199254740995",
+        weight: 1,
+        total: 1,
+      },
+      {
+        pathId: 0,
+        step: 2,
+        edgeId: 2,
+        source: "9007199254740995",
+        target: "9007199254740997",
+        weight: 1,
+        total: 2,
+      },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("paths validates and snapshots chronological options before queued execution", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const unqueued = sdb.newTable();
+    assertThrows(
+      () =>
+        unqueued.paths("source", "target", "edgeId", "A", "B", {
+          minGapMs: 0,
+        }),
+      TypeError,
+      "require options.startTimeColumn or options.endTimeColumn",
+    );
+    assertThrows(
+      () =>
+        unqueued.paths("source", "target", "edgeId", "A", "B", {
+          direction: "both",
+          startTimeColumn: "time",
+        }),
+      TypeError,
+      'options.direction cannot be "both"',
+    );
+    assertEquals(unqueued.pendingOps.length, 0);
+
+    const options = {
+      startTimeColumn: "time",
+      strictOrdering: true,
+      outputTable: "chronologicalPathSnapshot",
+    };
+    const source = sdb.newTable().loadArray([
+      { edgeId: "E1", source: "A", target: "B", time: "2025-01-01 00:00:00" },
+      { edgeId: "E2", source: "B", target: "C", time: "2025-01-01 00:00:01" },
+    ]).convert({ time: "datetime" });
+    const result = source.paths(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "C",
+      options,
+    );
+    options.startTimeColumn = "missing";
+    options.strictOrdering = false;
+    options.outputTable = "changed";
+    assertEquals(result.name, "chronologicalPathSnapshot");
+    assertEquals((await result.getData()).map((row) => row.edgeId), [
+      "E1",
+      "E2",
+    ]);
+    assertEquals(await source.getRowCount(), 2);
+
+    const missing = sdb.newTable().loadArray([
+      { edgeId: "E", source: "A", target: "B", time: new Date() },
+    ]);
+    await assertRejects(
+      () =>
+        missing.paths("source", "target", "edgeId", "A", "B", {
+          startTimeColumn: "missing",
+        }).run(),
+      Error,
+      'column "missing" does not exist',
     );
   } finally {
     await sdb.close();
