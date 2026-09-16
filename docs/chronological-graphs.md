@@ -91,6 +91,34 @@ project `eventSelections()` once, filter with `eventValidity()`, and call
 timestamp comparison; each method keeps its traversal, pruning, route, or
 component algorithm explicit.
 
+## Reachability state and termination
+
+Chronological `reachable()` materializes one valid-event relation and assigns
+each physical input row its event ordinal there. The same materialized relation
+is reused throughout recursion, so an ordinal cannot change between scans. Every
+valid event leaving a requested start seeds a state; no preceding event or local
+transfer partner is required.
+
+Recursive states retain the requested start and the complete last-event state:
+its physical ordinal, endpoint, effective start, and effective end. A candidate
+event is joined from that endpoint and checked against the actual last event.
+Incoming traversal joins a physical predecessor and applies the same
+earlier-to-later comparison through the shared transition helper.
+
+The recursive `UNION` deduplicates identical `(requested start, last event)`
+states. A last event completely determines the current node and every possible
+next transition, so reaching it through another route cannot reveal a new
+continuation. With `S` distinct requested starts and `E` valid physical events,
+at most `S × E` states are retained. This finite bound still holds when
+non-strict ordering allows equal-time event cycles and avoids enumerating all
+routes solely to establish reachability. Only after the closure is complete are
+states projected to the existing distinct `start` and `node` result.
+
+The internal SQL builder accepts an arbitrary typed start relation. Public
+`reachable()` supplies bound requested starts; chronological strong-component
+work can reuse the same closure over an all-node start relation without adding a
+public reachability API.
+
 When a method has no public edge-ID argument, the projected
 `row_number() OVER ()` identifies an event state by its physical position in the
 incoming relation. Parallel and otherwise identical rows remain distinct. The

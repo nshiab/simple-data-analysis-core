@@ -2785,6 +2785,15 @@ export default class SimpleTable extends Simple {
    * Unknown starting IDs and starts with no connections to follow produce
    * no rows. Empty start arrays and duplicate starting IDs throw an error.
    *
+   * Supply `startTimeColumn` or `endTimeColumn` to follow only chronological
+   * sequences. With both columns, each next connection's start is compared
+   * with the preceding connection's end. With one column, connections are
+   * treated as instantaneous. `minGapMs` sets an inclusive minimum separation and
+   * `strictOrdering` controls whether equal-time connections may be
+   * consecutive. Every valid connection remains eligible as the first step.
+   * Chronological traversal supports `"outgoing"` and `"incoming"`, but not
+   * `"both"`.
+   *
    * The next four examples each start with this data:
    *
    * | origin | destination |
@@ -2866,11 +2875,35 @@ export default class SimpleTable extends Simple {
    * | B | C |
    * | B | D |
    *
+   * Chronological options retain only journeys with valid connection times.
+   * Here, A → B arrives at 10:00, so the 09:00 connection to C is unavailable,
+   * while the 11:00 connection to D meets the one-hour minimum gap:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .reachable("origin", "destination", "A", {
+   *     startTimeColumn: "departureTime",
+   *     endTimeColumn: "arrivalTime",
+   *     minGapMs: 60 * 60 * 1000,
+   *   })
+   *   .log();
+   * ```
+   *
+   * | start | node |
+   * | --- | --- |
+   * | A | B |
+   * | A | D |
+   *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param startNodes - One starting node ID or an array of distinct starting node IDs.
-   * @param options - An optional object with direction and result configuration.
+   * @param options - An optional object with direction, chronological traversal, and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.startTimeColumn - The name of the column containing each connection's start time. Supplying this or `endTimeColumn` enables chronological traversal.
+   * @param options.endTimeColumn - The name of the column containing each connection's end time. Supplying this or `startTimeColumn` enables chronological traversal.
+   * @param options.minGapMs - The inclusive minimum time between consecutive connections, in milliseconds. Defaults to `0`. Requires a chronological column.
+   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a chronological column.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -2881,7 +2914,11 @@ export default class SimpleTable extends Simple {
     startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
+      endTimeColumn?: string;
+      minGapMs?: number;
       outputTable?: string | boolean;
+      startTimeColumn?: string;
+      strictOrdering?: boolean;
     } = {},
   ): SimpleTable {
     return reachable(this, sourceColumn, targetColumn, startNodes, options);

@@ -1,5 +1,11 @@
 import type SimpleTable from "../class/SimpleTable.ts";
+import buildGraphTemporalReachabilitySql from "../helpers/buildGraphTemporalReachabilitySql.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
+import prepareGraphTemporalSql, {
+  type GraphTemporalOptions,
+  type PreparedGraphTemporalOptions,
+  prepareGraphTemporalOptions,
+} from "../helpers/prepareGraphTemporalSql.ts";
 import prepareGraphStarts, {
   type GraphId,
   type PreparedGraphStarts,
@@ -11,7 +17,7 @@ import prepareGraphTraversal, {
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
-type ReachableOptions = {
+type ReachableOptions = GraphTemporalOptions & {
   direction?: GraphDirection;
   outputTable?: string | boolean;
 };
@@ -57,8 +63,13 @@ export default function reachable(
     "reachable()",
     "startNodes",
   );
-  options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
+  const temporalOptions = prepareGraphTemporalOptions(
+    options,
+    direction,
+    "reachable()",
+  );
+  options = structuredClone(options);
   const parameters = {
     sourceColumn,
     targetColumn,
@@ -71,8 +82,16 @@ export default function reachable(
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateStarts(schema, sourceColumn, targetColumn, preparedStarts);
-      return preparedStarts.values;
+      const { temporal } = validateInputs(
+        schema,
+        sourceColumn,
+        targetColumn,
+        preparedStarts,
+        temporalOptions,
+      );
+      return temporal === undefined
+        ? preparedStarts.values
+        : [temporal.gapParameter, ...preparedStarts.values];
     },
     buildSelect: (input, schema) =>
       reachableSelect(
@@ -82,26 +101,32 @@ export default function reachable(
         targetColumn,
         preparedStarts,
         direction,
+        temporalOptions,
       ),
     outputSchema: (schema) => {
-      const endpoints = validateStarts(
+      const { endpoints } = validateInputs(
         schema,
         sourceColumn,
         targetColumn,
         preparedStarts,
+        temporalOptions,
       );
-      return { start: endpoints.idType, node: endpoints.idType };
+      return {
+        start: endpoints.idType,
+        node: endpoints.idType,
+      };
     },
   });
 }
 
-function validateStarts(
+function validateInputs(
   schema: TableSchema,
   source: string,
   target: string,
   starts: PreparedGraphStarts,
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
 ) {
-  return validateGraphStarts(
+  const endpoints = validateGraphStarts(
     schema,
     source,
     target,
@@ -109,6 +134,10 @@ function validateStarts(
     "reachable()",
     "startNodes",
   );
+  const temporal = temporalOptions === undefined
+    ? undefined
+    : prepareGraphTemporalSql(schema, temporalOptions, "reachable()");
+  return { endpoints, temporal };
 }
 
 function reachableSelect(
@@ -118,6 +147,7 @@ function reachableSelect(
   target: string,
   starts: PreparedGraphStarts,
   direction: GraphDirection,
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
 ): string {
   const prepared = prepareGraphTraversal(
     input,
@@ -128,6 +158,18 @@ function reachableSelect(
     "reachable()",
     "startNodes",
   );
+  if (temporalOptions !== undefined) {
+    const temporal = prepareGraphTemporalSql(
+      schema,
+      temporalOptions,
+      "reachable()",
+    );
+    return temporalReachableSelect(
+      prepared,
+      direction as Exclude<GraphDirection, "both">,
+      temporal,
+    );
+  }
   const relations = prepared.relationNames([
     "graph_start_values",
     "graph_starts",
@@ -186,4 +228,31 @@ function reachableSelect(
     ORDER BY ${quoteIdentifier("__start_key")}, ${
     quoteIdentifier("__node_key")
   }`;
+}
+
+function temporalReachableSelect(
+  prepared: ReturnType<typeof prepareGraphTraversal>,
+  direction: Exclude<GraphDirection, "both">,
+  temporal: ReturnType<typeof prepareGraphTemporalSql>,
+): string {
+  const q = quoteIdentifier;
+  const startsSelect = `SELECT ${q("start")},
+        ${prepared.key(q("start"))} AS ${q("__key")}
+      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${
+    q("start")
+  })`;
+  const reachability = buildGraphTemporalReachabilitySql(
+    prepared,
+    startsSelect,
+    direction,
+    temporal,
+  );
+  return `${reachability.withClause}
+    SELECT ${q("start")}, ${q("node")}
+    FROM (
+      SELECT DISTINCT ${q("start")}, ${q("node")},
+        ${q("__start_key")}, ${q("__node_key")}
+      FROM ${reachability.reachableRelation}
+    ) AS ${q("reachable_nodes")}
+    ORDER BY ${q("__start_key")}, ${q("__node_key")}`;
 }
