@@ -23,11 +23,12 @@ rejected.
 `minGapMs` must be finite, non-negative, no greater than
 `Number.MAX_SAFE_INTEGER`, and exactly expressible as a whole number of
 microseconds. Fractional milliseconds such as `0.001` are accepted, while
-sub-microsecond settings such as `0.0001` are rejected. DuckDB intervals have
-microsecond precision, so accepting a finer configured gap would imply precision
-the engine cannot represent consistently. Timestamp comparisons still retain
-their native precision: two `TIMESTAMP_NS` events one nanosecond apart satisfy
-strict ordering when the configured gap is zero.
+sub-microsecond settings such as `0.0001` are rejected. Whole-microsecond gaps
+are a deliberate API granularity choice, shared across all accepted timestamp
+types. The helper uses exact integer arithmetic rather than DuckDB intervals;
+this restriction is not an engine precision limitation. Timestamp comparisons
+still retain their native precision: two `TIMESTAMP_NS` events one nanosecond
+apart satisfy strict ordering when the configured gap is zero.
 
 For two physical events, the transition is valid when:
 
@@ -123,7 +124,7 @@ incoming search encounters F2 first.
 
 ## Independent tiny-graph reference evaluator
 
-`test/helpers/chronologicalGraphReference.ts` is an exhaustive test-only
+`test/helpers/enumerateChronologicalRoutes.ts` is an exhaustive test-only
 evaluator. It uses bigint timestamps and a direct arithmetic implementation; it
 does not import or reproduce the production SQL builder. Callers must provide a
 positive `maxSteps`, which makes enumeration bounded even when non-strict equal

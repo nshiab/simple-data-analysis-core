@@ -1,8 +1,9 @@
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
+import { DuckDBInstance } from "@duckdb/node-api";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import prepareGraphTemporalSql, {
   prepareGraphTemporalOptions,
-} from "../../../src/helpers/prepareGraphTemporal.ts";
+} from "../../../src/helpers/prepareGraphTemporalSql.ts";
 
 Deno.test("prepareGraphTemporalOptions distinguishes static calls from explicit settings", () => {
   assertEquals(
@@ -554,3 +555,58 @@ function transitionQuery(
   }
     ORDER BY candidate.id`;
 }
+
+Deno.test("mixed DATE and nanosecond events retain wide dates and reject reversed events", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const prepared = prepareGraphTemporalSql(
+      { starts: "TIMESTAMP_NS", ends: "DATE" },
+      prepareGraphTemporalOptions(
+        { startTimeColumn: "starts", endTimeColumn: "ends" },
+        "outgoing",
+        "paths()",
+      )!,
+      "paths()",
+    );
+    assertEquals(
+      await sdb.customQuery(
+        `WITH events AS (
+          SELECT id, ${prepared.eventSelections("input").join(", ")}
+          FROM (VALUES
+            ('wide', TIMESTAMP_NS '2025-01-01', DATE '1000000-01-01'),
+            ('reversed', TIMESTAMP_NS '2025-01-01 00:00:00.000000001', DATE '2025-01-01'),
+            ('infinite', TIMESTAMP_NS 'infinity', DATE '1000000-01-01')
+          ) input(id, starts, ends)
+        ) SELECT id FROM events WHERE ${prepared.eventValidity()} ORDER BY id`,
+        { returnData: true },
+      ),
+      [{ id: "wide" }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("prepared gap binds exact large integers without JavaScript rounding", async () => {
+  const db = await DuckDBInstance.create(":memory:");
+  const connection = await db.connect();
+  try {
+    const prepared = prepareGraphTemporalSql(
+      { time: "TIMESTAMP_NS" },
+      prepareGraphTemporalOptions(
+        { startTimeColumn: "time", minGapMs: Number.MAX_SAFE_INTEGER },
+        "outgoing",
+        "reachable()",
+      )!,
+      "reachable()",
+    );
+    const result = await connection.runAndReadAll(
+      "SELECT CAST(CAST($1 AS HUGEINT) AS VARCHAR) AS gap",
+      [prepared.gapParameter],
+    );
+    assertEquals(result.getRowObjects(), [{ gap: "9007199254740991000000" }]);
+  } finally {
+    connection.closeSync();
+    db.closeSync();
+  }
+});

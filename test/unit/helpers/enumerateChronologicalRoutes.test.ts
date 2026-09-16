@@ -8,7 +8,7 @@ import {
   enumerateChronologicalRoutes,
   type ReferenceChronologicalEvent,
   type ReferenceChronologicalStep,
-} from "../../helpers/chronologicalGraphReference.ts";
+} from "../../helpers/enumerateChronologicalRoutes.ts";
 
 Deno.test("reference evaluator preserves a valid standalone event", () => {
   assertEquals(
@@ -134,3 +134,36 @@ function edgeIds<Node, EdgeId>(
 ): EdgeId[][] {
   return routes.map((route) => route.map((step) => step.event.edgeId));
 }
+
+Deno.test("reference evaluator preserves parallel identity and never reuses a looping event", () => {
+  const loop = {
+    edgeId: "loop",
+    source: "A",
+    target: "A",
+    startTime: 1n,
+    endTime: 1n,
+  };
+  assertEquals(
+    edgeIds(enumerateChronologicalRoutes([loop], "A", {
+      maxSteps: 3,
+      simpleNodes: false,
+      strictOrdering: false,
+    })),
+    [["loop"]],
+  );
+  assertEquals(
+    edgeIds(enumerateChronologicalRoutes([loop, { ...loop }], "A", {
+      maxSteps: 3,
+      simpleNodes: false,
+      strictOrdering: false,
+    })),
+    [["loop"], ["loop", "loop"], ["loop"], ["loop", "loop"]],
+  );
+  assertEquals(
+    edgeIds(enumerateChronologicalRoutes([loop], "A", {
+      maxSteps: 3,
+      returnToStart: true,
+    })),
+    [["loop"]],
+  );
+});

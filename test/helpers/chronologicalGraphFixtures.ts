@@ -1,4 +1,4 @@
-import type { ReferenceChronologicalEvent } from "./chronologicalGraphReference.ts";
+import type { ReferenceChronologicalEvent } from "./enumerateChronologicalRoutes.ts";
 
 export const standaloneEvent: ReferenceChronologicalEvent<string, string>[] = [
   {
