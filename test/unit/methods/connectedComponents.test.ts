@@ -1106,7 +1106,7 @@ Deno.test("connectedComponents applies strict ordering and inclusive gaps", asyn
   }
 });
 
-Deno.test("connectedComponents retains valid event nodes and excludes invalid events", async () => {
+Deno.test("connectedComponents rejects invalid events and preserves valid empty inputs", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("componentValidEvents");
@@ -1117,17 +1117,33 @@ Deno.test("connectedComponents retains valid event nodes and excludes invalid ev
         ('bad-null', 'missing', NULL::TIMESTAMP, NULL::TIMESTAMP),
         ('bad-order', 'missing-2', TIMESTAMP '2025-01-01 05:00:00', TIMESTAMP '2025-01-01 04:00:00')
       ) events(source, target, departure, arrival)`);
-    const result = table.connectedComponents("source", "target", {
-      mode: "strong",
-      startTimeColumn: "departure",
-      endTimeColumn: "arrival",
-      outputTable: true,
-    });
-    assertEquals(await result.getData(), [
-      { node: "A", componentId: 0 },
-      { node: "B", componentId: 1 },
-      { node: "S", componentId: 2 },
-    ]);
+    await assertRejects(
+      () =>
+        table.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+          outputTable: true,
+        }).getData(),
+      TypeError,
+      'selected start-time column "departure" contains a null timestamp',
+    );
+    table.filter(
+      "departure IS NOT NULL AND arrival IS NOT NULL AND arrival >= departure",
+    );
+    assertEquals(
+      await table.connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "departure",
+        endTimeColumn: "arrival",
+        outputTable: true,
+      }).getData(),
+      [
+        { node: "A", componentId: 0 },
+        { node: "B", componentId: 1 },
+        { node: "S", componentId: 2 },
+      ],
+    );
 
     const empty = sdb.newTable("emptyTemporalComponents");
     await sdb.customQuery(`CREATE TABLE "emptyTemporalComponents" (
@@ -1148,12 +1164,14 @@ Deno.test("connectedComponents retains valid event nodes and excludes invalid ev
         ('C', 'D', TIMESTAMP 'infinity'),
         ('E', 'F', TIMESTAMP '-infinity')
       ) events(source, target, time)`);
-    assertEquals(
-      await invalid.connectedComponents("source", "target", {
-        mode: "strong",
-        startTimeColumn: "time",
-      }).getData(),
-      [],
+    await assertRejects(
+      () =>
+        invalid.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+        }).getData(),
+      TypeError,
+      'selected start-time column "time" contains a null timestamp',
     );
   } finally {
     await sdb.close();

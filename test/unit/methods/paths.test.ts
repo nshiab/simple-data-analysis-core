@@ -1119,7 +1119,7 @@ Deno.test("paths chronological traversal supports timestamp fallbacks and orderi
   }
 });
 
-Deno.test("paths chronological traversal preserves incoming orientation, parallel IDs, weights, and invalid-row policy", async () => {
+Deno.test("paths chronological traversal preserves incoming orientation, parallel IDs, and weights", async () => {
   const sdb = new SimpleDB();
   const rows = [
     {
@@ -1145,14 +1145,6 @@ Deno.test("paths chronological traversal preserves incoming orientation, paralle
       weight: 3,
       startTime: new Date(chronologicalBase + 3000),
       endTime: new Date(chronologicalBase + 4000),
-    },
-    {
-      edgeId: "invalid",
-      source: "A",
-      target: "C",
-      weight: 1,
-      startTime: null,
-      endTime: new Date(chronologicalBase),
     },
   ];
   const expected = [
@@ -1208,8 +1200,8 @@ Deno.test("paths chronological results match the independent evaluator on genera
             edgeId,
             source: nodes[random(nodes.length)],
             target: nodes[random(nodes.length)],
-            startTime: (seed + edgeId) % 9 === 0 ? null : startTime,
-            endTime: startTime + ((seed + edgeId) % 7 === 0 ? -1n : 0n),
+            startTime,
+            endTime: startTime,
           };
         }),
       ];

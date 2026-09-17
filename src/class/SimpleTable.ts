@@ -2798,8 +2798,11 @@ export default class SimpleTable extends Simple {
    * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
    * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
    * precision. Zoned timestamps represent absolute instants and cannot be
-   * combined with a naive date or timestamp column. Connections with null or
-   * infinite selected times, or an end before their start, are excluded.
+   * combined with a naive date or timestamp column. Before traversal, the
+   * method rejects the entire supplied input if any selected time is null or
+   * infinite, or if an end is before its start. This includes disconnected
+   * or otherwise graph-ineligible rows; filter them before calling the method
+   * if they should be omitted. An empty input is valid.
    *
    * The next four examples each start with this data:
    *
@@ -2962,8 +2965,11 @@ export default class SimpleTable extends Simple {
    * `TIMESTAMP_MS`, `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE` values. Time
    * comparisons stay in DuckDB and retain the columns' native precision. Zoned
    * timestamps represent absolute instants and cannot be combined with a naive
-   * date or timestamp column. Connections with null or infinite selected
-   * times, or an end before their start, are excluded. Nodes in every valid
+   * date or timestamp column. Before traversal, the method rejects the entire
+   * supplied input if any selected time is null or infinite, or if an end is
+   * before its start. This includes disconnected or otherwise graph-ineligible
+   * rows; filter them before calling the method if they should be omitted. An
+   * empty input is valid. Nodes in every valid
    * event are included, even when they form singleton groups.
    *
    * For the first example, we start with this data:
@@ -3213,8 +3219,11 @@ export default class SimpleTable extends Simple {
    * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
    * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
    * precision. Zoned timestamps represent absolute instants and cannot be
-   * combined with a naive date or timestamp column. Connections with null or
-   * infinite selected times, or an end before their start, are excluded.
+   * combined with a naive date or timestamp column. Before traversal, the
+   * method rejects the entire supplied input if any selected time is null or
+   * infinite, or if an end is before its start. This includes disconnected
+   * or otherwise graph-ineligible rows; filter them before calling the method
+   * if they should be omitted. An empty input is valid.
    * `minGapMs` must be finite, non-negative, no greater than
    * `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
    *
@@ -3422,8 +3431,11 @@ export default class SimpleTable extends Simple {
    * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
    * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
    * precision. Zoned timestamps represent absolute instants and cannot be
-   * combined with a naive date or timestamp column. Connections with null or
-   * infinite selected times, or an end before their start, are excluded.
+   * combined with a naive date or timestamp column. Before traversal, the
+   * method rejects the entire supplied input if any selected time is null or
+   * infinite, or if an end is before its start. This includes disconnected
+   * or otherwise graph-ineligible rows; filter them before calling the method
+   * if they should be omitted. An empty input is valid.
    * `minGapMs` must be finite, non-negative, no greater than
    * `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
    *
@@ -3659,8 +3671,11 @@ export default class SimpleTable extends Simple {
    * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
    * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
    * precision. Zoned timestamps represent absolute instants and cannot be
-   * combined with a naive date or timestamp column. Connections with null or
-   * infinite selected times, or an end before their start, are excluded.
+   * combined with a naive date or timestamp column. Before traversal, the
+   * method rejects the entire supplied input if any selected time is null or
+   * infinite, or if an end is before its start. This includes disconnected
+   * or otherwise graph-ineligible rows; filter them before calling the method
+   * if they should be omitted. An empty input is valid.
    * `minGapMs` must be finite, non-negative, no greater than
    * `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
    *
@@ -3922,8 +3937,11 @@ export default class SimpleTable extends Simple {
    * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
    * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
    * precision. Zoned timestamps represent absolute instants and cannot be
-   * combined with a naive date or timestamp column. Connections with null or
-   * infinite selected times, or an end before their start, are excluded. A
+   * combined with a naive date or timestamp column. Before traversal, the
+   * method rejects the entire supplied input if any selected time is null or
+   * infinite, or if an end is before its start. This includes disconnected
+   * or otherwise graph-ineligible rows; filter them before calling the method
+   * if they should be omitted. An empty input is valid. A
    * valid self-connection remains a one-step cycle and has no connection gap
    * to check.
    *

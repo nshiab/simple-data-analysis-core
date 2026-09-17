@@ -1266,7 +1266,7 @@ Deno.test("distances chronological improvements propagate through previously rea
   }
 });
 
-Deno.test("distances chronological traversal handles first events, invalid rows, returns, and equal-time zero costs", async () => {
+Deno.test("distances chronological traversal handles first events, returns, and equal-time zero costs", async () => {
   const sdb = new SimpleDB();
   try {
     const rows: WeightedChronologicalEvent[] = [
@@ -1309,22 +1309,6 @@ Deno.test("distances chronological traversal handles first events, invalid rows,
         startTime: 10n,
         endTime: 11n,
         weight: 4,
-      },
-      {
-        edgeId: 5,
-        source: "I",
-        target: "invalid-null",
-        startTime: null,
-        endTime: 11n,
-        weight: 1,
-      },
-      {
-        edgeId: 6,
-        source: "I",
-        target: "invalid-order",
-        startTime: 12n,
-        endTime: 11n,
-        weight: 1,
       },
     ];
     assertEquals(
@@ -1440,8 +1424,8 @@ Deno.test("distances chronological results match the independent evaluator on ge
             edgeId,
             source: nodes[random(nodes.length)],
             target: nodes[random(nodes.length)],
-            startTime: (seed + edgeId) % 13 === 0 ? null : startTime,
-            endTime: startTime + ((seed + edgeId) % 9 === 0 ? -1n : 0n),
+            startTime,
+            endTime: startTime,
             weight: random(5),
           };
         },

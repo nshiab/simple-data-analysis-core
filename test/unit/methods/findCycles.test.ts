@@ -523,8 +523,7 @@ Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", asy
       SELECT * FROM (VALUES
         (1, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
         (2, 'C', 'A', TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
-        (3, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000002001'),
-        (4, 'Q', 'Q', TIMESTAMP_NS 'infinity')
+        (3, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000002001')
       ) AS events(edgeId, source, target, eventTime)`);
     for (const direction of ["outgoing", "incoming"] as const) {
       const exact = table.findCycles("source", "target", "edgeId", {
@@ -694,14 +693,6 @@ Deno.test("findCycles preserves temporal parallel identities and deterministic c
       source: "A",
       target: "B",
       startTime: 2_000n,
-      endTime: 2_000n,
-    },
-    { edgeId: 50, source: "Q", target: "Q", startTime: null, endTime: null },
-    {
-      edgeId: 60,
-      source: "X",
-      target: "Y",
-      startTime: 3_000n,
       endTime: 2_000n,
     },
   ];
@@ -1212,9 +1203,7 @@ Deno.test("findCycles matches independently normalized generated chronological c
         source: nodes[sourceIndex],
         target: nodes[targetIndex],
         startTime,
-        endTime: index === 4 && seed % 2 === 0
-          ? startTime - 1_000n
-          : startTime + duration,
+        endTime: startTime + duration,
       });
     }
     return events;

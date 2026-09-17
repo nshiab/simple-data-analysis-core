@@ -11,6 +11,7 @@ import prepareGraphTemporalSql, {
 import { prepareGraphSql } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
 
 type ConnectedComponentsOptions = GraphTemporalOptions & {
   mode?: "weak" | "strong";
@@ -70,6 +71,15 @@ export default function connectedComponents(
     method: "connectedComponents()",
     parameters,
     outputTable: options.outputTable,
+    preflight: temporalOptions === undefined
+      ? undefined
+      : (input) =>
+        validateGraphTemporalEvents(
+          input,
+          temporalOptions,
+          "connectedComponents()",
+          parameters,
+        ),
     values: (schema) => {
       const temporal = validateInputs(
         schema,

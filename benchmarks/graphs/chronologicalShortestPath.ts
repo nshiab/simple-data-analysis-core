@@ -1,4 +1,5 @@
 import SimpleDB from "../../src/class/SimpleDB.ts";
+import { observeSdaQueries } from "../queryProfile.ts";
 
 type ProfileNode = {
   children?: ProfileNode[];
@@ -61,6 +62,7 @@ for (const scenario of ["tied", "pruned"] as const) {
     const source = sdb.newTable(`chronological_shortest_${scenario}`)
       .loadArray(rows);
     await source.run();
+    const observer = observeSdaQueries(sdb);
     const profilePath = `${directory}/${scenario}.json`;
     await sdb.customQuery("SET enable_profiling='json'");
     await sdb.customQuery(`SET profiling_output='${profilePath}'`);
@@ -82,6 +84,13 @@ for (const scenario of ["tied", "pruned"] as const) {
     await sdb.customQuery("SET enable_profiling='no_output'");
 
     const output = await result.getData();
+    const validationMilliseconds = observer.queries.find((entry) =>
+      entry.query.includes("__graph_temporal_events") &&
+      entry.query.trimStart().startsWith("SELECT CASE")
+    )?.milliseconds;
+    if (validationMilliseconds === undefined) {
+      throw new Error("Missing chronological validation query timing.");
+    }
     const outputRoutes = new Set(output.map((row) => row.pathId)).size;
     const profile = JSON.parse(await Deno.readTextFile(profilePath)) as
       & ProfileNode
@@ -127,6 +136,7 @@ for (const scenario of ["tied", "pruned"] as const) {
       outputStepRows: output.length,
       retainedRoutePrefixes: routeCte.operator_cardinality,
       milliseconds,
+      validationMilliseconds,
       queryMilliseconds: profile.latency * 1000,
       endpointJoinCardinality: cardinality(endpointJoins),
       endpointJoinMilliseconds: timing(endpointJoins),

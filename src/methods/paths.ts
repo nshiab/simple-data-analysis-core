@@ -15,6 +15,7 @@ import prepareGraphTemporalSql, {
 import type { GraphDirection } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 
 type PathsOptions = GraphTemporalOptions & {
@@ -88,6 +89,15 @@ export default function paths(
     method: "paths()",
     parameters,
     outputTable: options.outputTable,
+    preflight: temporalOptions === undefined
+      ? undefined
+      : (input) =>
+        validateGraphTemporalEvents(
+          input,
+          temporalOptions,
+          "paths()",
+          parameters,
+        ),
     values: (schema) => {
       validateGraphRouteInputs(
         schema,

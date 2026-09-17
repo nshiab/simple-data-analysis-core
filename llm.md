@@ -3248,8 +3248,11 @@ end-to-start comparison while searching backward.
 Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
 `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
 precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Connections with null or infinite
-selected times, or an end before their start, are excluded.
+with a naive date or timestamp column. Before traversal, the method rejects the
+entire supplied input if any selected time is null or infinite, or if an end is
+before its start. This includes disconnected or otherwise graph-ineligible rows;
+filter them before calling the method if they should be omitted. An empty input
+is valid.
 
 The next four examples each start with this data:
 
@@ -3419,9 +3422,12 @@ Chronological columns accept DuckDB `DATE`, `TIMESTAMP`, `TIMESTAMP_S`,
 `TIMESTAMP_MS`, `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE` values. Time
 comparisons stay in DuckDB and retain the columns' native precision. Zoned
 timestamps represent absolute instants and cannot be combined with a naive date
-or timestamp column. Connections with null or infinite selected times, or an end
-before their start, are excluded. Nodes in every valid event are included, even
-when they form singleton groups.
+or timestamp column. Before traversal, the method rejects the entire supplied
+input if any selected time is null or infinite, or if an end is before its
+start. This includes disconnected or otherwise graph-ineligible rows; filter
+them before calling the method if they should be omitted. An empty input is
+valid. Nodes in every valid event are included, even when they form singleton
+groups.
 
 For the first example, we start with this data:
 
@@ -3680,10 +3686,12 @@ direction.
 Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
 `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
 precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Connections with null or infinite
-selected times, or an end before their start, are excluded. `minGapMs` must be
-finite, non-negative, no greater than `Number.MAX_SAFE_INTEGER`, and exactly
-representable in whole microseconds.
+with a naive date or timestamp column. Before traversal, the method rejects the
+entire supplied input if any selected time is null or infinite, or if an end is
+before its start. This includes disconnected or otherwise graph-ineligible rows;
+filter them before calling the method if they should be omitted. An empty input
+is valid. `minGapMs` must be finite, non-negative, no greater than
+`Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
 
 The next five examples each start with this data:
 
@@ -3893,10 +3901,12 @@ Chronological traversal supports `"outgoing"` and `"incoming"`, but not
 Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
 `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
 precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Connections with null or infinite
-selected times, or an end before their start, are excluded. `minGapMs` must be
-finite, non-negative, no greater than `Number.MAX_SAFE_INTEGER`, and exactly
-representable in whole microseconds.
+with a naive date or timestamp column. Before traversal, the method rejects the
+entire supplied input if any selected time is null or infinite, or if an end is
+before its start. This includes disconnected or otherwise graph-ineligible rows;
+filter them before calling the method if they should be omitted. An empty input
+is valid. `minGapMs` must be finite, non-negative, no greater than
+`Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
@@ -4122,10 +4132,12 @@ reverse the scheduled time of a connection.
 Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
 `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
 precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Connections with null or infinite
-selected times, or an end before their start, are excluded. `minGapMs` must be
-finite, non-negative, no greater than `Number.MAX_SAFE_INTEGER`, and exactly
-representable in whole microseconds.
+with a naive date or timestamp column. Before traversal, the method rejects the
+entire supplied input if any selected time is null or infinite, or if an end is
+before its start. This includes disconnected or otherwise graph-ineligible rows;
+filter them before calling the method if they should be omitted. An empty input
+is valid. `minGapMs` must be finite, non-negative, no greater than
+`Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
@@ -4383,9 +4395,12 @@ connections.
 Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
 `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
 precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Connections with null or infinite
-selected times, or an end before their start, are excluded. A valid
-self-connection remains a one-step cycle and has no connection gap to check.
+with a naive date or timestamp column. Before traversal, the method rejects the
+entire supplied input if any selected time is null or infinite, or if an end is
+before its start. This includes disconnected or otherwise graph-ineligible rows;
+filter them before calling the method if they should be omitted. An empty input
+is valid. A valid self-connection remains a one-step cycle and has no connection
+gap to check.
 
 A self-connection forms a one-step cycle. With `direction: "both"`, two separate
 connections between the same nodes can form a two-step cycle. A single

@@ -15,6 +15,7 @@ import {
 } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
 
 type FindCyclesOptions = GraphTemporalOptions & {
   direction?: GraphDirection;
@@ -77,6 +78,15 @@ export default function findCycles(
     method: "findCycles()",
     parameters,
     outputTable: options.outputTable,
+    preflight: temporalOptions === undefined
+      ? undefined
+      : (input) =>
+        validateGraphTemporalEvents(
+          input,
+          temporalOptions,
+          "findCycles()",
+          parameters,
+        ),
     values: (schema) => {
       validateFindCyclesInputs(
         schema,

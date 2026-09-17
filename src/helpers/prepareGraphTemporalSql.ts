@@ -167,13 +167,13 @@ export default function prepareGraphTemporalSql(
     eventValidity: (alias) => {
       const eventStart = eventReference(alias, "__event_start");
       const eventEnd = eventReference(alias, "__event_end");
-      return `${eventStart} IS NOT NULL
-        AND ${eventEnd} IS NOT NULL
-        AND isfinite(${eventStart})
-        AND isfinite(${eventEnd})
-        AND ${temporalUnits(eventEnd, endType, gapUnit)} >= ${
+      return `CASE
+        WHEN ${eventStart} IS NULL OR ${eventEnd} IS NULL THEN false
+        WHEN NOT isfinite(${eventStart}) OR NOT isfinite(${eventEnd}) THEN false
+        ELSE ${temporalUnits(eventEnd, endType, gapUnit)} >= ${
         temporalUnits(eventStart, startType, gapUnit)
-      }`;
+      }
+      END`;
     },
     transition: (currentAlias, candidateAlias, direction, gapExpression) => {
       const currentStart = eventReference(currentAlias, "__event_start");

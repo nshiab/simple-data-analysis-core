@@ -108,7 +108,16 @@ keyed event-cost states retained by `distances()`, the finite state bound,
 complete query time, and the timing and cardinality reported by DuckDB for
 transfer joins. Raw profiles are written under
 `benchmarks/.work/graphs/chronological-distances/`. This runner measures the
-cost-state algorithm directly and does not enumerate the possible routes.
+cost-state algorithm directly and does not enumerate the possible routes. It
+calls the internal SQL builder, so its query timing excludes the public
+chronological invalid-event preflight.
+
+The focused chronological-shortest-path runner uses the public queued method.
+Its wall time includes named-output setup, schema work, the invalid-event
+preflight, and traversal materialization. `validationMilliseconds` isolates the
+native invalid-event existence query, while `queryMilliseconds` comes from the
+separately profiled traversal statement. Do not attribute the difference between
+those two values solely to validation.
 
 The focused chronological-component runner measures all-pairs event-state
 reachability and maximal-clique enumeration as separate queries. One strict

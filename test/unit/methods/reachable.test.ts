@@ -991,12 +991,12 @@ Deno.test("reachable chronological results match the independent evaluator on ge
         { length: 6 },
         (_, index) => {
           const start = BigInt(random(7));
-          const duration = (seed + index) % 5 === 0 ? -1n : BigInt(index % 3);
+          const duration = BigInt(index % 3);
           return {
             edgeId: `${seed}-${index}`,
             source: nodes[random(nodes.length)],
             target: nodes[random(nodes.length)],
-            startTime: (seed + index) % 11 === 0 ? null : start,
+            startTime: start,
             endTime: start + duration,
           };
         },
