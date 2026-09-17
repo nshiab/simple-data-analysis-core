@@ -3235,24 +3235,13 @@ and back also reaches the starting node.
 Unknown starting IDs and starts with no connections to follow produce no rows.
 Empty start arrays and duplicate starting IDs throw an error.
 
-Supply `startTimeColumn` or `endTimeColumn` to follow only chronological
-sequences. With both columns, each next connection's start is compared with the
-preceding connection's end. With one column, connections are treated as
-instantaneous. `minGapMs` sets an inclusive minimum separation and
-`strictOrdering` controls whether equal-time connections may be consecutive.
-Every valid connection remains eligible as the first step. Chronological
-traversal supports `"outgoing"` and `"incoming"`, but not `"both"`. Incoming
-traversal finds actual earlier predecessors, applying the same physical
-end-to-start comparison while searching backward.
-
-Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
-`TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
-precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Before traversal, the method rejects the
-entire supplied input if any selected time is null or infinite, or if an end is
-before its start. This includes disconnected or otherwise graph-ineligible rows;
-filter them before calling the method if they should be omitted. An empty input
-is valid.
+Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
+chronological order. The `minGapMs` option sets the minimum gap between
+consecutive connections, in milliseconds. With both time columns, gaps are
+measured from one connection's end to the next connection's start; with one
+column, between their timestamps. The `strictOrdering` option defaults to
+`true`, rejecting zero-duration gaps. These options only work with
+`direction: "outgoing"` or `direction: "incoming"`.
 
 The next four examples each start with this data:
 
