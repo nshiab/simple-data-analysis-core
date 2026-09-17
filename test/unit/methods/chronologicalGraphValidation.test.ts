@@ -1,4 +1,9 @@
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import {
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+  assertThrows,
+} from "@std/assert";
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
@@ -69,6 +74,58 @@ const temporalGraphCases: TemporalGraphCase[] = [
       }),
   },
 ];
+
+Deno.test("all chronological graph methods reject fractional millisecond gaps", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("fractionalTemporalGap");
+  const calls = [
+    (minGapMs: number) =>
+      table.reachable("source", "target", "A", {
+        startTimeColumn: "time",
+        minGapMs,
+      }),
+    (minGapMs: number) =>
+      table.distances("source", "target", "A", {
+        startTimeColumn: "time",
+        minGapMs,
+      }),
+    (minGapMs: number) =>
+      table.shortestPath("source", "target", "edgeId", "A", "B", {
+        startTimeColumn: "time",
+        minGapMs,
+      }),
+    (minGapMs: number) =>
+      table.paths("source", "target", "edgeId", "A", "B", {
+        startTimeColumn: "time",
+        minGapMs,
+      }),
+    (minGapMs: number) =>
+      table.findCycles("source", "target", "edgeId", {
+        startTimeColumn: "time",
+        minGapMs,
+      }),
+    (minGapMs: number) =>
+      table.connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+        minGapMs,
+      }),
+  ];
+
+  try {
+    for (const call of calls) {
+      for (const minGapMs of [0.001, 0.5]) {
+        assertThrows(
+          () => call(minGapMs),
+          TypeError,
+          "options.minGapMs must be a finite, non-negative integer",
+        );
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
 
 const invalidEvents = [
   {

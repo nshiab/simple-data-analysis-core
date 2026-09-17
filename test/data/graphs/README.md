@@ -151,6 +151,9 @@ numbers. Those row-level properties remain caller requirements, so there are no
 malformed-row fixtures for them. Chronological methods are the exception: they
 preflight every selected effective timestamp across the supplied table and
 reject nulls, infinities, or an end before its start before graph computation.
+Their `minGapMs` option accepts finite, non-negative integer milliseconds;
+timestamp comparisons retain the selected columns' native precision.
+
 Matching is strict: no string/number coercion, trimming, case folding,
 leading-zero removal, or rounding.
 

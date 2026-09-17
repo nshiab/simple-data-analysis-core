@@ -92,9 +92,11 @@ export function prepareGraphTemporalOptions(
   }
 
   const minGapMs = options.minGapMs ?? 0;
-  if (!Number.isFinite(minGapMs) || minGapMs < 0) {
+  if (
+    !Number.isFinite(minGapMs) || minGapMs < 0 || !Number.isInteger(minGapMs)
+  ) {
     throw new TypeError(
-      `${method} options.minGapMs must be a finite, non-negative number.`,
+      `${method} options.minGapMs must be a finite, non-negative integer.`,
     );
   }
   if (minGapMs > Number.MAX_SAFE_INTEGER) {
@@ -102,12 +104,7 @@ export function prepareGraphTemporalOptions(
       `${method} options.minGapMs must not exceed Number.MAX_SAFE_INTEGER.`,
     );
   }
-  const gapMicroseconds = scaleDecimalNumber(minGapMs, 3);
-  if (gapMicroseconds === undefined) {
-    throw new TypeError(
-      `${method} options.minGapMs must resolve to a whole number of microseconds.`,
-    );
-  }
+  const gapMicroseconds = BigInt(minGapMs) * 1000n;
 
   return {
     endTimeColumn,
@@ -249,17 +246,4 @@ function normalizeTemporalType(type: string): string {
   if (normalized === "TIMESTAMPTZ") return "TIMESTAMP WITH TIME ZONE";
   if (normalized === "TIMESTAMP WITHOUT TIME ZONE") return "TIMESTAMP";
   return normalized;
-}
-
-function scaleDecimalNumber(
-  value: number,
-  decimalPlaces: number,
-): bigint | undefined {
-  const [coefficient, exponentText] = value.toString().toLowerCase().split("e");
-  const [whole, fraction = ""] = coefficient.split(".");
-  const digits = BigInt(`${whole}${fraction}`);
-  const exponent = Number(exponentText ?? 0) - fraction.length + decimalPlaces;
-  if (exponent >= 0) return digits * 10n ** BigInt(exponent);
-  const divisor = 10n ** BigInt(-exponent);
-  return digits % divisor === 0n ? digits / divisor : undefined;
 }

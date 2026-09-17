@@ -1278,16 +1278,16 @@ Deno.test("shortestPath keeps a costly early arrival when a cheap late arrival m
   }
 });
 
-Deno.test("shortestPath end-only timestamps preserve nanoseconds and inclusive microsecond gaps", async () => {
+Deno.test("shortestPath end-only timestamps preserve nanoseconds at an inclusive millisecond gap", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("chronologicalNanosecondShortest");
     await sdb.customQuery(`CREATE TABLE "chronologicalNanosecondShortest" AS
       SELECT * FROM (VALUES
         (1, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
-        (2, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000001000'),
-        (3, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
-        (4, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000001002')
+        (2, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.001000000'),
+        (3, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.001000001'),
+        (4, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.001000002')
       ) edges(edgeId, source, target, time)`);
     for (const direction of ["outgoing", "incoming"] as const) {
       for (const strictOrdering of [false, true]) {
@@ -1300,7 +1300,7 @@ Deno.test("shortestPath end-only timestamps preserve nanoseconds and inclusive m
           {
             direction,
             endTimeColumn: "time",
-            minGapMs: 0.001,
+            minGapMs: 1,
             strictOrdering,
             outputTable: true,
           },

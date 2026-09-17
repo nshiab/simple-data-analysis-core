@@ -1481,7 +1481,7 @@ Deno.test("connectedComponents clique siblings retain earlier noncandidate verti
 Deno.test("connectedComponents preserves nanosecond gap boundaries", async () => {
   const sdb = new SimpleDB();
   try {
-    for (const offset of [999, 1000, 1001]) {
+    for (const offset of [999_999, 1_000_000, 1_000_001]) {
       const table = sdb.newTable(`nanosecondComponents${offset}`);
       await sdb.customQuery(`CREATE TABLE "${table.name}" AS
         SELECT * FROM (VALUES
@@ -1489,18 +1489,18 @@ Deno.test("connectedComponents preserves nanosecond gap boundaries", async () =>
           ('X', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.${
         offset.toString().padStart(9, "0")
       }'),
-          ('B', 'A', TIMESTAMP_NS '2024-12-31 23:59:59.999999000')
+          ('B', 'A', TIMESTAMP_NS '2024-12-31 23:59:59.999000000')
         ) events(source, target, time)`);
       assertEquals(
         partitions(
           await table.connectedComponents("source", "target", {
             mode: "strong",
             startTimeColumn: "time",
-            minGapMs: 0.001,
+            minGapMs: 1,
             outputTable: true,
           }).getData(),
         ),
-        offset < 1000 ? [["A"], ["B", "X"]] : [["A", "B"], ["B", "X"]],
+        offset < 1_000_000 ? [["A"], ["B", "X"]] : [["A", "B"], ["B", "X"]],
       );
     }
   } finally {

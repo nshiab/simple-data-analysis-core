@@ -522,14 +522,14 @@ Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", asy
     await sdb.customQuery(`CREATE TABLE "nanosecond_cycles" AS
       SELECT * FROM (VALUES
         (1, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
-        (2, 'C', 'A', TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
-        (3, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000002001')
+        (2, 'C', 'A', TIMESTAMP_NS '2025-01-01 00:00:00.001000001'),
+        (3, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.002000001')
       ) AS events(edgeId, source, target, eventTime)`);
     for (const direction of ["outgoing", "incoming"] as const) {
       const exact = table.findCycles("source", "target", "edgeId", {
         direction,
         endTimeColumn: "eventTime",
-        minGapMs: 0.001,
+        minGapMs: 1,
         outputTable: true,
       });
       assertEquals(
@@ -539,7 +539,7 @@ Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", asy
       const above = table.findCycles("source", "target", "edgeId", {
         direction,
         endTimeColumn: "eventTime",
-        minGapMs: 0.002,
+        minGapMs: 2,
         outputTable: true,
       });
       assertEquals(await above.getData(), []);
@@ -554,9 +554,9 @@ Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loo
   try {
     for (
       const [nanoseconds, end] of [
-        [999, "2025-01-01 00:00:00.000000001"],
-        [1000, "2025-01-01 00:00:00"],
-        [1001, "2024-12-31 23:59:59.999999999"],
+        [999_999, "2025-01-01 00:00:00.000000001"],
+        [1_000_000, "2025-01-01 00:00:00"],
+        [1_000_001, "2024-12-31 23:59:59.999999999"],
       ] as const
     ) {
       const table = sdb.newTable(`mixed_precision_cycles_${nanoseconds}`);
@@ -564,8 +564,8 @@ Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loo
         SELECT * FROM (VALUES
           (2, 'B', 'A', TIMESTAMP '2024-12-31 23:59:59.999999',
             TIMESTAMP_NS '${end}'),
-          (1, 'A', 'B', TIMESTAMP '2025-01-01 00:00:00.000001',
-            TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
+          (1, 'A', 'B', TIMESTAMP '2025-01-01 00:00:00.001000',
+            TIMESTAMP_NS '2025-01-01 00:00:00.001000001'),
           (3, 'Q', 'Q', TIMESTAMP '2025-01-01', TIMESTAMP_NS '2025-01-01')
         ) AS events(edgeId, source, target, departure, arrival)`);
       for (const direction of ["outgoing", "incoming"] as const) {
@@ -574,13 +574,13 @@ Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loo
             direction,
             startTimeColumn: "departure",
             endTimeColumn: "arrival",
-            minGapMs: 0.001,
+            minGapMs: 1,
             strictOrdering,
             outputTable: true,
           });
           assertEquals(
             (await actual.getData()).map((row) => row.edgeId),
-            nanoseconds < 1000
+            nanoseconds < 1_000_000
               ? [3]
               : direction === "outgoing"
               ? [2, 1, 3]

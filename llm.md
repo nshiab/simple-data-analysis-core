@@ -3270,23 +3270,21 @@ reachable(sourceColumn: string, targetColumn: string, startNodes: string | numbe
   node ID.
 - **`startNodes`**: One starting node ID or an array of distinct starting node
   IDs.
-- **`options`**: An optional object with direction, chronological traversal, and
-  result configuration.
+- **`options`**: An optional object with direction, time, and result
+  configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
 - **`options.startTimeColumn`**: The name of the column containing each
-  connection's start time. Supplying this or `endTimeColumn` enables
-  chronological traversal.
+  connection's start time. Use this or `endTimeColumn` to follow connections in
+  chronological order.
 - **`options.endTimeColumn`**: The name of the column containing each
-  connection's end time. Supplying this or `startTimeColumn` enables
-  chronological traversal.
-- **`options.minGapMs`**: The inclusive minimum time between consecutive
-  connections, in milliseconds. Must be finite, non-negative, at most
-  `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds
-  (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological
+  connection's end time. Use this or `startTimeColumn` to follow connections in
+  chronological order.
+- **`options.minGapMs`**: The minimum gap between consecutive connections, in
+  milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time
   column.
 - **`options.strictOrdering`**: Whether consecutive connections must advance
-  strictly in time. Defaults to `true`. Requires a chronological column.
+  strictly in time. Defaults to `true`. Requires a time column.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
   omitted, overwrites the current table. Defaults to `false`.
@@ -3398,25 +3396,22 @@ The result has `node` and `componentId` columns. Static calls return one row per
 node, sorted by node. Static groups are numbered from zero in order of their
 smallest node ID.
 
-Chronological options require an explicitly supplied `mode: "strong"`. They
-return every maximal group in which every pair of distinct nodes can
-chronologically reach each other. The two directions can use independent
-journeys, and journeys can pass through nodes outside the group. Groups can
-overlap, so a node can have several result rows. Chronological groups are
-numbered from zero by their complete sorted member lists, and rows are sorted by
-group then node. All groups are returned without a result cap; their number can
-grow exponentially. An empty input produces no rows.
+Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
+chronological order. The `minGapMs` option sets the minimum gap between
+consecutive connections, in milliseconds. With both time columns, gaps are
+measured from one connection's end to the next connection's start; with one
+column, between their timestamps. The `strictOrdering` option defaults to
+`true`, rejecting zero-duration gaps. These options require an explicitly
+supplied `mode: "strong"`.
 
-Chronological columns accept DuckDB `DATE`, `TIMESTAMP`, `TIMESTAMP_S`,
-`TIMESTAMP_MS`, `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE` values. Time
-comparisons stay in DuckDB and retain the columns' native precision. Zoned
-timestamps represent absolute instants and cannot be combined with a naive date
-or timestamp column. Before traversal, the method rejects the entire supplied
-input if any selected time is null or infinite, or if an end is before its
-start. This includes disconnected or otherwise graph-ineligible rows; filter
-them before calling the method if they should be omitted. An empty input is
-valid. Nodes in every valid event are included, even when they form singleton
-groups.
+Chronological calls return every maximal group in which every pair of distinct
+nodes can reach each other in chronological order. The two directions can use
+independent journeys, and journeys can pass through nodes outside the group.
+Groups can overlap, so a node can have several result rows. They are numbered
+from zero by their complete sorted member lists, and rows are sorted by group
+then node. All groups are returned without a result cap; their number can grow
+exponentially. Nodes in every valid event are included, even when they form
+singleton groups. An empty input produces no rows.
 
 For the first example, we start with this data:
 
@@ -3440,24 +3435,22 @@ connectedComponents(sourceColumn: string, targetColumn: string, options?: { endT
   node ID.
 - **`targetColumn`**: The name of the column containing each connection's target
   node ID.
-- **`options`**: An optional object with component, chronological traversal, and
-  result configuration.
+- **`options`**: An optional object with component, time, and result
+  configuration.
 - **`options.mode`**: Whether to find `"weak"` or `"strong"` components.
   Defaults to `"weak"` for static calls. Chronological calls require explicitly
   supplied `"strong"`.
 - **`options.startTimeColumn`**: The name of the column containing each
-  connection's start time. Supplying this or `endTimeColumn` enables
-  chronological grouping.
+  connection's start time. Use this or `endTimeColumn` to follow connections in
+  chronological order.
 - **`options.endTimeColumn`**: The name of the column containing each
-  connection's end time. Supplying this or `startTimeColumn` enables
-  chronological grouping.
-- **`options.minGapMs`**: The inclusive minimum time between consecutive
-  connections, in milliseconds. Must be finite, non-negative, at most
-  `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds
-  (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological
+  connection's end time. Use this or `startTimeColumn` to follow connections in
+  chronological order.
+- **`options.minGapMs`**: The minimum gap between consecutive connections, in
+  milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time
   column.
 - **`options.strictOrdering`**: Whether consecutive connections must advance
-  strictly in time. Defaults to `true`. Requires a chronological column.
+  strictly in time. Defaults to `true`. Requires a time column.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
   omitted, overwrites the current table. Defaults to `false`.
@@ -3662,25 +3655,16 @@ Unknown starting IDs and starts with no connections to follow produce no rows.
 Empty start arrays and duplicate starting IDs throw an error. Weights must be
 non-null, finite, and non-negative.
 
-Supply `startTimeColumn` or `endTimeColumn` to minimize distance over
-chronological journeys. With both columns, each next connection's start is
-compared with the preceding connection's end. With one column, connections are
-instantaneous. Every valid connection remains eligible as the first step.
-`minGapMs` sets an inclusive minimum separation, and `strictOrdering` controls
-whether equal-time connections may be consecutive. Chronological traversal
-supports `"outgoing"` and `"incoming"`, but not `"both"`. Incoming traversal
-searches for actual earlier predecessors while reporting distance in that search
-direction.
+Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
+chronological order. The `minGapMs` option sets the minimum gap between
+consecutive connections, in milliseconds. With both time columns, gaps are
+measured from one connection's end to the next connection's start; with one
+column, between their timestamps. The `strictOrdering` option defaults to
+`true`, rejecting zero-duration gaps. These options only work with
+`direction: "outgoing"` or `direction: "incoming"`.
 
-Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
-`TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
-precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Before traversal, the method rejects the
-entire supplied input if any selected time is null or infinite, or if an end is
-before its start. This includes disconnected or otherwise graph-ineligible rows;
-filter them before calling the method if they should be omitted. An empty input
-is valid. `minGapMs` must be finite, non-negative, no greater than
-`Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
+Every connection remains eligible as the first step. Incoming searches follow
+actual earlier predecessors and report distance in that direction.
 
 The next five examples each start with this data:
 
@@ -3707,23 +3691,21 @@ distances(sourceColumn: string, targetColumn: string, startNodes: string | numbe
   node ID.
 - **`startNodes`**: One starting node ID or an array of distinct starting node
   IDs.
-- **`options`**: An optional object with direction, chronological traversal, and
-  result configuration.
+- **`options`**: An optional object with direction, time, and result
+  configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
 - **`options.startTimeColumn`**: The name of the column containing each
-  connection's start time. Supplying this or `endTimeColumn` enables
-  chronological traversal.
+  connection's start time. Use this or `endTimeColumn` to follow connections in
+  chronological order.
 - **`options.endTimeColumn`**: The name of the column containing each
-  connection's end time. Supplying this or `startTimeColumn` enables
-  chronological traversal.
-- **`options.minGapMs`**: The inclusive minimum time between consecutive
-  connections, in milliseconds. Must be finite, non-negative, at most
-  `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds
-  (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological
+  connection's end time. Use this or `startTimeColumn` to follow connections in
+  chronological order.
+- **`options.minGapMs`**: The minimum gap between consecutive connections, in
+  milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time
   column.
 - **`options.strictOrdering`**: Whether consecutive connections must advance
-  strictly in time. Defaults to `true`. Requires a chronological column.
+  strictly in time. Defaults to `true`. Requires a time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
@@ -3878,24 +3860,16 @@ column is the connection cost, and `total` is the sum of those costs up to and
 including the current step. Without the `weight` option, each connection costs
 one.
 
-Supply `startTimeColumn` or `endTimeColumn` to choose the cheapest route whose
-consecutive connections are chronological. With both columns, each next
-connection's start is compared with the preceding connection's end. With one
-column, connections are treated as instantaneous. Every valid connection remains
-eligible as a one-step route. `minGapMs` sets an inclusive minimum separation,
-and `strictOrdering` controls whether equal-time connections may be consecutive.
-Chronological traversal supports `"outgoing"` and `"incoming"`, but not
-`"both"`.
+Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
+chronological order. The `minGapMs` option sets the minimum gap between
+consecutive connections, in milliseconds. With both time columns, gaps are
+measured from one connection's end to the next connection's start; with one
+column, between their timestamps. The `strictOrdering` option defaults to
+`true`, rejecting zero-duration gaps. These options only work with
+`direction: "outgoing"` or `direction: "incoming"`.
 
-Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
-`TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
-precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Before traversal, the method rejects the
-entire supplied input if any selected time is null or infinite, or if an end is
-before its start. This includes disconnected or otherwise graph-ineligible rows;
-filter them before calling the method if they should be omitted. An empty input
-is valid. `minGapMs` must be finite, non-negative, no greater than
-`Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
+Every connection remains eligible as a one-step route. Incoming searches follow
+actual earlier predecessors and emit them in backward search order.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
@@ -3937,23 +3911,21 @@ shortestPath(sourceColumn: string, targetColumn: string, edgeId: string, start: 
   (edge).
 - **`start`**: The starting node ID.
 - **`end`**: The ending node ID, which must differ from `start`.
-- **`options`**: An optional object with direction, chronological traversal, and
-  result configuration.
+- **`options`**: An optional object with direction, time, and result
+  configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
 - **`options.startTimeColumn`**: The name of the column containing each
-  connection's start time. Supplying this or `endTimeColumn` enables
-  chronological traversal.
+  connection's start time. Use this or `endTimeColumn` to follow connections in
+  chronological order.
 - **`options.endTimeColumn`**: The name of the column containing each
-  connection's end time. Supplying this or `startTimeColumn` enables
-  chronological traversal.
-- **`options.minGapMs`**: The inclusive minimum time between consecutive
-  connections, in milliseconds. Must be finite, non-negative, at most
-  `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds
-  (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological
+  connection's end time. Use this or `startTimeColumn` to follow connections in
+  chronological order.
+- **`options.minGapMs`**: The minimum gap between consecutive connections, in
+  milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time
   column.
 - **`options.strictOrdering`**: Whether consecutive connections must advance
-  strictly in time. Defaults to `true`. Requires a chronological column.
+  strictly in time. Defaults to `true`. Requires a time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
@@ -4105,28 +4077,17 @@ column is the connection cost, and `total` is the sum of those costs up to and
 including the current step. By default, each connection costs one. Use the
 `weight` option to calculate running totals from a numeric column instead.
 
-Supply `startTimeColumn` or `endTimeColumn` to return only routes whose
-consecutive connections are chronological. With both columns, each next
-connection's start is compared with the preceding connection's end. With one
-column, connections are treated as instantaneous. Every valid connection remains
-eligible as the first and only step of a route, with no gap imposed before it.
-`minGapMs` sets an inclusive minimum separation, and `strictOrdering` controls
-whether equal-time connections may be consecutive. Chronological traversal
-supports `"outgoing"` and `"incoming"`, but not `"both"`.
+Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
+chronological order. The `minGapMs` option sets the minimum gap between
+consecutive connections, in milliseconds. With both time columns, gaps are
+measured from one connection's end to the next connection's start; with one
+column, between their timestamps. The `strictOrdering` option defaults to
+`true`, rejecting zero-duration gaps. These options only work with
+`direction: "outgoing"` or `direction: "incoming"`.
 
-Incoming chronological routes search for actual earlier predecessors. Their
-result rows remain oriented in search order from `start` to `end`; they do not
-reverse the scheduled time of a connection.
-
-Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
-`TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
-precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Before traversal, the method rejects the
-entire supplied input if any selected time is null or infinite, or if an end is
-before its start. This includes disconnected or otherwise graph-ineligible rows;
-filter them before calling the method if they should be omitted. An empty input
-is valid. `minGapMs` must be finite, non-negative, no greater than
-`Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
+Every valid connection remains eligible as a one-step route, with no gap imposed
+before it. Incoming routes follow actual earlier predecessors and remain
+oriented in search order from `start` to `end`.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
@@ -4167,23 +4128,21 @@ paths(sourceColumn: string, targetColumn: string, edgeId: string, start: string 
   (edge).
 - **`start`**: The starting node ID.
 - **`end`**: The ending node ID, which must differ from `start`.
-- **`options`**: An optional object with direction, chronological traversal, and
-  result configuration.
+- **`options`**: An optional object with direction, time, and result
+  configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
 - **`options.startTimeColumn`**: The name of the column containing each
-  connection's start time. Supplying this or `endTimeColumn` enables
-  chronological traversal.
+  connection's start time. Use this or `endTimeColumn` to follow connections in
+  chronological order.
 - **`options.endTimeColumn`**: The name of the column containing each
-  connection's end time. Supplying this or `startTimeColumn` enables
-  chronological traversal.
-- **`options.minGapMs`**: The inclusive minimum time between consecutive
-  connections, in milliseconds. Must be finite, non-negative, at most
-  `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds
-  (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological
+  connection's end time. Use this or `startTimeColumn` to follow connections in
+  chronological order.
+- **`options.minGapMs`**: The minimum gap between consecutive connections, in
+  milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time
   column.
 - **`options.strictOrdering`**: Whether consecutive connections must advance
-  strictly in time. Defaults to `true`. Requires a chronological column.
+  strictly in time. Defaults to `true`. Requires a time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
@@ -4361,16 +4320,17 @@ zero by comparing these sequences element by element, and rows are sorted by
 `pathId`, then `step`. Reordering the input rows preserves cycle IDs; changing
 the connections may change them.
 
-Supply `startTimeColumn` or `endTimeColumn` to keep only chronological cycles.
-With both columns, each next connection's start is compared with the preceding
-connection's end. With one column, connections are treated as instantaneous.
-`minGapMs` sets an inclusive minimum separation and `strictOrdering` controls
-whether equal-time connections may be consecutive. The return to the starting
-node closes the cycle; no extra time comparison is made from the final
-connection back to the first. Chronological traversal supports `"outgoing"` and
-`"incoming"`, but not `"both"`. Incoming traversal finds actual earlier
-predecessors and emits them in backward search order, with source and target
-oriented in that search direction.
+Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
+chronological order. The `minGapMs` option sets the minimum gap between
+consecutive connections, in milliseconds. With both time columns, gaps are
+measured from one connection's end to the next connection's start; with one
+column, between their timestamps. The `strictOrdering` option defaults to
+`true`, rejecting zero-duration gaps. These options only work with
+`direction: "outgoing"` or `direction: "incoming"`.
+
+The return to the starting node closes the cycle; no gap is checked from the
+final connection back to the first. Incoming searches follow actual earlier
+predecessors and emit them in backward search order.
 
 A chronological cycle begins at a connection that makes its returned sequence
 feasible, rather than necessarily at its smallest node. Rotation duplicates are
@@ -4380,16 +4340,6 @@ feasible rotation with the smallest connection-ID sequence. Cycle IDs are
 assigned by the rotation-independent identity, so shuffled input has the same
 output. Connections with distinct IDs remain distinct, including parallel
 connections.
-
-Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
-`TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
-precision. Zoned timestamps represent absolute instants and cannot be combined
-with a naive date or timestamp column. Before traversal, the method rejects the
-entire supplied input if any selected time is null or infinite, or if an end is
-before its start. This includes disconnected or otherwise graph-ineligible rows;
-filter them before calling the method if they should be omitted. An empty input
-is valid. A valid self-connection remains a one-step cycle and has no connection
-gap to check.
 
 A self-connection forms a one-step cycle. With `direction: "both"`, two separate
 connections between the same nodes can form a two-step cycle. A single
@@ -4424,23 +4374,21 @@ findCycles(sourceColumn: string, targetColumn: string, edgeId: string, options?:
   node ID.
 - **`edgeId`**: The name of the column uniquely identifying each connection
   (edge).
-- **`options`**: An optional object with direction, chronological traversal,
-  cost, and result configuration.
+- **`options`**: An optional object with direction, time, cost, and result
+  configuration.
 - **`options.direction`**: The direction in which to follow connections.
   Defaults to `"outgoing"`.
 - **`options.startTimeColumn`**: The name of the column containing each
-  connection's start time. Supplying this or `endTimeColumn` enables
-  chronological traversal.
+  connection's start time. Use this or `endTimeColumn` to follow connections in
+  chronological order.
 - **`options.endTimeColumn`**: The name of the column containing each
-  connection's end time. Supplying this or `startTimeColumn` enables
-  chronological traversal.
-- **`options.minGapMs`**: The inclusive minimum time between consecutive
-  connections, in milliseconds. Must be finite, non-negative, at most
-  `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds
-  (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological
+  connection's end time. Use this or `startTimeColumn` to follow connections in
+  chronological order.
+- **`options.minGapMs`**: The minimum gap between consecutive connections, in
+  milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time
   column.
 - **`options.strictOrdering`**: Whether consecutive connections must advance
-  strictly in time. Defaults to `true`. Requires a chronological column.
+  strictly in time. Defaults to `true`. Requires a time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a

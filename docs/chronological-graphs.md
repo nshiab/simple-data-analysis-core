@@ -20,15 +20,11 @@ ordinary call with none of the four chronological options stays static.
 Chronological direction may be `"outgoing"` or `"incoming"`; `"both"` is
 rejected.
 
-`minGapMs` must be finite, non-negative, no greater than
-`Number.MAX_SAFE_INTEGER`, and exactly expressible as a whole number of
-microseconds. Fractional milliseconds such as `0.001` are accepted, while
-sub-microsecond settings such as `0.0001` are rejected. Whole-microsecond gaps
-are a deliberate API granularity choice, shared across all accepted timestamp
-types. The helper uses exact integer arithmetic rather than DuckDB intervals;
-this restriction is not an engine precision limitation. Timestamp comparisons
-still retain their native precision: two `TIMESTAMP_NS` events one nanosecond
-apart satisfy strict ordering when the configured gap is zero.
+`minGapMs` must be a finite, non-negative integer no greater than
+`Number.MAX_SAFE_INTEGER`. Fractional millisecond settings such as `0.5` and
+`0.001` are rejected. This option granularity does not reduce timestamp
+precision: two `TIMESTAMP_NS` events one nanosecond apart still satisfy strict
+ordering when the configured gap is zero.
 
 For two physical events, the transition is valid when:
 
@@ -79,9 +75,9 @@ query path are unchanged.
 
 `prepareGraphTemporalOptions()` runs synchronously before queueing. It validates
 the option values and direction, distinguishes explicit settings from defaults,
-and converts the gap to exact microseconds. `prepareGraphTemporalSql()` runs
-from the queued input schema. It resolves case-insensitive column names,
-validates types, and returns:
+and converts the integer-millisecond gap to exact microseconds.
+`prepareGraphTemporalSql()` runs from the queued input schema. It resolves
+case-insensitive column names, validates types, and returns:
 
 - projected effective start/end expressions and an internal event ordinal;
 - a guarded valid-event predicate shared by validation and edge preparation;
@@ -391,7 +387,7 @@ case can be selected with `deno test --filter`.
 | Shared implementation items 1–5: shared timestamps with explicit algorithms, queue/output/chaining/binding/cache/exact identity, inline public types, schemas and documented temporal differences, no extra date/context features | `prepareGraphTemporalOptions()` and `prepareGraphTemporalSql()` plus their helper suite; method-specific SQL builders; each method's queue/output/cache/exact-ID cases; inline signatures and JSDoc in `SimpleTable.ts`; and parameter-binding assertions in the method suites. The public API contains only the four agreed flat settings: no explicit dates, `maxGapMs`, virtual events, or direct-query temporal modes.                                                                                     |
 | Acceptance 1: unchanged static results, schemas, order, and SQL                                                                                                                                                                   | Static calls select the original SQL branches. The existing method suites cover results, schemas, order, directions, weights, IDs, and generated SQL, including `topologicalSort matches the shared baseline and duplicate-edge oracles`.                                                                                                                                                                                                                                                                      |
 | Acceptance 2: both columns, each fallback, invalid columns/types/options/values, activation, precision, timezone                                                                                                                  | Shared helper tests from `prepareGraphTemporalSql resolves fallback columns and validates DuckDB temporal types` through the nanosecond, mixed-precision, DATE-range, TIMESTAMPTZ, validity, and large-gap cases; the all-six-method invalid-value matrix proves null, infinity, and end-before-start fail before traversal despite named outputs, unknown routes, and downstream suppression. Queued filtering/conversion, selected-only columns, disconnected rows, and empty inputs are covered separately. |
-| Acceptance 3: backward time, strict/non-strict, equality, zero and positive gap boundaries                                                                                                                                        | Helper transition tests plus each method's ordering/gap cases, including mixed `TIMESTAMP`/`TIMESTAMP_NS` boundaries at 999/1000/1001 ns.                                                                                                                                                                                                                                                                                                                                                                      |
+| Acceptance 3: backward time, strict/non-strict, equality, zero and positive gap boundaries                                                                                                                                        | Helper transition tests plus each method's ordering/gap cases, including mixed `TIMESTAMP`/`TIMESTAMP_NS` boundaries at 999999/1000000/1000001 ns around a one-millisecond gap.                                                                                                                                                                                                                                                                                                                                |
 | Acceptance 4: isolated and three-flight examples across direct and sequence queries                                                                                                                                               | `chronological graph integration preserves direct events while constraining transfers`; the independent evaluator standalone/exact-gap fixtures.                                                                                                                                                                                                                                                                                                                                                               |
 | Acceptance 5: neighbor/degree consistency, parallel versus distinct counts, weighted sums, no transfer multiplication                                                                                                             | `direct graph counts do not multiply parallel events by feasible transfers` and the direct method suites cited above.                                                                                                                                                                                                                                                                                                                                                                                          |
 | Acceptance 6: actual continuity, cheap-late/costly-early, ties, shuffle, loops, returns                                                                                                                                           | `paths retains actual event continuity and terminates equal-time cycles`; distance and shortest-path early-arrival cases; shortest tied-history cases; generated/shuffled comparisons; method loop/return cases.                                                                                                                                                                                                                                                                                               |

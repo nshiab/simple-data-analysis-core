@@ -46,7 +46,7 @@ Deno.test("prepareGraphTemporalOptions validates direction, option types, and ga
     TypeError,
     'options.direction cannot be "both"',
   );
-  for (const minGapMs of [-1, Infinity, Number.NaN]) {
+  for (const minGapMs of [-1, 0.001, 0.5, Infinity, Number.NaN]) {
     assertThrows(
       () =>
         prepareGraphTemporalOptions(
@@ -55,7 +55,7 @@ Deno.test("prepareGraphTemporalOptions validates direction, option types, and ga
           "reachable()",
         ),
       TypeError,
-      "finite, non-negative",
+      "finite, non-negative integer",
     );
   }
   assertThrows(
@@ -68,21 +68,11 @@ Deno.test("prepareGraphTemporalOptions validates direction, option types, and ga
     TypeError,
     "must not exceed Number.MAX_SAFE_INTEGER",
   );
-  assertThrows(
-    () =>
-      prepareGraphTemporalOptions(
-        { startTimeColumn: "time", minGapMs: 0.0001 },
-        "outgoing",
-        "reachable()",
-      ),
-    TypeError,
-    "whole number of microseconds",
-  );
   assertEquals(
     prepareGraphTemporalOptions(
       {
         endTimeColumn: "arrives",
-        minGapMs: 0.001,
+        minGapMs: 1,
         startTimeColumn: "departs",
         strictOrdering: false,
       },
@@ -91,7 +81,7 @@ Deno.test("prepareGraphTemporalOptions validates direction, option types, and ga
     ),
     {
       endTimeColumn: "arrives",
-      gapMicroseconds: 1n,
+      gapMicroseconds: 1000n,
       startTimeColumn: "departs",
       strictOrdering: false,
     },
@@ -103,6 +93,14 @@ Deno.test("prepareGraphTemporalOptions validates direction, option types, and ga
       "reachable()",
     )?.gapMicroseconds,
     9007199254740991000n,
+  );
+  assertEquals(
+    prepareGraphTemporalOptions(
+      { startTimeColumn: "time", minGapMs: -0 },
+      "outgoing",
+      "reachable()",
+    )?.gapMicroseconds,
+    0n,
   );
 });
 
@@ -170,14 +168,14 @@ Deno.test("prepareGraphTemporalSql resolves fallback columns and validates DuckD
   const endOnly = prepareGraphTemporalSql(
     { arrival: "TIMESTAMP_NS" },
     prepareGraphTemporalOptions(
-      { endTimeColumn: "arrival", minGapMs: 0.001 },
+      { endTimeColumn: "arrival", minGapMs: 1 },
       "incoming",
       "paths()",
     )!,
     "paths()",
   );
   assertEquals(endOnly.gapUnit, "nanosecond");
-  assertEquals(endOnly.gapParameter, "1000");
+  assertEquals(endOnly.gapParameter, "1000000");
   assertStringIncludes(endOnly.eventSelections()[1], '"arrival"');
 
   for (
@@ -248,13 +246,13 @@ Deno.test("prepared transition SQL preserves nanoseconds, strictness, and inclus
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE temporal_edges AS SELECT * FROM (VALUES
-      ('previous', TIMESTAMP_NS '2025-01-01 00:00:00.000000999'),
-      ('below', TIMESTAMP_NS '2025-01-01 00:00:00.000001998'),
-      ('exact', TIMESTAMP_NS '2025-01-01 00:00:00.000001999'),
-      ('above', TIMESTAMP_NS '2025-01-01 00:00:00.000002000')
+      ('previous', TIMESTAMP_NS '2025-01-01 00:00:00.000000000'),
+      ('below', TIMESTAMP_NS '2025-01-01 00:00:00.000999999'),
+      ('exact', TIMESTAMP_NS '2025-01-01 00:00:00.001000000'),
+      ('above', TIMESTAMP_NS '2025-01-01 00:00:00.001000001')
     ) AS t(id, time)`);
     const options = prepareGraphTemporalOptions(
-      { startTimeColumn: "time", minGapMs: 0.001 },
+      { startTimeColumn: "time", minGapMs: 1 },
       "outgoing",
       "reachable()",
     )!;

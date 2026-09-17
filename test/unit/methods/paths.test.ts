@@ -1406,13 +1406,13 @@ Deno.test("paths binds quoted endpoints and preserves mixed timestamp precision 
       SELECT * FROM (VALUES
         (9007199254740993::BIGINT, 'A''?', 'B',
           TIMESTAMP_NS '2025-01-01 00:00:00',
-          TIMESTAMP '2025-01-01 00:00:00.000001', 0.1::DECIMAL(10, 2)),
+          TIMESTAMP '2025-01-01 00:00:00.001000', 0.1::DECIMAL(10, 2)),
         (9007199254740995::BIGINT, 'B', 'D?',
-          TIMESTAMP_NS '2025-01-01 00:00:00.000002',
-          TIMESTAMP '2025-01-01 00:00:00.000003', 0.2::DECIMAL(10, 2)),
+          TIMESTAMP_NS '2025-01-01 00:00:00.002000000',
+          TIMESTAMP '2025-01-01 00:00:00.003000', 0.2::DECIMAL(10, 2)),
         (9007199254740997::BIGINT, 'B', 'D?',
-          TIMESTAMP_NS '2025-01-01 00:00:00.000001999',
-          TIMESTAMP '2025-01-01 00:00:00.000003', 0.4::DECIMAL(10, 2))
+          TIMESTAMP_NS '2025-01-01 00:00:00.001999999',
+          TIMESTAMP '2025-01-01 00:00:00.003000', 0.4::DECIMAL(10, 2))
       ) edges(edgeId, source, target, departure, arrival, cost)`);
     for (const direction of ["outgoing", "incoming"] as const) {
       for (const [start, end] of [["unknown", "D?"], ["A'?", "unknown"]]) {
@@ -1433,7 +1433,7 @@ Deno.test("paths binds quoted endpoints and preserves mixed timestamp precision 
           "total",
         ]);
       }
-      for (const minGapMs of [0, 0.001, 0.002]) {
+      for (const minGapMs of [0, 1, 2]) {
         const result = await table.paths(
           "source",
           "target",
@@ -1450,7 +1450,7 @@ Deno.test("paths binds quoted endpoints and preserves mixed timestamp precision 
           },
         ).convert({ edgeId: "string", weight: "string", total: "string" })
           .getData();
-        const expected = minGapMs === 0.002 ? [] : [
+        const expected = minGapMs === 2 ? [] : [
           ...(direction === "outgoing"
             ? [[0, 1, "9007199254740993", "0.10", "0.10"], [
               0,
