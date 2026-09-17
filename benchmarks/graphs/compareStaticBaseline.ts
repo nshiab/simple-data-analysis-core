@@ -1,3 +1,4 @@
+import { assertEquals } from "@std/assert";
 import CurrentSimpleDB from "../../src/class/SimpleDB.ts";
 import { type GraphWorkloadName, graphWorkloadQuery } from "./workloads.ts";
 
@@ -96,12 +97,45 @@ if (!Number.isSafeInteger(iterations) || iterations < 3) {
   throw new Error("--iterations must be a safe integer of at least 3.");
 }
 
-const baselineModuleUrl = new URL(
-  "src/class/SimpleDB.ts",
-  new URL(`file://${baselineRoot.replace(/\/$/, "")}/`),
+// Verify the archive before importing it: a label in the report cannot establish
+// which implementation ran. Git hashes include the complete source bytes.
+const baselineDirectory = await Deno.realPath(baselineRoot);
+const tree = await new Deno.Command("git", {
+  args: [
+    "ls-tree",
+    "-r",
+    pinnedBaseline,
+    "--",
+    "src",
+    "deno.json",
+    "deno.lock",
+  ],
+}).output();
+if (!tree.success) throw new Error("Cannot read the pinned baseline Git tree.");
+const files = new TextDecoder().decode(tree.stdout).trim().split("\n").map(
+  (line) => {
+    const match = /^100644 blob ([a-f0-9]+)\t(.+)$/.exec(line);
+    if (match === null) throw new Error(`Unexpected baseline entry: ${line}`);
+    return { hash: match[1], path: match[2] };
+  },
 );
-const BaselineSimpleDB = (await import(baselineModuleUrl.href))
-  .default as unknown as GraphDatabaseConstructor;
+const hashes = await new Deno.Command("git", {
+  args: [
+    "hash-object",
+    "--",
+    ...files.map(({ path }) => `${baselineDirectory}/${path}`),
+  ],
+}).output();
+if (!hashes.success) {
+  throw new Error("Cannot hash the extracted baseline files.");
+}
+assertEquals(
+  new TextDecoder().decode(hashes.stdout).trim().split("\n"),
+  files.map(({ hash }) => hash),
+  "Extracted baseline source/configuration differs from the pinned commit.",
+);
+const baselineModuleUrl = new URL("file:///");
+baselineModuleUrl.pathname = `${baselineDirectory}/src/class/SimpleDB.ts`;
 const CurrentDatabase = CurrentSimpleDB as unknown as GraphDatabaseConstructor;
 const baseline = JSON.parse(
   await Deno.readTextFile(baselineObservationsPath),
@@ -123,6 +157,26 @@ function variants(method: Method): Variant[] {
   }
   return ["default"];
 }
+
+// A length check alone would accept duplicated cases and silently miss others.
+const expectedCases = methods.flatMap((method) =>
+  variants(method).flatMap((variant) =>
+    [
+      ["deep-chain", 128],
+      ["branching", 127],
+      [method === "topologicalSort" ? "dense-dag" : "dense", 7],
+    ].map(([shape, nodes]) => `${method}/${variant}/${shape}/${nodes}/0`)
+  )
+).sort();
+assertEquals(
+  baseline.observations.map(({ method, variant, shape, nodes, iteration }) =>
+    `${method}/${variant}/${shape}/${nodes}/${iteration}`
+  ).sort(),
+  expectedCases,
+  "Baseline observations must contain every approved case exactly once.",
+);
+const BaselineSimpleDB = (await import(baselineModuleUrl.href))
+  .default as unknown as GraphDatabaseConstructor;
 
 function invoke(
   source: GraphTable,
@@ -176,13 +230,6 @@ function invoke(
     case "topologicalSort":
       return source.topologicalSort("source", "target", options);
   }
-}
-
-function canonical(value: unknown): string {
-  return JSON.stringify(
-    value,
-    (_, item) => typeof item === "bigint" ? `${item}n` : item,
-  );
 }
 
 function median(values: number[]): number {
@@ -240,9 +287,10 @@ async function measure(
 
 const workDirectory = "benchmarks/.work/graphs/static-baseline-comparison";
 await Deno.mkdir(workDirectory, { recursive: true });
-const observationsDirectory = baselineObservationsPath.slice(
+const observationsPath = await Deno.realPath(baselineObservationsPath);
+const observationsDirectory = observationsPath.slice(
   0,
-  baselineObservationsPath.lastIndexOf("/"),
+  observationsPath.lastIndexOf("/"),
 );
 const report: Record<string, unknown>[] = [];
 
@@ -266,7 +314,6 @@ for (const observation of baseline.observations) {
   const currentQueryTimes: number[] = [];
   const baselineTimes: number[] = [];
   const baselineQueryTimes: number[] = [];
-  let firstCurrent: Measurement | undefined;
   let firstBaseline: Measurement | undefined;
 
   for (let iteration = 0; iteration < iterations; iteration++) {
@@ -282,37 +329,37 @@ for (const observation of baseline.observations) {
         observation.nodes,
         `${workDirectory}/${observation.method}-${observation.variant}-${observation.shape}-${version}-${iteration}.json`,
       );
+      firstBaseline ??= measurement; // The first iteration runs baseline first.
+      const context =
+        `${observation.method}/${observation.variant}/${observation.shape}/${version}/${iteration}`;
+      assertEquals(
+        measurement.data,
+        firstBaseline.data,
+        `${context}: ordered values`,
+      );
+      assertEquals(
+        measurement.types,
+        firstBaseline.types,
+        `${context}: output types`,
+      );
+      assertEquals(
+        measurement.data.length,
+        observation.rows,
+        `${context}: pinned row count`,
+      );
+      assertEquals(
+        measurement.query,
+        pinnedProfile.query_name,
+        `${context}: full pinned SQL`,
+      );
       if (version === "baseline") {
-        firstBaseline ??= measurement;
         baselineTimes.push(measurement.milliseconds);
         baselineQueryTimes.push(measurement.queryMilliseconds);
       } else {
-        firstCurrent ??= measurement;
         currentTimes.push(measurement.milliseconds);
         currentQueryTimes.push(measurement.queryMilliseconds);
       }
     }
-  }
-  if (firstCurrent === undefined || firstBaseline === undefined) {
-    throw new Error("Missing comparison measurement.");
-  }
-  const dataExact =
-    canonical(firstCurrent.data) === canonical(firstBaseline.data);
-  const typesExact =
-    canonical(firstCurrent.types) === canonical(firstBaseline.types);
-  const baselineSqlMatchesPinned =
-    firstBaseline.query === pinnedProfile.query_name;
-  const currentSqlMatchesPinned =
-    firstCurrent.query === pinnedProfile.query_name;
-  const rowsMatchPinned = firstCurrent.data.length === observation.rows &&
-    firstBaseline.data.length === observation.rows;
-  if (
-    !dataExact || !typesExact || !baselineSqlMatchesPinned ||
-    !currentSqlMatchesPinned || !rowsMatchPinned
-  ) {
-    throw new Error(
-      `Static mismatch for ${observation.method}/${observation.variant}/${observation.shape}`,
-    );
   }
   const baselineMedian = median(baselineTimes);
   const currentMedian = median(currentTimes);
@@ -322,10 +369,11 @@ for (const observation of baseline.observations) {
     shape: observation.shape,
     nodes: observation.nodes,
     rows: observation.rows,
-    dataExact,
-    typesExact,
-    baselineSqlMatchesPinned,
-    currentSqlMatchesPinned,
+    dataExact: true,
+    typesExact: true,
+    baselineSqlMatchesPinned: true,
+    currentSqlMatchesPinned: true,
+    checkedMeasurements: iterations * 2,
     baselineMedianMilliseconds: baselineMedian,
     currentMedianMilliseconds: currentMedian,
     operationMedianRatio: currentMedian / baselineMedian,

@@ -66,8 +66,11 @@ performance parity with graph extensions or guarantees for larger graphs.
 `compareStaticBaseline.ts` checks static graph compatibility against an
 extracted source tree and a saved one-iteration benchmark artifact. It compares
 the complete ordered result, output types, row count, and full materialization
-SQL for all 57 method/variant/workload cases. It also runs each version five
-times by default, alternating which version runs first, and records median
+SQL for all 57 method/variant/workload cases in every repetition. Before
+importing the extracted source, it verifies source/configuration file hashes
+against the pinned Git commit and rejects missing or duplicate observation
+cases. Run it from this repository with Git available. It also runs each version
+five times by default, alternating which version runs first, and records median
 operation and DuckDB-query timings. Timings remain diagnostic; exact result and
 SQL comparisons are the compatibility checks.
 
@@ -79,6 +82,18 @@ deno run -A benchmarks/graphs/compareStaticBaseline.ts \
   --baseline-observations=/path/to/baseline-graphs/observations.json \
   --iterations=5
 ```
+
+If the saved capture is unavailable, recreate the one-iteration artifact from
+that same extracted baseline (using its own benchmark runner):
+
+```sh
+(cd "$baseline_root" && deno task benchmark-graphs --iterations=1)
+```
+
+Then pass
+`--baseline-observations="$baseline_root/benchmarks/.work/graphs/observations.json"`
+to the comparison command. Dependencies must be available or downloadable. A new
+capture reproduces the compatibility checkpoint, not the original timings.
 
 Only `observations.json` from the approved one-iteration capture and the profile
 named by each observation are inputs. Extra profiles from unrelated runs in the

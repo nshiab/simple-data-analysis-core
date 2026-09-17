@@ -1,10 +1,10 @@
 # Chronological graph contracts
 
-This document fixes the shared contracts introduced by issue #200. The
-chronological options are internal preparation only at this stage; the public
-sequence methods add the options in issues #201–#206. Direct adjacency methods
-(`neighbors()`, `degree()`, and `commonNeighbors()`) remain unchanged because
-they do not evaluate consecutive events.
+This document describes the shared chronological contracts implemented by
+`reachable()`, `distances()`, `shortestPath()`, `paths()`, `findCycles()`, and
+`connectedComponents()`. Direct adjacency methods (`neighbors()`, `degree()`,
+and `commonNeighbors()`) remain unchanged because they do not evaluate
+consecutive events.
 
 ## Activation and options
 
@@ -147,9 +147,9 @@ routes solely to establish reachability. Only after the closure is complete are
 states projected to the existing distinct `start` and `node` result.
 
 The internal SQL builder accepts an arbitrary typed start relation. Public
-`reachable()` supplies bound requested starts; chronological strong-component
-work can reuse the same closure over an all-node start relation without adding a
-public reachability API.
+`reachable()` supplies bound requested starts; chronological strong components
+reuse the same closure over an all-node start relation without adding a public
+reachability API.
 
 When a method has no public edge-ID argument, the projected
 `row_number() OVER ()` identifies an event state by its physical position in the
@@ -229,12 +229,11 @@ ordering admits equal-time cycles and when those cycles have zero weight,
 including under monotone floating-point addition.
 
 The reusable cost-state SQL computes one scalar optimum for each physical event.
-It is suitable for destination optima and lower bounds in later shortest route
-work. It deliberately does not claim to retain every tied simple route; route
-enumeration must keep its own route identity and visited-node state. When that
-later work needs public edge IDs, it must project them from this same
-materialized event relation; separately applying `row_number()` to another scan
-would not provide a reliable physical-event join key.
+Both `distances()` and `shortestPath()` use it for destination optima. It does
+not retain every tied simple route; shortest-route enumeration keeps its own
+route identity and visited-node state. Public edge IDs are projected from the
+same materialized event relation; separately applying `row_number()` to another
+scan would not provide a reliable physical-event join key.
 
 The focused layered benchmark in `benchmarks/graphs/chronologicalDistances.ts`
 measures retained cost states and the transfer join without enumerating routes.
@@ -429,19 +428,27 @@ baseline and final implementation in alternating order for five repetitions. For
 every method, variant, and workload shape, the final result has the exact same
 complete ordered rows and output types as the freshly executed baseline. Its row
 count and full materialization SQL also match the authoritative saved
-observation and named JSON profile. This includes all static directions and
-weight/count/component variants. `neighbors()`, `degree()`, `commonNeighbors()`,
+observation and named JSON profile. These 57 cases include cycle directions and
+weight/count/component variants; the method suites separately cover the other
+methods’ direction options. `neighbors()`, `degree()`, `commonNeighbors()`,
 `topologicalSort()`, and `addId()` retain their original implementation files;
 the sequence methods select their original SQL branches when no chronological
 setting is supplied.
 
+A subsequent three-repetition review run verified the extracted source hashes
+against the pinned commit, the complete unique 57-case manifest, and every
+measurement’s ordered values, types, row count, and full SQL. All 342
+measurements passed. Negative probes reject a changed baseline source tree and a
+duplicate observation that would otherwise omit one workload.
+
 The five-run operation-time ratio had a median of 1.005 across the 57 cases,
 with individual medians from 0.876 to 1.136. DuckDB query-time ratios had a
-median of 1.007 and ranged from 0.886 to 1.137. The identical SQL makes these
-small bidirectional differences consistent with profiling, scheduling, cache,
-and allocator noise; they are recorded rather than treated as evidence of a
-speedup, regression, or guaranteed parity. Raw comparison profiles remain in the
-ignored `benchmarks/.work/graphs/static-baseline-comparison/` directory. The
+median of 1.007 and ranged from 0.886 to 1.137. These small bidirectional
+differences may reflect profiling, scheduling, cache, and allocator variation;
+the experiment does not isolate their cause and they are recorded rather than
+treated as evidence of a speedup, regression, or guaranteed parity. Raw
+comparison profiles remain in the ignored
+`benchmarks/.work/graphs/static-baseline-comparison/` directory. The
 reproducible extraction and comparison command is documented in
 `benchmarks/graphs/README.md`.
 
