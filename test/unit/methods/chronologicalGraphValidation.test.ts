@@ -226,3 +226,90 @@ Deno.test("all chronological graph methods accept an empty typed input", async (
     await sdb.close();
   }
 });
+
+Deno.test("chronological output validation preserves cache hits and source invalidation", async () => {
+  const sdb = new SimpleDB();
+  const suffix = crypto.randomUUID().replaceAll("-", "");
+  let computations = 0;
+  try {
+    const source = sdb.newTable(`temporalCacheSource${suffix}`).loadArray([{
+      source: "A",
+      target: "B",
+      time: new Date("2025-01-01T00:00:00Z"),
+    }]);
+    const output = sdb.newTable(`temporalCacheOutput${suffix}`);
+    const compute = async (table: SimpleTable) => {
+      computations++;
+      const result = source.reachable("source", "target", "A", {
+        startTimeColumn: "time",
+        outputTable: true,
+      });
+      table.loadArray(await result.getData());
+      await result.removeTable();
+    };
+    await source.run();
+    const generation = getTableGeneration(source);
+    await output.cache(compute);
+    await output.cache(compute);
+    assertEquals(computations, 1);
+    assertEquals(getTableGeneration(source), generation);
+    assertEquals(await output.getData(), [{ start: "A", node: "B" }]);
+
+    source.loadArray([{
+      source: "A",
+      target: "C",
+      time: new Date("2025-01-01T00:00:00Z"),
+    }]);
+    await output.cache(compute);
+    assertEquals(computations, 2);
+    assertEquals(await output.getData(), [{ start: "A", node: "C" }]);
+
+    source.updateColumn("time", "NULL::TIMESTAMP");
+    await assertRejects(
+      () => output.cache(compute),
+      TypeError,
+      'reachable() selected start-time column "time" contains a null timestamp',
+    );
+    assertEquals(computations, 3);
+    assertEquals(await output.getData(), [{ start: "A", node: "C" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("chronological validation preserves interleaved snapshots and failure order", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("temporalSnapshotSource").loadArray([{
+      source: "A",
+      target: "B",
+      time: new Date("2025-01-01T00:00:00Z"),
+    }]);
+    const result = source.reachable("source", "target", "A", {
+      startTimeColumn: "time",
+      outputTable: "temporalSnapshotOutput",
+    });
+    source.updateColumn("time", "NULL::TIMESTAMP");
+    assertEquals(await result.getData(), [{ start: "A", node: "B" }]);
+
+    const other = sdb.newTable("temporalAfterFailure").loadArray([{
+      value: 1,
+    }]);
+    source.reachable("source", "target", "A", { startTimeColumn: "time" })
+      .selectRows(0);
+    other.updateColumn("value", "value + 1");
+    await assertRejects(
+      () => source.run(),
+      TypeError,
+      'reachable() selected start-time column "time" contains a null timestamp',
+    );
+    assertEquals(await other.getData(), [{ value: 2 }]);
+    assertEquals(await source.getData(), [{
+      source: "A",
+      target: "B",
+      time: null,
+    }]);
+  } finally {
+    await sdb.close();
+  }
+});
