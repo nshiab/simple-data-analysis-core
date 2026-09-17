@@ -3146,6 +3146,24 @@ export default class SimpleTable extends Simple {
    * no rows. Empty start arrays and duplicate starting IDs throw an error.
    * Weights must be non-null, finite, and non-negative.
    *
+   * Supply `startTimeColumn` or `endTimeColumn` to minimize distance over
+   * chronological journeys. With both columns, each next connection's start
+   * is compared with the preceding connection's end. With one column,
+   * connections are instantaneous. Every valid connection remains eligible
+   * as the first step. `minGapMs` sets an inclusive minimum separation, and
+   * `strictOrdering` controls whether equal-time connections may be
+   * consecutive. Chronological traversal supports `"outgoing"` and
+   * `"incoming"`, but not `"both"`. Incoming traversal searches for actual
+   * earlier predecessors while reporting distance in that search direction.
+   *
+   * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
+   * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
+   * precision. Zoned timestamps represent absolute instants and cannot be
+   * combined with a naive date or timestamp column. Connections with null or
+   * infinite selected times, or an end before their start, are excluded.
+   * `minGapMs` must be finite, non-negative, no greater than
+   * `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
+   *
    * The next five examples each start with this data:
    *
    * | origin | destination | minutes |
@@ -3261,11 +3279,42 @@ export default class SimpleTable extends Simple {
    * | A | B | 2 |
    * | A | A | 5 |
    *
+   * Chronological options can rule out a cheaper sequence that departs too
+   * early. For this example, F2 leaves before F1 arrives, while F3 meets the
+   * one-hour minimum exactly:
+   *
+   * | origin | destination | departureTime | arrivalTime | minutes |
+   * | --- | --- | --- | --- | ---: |
+   * | A | B | 2025-01-01 08:00 | 2025-01-01 10:00 | 2 |
+   * | B | C | 2025-01-01 09:00 | 2025-01-01 10:00 | 1 |
+   * | B | D | 2025-01-01 11:00 | 2025-01-01 12:00 | 3 |
+   *
+   * @example
+   * ```ts
+   * await scheduledFlights
+   *   .distances("origin", "destination", "A", {
+   *     startTimeColumn: "departureTime",
+   *     endTimeColumn: "arrivalTime",
+   *     minGapMs: 60 * 60 * 1000,
+   *     weight: "minutes",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | start | node | distance |
+   * | --- | --- | ---: |
+   * | A | B | 2 |
+   * | A | D | 5 |
+   *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param startNodes - One starting node ID or an array of distinct starting node IDs.
-   * @param options - An optional object with direction and result configuration.
+   * @param options - An optional object with direction, chronological traversal, and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.startTimeColumn - The name of the column containing each connection's start time. Supplying this or `endTimeColumn` enables chronological traversal.
+   * @param options.endTimeColumn - The name of the column containing each connection's end time. Supplying this or `startTimeColumn` enables chronological traversal.
+   * @param options.minGapMs - The inclusive minimum time between consecutive connections, in milliseconds. Must be finite, non-negative, at most `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological column.
+   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a chronological column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3277,8 +3326,12 @@ export default class SimpleTable extends Simple {
     startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
-      weight?: string;
+      endTimeColumn?: string;
+      minGapMs?: number;
       outputTable?: string | boolean;
+      startTimeColumn?: string;
+      strictOrdering?: boolean;
+      weight?: string;
     } = {},
   ): SimpleTable {
     return distances(this, sourceColumn, targetColumn, startNodes, options);

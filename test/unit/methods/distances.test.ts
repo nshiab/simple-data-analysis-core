@@ -8,6 +8,71 @@ import {
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import {
+  enumerateChronologicalRoutes,
+  type ReferenceChronologicalEvent,
+} from "../../helpers/enumerateChronologicalRoutes.ts";
+
+const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
+
+type WeightedChronologicalEvent =
+  & ReferenceChronologicalEvent<string, number>
+  & { weight: number };
+
+function chronologicalRows(events: WeightedChronologicalEvent[]) {
+  return events.map((event) => ({
+    ...event,
+    startTime: event.startTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.endTime)),
+  }));
+}
+
+function referenceChronologicalDistances(
+  events: WeightedChronologicalEvent[],
+  starts: string[],
+  direction: "outgoing" | "incoming",
+  minGap: bigint,
+  strictOrdering: boolean,
+) {
+  const weights = new Map(events.map((event) => [event.edgeId, event.weight]));
+  const best = new Map<
+    string,
+    { start: string; node: string; distance: number }
+  >();
+  for (const start of starts) {
+    const routes = enumerateChronologicalRoutes(events, start, {
+      direction,
+      maxSteps: events.length,
+      minGap,
+      simpleNodes: false,
+      strictOrdering,
+    });
+    for (const route of routes) {
+      const last = route.at(-1)!;
+      const distance = route.reduce(
+        (sum, step) => sum + weights.get(step.event.edgeId)!,
+        0,
+      );
+      const key = `${start}\u0000${last.target}`;
+      const current = best.get(key);
+      if (current === undefined || distance < current.distance) {
+        best.set(key, { start, node: last.target, distance });
+      }
+    }
+  }
+  return [...best.values()].toSorted((left, right) =>
+    left.start < right.start
+      ? -1
+      : left.start > right.start
+      ? 1
+      : left.distance - right.distance ||
+        (left.node < right.node ? -1 : left.node > right.node ? 1 : 0)
+  );
+}
 
 function loadScenario(
   sdb: SimpleDB,
@@ -872,42 +937,53 @@ Deno.test("distances preserves queued source and output operation order", async 
   }
 });
 
-Deno.test("distances output records its source as a cache dependency", async () => {
-  let computationRuns = 0;
-  const unique = crypto.randomUUID().replaceAll("-", "");
-  const outputName = `distancesCacheOutput${unique}`;
-  const sourceName = `distancesCacheSource${unique}`;
-  const compute = (source: SimpleTable) => async (output: SimpleTable) => {
-    computationRuns++;
-    const result = source.distances("source", "target", "A", {
-      outputTable: true,
-    });
-    output.loadArray(await result.getData());
-    await result.removeTable();
-  };
+for (const chronological of [false, true]) {
+  Deno.test(`distances ${chronological ? "chronological" : "static"} output records its source as a cache dependency`, async () => {
+    let computationRuns = 0;
+    const unique = crypto.randomUUID().replaceAll("-", "");
+    const outputName = `distancesCacheOutput${unique}`;
+    const sourceName = `distancesCacheSource${unique}`;
+    const compute = (source: SimpleTable) => async (output: SimpleTable) => {
+      computationRuns++;
+      const result = source.distances("source", "target", "A", {
+        outputTable: true,
+        ...(chronological ? { startTimeColumn: "time" } : {}),
+      });
+      output.loadArray(await result.getData());
+      await result.removeTable();
+    };
 
-  const firstSdb = new SimpleDB();
-  try {
-    const source = firstSdb.newTable(sourceName)
-      .loadArray([{ source: "A", target: "B" }]);
-    await firstSdb.newTable(outputName).cache(compute(source));
-  } finally {
-    await firstSdb.close();
-  }
-  const secondSdb = new SimpleDB();
-  try {
-    const source = secondSdb.newTable(sourceName)
-      .loadArray([{ source: "A", target: "C" }]);
-    const output = secondSdb.newTable(outputName);
-    await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals(await output.getData(), [
-      { start: "A", node: "C", distance: 1 },
-    ]);
-  } finally {
-    await secondSdb.close();
-  }
-});
+    const firstSdb = new SimpleDB();
+    try {
+      const source = firstSdb.newTable(sourceName)
+        .loadArray([{
+          source: "A",
+          target: "B",
+          time: new Date(chronologicalBase),
+        }]);
+      await firstSdb.newTable(outputName).cache(compute(source));
+    } finally {
+      await firstSdb.close();
+    }
+    const secondSdb = new SimpleDB();
+    try {
+      const source = secondSdb.newTable(sourceName)
+        .loadArray([{
+          source: "A",
+          target: "C",
+          time: new Date(chronologicalBase),
+        }]);
+      const output = secondSdb.newTable(outputName);
+      await output.cache(compute(source));
+      assertEquals(computationRuns, 2);
+      assertEquals(await output.getData(), [
+        { start: "A", node: "C", distance: 1 },
+      ]);
+    } finally {
+      await secondSdb.close();
+    }
+  });
+}
 
 Deno.test("distances uses keyed best-distance recursion without path enumeration", async () => {
   const sdb = new SimpleDB();
@@ -1038,7 +1114,511 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
         distance: 5,
       }],
     );
+    assertEquals(
+      await sdb.newTable().loadArray([
+        {
+          origin: "A",
+          destination: "B",
+          departureTime: new Date("2025-01-01T08:00:00Z"),
+          arrivalTime: new Date("2025-01-01T10:00:00Z"),
+          minutes: 2,
+        },
+        {
+          origin: "B",
+          destination: "C",
+          departureTime: new Date("2025-01-01T09:00:00Z"),
+          arrivalTime: new Date("2025-01-01T10:00:00Z"),
+          minutes: 1,
+        },
+        {
+          origin: "B",
+          destination: "D",
+          departureTime: new Date("2025-01-01T11:00:00Z"),
+          arrivalTime: new Date("2025-01-01T12:00:00Z"),
+          minutes: 3,
+        },
+      ]).distances("origin", "destination", "A", {
+        startTimeColumn: "departureTime",
+        endTimeColumn: "arrivalTime",
+        minGapMs: 60 * 60 * 1000,
+        weight: "minutes",
+      }).getData(),
+      [
+        { start: "A", node: "B", distance: 2 },
+        { start: "A", node: "D", distance: 5 },
+      ],
+    );
   } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological state keeps cheap late and costlier early arrivals", async () => {
+  const sdb = new SimpleDB();
+  const rows: WeightedChronologicalEvent[] = [
+    {
+      edgeId: 0,
+      source: "A",
+      target: "B",
+      startTime: 0n,
+      endTime: 1n,
+      weight: 5,
+    },
+    {
+      edgeId: 1,
+      source: "A",
+      target: "B",
+      startTime: 5n,
+      endTime: 6n,
+      weight: 1,
+    },
+    {
+      edgeId: 2,
+      source: "B",
+      target: "C",
+      startTime: 2n,
+      endTime: 3n,
+      weight: 1,
+    },
+  ];
+  try {
+    for (const ordered of [rows, rows.toReversed()]) {
+      assertEquals(
+        await sdb.newTable().loadArray(chronologicalRows(ordered))
+          .distances("source", "target", "A", {
+            startTimeColumn: "startTime",
+            endTimeColumn: "endTime",
+            weight: "weight",
+          }).getData(),
+        [
+          { start: "A", node: "B", distance: 1 },
+          { start: "A", node: "C", distance: 6 },
+        ],
+      );
+      assertEquals(
+        await sdb.newTable().loadArray(chronologicalRows(ordered))
+          .distances("source", "target", "C", {
+            direction: "incoming",
+            startTimeColumn: "startTime",
+            endTimeColumn: "endTime",
+            weight: "weight",
+          }).getData(),
+        [
+          { start: "C", node: "B", distance: 1 },
+          { start: "C", node: "A", distance: 6 },
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological traversal handles first events, invalid rows, returns, and equal-time zero costs", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows: WeightedChronologicalEvent[] = [
+      {
+        edgeId: 0,
+        source: "A",
+        target: "B",
+        startTime: 1n,
+        endTime: 1n,
+        weight: 0,
+      },
+      {
+        edgeId: 1,
+        source: "A",
+        target: "B",
+        startTime: 1n,
+        endTime: 1n,
+        weight: 3,
+      },
+      {
+        edgeId: 2,
+        source: "B",
+        target: "A",
+        startTime: 1n,
+        endTime: 1n,
+        weight: 0,
+      },
+      {
+        edgeId: 3,
+        source: "A",
+        target: "A",
+        startTime: 1n,
+        endTime: 1n,
+        weight: 2,
+      },
+      {
+        edgeId: 4,
+        source: "I",
+        target: "J",
+        startTime: 10n,
+        endTime: 11n,
+        weight: 4,
+      },
+      {
+        edgeId: 5,
+        source: "I",
+        target: "invalid-null",
+        startTime: null,
+        endTime: 11n,
+        weight: 1,
+      },
+      {
+        edgeId: 6,
+        source: "I",
+        target: "invalid-order",
+        startTime: 12n,
+        endTime: 11n,
+        weight: 1,
+      },
+    ];
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(rows))
+        .distances("source", "target", ["unknown", "I", "A"], {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          strictOrdering: false,
+          weight: "weight",
+        }).getData(),
+      [
+        { start: "A", node: "A", distance: 0 },
+        { start: "A", node: "B", distance: 0 },
+        { start: "I", node: "J", distance: 4 },
+      ],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(rows))
+        .distances("source", "target", "I", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: Number.MAX_SAFE_INTEGER,
+          weight: "weight",
+        }).getData(),
+      [{ start: "I", node: "J", distance: 4 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological traversal supports timestamp fallbacks and gap boundaries", async () => {
+  const sdb = new SimpleDB();
+  const equal: WeightedChronologicalEvent[] = [
+    {
+      edgeId: 0,
+      source: "A",
+      target: "B",
+      startTime: 0n,
+      endTime: 0n,
+      weight: 2,
+    },
+    {
+      edgeId: 1,
+      source: "B",
+      target: "C",
+      startTime: 0n,
+      endTime: 0n,
+      weight: 3,
+    },
+  ];
+  try {
+    for (const column of ["startTimeColumn", "endTimeColumn"] as const) {
+      const name = column === "startTimeColumn" ? "startTime" : "endTime";
+      assertEquals(
+        await sdb.newTable().loadArray(chronologicalRows(equal))
+          .distances("source", "target", "A", {
+            [column]: name,
+            weight: "weight",
+          }).getData(),
+        [{ start: "A", node: "B", distance: 2 }],
+      );
+      assertEquals(
+        await sdb.newTable().loadArray(chronologicalRows(equal))
+          .distances("source", "target", "A", {
+            [column]: name,
+            strictOrdering: false,
+            weight: "weight",
+          }).getData(),
+        [
+          { start: "A", node: "B", distance: 2 },
+          { start: "A", node: "C", distance: 5 },
+        ],
+      );
+    }
+    const boundary = structuredClone(equal);
+    boundary[0].endTime = 1n;
+    boundary[1].startTime = 2n;
+    boundary[1].endTime = 3n;
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(boundary))
+        .distances("source", "target", "A", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 1,
+          weight: "weight",
+        }).getData(),
+      [
+        { start: "A", node: "B", distance: 2 },
+        { start: "A", node: "C", distance: 5 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological results match the independent evaluator on generated tiny graphs", async () => {
+  const sdb = new SimpleDB();
+  const nodes = ["A", "B", "C", "D"];
+  try {
+    for (let seed = 0; seed < 10; seed++) {
+      let state = seed + 1;
+      const random = (limit: number) => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return (state >>> 16) % limit;
+      };
+      const events: WeightedChronologicalEvent[] = Array.from(
+        { length: 7 },
+        (_, edgeId) => {
+          const startTime = BigInt(random(6));
+          return {
+            edgeId,
+            source: nodes[random(nodes.length)],
+            target: nodes[random(nodes.length)],
+            startTime: (seed + edgeId) % 13 === 0 ? null : startTime,
+            endTime: startTime + ((seed + edgeId) % 9 === 0 ? -1n : 0n),
+            weight: random(5),
+          };
+        },
+      );
+      const minGap = BigInt(seed % 2);
+      const strictOrdering = seed % 3 !== 0;
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const starts = direction === "outgoing"
+          ? ["A", "C", "unknown"]
+          : ["D", "B", "unknown"];
+        const expected = referenceChronologicalDistances(
+          events,
+          starts,
+          direction,
+          minGap,
+          strictOrdering,
+        );
+        for (const ordered of [events, events.toReversed()]) {
+          assertEquals(
+            await sdb.newTable().loadArray(chronologicalRows(ordered))
+              .distances("source", "target", starts, {
+                direction,
+                startTimeColumn: "startTime",
+                endTimeColumn: "endTime",
+                minGapMs: Number(minGap),
+                strictOrdering,
+                weight: "weight",
+              }).getData(),
+            expected,
+            `seed ${seed}, ${direction}, strict ${strictOrdering}`,
+          );
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological traversal preserves decimal, wide integer, and floating cost behavior", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const decimal = sdb.newTable("chronologicalDecimalDistances");
+    await sdb.customQuery(`CREATE TABLE "chronologicalDecimalDistances" AS
+      SELECT * FROM (VALUES
+        ('A', 'C', TIMESTAMP '2025-01-01 00:00:02', 0.31::DECIMAL(6,2)),
+        ('A', 'B', TIMESTAMP '2025-01-01 00:00:00', 0.10::DECIMAL(6,2)),
+        ('B', 'C', TIMESTAMP '2025-01-01 00:00:01', 0.20::DECIMAL(6,2))
+      ) edges(source, target, time, weight)`);
+    decimal.distances("source", "target", "A", {
+      startTimeColumn: "time",
+      weight: "weight",
+    });
+    assertEquals(await decimal.getTypes(), {
+      start: "VARCHAR",
+      node: "VARCHAR",
+      distance: "DECIMAL(38,2)",
+    });
+    assertEquals(await decimal.getData(), [
+      { start: "A", node: "B", distance: "0.10" },
+      { start: "A", node: "C", distance: "0.30" },
+    ]);
+
+    const wide = sdb.newTable("graph_cost_states");
+    await sdb.customQuery(`CREATE TABLE "graph_cost_states" AS
+      SELECT * FROM (VALUES
+        (9007199254740993::BIGINT, 9007199254740995::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000001',
+          9007199254740993::BIGINT),
+        (9007199254740995::BIGINT, 9007199254740997::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000002', 2::BIGINT)
+      ) edges(source, target, time, weight)`);
+    wide.distances("source", "target", 9007199254740993n, {
+      startTimeColumn: "time",
+      weight: "weight",
+    }).convert({ start: "string", node: "string", distance: "string" });
+    assertEquals(await wide.getData(), [
+      {
+        start: "9007199254740993",
+        node: "9007199254740995",
+        distance: "9007199254740993",
+      },
+      {
+        start: "9007199254740993",
+        node: "9007199254740997",
+        distance: "9007199254740995",
+      },
+    ]);
+
+    const floating = sdb.newTable("chronologicalFloatingDistances");
+    await sdb.customQuery(`CREATE TABLE "chronologicalFloatingDistances" AS
+      SELECT * FROM (VALUES
+        ('A', 'C', TIMESTAMP '2025-01-01 00:00:02', 1.0000000000001::DOUBLE),
+        ('A', 'B', TIMESTAMP '2025-01-01 00:00:00', 0.5::DOUBLE),
+        ('B', 'C', TIMESTAMP '2025-01-01 00:00:01', 0.5::DOUBLE)
+      ) edges(source, target, time, weight)`);
+    assertEquals(
+      await floating.distances("source", "target", "A", {
+        startTimeColumn: "time",
+        weight: "weight",
+      }).getData(),
+      [
+        { start: "A", node: "B", distance: 0.5 },
+        { start: "A", node: "C", distance: 1 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances validates and snapshots chronological options before queued execution", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const unqueued = sdb.newTable();
+    assertThrows(
+      () => unqueued.distances("source", "target", "A", { minGapMs: 0 }),
+      TypeError,
+      "require options.startTimeColumn or options.endTimeColumn",
+    );
+    assertThrows(
+      () =>
+        unqueued.distances("source", "target", "A", {
+          direction: "both",
+          startTimeColumn: "time",
+        }),
+      TypeError,
+      'options.direction cannot be "both"',
+    );
+    assertThrows(
+      () =>
+        unqueued.distances("source", "target", "A", {
+          startTimeColumn: 1 as unknown as string,
+        }),
+      TypeError,
+      "options.startTimeColumn must be a string",
+    );
+    assertEquals(unqueued.pendingOps.length, 0);
+
+    const options: {
+      outputTable: string;
+      startTimeColumn: string;
+      strictOrdering: boolean;
+    } = {
+      outputTable: "chronologicalDistanceSnapshot",
+      startTimeColumn: "time",
+      strictOrdering: true,
+    };
+    const queued = sdb.newTable().loadArray([
+      { source: "A'?", target: "B", time: "2025-01-01 00:00:00" },
+      { source: "B", target: "C", time: "2025-01-01 00:00:01" },
+    ]).convert({ time: "datetime" })
+      .distances("source", "target", "A'?", options);
+    options.outputTable = "changed";
+    options.startTimeColumn = "missing";
+    options.strictOrdering = false;
+    assertEquals(queued.name, "chronologicalDistanceSnapshot");
+    assertEquals(await queued.getData(), [
+      { start: "A'?", node: "B", distance: 1 },
+      { start: "A'?", node: "C", distance: 2 },
+    ]);
+
+    const missing = sdb.newTable().loadArray([
+      { source: "A", target: "B", time: new Date(chronologicalBase) },
+    ]);
+    await assertRejects(
+      () =>
+        missing.distances("source", "target", "A", {
+          startTimeColumn: "missing",
+        }).run(),
+      Error,
+      'column "missing" does not exist',
+    );
+    const unsupported = sdb.newTable().loadArray([
+      { source: "A", target: "B", time: 1 },
+    ]);
+    await assertRejects(
+      () =>
+        unsupported.distances("source", "target", "A", {
+          startTimeColumn: "time",
+        }).run(),
+      TypeError,
+      "requires DATE or TIMESTAMP chronological columns",
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological SQL uses finite keyed event costs without route enumeration", async () => {
+  const sdb = new SimpleDB();
+  const observer = observeSdaQueries(sdb);
+  try {
+    const width = 4;
+    const layers = 5;
+    const rows = Array.from(
+      { length: layers },
+      (_, layer) =>
+        Array.from(
+          { length: width },
+          (_, from) =>
+            Array.from({ length: width }, (_, to) => ({
+              source: layer === 0 ? "start" : `L${layer}-${from}`,
+              target: `L${layer + 1}-${to}`,
+              time: new Date(chronologicalBase + layer * 1000),
+              weight: (from + to) % 3,
+            })),
+        ).flat(),
+    ).flat();
+    const result = sdb.newTable("chronologicalDistanceGrowth").loadArray(rows)
+      .distances("source", "target", ["start", "L1-0"], {
+        startTimeColumn: "time",
+        strictOrdering: false,
+        weight: "weight",
+        outputTable: true,
+      });
+    assertEquals((await result.getData()).length, 36);
+    const query = observer.queries.find((entry) =>
+      entry.query.includes("graph_cost_states") &&
+      entry.query.includes("CREATE OR REPLACE TABLE")
+    )?.query ?? "";
+    assertStringIncludes(query, "USING KEY");
+    assertStringIncludes(query, '"__start_key", "__event_id"');
+    assertStringIncludes(query, "recurring.");
+    assertStringIncludes(query, "AS MATERIALIZED");
+    assertEquals(query.includes("list_append"), false);
+    assertEquals(query.includes("path"), false);
+  } finally {
+    observer.restore();
     await sdb.close();
   }
 });

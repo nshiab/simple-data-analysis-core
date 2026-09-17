@@ -18,6 +18,7 @@ nodes are added.
 deno task benchmark-graphs --iterations=1 --methods=neighbors,degree
 deno task benchmark-graphs --methods=reachable,distances --chain-nodes=1000 --branch-nodes=1023
 deno task benchmark-graphs --methods=findCycles --dense-nodes=6
+deno run -A benchmarks/graphs/chronologicalDistances.ts
 ```
 
 Options use `--name=value`: `iterations`, comma-separated `methods`,
@@ -59,6 +60,14 @@ Use the raw plans to investigate scan/grouping costs and retain all repetitions
 when comparing changes. Unit tests verify correctness independently; no timing
 assertion is part of the test suite. These local measurements do not establish
 performance parity with graph extensions or guarantees for larger graphs.
+
+The focused chronological-distance runner builds layered event graphs whose
+number of possible routes grows exponentially. It reports the number of keyed
+event-cost states retained by `distances()`, the finite state bound, complete
+query time, and the timing and cardinality reported by DuckDB for transfer
+joins. Raw profiles are written under
+`benchmarks/.work/graphs/chronological-distances/`. This runner measures the
+cost-state algorithm directly and does not enumerate the possible routes.
 
 Topological sorting uses one recursive Kahn computation, selecting the smallest
 eligible typed ID at each step. It retains visited-ID lists and repeatedly

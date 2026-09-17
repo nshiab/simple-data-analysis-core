@@ -165,3 +165,52 @@ that return closes. Incoming steps are emitted in search order while the
 physical transition is checked earlier-to-later. Null and end-before-start
 events are excluded. Shared fixtures cover a standalone flight, an impossible
 and exact-gap transfer, and an equal-time return cycle.
+
+## Distance state and cost dominance
+
+Chronological `distances()` keys each recursive state by the requested start and
+the last physical event. The state also carries that event's endpoint, effective
+timestamps, and the minimum cost found for reaching it. Distinct events at the
+same node remain distinct states: a cheap late arrival cannot discard a costlier
+early arrival that is needed for a later connection.
+
+For either outgoing or incoming traversal, a lower cost safely dominates a
+higher cost only when both states have the same requested start and last
+physical event. Those states have the same endpoint and exactly the same future
+transfer eligibility. Non-negative weights then guarantee that no continuation
+of the higher-cost state can improve on the same continuation of the lower-cost
+state. Arrival or departure time alone is not a safe dominance key across
+different events. Incoming traversal uses the same rule because the last event
+in search order completely determines which physical predecessors can be joined
+next.
+
+Every state is seeded by one valid event, so projecting the minimum cost per
+destination does not introduce an empty distance from a start to itself. A start
+appears in its own results only through an actual self-connection or nonempty
+return route. There are at most `S × E` keyed states for `S` requested starts
+and `E` valid events. Updates require a strictly smaller cost. Together with the
+existing finite, non-negative weight contract, every improvement has a
+cycle-free witness: removing a cycle cannot increase its cost. There are only
+finitely many such event sequences, while zero-cost cycles produce equal rather
+than improving labels. The recursion therefore terminates when non-strict
+ordering admits equal-time cycles and when those cycles have zero weight,
+including under monotone floating-point addition.
+
+The reusable cost-state SQL computes one scalar optimum for each physical event.
+It is suitable for destination optima and lower bounds in later shortest route
+work. It deliberately does not claim to retain every tied simple route; route
+enumeration must keep its own route identity and visited-node state. When that
+later work needs public edge IDs, it must project them from this same
+materialized event relation; separately applying `row_number()` to another scan
+would not provide a reliable physical-event join key.
+
+The focused layered benchmark in `benchmarks/graphs/chronologicalDistances.ts`
+measures retained cost states and the transfer join without enumerating routes.
+With six layers and widths 4, 8, and 12, it retained 96, 384, and 864 states
+respectively, exactly the physical event bound for one start, while the
+corresponding route counts were 16,384, 2,097,152, and 35,831,808. On the
+2026-09-17 local run, DuckDB reported transfer join cardinalities of 320, 2,560,
+and 8,640 and operator times of 0.128 ms, 0.098 ms, and 0.173 ms. These
+diagnostic timings include profiler noise and are not performance guarantees;
+raw profiles are retained under the ignored
+`benchmarks/.work/graphs/chronological-distances/` directory.

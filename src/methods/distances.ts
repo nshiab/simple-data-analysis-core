@@ -1,6 +1,12 @@
 import type SimpleTable from "../class/SimpleTable.ts";
+import buildGraphTemporalCostStateSql from "../helpers/buildGraphTemporalCostStateSql.ts";
 import getGraphWeightColumn from "../helpers/getGraphWeightColumn.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
+import prepareGraphTemporalSql, {
+  type GraphTemporalOptions,
+  type PreparedGraphTemporalOptions,
+  prepareGraphTemporalOptions,
+} from "../helpers/prepareGraphTemporalSql.ts";
 import prepareGraphStarts, {
   type GraphId,
   type PreparedGraphStarts,
@@ -12,7 +18,7 @@ import prepareGraphTraversal, {
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
-type DistancesOptions = {
+type DistancesOptions = GraphTemporalOptions & {
   direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
@@ -62,8 +68,13 @@ export default function distances(
     "distances()",
     "startNodes",
   );
-  options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
+  const temporalOptions = prepareGraphTemporalOptions(
+    options,
+    direction,
+    "distances()",
+  );
+  options = structuredClone(options);
   const parameters = {
     sourceColumn,
     targetColumn,
@@ -76,14 +87,17 @@ export default function distances(
     parameters,
     outputTable: options.outputTable,
     values: (schema) => {
-      validateDistanceInputs(
+      const { temporal } = validateDistanceInputs(
         schema,
         sourceColumn,
         targetColumn,
         preparedStarts,
         options.weight,
+        temporalOptions,
       );
-      return preparedStarts.values;
+      return temporal === undefined
+        ? preparedStarts.values
+        : [temporal.gapParameter, ...preparedStarts.values];
     },
     buildSelect: (input, schema) =>
       distancesSelect(
@@ -94,6 +108,7 @@ export default function distances(
         preparedStarts,
         direction,
         options.weight,
+        temporalOptions,
       ),
     outputSchema: (schema) => {
       const validated = validateDistanceInputs(
@@ -102,6 +117,7 @@ export default function distances(
         targetColumn,
         preparedStarts,
         options.weight,
+        temporalOptions,
       );
       return {
         start: validated.idType,
@@ -118,6 +134,7 @@ function validateDistanceInputs(
   target: string,
   starts: PreparedGraphStarts,
   weight: string | undefined,
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
 ) {
   const endpoints = validateGraphStarts(
     schema,
@@ -130,7 +147,10 @@ function validateDistanceInputs(
   const distanceType = weight === undefined
     ? "BIGINT"
     : getGraphWeightColumn(schema, weight, "distances()").distanceType;
-  return { idType: endpoints.idType, distanceType };
+  const temporal = temporalOptions === undefined
+    ? undefined
+    : prepareGraphTemporalSql(schema, temporalOptions, "distances()");
+  return { idType: endpoints.idType, distanceType, temporal };
 }
 
 function distancesSelect(
@@ -141,6 +161,7 @@ function distancesSelect(
   starts: PreparedGraphStarts,
   direction: GraphDirection,
   weight: string | undefined,
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
 ): string {
   const prepared = prepareGraphTraversal(
     input,
@@ -160,6 +181,20 @@ function distancesSelect(
     : `CAST(${quoteIdentifier("edges")}.${
       quoteIdentifier(weightColumn.column)
     } AS ${distanceType})`;
+  if (temporalOptions !== undefined) {
+    const temporal = prepareGraphTemporalSql(
+      schema,
+      temporalOptions,
+      "distances()",
+    );
+    return temporalDistancesSelect(
+      prepared,
+      direction as Exclude<GraphDirection, "both">,
+      temporal,
+      distanceType,
+      edgeWeight,
+    );
+  }
   const relations = prepared.relationNames([
     "graph_start_values",
     "graph_starts",
@@ -248,4 +283,34 @@ function distancesSelect(
     ORDER BY ${quoteIdentifier("__start_key")}, ${
     quoteIdentifier("distance")
   }, ${quoteIdentifier("__node_key")}`;
+}
+
+function temporalDistancesSelect(
+  prepared: ReturnType<typeof prepareGraphTraversal>,
+  direction: Exclude<GraphDirection, "both">,
+  temporal: ReturnType<typeof prepareGraphTemporalSql>,
+  distanceType: string,
+  edgeWeight: string,
+): string {
+  const q = quoteIdentifier;
+  const startsSelect = `SELECT ${q("start")},
+        ${prepared.key(q("start"))} AS ${q("__key")}
+      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${
+    q("start")
+  })`;
+  const costStates = buildGraphTemporalCostStateSql(
+    prepared,
+    startsSelect,
+    direction,
+    temporal,
+    distanceType,
+    edgeWeight,
+  );
+  return `${costStates.withClause}
+    SELECT ${q("start")}, ${q("node")},
+      MIN(${q("distance")}) AS ${q("distance")}
+    FROM ${costStates.costRelation}
+    GROUP BY ${q("start")}, ${q("node")}, ${q("__start_key")},
+      ${q("__node_key")}
+    ORDER BY ${q("__start_key")}, ${q("distance")}, ${q("__node_key")}`;
 }
