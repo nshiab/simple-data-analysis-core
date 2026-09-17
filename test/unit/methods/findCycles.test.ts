@@ -550,6 +550,96 @@ Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", asy
   }
 });
 
+Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loops", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const [nanoseconds, end] of [
+        [999, "2025-01-01 00:00:00.000000001"],
+        [1000, "2025-01-01 00:00:00"],
+        [1001, "2024-12-31 23:59:59.999999999"],
+      ] as const
+    ) {
+      const table = sdb.newTable(`mixed_precision_cycles_${nanoseconds}`);
+      await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+        SELECT * FROM (VALUES
+          (2, 'B', 'A', TIMESTAMP '2024-12-31 23:59:59.999999',
+            TIMESTAMP_NS '${end}'),
+          (1, 'A', 'B', TIMESTAMP '2025-01-01 00:00:00.000001',
+            TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
+          (3, 'Q', 'Q', TIMESTAMP '2025-01-01', TIMESTAMP_NS '2025-01-01')
+        ) AS events(edgeId, source, target, departure, arrival)`);
+      for (const direction of ["outgoing", "incoming"] as const) {
+        for (const strictOrdering of [true, false]) {
+          const actual = table.findCycles("source", "target", "edgeId", {
+            direction,
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            minGapMs: 0.001,
+            strictOrdering,
+            outputTable: true,
+          });
+          assertEquals(
+            (await actual.getData()).map((row) => row.edgeId),
+            nanoseconds < 1000
+              ? [3]
+              : direction === "outgoing"
+              ? [2, 1, 3]
+              : [1, 2, 3],
+          );
+        }
+        const isolated = table.findCycles("source", "target", "edgeId", {
+          direction,
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+          minGapMs: Number.MAX_SAFE_INTEGER,
+          outputTable: true,
+        });
+        assertEquals((await isolated.getData()).map((row) => row.edgeId), [3]);
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles normalizes temporal binary IDs while preserving decimal totals", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("temporal_collated_cycles");
+    await sdb.customQuery(`CREATE TABLE "temporal_collated_cycles" (
+      edgeId VARCHAR COLLATE NOCASE, source VARCHAR COLLATE NOCASE,
+      target VARCHAR COLLATE NOCASE, time TIMESTAMP, weight DECIMAL(22,2)
+    ); INSERT INTO "temporal_collated_cycles" VALUES
+      ('a', 'A', 'B', TIMESTAMP '2025-01-01', 99999999999999999999.25),
+      ('Z', 'B', 'A', TIMESTAMP '2025-01-01', 0.50),
+      ('A', 'a', 'b', TIMESTAMP '2025-01-01', 1.25),
+      ('z', 'b', 'a', TIMESTAMP '2025-01-01', 2.50)`);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const result = table.findCycles("source", "target", "edgeId", {
+        direction,
+        startTimeColumn: "time",
+        strictOrdering: false,
+        weight: "weight",
+        outputTable: true,
+      }).convert({ weight: "string", total: "string" });
+      assertEquals(
+        (await result.getData()).map((
+          row,
+        ) => [row.pathId, row.edgeId, row.total]),
+        [
+          [0, "A", "1.25"],
+          [0, "z", "3.75"],
+          [1, "Z", "0.50"],
+          [1, "a", "99999999999999999999.75"],
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("findCycles keeps exact IDs when canonical identity differs from the feasible rotation", async () => {
   const sdb = new SimpleDB();
   try {
@@ -1083,8 +1173,10 @@ Deno.test("findCycles matches independently normalized generated chronological c
   const generate = (seed: number) => {
     let state = seed;
     const random = () => {
-      state = (state * 1_103_515_245 + 12_345) & 0x7fff_ffff;
-      return state;
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      return state >>> 0;
     };
     const nodes = ["A", "B", "C", "D"];
     const events: ReferenceChronologicalEvent<string, number>[] = [
@@ -1128,10 +1220,22 @@ Deno.test("findCycles matches independently normalized generated chronological c
     return events;
   };
 
+  const generated = Array.from(
+    { length: 6 },
+    (_, index) => generate(index + 1),
+  );
+  const extras = generated.flatMap((events) => events.slice(3));
+  assertEquals(new Set(extras.map((event) => event.source)).size, 4);
+  assertEquals(new Set(extras.map((event) => event.target)).size, 4);
+  assertEquals(
+    extras.some((event) => event.endTime! > event.startTime!),
+    true,
+  );
+
   const sdb = new SimpleDB();
   try {
     for (let seed = 1; seed <= 6; seed++) {
-      const events = generate(seed);
+      const events = generated[seed - 1];
       for (const direction of ["outgoing", "incoming"] as const) {
         for (const strictOrdering of [true, false]) {
           const minGap = seed % 2 === 0 ? 1_000n : 0n;
