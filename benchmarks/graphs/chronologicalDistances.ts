@@ -93,21 +93,37 @@ for (const width of widths) {
     const profile = JSON.parse(await Deno.readTextFile(profilePath)) as
       & ProfileNode
       & { latency: number };
-    const transferJoins = findTransferJoins(profile);
+    const endpointJoins = findJoins(profile, ["__node_key", "__from_key"]);
+    const chronologicalJoins = findJoins(profile, [
+      "__event_start",
+      "__event_end",
+      "__gap",
+    ]);
+    if (endpointJoins.length === 0 || chronologicalJoins.length === 0) {
+      throw new Error(`Missing transfer join operators in ${profilePath}.`);
+    }
     console.log(JSON.stringify({
       width,
       layers,
       events: rows.length,
-      possibleRoutes: width ** (layers + 1),
+      fullDepthRoutes: width ** (layers + 1),
       retainedStates: Number(result?.[0].retainedStates),
       stateBound: rows.length,
       milliseconds,
       queryMilliseconds: profile.latency * 1000,
-      transferJoinMilliseconds: transferJoins.reduce(
+      endpointJoinMilliseconds: endpointJoins.reduce(
         (sum, node) => sum + (node.operator_timing ?? 0) * 1000,
         0,
       ),
-      transferJoinCardinality: transferJoins.reduce(
+      endpointJoinCardinality: endpointJoins.reduce(
+        (sum, node) => sum + (node.operator_cardinality ?? 0),
+        0,
+      ),
+      chronologicalJoinMilliseconds: chronologicalJoins.reduce(
+        (sum, node) => sum + (node.operator_timing ?? 0) * 1000,
+        0,
+      ),
+      chronologicalJoinCardinality: chronologicalJoins.reduce(
         (sum, node) => sum + (node.operator_cardinality ?? 0),
         0,
       ),
@@ -118,14 +134,14 @@ for (const width of widths) {
   }
 }
 
-function findTransferJoins(node: ProfileNode): ProfileNode[] {
+function findJoins(node: ProfileNode, columns: string[]): ProfileNode[] {
   const detail = JSON.stringify(node.extra_info ?? {});
   const current = node.operator_name?.includes("JOIN") === true &&
-      detail.includes("__node_key") && detail.includes("__from_key")
+      columns.every((column) => detail.includes(column))
     ? [node]
     : [];
   return [
     ...current,
-    ...(node.children ?? []).flatMap(findTransferJoins),
+    ...(node.children ?? []).flatMap((child) => findJoins(child, columns)),
   ];
 }

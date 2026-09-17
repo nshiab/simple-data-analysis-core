@@ -208,9 +208,15 @@ The focused layered benchmark in `benchmarks/graphs/chronologicalDistances.ts`
 measures retained cost states and the transfer join without enumerating routes.
 With six layers and widths 4, 8, and 12, it retained 96, 384, and 864 states
 respectively, exactly the physical event bound for one start, while the
-corresponding route counts were 16,384, 2,097,152, and 35,831,808. On the
-2026-09-17 local run, DuckDB reported transfer join cardinalities of 320, 2,560,
-and 8,640 and operator times of 0.128 ms, 0.098 ms, and 0.173 ms. These
-diagnostic timings include profiler noise and are not performance guarantees;
-raw profiles are retained under the ignored
-`benchmarks/.work/graphs/chronological-distances/` directory.
+corresponding six-event route counts were 16,384, 2,097,152, and 35,831,808.
+These counts include only routes reaching the final layer; shorter prefixes add
+further routes. On the 2026-09-17 local review run, the endpoint candidate joins
+reported cardinalities of 320, 2,560, and 8,640 and operator times of 0.112 ms,
+0.107 ms, and 0.183 ms. DuckDB evaluated the chronological predicate in a
+separate join, with the same cardinalities and operator times of 0.464 ms, 0.367
+ms, and 0.112 ms. The runner reports both stages separately: timing only the
+endpoint join would omit the time comparison work, and adding their
+cardinalities would double-count these transfers. These diagnostic timings
+include profiler noise and are not performance guarantees; raw profiles are
+retained under the ignored `benchmarks/.work/graphs/chronological-distances/`
+directory.

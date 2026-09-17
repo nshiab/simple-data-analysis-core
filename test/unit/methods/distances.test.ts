@@ -397,46 +397,58 @@ Deno.test("distances evaluates multi-starts independently and omits unknowns", a
   }
 });
 
-Deno.test("distances preserves unsigned, arbitrary integer, and FLOAT sum types", async () => {
-  const sdb = new SimpleDB();
-  try {
-    for (
-      const [type, maximum, distanceType] of [
-        ["UBIGINT", "18446744073709551615", "HUGEINT"],
-        ["UHUGEINT", "340282366920938463463374607431768211455", "BIGNUM"],
-        ["BIGNUM", "9".repeat(80), "BIGNUM"],
-      ]
-    ) {
-      const table = sdb.newTable(`weights${type}`);
-      await sdb.customQuery(`CREATE TABLE "${table.name}" AS
-        SELECT * FROM (VALUES
+for (const chronological of [false, true]) {
+  Deno.test(`distances ${chronological ? "chronological" : "static"} preserves unsigned, arbitrary integer, and FLOAT sum types`, async () => {
+    const temporalOptions = chronological
+      ? { startTimeColumn: "time", strictOrdering: false }
+      : {};
+    const sdb = new SimpleDB();
+    try {
+      for (
+        const [type, maximum, distanceType] of [
+          ["UBIGINT", "18446744073709551615", "HUGEINT"],
+          ["UHUGEINT", "340282366920938463463374607431768211455", "BIGNUM"],
+          ["BIGNUM", "9".repeat(80), "BIGNUM"],
+        ]
+      ) {
+        const table = sdb.newTable(`weights${type}`);
+        await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+        SELECT *, TIMESTAMP '2025-01-01' AS time FROM (VALUES
           ('A', 'B', '${maximum}'::${type}),
           ('B', 'C', '${maximum}'::${type})
         ) edges(source, target, weight)`);
-      table.distances("source", "target", "A", { weight: "weight" });
-      assertEquals((await table.getTypes()).distance, distanceType);
-      assertEquals(await table.convert({ distance: "string" }).getData(), [
-        { start: "A", node: "B", distance: maximum },
-        { start: "A", node: "C", distance: String(BigInt(maximum) * 2n) },
-      ]);
-    }
+        table.distances("source", "target", "A", {
+          weight: "weight",
+          ...temporalOptions,
+        });
+        assertEquals((await table.getTypes()).distance, distanceType);
+        assertEquals(await table.convert({ distance: "string" }).getData(), [
+          { start: "A", node: "B", distance: maximum },
+          { start: "A", node: "C", distance: String(BigInt(maximum) * 2n) },
+        ]);
+      }
 
-    const floating = sdb.newTable("singlePrecisionWeights");
-    await sdb.customQuery(`CREATE TABLE "singlePrecisionWeights" AS
-      SELECT * FROM (VALUES
+      const floating = sdb.newTable("singlePrecisionWeights");
+      await sdb.customQuery(`CREATE TABLE "singlePrecisionWeights" AS
+      SELECT *, TIMESTAMP '2025-01-01' AS time FROM (VALUES
         ('A', 'B', 16777216::FLOAT),
-        ('B', 'C', 1::FLOAT)
+        ('B', 'C', 1::FLOAT),
+        ('C', 'B', 0::FLOAT)
       ) edges(source, target, weight)`);
-    floating.distances("source", "target", "A", { weight: "weight" });
-    assertEquals((await floating.getTypes()).distance, "FLOAT");
-    assertEquals(await floating.getData(), [
-      { start: "A", node: "B", distance: 16777216 },
-      { start: "A", node: "C", distance: 16777216 },
-    ]);
-  } finally {
-    await sdb.close();
-  }
-});
+      floating.distances("source", "target", "A", {
+        weight: "weight",
+        ...temporalOptions,
+      });
+      assertEquals((await floating.getTypes()).distance, "FLOAT");
+      assertEquals(await floating.getData(), [
+        { start: "A", node: "B", distance: 16777216 },
+        { start: "A", node: "C", distance: 16777216 },
+      ]);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
 
 Deno.test("distances weighted relaxation agrees with all-pairs costs in every direction", async () => {
   const sdb = new SimpleDB();
@@ -1206,6 +1218,46 @@ Deno.test("distances chronological state keeps cheap late and costlier early arr
         [
           { start: "C", node: "B", distance: 1 },
           { start: "C", node: "A", distance: 6 },
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances chronological improvements propagate through previously reached events", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const events = [
+      { source: "A", target: "B", time: 0, weight: 9 },
+      { source: "A", target: "C", time: 0, weight: 1 },
+      { source: "C", target: "B", time: 1, weight: 1 },
+      { source: "B", target: "D", time: 2, weight: 1 },
+      { source: "D", target: "E", time: 3, weight: 1 },
+    ];
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const rows = events.map((event) => ({
+        source: direction === "outgoing" ? event.source : event.target,
+        target: direction === "outgoing" ? event.target : event.source,
+        time: new Date(
+          chronologicalBase +
+            (direction === "outgoing" ? event.time : -event.time),
+        ),
+        weight: event.weight,
+      }));
+      assertEquals(
+        await sdb.newTable().loadArray(rows)
+          .distances("source", "target", "A", {
+            direction,
+            startTimeColumn: "time",
+            weight: "weight",
+          }).getData(),
+        [
+          { start: "A", node: "C", distance: 1 },
+          { start: "A", node: "B", distance: 2 },
+          { start: "A", node: "D", distance: 3 },
+          { start: "A", node: "E", distance: 4 },
         ],
       );
     }
