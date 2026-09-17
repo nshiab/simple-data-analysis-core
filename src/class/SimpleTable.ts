@@ -3508,7 +3508,10 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | F4 | C | E | 2 | 4 |
    *
    * With `direction: "incoming"`, connections are followed from target to
-   * source. For this input:
+   * source. Chronological searches discover the physical journey in reverse:
+   * each next search step must end early enough to precede the current event.
+   * Returned steps and source/target values follow that reverse search order;
+   * the scheduled events themselves are not reversed. For this input:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |

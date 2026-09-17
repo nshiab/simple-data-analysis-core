@@ -1245,6 +1245,82 @@ Deno.test("shortestPath chronological routing returns a costlier feasible optimu
   }
 });
 
+Deno.test("shortestPath keeps a costly early arrival when a cheap late arrival misses the connection", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable().loadArray([
+      { edgeId: 1, source: "A", target: "B", time: new Date(10), weight: 1 },
+      { edgeId: 2, source: "A", target: "B", time: new Date(0), weight: 3 },
+      { edgeId: 3, source: "B", target: "C", time: new Date(5), weight: 1 },
+    ]);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const rows = await source.shortestPath(
+        "source",
+        "target",
+        "edgeId",
+        direction === "outgoing" ? "A" : "C",
+        direction === "outgoing" ? "C" : "A",
+        {
+          direction,
+          startTimeColumn: "time",
+          weight: "weight",
+          outputTable: true,
+        },
+      ).getData();
+      assertEquals(
+        rows.map((row) => row.edgeId),
+        direction === "outgoing" ? [2, 3] : [3, 2],
+      );
+      assertEquals(rows.at(-1)?.total, 4);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath end-only timestamps preserve nanoseconds and inclusive microsecond gaps", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("chronologicalNanosecondShortest");
+    await sdb.customQuery(`CREATE TABLE "chronologicalNanosecondShortest" AS
+      SELECT * FROM (VALUES
+        (1, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
+        (2, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000001000'),
+        (3, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
+        (4, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000001002'),
+        (5, 'A', 'C', TIMESTAMP_NS 'infinity'),
+        (6, 'A', 'C', NULL)
+      ) edges(edgeId, source, target, time)`);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      for (const strictOrdering of [false, true]) {
+        const rows = await source.shortestPath(
+          "source",
+          "target",
+          "edgeId",
+          direction === "outgoing" ? "A" : "C",
+          direction === "outgoing" ? "C" : "A",
+          {
+            direction,
+            endTimeColumn: "time",
+            minGapMs: 0.001,
+            strictOrdering,
+            outputTable: true,
+          },
+        ).getData();
+        assertEquals(
+          rows.map((row) => [row.pathId, row.edgeId]),
+          direction === "outgoing"
+            ? [[0, 1], [0, 3], [1, 1], [1, 4]]
+            : [[0, 3], [0, 1], [1, 4], [1, 1]],
+        );
+        assertEquals(rows.map((row) => row.total), [1, 2, 1, 2]);
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("shortestPath chronological routing retains tied arrival and visited-node histories", async () => {
   const sdb = new SimpleDB();
   try {
