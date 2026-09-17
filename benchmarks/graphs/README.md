@@ -19,6 +19,7 @@ deno task benchmark-graphs --iterations=1 --methods=neighbors,degree
 deno task benchmark-graphs --methods=reachable,distances --chain-nodes=1000 --branch-nodes=1023
 deno task benchmark-graphs --methods=findCycles --dense-nodes=6
 deno run -A benchmarks/graphs/chronologicalDistances.ts
+deno run -A benchmarks/graphs/chronologicalShortestPath.ts
 deno run -A benchmarks/graphs/chronologicalComponents.ts
 ```
 
@@ -61,6 +62,29 @@ Use the raw plans to investigate scan/grouping costs and retain all repetitions
 when comparing changes. Unit tests verify correctness independently; no timing
 assertion is part of the test suite. These local measurements do not establish
 performance parity with graph extensions or guarantees for larger graphs.
+
+`compareStaticBaseline.ts` checks static graph compatibility against an
+extracted source tree and a saved one-iteration benchmark artifact. It compares
+the complete ordered result, output types, row count, and full materialization
+SQL for all 57 method/variant/workload cases. It also runs each version five
+times by default, alternating which version runs first, and records median
+operation and DuckDB-query timings. Timings remain diagnostic; exact result and
+SQL comparisons are the compatibility checks.
+
+```sh
+baseline_root=$(mktemp -d /tmp/sda-static-baseline-XXXXXX)
+git archive be11e360ffedebc62192b2bc07ffa0b64a9e4197 | tar -x -C "$baseline_root"
+deno run -A benchmarks/graphs/compareStaticBaseline.ts \
+  --baseline-root="$baseline_root" \
+  --baseline-observations=/path/to/baseline-graphs/observations.json \
+  --iterations=5
+```
+
+Only `observations.json` from the approved one-iteration capture and the profile
+named by each observation are inputs. Extra profiles from unrelated runs in the
+same directory are ignored. The comparison report and new profiles are written
+under the ignored `benchmarks/.work/graphs/static-baseline-comparison/`
+directory.
 
 The focused chronological-distance runner builds layered event graphs whose
 number of possible routes grows exponentially. `fullDepthRoutes` counts routes

@@ -91,6 +91,38 @@ project `eventSelections()` once, filter with `eventValidity()`, and call
 timestamp comparison; each method keeps its traversal, pruning, route, or
 component algorithm explicit.
 
+## Direct adjacency remains event-based
+
+`neighbors()`, `degree()`, and `commonNeighbors()` answer questions about
+individual connections. They do not accept chronological options because no
+preceding event exists in these queries. Time columns remain ordinary unused
+columns unless the caller filters the table before the direct query. A valid
+flight therefore remains a direct edge even when it cannot follow or precede
+another flight.
+
+For a table containing only Toronto → Ottawa at 12:00–13:00, Ottawa is Toronto's
+outgoing neighbor, Toronto's outgoing degree is one, Ottawa's incoming degree is
+one, and both nodes have total degree one. The same flight is a valid one-step
+chronological path and shortest path, and Ottawa is reachable from Toronto at
+distance one. No artificial event is required before or after it.
+
+For A → B at 08:00–10:00, B → C at 09:00–10:00, and B → D at 11:00–12:00, both C
+and D are direct outgoing neighbors of B and B has two outgoing edges and two
+distinct outgoing neighbors. With a one-hour minimum connection, a journey
+beginning at A cannot continue to C, while the connection to D qualifies exactly
+at the boundary. Direct adjacency describes available events; it does not
+advertise transfer feasibility.
+
+Parallel events are counted once each by edge degree and weight sums, and once
+per endpoint by distinct-neighbor degree. Counts are never multiplied by the
+number of preceding or following events that could form transfers. Likewise, two
+standalone edges to the same destination establish a common neighbor without
+implying synchronized arrivals or a feasible meeting. The consolidated
+regressions are in `test/unit/methods/chronologicalGraphIntegration.test.ts`;
+the existing direct method suites retain all outgoing, incoming, both,
+multi-start, unknown-node, parallel-edge, self-connection, weight, and total
+conventions.
+
 ## Reachability state and termination
 
 Chronological `reachable()` materializes one valid-event relation and assigns
@@ -387,3 +419,85 @@ candidates, while the chronological join retained 30,752 rows. Query time was
 26.18 ms and the engine peak buffer reading was 18.4 MB, without a temporary
 spill. This case demonstrates recursive transfer work that the single equal-time
 wave does not exercise; the same timing and memory caveats apply.
+
+## Static compatibility with the approved baseline
+
+The final static comparison uses baseline commit
+`be11e360ffedebc62192b2bc07ffa0b64a9e4197` and its approved 57-case,
+one-iteration capture. `compareStaticBaseline.ts` executes the extracted
+baseline and final implementation in alternating order for five repetitions. For
+every method, variant, and workload shape, the final result has the exact same
+complete ordered rows and output types as the freshly executed baseline. Its row
+count and full materialization SQL also match the authoritative saved
+observation and named JSON profile. This includes all static directions and
+weight/count/component variants. `neighbors()`, `degree()`, `commonNeighbors()`,
+`topologicalSort()`, and `addId()` retain their original implementation files;
+the sequence methods select their original SQL branches when no chronological
+setting is supplied.
+
+The five-run operation-time ratio had a median of 1.005 across the 57 cases,
+with individual medians from 0.876 to 1.136. DuckDB query-time ratios had a
+median of 1.007 and ranged from 0.886 to 1.137. The identical SQL makes these
+small bidirectional differences consistent with profiling, scheduling, cache,
+and allocator noise; they are recorded rather than treated as evidence of a
+speedup, regression, or guaranteed parity. Raw comparison profiles remain in the
+ignored `benchmarks/.work/graphs/static-baseline-comparison/` directory. The
+reproducible extraction and comparison command is documented in
+`benchmarks/graphs/README.md`.
+
+## Master acceptance evidence
+
+The following ledger maps every behavioral and validation acceptance item in
+issue #199 to repository evidence. Test names are quoted exactly so a focused
+case can be selected with `deno test --filter`.
+
+| #199 section and items                                                                                                                                                                                                            | Passing coverage or recorded evidence                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `neighbors()` items 1–4: isolated/end events, no transfer filtering, direct-query explanation, all directions/starts/parallels/loops/unknowns                                                                                     | The two chronological integration regressions above; `neighbors defaults to outgoing and supports every direction`, `neighbors sorts multiple starts and omits unknown starts`, and `neighbors deduplicates parallel edges and includes self-connections`; “Direct adjacency remains event-based” above.                                                                                                                                                |
+| `degree()` items 1–4: preserve events, edge/weight/loop/total rules, neighbor consistency, connection-gap example                                                                                                                 | The two chronological integration regressions above; `degree distinguishes edge, neighbor, and weighted counts` and `degree handles sources, sinks, convergence, disconnection, and self-loops`; “Direct adjacency remains event-based” above. The parallel example returns four feasible routes but counts two incoming edges, two outgoing edges, one neighbor per direction, and weights only once.                                                  |
+| `commonNeighbors()` items 1–3: direct set intersection, standalone edges, no meeting claim                                                                                                                                        | `direct graph counts do not multiply parallel events by feasible transfers`, `commonNeighbors defaults to outgoing and supports every direction`, `commonNeighbors deduplicates memberships and includes requested endpoints`, and the direct-adjacency contract above.                                                                                                                                                                                 |
+| `reachable()` items 1–4: last-event state, valid first events, actual continuity, unknown/return/equal-time termination                                                                                                           | “Reachability state and termination”; `reachable chronological traversal keeps valid first events and enforces connection gaps`, `reachable chronological traversal retains competing last-event states`, `reachable chronological traversal handles starts, parallel events, returns, equal times, and input order`, and its independent generated evaluator comparison.                                                                               |
+| `distances()` items 1–4: hop/weight optimum, costlier early state, justified dominance without route enumeration, cost units                                                                                                      | “Distance state and cost dominance”; `distances chronological state keeps cheap late and costlier early arrivals`, `distances chronological traversal handles first events, invalid rows, returns, and equal-time zero costs`, `distances chronological SQL uses finite keyed event costs without route enumeration`, and its generated evaluator comparison. Public JSDoc defines distance as hop count or summed connection weight, not elapsed time. |
+| `shortestPath()` items 1–4: all tied feasible simple routes, feasible rather than static optimum, competing histories and sound pruning, unchanged objective                                                                      | “Shortest simple route bounds”; `shortestPath chronological routing returns a costlier feasible optimum in both directions`, `shortestPath chronological routing retains tied arrival and visited-node histories`, `shortestPath chronological SQL shares numbered events and bounds route prefixes`, and the exhaustive generated minima comparison.                                                                                                   |
+| `paths()` items 1–3: per-transition chronology in both directions, all simple routes and exact edge identity, no walks                                                                                                            | `paths chronological traversal keeps first events and enforces both-column connections`, `paths chronological traversal preserves incoming orientation, parallel IDs, weights, and invalid-row policy`, `paths retains actual event continuity and terminates equal-time cycles`, and its generated evaluator comparison.                                                                                                                               |
+| `findCycles()` items 1–4: feasible returns, non-smallest-node start, chronological canonical identity without closing gap, loops/equal times/directions/no reuse                                                                  | “Chronological cycle identity and normalization”; `findCycles starts chronological cycles at a feasible event in both directions`, `findCycles applies strict, non-strict, gap, and self-loop chronology`, `findCycles preserves temporal parallel identities and deterministic cycle IDs`, and the independently normalized generated comparison.                                                                                                      |
+| `connectedComponents()` items 1–6: node mutual reachability, all maximal groups, overlapping deterministic memberships, no SCC merge, singleton/empty cases, uncapped output benchmark                                            | “Chronological strong components”; `connectedComponents returns the documented overlapping chronological groups`, `connectedComponents allows chronological journeys through outside nodes`, the independent exhaustive temporal comparison, the exhaustive 64 four-node mutual graphs, and the complete-clique/multipartite benchmark evidence above.                                                                                                  |
+| `topologicalSort()` and `addId()` unchanged                                                                                                                                                                                       | Their implementation files are byte-identical to the approved baseline. The complete static comparison includes all three topological workloads. `topologicalSort matches the shared baseline and duplicate-edge oracles` and the complete `addId()` suite cover public behavior. Neither signature advertises chronological settings.                                                                                                                  |
+| Incoming items 1–3: physical predecessor rule, output orientation, reject temporal `both` and explicit settings without columns                                                                                                   | “Incoming results”; the incoming chronological cases for all five direction-capable sequence methods; shared transition-helper incoming tests; each method's validation cases for temporal `both` and explicit `minGapMs: 0`; the consolidated explicit `strictOrdering: false` rejection regression. Static `both` cases remain in each existing suite.                                                                                                |
+| Shared implementation items 1–5: shared timestamps with explicit algorithms, queue/output/chaining/binding/cache/exact identity, inline public types, schemas and documented temporal differences, no extra date/context features | `prepareGraphTemporalOptions()` and `prepareGraphTemporalSql()` plus their helper suite; method-specific SQL builders; each method's queue/output/cache/exact-ID cases; inline signatures and JSDoc in `SimpleTable.ts`; full parameter binding in the recorded queries. The public API contains only the four agreed flat settings: no explicit dates, `maxGapMs`, virtual events, or direct-query temporal modes.                                     |
+| Acceptance 1: unchanged static results, schemas, order, and SQL                                                                                                                                                                   | The 57-case exact baseline comparison above, including complete ordered result data, types, row counts, and full query SQL.                                                                                                                                                                                                                                                                                                                             |
+| Acceptance 2: both columns, each fallback, invalid columns/types/options, activation, precision, timezone                                                                                                                         | Shared helper tests from `prepareGraphTemporalSql resolves fallback columns and validates DuckDB temporal types` through the nanosecond, mixed-precision, DATE-range, TIMESTAMPTZ, validity, and large-gap cases; method-level fallback/validation cases.                                                                                                                                                                                               |
+| Acceptance 3: backward time, strict/non-strict, equality, zero and positive gap boundaries                                                                                                                                        | Helper transition tests plus each method's ordering/gap cases, including mixed `TIMESTAMP`/`TIMESTAMP_NS` boundaries at 999/1000/1001 ns.                                                                                                                                                                                                                                                                                                               |
+| Acceptance 4: isolated and three-flight examples across direct and sequence queries                                                                                                                                               | `chronological graph integration preserves direct events while constraining transfers`; the independent evaluator standalone/exact-gap fixtures.                                                                                                                                                                                                                                                                                                        |
+| Acceptance 5: neighbor/degree consistency, parallel versus distinct counts, weighted sums, no transfer multiplication                                                                                                             | `direct graph counts do not multiply parallel events by feasible transfers` and the direct method suites cited above.                                                                                                                                                                                                                                                                                                                                   |
+| Acceptance 6: actual continuity, cheap-late/costly-early, ties, shuffle, loops, returns                                                                                                                                           | `paths retains actual event continuity and terminates equal-time cycles`; distance and shortest-path early-arrival cases; shortest tied-history cases; generated/shuffled comparisons; method loop/return cases.                                                                                                                                                                                                                                        |
+| Acceptance 7: incoming valid journeys, reject physical backward time, temporal `both`, and explicit zero/false activation errors                                                                                                  | Incoming-result contract and method tests cited above, plus the consolidated integration validation test.                                                                                                                                                                                                                                                                                                                                               |
+| Acceptance 8: non-strict equal-time termination/deduplication                                                                                                                                                                     | Reachability finite-state, distance improvement, route simple-node, and cycle used-event tests; generated evaluators run strict and non-strict graphs in both directions.                                                                                                                                                                                                                                                                               |
+| Acceptance 9: chronological cycle not anchored at smallest node and valid one-event cycles                                                                                                                                        | `findCycles starts chronological cycles at a feasible event in both directions` and `findCycles applies strict, non-strict, gap, and self-loop chronology`.                                                                                                                                                                                                                                                                                             |
+| Acceptance 10: independent overlapping components, both examples, singleton/determinism, explicit strong mode, outside intermediaries                                                                                             | The component contract and named component cases above, independent route/subset oracle, shuffled input comparisons, and exhaustive 64-graph regression.                                                                                                                                                                                                                                                                                                |
+| Acceptance 11: event-state, transfer, and overlapping-output benchmarks without unnecessary pair materialization                                                                                                                  | Distance benchmark: 96/384/864 keyed states versus 16,384/2,097,152/35,831,808 full-depth routes. Shortest benchmark: 2,388 versus six prefixes. Reachability benchmark: 32,736 states and 2,029,632 endpoint candidates with 30,752 chronological transfers. Component benchmark: one 32-member clique versus 729 groups/4,374 memberships. Query profiles record actual operators; stage counts are not added.                                        |
+| Acceptance 12: public option documentation and worked `.log()` examples; generated `llm.md`                                                                                                                                       | All six public signatures document all four flat options and contain executable `.log()` examples. Each method suite executes its exact examples and displayed tables. `deno task all-tests` runs `deno task llm`; `llm.md` is generated only by that task.                                                                                                                                                                                             |
+| Acceptance 13: formatting, lint, type/doc checks, tests, publish dry-run, npm smoke, generated docs                                                                                                                               | `deno task all-tests` is the canonical final command. It runs `deno fmt --check`, `deno lint`, `deno check src/index.ts`, `deno doc --lint`, `deno publish --allow-dirty --dry-run`, the complete Deno test suite, npm smoke tests, and `deno task llm`.                                                                                                                                                                                                |
+
+The benchmark commands are:
+
+```sh
+deno run -A benchmarks/graphs/chronologicalDistances.ts
+deno run -A benchmarks/graphs/chronologicalShortestPath.ts
+deno run -A benchmarks/graphs/chronologicalComponents.ts
+deno task benchmark-graphs
+```
+
+Focused integration verification is available with:
+
+```sh
+deno test -A test/unit/methods/chronologicalGraphIntegration.test.ts
+deno test -A test/unit/helpers/prepareGraphTemporalSql.test.ts \
+  test/unit/helpers/enumerateChronologicalRoutes.test.ts \
+  test/unit/methods/reachable.test.ts \
+  test/unit/methods/distances.test.ts \
+  test/unit/methods/shortestPath.test.ts \
+  test/unit/methods/paths.test.ts \
+  test/unit/methods/findCycles.test.ts \
+  test/unit/methods/connectedComponents.test.ts
+```
