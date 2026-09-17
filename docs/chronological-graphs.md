@@ -220,3 +220,54 @@ cardinalities would double-count these transfers. These diagnostic timings
 include profiler noise and are not performance guarantees; raw profiles are
 retained under the ignored `benchmarks/.work/graphs/chronological-distances/`
 directory.
+
+## Shortest simple route bounds
+
+Chronological `shortestPath()` reuses the cost-state recursion only to obtain
+the scalar minimum cost at the requested destination. It does not reuse a cost
+state's collapsed history or require a route prefix to be the cheapest way to
+reach its event. Route enumeration separately retains the complete visited-node
+list, ordered public edge-ID sequence, step records, last physical event, and
+running cost. This keeps equal-cost histories, earlier and later arrivals that
+can take the same next event, and histories with different visited-node
+restrictions distinct until complete routes are selected.
+
+The scalar walk optimum equals the simple-route optimum under this API's
+constraints. All weights are finite and non-negative, and there is no maximum
+connection gap. If a feasible chronological walk repeats a node, remove the
+closed segment between two occurrences. The event before the removed segment
+still precedes the event after it: chronological ordering and the non-negative
+minimum gap are transitive in both outgoing physical order and incoming reverse
+search order. Removing the segment cannot increase cost. Repeating this step
+produces a feasible simple route no more expensive than the walk. Since every
+simple route is also a walk, their minima are equal, including with zero-weight
+cycles.
+
+Enumeration can therefore discard a prefix only when its non-negative running
+cost exceeds the global optimum. Every prefix of a tied optimum stays at or
+below that optimum, including under monotone floating-point addition. Complete
+routes are compared to the optimum using the same typed, left-associated cost
+expression used by the cost-state recursion. This final equality retains all
+tied simple routes without relying on event-optimal prefixes, which would lose
+valid ties when competing histories share an event or have different visited
+nodes.
+
+The focused benchmark in `benchmarks/graphs/chronologicalShortestPath.ts`
+separates returned route size from recursive prefix work. A five-layer,
+width-four graph has 1,024 possible complete routes. When all routes tie, the
+query returns 1,024 routes and 6,144 step rows while retaining 2,388 route
+prefixes. With the same topology but one zero-cost spine and positive-cost
+alternatives, the optimum bound reduces the search to six prefixes and returns
+one six-step route. On the 2026-09-17 local run, the recursive endpoint join
+produced 2,384 and 17 candidates respectively; the cost-bound and chronological
+joins each retained 2,384 candidates in the tied case and five in the pruned
+case. The benchmark reports these join stages separately because adding their
+cardinalities would count the same candidates more than once.
+
+This bound does not make all shortest-route queries polynomial. When many simple
+prefixes remain at or below the optimum, especially with zero weights, the
+method must retain them to return every tied optimum and can do exponential work
+even when few prefixes ultimately reach the destination. There is no silent
+route or depth cap. Benchmark timings are diagnostic rather than a performance
+guarantee; raw profiles are written under the ignored
+`benchmarks/.work/graphs/chronological-shortest-path/` directory.

@@ -3356,6 +3356,23 @@ export default class SimpleTable extends Simple {
    * sum of those costs up to and including the current step.
    * Without the `weight` option, each connection costs one.
    *
+   * Supply `startTimeColumn` or `endTimeColumn` to choose the cheapest route
+   * whose consecutive connections are chronological. With both columns, each
+   * next connection's start is compared with the preceding connection's end.
+   * With one column, connections are treated as instantaneous. Every valid
+   * connection remains eligible as a one-step route. `minGapMs` sets an
+   * inclusive minimum separation, and `strictOrdering` controls whether
+   * equal-time connections may be consecutive. Chronological traversal
+   * supports `"outgoing"` and `"incoming"`, but not `"both"`.
+   *
+   * Time columns accept `DATE`, `TIMESTAMP`, `TIMESTAMP_S`, `TIMESTAMP_MS`,
+   * `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE`. Comparisons preserve native
+   * precision. Zoned timestamps represent absolute instants and cannot be
+   * combined with a naive date or timestamp column. Connections with null or
+   * infinite selected times, or an end before their start, are excluded.
+   * `minGapMs` must be finite, non-negative, no greater than
+   * `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds.
+   *
    * Routes are numbered from zero by comparing their sequences of connection
    * IDs, element by element. Rows are sorted by `pathId`, then `step`.
    * Reordering the input rows preserves route IDs; changing the connections
@@ -3462,6 +3479,34 @@ export default class SimpleTable extends Simple {
    * | ---: | ---: | --- | --- | --- | ---: | ---: |
    * | 0 | 1 | F1 | A | E | 1 | 1 |
    *
+   * Chronological routing can make a costlier static route the feasible
+   * optimum. Suppose the direct two-flight route departs B before F1 arrives,
+   * while the route through C connects after the required one-hour gap:
+   *
+   * | flightId | origin | destination | departureTime | arrivalTime | minutes |
+   * | --- | --- | --- | --- | --- | ---: |
+   * | F1 | A | B | 2025-01-01 08:00 | 2025-01-01 10:00 | 1 |
+   * | F2 | B | E | 2025-01-01 09:00 | 2025-01-01 10:00 | 1 |
+   * | F3 | A | C | 2025-01-01 08:00 | 2025-01-01 09:00 | 2 |
+   * | F4 | C | E | 2025-01-01 10:00 | 2025-01-01 11:00 | 2 |
+   *
+   * @example
+   * ```ts
+   * await scheduledFlights
+   *   .shortestPath("origin", "destination", "flightId", "A", "E", {
+   *     startTimeColumn: "departureTime",
+   *     endTimeColumn: "arrivalTime",
+   *     minGapMs: 60 * 60 * 1000,
+   *     weight: "minutes",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | edgeId | source | target | weight | total |
+   * | ---: | ---: | --- | --- | --- | ---: | ---: |
+   * | 0 | 1 | F3 | A | C | 2 | 2 |
+   * | 0 | 2 | F4 | C | E | 2 | 4 |
+   *
    * With `direction: "incoming"`, connections are followed from target to
    * source. For this input:
    *
@@ -3487,8 +3532,12 @@ export default class SimpleTable extends Simple {
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
    * @param start - The starting node ID.
    * @param end - The ending node ID, which must differ from `start`.
-   * @param options - An optional object with direction and result configuration.
+   * @param options - An optional object with direction, chronological traversal, and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.startTimeColumn - The name of the column containing each connection's start time. Supplying this or `endTimeColumn` enables chronological traversal.
+   * @param options.endTimeColumn - The name of the column containing each connection's end time. Supplying this or `startTimeColumn` enables chronological traversal.
+   * @param options.minGapMs - The inclusive minimum time between consecutive connections, in milliseconds. Must be finite, non-negative, at most `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological column.
+   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a chronological column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3502,8 +3551,12 @@ export default class SimpleTable extends Simple {
     end: string | number | bigint,
     options: {
       direction?: "outgoing" | "incoming" | "both";
-      weight?: string;
+      endTimeColumn?: string;
+      minGapMs?: number;
       outputTable?: string | boolean;
+      startTimeColumn?: string;
+      strictOrdering?: boolean;
+      weight?: string;
     } = {},
   ): SimpleTable {
     return shortestPath(

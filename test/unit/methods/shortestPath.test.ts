@@ -8,6 +8,84 @@ import {
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import {
+  enumerateChronologicalRoutes,
+  type ReferenceChronologicalEvent,
+} from "../../helpers/enumerateChronologicalRoutes.ts";
+
+const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
+
+type WeightedChronologicalEvent =
+  & ReferenceChronologicalEvent<string, number>
+  & { weight: number };
+
+function chronologicalRows(events: WeightedChronologicalEvent[]) {
+  return events.map((event) => ({
+    ...event,
+    startTime: event.startTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.endTime)),
+  }));
+}
+
+function referenceShortestRows(
+  events: WeightedChronologicalEvent[],
+  start: string,
+  end: string,
+  direction: "incoming" | "outgoing",
+  minGap: bigint,
+  strictOrdering: boolean,
+) {
+  const weights = new Map(events.map((event) => [event.edgeId, event.weight]));
+  const weight = (edgeId: number) => weights.get(edgeId)!;
+  const routes = enumerateChronologicalRoutes(events, start, {
+    direction,
+    end,
+    maxSteps: new Set(events.flatMap((event) => [event.source, event.target]))
+      .size - 1,
+    minGap,
+    strictOrdering,
+  });
+  const weighted = routes.map((steps) => ({
+    steps,
+    total: steps.reduce((sum, step) => sum + weight(step.event.edgeId), 0),
+  }));
+  const minimum = Math.min(...weighted.map((route) => route.total));
+  return weighted.filter((route) => route.total === minimum)
+    .sort((left, right) => {
+      const leftIds = left.steps.map((step) => step.event.edgeId);
+      const rightIds = right.steps.map((step) => step.event.edgeId);
+      for (
+        let index = 0;
+        index < Math.min(leftIds.length, rightIds.length);
+        index++
+      ) {
+        if (leftIds[index] !== rightIds[index]) {
+          return leftIds[index] - rightIds[index];
+        }
+      }
+      return leftIds.length - rightIds.length;
+    })
+    .flatMap((route, pathId) => {
+      let total = 0;
+      return route.steps.map((step, index) => {
+        const eventWeight = weight(step.event.edgeId);
+        total += eventWeight;
+        return {
+          pathId,
+          step: index + 1,
+          edgeId: step.event.edgeId,
+          source: step.source,
+          target: step.target,
+          weight: eventWeight,
+          total,
+        };
+      });
+    });
+}
 
 function loadScenario(
   sdb: SimpleDB,
@@ -907,6 +985,50 @@ Deno.test("shortestPath output records its source as a cache dependency", async 
   }
 });
 
+Deno.test("shortestPath chronological output records its source as a cache dependency", async () => {
+  let computationRuns = 0;
+  const unique = crypto.randomUUID().replaceAll("-", "");
+  const outputName = `chronologicalShortestCacheOutput${unique}`;
+  const sourceName = `chronologicalShortestCacheSource${unique}`;
+  const compute = (source: SimpleTable) => async (output: SimpleTable) => {
+    computationRuns++;
+    const result = source.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "C",
+      { startTimeColumn: "time", outputTable: true },
+    );
+    output.loadArray(await result.getData());
+    await result.removeTable();
+  };
+
+  const firstSdb = new SimpleDB();
+  try {
+    const source = firstSdb.newTable(sourceName).loadArray([
+      { edgeId: "E1", source: "A", target: "B", time: new Date(0) },
+      { edgeId: "E2", source: "B", target: "C", time: new Date(1) },
+    ]);
+    await firstSdb.newTable(outputName).cache(compute(source));
+  } finally {
+    await firstSdb.close();
+  }
+
+  const secondSdb = new SimpleDB();
+  try {
+    const source = secondSdb.newTable(sourceName).loadArray([
+      { edgeId: "E3", source: "A", target: "C", time: new Date(0) },
+    ]);
+    const output = secondSdb.newTable(outputName);
+    await output.cache(compute(source));
+    assertEquals(computationRuns, 2);
+    assertEquals((await output.getData()).map((row) => row.edgeId), ["E3"]);
+  } finally {
+    await secondSdb.close();
+  }
+});
+
 Deno.test("shortestPath uses native bounded simple-route enumeration", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
@@ -1040,6 +1162,483 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
   }
 });
 
+Deno.test("shortestPath chronological routing returns a costlier feasible optimum in both directions", async () => {
+  const sdb = new SimpleDB();
+  const events: WeightedChronologicalEvent[] = [
+    {
+      edgeId: 1,
+      source: "A",
+      target: "B",
+      startTime: 0n,
+      endTime: 10n,
+      weight: 1,
+    },
+    {
+      edgeId: 2,
+      source: "B",
+      target: "D",
+      startTime: 5n,
+      endTime: 11n,
+      weight: 1,
+    },
+    {
+      edgeId: 3,
+      source: "A",
+      target: "C",
+      startTime: 0n,
+      endTime: 2n,
+      weight: 2,
+    },
+    {
+      edgeId: 4,
+      source: "C",
+      target: "D",
+      startTime: 3n,
+      endTime: 4n,
+      weight: 2,
+    },
+  ];
+  try {
+    for (const ordered of [events, events.toReversed()]) {
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const start = direction === "outgoing" ? "A" : "D";
+        const end = direction === "outgoing" ? "D" : "A";
+        assertEquals(
+          await sdb.newTable().loadArray(chronologicalRows(ordered))
+            .shortestPath("source", "target", "edgeId", start, end, {
+              direction,
+              startTimeColumn: "startTime",
+              endTimeColumn: "endTime",
+              weight: "weight",
+            }).getData(),
+          referenceShortestRows(events, start, end, direction, 0n, true),
+        );
+      }
+    }
+
+    const oneEvent = await sdb.newTable().loadArray(chronologicalRows([
+      {
+        edgeId: 9,
+        source: "A",
+        target: "D",
+        startTime: 10n,
+        endTime: 11n,
+        weight: 7,
+      },
+    ])).shortestPath("source", "target", "edgeId", "A", "D", {
+      startTimeColumn: "startTime",
+      endTimeColumn: "endTime",
+      minGapMs: 1000,
+      weight: "weight",
+    }).getData();
+    assertEquals(oneEvent.map((row) => row.edgeId), [9]);
+
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(events))
+        .shortestPath("source", "target", "edgeId", "D", "A", {
+          startTimeColumn: "startTime",
+        }).getData(),
+      [],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological routing retains tied arrival and visited-node histories", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const tiedArrivals: WeightedChronologicalEvent[] = [
+      {
+        edgeId: 1,
+        source: "A",
+        target: "X",
+        startTime: 0n,
+        endTime: 0n,
+        weight: 1,
+      },
+      {
+        edgeId: 2,
+        source: "X",
+        target: "B",
+        startTime: 1n,
+        endTime: 2n,
+        weight: 1,
+      },
+      {
+        edgeId: 3,
+        source: "A",
+        target: "Y",
+        startTime: 0n,
+        endTime: 0n,
+        weight: 1,
+      },
+      {
+        edgeId: 4,
+        source: "Y",
+        target: "B",
+        startTime: 3n,
+        endTime: 4n,
+        weight: 1,
+      },
+      {
+        edgeId: 5,
+        source: "B",
+        target: "C",
+        startTime: 5n,
+        endTime: 6n,
+        weight: 0,
+      },
+      {
+        edgeId: 6,
+        source: "B",
+        target: "C",
+        startTime: 5n,
+        endTime: 6n,
+        weight: 0,
+      },
+    ];
+    const tied = await sdb.newTable().loadArray(chronologicalRows(tiedArrivals))
+      .shortestPath("source", "target", "edgeId", "A", "C", {
+        startTimeColumn: "startTime",
+        endTimeColumn: "endTime",
+        weight: "weight",
+      }).getData();
+    assertEquals(
+      tied,
+      referenceShortestRows(
+        tiedArrivals,
+        "A",
+        "C",
+        "outgoing",
+        0n,
+        true,
+      ),
+    );
+    assertEquals(
+      [...new Set(tied.map((row) => row.pathId))].length,
+      4,
+    );
+
+    const visitedHistories: WeightedChronologicalEvent[] = [
+      {
+        edgeId: 10,
+        source: "A",
+        target: "X",
+        startTime: 0n,
+        endTime: 0n,
+        weight: 0,
+      },
+      {
+        edgeId: 11,
+        source: "X",
+        target: "Z",
+        startTime: 1n,
+        endTime: 1n,
+        weight: 0,
+      },
+      {
+        edgeId: 12,
+        source: "A",
+        target: "Y",
+        startTime: 0n,
+        endTime: 0n,
+        weight: 0,
+      },
+      {
+        edgeId: 13,
+        source: "Y",
+        target: "Z",
+        startTime: 1n,
+        endTime: 1n,
+        weight: 0,
+      },
+      {
+        edgeId: 14,
+        source: "Z",
+        target: "B",
+        startTime: 2n,
+        endTime: 2n,
+        weight: 0,
+      },
+      {
+        edgeId: 15,
+        source: "B",
+        target: "X",
+        startTime: 3n,
+        endTime: 3n,
+        weight: 0,
+      },
+      {
+        edgeId: 16,
+        source: "X",
+        target: "D",
+        startTime: 4n,
+        endTime: 4n,
+        weight: 0,
+      },
+    ];
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(visitedHistories))
+        .shortestPath("source", "target", "edgeId", "A", "D", {
+          startTimeColumn: "startTime",
+          strictOrdering: true,
+          weight: "weight",
+        }).getData(),
+      referenceShortestRows(
+        visitedHistories,
+        "A",
+        "D",
+        "outgoing",
+        0n,
+        true,
+      ),
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological routing preserves floating ties after later rounding", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("chronologicalFloatShortest");
+    await sdb.customQuery(`CREATE TABLE "chronologicalFloatShortest" AS
+      SELECT * FROM (VALUES
+        (1, 'A', 'B', TIMESTAMP '2025-01-01 00:00:00', 1e16::DOUBLE),
+        (2, 'A', 'X', TIMESTAMP '2025-01-01 00:00:00', 1e16::DOUBLE),
+        (3, 'X', 'B', TIMESTAMP '2025-01-01 00:00:01', 2::DOUBLE),
+        (4, 'B', 'C', TIMESTAMP '2025-01-01 00:00:02', 1e16::DOUBLE)
+      ) edges(edgeId, source, target, time, weight)`);
+    const rows = await table.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "C",
+      { startTimeColumn: "time", weight: "weight" },
+    ).getData();
+    assertEquals(rows.map((row) => [row.pathId, row.edgeId]), [
+      [0, 1],
+      [0, 4],
+      [1, 2],
+      [1, 3],
+      [1, 4],
+    ]);
+    assertEquals(
+      rows.filter((row) => row.edgeId === 4).map((row) => row.total),
+      [2e16, 2e16],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological options enforce equal-time and validation boundaries", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const unqueued = sdb.newTable();
+    assertThrows(
+      () =>
+        unqueued.shortestPath("source", "target", "edgeId", "A", "C", {
+          minGapMs: 0,
+        }),
+      TypeError,
+      "require options.startTimeColumn or options.endTimeColumn",
+    );
+    assertThrows(
+      () =>
+        unqueued.shortestPath("source", "target", "edgeId", "A", "C", {
+          direction: "both",
+          startTimeColumn: "time",
+        }),
+      TypeError,
+      'options.direction cannot be "both"',
+    );
+    assertEquals(unqueued.pendingOps.length, 0);
+
+    const source = sdb.newTable().loadArray([
+      {
+        edgeId: 1,
+        source: "A",
+        target: "B",
+        time: new Date(chronologicalBase),
+      },
+      {
+        edgeId: 2,
+        source: "B",
+        target: "C",
+        time: new Date(chronologicalBase),
+      },
+    ]);
+    assertEquals(
+      await source.shortestPath("source", "target", "edgeId", "A", "C", {
+        startTimeColumn: "time",
+        outputTable: true,
+      }).getData(),
+      [],
+    );
+
+    const options = {
+      startTimeColumn: "time",
+      strictOrdering: false,
+      outputTable: "chronologicalShortestSnapshot",
+    };
+    const result = source.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "C",
+      options,
+    );
+    options.startTimeColumn = "missing";
+    options.strictOrdering = true;
+    options.outputTable = "changed";
+    assertEquals(result.name, "chronologicalShortestSnapshot");
+    assertEquals((await result.getData()).map((row) => row.edgeId), [1, 2]);
+    assertEquals(await source.getRowCount(), 2);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological routing preserves wide IDs and exact decimal totals", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("chronologicalWideShortest");
+    await sdb.customQuery(`CREATE TABLE "chronologicalWideShortest" AS
+      SELECT edgeId::BIGNUM AS edgeId, source, target, time,
+        weight::DECIMAL(22, 2) AS weight
+      FROM (VALUES
+        ('10000000000000000000000000000000000000000', 'A', 'B',
+          TIMESTAMP '2025-01-01 00:00:00', 99999999999999999999.25),
+        ('2', 'A', 'B', TIMESTAMP '2025-01-01 00:00:00',
+          99999999999999999999.25),
+        ('3', 'B', 'C', TIMESTAMP '2025-01-01 00:00:01', 0.50)
+      ) edges(edgeId, source, target, time, weight)`);
+    const result = table.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "C",
+      { startTimeColumn: "time", weight: "weight" },
+    );
+    const rows = await result.getData();
+    assertEquals(rows.map((row) => [row.pathId, row.step, row.edgeId]), [
+      [0, 1, "2"],
+      [0, 2, "3"],
+      [1, 1, "10000000000000000000000000000000000000000"],
+      [1, 2, "3"],
+    ]);
+    assertEquals(
+      rows.filter((row) => row.step === 2).map((row) => row.total),
+      ["99999999999999999999.75", "99999999999999999999.75"],
+    );
+    assertEquals((await result.getTypes()).total, "DECIMAL(38,2)");
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological SQL shares numbered events and bounds route prefixes", async () => {
+  const sdb = new SimpleDB();
+  const observer = observeSdaQueries(sdb);
+  try {
+    const result = sdb.newTable("graph_event_rows").loadArray([
+      { edgeId: 1, source: "A'?", target: "B", time: new Date(0), weight: 1 },
+      { edgeId: 2, source: "B", target: "C", time: new Date(1), weight: 1 },
+    ]).shortestPath("source", "target", "edgeId", "A'?", "C", {
+      startTimeColumn: "time",
+      weight: "weight",
+    });
+    await result.run();
+    const query = observer.queries.find((entry) =>
+      entry.query.includes("graph_shortest_routes") &&
+      entry.query.includes("graph_event_rows")
+    )?.query ?? "";
+    assertStringIncludes(query, "graph_event_rows");
+    assertStringIncludes(query, "AS MATERIALIZED");
+    assertStringIncludes(query, "USING KEY");
+    assertStringIncludes(query, "list_contains");
+    assertStringIncludes(query, '"best_total"."distance"');
+    assertEquals(query.match(/row_number\(\) OVER \(\)/g)?.length, 1);
+    assertEquals(query.includes("LIMIT"), false);
+  } finally {
+    observer.restore();
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological results match exhaustive generated simple-route minima", async () => {
+  const sdb = new SimpleDB();
+  const nodes = ["A", "B", "C", "D"];
+  try {
+    for (let seed = 0; seed < 6; seed++) {
+      let state = seed + 1;
+      const random = (limit: number) => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return (state >>> 16) % limit;
+      };
+      const generated: WeightedChronologicalEvent[] = [
+        {
+          edgeId: 0,
+          source: "A",
+          target: "D",
+          startTime: 0n,
+          endTime: 0n,
+          weight: 3,
+        },
+        ...Array.from({ length: 7 }, (_, offset) => {
+          const edgeId = offset + 1;
+          const startTime = BigInt(random(5));
+          return {
+            edgeId,
+            source: nodes[random(nodes.length)],
+            target: nodes[random(nodes.length)],
+            startTime: (seed + edgeId) % 11 === 0 ? null : startTime,
+            endTime: startTime + ((seed + edgeId) % 7 === 0 ? -1n : 0n),
+            weight: random(4),
+          };
+        }),
+      ];
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const start = direction === "outgoing" ? "A" : "D";
+        const end = direction === "outgoing" ? "D" : "A";
+        for (const strictOrdering of [false, true]) {
+          const minGap = BigInt(seed % 2);
+          const expected = referenceShortestRows(
+            generated,
+            start,
+            end,
+            direction,
+            minGap,
+            strictOrdering,
+          );
+          for (const ordered of [generated, generated.toReversed()]) {
+            assertEquals(
+              await sdb.newTable().loadArray(chronologicalRows(ordered))
+                .shortestPath("source", "target", "edgeId", start, end, {
+                  direction,
+                  startTimeColumn: "startTime",
+                  endTimeColumn: "endTime",
+                  minGapMs: Number(minGap),
+                  strictOrdering,
+                  weight: "weight",
+                }).getData(),
+              expected,
+              `seed ${seed}, ${direction}, strict=${strictOrdering}`,
+            );
+          }
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("shortestPath executes every actual JSDoc example and prints its complete ordered table", async () => {
   const source = await Deno.readTextFile(
     new URL("../../../src/class/SimpleTable.ts", import.meta.url),
@@ -1053,7 +1652,7 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
   const examples = [...documentation.matchAll(
     /```ts\n([\s\S]*?)```\n\n((?:\|[^\n]*\n)+)/g,
   )];
-  assertEquals(examples.length, 5);
+  assertEquals(examples.length, 6);
   const inputs = [
     [
       { edgeId: "E1", source: "A", target: "B" },
@@ -1075,6 +1674,40 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
       { flightId: "F3", origin: "B", destination: "D", minutes: 1 },
       { flightId: "F4", origin: "D", destination: "E", minutes: 1 },
     ],
+    [
+      {
+        flightId: "F1",
+        origin: "A",
+        destination: "B",
+        departureTime: new Date("2025-01-01T08:00:00Z"),
+        arrivalTime: new Date("2025-01-01T10:00:00Z"),
+        minutes: 1,
+      },
+      {
+        flightId: "F2",
+        origin: "B",
+        destination: "E",
+        departureTime: new Date("2025-01-01T09:00:00Z"),
+        arrivalTime: new Date("2025-01-01T10:00:00Z"),
+        minutes: 1,
+      },
+      {
+        flightId: "F3",
+        origin: "A",
+        destination: "C",
+        departureTime: new Date("2025-01-01T08:00:00Z"),
+        arrivalTime: new Date("2025-01-01T09:00:00Z"),
+        minutes: 2,
+      },
+      {
+        flightId: "F4",
+        origin: "C",
+        destination: "E",
+        departureTime: new Date("2025-01-01T10:00:00Z"),
+        arrivalTime: new Date("2025-01-01T11:00:00Z"),
+        minutes: 2,
+      },
+    ],
     [{ edgeId: "F1", source: "A", target: "B" }],
   ];
   for (const [index, example] of examples.entries()) {
@@ -1087,13 +1720,14 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
         "connections",
         "unnumberedConnections",
         "flights",
+        "scheduledFlights",
         "reverseExample",
         `return (async () => { ${example[1]} })();`,
       ) as (...tables: SimpleTable[]) => Promise<void>;
       console.log = (...values: unknown[]) => {
         printed.push(values.map(String).join(" "));
       };
-      await execute(table, table, table, table);
+      await execute(table, table, table, table, table);
       const expected = example[2].trim().split("\n")
         .filter((line) => !line.startsWith("| ---"))
         .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));

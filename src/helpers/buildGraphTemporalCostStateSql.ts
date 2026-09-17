@@ -8,6 +8,8 @@ import quoteIdentifier from "./quoteIdentifier.ts";
 export type GraphTemporalCostStateSql = {
   costRelation: string;
   edgesRelation: string;
+  settingsRelation: string;
+  startsRelation: string;
   withClause: string;
 };
 
@@ -19,6 +21,7 @@ export default function buildGraphTemporalCostStateSql(
   temporal: PreparedGraphTemporalSql,
   distanceType: string,
   edgeWeight: string,
+  eventSelections: string[] = [],
 ): GraphTemporalCostStateSql {
   const q = quoteIdentifier;
   const relations = prepared.relationNames([
@@ -57,12 +60,15 @@ export default function buildGraphTemporalCostStateSql(
   return {
     costRelation,
     edgesRelation,
+    settingsRelation,
+    startsRelation,
     withClause: `WITH RECURSIVE ${settingsRelation} AS MATERIALIZED (
       SELECT CAST(? AS HUGEINT) AS ${q("__gap")}
     ), ${eventRowsRelation} AS MATERIALIZED (
       ${
       prepared.edges(direction, [
         `${edgeWeight} AS ${q("__weight")}`,
+        ...eventSelections,
         ...temporal.eventSelections("edges"),
       ])
     }
