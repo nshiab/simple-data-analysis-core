@@ -353,6 +353,22 @@ membership, or search cap. The focused component benchmark reports reachability
 and clique-enumeration time separately, along with state, group, membership, and
 memory measurements where the runtime exposes them.
 
+The reachability cases reuse the production event-state SQL. The first has one
+strict equal-time wave, so only direct seed states survive; a second wave one
+hour later exercises actual transfers and deduplication. The runner reports
+recursive join predicates, cardinalities, and timings separately: endpoint and
+chronological joins may process the same candidates, so their row counts must
+not be added. The clique cases reuse the exact production clique CTE builder on
+synthetic mutual graphs. Their timings include synthetic adjacency preparation
+and aggregate output counts, but exclude all-pairs reachability, mutual-graph
+construction from reachability, and final membership expansion and row sorting.
+They are stage diagnostics, not end-to-end `connectedComponents()` timings.
+
+Engine peak buffer measurements include connection-resident tables and retained
+allocations; RSS snapshots also include the runtime and allocator. Successive
+cases share a connection, so these figures are not isolated per-stage memory
+costs and cannot be added together.
+
 On the local benchmark environment (DuckDB 1.5.5, one thread, 1 GB limit), a
 32-node complete direct-event graph retained 992 all-pairs reachability states
 and took 2.68 ms of DuckDB query time. Clique enumeration on the corresponding
@@ -364,3 +380,10 @@ for those three queries, with no temporary spill. These single runs include
 profiling overhead and are diagnostic rather than performance guarantees. Raw
 profiles are retained under the ignored
 `benchmarks/.work/graphs/chronological-components/` directory.
+
+The review's two-wave reachability case used 1,984 events and retained 32,736
+states against the 63,488 state bound. Its endpoint join emitted 2,029,632
+candidates, while the chronological join retained 30,752 rows. Query time was
+26.18 ms and the engine peak buffer reading was 18.4 MB, without a temporary
+spill. This case demonstrates recursive transfer work that the single equal-time
+wave does not exercise; the same timing and memory caveats apply.

@@ -72,14 +72,23 @@ transfer joins. Raw profiles are written under
 cost-state algorithm directly and does not enumerate the possible routes.
 
 The focused chronological-component runner measures all-pairs event-state
-reachability and maximal-clique enumeration as separate queries. Its complete
-mutual graph verifies that pivoting follows one branch per level instead of
-enumerating every subset. Its complete multipartite graph has six parts of three
-nodes, producing `3^6 = 729` maximal groups and `6 × 3^6 = 4,374` membership
-rows. It reports retained reachability states, recursive clique states, groups,
-memberships, query time, DuckDB peak buffer/temp storage, and process RSS before
-and after each phase. Process RSS changes include allocator state and are not
-isolated operator peaks. Raw profiles are written under
+reachability and maximal-clique enumeration as separate queries. One strict
+equal-time wave measures direct seeds; two waves exercise transfers and state
+deduplication. Recursive transfer operators report their actual predicates,
+times, and cardinalities; do not sum row counts from successive join stages. Its
+complete mutual graph verifies that pivoting follows one branch per level
+instead of enumerating every subset. Its complete multipartite graph has six
+parts of three nodes, producing `3^6 = 729` maximal groups and `6 × 3^6 = 4,374`
+membership rows. It reports retained reachability states, recursive clique
+states, groups, memberships, query time, DuckDB peak buffer/temp storage, and
+process RSS before and after each phase. The runner reuses production
+reachability and clique SQL builders. Clique queries operate on synthetic mutual
+graphs and aggregate output counts; they exclude reachability, mutual-graph
+derivation, and final membership expansion/sorting. These are not end-to-end
+method times. Engine peak buffers include connection-resident data and retained
+allocations, and process RSS includes runtime/allocator state. Cases share a
+connection, so memory readings are not isolated operator costs and cannot be
+added. Raw profiles are written under
 `benchmarks/.work/graphs/chronological-components/`.
 
 Topological sorting uses one recursive Kahn computation, selecting the smallest

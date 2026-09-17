@@ -1141,6 +1141,20 @@ Deno.test("connectedComponents retains valid event nodes and excludes invalid ev
       node: "VARCHAR",
       componentId: "BIGINT",
     });
+    const invalid = sdb.newTable("invalidOnlyTemporalComponents");
+    await sdb.customQuery(`CREATE TABLE "${invalid.name}" AS
+      SELECT * FROM (VALUES
+        ('A', 'B', NULL::TIMESTAMP),
+        ('C', 'D', TIMESTAMP 'infinity'),
+        ('E', 'F', TIMESTAMP '-infinity')
+      ) events(source, target, time)`);
+    assertEquals(
+      await invalid.connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+      }).getData(),
+      [],
+    );
   } finally {
     await sdb.close();
   }
@@ -1196,6 +1210,52 @@ Deno.test("connectedComponents matches independent exhaustive temporal component
           );
         }
       }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents enumerates every four-node mutual graph", async () => {
+  const nodes = ["A", "B", "C", "D"];
+  const pairs = nodes.flatMap((left, index) =>
+    nodes.slice(index + 1).map((right) => [left, right])
+  );
+  const sdb = new SimpleDB();
+  try {
+    // Strict equal times prohibit transfers, so each of the 64 undirected
+    // graphs is represented exactly. Self-events retain isolated vertices.
+    // The independent oracle enumerates routes and all subsets, not pivots.
+    for (let mask = 0; mask < 2 ** pairs.length; mask++) {
+      const endpoints = nodes.map((node) => [node, node]);
+      for (const [index, [left, right]] of pairs.entries()) {
+        if ((mask & 2 ** index) !== 0) {
+          endpoints.push([left, right], [right, left]);
+        }
+      }
+      const events = endpoints.map(([source, target], edgeId) => ({
+        source,
+        target,
+        edgeId,
+        startTime: 0n,
+        endTime: 0n,
+      }));
+      const table = sdb.newTable(`allMutualGraphs${mask}`).loadArray(
+        events.toReversed().map(({ source, target }) => ({
+          source,
+          target,
+          time: new Date("2025-01-01T00:00:00Z"),
+        })),
+      );
+      assertEquals(
+        await table.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+        }).getData(),
+        referenceTemporalComponents(events),
+        `mutual graph ${mask}`,
+      );
+      await table.removeTable();
     }
   } finally {
     await sdb.close();

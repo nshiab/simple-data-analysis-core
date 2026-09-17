@@ -32,68 +32,104 @@ await Deno.mkdir(directory, { recursive: true });
 const sdb = new SimpleDB();
 try {
   await sdb.customQuery("SET threads=1; SET memory_limit='1GB'");
-  const time = new Date("2025-01-01T00:00:00Z");
-  const events = Array.from(
-    { length: completeNodes },
-    (_, source) =>
-      Array.from({ length: completeNodes }, (_, target) => ({
-        source,
-        target,
-        time,
-      })).filter((event) => event.source !== event.target),
-  ).flat();
-  const input = sdb.newTable("chronological_component_events")
-    .loadArray(events);
-  await input.run();
-  const schema = await input.getTypes();
-  const prepared = prepareGraphSql(
-    quoteIdentifier(input.name),
-    schema,
-    "source",
-    "target",
-    "connectedComponents()",
-  );
-  const temporal = prepareGraphTemporalSql(
-    schema,
-    prepareGraphTemporalOptions(
-      { startTimeColumn: "time" },
-      undefined,
+  // One wave measures seeds only; two waves exercise the temporal join and
+  // retain a second-wave event for every start, including its own target.
+  for (const waves of [1, 2]) {
+    const events = Array.from({ length: waves }, (_, wave) =>
+      Array.from(
+        { length: completeNodes },
+        (_, source) =>
+          Array.from({ length: completeNodes }, (_, target) => ({
+            source,
+            target,
+            time: new Date(Date.UTC(2025, 0, 1, wave)),
+          })).filter((event) => event.source !== event.target),
+      ).flat()).flat();
+    const input = sdb.newTable(`chronological_component_events_${waves}`)
+      .loadArray(events);
+    await input.run();
+    const schema = await input.getTypes();
+    const prepared = prepareGraphSql(
+      quoteIdentifier(input.name),
+      schema,
+      "source",
+      "target",
       "connectedComponents()",
-    )!,
-    "connectedComponents()",
-  );
-  const reachability = buildGraphTemporalReachabilitySql(
-    prepared,
-    (edges) =>
-      `SELECT "__from" AS "start", "__from_key" AS "__key" FROM ${edges}
+    );
+    const temporal = prepareGraphTemporalSql(
+      schema,
+      prepareGraphTemporalOptions(
+        { startTimeColumn: "time" },
+        undefined,
+        "connectedComponents()",
+      )!,
+      "connectedComponents()",
+    );
+    const reachability = buildGraphTemporalReachabilitySql(
+      prepared,
+      (edges) =>
+        `SELECT "__from" AS "start", "__from_key" AS "__key" FROM ${edges}
       UNION SELECT "__to", "__to_key" FROM ${edges}`,
-    "outgoing",
-    temporal,
-  );
-  const reachabilityProfile = await profileQuery(
-    sdb,
-    `${directory}/all-pairs-reachability.json`,
-    `${reachability.withClause}
+      "outgoing",
+      temporal,
+    );
+    const reachabilityProfile = await profileQuery(
+      sdb,
+      `${directory}/all-pairs-reachability-${waves}-waves.json`,
+      `${reachability.withClause}
     SELECT count(*) AS states FROM ${reachability.reachableRelation}`,
-    [temporal.gapParameter],
-  );
-  const reachabilityRows = reachabilityProfile.rows as { states: number }[];
-  const reachabilityCte = findOne(
-    reachabilityProfile.profile,
-    (node) =>
-      node.operator_name === "REC_CTE" &&
-      node.extra_info?.["CTE Name"] === "graph_reachable_states",
-  );
-  console.log(JSON.stringify({
-    phase: "all-pairs reachability",
-    shape: "complete direct mutual graph",
-    nodes: completeNodes,
-    events: events.length,
-    retainedStates: reachabilityRows[0].states,
-    stateBound: completeNodes * events.length,
-    recursiveRows: reachabilityCte.operator_cardinality,
-    ...measurements(reachabilityProfile),
-  }));
+      [temporal.gapParameter],
+    );
+    const reachabilityRows = reachabilityProfile.rows as { states: number }[];
+    const reachabilityCte = findOne(
+      reachabilityProfile.profile,
+      (node) =>
+        node.operator_name === "REC_CTE" &&
+        node.extra_info?.["CTE Name"] === "graph_reachable_states",
+    );
+    const expectedStates = events.length +
+      (waves - 1) * completeNodes * (completeNodes - 1) ** 2;
+    if (reachabilityRows[0].states !== expectedStates) {
+      throw new Error("Unexpected all-pairs reachability state count.");
+    }
+    const transferJoins = findAll(
+      reachabilityCte,
+      (node) => {
+        const conditions = JSON.stringify(node.extra_info?.Conditions ?? "");
+        return node.operator_name?.includes("JOIN") === true &&
+          (conditions.includes("__node_key") ||
+            conditions.includes("__event_start"));
+      },
+    );
+    if (transferJoins.length === 0) {
+      throw new Error(
+        "Expected recursive transfer joins in reachability profile.",
+      );
+    }
+    console.log(JSON.stringify({
+      phase: "all-pairs reachability",
+      shape: waves === 1
+        ? "complete direct mutual graph"
+        : "two chronological waves",
+      waves,
+      nodes: completeNodes,
+      events: events.length,
+      retainedStates: reachabilityRows[0].states,
+      stateBound: completeNodes * events.length,
+      recursiveRows: reachabilityCte.operator_cardinality,
+      // Operators can split endpoint and time comparisons, or fuse them.
+      // Report their actual predicates; their cardinalities must not be added.
+      transferJoins: transferJoins.map((node) => ({
+        operator: node.operator_name,
+        conditions: node.extra_info?.Conditions,
+        rows: node.operator_cardinality,
+        milliseconds: node.operator_timing === undefined
+          ? null
+          : node.operator_timing * 1000,
+      })),
+      ...measurements(reachabilityProfile),
+    }));
+  }
 
   for (
     const scenario of [
