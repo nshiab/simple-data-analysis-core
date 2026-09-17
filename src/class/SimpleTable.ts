@@ -2945,10 +2945,26 @@ export default class SimpleTable extends Simple {
    * option set to "strong", nodes belong to the same group only if each can
    * reach all the others by following connections from source to target.
    *
-   * The result has `node` and `componentId` columns, with one row per node,
-   * sorted by node. Groups are numbered from zero in order of their smallest
-   * node ID. Group IDs can change when the connections change. An empty input
-   * produces no rows.
+   * The result has `node` and `componentId` columns. Static calls return one
+   * row per node, sorted by node. Static groups are numbered from zero in order
+   * of their smallest node ID.
+   *
+   * Chronological options require an explicitly supplied `mode: "strong"`.
+   * They return every maximal group in which every pair of distinct nodes can
+   * chronologically reach each other. The two directions can use independent
+   * journeys, and journeys can pass through nodes outside the group. Groups
+   * can overlap, so a node can have several result rows. Chronological groups
+   * are numbered from zero by their complete sorted member lists, and rows are
+   * sorted by group then node. All groups are returned without a result cap;
+   * their number can grow exponentially. An empty input produces no rows.
+   *
+   * Chronological columns accept DuckDB `DATE`, `TIMESTAMP`, `TIMESTAMP_S`,
+   * `TIMESTAMP_MS`, `TIMESTAMP_NS`, and `TIMESTAMP WITH TIME ZONE` values. Time
+   * comparisons stay in DuckDB and retain the columns' native precision. Zoned
+   * timestamps represent absolute instants and cannot be combined with a naive
+   * date or timestamp column. Connections with null or infinite selected
+   * times, or an end before their start, are excluded. Nodes in every valid
+   * event are included, even when they form singleton groups.
    *
    * For the first example, we start with this data:
    *
@@ -3018,10 +3034,44 @@ export default class SimpleTable extends Simple {
    * Adding C -> A would let every node reach the others, so all three would
    * belong to the same group in "strong" mode too.
    *
+   * Chronological strong groups can overlap. The next example uses one
+   * instantaneous timestamp column:
+   *
+   * | time | source | target |
+   * | --- | --- | --- |
+   * | 2025-01-01 08:00 | B | C |
+   * | 2025-01-01 09:00 | C | B |
+   * | 2025-01-01 10:00 | A | B |
+   * | 2025-01-01 11:00 | B | A |
+   *
+   * A and B can reach each other, as can B and C, but A cannot reach C after
+   * its first event. This produces the maximal groups `{A, B}` and `{B, C}`:
+   *
+   * @example
+   * ```ts
+   * await transactions
+   *   .connectedComponents("source", "target", {
+   *     mode: "strong",
+   *     startTimeColumn: "time",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | node | componentId |
+   * | --- | ---: |
+   * | A | 0 |
+   * | B | 0 |
+   * | B | 1 |
+   * | C | 1 |
+   *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
-   * @param options - An optional object with component and result configuration.
-   * @param options.mode - Whether to find `"weak"` or `"strong"` components. Defaults to `"weak"`.
+   * @param options - An optional object with component, chronological traversal, and result configuration.
+   * @param options.mode - Whether to find `"weak"` or `"strong"` components. Defaults to `"weak"` for static calls. Chronological calls require explicitly supplied `"strong"`.
+   * @param options.startTimeColumn - The name of the column containing each connection's start time. Supplying this or `endTimeColumn` enables chronological grouping.
+   * @param options.endTimeColumn - The name of the column containing each connection's end time. Supplying this or `startTimeColumn` enables chronological grouping.
+   * @param options.minGapMs - The inclusive minimum time between consecutive connections, in milliseconds. Must be finite, non-negative, at most `Number.MAX_SAFE_INTEGER`, and exactly representable in whole microseconds (for example, `0.001` milliseconds). Defaults to `0`. Requires a chronological column.
+   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a chronological column.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -3030,8 +3080,12 @@ export default class SimpleTable extends Simple {
     sourceColumn: string,
     targetColumn: string,
     options: {
+      endTimeColumn?: string;
+      minGapMs?: number;
       mode?: "weak" | "strong";
       outputTable?: string | boolean;
+      startTimeColumn?: string;
+      strictOrdering?: boolean;
     } = {},
   ): SimpleTable {
     return connectedComponents(this, sourceColumn, targetColumn, options);

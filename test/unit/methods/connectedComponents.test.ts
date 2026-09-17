@@ -8,6 +8,10 @@ import {
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import {
+  enumerateChronologicalRoutes,
+  type ReferenceChronologicalEvent,
+} from "../../helpers/enumerateChronologicalRoutes.ts";
 
 function loadScenario(
   sdb: SimpleDB,
@@ -23,6 +27,83 @@ function loadScenario(
 function partitions(rows: Record<string, unknown>[]) {
   return [...Map.groupBy(rows, (row) => row.componentId).values()]
     .map((group) => group.map((row) => row.node));
+}
+
+function referenceTemporalComponents(
+  events: ReferenceChronologicalEvent<string, number>[],
+  options: { minGap?: bigint; strictOrdering?: boolean } = {},
+) {
+  const nodes = [
+    ...new Set(
+      events.flatMap((event) =>
+        event.startTime !== null && event.endTime !== null &&
+          event.endTime >= event.startTime
+          ? [event.source, event.target]
+          : []
+      ),
+    ),
+  ].sort(compareBinaryStrings);
+  const reachable = new Map<string, Set<string>>();
+  for (const node of nodes) {
+    const reached = new Set([node]);
+    for (
+      const route of enumerateChronologicalRoutes(events, node, {
+        maxSteps: Math.max(events.length, 1),
+        minGap: options.minGap,
+        simpleNodes: false,
+        strictOrdering: options.strictOrdering,
+      })
+    ) {
+      reached.add(route.at(-1)!.target);
+    }
+    reachable.set(node, reached);
+  }
+
+  const cliques: string[][] = [];
+  for (let mask = 1; mask < 2 ** nodes.length; mask++) {
+    const members = nodes.filter((_, index) => (mask & 2 ** index) !== 0);
+    const clique = members.every((left) =>
+      members.every((right) =>
+        left === right ||
+        (reachable.get(left)!.has(right) && reachable.get(right)!.has(left))
+      )
+    );
+    if (!clique) continue;
+    const maximal = nodes.every((candidate) =>
+      members.includes(candidate) ||
+      members.some((member) =>
+        !reachable.get(candidate)!.has(member) ||
+        !reachable.get(member)!.has(candidate)
+      )
+    );
+    if (maximal) cliques.push(members);
+  }
+  cliques.sort(compareMemberLists);
+  return cliques.flatMap((members, componentId) =>
+    members.map((node) => ({ node, componentId }))
+  );
+}
+
+function compareBinaryStrings(left: string, right: string): number {
+  const encoder = new TextEncoder();
+  const leftBytes = encoder.encode(left);
+  const rightBytes = encoder.encode(right);
+  const length = Math.min(leftBytes.length, rightBytes.length);
+  for (let index = 0; index < length; index++) {
+    if (leftBytes[index] !== rightBytes[index]) {
+      return leftBytes[index] - rightBytes[index];
+    }
+  }
+  return leftBytes.length - rightBytes.length;
+}
+
+function compareMemberLists(left: string[], right: string[]): number {
+  const length = Math.min(left.length, right.length);
+  for (let index = 0; index < length; index++) {
+    const comparison = compareBinaryStrings(left[index], right[index]);
+    if (comparison !== 0) return comparison;
+  }
+  return left.length - right.length;
 }
 
 Deno.test("connectedComponents defaults to weak and finds baseline groups", async () => {
@@ -582,7 +663,7 @@ Deno.test("connectedComponents weak mode scales through a deep chain", async () 
   }
 });
 
-Deno.test("connectedComponents executes all three complete JSDoc examples", async () => {
+Deno.test("connectedComponents executes all four complete JSDoc examples", async () => {
   const firstDb = new SimpleDB();
   try {
     const table = firstDb.newTable().loadArray([
@@ -638,6 +719,30 @@ Deno.test("connectedComponents executes all three complete JSDoc examples", asyn
     ]);
   } finally {
     await thirdDb.close();
+  }
+
+  const fourthDb = new SimpleDB();
+  try {
+    const transactions = fourthDb.newTable().loadArray([
+      { source: "B", target: "C", time: new Date("2025-01-01T08:00:00Z") },
+      { source: "C", target: "B", time: new Date("2025-01-01T09:00:00Z") },
+      { source: "A", target: "B", time: new Date("2025-01-01T10:00:00Z") },
+      { source: "B", target: "A", time: new Date("2025-01-01T11:00:00Z") },
+    ]);
+    await transactions
+      .connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+      })
+      .log();
+    assertEquals(await transactions.getData(), [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "B", componentId: 1 },
+      { node: "C", componentId: 1 },
+    ]);
+  } finally {
+    await fourthDb.close();
   }
 });
 
@@ -822,6 +927,539 @@ Deno.test("connectedComponents keeps one-way bridges between strong groups separ
         componentId: node === 100 ? 1 : 0,
       })),
     );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents returns the documented overlapping chronological groups", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const transactions = sdb.newTable("temporalComponentExample").loadArray([
+      { source: "B", target: "C", time: new Date("2025-01-01T08:00:00Z") },
+      { source: "C", target: "B", time: new Date("2025-01-01T09:00:00Z") },
+      { source: "A", target: "B", time: new Date("2025-01-01T10:00:00Z") },
+      { source: "B", target: "A", time: new Date("2025-01-01T11:00:00Z") },
+    ]);
+    assertEquals(
+      await transactions.connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+        outputTable: true,
+      }).getData(),
+      [
+        { node: "A", componentId: 0 },
+        { node: "B", componentId: 0 },
+        { node: "B", componentId: 1 },
+        { node: "C", componentId: 1 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents allows chronological journeys through outside nodes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const events = sdb.newTable("outsideComponentIntermediary").loadArray([
+      { source: "B", target: "A", time: new Date("2025-01-01T01:00:00Z") },
+      { source: "A", target: "X", time: new Date("2025-01-01T10:00:00Z") },
+      { source: "X", target: "B", time: new Date("2025-01-01T11:00:00Z") },
+    ]);
+    assertEquals(
+      await events.connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+        outputTable: true,
+      }).getData(),
+      [
+        { node: "A", componentId: 0 },
+        { node: "B", componentId: 0 },
+        { node: "B", componentId: 1 },
+        { node: "X", componentId: 1 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents enforces chronological mode and option activation", () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable();
+    assertThrows(
+      () =>
+        table.connectedComponents("source", "target", {
+          startTimeColumn: "time",
+        }),
+      TypeError,
+      'chronological options require options.mode to be explicitly set to "strong"',
+    );
+    assertThrows(
+      () =>
+        table.connectedComponents("source", "target", {
+          mode: "weak",
+          endTimeColumn: "time",
+        }),
+      TypeError,
+      'chronological options require options.mode to be explicitly set to "strong"',
+    );
+    assertThrows(
+      () =>
+        table.connectedComponents("source", "target", {
+          mode: "strong",
+          minGapMs: 0,
+        }),
+      TypeError,
+      "options.minGapMs and options.strictOrdering require",
+    );
+    assertThrows(
+      () =>
+        table.connectedComponents("source", "target", {
+          mode: "strong",
+          strictOrdering: false,
+        }),
+      TypeError,
+      "options.minGapMs and options.strictOrdering require",
+    );
+  } finally {
+    void sdb.close();
+  }
+});
+
+Deno.test("connectedComponents applies strict ordering and inclusive gaps", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("componentGapBoundaries");
+    await sdb.customQuery(`CREATE TABLE "componentGapBoundaries" AS
+      SELECT * FROM (VALUES
+        ('A', 'X', TIMESTAMP '2025-01-01 08:00:00', TIMESTAMP '2025-01-01 09:00:00'),
+        ('X', 'B', TIMESTAMP '2025-01-01 10:00:00', TIMESTAMP '2025-01-01 10:00:00'),
+        ('B', 'A', TIMESTAMP '2025-01-01 07:00:00', TIMESTAMP '2025-01-01 07:00:00')
+      ) events(source, target, departure, arrival)`);
+    const base = {
+      mode: "strong" as const,
+      startTimeColumn: "departure",
+      endTimeColumn: "arrival",
+      outputTable: true,
+    };
+    assertEquals(
+      partitions(
+        await table.connectedComponents("source", "target", {
+          ...base,
+          minGapMs: 60 * 60 * 1000,
+        }).getData(),
+      ),
+      [["A", "B"], ["B", "X"]],
+    );
+    assertEquals(
+      partitions(
+        await table.connectedComponents("source", "target", {
+          ...base,
+          minGapMs: 60 * 60 * 1000 + 1,
+        }).getData(),
+      ),
+      [["A"], ["B"], ["X"]],
+    );
+    assertEquals(
+      partitions(
+        await table.connectedComponents("source", "target", {
+          mode: "strong",
+          endTimeColumn: "arrival",
+          minGapMs: 60 * 60 * 1000,
+          outputTable: true,
+        }).getData(),
+      ),
+      [["A", "B"], ["B", "X"]],
+    );
+
+    const equal = sdb.newTable("componentStrictOrdering").loadArray([
+      { source: "A", target: "X", time: new Date("2025-01-01T10:00:00Z") },
+      { source: "X", target: "B", time: new Date("2025-01-01T10:00:00Z") },
+      { source: "B", target: "A", time: new Date("2025-01-01T09:00:00Z") },
+    ]);
+    assertEquals(
+      partitions(
+        await equal.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+          outputTable: true,
+        }).getData(),
+      ),
+      [["A"], ["B", "X"]],
+    );
+    assertEquals(
+      partitions(
+        await equal.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+          strictOrdering: false,
+          outputTable: true,
+        }).getData(),
+      ),
+      [["A", "B"], ["B", "X"]],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents retains valid event nodes and excludes invalid events", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("componentValidEvents");
+    await sdb.customQuery(`CREATE TABLE "componentValidEvents" AS
+      SELECT * FROM (VALUES
+        ('A', 'B', TIMESTAMP '2025-01-01 01:00:00', TIMESTAMP '2025-01-01 02:00:00'),
+        ('S', 'S', TIMESTAMP '2025-01-01 03:00:00', TIMESTAMP '2025-01-01 03:00:00'),
+        ('bad-null', 'missing', NULL::TIMESTAMP, NULL::TIMESTAMP),
+        ('bad-order', 'missing-2', TIMESTAMP '2025-01-01 05:00:00', TIMESTAMP '2025-01-01 04:00:00')
+      ) events(source, target, departure, arrival)`);
+    const result = table.connectedComponents("source", "target", {
+      mode: "strong",
+      startTimeColumn: "departure",
+      endTimeColumn: "arrival",
+      outputTable: true,
+    });
+    assertEquals(await result.getData(), [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 1 },
+      { node: "S", componentId: 2 },
+    ]);
+
+    const empty = sdb.newTable("emptyTemporalComponents");
+    await sdb.customQuery(`CREATE TABLE "emptyTemporalComponents" (
+      source VARCHAR, target VARCHAR, time TIMESTAMP)`);
+    const emptyResult = empty.connectedComponents("source", "target", {
+      mode: "strong",
+      startTimeColumn: "time",
+    });
+    assertEquals(await emptyResult.getData(), []);
+    assertEquals(await emptyResult.getTypes(), {
+      node: "VARCHAR",
+      componentId: "BIGINT",
+    });
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents matches independent exhaustive temporal components", async () => {
+  let state = 0x206199;
+  const random = () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return state >>> 0;
+  };
+  const baseTime = Date.UTC(2025, 0, 1);
+  const sdb = new SimpleDB();
+  try {
+    for (let fixture = 0; fixture < 6; fixture++) {
+      const events = Array.from({ length: 8 }, (_, edgeId) => {
+        const startTime = BigInt(random() % 5);
+        return {
+          edgeId,
+          source: String.fromCharCode(65 + random() % 5),
+          target: String.fromCharCode(65 + random() % 5),
+          startTime,
+          endTime: startTime + BigInt(random() % 2),
+        } satisfies ReferenceChronologicalEvent<string, number>;
+      });
+      for (const strictOrdering of [true, false]) {
+        const expected = referenceTemporalComponents(events, {
+          strictOrdering,
+        });
+        for (
+          const [order, ordered] of [events, events.toReversed()].entries()
+        ) {
+          const rows = ordered.map((event) => ({
+            source: event.source,
+            target: event.target,
+            departure: new Date(baseTime + Number(event.startTime) * 1000),
+            arrival: new Date(baseTime + Number(event.endTime) * 1000),
+          }));
+          const actual = await sdb.newTable(
+            `referenceComponents${fixture}_${strictOrdering}_${order}`,
+          ).loadArray(rows).connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            strictOrdering,
+          }).getData();
+          assertEquals(
+            actual,
+            expected,
+            `${fixture}/${strictOrdering}/${order}`,
+          );
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents temporal IDs use exact typed key order", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const values = [
+      "('A', 'b', TIMESTAMP '2025-01-01 00:00:00')",
+      "('b', 'A', TIMESTAMP '2025-01-01 00:00:00')",
+      "('a', 'B', TIMESTAMP '2025-01-01 00:00:00')",
+      "('B', 'a', TIMESTAMP '2025-01-01 00:00:00')",
+    ];
+    for (const [index, ordered] of [values, values.toReversed()].entries()) {
+      const strings = sdb.newTable(`collatedTemporalComponents${index}`);
+      await sdb.customQuery(`CREATE TABLE "${strings.name}" (
+        source VARCHAR COLLATE NOCASE, target VARCHAR COLLATE NOCASE,
+        time TIMESTAMP
+      ); INSERT INTO "${strings.name}" VALUES
+        ${ordered.join(",\n        ")}`);
+      assertEquals(
+        await strings.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+          outputTable: true,
+        }).getData(),
+        [
+          { node: "A", componentId: 0 },
+          { node: "b", componentId: 0 },
+          { node: "B", componentId: 1 },
+          { node: "a", componentId: 1 },
+        ],
+      );
+    }
+
+    const wide = sdb.newTable("wideTemporalComponents");
+    await sdb.customQuery(`CREATE TABLE "wideTemporalComponents" AS
+      SELECT source::HUGEINT AS source, target::HUGEINT AS target, time
+      FROM (VALUES
+        ('9007199254740995', '9007199254740993', TIMESTAMP '2025-01-01'),
+        ('9007199254740993', '9007199254740995', TIMESTAMP '2025-01-01'),
+        ('0', '1', TIMESTAMP '2025-01-01')
+      ) events(source, target, time)`);
+    const wideResult = wide.connectedComponents("source", "target", {
+      mode: "strong",
+      startTimeColumn: "time",
+    }).convert({ node: "string" });
+    assertEquals(await wideResult.getData(), [
+      { node: "0", componentId: 0 },
+      { node: "1", componentId: 1 },
+      { node: "9007199254740993", componentId: 2 },
+      { node: "9007199254740995", componentId: 2 },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents preserves temporal queues, outputs, and option snapshots", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const options: {
+      mode: "strong";
+      outputTable: string;
+      startTimeColumn: string;
+      strictOrdering: boolean;
+    } = {
+      mode: "strong",
+      outputTable: "temporalComponentOutput",
+      startTimeColumn: "time",
+      strictOrdering: false,
+    };
+    const source = sdb.newTable("temporalComponentQueue").loadArray([
+      { source: "A", target: "B", time: "2025-01-01T00:00:00Z" },
+      { source: "B", target: "A", time: "2025-01-01T00:00:00Z" },
+    ]).convert({ time: "timestamp" });
+    const result = source.connectedComponents("source", "target", options)
+      .filter("node = 'B'");
+    options.startTimeColumn = "changed";
+    options.strictOrdering = true;
+    options.outputTable = "changedOutput";
+    source.loadArray([
+      { source: "X", target: "Y", time: "2025-01-02T00:00:00Z" },
+    ]);
+    assertEquals(result.name, "temporalComponentOutput");
+    assertEquals(await result.getData(), [{ node: "B", componentId: 0 }]);
+    assertEquals(await source.getData(), [
+      { source: "X", target: "Y", time: "2025-01-02T00:00:00Z" },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents temporal output records its source cache dependency", async () => {
+  let computationRuns = 0;
+  const unique = crypto.randomUUID().replaceAll("-", "");
+  const outputName = `temporalComponentsCacheOutput${unique}`;
+  const sourceName = `temporalComponentsCacheSource${unique}`;
+  const compute = (source: SimpleTable) => async (output: SimpleTable) => {
+    computationRuns++;
+    const result = source.connectedComponents("source", "target", {
+      mode: "strong",
+      startTimeColumn: "time",
+      strictOrdering: false,
+      outputTable: true,
+    });
+    output.loadArray(await result.getData());
+    await result.removeTable();
+  };
+  const firstRows = [
+    { source: "A", target: "B", time: new Date("2025-01-01T00:00:00Z") },
+    { source: "B", target: "A", time: new Date("2025-01-01T00:00:00Z") },
+  ];
+
+  const firstSdb = new SimpleDB();
+  try {
+    await firstSdb.newTable(outputName).cache(
+      compute(firstSdb.newTable(sourceName).loadArray(firstRows)),
+    );
+  } finally {
+    await firstSdb.close();
+  }
+  const secondSdb = new SimpleDB();
+  try {
+    const source = secondSdb.newTable(sourceName).loadArray([
+      ...firstRows,
+      { source: "C", target: "C", time: new Date("2025-01-01T00:00:00Z") },
+    ]);
+    const output = secondSdb.newTable(outputName);
+    await output.cache(compute(source));
+    assertEquals(computationRuns, 2);
+    assertEquals(await output.getData(), [
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "C", componentId: 1 },
+    ]);
+  } finally {
+    await secondSdb.close();
+  }
+});
+
+Deno.test("connectedComponents validates chronological columns from the queued schema", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const missing = sdb.newTable("missingComponentTime")
+      .loadArray([{ source: "A", target: "B" }])
+      .connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+      });
+    await assertRejects(
+      () => missing.run(),
+      Error,
+      'the column "time" does not exist',
+    );
+
+    const wrongType = sdb.newTable("wrongComponentTime")
+      .loadArray([{ source: "A", target: "B", time: 1 }])
+      .connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+      });
+    await assertRejects(
+      () => wrongType.run(),
+      TypeError,
+      "requires DATE or TIMESTAMP chronological columns",
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents clique siblings retain earlier noncandidate vertices", async () => {
+  const undirectedEdges = [[0, 1], [0, 3], [1, 2]] as const;
+  const time = new Date("2025-01-01T00:00:00Z");
+  const rows = undirectedEdges.flatMap(([left, right]) => [
+    { source: left, target: right, time },
+    { source: right, target: left, time },
+  ]);
+  const sdb = new SimpleDB();
+  try {
+    assertEquals(
+      await sdb.newTable("componentSiblingCandidates").loadArray(rows)
+        .connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+        }).getData(),
+      [
+        { node: 0, componentId: 0 },
+        { node: 1, componentId: 0 },
+        { node: 0, componentId: 1 },
+        { node: 3, componentId: 1 },
+        { node: 1, componentId: 2 },
+        { node: 2, componentId: 2 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents preserves nanosecond gap boundaries", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const offset of [999, 1000, 1001]) {
+      const table = sdb.newTable(`nanosecondComponents${offset}`);
+      await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+        SELECT * FROM (VALUES
+          ('A', 'X', TIMESTAMP_NS '2025-01-01 00:00:00.000000000'),
+          ('X', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.${
+        offset.toString().padStart(9, "0")
+      }'),
+          ('B', 'A', TIMESTAMP_NS '2024-12-31 23:59:59.999999000')
+        ) events(source, target, time)`);
+      assertEquals(
+        partitions(
+          await table.connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+            minGapMs: 0.001,
+            outputTable: true,
+          }).getData(),
+        ),
+        offset < 1000 ? [["A"], ["B", "X"]] : [["A", "B"], ["B", "X"]],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("connectedComponents temporal relations do not shadow the input", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const [index, name] of [
+        "graph_starts",
+        "GRAPH_EDGES",
+        "graph_component_nodes",
+        "GRAPH_MUTUAL_ADJACENCY",
+        "graph_clique_search",
+      ].entries()
+    ) {
+      const time = new Date("2025-01-01T00:00:00Z");
+      const table = sdb.newTable(name).loadArray([
+        { source: "A", target: "B", time },
+        { source: "B", target: "A", time },
+      ]);
+      await table.run();
+      assertEquals(
+        await table.connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+          outputTable: `temporalCollisionOutput${index}`,
+        }).getData(),
+        [
+          { node: "A", componentId: 0 },
+          { node: "B", componentId: 0 },
+        ],
+      );
+    }
   } finally {
     await sdb.close();
   }

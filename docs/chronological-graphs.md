@@ -304,3 +304,63 @@ B at 11:00, outgoing output is B → C → A → B, while incoming output is B �
 same physical event cycle. Their edge sequences are reversed, so identity and
 numbering are deterministic within each search direction and are not promised to
 match across directions.
+
+## Chronological strong components
+
+Chronological `connectedComponents()` requires an explicitly supplied
+`mode: "strong"`. Supplying either timestamp column with omitted mode or with
+`mode: "weak"` is an argument error. Calls without chronological options keep
+the existing static weak default and static strong-component behavior.
+
+The method runs the shared chronological reachability closure from every node
+that occurs in a valid event. Two distinct nodes are adjacent in the resulting
+undirected mutual graph only when each can chronologically reach the other.
+Those two directions may use independent journeys, and each journey may pass
+through nodes outside the group. An intermediary becomes a member only when it
+is mutually reachable with every other member.
+
+Temporal strong components are every maximal clique of this mutual graph. They
+can overlap, so one node can produce several `node`/`componentId` rows. They are
+not ordinary strongly connected partitions: mutual chronological reachability is
+not transitive, and overlapping groups are never merged. Every node from a valid
+event belongs to at least one group, including endpoints of isolated one-way
+events and self-connections. Such a node is a singleton exactly when it has no
+mutual neighbor. An input with no valid events produces no rows.
+
+Group identity is the complete sorted list of member keys. String IDs use their
+encoded binary bytes and numeric IDs use their resolved native graph type, so
+collations and JavaScript number precision do not affect identity or order.
+Groups are numbered from zero in lexicographic order of those canonical member
+lists. Result rows are ordered by `componentId` and then by the member's typed
+key. IDs and row order therefore remain stable when input events are shuffled.
+
+Maximal cliques are enumerated in DuckDB with a pivoted Bron–Kerbosch search.
+Each recursive state retains the current clique and disjoint prospective and
+excluded vertex lists. The pivot maximizes prospective neighbors, with the
+smallest typed key breaking ties. Sibling branches process only vertices in
+`P ∖ N(pivot)`; a branch removes the earlier vertices from that candidate list
+while retaining earlier members of `P` that were not sibling candidates. This
+avoids enumerating every subset of a complete mutual graph while preserving
+every maximal overlapping group.
+
+All-pairs event-state reachability is bounded by `N × E` states for `N` valid
+event nodes and `E` valid physical events. Maximal-clique enumeration remains
+output-sensitive and has unavoidable exponential worst cases. A complete mutual
+graph yields one group and follows one pivot branch per level, while a complete
+multipartite graph with `k` parts of three yields `3^k` maximal groups and
+`k × 3^k` membership rows. The API returns all of them without a group,
+membership, or search cap. The focused component benchmark reports reachability
+and clique-enumeration time separately, along with state, group, membership, and
+memory measurements where the runtime exposes them.
+
+On the local benchmark environment (DuckDB 1.5.5, one thread, 1 GB limit), a
+32-node complete direct-event graph retained 992 all-pairs reachability states
+and took 2.68 ms of DuckDB query time. Clique enumeration on the corresponding
+complete mutual graph retained 33 recursive states and returned one group with
+32 memberships in 22.17 ms. A complete six-part graph with three nodes per part
+retained 1,093 recursive states and returned 729 groups with 4,374 memberships
+in 10.99 ms. DuckDB reported peak buffer usage of 10.3 MB, 26.6 MB, and 34.7 MB
+for those three queries, with no temporary spill. These single runs include
+profiling overhead and are diagnostic rather than performance guarantees. Raw
+profiles are retained under the ignored
+`benchmarks/.work/graphs/chronological-components/` directory.

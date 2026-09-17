@@ -19,6 +19,7 @@ deno task benchmark-graphs --iterations=1 --methods=neighbors,degree
 deno task benchmark-graphs --methods=reachable,distances --chain-nodes=1000 --branch-nodes=1023
 deno task benchmark-graphs --methods=findCycles --dense-nodes=6
 deno run -A benchmarks/graphs/chronologicalDistances.ts
+deno run -A benchmarks/graphs/chronologicalComponents.ts
 ```
 
 Options use `--name=value`: `iterations`, comma-separated `methods`,
@@ -69,6 +70,17 @@ complete query time, and the timing and cardinality reported by DuckDB for
 transfer joins. Raw profiles are written under
 `benchmarks/.work/graphs/chronological-distances/`. This runner measures the
 cost-state algorithm directly and does not enumerate the possible routes.
+
+The focused chronological-component runner measures all-pairs event-state
+reachability and maximal-clique enumeration as separate queries. Its complete
+mutual graph verifies that pivoting follows one branch per level instead of
+enumerating every subset. Its complete multipartite graph has six parts of three
+nodes, producing `3^6 = 729` maximal groups and `6 × 3^6 = 4,374` membership
+rows. It reports retained reachability states, recursive clique states, groups,
+memberships, query time, DuckDB peak buffer/temp storage, and process RSS before
+and after each phase. Process RSS changes include allocator state and are not
+isolated operator peaks. Raw profiles are written under
+`benchmarks/.work/graphs/chronological-components/`.
 
 Topological sorting uses one recursive Kahn computation, selecting the smallest
 eligible typed ID at each step. It retains visited-ID lists and repeatedly
