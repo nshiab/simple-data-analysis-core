@@ -271,3 +271,36 @@ even when few prefixes ultimately reach the destination. There is no silent
 route or depth cap. Benchmark timings are diagnostic rather than a performance
 guarantee; raw profiles are written under the ignored
 `benchmarks/.work/graphs/chronological-shortest-path/` directory.
+
+## Chronological cycle identity and normalization
+
+Chronological `findCycles()` seeds its simple-cycle search from every valid
+physical event. It does not use the static smallest-node anchor, because the
+rotation beginning at that node may violate time order. Each recursive state
+retains the actual last event, the visited nodes, and the used physical event
+ordinals. A candidate must pass the shared transition predicate against that
+last event. Reaching the seed node closes the cycle immediately: the final event
+is compared with its predecessor, but no artificial transition is imposed from
+the final event back to the first. A valid self-connection is therefore a
+one-event cycle regardless of the configured gap.
+
+Temporal cycle identity is the lexicographically smallest rotation of the
+cycle's typed edge-key sequence. Numeric IDs use their native numeric order;
+string IDs use their binary bytes, matching the existing graph route order and
+remaining independent of collations. This identity is used only for
+deduplication and `pathId` ordering. The returned step sequence is never rotated
+after enumeration. When non-strict equal-time ordering makes several rotations
+feasible, `findCycles()` chooses the feasible rotation with the
+lexicographically smallest edge-key sequence. It therefore returns a genuinely
+chronological sequence while assigning the same identity and ID after input rows
+are shuffled. Parallel events with distinct original edge IDs retain distinct
+identities.
+
+Incoming search starts from a physically later event and follows actual
+predecessors backward. Its result steps and endpoints use the existing incoming
+search orientation. For physical events B → C at 09:00, C → A at 10:00, and A →
+B at 11:00, outgoing output is B → C → A → B, while incoming output is B → A → C
+→ B using those events in 11:00, 10:00, 09:00 order. Both outputs represent the
+same physical event cycle. Their edge sequences are reversed, so identity and
+numbering are deterministic within each search direction and are not promised to
+match across directions.

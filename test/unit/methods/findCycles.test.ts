@@ -8,6 +8,10 @@ import {
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import {
+  enumerateChronologicalRoutes,
+  type ReferenceChronologicalEvent,
+} from "../../helpers/enumerateChronologicalRoutes.ts";
 
 function loadScenario(
   sdb: SimpleDB,
@@ -29,6 +33,94 @@ function expectedCase(sdb: SimpleDB, name: string, caseName: string) {
     .loadData("test/data/graphs/expected/find_cycles.csv")
     .filter(`"case" = '${caseName}'`)
     .removeColumns("case");
+}
+
+const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
+
+function chronologicalRows(
+  events: ReferenceChronologicalEvent<string, number>[],
+) {
+  return events.map((event) => ({
+    edgeId: event.edgeId,
+    source: event.source,
+    target: event.target,
+    startTime: event.startTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.endTime)),
+  }));
+}
+
+function compareNumberLists(left: number[], right: number[]): number {
+  for (let index = 0; index < Math.min(left.length, right.length); index++) {
+    if (left[index] !== right[index]) return left[index] - right[index];
+  }
+  return left.length - right.length;
+}
+
+function smallestRotation(values: number[]): number[] {
+  let smallest = values;
+  for (let offset = 1; offset < values.length; offset++) {
+    const rotated = [...values.slice(offset), ...values.slice(0, offset)];
+    if (compareNumberLists(rotated, smallest) < 0) smallest = rotated;
+  }
+  return smallest;
+}
+
+function referenceChronologicalCycleRows(
+  events: ReferenceChronologicalEvent<string, number>[],
+  direction: "incoming" | "outgoing",
+  minGap: bigint,
+  strictOrdering: boolean,
+) {
+  type Route = ReturnType<typeof enumerateChronologicalRoutes<string, number>>[
+    number
+  ];
+  const selected = new Map<string, { identity: number[]; route: Route }>();
+  const nodes = new Set(
+    events.flatMap((event) => [event.source, event.target]),
+  );
+  for (const start of nodes) {
+    const routes = enumerateChronologicalRoutes(events, start, {
+      direction,
+      maxSteps: Math.max(events.length, 1),
+      minGap,
+      returnToStart: true,
+      strictOrdering,
+    });
+    for (const route of routes) {
+      const sequence = route.map((step) => step.event.edgeId);
+      const identity = smallestRotation(sequence);
+      const key = JSON.stringify(identity);
+      const current = selected.get(key);
+      if (
+        current === undefined ||
+        compareNumberLists(
+            sequence,
+            current.route.map((step) => step.event.edgeId),
+          ) < 0
+      ) {
+        selected.set(key, { identity, route });
+      }
+    }
+  }
+  return [...selected.values()]
+    .toSorted((left, right) =>
+      compareNumberLists(left.identity, right.identity)
+    )
+    .flatMap(({ route }, pathId) =>
+      route.map((routeStep, index) => ({
+        pathId,
+        step: index + 1,
+        edgeId: routeStep.event.edgeId,
+        source: routeStep.source,
+        target: routeStep.target,
+        weight: 1,
+        total: index + 1,
+      }))
+    );
 }
 
 Deno.test("findCycles defaults to outgoing with omitted or empty options", async () => {
@@ -277,6 +369,283 @@ Deno.test("findCycles preserves distinct edge combinations and is row-order dete
   }
 });
 
+Deno.test("findCycles starts chronological cycles at a feasible event in both directions", async () => {
+  const rows = [
+    {
+      edgeId: "F1",
+      source: "B",
+      target: "C",
+      time: new Date("2025-01-01T09:00:00Z"),
+      weight: 2,
+    },
+    {
+      edgeId: "F2",
+      source: "C",
+      target: "A",
+      time: new Date("2025-01-01T10:00:00Z"),
+      weight: 3,
+    },
+    {
+      edgeId: "F3",
+      source: "A",
+      target: "B",
+      time: new Date("2025-01-01T11:00:00Z"),
+      weight: 4,
+    },
+  ];
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const [direction, expected] of [
+        ["outgoing", [
+          [0, 1, "F1", "B", "C", 2, 2],
+          [0, 2, "F2", "C", "A", 3, 5],
+          [0, 3, "F3", "A", "B", 4, 9],
+        ]],
+        ["incoming", [
+          [0, 1, "F3", "B", "A", 4, 4],
+          [0, 2, "F2", "A", "C", 3, 7],
+          [0, 3, "F1", "C", "B", 2, 9],
+        ]],
+      ] as const
+    ) {
+      const result = sdb.newTable(`non_smallest_${direction}`).loadArray(rows)
+        .findCycles("source", "target", "edgeId", {
+          direction,
+          startTimeColumn: "time",
+          weight: "weight",
+        });
+      assertEquals(
+        (await result.getData()).map((row) => [
+          row.pathId,
+          row.step,
+          row.edgeId,
+          row.source,
+          row.target,
+          row.weight,
+          row.total,
+        ]),
+        expected.map((row) => [...row]),
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles applies strict, non-strict, gap, and self-loop chronology", async () => {
+  const equalEvents: ReferenceChronologicalEvent<string, number>[] = [
+    { edgeId: 3, source: "C", target: "A", startTime: 0n, endTime: 0n },
+    { edgeId: 1, source: "A", target: "B", startTime: 0n, endTime: 0n },
+    { edgeId: 2, source: "B", target: "C", startTime: 0n, endTime: 0n },
+    { edgeId: 4, source: "D", target: "D", startTime: 0n, endTime: 0n },
+  ];
+  const gapEvents: ReferenceChronologicalEvent<string, number>[] = [
+    {
+      edgeId: 12,
+      source: "C",
+      target: "A",
+      startTime: 4_000n,
+      endTime: 5_000n,
+    },
+    { edgeId: 10, source: "A", target: "B", startTime: 0n, endTime: 1_000n },
+    {
+      edgeId: 11,
+      source: "B",
+      target: "C",
+      startTime: 2_000n,
+      endTime: 3_000n,
+    },
+  ];
+  const sdb = new SimpleDB();
+  try {
+    const strict = sdb.newTable("strict_equal_cycles")
+      .loadArray(chronologicalRows(equalEvents))
+      .findCycles("source", "target", "edgeId", {
+        startTimeColumn: "startTime",
+        endTimeColumn: "endTime",
+      });
+    assertEquals((await strict.getData()).map((row) => row.edgeId), [4]);
+
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const expected = referenceChronologicalCycleRows(
+        equalEvents,
+        direction,
+        0n,
+        false,
+      );
+      for (
+        const [order, events] of [equalEvents, equalEvents.toReversed()]
+          .entries()
+      ) {
+        const actual = sdb.newTable(`equal_${direction}_${order}`)
+          .loadArray(chronologicalRows(events))
+          .findCycles("source", "target", "edgeId", {
+            direction,
+            startTimeColumn: "startTime",
+            endTimeColumn: "endTime",
+            strictOrdering: false,
+          });
+        assertEquals(await actual.getData(), expected);
+      }
+    }
+
+    const inclusive = sdb.newTable("inclusive_gap_cycles")
+      .loadArray(chronologicalRows(gapEvents))
+      .findCycles("source", "target", "edgeId", {
+        startTimeColumn: "startTime",
+        endTimeColumn: "endTime",
+        minGapMs: 1_000,
+      });
+    assertEquals((await inclusive.getData()).map((row) => row.edgeId), [
+      10,
+      11,
+      12,
+    ]);
+    const above = sdb.newTable("above_gap_cycles")
+      .loadArray(chronologicalRows(gapEvents))
+      .findCycles("source", "target", "edgeId", {
+        startTimeColumn: "startTime",
+        endTimeColumn: "endTime",
+        minGapMs: 1_001,
+      });
+    assertEquals(await above.getData(), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("nanosecond_cycles");
+    await sdb.customQuery(`CREATE TABLE "nanosecond_cycles" AS
+      SELECT * FROM (VALUES
+        (1, 'B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
+        (2, 'C', 'A', TIMESTAMP_NS '2025-01-01 00:00:00.000001001'),
+        (3, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000002001'),
+        (4, 'Q', 'Q', TIMESTAMP_NS 'infinity')
+      ) AS events(edgeId, source, target, eventTime)`);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const exact = table.findCycles("source", "target", "edgeId", {
+        direction,
+        endTimeColumn: "eventTime",
+        minGapMs: 0.001,
+        outputTable: true,
+      });
+      assertEquals(
+        (await exact.getData()).map((row) => row.edgeId),
+        direction === "outgoing" ? [1, 2, 3] : [3, 2, 1],
+      );
+      const above = table.findCycles("source", "target", "edgeId", {
+        direction,
+        endTimeColumn: "eventTime",
+        minGapMs: 0.002,
+        outputTable: true,
+      });
+      assertEquals(await above.getData(), []);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles keeps exact IDs when canonical identity differs from the feasible rotation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("wide_temporal_cycles");
+    await sdb.customQuery(`CREATE TABLE "wide_temporal_cycles" AS
+      SELECT * FROM (VALUES
+        (9007199254740995::BIGINT, 9007199254741001::BIGINT,
+          9007199254741003::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
+        (9007199254740997::BIGINT, 9007199254741003::BIGINT,
+          9007199254741005::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000002'),
+        (9007199254740993::BIGINT, 9007199254741005::BIGINT,
+          9007199254741001::BIGINT,
+          TIMESTAMP_NS '2025-01-01 00:00:00.000000003')
+      ) AS events(edgeId, source, target, eventTime)`);
+    const result = table.findCycles("source", "target", "edgeId", {
+      startTimeColumn: "eventTime",
+      outputTable: true,
+    }).convert({ edgeId: "string", source: "string", target: "string" });
+    assertEquals(
+      (await result.getData()).map((row) => [
+        row.pathId,
+        row.edgeId,
+        row.source,
+        row.target,
+      ]),
+      [
+        [0, "9007199254740995", "9007199254741001", "9007199254741003"],
+        [0, "9007199254740997", "9007199254741003", "9007199254741005"],
+        [0, "9007199254740993", "9007199254741005", "9007199254741001"],
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles preserves temporal parallel identities and deterministic cycle IDs", async () => {
+  const events: ReferenceChronologicalEvent<string, number>[] = [
+    { edgeId: 20, source: "B", target: "C", startTime: 0n, endTime: 0n },
+    { edgeId: 10, source: "B", target: "C", startTime: 0n, endTime: 0n },
+    {
+      edgeId: 30,
+      source: "C",
+      target: "A",
+      startTime: 1_000n,
+      endTime: 1_000n,
+    },
+    {
+      edgeId: 40,
+      source: "A",
+      target: "B",
+      startTime: 2_000n,
+      endTime: 2_000n,
+    },
+    { edgeId: 50, source: "Q", target: "Q", startTime: null, endTime: null },
+    {
+      edgeId: 60,
+      source: "X",
+      target: "Y",
+      startTime: 3_000n,
+      endTime: 2_000n,
+    },
+  ];
+  const expected = referenceChronologicalCycleRows(
+    events,
+    "outgoing",
+    0n,
+    true,
+  );
+  const sdb = new SimpleDB();
+  try {
+    for (const [order, rows] of [events, events.toReversed()].entries()) {
+      const actual = sdb.newTable(`parallel_temporal_${order}`)
+        .loadArray(chronologicalRows(rows))
+        .findCycles("source", "target", "edgeId", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          outputTable: true,
+        });
+      assertEquals(await actual.getData(), expected);
+    }
+    assertEquals(expected.map((row) => [row.pathId, row.edgeId]), [
+      [0, 10],
+      [0, 30],
+      [0, 40],
+      [1, 20],
+      [1, 30],
+      [1, 40],
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("findCycles validates required arguments and schema without data audits", async () => {
   const sdb = new SimpleDB();
   try {
@@ -312,6 +681,35 @@ Deno.test("findCycles validates required arguments and schema without data audit
       TypeError,
       "options.weight must be a string",
     );
+    for (
+      const options of [
+        { minGapMs: 0 },
+        { strictOrdering: false },
+      ]
+    ) {
+      assertThrows(
+        () => table.findCycles("source", "target", "edgeId", options),
+        TypeError,
+        "require options.startTimeColumn or options.endTimeColumn",
+      );
+    }
+    assertThrows(
+      () =>
+        table.findCycles("source", "target", "edgeId", {
+          direction: "both",
+          startTimeColumn: "time",
+        }),
+      TypeError,
+      'cannot be "both"',
+    );
+    assertThrows(
+      () =>
+        table.findCycles("source", "target", "edgeId", {
+          startTimeColumn: 1 as unknown as string,
+        }),
+      TypeError,
+      "options.startTimeColumn must be a string",
+    );
 
     await assertRejects(
       () =>
@@ -337,6 +735,28 @@ Deno.test("findCycles validates required arguments and schema without data audit
           .loadData("test/data/graphs/unsupported-types.csv")
           .findCycles("dateSource", "stringTarget", "booleanEdgeId").run(),
       TypeError,
+    );
+    await assertRejects(
+      () =>
+        table.findCycles("source", "target", "edgeId", {
+          startTimeColumn: "source",
+        }).run(),
+      TypeError,
+      "requires DATE or TIMESTAMP chronological columns",
+    );
+    const mixedTimes = sdb.newTable("mixed_cycle_times");
+    await sdb.customQuery(`CREATE TABLE "mixed_cycle_times" (
+      edgeId INTEGER, source VARCHAR, target VARCHAR,
+      departure TIMESTAMPTZ, arrival TIMESTAMP
+    )`);
+    await assertRejects(
+      () =>
+        mixedTimes.findCycles("source", "target", "edgeId", {
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+        }).run(),
+      TypeError,
+      "cannot mix time-zone-aware and time-zone-naive",
     );
   } finally {
     await sdb.close();
@@ -389,6 +809,35 @@ Deno.test("findCycles keeps typed empty outputs and supports output snapshots", 
     options.weight = "changed";
     assertEquals(named.name, "namedCycles");
     assertEquals((await named.getData()).map((row) => row.edgeId), ["T3"]);
+    assertEquals(await source.getRowCount(), 3);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles snapshots chronological options across queued conversion", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const options = {
+      startTimeColumn: "time",
+      strictOrdering: true,
+      outputTable: "chronologicalCycleSnapshot",
+    };
+    const source = sdb.newTable().loadArray([
+      { edgeId: "E1", source: "B", target: "C", time: "2025-01-01 09:00:00" },
+      { edgeId: "E2", source: "C", target: "A", time: "2025-01-01 10:00:00" },
+      { edgeId: "E3", source: "A", target: "B", time: "2025-01-01 11:00:00" },
+    ]).convert({ time: "datetime" });
+    const result = source.findCycles("source", "target", "edgeId", options);
+    options.startTimeColumn = "missing";
+    options.strictOrdering = false;
+    options.outputTable = "changed";
+    assertEquals(result.name, "chronologicalCycleSnapshot");
+    assertEquals((await result.getData()).map((row) => row.edgeId), [
+      "E1",
+      "E2",
+      "E3",
+    ]);
     assertEquals(await source.getRowCount(), 3);
   } finally {
     await sdb.close();
@@ -573,42 +1022,154 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
   }
 });
 
-Deno.test("findCycles output records its source as a cache dependency", async () => {
-  let computationRuns = 0;
-  const unique = crypto.randomUUID().replaceAll("-", "");
-  const outputName = `cyclesCacheOutput${unique}`;
-  const sourceName = `cyclesCacheSource${unique}`;
-  const compute = (source: SimpleTable) => async (output: SimpleTable) => {
-    computationRuns++;
-    const result = source.findCycles("source", "target", "edgeId", {
-      outputTable: true,
-    });
-    output.loadArray(await result.getData());
-    await result.removeTable();
+for (const chronological of [false, true]) {
+  Deno.test(`findCycles ${chronological ? "chronological" : "static"} output records its source as a cache dependency`, async () => {
+    let computationRuns = 0;
+    const unique = crypto.randomUUID().replaceAll("-", "");
+    const outputName = `cyclesCacheOutput${unique}`;
+    const sourceName = `cyclesCacheSource${unique}`;
+    const compute = (source: SimpleTable) => async (output: SimpleTable) => {
+      computationRuns++;
+      const result = source.findCycles("source", "target", "edgeId", {
+        outputTable: true,
+        ...(chronological ? { startTimeColumn: "time" } : {}),
+      });
+      output.loadArray(await result.getData());
+      await result.removeTable();
+    };
+
+    const firstSdb = new SimpleDB();
+    try {
+      const source = firstSdb.newTable(sourceName).loadArray([
+        {
+          edgeId: "E1",
+          source: "A",
+          target: "B",
+          time: new Date(chronologicalBase),
+        },
+        {
+          edgeId: "E2",
+          source: "B",
+          target: "A",
+          time: new Date(chronologicalBase + 1_000),
+        },
+      ]);
+      await firstSdb.newTable(outputName).cache(compute(source));
+    } finally {
+      await firstSdb.close();
+    }
+
+    const secondSdb = new SimpleDB();
+    try {
+      const source = secondSdb.newTable(sourceName).loadArray([
+        {
+          edgeId: "E3",
+          source: "A",
+          target: "A",
+          time: new Date(chronologicalBase),
+        },
+      ]);
+      const output = secondSdb.newTable(outputName);
+      await output.cache(compute(source));
+      assertEquals(computationRuns, 2);
+      assertEquals((await output.getData()).map((row) => row.edgeId), ["E3"]);
+    } finally {
+      await secondSdb.close();
+    }
+  });
+}
+
+Deno.test("findCycles matches independently normalized generated chronological cycles", async () => {
+  const generate = (seed: number) => {
+    let state = seed;
+    const random = () => {
+      state = (state * 1_103_515_245 + 12_345) & 0x7fff_ffff;
+      return state;
+    };
+    const nodes = ["A", "B", "C", "D"];
+    const events: ReferenceChronologicalEvent<string, number>[] = [
+      {
+        edgeId: seed * 100 + 1,
+        source: "B",
+        target: "C",
+        startTime: 0n,
+        endTime: 0n,
+      },
+      {
+        edgeId: seed * 100 + 2,
+        source: "C",
+        target: "A",
+        startTime: 2_000n,
+        endTime: 2_000n,
+      },
+      {
+        edgeId: seed * 100 + 3,
+        source: "A",
+        target: "B",
+        startTime: 4_000n,
+        endTime: 4_000n,
+      },
+    ];
+    for (let index = 0; index < 5; index++) {
+      const sourceIndex = random() % nodes.length;
+      const targetIndex = random() % nodes.length;
+      const startTime = BigInt(random() % 5) * 1_000n;
+      const duration = BigInt(random() % 2) * 1_000n;
+      events.push({
+        edgeId: seed * 100 + index + 10,
+        source: nodes[sourceIndex],
+        target: nodes[targetIndex],
+        startTime,
+        endTime: index === 4 && seed % 2 === 0
+          ? startTime - 1_000n
+          : startTime + duration,
+      });
+    }
+    return events;
   };
 
-  const firstSdb = new SimpleDB();
+  const sdb = new SimpleDB();
   try {
-    const source = firstSdb.newTable(sourceName).loadArray([
-      { edgeId: "E1", source: "A", target: "B" },
-      { edgeId: "E2", source: "B", target: "A" },
-    ]);
-    await firstSdb.newTable(outputName).cache(compute(source));
+    for (let seed = 1; seed <= 6; seed++) {
+      const events = generate(seed);
+      for (const direction of ["outgoing", "incoming"] as const) {
+        for (const strictOrdering of [true, false]) {
+          const minGap = seed % 2 === 0 ? 1_000n : 0n;
+          const expected = referenceChronologicalCycleRows(
+            events,
+            direction,
+            minGap,
+            strictOrdering,
+          );
+          assertEquals(expected.length > 0, true, `seed ${seed}`);
+          for (
+            const [order, rows] of [events, events.toReversed()].entries()
+          ) {
+            const actual = sdb.newTable(
+              `generated_cycles_${seed}_${direction}_${strictOrdering}_${order}`,
+            ).loadArray(chronologicalRows(rows)).findCycles(
+              "source",
+              "target",
+              "edgeId",
+              {
+                direction,
+                startTimeColumn: "startTime",
+                endTimeColumn: "endTime",
+                minGapMs: Number(minGap),
+                strictOrdering,
+              },
+            );
+            assertEquals(
+              await actual.getData(),
+              expected,
+              `seed ${seed}, ${direction}, strict=${strictOrdering}, order ${order}`,
+            );
+          }
+        }
+      }
+    }
   } finally {
-    await firstSdb.close();
-  }
-
-  const secondSdb = new SimpleDB();
-  try {
-    const source = secondSdb.newTable(sourceName).loadArray([
-      { edgeId: "E3", source: "A", target: "A" },
-    ]);
-    const output = secondSdb.newTable(outputName);
-    await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals((await output.getData()).map((row) => row.edgeId), ["E3"]);
-  } finally {
-    await secondSdb.close();
+    await sdb.close();
   }
 });
 
@@ -759,7 +1320,7 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
   }
 });
 
-Deno.test("findCycles executes all six JSDoc examples with their displayed rows", async () => {
+Deno.test("findCycles executes all eight JSDoc examples with their displayed rows", async () => {
   const sdb = new SimpleDB();
   const triangleRows = [
     { edgeId: "E1", source: "A", target: "B" },
@@ -875,6 +1436,52 @@ Deno.test("findCycles executes all six JSDoc examples with their displayed rows"
           [0, 2, "edge-1", "B", "C", 1, 2],
           [0, 3, "edge-2", "C", "A", 1, 3],
         ]),
+      );
+    }
+    for (
+      const [direction, rows] of [
+        ["outgoing", [
+          [0, 1, "F1", "B", "C", 1, 1],
+          [0, 2, "F2", "C", "A", 1, 2],
+          [0, 3, "F3", "A", "B", 1, 3],
+        ]],
+        ["incoming", [
+          [0, 1, "F3", "B", "A", 1, 1],
+          [0, 2, "F2", "A", "C", 1, 2],
+          [0, 3, "F1", "C", "B", 1, 3],
+        ]],
+      ] as const
+    ) {
+      const timedFlights = sdb.newTable(`doc_cycles_timed_${direction}`)
+        .loadArray([
+          {
+            flightId: "F1",
+            origin: "B",
+            destination: "C",
+            departureTime: new Date("2025-01-01T09:00:00Z"),
+          },
+          {
+            flightId: "F2",
+            origin: "C",
+            destination: "A",
+            departureTime: new Date("2025-01-01T10:00:00Z"),
+          },
+          {
+            flightId: "F3",
+            origin: "A",
+            destination: "B",
+            departureTime: new Date("2025-01-01T11:00:00Z"),
+          },
+        ]);
+      await timedFlights
+        .findCycles("origin", "destination", "flightId", {
+          ...(direction === "incoming" ? { direction } : {}),
+          startTimeColumn: "departureTime",
+        })
+        .log();
+      assertEquals(
+        await timedFlights.getData(),
+        expectedRows(rows.map((row) => [...row])),
       );
     }
   } finally {
