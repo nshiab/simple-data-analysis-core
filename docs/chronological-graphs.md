@@ -247,24 +247,6 @@ route identity and visited-node state. Public edge IDs are projected from the
 same materialized event relation; separately applying `row_number()` to another
 scan would not provide a reliable physical-event join key.
 
-The focused layered benchmark in `benchmarks/graphs/chronologicalDistances.ts`
-measures retained cost states and the transfer join without enumerating routes.
-It invokes the internal SQL builder, so these timings exclude the public
-invalid-event preflight and isolate the traversal query. With six layers and
-widths 4, 8, and 12, it retained 96, 384, and 864 states respectively, exactly
-the physical event bound for one start, while the corresponding six-event route
-counts were 16,384, 2,097,152, and 35,831,808. These counts include only routes
-reaching the final layer; shorter prefixes add further routes. On the 2026-09-17
-local review run, the endpoint candidate joins reported cardinalities of 320,
-2,560, and 8,640 and operator times of 0.112 ms, 0.107 ms, and 0.183 ms. DuckDB
-evaluated the chronological predicate in a separate join, with the same
-cardinalities and operator times of 0.464 ms, 0.367 ms, and 0.112 ms. The runner
-reports both stages separately: timing only the endpoint join would omit the
-time comparison work, and adding their cardinalities would double-count these
-transfers. These diagnostic timings include profiler noise and are not
-performance guarantees; raw profiles are retained under the ignored
-`benchmarks/.work/graphs/chronological-distances/` directory.
-
 ## Shortest simple route bounds
 
 Chronological `shortestPath()` reuses the cost-state recursion only to obtain
@@ -296,31 +278,11 @@ tied simple routes without relying on event-optimal prefixes, which would lose
 valid ties when competing histories share an event or have different visited
 nodes.
 
-The focused benchmark in `benchmarks/graphs/chronologicalShortestPath.ts`
-separates returned route size from recursive prefix work. A five-layer,
-width-four graph has 1,024 possible complete routes. When all routes tie, the
-query returns 1,024 routes and 6,144 step rows while retaining 2,388 route
-prefixes. With the same topology but one zero-cost spine and positive-cost
-alternatives, the optimum bound reduces the search to six prefixes and returns
-one six-step route. On the 2026-09-17 local run, the recursive endpoint join
-produced 2,384 and 17 candidates respectively; the cost-bound and chronological
-joins each retained 2,384 candidates in the tied case and five in the pruned
-case. The benchmark reports these join stages separately because adding their
-cardinalities would count the same candidates more than once. A 2026-09-17 rerun
-after adding invalid-event validation measured 21.30 ms and 12.45 ms end to end.
-The native validation existence query took 0.61 ms and 0.64 ms, while the
-traversal statements accounted for 18.17 ms and 10.24 ms. End-to-end time also
-includes named-output setup and schema queries, so the difference from traversal
-time is not validation cost. The preflight can scan the full valid input and
-materializes preceding queued work before it runs.
-
 This bound does not make all shortest-route queries polynomial. When many simple
 prefixes remain at or below the optimum, especially with zero weights, the
 method must retain them to return every tied optimum and can do exponential work
 even when few prefixes ultimately reach the destination. There is no silent
-route or depth cap. Benchmark timings are diagnostic rather than a performance
-guarantee; raw profiles are written under the ignored
-`benchmarks/.work/graphs/chronological-shortest-path/` directory.
+route or depth cap.
 
 ## Chronological cycle identity and normalization
 
@@ -399,77 +361,13 @@ output-sensitive and has unavoidable exponential worst cases. A complete mutual
 graph yields one group and follows one pivot branch per level, while a complete
 multipartite graph with `k` parts of three yields `3^k` maximal groups and
 `k × 3^k` membership rows. The API returns all of them without a group,
-membership, or search cap. The focused component benchmark reports reachability
-and clique-enumeration time separately, along with state, group, membership, and
-memory measurements where the runtime exposes them.
+membership, or search cap.
 
-The reachability cases reuse the production event-state SQL. The first has one
-strict equal-time wave, so only direct seed states survive; a second wave one
-hour later exercises actual transfers and deduplication. The runner reports
-recursive join predicates, cardinalities, and timings separately: endpoint and
-chronological joins may process the same candidates, so their row counts must
-not be added. The clique cases reuse the exact production clique CTE builder on
-synthetic mutual graphs. Their timings include synthetic adjacency preparation
-and aggregate output counts, but exclude all-pairs reachability, mutual-graph
-construction from reachability, and final membership expansion and row sorting.
-They are stage diagnostics, not end-to-end `connectedComponents()` timings.
+## Static compatibility
 
-Engine peak buffer measurements include connection-resident tables and retained
-allocations; RSS snapshots also include the runtime and allocator. Successive
-cases share a connection, so these figures are not isolated per-stage memory
-costs and cannot be added together.
-
-On the local benchmark environment (DuckDB 1.5.5, one thread, 1 GB limit), a
-32-node complete direct-event graph retained 992 all-pairs reachability states
-and took 2.68 ms of DuckDB query time. Clique enumeration on the corresponding
-complete mutual graph retained 33 recursive states and returned one group with
-32 memberships in 22.17 ms. A complete six-part graph with three nodes per part
-retained 1,093 recursive states and returned 729 groups with 4,374 memberships
-in 10.99 ms. DuckDB reported peak buffer usage of 10.3 MB, 26.6 MB, and 34.7 MB
-for those three queries, with no temporary spill. These single runs include
-profiling overhead and are diagnostic rather than performance guarantees. Raw
-profiles are retained under the ignored
-`benchmarks/.work/graphs/chronological-components/` directory.
-
-The review's two-wave reachability case used 1,984 events and retained 32,736
-states against the 63,488 state bound. Its endpoint join emitted 2,029,632
-candidates, while the chronological join retained 30,752 rows. Query time was
-26.18 ms and the engine peak buffer reading was 18.4 MB, without a temporary
-spill. This case demonstrates recursive transfer work that the single equal-time
-wave does not exercise; the same timing and memory caveats apply.
-
-## Static compatibility with the approved baseline
-
-The final static comparison uses baseline commit
-`be11e360ffedebc62192b2bc07ffa0b64a9e4197` and its approved 57-case,
-one-iteration capture. `compareStaticBaseline.ts` executes the extracted
-baseline and final implementation in alternating order for five repetitions. For
-every method, variant, and workload shape, the final result has the exact same
-complete ordered rows and output types as the freshly executed baseline. Its row
-count and full materialization SQL also match the authoritative saved
-observation and named JSON profile. These 57 cases include cycle directions and
-weight/count/component variants; the method suites separately cover the other
-methods’ direction options. `neighbors()`, `degree()`, `commonNeighbors()`,
-`topologicalSort()`, and `addId()` retain their original implementation files;
-the sequence methods select their original SQL branches when no chronological
-setting is supplied.
-
-A subsequent three-repetition review run verified the extracted source hashes
-against the pinned commit, the complete unique 57-case manifest, and every
-measurement’s ordered values, types, row count, and full SQL. All 342
-measurements passed. Negative probes reject a changed baseline source tree and a
-duplicate observation that would otherwise omit one workload.
-
-The five-run operation-time ratio had a median of 1.005 across the 57 cases,
-with individual medians from 0.876 to 1.136. DuckDB query-time ratios had a
-median of 1.007 and ranged from 0.886 to 1.137. These small bidirectional
-differences may reflect profiling, scheduling, cache, and allocator variation;
-the experiment does not isolate their cause and they are recorded rather than
-treated as evidence of a speedup, regression, or guaranteed parity. Raw
-comparison profiles remain in the ignored
-`benchmarks/.work/graphs/static-baseline-comparison/` directory. The
-reproducible extraction and comparison command is documented in
-`benchmarks/graphs/README.md`.
+`neighbors()`, `degree()`, `commonNeighbors()`, `topologicalSort()`, and
+`addId()` retain their original implementation files. The sequence methods
+select their original SQL branches when no chronological setting is supplied.
 
 ## Master acceptance evidence
 
@@ -487,11 +385,11 @@ case can be selected with `deno test --filter`.
 | `shortestPath()` items 1–4: all tied feasible simple routes, feasible rather than static optimum, competing histories and sound pruning, unchanged objective                                                                      | “Shortest simple route bounds”; `shortestPath chronological routing returns a costlier feasible optimum in both directions`, `shortestPath chronological routing retains tied arrival and visited-node histories`, `shortestPath chronological SQL shares numbered events and bounds route prefixes`, and the exhaustive generated minima comparison.                                                                                                                                                          |
 | `paths()` items 1–3: per-transition chronology in both directions, all simple routes and exact edge identity, no walks                                                                                                            | `paths chronological traversal keeps first events and enforces both-column connections`, `paths chronological traversal preserves incoming orientation, parallel IDs, and weights`, `paths retains actual event continuity and terminates equal-time cycles`, and its generated evaluator comparison.                                                                                                                                                                                                          |
 | `findCycles()` items 1–4: feasible returns, non-smallest-node start, chronological canonical identity without closing gap, loops/equal times/directions/no reuse                                                                  | “Chronological cycle identity and normalization”; `findCycles starts chronological cycles at a feasible event in both directions`, `findCycles applies strict, non-strict, gap, and self-loop chronology`, `findCycles preserves temporal parallel identities and deterministic cycle IDs`, and the independently normalized generated comparison.                                                                                                                                                             |
-| `connectedComponents()` items 1–6: node mutual reachability, all maximal groups, overlapping deterministic memberships, no SCC merge, singleton/empty cases, uncapped output benchmark                                            | “Chronological strong components”; `connectedComponents returns the documented overlapping chronological groups`, `connectedComponents allows chronological journeys through outside nodes`, the independent exhaustive temporal comparison, the exhaustive 64 four-node mutual graphs, and the complete-clique/multipartite benchmark evidence above.                                                                                                                                                         |
-| `topologicalSort()` and `addId()` unchanged                                                                                                                                                                                       | Their implementation files are byte-identical to the approved baseline. The complete static comparison includes all three topological workloads. `topologicalSort matches the shared baseline and duplicate-edge oracles` and the complete `addId()` suite cover public behavior. Neither signature advertises chronological settings.                                                                                                                                                                         |
+| `connectedComponents()` items 1–6: node mutual reachability, all maximal groups, overlapping deterministic memberships, no SCC merge, singleton/empty cases, uncapped output growth                                               | “Chronological strong components”; `connectedComponents returns the documented overlapping chronological groups`, `connectedComponents allows chronological journeys through outside nodes`, the independent exhaustive temporal comparison, and the exhaustive 64 four-node mutual-graph regression. The complete and complete-multipartite cases above explain the output-growth limits.                                                                                                                     |
+| `topologicalSort()` and `addId()` unchanged                                                                                                                                                                                       | Their implementation files are byte-identical to the approved baseline. `topologicalSort matches the shared baseline and duplicate-edge oracles` and the complete `addId()` suite cover public behavior. Neither signature advertises chronological settings.                                                                                                                                                                                                                                                  |
 | Incoming items 1–3: physical predecessor rule, output orientation, reject temporal `both` and explicit settings without columns                                                                                                   | “Incoming results”; the incoming chronological cases for all five direction-capable sequence methods; shared transition-helper incoming tests; each method's validation cases for temporal `both` and explicit `minGapMs: 0`; the consolidated explicit `strictOrdering: false` rejection regression. Static `both` cases remain in each existing suite.                                                                                                                                                       |
-| Shared implementation items 1–5: shared timestamps with explicit algorithms, queue/output/chaining/binding/cache/exact identity, inline public types, schemas and documented temporal differences, no extra date/context features | `prepareGraphTemporalOptions()` and `prepareGraphTemporalSql()` plus their helper suite; method-specific SQL builders; each method's queue/output/cache/exact-ID cases; inline signatures and JSDoc in `SimpleTable.ts`; full parameter binding in the recorded queries. The public API contains only the four agreed flat settings: no explicit dates, `maxGapMs`, virtual events, or direct-query temporal modes.                                                                                            |
-| Acceptance 1: unchanged static results, schemas, order, and SQL                                                                                                                                                                   | The 57-case exact baseline comparison above, including complete ordered result data, types, row counts, and full query SQL.                                                                                                                                                                                                                                                                                                                                                                                    |
+| Shared implementation items 1–5: shared timestamps with explicit algorithms, queue/output/chaining/binding/cache/exact identity, inline public types, schemas and documented temporal differences, no extra date/context features | `prepareGraphTemporalOptions()` and `prepareGraphTemporalSql()` plus their helper suite; method-specific SQL builders; each method's queue/output/cache/exact-ID cases; inline signatures and JSDoc in `SimpleTable.ts`; and parameter-binding assertions in the method suites. The public API contains only the four agreed flat settings: no explicit dates, `maxGapMs`, virtual events, or direct-query temporal modes.                                                                                     |
+| Acceptance 1: unchanged static results, schemas, order, and SQL                                                                                                                                                                   | Static calls select the original SQL branches. The existing method suites cover results, schemas, order, directions, weights, IDs, and generated SQL, including `topologicalSort matches the shared baseline and duplicate-edge oracles`.                                                                                                                                                                                                                                                                      |
 | Acceptance 2: both columns, each fallback, invalid columns/types/options/values, activation, precision, timezone                                                                                                                  | Shared helper tests from `prepareGraphTemporalSql resolves fallback columns and validates DuckDB temporal types` through the nanosecond, mixed-precision, DATE-range, TIMESTAMPTZ, validity, and large-gap cases; the all-six-method invalid-value matrix proves null, infinity, and end-before-start fail before traversal despite named outputs, unknown routes, and downstream suppression. Queued filtering/conversion, selected-only columns, disconnected rows, and empty inputs are covered separately. |
 | Acceptance 3: backward time, strict/non-strict, equality, zero and positive gap boundaries                                                                                                                                        | Helper transition tests plus each method's ordering/gap cases, including mixed `TIMESTAMP`/`TIMESTAMP_NS` boundaries at 999/1000/1001 ns.                                                                                                                                                                                                                                                                                                                                                                      |
 | Acceptance 4: isolated and three-flight examples across direct and sequence queries                                                                                                                                               | `chronological graph integration preserves direct events while constraining transfers`; the independent evaluator standalone/exact-gap fixtures.                                                                                                                                                                                                                                                                                                                                                               |
@@ -501,18 +399,9 @@ case can be selected with `deno test --filter`.
 | Acceptance 8: non-strict equal-time termination/deduplication                                                                                                                                                                     | Reachability finite-state, distance improvement, route simple-node, and cycle used-event tests; generated evaluators run strict and non-strict graphs in both directions.                                                                                                                                                                                                                                                                                                                                      |
 | Acceptance 9: chronological cycle not anchored at smallest node and valid one-event cycles                                                                                                                                        | `findCycles starts chronological cycles at a feasible event in both directions` and `findCycles applies strict, non-strict, gap, and self-loop chronology`.                                                                                                                                                                                                                                                                                                                                                    |
 | Acceptance 10: independent overlapping components, both examples, singleton/determinism, explicit strong mode, outside intermediaries                                                                                             | The component contract and named component cases above, independent route/subset oracle, shuffled input comparisons, and exhaustive 64-graph regression.                                                                                                                                                                                                                                                                                                                                                       |
-| Acceptance 11: event-state, transfer, and overlapping-output benchmarks without unnecessary pair materialization                                                                                                                  | Distance benchmark: 96/384/864 keyed states versus 16,384/2,097,152/35,831,808 full-depth routes. Shortest benchmark: 2,388 versus six prefixes. Reachability benchmark: 32,736 states and 2,029,632 endpoint candidates with 30,752 chronological transfers. Component benchmark: one 32-member clique versus 729 groups/4,374 memberships. Query profiles record actual operators; stage counts are not added.                                                                                               |
+| Acceptance 11: finite event-state traversal and uncapped overlapping-output growth without unnecessary route materialization                                                                                                      | “Reachability state and termination”, “Distance state and cost dominance”, “Shortest simple route bounds”, and “Chronological strong components” document the state and output bounds. Structural SQL tests verify finite last-event state, keyed event costs without route enumeration, bounded simple-route enumeration, and pivoted maximal-clique search; exhaustive tiny-graph comparisons verify the results independently.                                                                              |
 | Acceptance 12: public option documentation and worked `.log()` examples; generated `llm.md`                                                                                                                                       | All six public signatures document all four flat options and contain executable `.log()` examples. Each method suite executes its exact examples and displayed tables. `deno task all-tests` runs `deno task llm`; `llm.md` is generated only by that task.                                                                                                                                                                                                                                                    |
 | Acceptance 13: formatting, lint, type/doc checks, tests, publish dry-run, npm smoke, generated docs                                                                                                                               | `deno task all-tests` is the canonical final command. It runs `deno fmt --check`, `deno lint`, `deno check src/index.ts`, `deno doc --lint`, `deno publish --allow-dirty --dry-run`, the complete Deno test suite, npm smoke tests, and `deno task llm`.                                                                                                                                                                                                                                                       |
-
-The benchmark commands are:
-
-```sh
-deno run -A benchmarks/graphs/chronologicalDistances.ts
-deno run -A benchmarks/graphs/chronologicalShortestPath.ts
-deno run -A benchmarks/graphs/chronologicalComponents.ts
-deno task benchmark-graphs
-```
 
 Focused integration verification is available with:
 

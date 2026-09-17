@@ -18,9 +18,6 @@ nodes are added.
 deno task benchmark-graphs --iterations=1 --methods=neighbors,degree
 deno task benchmark-graphs --methods=reachable,distances --chain-nodes=1000 --branch-nodes=1023
 deno task benchmark-graphs --methods=findCycles --dense-nodes=6
-deno run -A benchmarks/graphs/chronologicalDistances.ts
-deno run -A benchmarks/graphs/chronologicalShortestPath.ts
-deno run -A benchmarks/graphs/chronologicalComponents.ts
 ```
 
 Options use `--name=value`: `iterations`, comma-separated `methods`,
@@ -62,82 +59,6 @@ Use the raw plans to investigate scan/grouping costs and retain all repetitions
 when comparing changes. Unit tests verify correctness independently; no timing
 assertion is part of the test suite. These local measurements do not establish
 performance parity with graph extensions or guarantees for larger graphs.
-
-`compareStaticBaseline.ts` checks static graph compatibility against an
-extracted source tree and a saved one-iteration benchmark artifact. It compares
-the complete ordered result, output types, row count, and full materialization
-SQL for all 57 method/variant/workload cases in every repetition. Before
-importing the extracted source, it verifies source/configuration file hashes
-against the pinned Git commit and rejects missing or duplicate observation
-cases. Run it from this repository with Git available. It also runs each version
-five times by default, alternating which version runs first, and records median
-operation and DuckDB-query timings. Timings remain diagnostic; exact result and
-SQL comparisons are the compatibility checks.
-
-```sh
-baseline_root=$(mktemp -d /tmp/sda-static-baseline-XXXXXX)
-git archive be11e360ffedebc62192b2bc07ffa0b64a9e4197 | tar -x -C "$baseline_root"
-deno run -A benchmarks/graphs/compareStaticBaseline.ts \
-  --baseline-root="$baseline_root" \
-  --baseline-observations=/path/to/baseline-graphs/observations.json \
-  --iterations=5
-```
-
-If the saved capture is unavailable, recreate the one-iteration artifact from
-that same extracted baseline (using its own benchmark runner):
-
-```sh
-(cd "$baseline_root" && deno task benchmark-graphs --iterations=1)
-```
-
-Then pass
-`--baseline-observations="$baseline_root/benchmarks/.work/graphs/observations.json"`
-to the comparison command. Dependencies must be available or downloadable. A new
-capture reproduces the compatibility checkpoint, not the original timings.
-
-Only `observations.json` from the approved one-iteration capture and the profile
-named by each observation are inputs. Extra profiles from unrelated runs in the
-same directory are ignored. The comparison report and new profiles are written
-under the ignored `benchmarks/.work/graphs/static-baseline-comparison/`
-directory.
-
-The focused chronological-distance runner builds layered event graphs whose
-number of possible routes grows exponentially. `fullDepthRoutes` counts routes
-reaching the final layer, excluding shorter prefixes. It reports the number of
-keyed event-cost states retained by `distances()`, the finite state bound,
-complete query time, and the timing and cardinality reported by DuckDB for
-transfer joins. Raw profiles are written under
-`benchmarks/.work/graphs/chronological-distances/`. This runner measures the
-cost-state algorithm directly and does not enumerate the possible routes. It
-calls the internal SQL builder, so its query timing excludes the public
-chronological invalid-event preflight.
-
-The focused chronological-shortest-path runner uses the public queued method.
-Its wall time includes named-output setup, schema work, the invalid-event
-preflight, and traversal materialization. `validationMilliseconds` isolates the
-native invalid-event existence query, while `queryMilliseconds` comes from the
-separately profiled traversal statement. Do not attribute the difference between
-those two values solely to validation.
-
-The focused chronological-component runner measures all-pairs event-state
-reachability and maximal-clique enumeration as separate queries. One strict
-equal-time wave measures direct seeds; two waves exercise transfers and state
-deduplication. Recursive transfer operators report their actual predicates,
-times, and cardinalities; do not sum row counts from successive join stages. Its
-complete mutual graph verifies that pivoting follows one branch per level
-instead of enumerating every subset. Its complete multipartite graph has six
-parts of three nodes, producing `3^6 = 729` maximal groups and `6 × 3^6 = 4,374`
-membership rows. It reports retained reachability states, recursive clique
-states, groups, memberships, query time, DuckDB peak buffer/temp storage, and
-process RSS before and after each phase. The runner reuses production
-reachability and clique SQL builders. Clique queries operate on synthetic mutual
-graphs and aggregate output counts; they exclude reachability, mutual-graph
-derivation, and final membership expansion/sorting. These are not end-to-end
-method times. Engine peak buffers include connection-resident data and retained
-allocations, and process RSS includes runtime/allocator state. Cases share a
-connection, so memory readings are not isolated operator costs and cannot be
-added. Raw profiles are written under
-`benchmarks/.work/graphs/chronological-components/`.
 
 Topological sorting uses one recursive Kahn computation, selecting the smallest
 eligible typed ID at each step. It retains visited-ID lists and repeatedly
