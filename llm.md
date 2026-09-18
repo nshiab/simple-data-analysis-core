@@ -4323,28 +4323,30 @@ Each connection needs a unique, non-null ID. Pass the name of the column
 containing these IDs as the `edgeId` argument. If your table is missing an ID
 column, you can easily create one with `addId()`.
 
-The result starts with the `pathId`, `step`, `weight`, and `total` columns,
-followed by all original columns. Steps start at one and follow the search
-direction. The `weight` column is the connection cost, and `total` is the sum of
-those costs up to and including the current step. Without the `weight` option,
-each connection costs one.
+The result starts with the `start`, `pathId`, `step`, `weight`, and `total`
+columns, followed by all original columns. The `start` column identifies the
+requested starting node. Steps start at one and follow the search direction. The
+`weight` column is the connection cost, and `total` is the sum of those costs up
+to and including the current step. Without the `weight` option, each connection
+costs one.
 
-If an input column is already named `pathId`, `step`, `weight`, or `total`
-(regardless of capitalization), the method throws an error. Rename it with
-`renameColumns()` first.
+If an input column is already named `start`, `pathId`, `step`, `weight`, or
+`total` (regardless of capitalization), the method throws an error. Rename it
+with `renameColumns()` first.
 
 Each row is one connection, including the final connection back to the start.
 Weights must be non-null, finite, and non-negative.
 
 If a cycle can start at several requested nodes, each starting node produces a
-separate result with its own `pathId`. Passing an empty array or duplicate IDs
-in `startNodes` throws an error. Unknown IDs or starts with no cycles produce no
+separate result. The `pathId` starts at zero for each starting node; `start` and
+`pathId` together identify a cycle. Passing an empty array or duplicate IDs in
+`startNodes` throws an error. Unknown IDs or starts with no cycles produce no
 rows.
 
 With `direction: "both"`, a cycle and its reverse are returned once per starting
-node, choosing the smaller sequence of connection IDs. Cycles are numbered from
-zero by starting node, then connection-ID sequence. Rows are sorted by `pathId`,
-then `step`.
+node, choosing the smaller sequence of connection IDs. Within each start, cycles
+are numbered by connection-ID sequence. Rows are sorted by `start`, then
+`pathId`, then `step`.
 
 Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
 chronological order. The `minGapMs` option sets the minimum gap between
@@ -4428,11 +4430,11 @@ await triangle
   .log();
 ```
 
-| pathId | step | weight | total | edgeId | source | target |
-| -----: | ---: | -----: | ----: | ------ | ------ | ------ |
-|      0 |    1 |      1 |     1 | E1     | A      | B      |
-|      0 |    2 |      1 |     2 | E2     | B      | C      |
-|      0 |    3 |      1 |     3 | E3     | C      | A      |
+| start | pathId | step | weight | total | edgeId | source | target |
+| ----- | -----: | ---: | -----: | ----: | ------ | ------ | ------ |
+| A     |      0 |    1 |      1 |     1 | E1     | A      | B      |
+| A     |      0 |    2 |      1 |     2 | E2     | B      | C      |
+| A     |      0 |    3 |      1 |     3 | E3     | C      | A      |
 
 Requesting both A and B returns the cycle separately for each start:
 
@@ -4442,14 +4444,14 @@ await triangle
   .log();
 ```
 
-| pathId | step | weight | total | edgeId | source | target |
-| -----: | ---: | -----: | ----: | ------ | ------ | ------ |
-|      0 |    1 |      1 |     1 | E1     | A      | B      |
-|      0 |    2 |      1 |     2 | E2     | B      | C      |
-|      0 |    3 |      1 |     3 | E3     | C      | A      |
-|      1 |    1 |      1 |     1 | E2     | B      | C      |
-|      1 |    2 |      1 |     2 | E3     | C      | A      |
-|      1 |    3 |      1 |     3 | E1     | A      | B      |
+| start | pathId | step | weight | total | edgeId | source | target |
+| ----- | -----: | ---: | -----: | ----: | ------ | ------ | ------ |
+| A     |      0 |    1 |      1 |     1 | E1     | A      | B      |
+| A     |      0 |    2 |      1 |     2 | E2     | B      | C      |
+| A     |      0 |    3 |      1 |     3 | E3     | C      | A      |
+| B     |      0 |    1 |      1 |     1 | E2     | B      | C      |
+| B     |      0 |    2 |      1 |     2 | E3     | C      | A      |
+| B     |      0 |    3 |      1 |     3 | E1     | A      | B      |
 
 With `direction: "incoming"`, connections are followed from target to source:
 
@@ -4459,11 +4461,11 @@ await triangle
   .log();
 ```
 
-| pathId | step | weight | total | edgeId | source | target |
-| -----: | ---: | -----: | ----: | ------ | ------ | ------ |
-|      0 |    1 |      1 |     1 | E3     | C      | A      |
-|      0 |    2 |      1 |     2 | E2     | B      | C      |
-|      0 |    3 |      1 |     3 | E1     | A      | B      |
+| start | pathId | step | weight | total | edgeId | source | target |
+| ----- | -----: | ---: | -----: | ----: | ------ | ------ | ------ |
+| A     |      0 |    1 |      1 |     1 | E3     | C      | A      |
+| A     |      0 |    2 |      1 |     2 | E2     | B      | C      |
+| A     |      0 |    3 |      1 |     3 | E1     | A      | B      |
 
 With `direction: "both"`, either direction is allowed. This cycle appears once,
 in the direction that starts with E1:
@@ -4474,11 +4476,11 @@ await triangle
   .log();
 ```
 
-| pathId | step | weight | total | edgeId | source | target |
-| -----: | ---: | -----: | ----: | ------ | ------ | ------ |
-|      0 |    1 |      1 |     1 | E1     | A      | B      |
-|      0 |    2 |      1 |     2 | E2     | B      | C      |
-|      0 |    3 |      1 |     3 | E3     | C      | A      |
+| start | pathId | step | weight | total | edgeId | source | target |
+| ----- | -----: | ---: | -----: | ----: | ------ | ------ | ------ |
+| A     |      0 |    1 |      1 |     1 | E1     | A      | B      |
+| A     |      0 |    2 |      1 |     2 | E2     | B      | C      |
+| A     |      0 |    3 |      1 |     3 | E3     | C      | A      |
 
 Two separate connections between A and B form a cycle with `direction:
 "both"`.
@@ -4499,11 +4501,11 @@ await parallelAndLoop
   .log();
 ```
 
-| pathId | step | weight | total | edgeId | source | target | cost |
-| -----: | ---: | -----: | ----: | ------ | ------ | ------ | ---: |
-|      0 |    1 |      1 |     1 | P1     | A      | B      |    1 |
-|      0 |    2 |      2 |     3 | P2     | A      | B      |    2 |
-|      1 |    1 |      4 |     4 | L1     | C      | C      |    4 |
+| start | pathId | step | weight | total | edgeId | source | target | cost |
+| ----- | -----: | ---: | -----: | ----: | ------ | ------ | ------ | ---: |
+| A     |      0 |    1 |      1 |     1 | P1     | A      | B      |    1 |
+| A     |      0 |    2 |      2 |     3 | P2     | A      | B      |    2 |
+| C     |      0 |    1 |      4 |     4 | L1     | C      | C      |    4 |
 
 With the `weight` option, total is a running total of the selected values. For
 these flights:
@@ -4522,11 +4524,11 @@ await flights
   .log();
 ```
 
-| pathId | step | weight | total | flightId | origin | destination | minutes |
-| -----: | ---: | -----: | ----: | -------- | ------ | ----------- | ------: |
-|      0 |    1 |      1 |     1 | F1       | A      | B           |       1 |
-|      0 |    2 |      2 |     3 | F2       | B      | C           |       2 |
-|      0 |    3 |      3 |     6 | F3       | C      | A           |       3 |
+| start | pathId | step | weight | total | flightId | origin | destination | minutes |
+| ----- | -----: | ---: | -----: | ----: | -------- | ------ | ----------- | ------: |
+| A     |      0 |    1 |      1 |     1 | F1       | A      | B           |       1 |
+| A     |      0 |    2 |      2 |     3 | F2       | B      | C           |       2 |
+| A     |      0 |    3 |      3 |     6 | F3       | C      | A           |       3 |
 
 For an input without connection IDs, use `addId()` first:
 
@@ -4543,11 +4545,11 @@ await unnumberedConnections
   .log();
 ```
 
-| pathId | step | weight | total | source | target | edgeId |
-| -----: | ---: | -----: | ----: | ------ | ------ | ------ |
-|      0 |    1 |      1 |     1 | A      | B      | edge-0 |
-|      0 |    2 |      1 |     2 | B      | C      | edge-1 |
-|      0 |    3 |      1 |     3 | C      | A      | edge-2 |
+| start | pathId | step | weight | total | source | target | edgeId |
+| ----- | -----: | ---: | -----: | ----: | ------ | ------ | ------ |
+| A     |      0 |    1 |      1 |     1 | A      | B      | edge-0 |
+| A     |      0 |    2 |      1 |     2 | B      | C      | edge-1 |
+| A     |      0 |    3 |      1 |     3 | C      | A      | edge-2 |
 
 For these instantaneous events, requesting A and B as starting nodes returns
 only the cycle B → C → A → B. Starting at A would break chronological order:
@@ -4566,11 +4568,11 @@ await timedFlights
   .log();
 ```
 
-| pathId | step | weight | total | flightId | origin | destination | departureTime       |
-| -----: | ---: | -----: | ----: | -------- | ------ | ----------- | ------------------- |
-|      0 |    1 |      1 |     1 | F1       | B      | C           | 2025-01-01 09:00:00 |
-|      0 |    2 |      1 |     2 | F2       | C      | A           | 2025-01-01 10:00:00 |
-|      0 |    3 |      1 |     3 | F3       | A      | B           | 2025-01-01 11:00:00 |
+| start | pathId | step | weight | total | flightId | origin | destination | departureTime       |
+| ----- | -----: | ---: | -----: | ----: | -------- | ------ | ----------- | ------------------- |
+| B     |      0 |    1 |      1 |     1 | F1       | B      | C           | 2025-01-01 09:00:00 |
+| B     |      0 |    2 |      1 |     2 | F2       | C      | A           | 2025-01-01 10:00:00 |
+| B     |      0 |    3 |      1 |     3 | F3       | A      | B           | 2025-01-01 11:00:00 |
 
 Searching the same events from B in the incoming direction follows connections
 backward, from the latest to the earliest:
@@ -4584,11 +4586,11 @@ await timedFlights
   .log();
 ```
 
-| pathId | step | weight | total | flightId | origin | destination | departureTime       |
-| -----: | ---: | -----: | ----: | -------- | ------ | ----------- | ------------------- |
-|      0 |    1 |      1 |     1 | F3       | A      | B           | 2025-01-01 11:00:00 |
-|      0 |    2 |      1 |     2 | F2       | C      | A           | 2025-01-01 10:00:00 |
-|      0 |    3 |      1 |     3 | F1       | B      | C           | 2025-01-01 09:00:00 |
+| start | pathId | step | weight | total | flightId | origin | destination | departureTime       |
+| ----- | -----: | ---: | -----: | ----: | -------- | ------ | ----------- | ------------------- |
+| B     |      0 |    1 |      1 |     1 | F3       | A      | B           | 2025-01-01 11:00:00 |
+| B     |      0 |    2 |      1 |     2 | F2       | C      | A           | 2025-01-01 10:00:00 |
+| B     |      0 |    3 |      1 |     3 | F1       | B      | C           | 2025-01-01 09:00:00 |
 
 #### `extractDatePart`
 

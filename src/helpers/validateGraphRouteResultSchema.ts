@@ -8,8 +8,9 @@ const resultColumns = ["pathId", "step", "weight", "total"] as const;
 export default function validateGraphRouteResultSchema(
   schema: TableSchema,
   method: string,
+  additionalResultColumns: readonly string[] = [],
 ): void {
-  for (const resultColumn of resultColumns) {
+  for (const resultColumn of [...resultColumns, ...additionalResultColumns]) {
     const folded = foldIdentifier(resultColumn);
     const inputColumn = Object.keys(schema).find((column) =>
       foldIdentifier(column) === folded

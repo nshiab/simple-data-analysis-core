@@ -85,18 +85,18 @@ arguments, not strings. For empty inputs, load the header-only file with
 explicit string endpoint/edge-ID and numeric weight types so inference does not
 define the test's schema.
 
-| Method                  | Expected file                       | Output after dropping `case`                   |
-| ----------------------- | ----------------------------------- | ---------------------------------------------- |
-| `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                   |
-| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                 |
-| `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                         |
-| `reachable()`           | `expected/reachable.csv`            | `start,node`                                   |
-| `distances()`           | `expected/distances.csv`            | `start,node,distance`                          |
-| `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,weight,total,<all input columns>` |
-| `paths()`               | `expected/paths.csv`                | `pathId,step,weight,total,<all input columns>` |
-| `connectedComponents()` | `expected/connected_components.csv` | `componentId,node`                             |
-| `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,weight,total,<all input columns>` |
-| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                       |
+| Method                  | Expected file                       | Output after dropping `case`                         |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------- |
+| `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                         |
+| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                       |
+| `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                               |
+| `reachable()`           | `expected/reachable.csv`            | `start,node`                                         |
+| `distances()`           | `expected/distances.csv`            | `start,node,distance`                                |
+| `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,weight,total,<all input columns>`       |
+| `paths()`               | `expected/paths.csv`                | `pathId,step,weight,total,<all input columns>`       |
+| `connectedComponents()` | `expected/connected_components.csv` | `componentId,node`                                   |
+| `findCycles()`          | `expected/find_cycles.csv`          | `start,pathId,step,weight,total,<all input columns>` |
+| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                             |
 
 The files under `expected/numeric/` retain numeric identities for neighbors,
 distances, shortest paths, cycle normalization, and topological order. The
@@ -127,12 +127,14 @@ as separate paths even though their node sequences match.
 Route rows represent traversed connections. There is no synthetic start row. A
 two-edge path has two rows, and a cycle contains its real closing edge.
 Unweighted rows still have `weight=1` and a running sum: `total` for
-`shortestPath()`, `paths()`, and `findCycles()`. The four generated columns come
-first, followed by every original input column in its original order. Incoming
-and both-direction results preserve the stored endpoint values; for example
-incoming edge B5 remains D->E even though traversal follows E to D. Input
-columns whose names conflict case-insensitively with `pathId`, `step`, `weight`,
-or `total` must be renamed with `renameColumns()` before calculation.
+`shortestPath()`, `paths()`, and `findCycles()`. The four generated route
+columns come first, with `findCycles()` adding `start` before them. These
+generated columns are followed by every original input column in its original
+order. Incoming and both-direction results preserve the stored endpoint values;
+for example incoming edge B5 remains D->E even though traversal follows E to D.
+Input columns whose names conflict case-insensitively with `pathId`, `step`,
+`weight`, or `total` must be renamed with `renameColumns()` before calculation.
+`findCycles()` also reserves `start`.
 
 ## Empty results and inexpensive errors
 
@@ -163,18 +165,18 @@ leading-zero removal, or rounding.
 
 All ordinary results are sorted by the contract: `start,node` for multi-start
 methods; descending `total`, then ascending `node` for degree; `node` for common
-neighbors and components; `pathId,step` for routes/cycles; and `order` for
-topological sorting. Degree totals add incoming and outgoing values, so a
-self-connection contributes twice.
+neighbors and components; `pathId,step` for routes; `start,pathId,step` for
+cycles; and `order` for topological sorting. Degree totals add incoming and
+outgoing values, so a self-connection contributes twice.
 
 Routes are sorted by their typed edge-ID sequence and numbered from pathId 0;
-steps begin at 1. Components are numbered by sorted smallest member. Directed
-cycles rotate to their smallest node while preserving traversal direction.
-Both-direction cycles also choose the smaller of the two typed edge-ID sequences
-and deduplicate reversal. Different edge combinations remain different cycles. A
-single edge cannot be reused to create an out-and-back cycle; two distinct
-parallel edges can form one. These rules are invariant to input row order while
-the original edge IDs are preserved.
+steps begin at 1. Components are numbered by sorted smallest member. Cycles
+remain rooted at each requested start, with path IDs restarting at zero per
+start. Both-direction cycles also choose the smaller of the two typed edge-ID
+sequences and deduplicate reversal. Different edge combinations remain different
+cycles. A single edge cannot be reused to create an out-and-back cycle; two
+distinct parallel edges can form one. These rules are invariant to input row
+order while the original edge IDs are preserved.
 
 ## Performance data
 

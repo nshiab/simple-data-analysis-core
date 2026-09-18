@@ -6,6 +6,7 @@ export default function graphRouteResultSelect(
   rankedRelation: string,
   input: string,
   edgeIdColumn: GraphEdgeIdColumn,
+  includeStart = false,
 ): string {
   const q = quoteIdentifier;
   const routeStep = `${q("unnested")}.${q("route_step")}`;
@@ -15,7 +16,9 @@ export default function graphRouteResultSelect(
         ENCODE(${routeStep}.${q("edgeId")})`
     : `CAST(${originalEdgeId} AS ${edgeIdColumn.idType}) =
         ${routeStep}.${q("edgeId")}`;
-  return `SELECT ${q("ranked")}.${q("pathId")},
+  return `SELECT ${
+    includeStart ? `${q("ranked")}.${q("start")},\n      ` : ""
+  }${q("ranked")}.${q("pathId")},
       CAST(${q("unnested")}.${q("step")} AS BIGINT) AS ${q("step")},
       ${routeStep}.${q("weight")} AS ${q("weight")},
       ${routeStep}.${q("distance")} AS ${q("total")},
@@ -26,5 +29,7 @@ export default function graphRouteResultSelect(
   }(${q("route_step")}, ${q("step")})
     INNER JOIN ${input} AS ${q("original")}
       ON ${edgeMatch}
-    ORDER BY ${q("ranked")}.${q("pathId")}, ${q("unnested")}.${q("step")}`;
+    ORDER BY ${includeStart ? `${q("ranked")}.${q("__start_key")}, ` : ""}${
+    q("ranked")
+  }.${q("pathId")}, ${q("unnested")}.${q("step")}`;
 }

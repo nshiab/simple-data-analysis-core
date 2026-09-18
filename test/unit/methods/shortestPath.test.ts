@@ -2124,6 +2124,52 @@ Deno.test("route methods reject every generated-column conflict and accept renam
         assertEquals((await valid.getData()).length > 0, true);
       }
     }
+
+    for (const conflict of ["start", "START"] as const) {
+      const rows = [
+        { edgeId: "E1", source: "A", target: "B", [conflict]: "kept" },
+        { edgeId: "E2", source: "B", target: "A", [conflict]: "kept" },
+      ];
+      for (const method of ["shortestPath", "paths"] as const) {
+        const result = calculate(sdb.newTable().loadArray(rows), method);
+        assertEquals(await result.getColumns(), [
+          "pathId",
+          "step",
+          "weight",
+          "total",
+          "edgeId",
+          "source",
+          "target",
+          conflict,
+        ]);
+        assertEquals((await result.getData())[0]?.[conflict], "kept");
+      }
+
+      const invalid = calculate(
+        sdb.newTable().loadArray(rows),
+        "findCycles",
+      );
+      const error = await assertRejects(() => invalid.run(), Error);
+      assertStringIncludes(error.message, "findCycles()");
+      assertStringIncludes(error.message, `"${conflict}"`);
+      assertStringIncludes(error.message, "renameColumns()");
+
+      const empty = calculate(
+        sdb.newTable().loadArray(rows).filter("FALSE"),
+        "findCycles",
+      );
+      const emptyError = await assertRejects(() => empty.run(), Error);
+      assertStringIncludes(emptyError.message, `"${conflict}"`);
+      assertStringIncludes(emptyError.message, "renameColumns()");
+
+      const valid = calculate(
+        sdb.newTable().loadArray(rows).renameColumns({
+          [conflict]: "originalStart",
+        }),
+        "findCycles",
+      );
+      assertEquals((await valid.getData())[0]?.originalStart, "kept");
+    }
   } finally {
     await sdb.close();
   }
@@ -2184,6 +2230,7 @@ Deno.test("route methods preserve queued typed metadata after generated columns"
           options,
         );
       assertEquals(await output.getColumns(), [
+        ...(method === "findCycles" ? ["start"] : []),
         "pathId",
         "step",
         "weight",
@@ -2202,6 +2249,9 @@ Deno.test("route methods preserve queued typed metadata after generated columns"
         "queued",
       ]);
       const types = await output.getTypes();
+      if (method === "findCycles") {
+        assertEquals(types.start, "INTEGER");
+      }
       for (const column of originalColumns) {
         assertEquals(
           types[column],

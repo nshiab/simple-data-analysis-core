@@ -210,6 +210,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
     "connected_components.csv": ["case", "componentId", "node"],
     "find_cycles.csv": [
       "case",
+      "start",
       "pathId",
       "step",
       "weight",
@@ -280,21 +281,51 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
     const cases = Map.groupBy(rows, (row) => row.case);
 
     for (const [caseName, caseRows] of cases) {
-      const paths = Map.groupBy(caseRows, (row) => Number(row.pathId));
-      assertEquals([...paths.keys()], [...paths.keys()].map((_, i) => i));
-      const edgeSequences = [...paths.values()].map((pathRows) =>
+      const cycleRows = path.includes("find_cycles");
+      const paths = Map.groupBy(
+        caseRows,
+        (row) =>
+          cycleRows
+            ? JSON.stringify([row.start, Number(row.pathId)])
+            : JSON.stringify(Number(row.pathId)),
+      );
+      if (cycleRows) {
+        for (
+          const startRows of Map.groupBy(caseRows, (row) => row.start).values()
+        ) {
+          const ids = [...new Set(startRows.map((row) => Number(row.pathId)))];
+          assertEquals(ids, ids.map((_, i) => i));
+        }
+      } else {
+        const ids = [...new Set(caseRows.map((row) => Number(row.pathId)))];
+        assertEquals(ids, ids.map((_, i) => i));
+      }
+      const pathGroups = [...paths.values()];
+      const edgeSequences = pathGroups.map((pathRows) =>
         pathRows.map((row) => row.edgeId)
       );
       const numeric = path.includes("/numeric/");
       assertEquals(
         edgeSequences,
-        edgeSequences.toSorted((left, right) => {
+        pathGroups.toSorted((left, right) => {
+          if (cycleRows) {
+            const startComparison = compareIds(
+              left[0].start,
+              right[0].start,
+              numeric,
+            );
+            if (startComparison) return startComparison;
+          }
           for (let i = 0; i < Math.min(left.length, right.length); i++) {
-            const comparison = compareIds(left[i], right[i], numeric);
+            const comparison = compareIds(
+              left[i].edgeId,
+              right[i].edgeId,
+              numeric,
+            );
             if (comparison) return comparison;
           }
           return left.length - right.length;
-        }),
+        }).map((pathRows) => pathRows.map((row) => row.edgeId)),
         `${path}: ${caseName} path IDs`,
       );
       for (const pathRows of paths.values()) {
@@ -376,10 +407,8 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
           assertEquals(traversal.at(-1)!.target, traversal[0].source);
           assertEquals(
             traversal[0].source,
-            traversal.map((row) => row.source).toSorted((a, b) =>
-              compareIds(a, b, numeric)
-            )[0],
-            `${path}: ${caseName} must start at its smallest node`,
+            pathRows[0].start,
+            `${path}: ${caseName} must start at its requested node`,
           );
           if (caseName.includes("-both") && pathRows.length > 1) {
             assert(

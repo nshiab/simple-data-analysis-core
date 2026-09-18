@@ -144,11 +144,14 @@ export default function findCycles(
       if (temporalOptions !== undefined) {
         prepareGraphTemporalSql(schema, temporalOptions, "findCycles()");
       }
-      return graphRouteResultSchema(
-        schema,
-        validated.distanceType,
-        "findCycles()",
-      );
+      return {
+        start: validated.nodeIdType,
+        ...graphRouteResultSchema(
+          schema,
+          validated.distanceType,
+          "findCycles()",
+        ),
+      };
     },
   });
 }
@@ -173,7 +176,7 @@ function validateFindCyclesInputs(
   const weightColumn = weight === undefined
     ? undefined
     : getGraphWeightColumn(schema, weight, "findCycles()");
-  validateGraphRouteResultSchema(schema, "findCycles()");
+  validateGraphRouteResultSchema(schema, "findCycles()", ["start"]);
   return {
     distanceType: weightColumn?.distanceType ?? "BIGINT",
     edgeIdType: edgeIdColumn.idType,
@@ -332,8 +335,8 @@ function findCyclesSelect(
           )
         )
     ), ${completeRelation} AS (
-      SELECT DISTINCT ${q("__start_key")}, ${q("__edge_keys")},
-        ${q("steps")}
+      SELECT DISTINCT ${q("start")}, ${q("__start_key")},
+        ${q("__edge_keys")}, ${q("steps")}
       FROM ${walksRelation}
       WHERE ${q("closed")}${
     direction === "both"
@@ -342,10 +345,11 @@ function findCyclesSelect(
       : ""
   }
     ), ${rankedRelation} AS (
-      SELECT CAST(row_number() OVER (
-          ORDER BY ${q("__start_key")}, ${q("__edge_keys")}) - 1
-          AS BIGINT) AS ${q("pathId")},
-        ${q("steps")}
+      SELECT ${q("start")}, ${q("__start_key")},
+        CAST(row_number() OVER (
+          PARTITION BY ${q("__start_key")}
+          ORDER BY ${q("__edge_keys")}) - 1
+          AS BIGINT) AS ${q("pathId")}, ${q("steps")}
       FROM ${completeRelation}
     )
     ${
@@ -353,6 +357,7 @@ function findCyclesSelect(
       rankedRelation,
       input,
       edgeIdColumn,
+      true,
     )
   }`;
 }
@@ -477,13 +482,15 @@ function temporalFindCyclesSelect(
         )
         AND ${temporal.transition("walks", "edges", direction, gap)}
     ), ${completeRelation} AS (
-      SELECT DISTINCT ${q("__start_key")}, ${q("__edge_keys")},
-        ${q("steps")}
+      SELECT DISTINCT ${q("start")}, ${q("__start_key")},
+        ${q("__edge_keys")}, ${q("steps")}
       FROM ${walksRelation}
       WHERE ${q("closed")}
     ), ${rankedRelation} AS (
-      SELECT CAST(row_number() OVER (
-          ORDER BY ${q("__start_key")}, ${q("__edge_keys")}) - 1
+      SELECT ${q("start")}, ${q("__start_key")},
+        CAST(row_number() OVER (
+          PARTITION BY ${q("__start_key")}
+          ORDER BY ${q("__edge_keys")}) - 1
           AS BIGINT) AS ${q("pathId")}, ${q("steps")}
       FROM ${completeRelation}
     )
@@ -492,6 +499,7 @@ function temporalFindCyclesSelect(
       rankedRelation,
       input,
       edgeIdColumn,
+      true,
     )
   }`;
 }
