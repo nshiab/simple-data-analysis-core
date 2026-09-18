@@ -2910,7 +2910,7 @@ export default class SimpleTable extends Simple {
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
-   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a time column.
+   * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -3054,11 +3054,11 @@ export default class SimpleTable extends Simple {
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param options - An optional object with component, time, and result configuration.
-   * @param options.mode - Whether to find `"weak"` or `"strong"` components. Defaults to `"weak"` for static calls. Chronological calls require explicitly supplied `"strong"`.
+   * @param options.mode - Whether to find `"weak"` or `"strong"` components. Defaults to `"weak"`. Using `startTimeColumn` or `endTimeColumn` requires explicitly setting `mode: "strong"`.
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
-   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a time column.
+   * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -3348,7 +3348,7 @@ export default class SimpleTable extends Simple {
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
-   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a time column.
+   * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3568,7 +3568,7 @@ export default class SimpleTable extends Simple {
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
-   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a time column.
+   * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3811,7 +3811,7 @@ export default class SimpleTable extends Simple {
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
-   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a time column.
+   * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -4069,7 +4069,7 @@ export default class SimpleTable extends Simple {
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
-   * @param options.strictOrdering - Whether consecutive connections must advance strictly in time. Defaults to `true`. Requires a time column.
+   * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
