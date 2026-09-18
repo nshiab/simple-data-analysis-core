@@ -8,6 +8,21 @@ import {
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
+import buildGraphTemporalReachabilitySql from "../../../src/helpers/buildGraphTemporalReachabilitySql.ts";
+import prepareGraphTemporalSql, {
+  prepareGraphTemporalOptions,
+} from "../../../src/helpers/prepareGraphTemporalSql.ts";
+import { prepareGraphSql } from "../../../src/helpers/prepareGraphTraversal.ts";
+import quoteIdentifier from "../../../src/helpers/quoteIdentifier.ts";
+import {
+  connectionEvents,
+  equalTimeEvents,
+  standaloneEvent,
+} from "../../helpers/chronologicalGraphFixtures.ts";
+import {
+  enumerateChronologicalRoutes,
+  type ReferenceChronologicalEvent,
+} from "../../helpers/enumerateChronologicalRoutes.ts";
 
 function loadScenario(
   sdb: SimpleDB,
@@ -18,6 +33,49 @@ function loadScenario(
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(["source", "target"]);
+}
+
+const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
+
+function chronologicalRows(
+  events: ReferenceChronologicalEvent<string, string>[],
+) {
+  return events.map((event) => ({
+    edgeId: event.edgeId,
+    source: event.source,
+    target: event.target,
+    startTime: event.startTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null
+      ? null
+      : new Date(chronologicalBase + Number(event.endTime)),
+  }));
+}
+
+function referenceReachable(
+  events: ReferenceChronologicalEvent<string, string>[],
+  starts: string[],
+  direction: "incoming" | "outgoing",
+  minGap: bigint,
+  strictOrdering: boolean,
+) {
+  return starts.toSorted().flatMap((start) => {
+    const nodes = new Set<string>();
+    for (
+      const route of enumerateChronologicalRoutes(events, start, {
+        direction,
+        maxSteps: Math.max(events.length, 1),
+        minGap,
+        simpleNodes: false,
+        strictOrdering,
+      })
+    ) {
+      const last = route.at(-1);
+      if (last !== undefined) nodes.add(last.target);
+    }
+    return [...nodes].toSorted().map((node) => ({ start, node }));
+  });
 }
 
 Deno.test("reachable defaults to outgoing and supports every direction", async () => {
@@ -760,6 +818,512 @@ Deno.test("reachable JSDoc examples return their complete displayed outputs", as
       await sdb.newTable().loadArray(edges)
         .reachable("origin", "destination", ["B", "A"]).getData(),
       [...allFromA, ...allFromB],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological traversal keeps valid first events and enforces connection gaps", async () => {
+  const sdb = new SimpleDB();
+  try {
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(standaloneEvent))
+        .reachable("source", "target", "Toronto", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 60,
+        }).getData(),
+      [{ start: "Toronto", node: "Ottawa" }],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(standaloneEvent))
+        .reachable("source", "target", "Toronto", {
+          endTimeColumn: "endTime",
+        }).getData(),
+      [{ start: "Toronto", node: "Ottawa" }],
+    );
+
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(connectionEvents))
+        .reachable("source", "target", "A", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 60,
+        }).getData(),
+      [
+        { start: "A", node: "B" },
+        { start: "A", node: "D" },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological traversal retains competing last-event states", async () => {
+  const sdb = new SimpleDB();
+  const events: ReferenceChronologicalEvent<string, string>[] = [
+    { edgeId: "AB", source: "A", target: "B", startTime: 1n, endTime: 1n },
+    {
+      edgeId: "BC-late",
+      source: "B",
+      target: "C",
+      startTime: 2n,
+      endTime: 6n,
+    },
+    {
+      edgeId: "BC-early",
+      source: "B",
+      target: "C",
+      startTime: 3n,
+      endTime: 3n,
+    },
+    { edgeId: "CD", source: "C", target: "D", startTime: 4n, endTime: 4n },
+    { edgeId: "DE", source: "D", target: "E", startTime: 5n, endTime: 5n },
+  ];
+  try {
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(events))
+        .reachable("source", "target", "A", {
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+        }).getData(),
+      ["B", "C", "D", "E"].map((node) => ({ start: "A", node })),
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological incoming traversal follows actual predecessors", async () => {
+  const sdb = new SimpleDB();
+  const events: ReferenceChronologicalEvent<string, string>[] = [
+    { edgeId: "F1", source: "A", target: "B", startTime: 1n, endTime: 2n },
+    { edgeId: "F2", source: "B", target: "C", startTime: 3n, endTime: 4n },
+    { edgeId: "late", source: "X", target: "B", startTime: 4n, endTime: 5n },
+  ];
+  try {
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(events))
+        .reachable("source", "target", "C", {
+          direction: "incoming",
+          startTimeColumn: "startTime",
+          endTimeColumn: "endTime",
+          minGapMs: 1,
+        }).getData(),
+      [
+        { start: "C", node: "A" },
+        { start: "C", node: "B" },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological traversal handles starts, parallel events, returns, equal times, and input order", async () => {
+  const sdb = new SimpleDB();
+  const events: ReferenceChronologicalEvent<string, string>[] = [
+    ...equalTimeEvents,
+    { edgeId: "E1-copy", source: "A", target: "B", startTime: 1n, endTime: 1n },
+    { edgeId: "E3", source: "B", target: "C", startTime: 2n, endTime: 2n },
+  ];
+  const expected = [
+    { start: "A", node: "A" },
+    { start: "A", node: "B" },
+    { start: "A", node: "C" },
+    { start: "B", node: "A" },
+    { start: "B", node: "B" },
+    { start: "B", node: "C" },
+  ];
+  try {
+    for (const ordered of [events, events.toReversed()]) {
+      assertEquals(
+        await sdb.newTable().loadArray(chronologicalRows(ordered))
+          .reachable("source", "target", ["unknown", "B", "A"], {
+            startTimeColumn: "startTime",
+            strictOrdering: false,
+          }).getData(),
+        expected,
+      );
+    }
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows(events))
+        .reachable("source", "target", "A", {
+          startTimeColumn: "startTime",
+        }).getData(),
+      [
+        { start: "A", node: "B" },
+        { start: "A", node: "C" },
+      ],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray(chronologicalRows([
+        {
+          edgeId: "self",
+          source: "C",
+          target: "C",
+          startTime: 1n,
+          endTime: 1n,
+        },
+      ])).reachable("source", "target", "C", {
+        startTimeColumn: "startTime",
+      }).getData(),
+      [{ start: "C", node: "C" }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological results match the independent evaluator on generated tiny graphs", async () => {
+  const sdb = new SimpleDB();
+  const nodes = ["A", "B", "C", "D"];
+  try {
+    for (let seed = 0; seed < 12; seed++) {
+      let randomState = seed + 1;
+      const random = (limit: number) => {
+        randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+        return (randomState >>> 16) % limit;
+      };
+      const events: ReferenceChronologicalEvent<string, string>[] = Array.from(
+        { length: 6 },
+        (_, index) => {
+          const start = BigInt(random(7));
+          const duration = BigInt(index % 3);
+          return {
+            edgeId: `${seed}-${index}`,
+            source: nodes[random(nodes.length)],
+            target: nodes[random(nodes.length)],
+            startTime: start,
+            endTime: start + duration,
+          };
+        },
+      );
+      const strictOrdering = seed % 3 !== 0;
+      const minGap = BigInt(seed % 2);
+      const starts = ["A", "C", "unknown"];
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const expected = referenceReachable(
+          events,
+          starts,
+          direction,
+          minGap,
+          strictOrdering,
+        );
+        for (const ordered of [events, events.toReversed()]) {
+          assertEquals(
+            await sdb.newTable().loadArray(chronologicalRows(ordered))
+              .reachable("source", "target", starts, {
+                direction,
+                startTimeColumn: "startTime",
+                endTimeColumn: "endTime",
+                minGapMs: Number(minGap),
+                strictOrdering,
+              }).getData(),
+            expected,
+            `seed ${seed}, ${direction}, ${strictOrdering}`,
+          );
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological traversal preserves exact IDs and queued temporal schemas", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const wide = sdb.newTable("wideChronologicalReachability");
+    await sdb.customQuery(`CREATE TABLE "wideChronologicalReachability" AS
+      SELECT * FROM (VALUES
+        (9007199254740993::BIGINT, 9007199254740995::BIGINT,
+          TIMESTAMP '2025-01-01 00:00:00'),
+        (9007199254740995::BIGINT, 9007199254740997::BIGINT,
+          TIMESTAMP '2025-01-01 00:00:01')
+      ) edges(source, target, time)`);
+    wide.reachable("source", "target", 9007199254740993n, {
+      startTimeColumn: "time",
+    }).convert({ start: "string", node: "string" });
+    assertEquals(await wide.getData(), [
+      { start: "9007199254740993", node: "9007199254740995" },
+      { start: "9007199254740993", node: "9007199254740997" },
+    ]);
+
+    const queuedOptions: {
+      startTimeColumn: string;
+      strictOrdering: boolean;
+    } = { startTimeColumn: "time", strictOrdering: true };
+    const queued = sdb.newTable().loadArray([
+      { source: "A", target: "B", time: "2025-01-01 00:00:00" },
+      { source: "B", target: "C", time: "2025-01-01 00:00:01" },
+    ]).convert({ time: "datetime" })
+      .reachable("source", "target", "A", queuedOptions);
+    queuedOptions.startTimeColumn = "missing";
+    queuedOptions.strictOrdering = false;
+    assertEquals(await queued.getData(), [
+      { start: "A", node: "B" },
+      { start: "A", node: "C" },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable validates chronological options before queuing and columns at execution", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const unqueued = sdb.newTable();
+    assertThrows(
+      () => unqueued.reachable("source", "target", "A", { minGapMs: 0 }),
+      TypeError,
+      "require options.startTimeColumn or options.endTimeColumn",
+    );
+    assertThrows(
+      () =>
+        unqueued.reachable("source", "target", "A", {
+          direction: "both",
+          startTimeColumn: "time",
+        }),
+      TypeError,
+      'options.direction cannot be "both"',
+    );
+    assertThrows(
+      () =>
+        unqueued.reachable("source", "target", "A", {
+          startTimeColumn: 1 as unknown as string,
+        }),
+      TypeError,
+      "options.startTimeColumn must be a string",
+    );
+    assertEquals(unqueued.pendingOps.length, 0);
+
+    const missing = sdb.newTable().loadArray([
+      { source: "A", target: "B", time: new Date(chronologicalBase) },
+    ]);
+    await assertRejects(
+      () =>
+        missing.reachable("source", "target", "A", {
+          startTimeColumn: "missing",
+        }).run(),
+      Error,
+      'column "missing" does not exist',
+    );
+    const unsupported = sdb.newTable().loadArray([
+      { source: "A", target: "B", time: 1 },
+    ]);
+    await assertRejects(
+      () =>
+        unsupported.reachable("source", "target", "A", {
+          startTimeColumn: "time",
+        }).run(),
+      TypeError,
+      "requires DATE or TIMESTAMP chronological columns",
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological SQL materializes finite last-event state", async () => {
+  const sdb = new SimpleDB();
+  const observer = observeSdaQueries(sdb);
+  const width = 5;
+  const layers = 5;
+  const events = Array.from(
+    { length: layers },
+    (_, layer) =>
+      Array.from(
+        { length: width },
+        (_, from) =>
+          Array.from({ length: width }, (_, to) => ({
+            source: layer === 0 ? "start" : `L${layer}-${from}`,
+            target: `L${layer + 1}-${to}`,
+            time: new Date(chronologicalBase + layer * 1000),
+          })),
+      ).flat(),
+  ).flat();
+  try {
+    const source = sdb.newTable("temporalStateGrowth").loadArray(events);
+    await source.run();
+    const result = source
+      .reachable("source", "target", ["start", "L1-0"], {
+        startTimeColumn: "time",
+        outputTable: true,
+      });
+    assertEquals((await result.getData()).length, 45);
+    const query = observer.queries.find((entry) =>
+      entry.query.includes("graph_reachable_states") &&
+      entry.query.includes("CREATE OR REPLACE TABLE")
+    )?.query ?? "";
+    assertStringIncludes(query, "AS MATERIALIZED");
+    assertStringIncludes(query, '"__event_id", "__event_start", "__event_end"');
+    assertEquals(query.includes("list_append"), false);
+    assertEquals(query.includes("path"), false);
+
+    const schema = {
+      source: "VARCHAR",
+      target: "VARCHAR",
+      time: "TIMESTAMP",
+    };
+    const prepared = prepareGraphSql(
+      quoteIdentifier(source.name),
+      schema,
+      "source",
+      "target",
+      "reachable()",
+    );
+    const temporal = prepareGraphTemporalSql(
+      schema,
+      prepareGraphTemporalOptions(
+        { startTimeColumn: "time" },
+        "outgoing",
+        "reachable()",
+      )!,
+      "reachable()",
+    );
+    const startsSelect = `SELECT ${quoteIdentifier("start")},
+      ${prepared.key(quoteIdentifier("start"))} AS ${quoteIdentifier("__key")}
+      FROM (VALUES ('start'), ('L1-0')) AS ${quoteIdentifier("start_values")}(${
+      quoteIdentifier("start")
+    })`;
+    const measured = buildGraphTemporalReachabilitySql(
+      prepared,
+      startsSelect,
+      "outgoing",
+      temporal,
+    );
+    assertEquals(
+      await sdb.runQuery(
+        `${measured.withClause}
+        SELECT count(*) AS ${quoteIdentifier("stateCount")}
+        FROM ${measured.reachableRelation}`,
+        sdb.connection,
+        true,
+        {
+          explainSQL: false,
+          logSQL: false,
+          method: "reachable() state measurement",
+          parameters: null,
+          values: [temporal.gapParameter],
+        },
+      ),
+      [{ stateCount: 205 }],
+    );
+    // 125 physical events and two starts bound retained state to 250 rows.
+    // The measured 205 states replace 5^6 possible full routes from one start.
+    assertEquals(events.length * 2, 250);
+  } finally {
+    observer.restore();
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable chronological recursion preserves nanoseconds and binary node identity", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("graph_reachable_states");
+    await sdb.customQuery(`CREATE TABLE "graph_reachable_states" (
+      source VARCHAR COLLATE NOCASE, target VARCHAR COLLATE NOCASE,
+      time TIMESTAMP_NS
+    ); INSERT INTO "graph_reachable_states" VALUES
+      ('A', 'b', '2025-01-01 00:00:00.000000001'),
+      ('b', 'C', '2025-01-01 00:00:00.000000002'),
+      ('a', 'B', '2025-01-01 00:00:00.000000001'),
+      ('B', 'D', '2025-01-01 00:00:00.000000002')`);
+    assertEquals(
+      await source.reachable("source", "target", ["a", "A"], {
+        startTimeColumn: "TIME",
+        outputTable: true,
+      }).getData(),
+      [
+        { start: "A", node: "C" },
+        { start: "A", node: "b" },
+        { start: "a", node: "B" },
+        { start: "a", node: "D" },
+      ],
+    );
+    assertEquals(
+      await source.reachable("source", "target", ["C", "D"], {
+        direction: "incoming",
+        endTimeColumn: "time",
+        outputTable: true,
+      }).getData(),
+      [
+        { start: "C", node: "A" },
+        { start: "C", node: "b" },
+        { start: "D", node: "B" },
+        { start: "D", node: "a" },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("reachable internal all-node starts use valid events and retain isolated endpoints", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable("graph_starts");
+    await sdb.customQuery(`CREATE TABLE "graph_starts" AS
+      SELECT * FROM (VALUES
+        ('A', 'X', TIMESTAMP '2025-01-01 10:00:00'),
+        ('X', 'B', TIMESTAMP '2025-01-01 11:00:00'),
+        ('B', 'A', TIMESTAMP '2025-01-01 01:00:00'),
+        ('I', 'J', TIMESTAMP '2025-01-01 12:00:00'),
+        ('invalid', 'missing', NULL::TIMESTAMP)
+      ) edges(source, target, time)`);
+    const schema = { source: "VARCHAR", target: "VARCHAR", time: "TIMESTAMP" };
+    const prepared = prepareGraphSql(
+      quoteIdentifier(source.name),
+      schema,
+      "source",
+      "target",
+      "reachable()",
+    );
+    const temporal = prepareGraphTemporalSql(
+      schema,
+      prepareGraphTemporalOptions(
+        { startTimeColumn: "time" },
+        "outgoing",
+        "reachable()",
+      )!,
+      "reachable()",
+    );
+    const reachability = buildGraphTemporalReachabilitySql(
+      prepared,
+      (edges) =>
+        `SELECT "__from" AS "start", "__from_key" AS "__key" FROM ${edges}
+        UNION SELECT "__to", "__to_key" FROM ${edges}`,
+      "outgoing",
+      temporal,
+    );
+    assertEquals(
+      await sdb.runQuery(
+        `${reachability.withClause}
+        SELECT DISTINCT start, node FROM ${reachability.reachableRelation}
+        ORDER BY start, node`,
+        sdb.connection,
+        true,
+        {
+          explainSQL: false,
+          logSQL: false,
+          method: "all-node reachability probe",
+          parameters: null,
+          values: [temporal.gapParameter],
+        },
+      ),
+      [
+        { start: "A", node: "B" },
+        { start: "A", node: "X" },
+        { start: "B", node: "A" },
+        { start: "B", node: "B" },
+        { start: "B", node: "X" },
+        { start: "I", node: "J" },
+        { start: "X", node: "B" },
+      ],
     );
   } finally {
     await sdb.close();

@@ -11,6 +11,7 @@ type GraphResult = {
   outputSchema: (schema: TableSchema) => TableSchema;
   outputTable?: string | boolean;
   parameters: { [key: string]: unknown };
+  preflight?: (input: SimpleTable) => Promise<void>;
   values: (schema: TableSchema) => DuckDBValue[];
 };
 
@@ -31,6 +32,16 @@ export default function queueGraphResult(
       parameters: result.parameters,
       rawSQL: [quoteIdentifier(simpleTable.name)],
       buildSelect: () => `SELECT * FROM ${quoteIdentifier(simpleTable.name)}`,
+    });
+  }
+
+  const preflight = result.preflight;
+  if (preflight !== undefined) {
+    queueOp(outputTable, {
+      kind: "barrier",
+      method: result.method,
+      parameters: result.parameters,
+      execute: () => preflight(outputTable),
     });
   }
 

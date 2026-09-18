@@ -15,6 +15,11 @@ const methods = [
   "topologicalSort",
 ] as const;
 type Method = typeof methods[number];
+const routeMethods: readonly Method[] = [
+  "shortestPath",
+  "paths",
+  "findCycles",
+];
 type Variant =
   | "default"
   | "weighted"
@@ -96,7 +101,9 @@ function invoke(
   const options = { outputTable };
   const weighted = {
     outputTable,
-    weight: variant === "weighted" ? "weight" : undefined,
+    weight: variant === "weighted"
+      ? routeMethods.includes(method) ? "cost" : "weight"
+      : undefined,
   };
   switch (method) {
     case "neighbors":
@@ -129,7 +136,7 @@ function invoke(
     case "commonNeighbors":
       return source.commonNeighbors("source", "target", 0, 1, options);
     case "findCycles":
-      return source.findCycles("source", "target", "edgeId", {
+      return source.findCycles("source", "target", "edgeId", 0, {
         ...weighted,
         direction: variant === "incoming" || variant === "both"
           ? variant
@@ -166,6 +173,9 @@ for (const selectedMethod of selected) {
                 : fixture
             }`,
           );
+          if (routeMethods.includes(method)) {
+            await source.renameColumns({ weight: "cost" }).run();
+          }
           await invoke(source, method, variant, shape.nodes - 1, "warm_result")
             .run();
           const profilePath =

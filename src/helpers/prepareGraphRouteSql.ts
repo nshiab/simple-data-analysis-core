@@ -1,6 +1,7 @@
 import getGraphEdgeIdColumn from "./getGraphEdgeIdColumn.ts";
 import getGraphWeightColumn from "./getGraphWeightColumn.ts";
 import type { TableSchema } from "./pendingOps.ts";
+import validateGraphRouteResultSchema from "./validateGraphRouteResultSchema.ts";
 import prepareGraphStarts, {
   type GraphId,
   type PreparedGraphStarts,
@@ -75,6 +76,7 @@ export function validateGraphRouteInputs(
   const weightColumn = weight === undefined
     ? undefined
     : getGraphWeightColumn(schema, weight, method);
+  validateGraphRouteResultSchema(schema, method);
   return {
     distanceType: weightColumn?.distanceType ?? "BIGINT",
     edgeIdType: edges.idType,
@@ -93,6 +95,7 @@ export function prepareGraphRouteSql(
   weight: string | undefined,
   method: string,
 ) {
+  validateGraphRouteResultSchema(schema, method);
   const traversal = prepareGraphTraversal(
     input,
     schema,
@@ -134,24 +137,10 @@ export function prepareGraphRouteSql(
     endpointValue: `TRY_CAST(? AS ${traversal.endpoints.idType})`,
     keyType,
     stepType,
+    input,
+    schema,
     traversal,
     typedEdgeId,
     weightType: weightColumn?.type,
   };
-}
-
-/** Builds the fixed public projection from ranked route step lists. */
-export function graphRouteResultSelect(rankedRelation: string): string {
-  const q = quoteIdentifier;
-  return `SELECT ${q("pathId")}, CAST(${q("step")} AS BIGINT) AS ${q("step")},
-      ${q("route_step")}.${q("edgeId")} AS ${q("edgeId")},
-      ${q("route_step")}.${q("source")} AS ${q("source")},
-      ${q("route_step")}.${q("target")} AS ${q("target")},
-      ${q("route_step")}.${q("weight")} AS ${q("weight")},
-      ${q("route_step")}.${q("distance")} AS ${q("total")}
-    FROM ${rankedRelation},
-      UNNEST(${q("steps")}) WITH ORDINALITY AS ${q("unnested")}(${
-    q("route_step")
-  }, ${q("step")})
-    ORDER BY ${q("pathId")}, ${q("step")}`;
 }

@@ -1,12 +1,19 @@
+import buildChronologicalGraphComponentsSql from "../helpers/buildChronologicalGraphComponentsSql.ts";
 import buildWeakGraphComponentsSql from "../helpers/buildWeakGraphComponentsSql.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import getGraphEndpointColumns from "../helpers/getGraphEndpointColumns.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
+import prepareGraphTemporalSql, {
+  type GraphTemporalOptions,
+  type PreparedGraphTemporalOptions,
+  prepareGraphTemporalOptions,
+} from "../helpers/prepareGraphTemporalSql.ts";
 import { prepareGraphSql } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
 
-type ConnectedComponentsOptions = {
+type ConnectedComponentsOptions = GraphTemporalOptions & {
   mode?: "weak" | "strong";
   outputTable?: string | boolean;
 };
@@ -46,6 +53,16 @@ export default function connectedComponents(
     );
   }
 
+  const temporalOptions = prepareGraphTemporalOptions(
+    options,
+    undefined,
+    "connectedComponents()",
+  );
+  if (temporalOptions !== undefined && options.mode !== "strong") {
+    throw new TypeError(
+      'connectedComponents() chronological options require options.mode to be explicitly set to "strong".',
+    );
+  }
   options = structuredClone(options);
   const mode = options.mode ?? "weak";
   const parameters = { sourceColumn, targetColumn, options };
@@ -54,9 +71,23 @@ export default function connectedComponents(
     method: "connectedComponents()",
     parameters,
     outputTable: options.outputTable,
+    preflight: temporalOptions === undefined
+      ? undefined
+      : (input) =>
+        validateGraphTemporalEvents(
+          input,
+          temporalOptions,
+          "connectedComponents()",
+          parameters,
+        ),
     values: (schema) => {
-      validateEndpoints(schema, sourceColumn, targetColumn);
-      return [];
+      const temporal = validateInputs(
+        schema,
+        sourceColumn,
+        targetColumn,
+        temporalOptions,
+      ).temporal;
+      return temporal === undefined ? [] : [temporal.gapParameter];
     },
     buildSelect: (input, schema) =>
       connectedComponentsSelect(
@@ -65,10 +96,16 @@ export default function connectedComponents(
         sourceColumn,
         targetColumn,
         mode,
+        temporalOptions,
       ),
     outputSchema: (schema) => ({
-      node: validateEndpoints(schema, sourceColumn, targetColumn).idType,
       componentId: "BIGINT",
+      node: validateInputs(
+        schema,
+        sourceColumn,
+        targetColumn,
+        temporalOptions,
+      ).endpoints.idType,
     }),
   });
 }
@@ -86,12 +123,26 @@ function validateEndpoints(
   );
 }
 
+function validateInputs(
+  schema: TableSchema,
+  source: string,
+  target: string,
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
+) {
+  const endpoints = validateEndpoints(schema, source, target);
+  const temporal = temporalOptions === undefined
+    ? undefined
+    : prepareGraphTemporalSql(schema, temporalOptions, "connectedComponents()");
+  return { endpoints, temporal };
+}
+
 function connectedComponentsSelect(
   input: string,
   schema: TableSchema,
   source: string,
   target: string,
   mode: "weak" | "strong",
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
 ): string {
   const prepared = prepareGraphSql(
     input,
@@ -100,6 +151,16 @@ function connectedComponentsSelect(
     target,
     "connectedComponents()",
   );
+  if (temporalOptions !== undefined) {
+    return buildChronologicalGraphComponentsSql(
+      prepared,
+      prepareGraphTemporalSql(
+        schema,
+        temporalOptions,
+        "connectedComponents()",
+      ),
+    );
+  }
   const relationNames = mode === "weak"
     ? [
       "graph_edges",
@@ -137,7 +198,7 @@ function connectedComponentsSelect(
     return `WITH RECURSIVE ${common}, ${
       buildWeakGraphComponentsSql(edges, nodes, labels, roots)
     }
-    SELECT ${q("labels")}.${q("node")}, ${q("roots")}.${q("componentId")}
+    SELECT ${q("roots")}.${q("componentId")}, ${q("labels")}.${q("node")}
     FROM ${labels} AS ${q("labels")}
     INNER JOIN ${roots} AS ${q("roots")}
       ON ${q("labels")}.${q("__root_key")} =
@@ -178,7 +239,7 @@ function connectedComponentsSelect(
       FROM (SELECT DISTINCT ${q("__root_key")} FROM ${members})
         AS ${q("distinct_roots")}
     )
-    SELECT ${q("members")}.${q("node")}, ${q("roots")}.${q("componentId")}
+    SELECT ${q("roots")}.${q("componentId")}, ${q("members")}.${q("node")}
     FROM ${members} AS ${q("members")}
     INNER JOIN ${roots} AS ${q("roots")}
       ON ${q("members")}.${q("__root_key")} =

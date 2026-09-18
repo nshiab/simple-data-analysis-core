@@ -1,18 +1,26 @@
 import type SimpleTable from "../class/SimpleTable.ts";
+import buildGraphTemporalCostStateSql from "../helpers/buildGraphTemporalCostStateSql.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import type { GraphId } from "../helpers/prepareGraphStarts.ts";
 import {
-  graphRouteResultSelect,
   type PreparedGraphRouteEndpoints,
   prepareGraphRouteEndpoints,
   prepareGraphRouteSql,
   validateGraphRouteInputs,
 } from "../helpers/prepareGraphRouteSql.ts";
+import graphRouteResultSchema from "../helpers/graphRouteResultSchema.ts";
+import graphRouteResultSelect from "../helpers/graphRouteResultSelect.ts";
+import prepareGraphTemporalSql, {
+  type GraphTemporalOptions,
+  type PreparedGraphTemporalOptions,
+  prepareGraphTemporalOptions,
+} from "../helpers/prepareGraphTemporalSql.ts";
 import type { GraphDirection } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
 
-type ShortestPathOptions = {
+type ShortestPathOptions = GraphTemporalOptions & {
   direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
@@ -63,8 +71,13 @@ export default function shortestPath(
   }
 
   const endpoints = prepareGraphRouteEndpoints(start, end, "shortestPath()");
-  options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
+  const temporalOptions = prepareGraphTemporalOptions(
+    options,
+    direction,
+    "shortestPath()",
+  );
+  options = structuredClone(options);
   const parameters = {
     sourceColumn,
     targetColumn,
@@ -78,6 +91,15 @@ export default function shortestPath(
     method: "shortestPath()",
     parameters,
     outputTable: options.outputTable,
+    preflight: temporalOptions === undefined
+      ? undefined
+      : (input) =>
+        validateGraphTemporalEvents(
+          input,
+          temporalOptions,
+          "shortestPath()",
+          parameters,
+        ),
     values: (schema) => {
       validateGraphRouteInputs(
         schema,
@@ -88,7 +110,12 @@ export default function shortestPath(
         options.weight,
         "shortestPath()",
       );
-      return endpoints.values.values;
+      const temporal = temporalOptions === undefined
+        ? undefined
+        : prepareGraphTemporalSql(schema, temporalOptions, "shortestPath()");
+      return temporal === undefined
+        ? endpoints.values.values
+        : [temporal.gapParameter, ...endpoints.values.values];
     },
     buildSelect: (input, schema) =>
       shortestPathSelect(
@@ -100,6 +127,7 @@ export default function shortestPath(
         endpoints,
         direction,
         options.weight,
+        temporalOptions,
       ),
     outputSchema: (schema) => {
       const validated = validateGraphRouteInputs(
@@ -111,15 +139,14 @@ export default function shortestPath(
         options.weight,
         "shortestPath()",
       );
-      return {
-        pathId: "BIGINT",
-        step: "BIGINT",
-        edgeId: validated.edgeIdType,
-        source: validated.nodeIdType,
-        target: validated.nodeIdType,
-        weight: validated.distanceType,
-        total: validated.distanceType,
-      };
+      if (temporalOptions !== undefined) {
+        prepareGraphTemporalSql(schema, temporalOptions, "shortestPath()");
+      }
+      return graphRouteResultSchema(
+        schema,
+        validated.distanceType,
+        "shortestPath()",
+      );
     },
   });
 }
@@ -133,6 +160,7 @@ function shortestPathSelect(
   routeEndpoints: PreparedGraphRouteEndpoints,
   direction: GraphDirection,
   weight: string | undefined,
+  temporalOptions: PreparedGraphTemporalOptions | undefined,
 ): string {
   const route = prepareGraphRouteSql(
     input,
@@ -145,6 +173,18 @@ function shortestPathSelect(
     "shortestPath()",
   );
   const prepared = route.traversal;
+  if (temporalOptions !== undefined) {
+    const temporal = prepareGraphTemporalSql(
+      schema,
+      temporalOptions,
+      "shortestPath()",
+    );
+    return temporalShortestPathSelect(
+      route,
+      direction as Exclude<GraphDirection, "both">,
+      temporal,
+    );
+  }
   const distanceType = route.distanceType;
   // Exact shortest routes have optimal prefixes. Floating addition can erase
   // a prefix-cost difference later, so retain all simple prefixes up to the
@@ -297,5 +337,159 @@ function shortestPathSelect(
         ${q("steps")}
       FROM ${shortestRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      route.input,
+      route.edgeIdColumn,
+    )
+  }`;
+}
+
+function temporalShortestPathSelect(
+  route: ReturnType<typeof prepareGraphRouteSql>,
+  direction: Exclude<GraphDirection, "both">,
+  temporal: ReturnType<typeof prepareGraphTemporalSql>,
+): string {
+  const prepared = route.traversal;
+  const q = quoteIdentifier;
+  const startsSelect = `SELECT ${q("start")},
+        ${prepared.key(q("start"))} AS ${q("__key")}
+      FROM (SELECT ${route.endpointValue} AS ${q("start")}) AS ${q("values")}`;
+  const costs = buildGraphTemporalCostStateSql(
+    prepared,
+    startsSelect,
+    direction,
+    temporal,
+    route.distanceType,
+    route.edgeWeight,
+    [
+      `${route.typedEdgeId} AS ${q("__edge_id")}`,
+      `${route.edgeKey} AS ${q("__edge_key")}`,
+    ],
+  );
+  const relations = prepared.relationNames([
+    "graph_route_endpoints",
+    "graph_nodes",
+    "graph_to_end",
+    "graph_best_total",
+    "graph_routes",
+    "graph_shortest_routes",
+    "graph_ranked_routes",
+  ]);
+  const endpointRelation = relations.graph_route_endpoints;
+  const nodesRelation = relations.graph_nodes;
+  const toEndRelation = relations.graph_to_end;
+  const bestTotalRelation = relations.graph_best_total;
+  const routesRelation = relations.graph_routes;
+  const shortestRelation = relations.graph_shortest_routes;
+  const rankedRelation = relations.graph_ranked_routes;
+  const edgesRelation = costs.edgesRelation;
+  const edgeFromKey = `${q("edges")}.${q("__from_key")}`;
+  const edgeToKey = `${q("edges")}.${q("__to_key")}`;
+  const edgeTo = `${q("edges")}.${q("__to")}`;
+  const edgeCost = `${q("edges")}.${q("__weight")}`;
+  const edgeKey = `${q("edges")}.${q("__edge_key")}`;
+  const routeDistance = `${q("routes")}.${q("distance")}`;
+  const candidateDistance =
+    `CAST(${routeDistance} + ${edgeCost} AS ${route.distanceType})`;
+  const gap = `${q("settings")}.${q("__gap")}`;
+  const step = (distance: string) =>
+    `struct_pack(
+          ${q("edgeId")} := ${q("edges")}.${q("__edge_id")},
+          ${q("source")} := ${q("edges")}.${q("__from")},
+          ${q("target")} := ${edgeTo},
+          ${q("weight")} := ${edgeCost},
+          ${q("distance")} := ${distance}
+        )`;
+
+  return `${costs.withClause}, ${endpointRelation}(
+      ${q("start")}, ${q("end")}, ${q("__start_key")}, ${q("__end_key")}
+    ) AS (
+      SELECT ${q("starts")}.${q("start")}, ${q("values")}.${q("end")},
+        ${q("starts")}.${q("__key")},
+        ${prepared.key(`${q("values")}.${q("end")}`)}
+      FROM ${costs.startsRelation} AS ${q("starts")}
+      CROSS JOIN (SELECT ${route.endpointValue} AS ${q("end")}) AS ${
+    q("values")
+  }
+    ), ${nodesRelation} AS (
+      SELECT ${q("__from_key")} AS ${q("__key")} FROM ${edgesRelation}
+      UNION
+      SELECT ${q("__to_key")} AS ${q("__key")} FROM ${edgesRelation}
+    ), ${toEndRelation}(${q("__key")}) AS (
+      SELECT ${q("__end_key")}
+      FROM ${endpointRelation}
+      INNER JOIN ${nodesRelation}
+        ON ${q("__end_key")} = ${q("__key")}
+      UNION
+      SELECT ${edgeFromKey}
+      FROM ${toEndRelation} AS ${q("reached")}
+      INNER JOIN ${edgesRelation} AS ${q("edges")}
+        ON ${q("reached")}.${q("__key")} = ${edgeToKey}
+    ), ${bestTotalRelation} AS (
+      SELECT MIN(${q("costs")}.${q("distance")}) AS ${q("distance")}
+      FROM ${costs.costRelation} AS ${q("costs")}
+      INNER JOIN ${endpointRelation}
+        ON ${q("costs")}.${q("__node_key")} = ${q("__end_key")}
+    ), ${routesRelation}(
+      ${q("node")}, ${q("__node_key")}, ${q("__visited")},
+      ${q("__edge_keys")}, ${q("steps")}, ${q("distance")},
+      ${q("__event_id")}, ${q("__event_start")}, ${q("__event_end")}
+    ) AS (
+      SELECT ${edgeTo}, ${edgeToKey},
+        [${q("__start_key")}, ${edgeToKey}], [${edgeKey}],
+        [${step(edgeCost)}], ${edgeCost},
+        ${q("edges")}.${q("__event_id")},
+        ${q("edges")}.${q("__event_start")},
+        ${q("edges")}.${q("__event_end")}
+      FROM ${endpointRelation}
+      INNER JOIN ${edgesRelation} AS ${q("edges")}
+        ON ${q("__start_key")} = ${edgeFromKey}
+      INNER JOIN ${toEndRelation} AS ${q("can_reach_end")}
+        ON ${edgeToKey} = ${q("can_reach_end")}.${q("__key")}
+      INNER JOIN ${bestTotalRelation} AS ${q("best_total")}
+        ON ${edgeCost} <= ${q("best_total")}.${q("distance")}
+      WHERE ${q("__start_key")} <> ${edgeToKey}
+      UNION ALL
+      SELECT ${edgeTo}, ${edgeToKey},
+        list_append(${q("routes")}.${q("__visited")}, ${edgeToKey}),
+        list_append(${q("routes")}.${q("__edge_keys")}, ${edgeKey}),
+        list_append(${q("routes")}.${q("steps")}, ${step(candidateDistance)}),
+        ${candidateDistance}, ${q("edges")}.${q("__event_id")},
+        ${q("edges")}.${q("__event_start")},
+        ${q("edges")}.${q("__event_end")}
+      FROM ${routesRelation} AS ${q("routes")}
+      INNER JOIN ${edgesRelation} AS ${q("edges")}
+        ON ${q("routes")}.${q("__node_key")} = ${edgeFromKey}
+      INNER JOIN ${toEndRelation} AS ${q("can_reach_end")}
+        ON ${edgeToKey} = ${q("can_reach_end")}.${q("__key")}
+      INNER JOIN ${bestTotalRelation} AS ${q("best_total")}
+        ON ${candidateDistance} <= ${q("best_total")}.${q("distance")}
+      CROSS JOIN ${endpointRelation}
+      CROSS JOIN ${costs.settingsRelation} AS ${q("settings")}
+      WHERE ${q("routes")}.${q("__node_key")} <> ${q("__end_key")}
+        AND NOT list_contains(${q("routes")}.${q("__visited")}, ${edgeToKey})
+        AND ${temporal.transition("routes", "edges", direction, gap)}
+    ), ${shortestRelation} AS (
+      SELECT ${q("__edge_keys")}, ${q("steps")}
+      FROM ${routesRelation} AS ${q("routes")}
+      CROSS JOIN ${endpointRelation}
+      CROSS JOIN ${bestTotalRelation} AS ${q("best_total")}
+      WHERE ${q("__node_key")} = ${q("__end_key")}
+        AND ${routeDistance} = ${q("best_total")}.${q("distance")}
+    ), ${rankedRelation} AS (
+      SELECT CAST(row_number() OVER (ORDER BY ${
+    q("__edge_keys")
+  }) - 1 AS BIGINT)
+          AS ${q("pathId")}, ${q("steps")}
+      FROM ${shortestRelation}
+    )
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      route.input,
+      route.edgeIdColumn,
+    )
+  }`;
 }
