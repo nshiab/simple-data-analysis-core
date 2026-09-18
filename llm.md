@@ -3859,12 +3859,11 @@ Each connection needs a unique, non-null ID. Pass the name of the column
 containing these IDs as the `edgeId` argument. If your table is missing an ID
 column, you can easily create one with `addId()`.
 
-The result starts with `pathId`, `step`, `weight`, and `total`, followed by all
-original columns in their original order, with their names and values unchanged.
-Steps start at one and follow the search direction; original source and target
-values stay unchanged, even for incoming searches. The `weight` column is the
-connection cost, and `total` is the sum of those costs up to and including the
-current step. Without the `weight` option, each connection costs one.
+The result starts with the `pathId`, `step`, `weight`, and `total` columns,
+followed by all original columns. Steps start at one and follow the search
+direction. The `weight` column is the connection cost, and `total` is the sum of
+those costs up to and including the current step. Without the `weight` option,
+each connection costs one.
 
 If an input column is already named `pathId`, `step`, `weight`, or `total`
 (regardless of capitalization), the method throws an error. Rename it with
@@ -3884,12 +3883,11 @@ The minimum gap applies only between consecutive connections, not before the
 first connection.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
-element by element. Rows are sorted by `pathId`, then `step`. Reordering the
-input rows preserves route IDs; changing the connections may change them.
+element by element. Rows are sorted by `pathId`, then `step`.
 
 Unknown IDs or nodes with no route between them produce no rows. The start and
-end must differ. Self-connections cannot appear in a route because a route never
-repeats a node. Weights must be non-null, finite, and non-negative.
+end must differ. Self-connections are ignored. Weights must be non-null, finite,
+and non-negative.
 
 There is no limit on route length or the number of tied routes returned. Finding
 many tied routes can take a long time and use substantial memory.
@@ -4073,20 +4071,21 @@ await reverseExample
 
 #### `paths`
 
-Finds all routes between two different nodes without repeating a node along a
-route. The `direction` option lets you follow connections from source to target,
-from target to source, or in either direction.
+Finds all routes between two different nodes. A route cannot visit the same node
+twice, to avoid loops. Different routes can still share the same nodes.
+
+The `direction` option lets you follow connections from source to target, from
+target to source, or in either direction.
 
 Each connection needs a unique, non-null ID. Pass the name of the column
 containing these IDs as the `edgeId` argument. If your table is missing an ID
 column, you can easily create one with `addId()`.
 
-The result starts with `pathId`, `step`, `weight`, and `total`, followed by all
-original columns in their original order, with their names and values unchanged.
-Steps start at one and follow the search direction; original source and target
-values stay unchanged, even for incoming searches. The `weight` column is the
-connection cost, and `total` is the sum of those costs up to and including the
-current step. Without the `weight` option, each connection costs one.
+The result starts with the `pathId`, `step`, `weight`, and `total` columns,
+followed by all original columns. Steps start at one and follow the search
+direction. The `weight` column is the connection cost, and `total` is the sum of
+those costs up to and including the current step. Without the `weight` option,
+each connection costs one.
 
 If an input column is already named `pathId`, `step`, `weight`, or `total`
 (regardless of capitalization), the method throws an error. Rename it with
@@ -4106,12 +4105,11 @@ The minimum gap applies only between consecutive connections, not before the
 first connection.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
-element by element. Rows are sorted by `pathId`, then `step`. Reordering the
-input rows preserves route IDs; changing the connections may change them.
+element by element. Rows are sorted by `pathId`, then `step`.
 
 Unknown IDs or nodes with no route between them produce no rows. The start and
-end must differ. Self-connections cannot appear in a route because a route never
-repeats a node. Weights must be non-null, finite, and non-negative.
+end must differ. Self-connections are ignored. Weights must be non-null, finite,
+and non-negative.
 
 There is no limit on route length or the number of routes returned. Finding all
 routes can take a long time and use substantial memory.
@@ -4323,12 +4321,11 @@ Each connection needs a unique, non-null ID. Pass the name of the column
 containing these IDs as the `edgeId` argument. If your table is missing an ID
 column, you can easily create one with `addId()`.
 
-The result starts with `pathId`, `step`, `weight`, and `total`, followed by all
-original columns in their original order, with their names and values unchanged.
-Steps start at one and follow the search direction; original source and target
-values stay unchanged, even for incoming searches. The `weight` column is the
-connection cost, and `total` is the sum of those costs up to and including the
-current step. Without the `weight` option, each connection costs one.
+The result starts with the `pathId`, `step`, `weight`, and `total` columns,
+followed by all original columns. Steps start at one and follow the search
+direction. The `weight` column is the connection cost, and `total` is the sum of
+those costs up to and including the current step. Without the `weight` option,
+each connection costs one.
 
 If an input column is already named `pathId`, `step`, `weight`, or `total`
 (regardless of capitalization), the method throws an error. Rename it with
@@ -4341,8 +4338,7 @@ Without chronological options, each cycle starts at its smallest node ID. With
 `direction: "both"`, a cycle and its reverse are returned once, choosing the
 direction with the smaller sequence of connection IDs. Cycles are numbered from
 zero by comparing these sequences element by element, and rows are sorted by
-`pathId`, then `step`. Reordering the input rows preserves cycle IDs; changing
-the connections may change them.
+`pathId`, then `step`.
 
 Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
 chronological order. The `minGapMs` option sets the minimum gap between
