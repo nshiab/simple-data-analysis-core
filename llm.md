@@ -3660,8 +3660,8 @@ column, between their timestamps. The `strictOrdering` option defaults to
 `true`, rejecting zero-duration gaps. These options only work with
 `direction: "outgoing"` or `direction: "incoming"`.
 
-Every connection remains eligible as the first step. Incoming searches follow
-actual earlier predecessors and report distance in that direction.
+The minimum gap applies only between consecutive connections, not before the
+first connection.
 
 The next five examples each start with this data:
 
