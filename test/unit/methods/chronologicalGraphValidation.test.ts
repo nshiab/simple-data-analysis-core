@@ -57,7 +57,7 @@ const temporalGraphCases: TemporalGraphCase[] = [
   {
     method: "findCycles()",
     run: (table, outputTable) =>
-      table.findCycles("source", "target", "edgeId", {
+      table.findCycles("source", "target", "edgeId", "A", {
         startTimeColumn: "start time",
         endTimeColumn: "end time",
         outputTable,
@@ -100,7 +100,7 @@ Deno.test("all chronological graph methods reject fractional millisecond gaps", 
         minGapMs,
       }),
     (minGapMs: number) =>
-      table.findCycles("source", "target", "edgeId", {
+      table.findCycles("source", "target", "edgeId", "A", {
         startTimeColumn: "time",
         minGapMs,
       }),

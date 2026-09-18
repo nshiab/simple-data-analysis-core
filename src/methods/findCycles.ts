@@ -1,6 +1,5 @@
 import type SimpleTable from "../class/SimpleTable.ts";
 import getGraphEdgeIdColumn from "../helpers/getGraphEdgeIdColumn.ts";
-import getGraphEndpointColumns from "../helpers/getGraphEndpointColumns.ts";
 import getGraphWeightColumn from "../helpers/getGraphWeightColumn.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import graphRouteResultSchema from "../helpers/graphRouteResultSchema.ts";
@@ -10,9 +9,13 @@ import prepareGraphTemporalSql, {
   type PreparedGraphTemporalOptions,
   prepareGraphTemporalOptions,
 } from "../helpers/prepareGraphTemporalSql.ts";
-import {
+import prepareGraphStarts, {
+  type GraphId,
+  type PreparedGraphStarts,
+} from "../helpers/prepareGraphStarts.ts";
+import prepareGraphTraversal, {
   type GraphDirection,
-  prepareGraphSql,
+  validateGraphStarts,
 } from "../helpers/prepareGraphTraversal.ts";
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
@@ -30,6 +33,7 @@ export default function findCycles(
   sourceColumn: string,
   targetColumn: string,
   edgeId: string,
+  startNodes: GraphId | GraphId[],
   options: FindCyclesOptions = {},
 ): SimpleTable {
   if (typeof sourceColumn !== "string") {
@@ -41,6 +45,11 @@ export default function findCycles(
   if (typeof edgeId !== "string") {
     throw new TypeError("findCycles() edgeId must be a string.");
   }
+  const preparedStarts = prepareGraphStarts(
+    startNodes,
+    "findCycles()",
+    "startNodes",
+  );
   if (
     options === null || typeof options !== "object" || Array.isArray(options)
   ) {
@@ -74,7 +83,13 @@ export default function findCycles(
     "findCycles()",
   );
   options = structuredClone(options);
-  const parameters = { sourceColumn, targetColumn, edgeId, options };
+  const parameters = {
+    sourceColumn,
+    targetColumn,
+    edgeId,
+    startNodes: structuredClone(startNodes),
+    options,
+  };
 
   return queueGraphResult(simpleTable, {
     method: "findCycles()",
@@ -95,12 +110,15 @@ export default function findCycles(
         sourceColumn,
         targetColumn,
         edgeId,
+        preparedStarts,
         options.weight,
       );
       const temporal = temporalOptions === undefined
         ? undefined
         : prepareGraphTemporalSql(schema, temporalOptions, "findCycles()");
-      return temporal === undefined ? [] : [temporal.gapParameter];
+      return temporal === undefined
+        ? preparedStarts.values
+        : [temporal.gapParameter, ...preparedStarts.values];
     },
     buildSelect: (input, schema) =>
       findCyclesSelect(
@@ -109,6 +127,7 @@ export default function findCycles(
         sourceColumn,
         targetColumn,
         edgeId,
+        preparedStarts,
         direction,
         options.weight,
         temporalOptions,
@@ -119,6 +138,7 @@ export default function findCycles(
         sourceColumn,
         targetColumn,
         edgeId,
+        preparedStarts,
         options.weight,
       );
       if (temporalOptions !== undefined) {
@@ -138,13 +158,16 @@ function validateFindCyclesInputs(
   source: string,
   target: string,
   edgeId: string,
+  starts: PreparedGraphStarts,
   weight: string | undefined,
 ) {
-  const endpoints = getGraphEndpointColumns(
+  const endpoints = validateGraphStarts(
     schema,
     source,
     target,
+    starts,
     "findCycles()",
+    "startNodes",
   );
   const edgeIdColumn = getGraphEdgeIdColumn(schema, edgeId, "findCycles()");
   const weightColumn = weight === undefined
@@ -164,16 +187,19 @@ function findCyclesSelect(
   source: string,
   target: string,
   edgeId: string,
+  starts: PreparedGraphStarts,
   direction: GraphDirection,
   weight: string | undefined,
   temporalOptions: PreparedGraphTemporalOptions | undefined,
 ): string {
-  const prepared = prepareGraphSql(
+  const prepared = prepareGraphTraversal(
     input,
     schema,
     source,
     target,
+    starts,
     "findCycles()",
+    "startNodes",
   );
   const edgeIdColumn = getGraphEdgeIdColumn(schema, edgeId, "findCycles()");
   const weightColumn = weight === undefined
@@ -218,11 +244,15 @@ function findCyclesSelect(
   }
 
   const relations = prepared.relationNames([
+    "graph_start_values",
+    "graph_starts",
     "graph_edges",
     "graph_cycle_walks",
     "graph_complete_cycles",
     "graph_ranked_cycles",
   ]);
+  const startValuesRelation = relations.graph_start_values;
+  const startsRelation = relations.graph_starts;
   const edgesRelation = relations.graph_edges;
   const walksRelation = relations.graph_cycle_walks;
   const completeRelation = relations.graph_complete_cycles;
@@ -238,7 +268,13 @@ function findCyclesSelect(
   const candidateDistance =
     `CAST(${walkDistance} + ${edgeCost} AS ${distanceType})`;
 
-  return `WITH RECURSIVE ${edgesRelation} AS (
+  return `WITH RECURSIVE ${startValuesRelation}(${q("start")}) AS (
+      VALUES ${prepared.startValues}
+    ), ${startsRelation} AS (
+      SELECT ${q("start")},
+        ${prepared.key(q("start"))} AS ${q("__start_key")}
+      FROM ${startValuesRelation}
+    ), ${edgesRelation} AS (
       ${
     prepared.edges(direction, [
       `${typedEdgeId} AS ${q("__edge_id")}`,
@@ -251,7 +287,8 @@ function findCyclesSelect(
       ${q("__node_key")}, ${q("__visited")}, ${q("__edge_keys")},
       ${q("steps")}, ${q("distance")}, ${q("closed")}
     ) AS (
-      SELECT ${edgeFrom}, ${edgeFromKey}, ${edgeTo}, ${edgeToKey},
+      SELECT ${q("starts")}.${q("start")},
+        ${q("starts")}.${q("__start_key")}, ${edgeTo}, ${edgeToKey},
         CASE WHEN ${edgeFromKey} = ${edgeToKey}
           THEN [${edgeFromKey}]
           ELSE [${edgeFromKey}, ${edgeToKey}]
@@ -266,7 +303,8 @@ function findCyclesSelect(
         )]::${stepType}[],
         ${edgeCost}, ${edgeFromKey} = ${edgeToKey}
       FROM ${edgesRelation} AS ${q("edges")}
-      WHERE ${edgeToKey} >= ${edgeFromKey}
+      INNER JOIN ${startsRelation} AS ${q("starts")}
+        ON ${q("starts")}.${q("__start_key")} = ${edgeFromKey}
       UNION ALL
       SELECT ${q("walks")}.${q("start")},
         ${q("walks")}.${q("__start_key")}, ${edgeTo}, ${edgeToKey},
@@ -289,15 +327,13 @@ function findCyclesSelect(
         )
         AND (
           ${edgeToKey} = ${q("walks")}.${q("__start_key")}
-          OR (
-            ${edgeToKey} >= ${q("walks")}.${q("__start_key")}
-            AND NOT list_contains(
-              ${q("walks")}.${q("__visited")}, ${edgeToKey}
-            )
+          OR NOT list_contains(
+            ${q("walks")}.${q("__visited")}, ${edgeToKey}
           )
         )
     ), ${completeRelation} AS (
-      SELECT DISTINCT ${q("__edge_keys")}, ${q("steps")}
+      SELECT DISTINCT ${q("__start_key")}, ${q("__edge_keys")},
+        ${q("steps")}
       FROM ${walksRelation}
       WHERE ${q("closed")}${
     direction === "both"
@@ -306,7 +342,8 @@ function findCyclesSelect(
       : ""
   }
     ), ${rankedRelation} AS (
-      SELECT CAST(row_number() OVER (ORDER BY ${q("__edge_keys")}) - 1
+      SELECT CAST(row_number() OVER (
+          ORDER BY ${q("__start_key")}, ${q("__edge_keys")}) - 1
           AS BIGINT) AS ${q("pathId")},
         ${q("steps")}
       FROM ${completeRelation}
@@ -321,7 +358,7 @@ function findCyclesSelect(
 }
 
 function temporalFindCyclesSelect(
-  prepared: ReturnType<typeof prepareGraphSql>,
+  prepared: ReturnType<typeof prepareGraphTraversal>,
   direction: Exclude<GraphDirection, "both">,
   temporal: ReturnType<typeof prepareGraphTemporalSql>,
   typedEdgeId: string,
@@ -334,24 +371,22 @@ function temporalFindCyclesSelect(
 ): string {
   const q = quoteIdentifier;
   const relations = prepared.relationNames([
+    "graph_start_values",
+    "graph_starts",
     "graph_temporal_settings",
     "graph_event_rows",
     "graph_edges",
     "graph_cycle_walks",
     "graph_complete_cycles",
-    "graph_cycle_rotations",
-    "graph_canonical_cycles",
-    "graph_selected_cycles",
     "graph_ranked_cycles",
   ]);
+  const startValuesRelation = relations.graph_start_values;
+  const startsRelation = relations.graph_starts;
   const settingsRelation = relations.graph_temporal_settings;
   const eventRowsRelation = relations.graph_event_rows;
   const edgesRelation = relations.graph_edges;
   const walksRelation = relations.graph_cycle_walks;
   const completeRelation = relations.graph_complete_cycles;
-  const rotationsRelation = relations.graph_cycle_rotations;
-  const canonicalRelation = relations.graph_canonical_cycles;
-  const selectedRelation = relations.graph_selected_cycles;
   const rankedRelation = relations.graph_ranked_cycles;
   const edgeFrom = `${q("edges")}.${q("__from")}`;
   const edgeTo = `${q("edges")}.${q("__to")}`;
@@ -375,6 +410,12 @@ function temporalFindCyclesSelect(
 
   return `WITH RECURSIVE ${settingsRelation} AS MATERIALIZED (
       SELECT CAST(? AS HUGEINT) AS ${q("__gap")}
+    ), ${startValuesRelation}(${q("start")}) AS (
+      VALUES ${prepared.startValues}
+    ), ${startsRelation} AS (
+      SELECT ${q("start")},
+        ${prepared.key(q("start"))} AS ${q("__start_key")}
+      FROM ${startValuesRelation}
     ), ${eventRowsRelation} AS MATERIALIZED (
       ${
     prepared.edges(direction, [
@@ -395,7 +436,8 @@ function temporalFindCyclesSelect(
       ${q("closed")}, ${q("__event_id")}, ${q("__event_start")},
       ${q("__event_end")}
     ) AS (
-      SELECT ${edgeFrom}, ${edgeFromKey}, ${edgeTo}, ${edgeToKey},
+      SELECT ${q("starts")}.${q("start")},
+        ${q("starts")}.${q("__start_key")}, ${edgeTo}, ${edgeToKey},
         CASE WHEN ${edgeFromKey} = ${edgeToKey}
           THEN [${edgeFromKey}]
           ELSE [${edgeFromKey}, ${edgeToKey}]
@@ -407,6 +449,8 @@ function temporalFindCyclesSelect(
         ${q("edges")}.${q("__event_start")},
         ${q("edges")}.${q("__event_end")}
       FROM ${edgesRelation} AS ${q("edges")}
+      INNER JOIN ${startsRelation} AS ${q("starts")}
+        ON ${q("starts")}.${q("__start_key")} = ${edgeFromKey}
       UNION ALL
       SELECT ${q("walks")}.${q("start")},
         ${q("walks")}.${q("__start_key")}, ${edgeTo}, ${edgeToKey},
@@ -433,35 +477,15 @@ function temporalFindCyclesSelect(
         )
         AND ${temporal.transition("walks", "edges", direction, gap)}
     ), ${completeRelation} AS (
-      SELECT DISTINCT ${q("__edge_keys")}, ${q("steps")}
+      SELECT DISTINCT ${q("__start_key")}, ${q("__edge_keys")},
+        ${q("steps")}
       FROM ${walksRelation}
       WHERE ${q("closed")}
-    ), ${rotationsRelation} AS (
-      SELECT ${q("__edge_keys")}, ${q("steps")},
-        list_concat(
-          list_slice(${q("__edge_keys")}, ${q("rotation")} + 1,
-            length(${q("__edge_keys")})),
-          list_slice(${q("__edge_keys")}, 1, ${q("rotation")})
-        ) AS ${q("__rotation_key")}
-      FROM ${completeRelation},
-        UNNEST(range(length(${q("__edge_keys")})))
-          AS ${q("rotations")}(${q("rotation")})
-    ), ${canonicalRelation} AS (
-      SELECT ${q("__edge_keys")}, ${q("steps")},
-        min(${q("__rotation_key")}) AS ${q("__cycle_key")}
-      FROM ${rotationsRelation}
-      GROUP BY ${q("__edge_keys")}, ${q("steps")}
-    ), ${selectedRelation} AS (
-      SELECT ${q("__cycle_key")}, ${q("__edge_keys")}, ${q("steps")}
-      FROM ${canonicalRelation}
-      QUALIFY row_number() OVER (
-        PARTITION BY ${q("__cycle_key")}
-        ORDER BY ${q("__edge_keys")}
-      ) = 1
     ), ${rankedRelation} AS (
-      SELECT CAST(row_number() OVER (ORDER BY ${q("__cycle_key")}) - 1
+      SELECT CAST(row_number() OVER (
+          ORDER BY ${q("__start_key")}, ${q("__edge_keys")}) - 1
           AS BIGINT) AS ${q("pathId")}, ${q("steps")}
-      FROM ${selectedRelation}
+      FROM ${completeRelation}
     )
     ${
     graphRouteResultSelect(

@@ -3851,8 +3851,10 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds all loops that return to their starting node without repeating any
-   * other node or reusing a connection. The `direction` option lets you
+   * Finds all cycles starting and ending at each node in `startNodes`.
+   * Pass one node ID or an array of node IDs. A cycle cannot visit the same
+   * node twice, except to return to its start, or reuse a connection.
+   * Different cycles can share nodes. The `direction` option lets you
    * follow connections from source to target, from target to source, or in
    * either direction. By default, connections are followed from source to
    * target.
@@ -3874,11 +3876,15 @@ export default class SimpleTable extends Simple {
    * Each row is one connection, including the final connection back to the
    * start. Weights must be non-null, finite, and non-negative.
    *
-   * Without chronological options, each cycle starts at its smallest node ID.
-   * With `direction: "both"`, a cycle and its reverse are returned once,
-   * choosing the direction with the smaller sequence of connection IDs.
-   * Cycles are numbered from zero by comparing these sequences element by
-   * element, and rows are sorted by `pathId`, then `step`.
+   * If a cycle can start at several requested nodes, each starting node
+   * produces a separate result with its own `pathId`. Empty arrays and
+   * duplicate starting IDs throw an error. Unknown IDs or starts with no
+   * cycles produce no rows.
+   *
+   * With `direction: "both"`, a cycle and its reverse are returned once per
+   * starting node, choosing the smaller sequence of connection IDs. Cycles
+   * are numbered from zero by starting node, then connection-ID sequence.
+   * Rows are sorted by `pathId`, then `step`.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -3888,18 +3894,10 @@ export default class SimpleTable extends Simple {
    * `true`, rejecting zero-duration gaps. These options only work with
    * `direction: "outgoing"` or `direction: "incoming"`.
    *
-   * The return to the starting node closes the cycle; no gap is checked from
-   * the final connection back to the first. Incoming searches follow actual
-   * earlier predecessors and emit them in backward search order.
-   *
-   * A chronological cycle begins at a connection that makes its returned
-   * sequence feasible, rather than necessarily at its smallest node. Rotation
-   * duplicates are identified by the smallest rotation of their connection-ID
-   * sequence. If equal-time ordering makes several rotations feasible, the
-   * method returns the feasible rotation with the smallest connection-ID
-   * sequence. Cycle IDs are assigned by the rotation-independent identity, so
-   * shuffled input has the same output. Connections with distinct IDs remain
-   * distinct, including parallel connections.
+   * Time rules are checked from each requested starting node. A cycle may
+   * therefore work from one starting node but not another. No gap is checked
+   * from the final connection back to the first. Incoming searches follow
+   * connections backward in chronological order.
    *
    * A self-connection forms a one-step cycle. With `direction: "both"`, two
    * separate connections between the same nodes can form a two-step cycle. A
@@ -3910,7 +3908,7 @@ export default class SimpleTable extends Simple {
    * There is no limit on cycle length or the number of cycles returned.
    * Finding all cycles can take a long time and use substantial memory.
    *
-   * The next three examples each start with these connections:
+   * The next four examples each start with these connections:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |
@@ -3923,7 +3921,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * await triangle
-   *   .findCycles("source", "target", "edgeId")
+   *   .findCycles("source", "target", "edgeId", "A")
    *   .log();
    * ```
    *
@@ -3933,13 +3931,31 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | 1 | 2 | E2 | B | C |
    * | 0 | 3 | 1 | 3 | E3 | C | A |
    *
+   * Requesting both A and B returns the cycle separately for each start:
+   *
+   * @example
+   * ```ts
+   * await triangle
+   *   .findCycles("source", "target", "edgeId", ["A", "B"])
+   *   .log();
+   * ```
+   *
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | E1 | A | B |
+   * | 0 | 2 | 1 | 2 | E2 | B | C |
+   * | 0 | 3 | 1 | 3 | E3 | C | A |
+   * | 1 | 1 | 1 | 1 | E2 | B | C |
+   * | 1 | 2 | 1 | 2 | E3 | C | A |
+   * | 1 | 3 | 1 | 3 | E1 | A | B |
+   *
    * With `direction: "incoming"`, connections are followed from target to
    * source:
    *
    * @example
    * ```ts
    * await triangle
-   *   .findCycles("source", "target", "edgeId", { direction: "incoming" })
+   *   .findCycles("source", "target", "edgeId", "A", { direction: "incoming" })
    *   .log();
    * ```
    *
@@ -3955,7 +3971,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * await triangle
-   *   .findCycles("source", "target", "edgeId", { direction: "both" })
+   *   .findCycles("source", "target", "edgeId", "A", { direction: "both" })
    *   .log();
    * ```
    *
@@ -3977,7 +3993,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * await parallelAndLoop
-   *   .findCycles("source", "target", "edgeId", {
+   *   .findCycles("source", "target", "edgeId", ["A", "C"], {
    *     direction: "both",
    *     weight: "cost",
    *   })
@@ -3986,9 +4002,9 @@ export default class SimpleTable extends Simple {
    *
    * | pathId | step | weight | total | edgeId | source | target | cost |
    * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
-   * | 0 | 1 | 4 | 4 | L1 | C | C | 4 |
-   * | 1 | 1 | 1 | 1 | P1 | A | B | 1 |
-   * | 1 | 2 | 2 | 3 | P2 | A | B | 2 |
+   * | 0 | 1 | 1 | 1 | P1 | A | B | 1 |
+   * | 0 | 2 | 2 | 3 | P2 | A | B | 2 |
+   * | 1 | 1 | 4 | 4 | L1 | C | C | 4 |
    *
    * With the `weight` option, total is a running total of the selected
    * values. For these flights:
@@ -4002,7 +4018,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * await flights
-   *   .findCycles("origin", "destination", "flightId", {
+   *   .findCycles("origin", "destination", "flightId", "A", {
    *     weight: "minutes",
    *   })
    *   .log();
@@ -4026,7 +4042,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * await unnumberedConnections
    *   .addId("edgeId", { prefix: "edge-" })
-   *   .findCycles("source", "target", "edgeId")
+   *   .findCycles("source", "target", "edgeId", "A")
    *   .log();
    * ```
    *
@@ -4036,8 +4052,9 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | 1 | 2 | B | C | edge-1 |
    * | 0 | 3 | 1 | 3 | C | A | edge-2 |
    *
-   * Chronological cycles start where their connection times allow. These
-   * instantaneous events form a cycle only in the order B → C → A → B:
+   * For these instantaneous events, requesting A and B as starting nodes
+   * returns only the cycle B → C → A → B. Starting at A would break
+   * chronological order:
    *
    * | flightId | origin | destination | departureTime |
    * | --- | --- | --- | --- |
@@ -4048,7 +4065,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * await timedFlights
-   *   .findCycles("origin", "destination", "flightId", {
+   *   .findCycles("origin", "destination", "flightId", ["A", "B"], {
    *     startTimeColumn: "departureTime",
    *   })
    *   .log();
@@ -4060,13 +4077,13 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | 1 | 2 | F2 | C | A | 2025-01-01 10:00:00 |
    * | 0 | 3 | 1 | 3 | F3 | A | B | 2025-01-01 11:00:00 |
    *
-   * Searching the same events in the incoming direction finds actual
-   * predecessors. The output follows backward search order:
+   * Searching the same events from B in the incoming direction follows
+   * connections backward, from the latest to the earliest:
    *
    * @example
    * ```ts
    * await timedFlights
-   *   .findCycles("origin", "destination", "flightId", {
+   *   .findCycles("origin", "destination", "flightId", "B", {
    *     direction: "incoming",
    *     startTimeColumn: "departureTime",
    *   })
@@ -4082,6 +4099,7 @@ export default class SimpleTable extends Simple {
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
+   * @param startNodes - One starting node ID or an array of IDs. Finds cycles that start and end at each requested node.
    * @param options - An optional object with direction, time, cost, and result configuration.
    * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
@@ -4097,6 +4115,7 @@ export default class SimpleTable extends Simple {
     sourceColumn: string,
     targetColumn: string,
     edgeId: string,
+    startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
       direction?: "outgoing" | "incoming" | "both";
       endTimeColumn?: string;
@@ -4112,6 +4131,7 @@ export default class SimpleTable extends Simple {
       sourceColumn,
       targetColumn,
       edgeId,
+      startNodes,
       options,
     );
   }

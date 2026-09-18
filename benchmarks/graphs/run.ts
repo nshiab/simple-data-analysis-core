@@ -136,7 +136,7 @@ function invoke(
     case "commonNeighbors":
       return source.commonNeighbors("source", "target", 0, 1, options);
     case "findCycles":
-      return source.findCycles("source", "target", "edgeId", {
+      return source.findCycles("source", "target", "edgeId", 0, {
         ...weighted,
         direction: variant === "incoming" || variant === "both"
           ? variant

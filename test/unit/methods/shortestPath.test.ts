@@ -2094,7 +2094,7 @@ Deno.test("route methods reject every generated-column conflict and accept renam
         options,
       );
     }
-    return table.findCycles("source", "target", "edgeId", options);
+    return table.findCycles("source", "target", "edgeId", "A", options);
   };
   try {
     for (const method of methods) {
@@ -2180,6 +2180,7 @@ Deno.test("route methods preserve queued typed metadata after generated columns"
           "origin",
           "destination",
           "flightId",
+          1,
           options,
         );
       assertEquals(await output.getColumns(), [
