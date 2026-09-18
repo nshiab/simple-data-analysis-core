@@ -2151,6 +2151,11 @@ Deno.test("route methods preserve queued typed metadata after generated columns"
           flightId, origin, destination, cost, happened,
           route_step, steps, "0", edgeId, source, target
         )`);
+      const originalColumns = await input.getColumns();
+      const originalTypes = await input.getTypes();
+      const originalRows = new Map(
+        (await input.getData()).map((row) => [row.flightId, row]),
+      );
       input.addColumn("queued", "string", "'kept'");
       const options = { weight: "cost", outputTable: true };
       const output = method === "shortestPath"
@@ -2196,28 +2201,28 @@ Deno.test("route methods preserve queued typed metadata after generated columns"
         "queued",
       ]);
       const types = await output.getTypes();
-      assertEquals(types.origin, "SMALLINT");
-      assertEquals(types.destination, "INTEGER");
-      assertEquals(types.cost, "DECIMAL(5,2)");
-      assertEquals(types.happened, "TIMESTAMP_NS");
+      for (const column of originalColumns) {
+        assertEquals(
+          types[column],
+          originalTypes[column],
+          `${method}: ${column}`,
+        );
+      }
       const rows = await output.getData();
-      assertEquals(rows.every((row) => row.queued === "kept"), true);
       assertEquals(
-        rows.every((row) => String(row.flightId).length === 1),
-        true,
+        rows.map((row) => row.flightId),
+        method === "findCycles" ? ["a", "A"] : ["a"],
       );
-      assertEquals(
-        rows.every((row) => String(row.edgeId).startsWith("edge-meta-")),
-        true,
-      );
-      assertEquals(
-        rows.every((row) => String(row.source).startsWith("source-meta-")),
-        true,
-      );
-      assertEquals(
-        rows.every((row) => String(row.target).startsWith("target-meta-")),
-        true,
-      );
+      for (const row of rows) {
+        assertEquals(row.queued, "kept");
+        assertEquals(
+          Object.fromEntries(
+            originalColumns.map((column) => [column, row[column]]),
+          ),
+          originalRows.get(row.flightId),
+          `${method}: original values for ${row.flightId}`,
+        );
+      }
     }
   } finally {
     await sdb.close();
