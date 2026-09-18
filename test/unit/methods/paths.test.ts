@@ -22,10 +22,11 @@ function loadScenario(
   const columns = weighted
     ? ["edgeId", "source", "target", "weight"]
     : ["edgeId", "source", "target"];
-  return sdb.newTable(name)
+  const table = sdb.newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(columns);
+  return weighted ? table.renameColumns({ weight: "cost" }) : table;
 }
 
 const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
@@ -72,8 +73,14 @@ function referencePathRows(
       pathId,
       step: index + 1,
       edgeId: routeStep.event.edgeId,
-      source: routeStep.source,
-      target: routeStep.target,
+      source: routeStep.event.source,
+      target: routeStep.event.target,
+      startTime: routeStep.event.startTime === null
+        ? null
+        : new Date(chronologicalBase + Number(routeStep.event.startTime)),
+      endTime: routeStep.event.endTime === null
+        ? null
+        : new Date(chronologicalBase + Number(routeStep.event.endTime)),
       weight: 1,
       total: index + 1,
     }))
@@ -141,8 +148,9 @@ Deno.test("paths preserves parallel edges, all weighted alternatives, and cumula
         .removeColumns("case");
       const actual = loadScenario(sdb, `${scenario}Actual`, scenario, true)
         .paths("source", "target", "edgeId", start, end, {
-          weight: "weight",
-        });
+          weight: "cost",
+        })
+        .removeColumns("cost");
       assertEquals(await actual.getData(), await expected.getData(), scenario);
     }
 
@@ -168,7 +176,8 @@ Deno.test("paths uses typed deterministic edge sequences for numeric and string 
   try {
     const numeric = sdb.newTable("numeric")
       .loadData("test/data/graphs/numeric.csv")
-      .paths("source", "target", "edgeId", 0, 10, { weight: "weight" });
+      .renameColumns({ weight: "cost" })
+      .paths("source", "target", "edgeId", 0, 10, { weight: "cost" });
     assertEquals(
       (await numeric.getData()).map((
         row,
@@ -183,6 +192,7 @@ Deno.test("paths uses typed deterministic edge sequences for numeric and string 
       target: "BIGINT",
       weight: "HUGEINT",
       total: "HUGEINT",
+      cost: "BIGINT",
     });
 
     const edgeRows = [
@@ -201,21 +211,21 @@ Deno.test("paths uses typed deterministic edge sequences for numeric and string 
 
     const wide = sdb.newTable("wideRoutes");
     await sdb.customQuery(`CREATE TABLE "wideRoutes" AS
-      SELECT edgeId::BIGNUM AS edgeId, source, target, weight::HUGEINT AS weight
+      SELECT edgeId::BIGNUM AS edgeId, source, target, cost::HUGEINT AS cost
       FROM (VALUES
         ('10000000000000000000000000000000000000000', 'A', 'B',
           '170141183460469231731687303715884105727'),
         ('2', 'A', 'B', '170141183460469231731687303715884105727'),
         ('3', 'B', 'C', '1')
-      ) edges(edgeId, source, target, weight)`);
+      ) edges(edgeId, source, target, cost)`);
     const wideRows = await wide.paths(
       "source",
       "target",
       "edgeId",
       "A",
       "C",
-      { weight: "weight" },
-    ).getData();
+      { weight: "cost" },
+    ).removeColumns("cost").getData();
     assertEquals(wideRows.map((row) => [row.pathId, row.step, row.edgeId]), [
       [0, 1, "2"],
       [0, 2, "3"],
@@ -242,9 +252,9 @@ Deno.test("paths preserves exact decimal accumulators", async () => {
       SELECT * FROM (VALUES
         (0, 'A', 'B', 99999999999999999999.25::DECIMAL(22,2)),
         (1, 'B', 'C', 0.50::DECIMAL(22,2))
-      ) edges(edgeId, source, target, weight)`);
+      ) edges(edgeId, source, target, cost)`);
     const result = table.paths("source", "target", "edgeId", "A", "C", {
-      weight: "weight",
+      weight: "cost",
     });
     assertEquals((await result.getData()).map((row) => row.total), [
       "99999999999999999999.25",
@@ -261,10 +271,10 @@ Deno.test("paths preserves an empty typed result for unknown and disconnected en
   try {
     const empty = sdb.newTable("emptyPaths");
     await sdb.customQuery(`CREATE TABLE "emptyPaths" (
-      edgeId VARCHAR, source VARCHAR, target VARCHAR, weight DECIMAL(8,3)
+      edgeId VARCHAR, source VARCHAR, target VARCHAR, cost DECIMAL(8,3)
     )`);
     empty.paths("source", "target", "edgeId", "A", "B", {
-      weight: "weight",
+      weight: "cost",
     });
     assertEquals(await empty.getData(), []);
     assertEquals(await empty.getTypes(), {
@@ -275,6 +285,7 @@ Deno.test("paths preserves an empty typed result for unknown and disconnected en
       target: "VARCHAR",
       weight: "DECIMAL(38,3)",
       total: "DECIMAL(38,3)",
+      cost: "DECIMAL(8,3)",
     });
     assertEquals(
       await loadScenario(sdb, "unknown", "baseline")
@@ -411,11 +422,11 @@ Deno.test("paths supports output destinations, snapshots, custom names, and addI
     assertEquals(await overwritten.getColumns(), [
       "pathId",
       "step",
+      "weight",
+      "total",
       "edgeId",
       "source",
       "target",
-      "weight",
-      "total",
     ]);
 
     const source = loadScenario(sdb, "preserved", "baseline");
@@ -434,7 +445,7 @@ Deno.test("paths supports output destinations, snapshots, custom names, and addI
     options.direction = "outgoing";
     options.outputTable = "changed";
     assertEquals(named.name, "namedPaths");
-    assertEquals((await named.getData()).map((row) => row.target), ["A", "A"]);
+    assertEquals((await named.getData()).map((row) => row.target), ["B", "C"]);
     assertEquals(await source.getRowCount(), 6);
 
     const generated = source.paths(
@@ -453,18 +464,20 @@ Deno.test("paths supports output destinations, snapshots, custom names, and addI
       .paths("ORIGIN", "Destination", "flightId", "A", "C", {
         weight: "COST",
       });
-    assertEquals((await custom.getData()).map((row) => row.edgeId), [
+    assertEquals((await custom.getData()).map((row) => row.flightId), [
       "F1",
       "F2",
     ]);
 
     const numericId = sdb.newTable("generatedNumeric")
       .loadData("test/data/graphs/without-edge-id.csv")
+      .removeColumns("weight")
       .addId("edgeId")
       .paths("source", "target", "edgeId", "A", "C");
     assertEquals((await numericId.getData()).map((row) => row.edgeId), [0, 1]);
     const prefixedId = sdb.newTable("generatedPrefixed")
       .loadData("test/data/graphs/without-edge-id.csv")
+      .removeColumns("weight")
       .addId("edgeId", { prefix: "edge-" })
       .paths("source", "target", "edgeId", "A", "C");
     assertEquals((await prefixedId.getData()).map((row) => row.edgeId), [
@@ -596,29 +609,32 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         {
           pathId: 0,
           step: 1,
-          edgeId: "F1",
-          source: "A",
-          target: "D",
           weight: 10,
           total: 10,
+          flightId: "F1",
+          origin: "A",
+          destination: "D",
+          minutes: 10,
         },
         {
           pathId: 1,
           step: 1,
-          edgeId: "F2",
-          source: "A",
-          target: "B",
           weight: 1,
           total: 1,
+          flightId: "F2",
+          origin: "A",
+          destination: "B",
+          minutes: 1,
         },
         {
           pathId: 1,
           step: 2,
-          edgeId: "F3",
-          source: "B",
-          target: "D",
           weight: 2,
           total: 3,
+          flightId: "F3",
+          origin: "B",
+          destination: "D",
+          minutes: 2,
         },
       ],
     );
@@ -645,15 +661,15 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         },
       ).getData()).map((row) => [
         row.pathId,
-        row.edgeId,
-        row.source,
-        row.target,
+        row.flightId,
+        row.origin,
+        row.destination,
         row.total,
       ]),
       [
-        [0, "F1", "D", "A", 10],
-        [1, "F3", "D", "B", 2],
-        [1, "F2", "B", "A", 3],
+        [0, "F1", "A", "D", 10],
+        [1, "F3", "B", "D", 2],
+        [1, "F2", "A", "B", 3],
       ],
     );
 
@@ -691,8 +707,8 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
           [0, 2, "F3", "B", "D", 3, 5],
         ]],
         ["D", "A", "incoming", [
-          [0, 1, "F3", "D", "B", 3, 3],
-          [0, 2, "F1", "B", "A", 2, 5],
+          [0, 1, "F3", "B", "D", 3, 3],
+          [0, 2, "F1", "A", "B", 2, 5],
         ]],
       ] as const
     ) {
@@ -715,9 +731,9 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
         (await result.getData()).map((row) => [
           row.pathId,
           row.step,
-          row.edgeId,
-          row.source,
-          row.target,
+          row.flightId,
+          row.origin,
+          row.destination,
           row.weight,
           row.total,
         ]),
@@ -731,15 +747,15 @@ Deno.test("paths custom-column weighted JSDoc examples match their tables", asyn
 
 Deno.test("paths and shortestPath match independent simple-route enumeration", async () => {
   const edges = [
-    { edgeId: 10, source: 0, target: 1, weight: 0 },
-    { edgeId: 2, source: 0, target: 1, weight: 0.5 },
-    { edgeId: 30, source: 1, target: 2, weight: 0 },
-    { edgeId: 4, source: 2, target: 1, weight: 0 },
-    { edgeId: 50, source: 2, target: 3, weight: 2 },
-    { edgeId: 6, source: 1, target: 3, weight: 4 },
-    { edgeId: 70, source: 0, target: 3, weight: 8 },
-    { edgeId: 8, source: 1, target: 1, weight: 0 },
-    { edgeId: 90, source: 4, target: 5, weight: 1 },
+    { edgeId: 10, source: 0, target: 1, cost: 0 },
+    { edgeId: 2, source: 0, target: 1, cost: 0.5 },
+    { edgeId: 30, source: 1, target: 2, cost: 0 },
+    { edgeId: 4, source: 2, target: 1, cost: 0 },
+    { edgeId: 50, source: 2, target: 3, cost: 2 },
+    { edgeId: 6, source: 1, target: 3, cost: 4 },
+    { edgeId: 70, source: 0, target: 3, cost: 8 },
+    { edgeId: 8, source: 1, target: 1, cost: 0 },
+    { edgeId: 90, source: 4, target: 5, cost: 1 },
   ];
   type Edge = typeof edges[number];
   const sdb = new SimpleDB();
@@ -780,7 +796,7 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
       });
       for (const weighted of [false, true]) {
         const cost = (route: Edge[]) =>
-          route.reduce((sum, edge) => sum + (weighted ? edge.weight : 1), 0);
+          route.reduce((sum, edge) => sum + (weighted ? edge.cost : 1), 0);
         const minimum = Math.min(...routes.map(cost));
         for (const method of ["paths", "shortestPath"] as const) {
           const selected = method === "paths"
@@ -789,14 +805,18 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
           const expected = selected.flatMap((route, pathId) => {
             let total = 0;
             return route.map((edge, index) => {
-              const weight = weighted ? edge.weight : 1;
+              const weight = weighted ? edge.cost : 1;
+              const original = edges.find((candidate) =>
+                candidate.edgeId === edge.edgeId
+              )!;
               total += weight;
               return {
                 pathId,
                 step: index + 1,
                 edgeId: edge.edgeId,
-                source: edge.source,
-                target: edge.target,
+                source: original.source,
+                target: original.target,
+                cost: edge.cost,
                 weight,
                 total,
               };
@@ -807,7 +827,7 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
             assertEquals(
               await table[method]("source", "target", "edgeId", start, end, {
                 direction,
-                ...(weighted ? { weight: "weight" } : {}),
+                ...(weighted ? { weight: "cost" } : {}),
               }).getData(),
               expected,
               `${method}: ${direction}, weighted=${weighted}`,
@@ -914,24 +934,31 @@ Deno.test("paths runs all five JSDoc examples with their full ordered output", a
     try {
       const table = sdb.newTable().loadArray(example.input);
       await example.run(table);
-      const columns = [
-        "pathId",
-        "step",
-        "edgeId",
-        "source",
-        "target",
-        "weight",
-        "total",
-      ];
+      const expectedRows = example.expected.map((values) => {
+        const edgeId = values[2];
+        const original = "edgeId" in example.input[0]
+          ? example.input.find((row) =>
+            "edgeId" in row && row.edgeId === edgeId
+          )!
+          : "flightId" in example.input[0]
+          ? example.input.find((row) =>
+            "flightId" in row && row.flightId === edgeId
+          )!
+          : {
+            ...example.input[Number(String(edgeId).replace("edge-", ""))],
+            edgeId,
+          };
+        return {
+          pathId: values[0],
+          step: values[1],
+          weight: values[5],
+          total: values[6],
+          ...original,
+        };
+      });
+      const columns = Object.keys(expectedRows[0]);
       assertEquals(await table.getColumns(), columns);
-      assertEquals(
-        await table.getData(),
-        example.expected.map((values) =>
-          Object.fromEntries(
-            columns.map((column, index) => [column, values[index]]),
-          )
-        ),
-      );
+      assertEquals(await table.getData(), expectedRows);
     } finally {
       await sdb.close();
     }
@@ -1015,6 +1042,8 @@ Deno.test("paths chronological traversal keeps first events and enforces both-co
           edgeId: "F1",
           source: "A",
           target: "B",
+          startTime: new Date("2025-01-01T08:00:00Z"),
+          endTime: new Date("2025-01-01T10:00:00Z"),
           weight: 1,
           total: 1,
         },
@@ -1024,6 +1053,8 @@ Deno.test("paths chronological traversal keeps first events and enforces both-co
           edgeId: "F3",
           source: "B",
           target: "D",
+          startTime: new Date("2025-01-01T11:00:00Z"),
+          endTime: new Date("2025-01-01T12:00:00Z"),
           weight: 1,
           total: 2,
         },
@@ -1051,6 +1082,8 @@ Deno.test("paths chronological traversal keeps first events and enforces both-co
         edgeId: "F1",
         source: "A",
         target: "B",
+        startTime: new Date("2025-01-01T08:00:00Z"),
+        endTime: new Date("2025-01-01T10:00:00Z"),
         weight: 1,
         total: 1,
       }],
@@ -1126,7 +1159,7 @@ Deno.test("paths chronological traversal preserves incoming orientation, paralle
       edgeId: "F1",
       source: "A",
       target: "B",
-      weight: 2,
+      cost: 2,
       startTime: new Date(chronologicalBase + 1000),
       endTime: new Date(chronologicalBase + 2000),
     },
@@ -1134,7 +1167,7 @@ Deno.test("paths chronological traversal preserves incoming orientation, paralle
       edgeId: "F1-copy",
       source: "A",
       target: "B",
-      weight: 4,
+      cost: 4,
       startTime: new Date(chronologicalBase + 1000),
       endTime: new Date(chronologicalBase + 2000),
     },
@@ -1142,16 +1175,16 @@ Deno.test("paths chronological traversal preserves incoming orientation, paralle
       edgeId: "F2",
       source: "B",
       target: "C",
-      weight: 3,
+      cost: 3,
       startTime: new Date(chronologicalBase + 3000),
       endTime: new Date(chronologicalBase + 4000),
     },
   ];
   const expected = [
-    [0, 1, "F2", "C", "B", 3, 3],
-    [0, 2, "F1", "B", "A", 2, 5],
-    [1, 1, "F2", "C", "B", 3, 3],
-    [1, 2, "F1-copy", "B", "A", 4, 7],
+    [0, 1, "F2", "B", "C", 3, 3],
+    [0, 2, "F1", "A", "B", 2, 5],
+    [1, 1, "F2", "B", "C", 3, 3],
+    [1, 2, "F1-copy", "A", "B", 4, 7],
   ];
   try {
     for (const ordered of [rows, rows.toReversed()]) {
@@ -1161,7 +1194,7 @@ Deno.test("paths chronological traversal preserves incoming orientation, paralle
           startTimeColumn: "startTime",
           endTimeColumn: "endTime",
           minGapMs: 1000,
-          weight: "weight",
+          weight: "cost",
         }).getData();
       assertEquals(
         result.map((row) => [
@@ -1266,6 +1299,7 @@ Deno.test("paths chronological traversal preserves nanoseconds and exact endpoin
         edgeId: 1,
         source: "9007199254740993",
         target: "9007199254740995",
+        time: "2025-01-01 00:00:00.000000001",
         weight: 1,
         total: 1,
       },
@@ -1275,6 +1309,7 @@ Deno.test("paths chronological traversal preserves nanoseconds and exact endpoin
         edgeId: 2,
         source: "9007199254740995",
         target: "9007199254740997",
+        time: "2025-01-01 00:00:00.000000002",
         weight: 1,
         total: 2,
       },
@@ -1426,11 +1461,14 @@ Deno.test("paths binds quoted endpoints and preserves mixed timestamp precision 
         assertEquals(await empty.getColumns(), [
           "pathId",
           "step",
+          "weight",
+          "total",
           "edgeId",
           "source",
           "target",
-          "weight",
-          "total",
+          "departure",
+          "arrival",
+          "cost",
         ]);
       }
       for (const minGapMs of [0, 1, 2]) {

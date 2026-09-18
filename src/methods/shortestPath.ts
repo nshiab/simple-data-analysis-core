@@ -3,12 +3,13 @@ import buildGraphTemporalCostStateSql from "../helpers/buildGraphTemporalCostSta
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import type { GraphId } from "../helpers/prepareGraphStarts.ts";
 import {
-  graphRouteResultSelect,
   type PreparedGraphRouteEndpoints,
   prepareGraphRouteEndpoints,
   prepareGraphRouteSql,
   validateGraphRouteInputs,
 } from "../helpers/prepareGraphRouteSql.ts";
+import graphRouteResultSchema from "../helpers/graphRouteResultSchema.ts";
+import graphRouteResultSelect from "../helpers/graphRouteResultSelect.ts";
 import prepareGraphTemporalSql, {
   type GraphTemporalOptions,
   type PreparedGraphTemporalOptions,
@@ -141,15 +142,11 @@ export default function shortestPath(
       if (temporalOptions !== undefined) {
         prepareGraphTemporalSql(schema, temporalOptions, "shortestPath()");
       }
-      return {
-        pathId: "BIGINT",
-        step: "BIGINT",
-        edgeId: validated.edgeIdType,
-        source: validated.nodeIdType,
-        target: validated.nodeIdType,
-        weight: validated.distanceType,
-        total: validated.distanceType,
-      };
+      return graphRouteResultSchema(
+        schema,
+        validated.distanceType,
+        "shortestPath()",
+      );
     },
   });
 }
@@ -340,7 +337,13 @@ function shortestPathSelect(
         ${q("steps")}
       FROM ${shortestRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      route.input,
+      route.edgeIdColumn,
+    )
+  }`;
 }
 
 function temporalShortestPathSelect(
@@ -482,5 +485,11 @@ function temporalShortestPathSelect(
           AS ${q("pathId")}, ${q("steps")}
       FROM ${shortestRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      route.input,
+      route.edgeIdColumn,
+    )
+  }`;
 }

@@ -43,11 +43,13 @@ Deno.test("chronological graph integration preserves direct events while constra
     const isolatedRoute = [{
       pathId: 0,
       step: 1,
-      edgeId: "F0",
-      source: "Toronto",
-      target: "Ottawa",
       weight: 1,
       total: 1,
+      flightId: "F0",
+      origin: "Toronto",
+      destination: "Ottawa",
+      departure: new Date("2025-01-01T12:00:00Z"),
+      arrival: new Date("2025-01-01T13:00:00Z"),
     }];
     assertEquals(
       await sdb.newTable().loadArray(isolated)
@@ -143,20 +145,24 @@ Deno.test("chronological graph integration preserves direct events while constra
         {
           pathId: 0,
           step: 1,
-          edgeId: "F1",
-          source: "A",
-          target: "B",
           weight: 1,
           total: 1,
+          flightId: "F1",
+          origin: "A",
+          destination: "B",
+          departure: new Date("2025-01-01T08:00:00Z"),
+          arrival: new Date("2025-01-01T10:00:00Z"),
         },
         {
           pathId: 0,
           step: 2,
-          edgeId: "F3",
-          source: "B",
-          target: "D",
           weight: 1,
           total: 2,
+          flightId: "F3",
+          origin: "B",
+          destination: "D",
+          departure: new Date("2025-01-01T11:00:00Z"),
+          arrival: new Date("2025-01-01T12:00:00Z"),
         },
       ],
     );
@@ -227,6 +233,7 @@ Deno.test("direct graph counts do not multiply parallel events by feasible trans
     assertEquals(
       new Set(
         (await sdb.newTable().loadArray(parallel)
+          .renameColumns({ weight: "cost" })
           .paths("source", "target", "edgeId", "A", "C", {
             startTimeColumn: "departure",
             endTimeColumn: "arrival",

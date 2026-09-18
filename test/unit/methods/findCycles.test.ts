@@ -22,10 +22,11 @@ function loadScenario(
   const columns = weighted
     ? ["edgeId", "source", "target", "weight"]
     : ["edgeId", "source", "target"];
-  return sdb.newTable(name)
+  const table = sdb.newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(columns);
+  return weighted ? table.renameColumns({ weight: "cost" }) : table;
 }
 
 function expectedCase(sdb: SimpleDB, name: string, caseName: string) {
@@ -115,8 +116,8 @@ function referenceChronologicalCycleRows(
         pathId,
         step: index + 1,
         edgeId: routeStep.event.edgeId,
-        source: routeStep.source,
-        target: routeStep.target,
+        source: routeStep.event.source,
+        target: routeStep.event.target,
         weight: 1,
         total: index + 1,
       }))
@@ -220,8 +221,9 @@ Deno.test("findCycles handles self-loops and distinct parallel-edge cycles", asy
       const loop = loadScenario(sdb, `loop_${direction}`, "self-loop", true)
         .findCycles("source", "target", "edgeId", {
           direction,
-          weight: "weight",
-        });
+          weight: "cost",
+        })
+        .removeColumns("cost");
       assertEquals(
         await loop.getData(),
         await expectedCase(
@@ -242,8 +244,8 @@ Deno.test("findCycles handles self-loops and distinct parallel-edge cycles", asy
         "source",
         "target",
         "edgeId",
-        { direction: "both", weight: "weight" },
-      );
+        { direction: "both", weight: "cost" },
+      ).removeColumns("cost");
       assertEquals(
         await result.getData(),
         await expectedCase(sdb, `${scenario}_oracle`, caseName).getData(),
@@ -266,12 +268,14 @@ Deno.test("findCycles handles self-loops and distinct parallel-edge cycles", asy
 Deno.test("findCycles preserves weights, floating sums, and numeric identity ordering", async () => {
   const sdb = new SimpleDB();
   try {
-    const zero = loadScenario(sdb, "zero", "zero-cycle", true).findCycles(
-      "source",
-      "target",
-      "edgeId",
-      { weight: "weight" },
-    );
+    const zero = loadScenario(sdb, "zero", "zero-cycle", true)
+      .findCycles(
+        "source",
+        "target",
+        "edgeId",
+        { weight: "cost" },
+      )
+      .removeColumns("cost");
     assertEquals(
       await zero.getData(),
       await expectedCase(sdb, "zero_oracle", "zero-cycle-weighted").getData(),
@@ -280,6 +284,7 @@ Deno.test("findCycles preserves weights, floating sums, and numeric identity ord
     for (const direction of ["outgoing", "incoming", "both"] as const) {
       const numeric = sdb.newTable(`numeric_${direction}`)
         .loadData("test/data/graphs/numeric-cycle.csv")
+        .removeColumns("weight")
         .findCycles("source", "target", "edgeId", { direction });
       const expected = sdb.newTable(`numeric_${direction}_oracle`)
         .loadData("test/data/graphs/expected/numeric/find_cycles.csv")
@@ -294,10 +299,10 @@ Deno.test("findCycles preserves weights, floating sums, and numeric identity ord
         (3, 0, 1, 0.1::FLOAT),
         (1, 1, 2, 0.2::FLOAT),
         (2, 2, 0, 0.3::FLOAT)
-      ) AS edges(edgeId, source, target, weight)`);
+      ) AS edges(edgeId, source, target, cost)`);
     assertEquals(
       await floating.findCycles("source", "target", "edgeId", {
-        weight: "weight",
+        weight: "cost",
       }).getTypes(),
       {
         pathId: "BIGINT",
@@ -307,6 +312,7 @@ Deno.test("findCycles preserves weights, floating sums, and numeric identity ord
         target: "INTEGER",
         weight: "FLOAT",
         total: "FLOAT",
+        cost: "FLOAT",
       },
     );
     const floatRows = await floating.getData();
@@ -332,12 +338,13 @@ Deno.test("findCycles preserves distinct edge combinations and is row-order dete
   const sdb = new SimpleDB();
   try {
     const run = (name: string, rows: typeof edges) =>
-      sdb.newTable(name).loadArray(rows).findCycles(
-        "source",
-        "target",
-        "edgeId",
-        { weight: "weight" },
-      ).getData();
+      sdb.newTable(name).loadArray(rows).renameColumns({ weight: "cost" })
+        .findCycles(
+          "source",
+          "target",
+          "edgeId",
+          { weight: "cost" },
+        ).getData();
     const expected = [
       [0, "E1", 1, 1],
       [0, "E3", 3, 4],
@@ -376,21 +383,21 @@ Deno.test("findCycles starts chronological cycles at a feasible event in both di
       source: "B",
       target: "C",
       time: new Date("2025-01-01T09:00:00Z"),
-      weight: 2,
+      cost: 2,
     },
     {
       edgeId: "F2",
       source: "C",
       target: "A",
       time: new Date("2025-01-01T10:00:00Z"),
-      weight: 3,
+      cost: 3,
     },
     {
       edgeId: "F3",
       source: "A",
       target: "B",
       time: new Date("2025-01-01T11:00:00Z"),
-      weight: 4,
+      cost: 4,
     },
   ];
   const sdb = new SimpleDB();
@@ -403,9 +410,9 @@ Deno.test("findCycles starts chronological cycles at a feasible event in both di
           [0, 3, "F3", "A", "B", 4, 9],
         ]],
         ["incoming", [
-          [0, 1, "F3", "B", "A", 4, 4],
-          [0, 2, "F2", "A", "C", 3, 7],
-          [0, 3, "F1", "C", "B", 2, 9],
+          [0, 1, "F3", "A", "B", 4, 4],
+          [0, 2, "F2", "C", "A", 3, 7],
+          [0, 3, "F1", "B", "C", 2, 9],
         ]],
       ] as const
     ) {
@@ -413,7 +420,7 @@ Deno.test("findCycles starts chronological cycles at a feasible event in both di
         .findCycles("source", "target", "edgeId", {
           direction,
           startTimeColumn: "time",
-          weight: "weight",
+          weight: "cost",
         });
       assertEquals(
         (await result.getData()).map((row) => [
@@ -486,7 +493,10 @@ Deno.test("findCycles applies strict, non-strict, gap, and self-loop chronology"
             endTimeColumn: "endTime",
             strictOrdering: false,
           });
-        assertEquals(await actual.getData(), expected);
+        assertEquals(
+          await actual.removeColumns(["startTime", "endTime"]).getData(),
+          expected,
+        );
       }
     }
 
@@ -608,7 +618,7 @@ Deno.test("findCycles normalizes temporal binary IDs while preserving decimal to
     const table = sdb.newTable("temporal_collated_cycles");
     await sdb.customQuery(`CREATE TABLE "temporal_collated_cycles" (
       edgeId VARCHAR COLLATE NOCASE, source VARCHAR COLLATE NOCASE,
-      target VARCHAR COLLATE NOCASE, time TIMESTAMP, weight DECIMAL(22,2)
+      target VARCHAR COLLATE NOCASE, time TIMESTAMP, cost DECIMAL(22,2)
     ); INSERT INTO "temporal_collated_cycles" VALUES
       ('a', 'A', 'B', TIMESTAMP '2025-01-01', 99999999999999999999.25),
       ('Z', 'B', 'A', TIMESTAMP '2025-01-01', 0.50),
@@ -619,7 +629,7 @@ Deno.test("findCycles normalizes temporal binary IDs while preserving decimal to
         direction,
         startTimeColumn: "time",
         strictOrdering: false,
-        weight: "weight",
+        weight: "cost",
         outputTable: true,
       }).convert({ weight: "string", total: "string" });
       assertEquals(
@@ -712,7 +722,10 @@ Deno.test("findCycles preserves temporal parallel identities and deterministic c
           endTimeColumn: "endTime",
           outputTable: true,
         });
-      assertEquals(await actual.getData(), expected);
+      assertEquals(
+        await actual.removeColumns(["startTime", "endTime"]).getData(),
+        expected,
+      );
     }
     assertEquals(expected.map((row) => [row.pathId, row.edgeId]), [
       [0, 10],
@@ -849,10 +862,10 @@ Deno.test("findCycles keeps typed empty outputs and supports output snapshots", 
   try {
     const empty = sdb.newTable("empty_cycles");
     await sdb.customQuery(`CREATE TABLE "empty_cycles" (
-      edgeId VARCHAR, source VARCHAR, target VARCHAR, weight DECIMAL(8,3)
+      edgeId VARCHAR, source VARCHAR, target VARCHAR, cost DECIMAL(8,3)
     )`);
     empty.findCycles("source", "target", "edgeId", {
-      weight: "weight",
+      weight: "cost",
     });
     assertEquals(await empty.getData(), []);
     assertEquals(await empty.getTypes(), {
@@ -863,6 +876,7 @@ Deno.test("findCycles keeps typed empty outputs and supports output snapshots", 
       target: "VARCHAR",
       weight: "DECIMAL(38,3)",
       total: "DECIMAL(38,3)",
+      cost: "DECIMAL(8,3)",
     });
 
     const overwritten = loadScenario(sdb, "overwritten_cycles", "triangle");
@@ -936,7 +950,7 @@ Deno.test("findCycles accepts custom and generated edge IDs", async () => {
       weight: "cost",
     });
     assertEquals(
-      (await custom.getData()).map((row) => [row.edgeId, row.total]),
+      (await custom.getData()).map((row) => [row.flightId, row.total]),
       [["F1", 1], ["F2", 3], ["F3", 6]],
     );
 
@@ -1058,9 +1072,9 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
       SELECT * FROM (VALUES
         (1, 0, 1, 99999999999999999999.25::DECIMAL(22,2)),
         (2, 1, 0, 0.50::DECIMAL(22,2))
-      ) AS edges(edgeId, source, target, weight)`);
+      ) AS edges(edgeId, source, target, cost)`);
     decimal.findCycles("source", "target", "edgeId", {
-      weight: "weight",
+      weight: "cost",
     }).convert({ weight: "string", total: "string" });
     assertEquals(await decimal.getData(), [
       {
@@ -1071,6 +1085,7 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
         target: 1,
         weight: "99999999999999999999.25",
         total: "99999999999999999999.25",
+        cost: "99999999999999999999.25",
       },
       {
         pathId: 0,
@@ -1080,6 +1095,7 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
         target: 0,
         weight: "0.50",
         total: "99999999999999999999.75",
+        cost: "0.50",
       },
     ]);
 
@@ -1088,12 +1104,12 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
       SELECT * FROM (VALUES
         (1, 0, 1, 18446744073709551615::UBIGINT),
         (2, 1, 0, 18446744073709551615::UBIGINT)
-      ) AS edges(edgeId, source, target, weight)`);
+      ) AS edges(edgeId, source, target, cost)`);
     const result = integers.findCycles("source", "target", "edgeId", {
-      weight: "weight",
+      weight: "cost",
     });
     assertEquals((await result.getTypes()).total, "HUGEINT");
-    result.convert({ weight: "string", total: "string" });
+    result.convert({ weight: "string", total: "string", cost: "string" });
     assertEquals(
       (await result.getData()).at(-1)?.total,
       "36893488147419103230",
@@ -1228,12 +1244,20 @@ Deno.test("findCycles matches independently normalized generated chronological c
       for (const direction of ["outgoing", "incoming"] as const) {
         for (const strictOrdering of [true, false]) {
           const minGap = seed % 2 === 0 ? 1_000n : 0n;
+          const eventRows = chronologicalRows(events);
+          const eventsById = new Map(
+            eventRows.map((event) => [event.edgeId, event]),
+          );
           const expected = referenceChronologicalCycleRows(
             events,
             direction,
             minGap,
             strictOrdering,
-          );
+          ).map((row) => ({
+            ...row,
+            startTime: eventsById.get(row.edgeId)!.startTime,
+            endTime: eventsById.get(row.edgeId)!.endTime,
+          }));
           assertEquals(expected.length > 0, true, `seed ${seed}`);
           for (
             const [order, rows] of [events, events.toReversed()].entries()
@@ -1268,7 +1292,7 @@ Deno.test("findCycles matches independently normalized generated chronological c
 
 Deno.test("findCycles matches an independent permutation oracle in every mode", async () => {
   type Id = string | number;
-  type Edge = { edgeId: Id; source: Id; target: Id; weight: number };
+  type Edge = { edgeId: Id; source: Id; target: Id; cost: number };
   type Direction = "outgoing" | "incoming" | "both";
   const encoder = new TextEncoder();
   const compare = (left: Id, right: Id): number => {
@@ -1350,22 +1374,28 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
     return [...cycles.values()].sort(compareCycles).flatMap((cycle, pathId) => {
       let total = 0;
       return cycle.map((edge, index) => {
-        total += edge.weight;
-        return { pathId, step: index + 1, ...edge, total };
+        total += edge.cost;
+        return {
+          pathId,
+          step: index + 1,
+          weight: edge.cost,
+          total,
+          ...edge,
+        };
       });
     });
   };
 
   const numeric: Edge[] = [
-    { edgeId: 10, source: 10, target: 0, weight: 0.25 },
-    { edgeId: 2, source: 2, target: 10, weight: 0.5 },
-    { edgeId: 30, source: 0, target: 2, weight: 2 },
-    { edgeId: 4, source: 0, target: 2, weight: 1.25 },
-    { edgeId: 0, source: 2, target: 0, weight: 0 },
-    { edgeId: 6, source: 10, target: 2, weight: 4 },
-    { edgeId: 7, source: 2, target: 2, weight: 0 },
-    { edgeId: 8, source: 20, target: 30, weight: 5 },
-    { edgeId: 9, source: 30, target: 20, weight: 6 },
+    { edgeId: 10, source: 10, target: 0, cost: 0.25 },
+    { edgeId: 2, source: 2, target: 10, cost: 0.5 },
+    { edgeId: 30, source: 0, target: 2, cost: 2 },
+    { edgeId: 4, source: 0, target: 2, cost: 1.25 },
+    { edgeId: 0, source: 2, target: 0, cost: 0 },
+    { edgeId: 6, source: 10, target: 2, cost: 4 },
+    { edgeId: 7, source: 2, target: 2, cost: 0 },
+    { edgeId: 8, source: 20, target: 30, cost: 5 },
+    { edgeId: 9, source: 30, target: 20, cost: 6 },
   ];
   const edgeIds = ["10", "2", "A", "a", "a|b", "a|", "", "é", "Z"];
   const nodeIds = new Map<Id, Id>([
@@ -1390,7 +1420,14 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
       ]] as const
     ) {
       for (const direction of ["outgoing", "incoming", "both"] as const) {
-        const expected = oracle(edges, direction);
+        const expected = oracle(edges, direction).map((row) => {
+          const original = edges.find((edge) => edge.edgeId === row.edgeId)!;
+          return {
+            ...row,
+            source: original.source,
+            target: original.target,
+          };
+        });
         for (const [order, rows] of [edges, edges.toReversed()].entries()) {
           const actual = await sdb.newTable(
             `oracle_${kind}_${direction}_${order}`,
@@ -1398,7 +1435,7 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
             .loadArray(rows)
             .findCycles("source", "target", "edgeId", {
               direction,
-              weight: "weight",
+              weight: "cost",
             }).getData();
           assertEquals(
             actual,
@@ -1457,9 +1494,9 @@ Deno.test("findCycles executes all eight JSDoc examples with their displayed row
       assertEquals(
         await triangle.getData(),
         expectedRows([
-          [0, 1, "E3", "A", "C", 1, 1],
-          [0, 2, "E2", "C", "B", 1, 2],
-          [0, 3, "E1", "B", "A", 1, 3],
+          [0, 1, "E3", "C", "A", 1, 1],
+          [0, 2, "E2", "B", "C", 1, 2],
+          [0, 3, "E1", "A", "B", 1, 3],
         ]),
       );
     }
@@ -1487,8 +1524,8 @@ Deno.test("findCycles executes all eight JSDoc examples with their displayed row
         expectedRows([
           [0, 1, "L1", "C", "C", 4, 4],
           [1, 1, "P1", "A", "B", 1, 1],
-          [1, 2, "P2", "B", "A", 2, 3],
-        ]),
+          [1, 2, "P2", "A", "B", 2, 3],
+        ]).map((row) => ({ ...row, cost: row.weight })),
       );
     }
     {
@@ -1504,11 +1541,22 @@ Deno.test("findCycles executes all eight JSDoc examples with their displayed row
         .log();
       assertEquals(
         await flights.getData(),
-        expectedRows([
+        [
           [0, 1, "F1", "A", "B", 1, 1],
           [0, 2, "F2", "B", "C", 2, 3],
           [0, 3, "F3", "C", "A", 3, 6],
-        ]),
+        ].map((
+          [pathId, step, flightId, origin, destination, weight, total],
+        ) => ({
+          pathId,
+          step,
+          weight,
+          total,
+          flightId,
+          origin,
+          destination,
+          minutes: weight,
+        })),
       );
     }
     {
@@ -1539,9 +1587,9 @@ Deno.test("findCycles executes all eight JSDoc examples with their displayed row
           [0, 3, "F3", "A", "B", 1, 3],
         ]],
         ["incoming", [
-          [0, 1, "F3", "B", "A", 1, 1],
-          [0, 2, "F2", "A", "C", 1, 2],
-          [0, 3, "F1", "C", "B", 1, 3],
+          [0, 1, "F3", "A", "B", 1, 1],
+          [0, 2, "F2", "C", "A", 1, 2],
+          [0, 3, "F1", "B", "C", 1, 3],
         ]],
       ] as const
     ) {
@@ -1574,7 +1622,22 @@ Deno.test("findCycles executes all eight JSDoc examples with their displayed row
         .log();
       assertEquals(
         await timedFlights.getData(),
-        expectedRows(rows.map((row) => [...row])),
+        rows.map(
+          ([pathId, step, flightId, origin, destination, weight, total]) => ({
+            pathId,
+            step,
+            weight,
+            total,
+            flightId,
+            origin,
+            destination,
+            departureTime: new Date(
+              `2025-01-01T${
+                String(Number(flightId.slice(1)) + 8).padStart(2, "0")
+              }:00:00Z`,
+            ),
+          }),
+        ),
       );
     }
   } finally {

@@ -1,11 +1,12 @@
 import type SimpleTable from "../class/SimpleTable.ts";
 import {
-  graphRouteResultSelect,
   type PreparedGraphRouteEndpoints,
   prepareGraphRouteEndpoints,
   prepareGraphRouteSql,
   validateGraphRouteInputs,
 } from "../helpers/prepareGraphRouteSql.ts";
+import graphRouteResultSchema from "../helpers/graphRouteResultSchema.ts";
+import graphRouteResultSelect from "../helpers/graphRouteResultSelect.ts";
 import type { GraphId } from "../helpers/prepareGraphStarts.ts";
 import prepareGraphTemporalSql, {
   type GraphTemporalOptions,
@@ -140,15 +141,7 @@ export default function paths(
       if (temporalOptions !== undefined) {
         prepareGraphTemporalSql(schema, temporalOptions, "paths()");
       }
-      return {
-        pathId: "BIGINT",
-        step: "BIGINT",
-        edgeId: validated.edgeIdType,
-        source: validated.nodeIdType,
-        target: validated.nodeIdType,
-        weight: validated.distanceType,
-        total: validated.distanceType,
-      };
+      return graphRouteResultSchema(schema, validated.distanceType, "paths()");
     },
   });
 }
@@ -286,7 +279,13 @@ function pathsSelect(
         ${q("steps")}
       FROM ${completeRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      route.input,
+      route.edgeIdColumn,
+    )
+  }`;
 }
 
 function temporalPathsSelect(
@@ -418,5 +417,11 @@ function temporalPathsSelect(
           AS ${q("pathId")}, ${q("steps")}
       FROM ${completeRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      route.input,
+      route.edgeIdColumn,
+    )
+  }`;
 }

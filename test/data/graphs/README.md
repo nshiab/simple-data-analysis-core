@@ -8,10 +8,9 @@ result was produced by a graph implementation.
 Select exactly one scenario before calling a graph method. Edge IDs are unique
 and endpoints are non-null within each scenario. `numeric.csv` is separate so
 CSV inference keeps node and edge IDs numeric. `empty.csv` contains only its
-header. `custom-columns.csv` verifies that input names such as `origin` and
-`flightId` still produce the fixed graph output names. `without-edge-id.csv`
-supports the documented `addId("edgeId")` and
-`addId("edgeId", { prefix: "edge-" })` preparation paths.
+header. `custom-columns.csv` verifies that route results preserve input names
+such as `origin` and `flightId`. `without-edge-id.csv` supports the documented
+`addId("edgeId")` and `addId("edgeId", { prefix: "edge-" })` preparation paths.
 
 Nodes are always discovered from both endpoint columns. There is no node file.
 Consequently, an ID absent from both columns is unknown, and the empty table has
@@ -86,18 +85,18 @@ arguments, not strings. For empty inputs, load the header-only file with
 explicit string endpoint/edge-ID and numeric weight types so inference does not
 define the test's schema.
 
-| Method                  | Expected file                       | Output after dropping `case`                    |
-| ----------------------- | ----------------------------------- | ----------------------------------------------- |
-| `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                    |
-| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                  |
-| `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                          |
-| `reachable()`           | `expected/reachable.csv`            | `start,node`                                    |
-| `distances()`           | `expected/distances.csv`            | `start,node,distance`                           |
-| `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,edgeId,source,target,weight,total` |
-| `paths()`               | `expected/paths.csv`                | `pathId,step,edgeId,source,target,weight,total` |
-| `connectedComponents()` | `expected/connected_components.csv` | `componentId,node`                              |
-| `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,edgeId,source,target,weight,total` |
-| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                        |
+| Method                  | Expected file                       | Output after dropping `case`                   |
+| ----------------------- | ----------------------------------- | ---------------------------------------------- |
+| `neighbors()`           | `expected/neighbors.csv`            | `start,node`                                   |
+| `degree()`              | `expected/degree.csv`               | `node,incoming,outgoing,total`                 |
+| `commonNeighbors()`     | `expected/common_neighbors.csv`     | `node`                                         |
+| `reachable()`           | `expected/reachable.csv`            | `start,node`                                   |
+| `distances()`           | `expected/distances.csv`            | `start,node,distance`                          |
+| `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,weight,total,<all input columns>` |
+| `paths()`               | `expected/paths.csv`                | `pathId,step,weight,total,<all input columns>` |
+| `connectedComponents()` | `expected/connected_components.csv` | `componentId,node`                             |
+| `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,weight,total,<all input columns>` |
+| `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                       |
 
 The files under `expected/numeric/` retain numeric identities for neighbors,
 distances, shortest paths, cycle normalization, and topological order. The
@@ -128,9 +127,12 @@ as separate paths even though their node sequences match.
 Route rows represent traversed connections. There is no synthetic start row. A
 two-edge path has two rows, and a cycle contains its real closing edge.
 Unweighted rows still have `weight=1` and a running sum: `total` for
-`shortestPath()`, `paths()`, and `findCycles()`. Incoming and both-direction
-results report endpoints in traversal order while retaining the stored edge ID;
-for example incoming edge B5 is emitted as E->D.
+`shortestPath()`, `paths()`, and `findCycles()`. The four generated columns come
+first, followed by every original input column in its original order. Incoming
+and both-direction results preserve the stored endpoint values; for example
+incoming edge B5 remains D->E even though traversal follows E to D. Input
+columns whose names conflict case-insensitively with `pathId`, `step`, `weight`,
+or `total` must be renamed with `renameColumns()` before calculation.
 
 ## Empty results and inexpensive errors
 

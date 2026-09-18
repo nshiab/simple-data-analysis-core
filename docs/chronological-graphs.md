@@ -68,9 +68,32 @@ existence check and reject the whole supplied table if any event is invalid. The
 check covers disconnected rows and rows that graph-specific rules would
 otherwise make ineligible. Queued filters and conversions run first, so callers
 can explicitly remove or repair invalid events before the check. Empty inputs
-are valid. Without chronological options, the existing static graph behavior and
-query path are unchanged. The deliberate schema exception is that
-`connectedComponents()` now returns `componentId` before `node`.
+are valid. Without chronological options, the existing graph algorithms remain
+unchanged. The approved output changes are that `connectedComponents()` returns
+`componentId` before `node`, and the three route methods preserve their original
+connection columns as described below.
+
+## Original connection columns
+
+`shortestPath()`, `paths()`, and `findCycles()` return `pathId`, `step`,
+`weight`, and `total` first, followed by every original input column in its
+original order. Original names, values, and types are preserved, including the
+columns selected as connection ID, source, target, weight, and timestamps. There
+are no additional standardized `edgeId`, `source`, or `target` columns. The
+unique, non-null connection-ID input parameter is still required to identify
+connections and routes reliably.
+
+An input column named `pathId`, `step`, `weight`, or `total` conflicts with an
+added column and causes an error before route computation. Matching ignores
+ASCII letter case, consistent with DuckDB identifiers. Rename the input column
+with `renameColumns()` first; for example, rename `weight` to `cost` and pass
+`weight: "cost"`. The rule applies even when the conflicting column is not used
+by the graph query, and to typed empty inputs.
+
+The final SQL joins route steps back to the input by exact connection ID, so
+wide original rows are not carried through recursive searches. Generated column
+types and original column types are also reflected in queued schema prediction.
+This is an intentional change from the parent PR's fixed seven-column output.
 
 ## Shared preparation interface
 
@@ -168,22 +191,26 @@ IDs; no new public edge-ID parameter is required.
 ## Incoming results
 
 Incoming traversal searches the same physically valid journey backward. It does
-not reverse an event's real chronology. Given:
+not reverse an event's real chronology. Given this input:
 
-| Event | Physical route | Time        | Weight |
-| ----- | -------------- | ----------- | ------ |
-| F1    | A → B          | 08:00–09:00 | 2      |
-| F2    | B → C          | 10:00–11:00 | 3      |
+| flightId | origin | destination | departureTime    | arrivalTime      | cost |
+| -------- | ------ | ----------- | ---------------- | ---------------- | ---- |
+| F1       | A      | B           | 2025-01-01 08:00 | 2025-01-01 09:00 | 2    |
+| F2       | B      | C           | 2025-01-01 10:00 | 2025-01-01 11:00 | 3    |
 
 an incoming route from C to A visits F2 and then F1. The transition predicate
-still checks `F1.end + gap <= F2.start`. Under the existing route result
-convention, the returned steps follow search order and orient endpoints in that
-direction:
+still checks `F1.end + gap <= F2.start`. With `weight: "cost"`, the returned
+steps and running totals follow search order, while every original value stays
+unchanged:
 
-| step | edgeId | source | target | weight | total |
-| ---- | ------ | ------ | ------ | ------ | ----- |
-| 1    | F2     | C      | B      | 3      | 3     |
-| 2    | F1     | B      | A      | 2      | 5     |
+| pathId | step | weight | total | flightId | origin | destination | departureTime       | arrivalTime         | cost |
+| ------ | ---- | ------ | ----- | -------- | ------ | ----------- | ------------------- | ------------------- | ---- |
+| 0      | 1    | 3      | 3     | F2       | B      | C           | 2025-01-01 10:00:00 | 2025-01-01 11:00:00 | 3    |
+| 0      | 2    | 2      | 5     | F1       | A      | B           | 2025-01-01 08:00:00 | 2025-01-01 09:00:00 | 2    |
+
+The same preservation rule applies when a connection is followed backward with
+`direction: "both"` without time options. This supersedes the earlier output
+convention that reversed the source and target values to match traversal.
 
 For reachability or distance from C, B is one incoming step away and A is two.
 An event arriving at B at 10:30 cannot be the predecessor of F2 even though the
@@ -306,13 +333,13 @@ are shuffled. Parallel events with distinct original edge IDs retain distinct
 identities.
 
 Incoming search starts from a physically later event and follows actual
-predecessors backward. Its result steps and endpoints use the existing incoming
-search orientation. For physical events B → C at 09:00, C → A at 10:00, and A →
-B at 11:00, outgoing output is B → C → A → B, while incoming output is B → A → C
-→ B using those events in 11:00, 10:00, 09:00 order. Both outputs represent the
-same physical event cycle. Their edge sequences are reversed, so identity and
-numbering are deterministic within each search direction and are not promised to
-match across directions.
+predecessors backward. Steps follow search order, but the original endpoint
+values remain unchanged. For physical events B → C at 09:00, C → A at 10:00, and
+A → B at 11:00, outgoing rows contain those events in 09:00, 10:00, 11:00 order;
+incoming rows contain A → B, C → A, and B → C in 11:00, 10:00, 09:00 order. Both
+outputs represent the same physical event cycle. Their edge sequences are
+reversed, so identity and numbering are deterministic within each search
+direction and are not promised to match across directions.
 
 ## Chronological strong components
 
@@ -386,7 +413,7 @@ case can be selected with `deno test --filter`.
 | `topologicalSort()` and `addId()` unchanged                                                                                                                                                                                       | Their implementation files are byte-identical to the approved baseline. `topologicalSort matches the shared baseline and duplicate-edge oracles` and the complete `addId()` suite cover public behavior. Neither signature advertises chronological settings.                                                                                                                                                                                                                                                  |
 | Incoming items 1–3: physical predecessor rule, output orientation, reject temporal `both` and explicit settings without columns                                                                                                   | “Incoming results”; the incoming chronological cases for all five direction-capable sequence methods; shared transition-helper incoming tests; each method's validation cases for temporal `both` and explicit `minGapMs: 0`; the consolidated explicit `strictOrdering: false` rejection regression. Static `both` cases remain in each existing suite.                                                                                                                                                       |
 | Shared implementation items 1–5: shared timestamps with explicit algorithms, queue/output/chaining/binding/cache/exact identity, inline public types, schemas and documented temporal differences, no extra date/context features | `prepareGraphTemporalOptions()` and `prepareGraphTemporalSql()` plus their helper suite; method-specific SQL builders; each method's queue/output/cache/exact-ID cases; inline signatures and JSDoc in `SimpleTable.ts`; and parameter-binding assertions in the method suites. The public API contains only the four agreed flat settings: no explicit dates, `maxGapMs`, virtual events, or direct-query temporal modes.                                                                                     |
-| Acceptance 1: unchanged static memberships, IDs, row order, and graph rules                                                                                                                                                       | Static calls keep the original graph algorithms and row sorting. The deliberate compatibility exception is that `connectedComponents()` now returns `componentId` before `node`; its weak, strong, chronological, queued, and empty-result tests cover the SQL and predicted schema order. Other method schemas remain unchanged, including `topologicalSort()`.                                                                                                                                               |
+| Acceptance 1: unchanged static memberships, IDs, row order, and graph rules                                                                                                                                                       | Static calls keep the original graph algorithms and row sorting. The approved output changes are `componentId` before `node` for `connectedComponents()`, and preservation of original columns after the four generated columns for `shortestPath()`, `paths()`, and `findCycles()`. Route endpoints now retain original physical values. Method tests cover revised schemas, empty results, and queued operations. Other method schemas, including `topologicalSort()`, remain unchanged.                     |
 | Acceptance 2: both columns, each fallback, invalid columns/types/options/values, activation, precision, timezone                                                                                                                  | Shared helper tests from `prepareGraphTemporalSql resolves fallback columns and validates DuckDB temporal types` through the nanosecond, mixed-precision, DATE-range, TIMESTAMPTZ, validity, and large-gap cases; the all-six-method invalid-value matrix proves null, infinity, and end-before-start fail before traversal despite named outputs, unknown routes, and downstream suppression. Queued filtering/conversion, selected-only columns, disconnected rows, and empty inputs are covered separately. |
 | Acceptance 3: backward time, strict/non-strict, equality, zero and positive gap boundaries                                                                                                                                        | Helper transition tests plus each method's ordering/gap cases, including mixed `TIMESTAMP`/`TIMESTAMP_NS` boundaries at 999999/1000000/1000001 ns around a one-millisecond gap.                                                                                                                                                                                                                                                                                                                                |
 | Acceptance 4: isolated and three-flight examples across direct and sequence queries                                                                                                                                               | `chronological graph integration preserves direct events while constraining transfers`; the independent evaluator standalone/exact-gap fixtures.                                                                                                                                                                                                                                                                                                                                                               |

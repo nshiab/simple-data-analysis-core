@@ -3389,12 +3389,19 @@ export default class SimpleTable extends Simple {
    * own unique, non-null ID in the column named by `edgeId`. You can create
    * these IDs with `addId()`.
    *
-   * The result has `pathId`, `step`, `edgeId`, `source`, `target`, `weight`,
-   * and `total` columns. Each row is one connection along a route. Steps
-   * start at one. The source and target show the direction taken along that
-   * route. The `weight` column is the connection cost, and `total` is the
-   * sum of those costs up to and including the current step.
-   * Without the `weight` option, each connection costs one.
+   * The result starts with `pathId`, `step`, `weight`, and `total`, followed
+   * by all original columns in their original order, with their names and
+   * values unchanged. Steps start at one and follow the search direction;
+   * original source and target values stay unchanged, even for incoming
+   * searches. The `weight` column is the connection cost, and `total` is the
+   * sum of those costs up to and including the current step. Without the
+   * `weight` option, each connection costs one.
+   *
+   * If an input column is already named `pathId`, `step`, `weight`, or `total`
+   * (regardless of capitalization), the method throws an error. Rename it
+   * with `renameColumns()` first.
+   *
+   * Each row is one connection along a route.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -3440,14 +3447,14 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | E1 | A | B | 1 | 1 |
-   * | 0 | 2 | E3 | B | D | 1 | 2 |
-   * | 0 | 3 | E5 | D | E | 1 | 3 |
-   * | 1 | 1 | E2 | A | C | 1 | 1 |
-   * | 1 | 2 | E4 | C | D | 1 | 2 |
-   * | 1 | 3 | E5 | D | E | 1 | 3 |
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | E1 | A | B |
+   * | 0 | 2 | 1 | 2 | E3 | B | D |
+   * | 0 | 3 | 1 | 3 | E5 | D | E |
+   * | 1 | 1 | 1 | 1 | E2 | A | C |
+   * | 1 | 2 | 1 | 2 | E4 | C | D |
+   * | 1 | 3 | 1 | 3 | E5 | D | E |
    *
    * For an input without connection IDs, use `addId()` first:
    *
@@ -3466,10 +3473,10 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | edge-0 | A | B | 1 | 1 |
-   * | 0 | 2 | edge-1 | B | E | 1 | 2 |
+   * | pathId | step | weight | total | source | target | edgeId |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | A | B | edge-0 |
+   * | 0 | 2 | 1 | 2 | B | E | edge-1 |
    *
    * The next two examples each start with these flights. The direct flight
    * takes ten minutes; the route through B and D takes three:
@@ -3493,11 +3500,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F2 | A | B | 1 | 1 |
-   * | 0 | 2 | F3 | B | D | 1 | 2 |
-   * | 0 | 3 | F4 | D | E | 1 | 3 |
+   * | pathId | step | weight | total | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1 | F2 | A | B | 1 |
+   * | 0 | 2 | 1 | 2 | F3 | B | D | 1 |
+   * | 0 | 3 | 1 | 3 | F4 | D | E | 1 |
    *
    * Without the `weight` option, the direct flight is shortest because it
    * uses only one connection:
@@ -3509,15 +3516,15 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | A | E | 1 | 1 |
+   * | pathId | step | weight | total | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1 | F1 | A | E | 10 |
    *
-   * Chronological routing can make a costlier static route the feasible
-   * optimum. Suppose the direct two-flight route departs B before F1 arrives,
-   * while the route through C connects after the required one-hour gap:
+   * With time options, the cheaper route through B is ruled out because F2
+   * leaves before F1 arrives. The route through C meets the one-hour minimum
+   * gap:
    *
-   * | flightId | origin | destination | departureTime | arrivalTime | minutes |
+   * | flightId | origin | destination | departureTime | arrivalTime | cost |
    * | --- | --- | --- | --- | --- | ---: |
    * | F1 | A | B | 2025-01-01 08:00 | 2025-01-01 10:00 | 1 |
    * | F2 | B | E | 2025-01-01 09:00 | 2025-01-01 10:00 | 1 |
@@ -3531,21 +3538,19 @@ export default class SimpleTable extends Simple {
    *     startTimeColumn: "departureTime",
    *     endTimeColumn: "arrivalTime",
    *     minGapMs: 60 * 60 * 1000,
-   *     weight: "minutes",
+   *     weight: "cost",
    *   })
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F3 | A | C | 2 | 2 |
-   * | 0 | 2 | F4 | C | E | 2 | 4 |
+   * | pathId | step | weight | total | flightId | origin | destination | departureTime | arrivalTime | cost |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 2 | 2 | F3 | A | C | 2025-01-01 08:00:00 | 2025-01-01 09:00:00 | 2 |
+   * | 0 | 2 | 2 | 4 | F4 | C | E | 2025-01-01 10:00:00 | 2025-01-01 11:00:00 | 2 |
    *
    * With `direction: "incoming"`, connections are followed from target to
-   * source. Chronological searches discover the physical journey in reverse:
-   * each next search step must end early enough to precede the current event.
-   * Returned steps and source/target values follow that reverse search order;
-   * the scheduled events themselves are not reversed. For this input:
+   * source. The original source and target values remain unchanged. For
+   * this input:
    *
    * | edgeId | source | target |
    * | --- | --- | --- |
@@ -3560,9 +3565,9 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | B | A | 1 | 1 |
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | F1 | A | B |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
@@ -3614,13 +3619,19 @@ export default class SimpleTable extends Simple {
    * connection needs its own unique, non-null ID in the column named by
    * `edgeId`. You can create these IDs with `addId()`.
    *
-   * The result has `pathId`, `step`, `edgeId`, `source`, `target`, `weight`,
-   * and `total` columns. Each row is one connection along a route. Steps
-   * start at one. The source and target show the direction taken along that
-   * route. The `weight` column is the connection cost, and `total` is the
-   * sum of those costs up to and including the current step. By default,
-   * each connection costs one. Use the `weight` option to calculate running
-   * totals from a numeric column instead.
+   * The result starts with `pathId`, `step`, `weight`, and `total`, followed
+   * by all original columns in their original order, with their names and
+   * values unchanged. Steps start at one and follow the search direction;
+   * original source and target values stay unchanged, even for incoming
+   * searches. The `weight` column is the connection cost, and `total` is the
+   * sum of those costs up to and including the current step. Without the
+   * `weight` option, each connection costs one.
+   *
+   * If an input column is already named `pathId`, `step`, `weight`, or `total`
+   * (regardless of capitalization), the method throws an error. Rename it
+   * with `renameColumns()` first.
+   *
+   * Each row is one connection along a route.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -3665,12 +3676,12 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | E1 | A | B | 1 | 1 |
-   * | 0 | 2 | E3 | B | D | 1 | 2 |
-   * | 1 | 1 | E2 | A | C | 1 | 1 |
-   * | 1 | 2 | E4 | C | D | 1 | 2 |
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | E1 | A | B |
+   * | 0 | 2 | 1 | 2 | E3 | B | D |
+   * | 1 | 1 | 1 | 1 | E2 | A | C |
+   * | 1 | 2 | 1 | 2 | E4 | C | D |
    *
    * For an input without connection IDs, use `addId()` first:
    *
@@ -3689,10 +3700,10 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | edge-0 | A | B | 1 | 1 |
-   * | 0 | 2 | edge-1 | B | D | 1 | 2 |
+   * | pathId | step | weight | total | source | target | edgeId |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | A | B | edge-0 |
+   * | 0 | 2 | 1 | 2 | B | D | edge-1 |
    *
    * The next three examples each start with these flights. The direct flight
    * takes ten minutes; the route through B takes three:
@@ -3715,11 +3726,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | A | D | 10 | 10 |
-   * | 1 | 1 | F2 | A | B | 1 | 1 |
-   * | 1 | 2 | F3 | B | D | 2 | 3 |
+   * | pathId | step | weight | total | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 10 | 10 | F1 | A | D | 10 |
+   * | 1 | 1 | 1 | 1 | F2 | A | B | 1 |
+   * | 1 | 2 | 2 | 3 | F3 | B | D | 2 |
    *
    * Without the `weight` option, the same routes are returned and total
    * counts connections:
@@ -3731,14 +3742,15 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | A | D | 1 | 1 |
-   * | 1 | 1 | F2 | A | B | 1 | 1 |
-   * | 1 | 2 | F3 | B | D | 1 | 2 |
+   * | pathId | step | weight | total | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1 | F1 | A | D | 10 |
+   * | 1 | 1 | 1 | 1 | F2 | A | B | 1 |
+   * | 1 | 2 | 1 | 2 | F3 | B | D | 2 |
    *
-   * With `direction: "incoming"`, the routes run from D to A. Connection IDs
-   * and weights are kept, while source and target show the direction taken:
+   * With `direction: "incoming"`, the search runs from D to A. Steps follow
+   * that direction, while the original origin and destination values stay
+   * unchanged:
    *
    * @example
    * ```ts
@@ -3750,17 +3762,17 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | D | A | 10 | 10 |
-   * | 1 | 1 | F3 | D | B | 2 | 2 |
-   * | 1 | 2 | F2 | B | A | 1 | 3 |
+   * | pathId | step | weight | total | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 10 | 10 | F1 | A | D | 10 |
+   * | 1 | 1 | 2 | 2 | F3 | B | D | 2 |
+   * | 1 | 2 | 1 | 3 | F2 | A | B | 1 |
    *
    * Chronological routes enforce the connection time between every pair of
    * steps. For the next two examples, the 09:00 flight leaves before F1
    * arrives, while F3 meets the one-hour minimum exactly:
    *
-   * | flightId | origin | destination | departureTime | arrivalTime | minutes |
+   * | flightId | origin | destination | departureTime | arrivalTime | cost |
    * | --- | --- | --- | --- | --- | ---: |
    * | F1 | A | B | 2025-01-01 08:00 | 2025-01-01 10:00 | 2 |
    * | F2 | B | C | 2025-01-01 09:00 | 2025-01-01 10:00 | 9 |
@@ -3775,15 +3787,15 @@ export default class SimpleTable extends Simple {
    *     startTimeColumn: "departureTime",
    *     endTimeColumn: "arrivalTime",
    *     minGapMs: 60 * 60 * 1000,
-   *     weight: "minutes",
+   *     weight: "cost",
    *   })
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | A | B | 2 | 2 |
-   * | 0 | 2 | F3 | B | D | 3 | 5 |
+   * | pathId | step | weight | total | flightId | origin | destination | departureTime | arrivalTime | cost |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 2 | 2 | F1 | A | B | 2025-01-01 08:00:00 | 2025-01-01 10:00:00 | 2 |
+   * | 0 | 2 | 3 | 5 | F3 | B | D | 2025-01-01 11:00:00 | 2025-01-01 12:00:00 | 3 |
    *
    * Searching backward from D finds the same physical journey. The steps and
    * cumulative totals follow the incoming search from D to A:
@@ -3796,15 +3808,15 @@ export default class SimpleTable extends Simple {
    *     startTimeColumn: "departureTime",
    *     endTimeColumn: "arrivalTime",
    *     minGapMs: 60 * 60 * 1000,
-   *     weight: "minutes",
+   *     weight: "cost",
    *   })
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F3 | D | B | 3 | 3 |
-   * | 0 | 2 | F1 | B | A | 2 | 5 |
+   * | pathId | step | weight | total | flightId | origin | destination | departureTime | arrivalTime | cost |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 3 | 3 | F3 | B | D | 2025-01-01 11:00:00 | 2025-01-01 12:00:00 | 3 |
+   * | 0 | 2 | 2 | 5 | F1 | A | B | 2025-01-01 08:00:00 | 2025-01-01 10:00:00 | 2 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
@@ -3849,16 +3861,22 @@ export default class SimpleTable extends Simple {
    * target.
    *
    * Each connection needs its own unique, non-null ID in the column named by
-   * `edgeId`. You can create these IDs with `addId()`. The result has
-   * `pathId`, `step`, `edgeId`, `source`, `target`, `weight`, and `total`
-   * columns. Each row is one connection, including the final connection back
-   * to the start. Steps start at one. The source and target show the
-   * direction taken around the loop.
+   * `edgeId`. You can create these IDs with `addId()`.
    *
-   * By default, each connection has a weight of one and `total` counts the
-   * connections taken so far. Use the `weight` option to calculate running
-   * totals from a numeric column instead. Weights must be non-null, finite,
-   * and non-negative.
+   * The result starts with `pathId`, `step`, `weight`, and `total`, followed
+   * by all original columns in their original order, with their names and
+   * values unchanged. Steps start at one and follow the search direction;
+   * original source and target values stay unchanged, even for incoming
+   * searches. The `weight` column is the connection cost, and `total` is the
+   * sum of those costs up to and including the current step. Without the
+   * `weight` option, each connection costs one.
+   *
+   * If an input column is already named `pathId`, `step`, `weight`, or `total`
+   * (regardless of capitalization), the method throws an error. Rename it
+   * with `renameColumns()` first.
+   *
+   * Each row is one connection, including the final connection back to the
+   * start. Weights must be non-null, finite, and non-negative.
    *
    * Without chronological options, each cycle starts at its smallest node ID.
    * With `direction: "both"`, a cycle and its reverse are returned once,
@@ -3914,11 +3932,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | E1 | A | B | 1 | 1 |
-   * | 0 | 2 | E2 | B | C | 1 | 2 |
-   * | 0 | 3 | E3 | C | A | 1 | 3 |
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | E1 | A | B |
+   * | 0 | 2 | 1 | 2 | E2 | B | C |
+   * | 0 | 3 | 1 | 3 | E3 | C | A |
    *
    * With `direction: "incoming"`, connections are followed from target to
    * source:
@@ -3930,11 +3948,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | E3 | A | C | 1 | 1 |
-   * | 0 | 2 | E2 | C | B | 1 | 2 |
-   * | 0 | 3 | E1 | B | A | 1 | 3 |
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | E3 | C | A |
+   * | 0 | 2 | 1 | 2 | E2 | B | C |
+   * | 0 | 3 | 1 | 3 | E1 | A | B |
    *
    * With `direction: "both"`, either direction is allowed. This cycle appears
    * once, in the direction that starts with E1:
@@ -3946,11 +3964,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | E1 | A | B | 1 | 1 |
-   * | 0 | 2 | E2 | B | C | 1 | 2 |
-   * | 0 | 3 | E3 | C | A | 1 | 3 |
+   * | pathId | step | weight | total | edgeId | source | target |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | E1 | A | B |
+   * | 0 | 2 | 1 | 2 | E2 | B | C |
+   * | 0 | 3 | 1 | 3 | E3 | C | A |
    *
    * Two separate connections between A and B form a cycle with `direction:
    * "both"`. The self-connection at C forms another cycle. For this input:
@@ -3971,11 +3989,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | L1 | C | C | 4 | 4 |
-   * | 1 | 1 | P1 | A | B | 1 | 1 |
-   * | 1 | 2 | P2 | B | A | 2 | 3 |
+   * | pathId | step | weight | total | edgeId | source | target | cost |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 4 | 4 | L1 | C | C | 4 |
+   * | 1 | 1 | 1 | 1 | P1 | A | B | 1 |
+   * | 1 | 2 | 2 | 3 | P2 | A | B | 2 |
    *
    * With the `weight` option, total is a running total of the selected
    * values. For these flights:
@@ -3995,11 +4013,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | A | B | 1 | 1 |
-   * | 0 | 2 | F2 | B | C | 2 | 3 |
-   * | 0 | 3 | F3 | C | A | 3 | 6 |
+   * | pathId | step | weight | total | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1 | F1 | A | B | 1 |
+   * | 0 | 2 | 2 | 3 | F2 | B | C | 2 |
+   * | 0 | 3 | 3 | 6 | F3 | C | A | 3 |
    *
    * For an input without connection IDs, use `addId()` first:
    *
@@ -4017,11 +4035,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | edge-0 | A | B | 1 | 1 |
-   * | 0 | 2 | edge-1 | B | C | 1 | 2 |
-   * | 0 | 3 | edge-2 | C | A | 1 | 3 |
+   * | pathId | step | weight | total | source | target | edgeId |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | A | B | edge-0 |
+   * | 0 | 2 | 1 | 2 | B | C | edge-1 |
+   * | 0 | 3 | 1 | 3 | C | A | edge-2 |
    *
    * Chronological cycles start where their connection times allow. These
    * instantaneous events form a cycle only in the order B → C → A → B:
@@ -4041,11 +4059,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F1 | B | C | 1 | 1 |
-   * | 0 | 2 | F2 | C | A | 1 | 2 |
-   * | 0 | 3 | F3 | A | B | 1 | 3 |
+   * | pathId | step | weight | total | flightId | origin | destination | departureTime |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | F1 | B | C | 2025-01-01 09:00:00 |
+   * | 0 | 2 | 1 | 2 | F2 | C | A | 2025-01-01 10:00:00 |
+   * | 0 | 3 | 1 | 3 | F3 | A | B | 2025-01-01 11:00:00 |
    *
    * Searching the same events in the incoming direction finds actual
    * predecessors. The output follows backward search order:
@@ -4060,11 +4078,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | edgeId | source | target | weight | total |
-   * | ---: | ---: | --- | --- | --- | ---: | ---: |
-   * | 0 | 1 | F3 | B | A | 1 | 1 |
-   * | 0 | 2 | F2 | A | C | 1 | 2 |
-   * | 0 | 3 | F1 | C | B | 1 | 3 |
+   * | pathId | step | weight | total | flightId | origin | destination | departureTime |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
+   * | 0 | 1 | 1 | 1 | F3 | A | B | 2025-01-01 11:00:00 |
+   * | 0 | 2 | 1 | 2 | F2 | C | A | 2025-01-01 10:00:00 |
+   * | 0 | 3 | 1 | 3 | F1 | B | C | 2025-01-01 09:00:00 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.

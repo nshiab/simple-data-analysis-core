@@ -3,7 +3,8 @@ import getGraphEdgeIdColumn from "../helpers/getGraphEdgeIdColumn.ts";
 import getGraphEndpointColumns from "../helpers/getGraphEndpointColumns.ts";
 import getGraphWeightColumn from "../helpers/getGraphWeightColumn.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
-import { graphRouteResultSelect } from "../helpers/prepareGraphRouteSql.ts";
+import graphRouteResultSchema from "../helpers/graphRouteResultSchema.ts";
+import graphRouteResultSelect from "../helpers/graphRouteResultSelect.ts";
 import prepareGraphTemporalSql, {
   type GraphTemporalOptions,
   type PreparedGraphTemporalOptions,
@@ -16,6 +17,7 @@ import {
 import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
+import validateGraphRouteResultSchema from "../helpers/validateGraphRouteResultSchema.ts";
 
 type FindCyclesOptions = GraphTemporalOptions & {
   direction?: GraphDirection;
@@ -122,15 +124,11 @@ export default function findCycles(
       if (temporalOptions !== undefined) {
         prepareGraphTemporalSql(schema, temporalOptions, "findCycles()");
       }
-      return {
-        pathId: "BIGINT",
-        step: "BIGINT",
-        edgeId: validated.edgeIdType,
-        source: validated.nodeIdType,
-        target: validated.nodeIdType,
-        weight: validated.distanceType,
-        total: validated.distanceType,
-      };
+      return graphRouteResultSchema(
+        schema,
+        validated.distanceType,
+        "findCycles()",
+      );
     },
   });
 }
@@ -152,6 +150,7 @@ function validateFindCyclesInputs(
   const weightColumn = weight === undefined
     ? undefined
     : getGraphWeightColumn(schema, weight, "findCycles()");
+  validateGraphRouteResultSchema(schema, "findCycles()");
   return {
     distanceType: weightColumn?.distanceType ?? "BIGINT",
     edgeIdType: edgeIdColumn.idType,
@@ -213,6 +212,8 @@ function findCyclesSelect(
       edgeWeight,
       distanceType,
       stepType,
+      input,
+      edgeIdColumn,
     );
   }
 
@@ -310,7 +311,13 @@ function findCyclesSelect(
         ${q("steps")}
       FROM ${completeRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      input,
+      edgeIdColumn,
+    )
+  }`;
 }
 
 function temporalFindCyclesSelect(
@@ -322,6 +329,8 @@ function temporalFindCyclesSelect(
   edgeWeight: string,
   distanceType: string,
   stepType: string,
+  input: string,
+  edgeIdColumn: ReturnType<typeof getGraphEdgeIdColumn>,
 ): string {
   const q = quoteIdentifier;
   const relations = prepared.relationNames([
@@ -454,5 +463,11 @@ function temporalFindCyclesSelect(
           AS BIGINT) AS ${q("pathId")}, ${q("steps")}
       FROM ${selectedRelation}
     )
-    ${graphRouteResultSelect(rankedRelation)}`;
+    ${
+    graphRouteResultSelect(
+      rankedRelation,
+      input,
+      edgeIdColumn,
+    )
+  }`;
 }

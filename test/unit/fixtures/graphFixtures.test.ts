@@ -191,32 +191,32 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "case",
       "pathId",
       "step",
+      "weight",
+      "total",
       "edgeId",
       "source",
       "target",
-      "weight",
-      "total",
     ],
     "paths.csv": [
       "case",
       "pathId",
       "step",
+      "weight",
+      "total",
       "edgeId",
       "source",
       "target",
-      "weight",
-      "total",
     ],
     "connected_components.csv": ["case", "componentId", "node"],
     "find_cycles.csv": [
       "case",
       "pathId",
       "step",
+      "weight",
+      "total",
       "edgeId",
       "source",
       "target",
-      "weight",
-      "total",
     ],
     "topological_sort.csv": ["case", "node", "componentId", "order"],
   };
@@ -308,6 +308,37 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
         const availableEdges = scenario
           ? edgeRows.filter((row) => row.scenario === scenario)
           : edgeRows;
+        const orientations = pathRows.map((row) => {
+          const forward = { source: row.source, target: row.target };
+          const backward = { source: row.target, target: row.source };
+          return caseName.includes("-both")
+            ? [forward, backward]
+            : caseName.includes("-incoming")
+            ? [backward]
+            : [forward];
+        });
+        const orient = (
+          index: number,
+          selected: { source: string; target: string }[],
+        ): { source: string; target: string }[] | undefined => {
+          if (index === orientations.length) {
+            if (
+              path.includes("find_cycles") &&
+              selected.at(-1)!.target !== selected[0].source
+            ) return undefined;
+            return selected;
+          }
+          for (const candidate of orientations[index]) {
+            if (
+              index === 0 || candidate.source === selected.at(-1)!.target
+            ) {
+              const result = orient(index + 1, [...selected, candidate]);
+              if (result) return result;
+            }
+          }
+        };
+        const traversal = orient(0, []);
+        assert(traversal, `${path}: ${caseName} has disconnected traversal`);
         pathRows.forEach((row, i) => {
           assertEquals(Number(row.step), i + 1, `${path}: ${caseName}`);
           distance += Number(row.weight);
@@ -327,21 +358,14 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
           assert(edge, `${path}: ${caseName} references ${row.edgeId}`);
           const forward = edge.source === row.source &&
             edge.target === row.target;
-          const backward = edge.source === row.target &&
-            edge.target === row.source;
           assert(
-            caseName.includes("-both")
-              ? forward || backward
-              : caseName.includes("-incoming")
-              ? backward
-              : forward,
-            `${path}: ${caseName} has wrong traversal for ${row.edgeId}`,
+            forward,
+            `${path}: ${caseName} changed the original endpoints for ${row.edgeId}`,
           );
           assertEquals(
             Number(row.weight),
             caseName.endsWith("-weighted") ? Number(edge.weight) : 1,
           );
-          if (i > 0) assertEquals(row.source, pathRows[i - 1].target);
         });
         assertEquals(
           new Set(pathRows.map((row) => row.edgeId)).size,
@@ -349,10 +373,10 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
           `${path}: ${caseName} reuses an edge`,
         );
         if (path.includes("find_cycles")) {
-          assertEquals(pathRows.at(-1)!.target, pathRows[0].source);
+          assertEquals(traversal.at(-1)!.target, traversal[0].source);
           assertEquals(
-            pathRows[0].source,
-            pathRows.map((row) => row.source).toSorted((a, b) =>
+            traversal[0].source,
+            traversal.map((row) => row.source).toSorted((a, b) =>
               compareIds(a, b, numeric)
             )[0],
             `${path}: ${caseName} must start at its smallest node`,
@@ -365,13 +389,13 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
             );
           }
           assertEquals(
-            new Set(pathRows.map((row) => row.source)).size,
-            pathRows.length,
+            new Set(traversal.map((row) => row.source)).size,
+            traversal.length,
           );
         } else {
           const nodes = [
-            pathRows[0].source,
-            ...pathRows.map((row) => row.target),
+            traversal[0].source,
+            ...traversal.map((row) => row.target),
           ];
           assertEquals(
             new Set(nodes).size,
