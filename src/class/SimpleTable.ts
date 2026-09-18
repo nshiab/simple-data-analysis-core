@@ -3877,9 +3877,9 @@ export default class SimpleTable extends Simple {
    * start. Weights must be non-null, finite, and non-negative.
    *
    * If a cycle can start at several requested nodes, each starting node
-   * produces a separate result with its own `pathId`. Empty arrays and
-   * duplicate starting IDs throw an error. Unknown IDs or starts with no
-   * cycles produce no rows.
+   * produces a separate result with its own `pathId`. Passing an empty array
+   * or duplicate IDs in `startNodes` throws an error. Unknown IDs or starts
+   * with no cycles produce no rows.
    *
    * With `direction: "both"`, a cycle and its reverse are returned once per
    * starting node, choosing the smaller sequence of connection IDs. Cycles
