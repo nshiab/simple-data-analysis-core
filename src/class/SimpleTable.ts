@@ -3424,6 +3424,8 @@ export default class SimpleTable extends Simple {
    * There is no limit on route length or the number of tied routes returned.
    * Finding many tied routes can take a long time and use substantial memory.
    *
+   * The first example uses this table:
+   *
    * | edgeId | source | target |
    * | --- | --- | --- |
    * | E1 | A | B |
