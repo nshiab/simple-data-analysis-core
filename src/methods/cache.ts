@@ -38,7 +38,7 @@ import {
   unchangedCacheTableDependenciesMessage,
 } from "../helpers/cacheTableDependencies.ts";
 
-const CACHE_FORMAT_VERSION = "duckdb-v4";
+const CACHE_FORMAT_VERSION = "duckdb-v5";
 
 type CacheSource = {
   file: string | null;

@@ -1,3 +1,4 @@
+import umap from "../methods/umap.ts";
 import logBottom from "../methods/logBottom.ts";
 import log from "../methods/log.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
@@ -1088,6 +1089,85 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     createVssIndex(this, column, options);
+    return this;
+  }
+
+  /**
+   * Reduces numeric vectors, such as embeddings, to a two-dimensional UMAP
+   * projection. The resulting coordinates are added as `umapX` and `umapY`,
+   * while all existing columns (including the source vector column), their
+   * values and types, and the input row order are preserved. DuckDB computes
+   * neighbors and the fuzzy graph; TypeScript optimizes the coordinates without
+   * copying the input vectors into JavaScript. Neighbor search is selected
+   * automatically.
+   *
+   * The defaults are a starting point for exploration. To adjust the projection:
+   *
+   * - `neighbors` (default `15`): How many nearby points influence the layout.
+   *   Smaller values emphasize local detail but can fragment groups. Larger
+   *   values emphasize broader structure, can hide local detail, and generally
+   *   require more time and memory.
+   * - `metric` (default `"euclidean"`): How similarity is measured. Euclidean
+   *   compares distance, including differences in vector magnitude. Cosine
+   *   compares direction, ignoring magnitude. Choose according to what makes
+   *   vectors similar in your data; neither is universally better.
+   * - `epochs` (default `200`): How many passes refine the coordinates. Fewer
+   *   passes finish sooner but may leave the layout unfinished. More passes
+   *   allow further refinement and take longer, with diminishing returns.
+   * - `minDistance` (default `0.1`): How tightly points can group in the
+   *   projection. Smaller values allow tighter clumps; larger values spread
+   *   points out. This changes the layout's appearance, not an accuracy level
+   *   or the number of optimization passes.
+   * - `learningRate` (default `1`): The initial size of coordinate adjustments.
+   *   Smaller values make gentler adjustments and may need more epochs. Larger
+   *   values make bigger adjustments but can overshoot useful positions. This
+   *   does not change the number of passes.
+   * - `negativeSamples` (default `5`): How many random points are sampled for
+   *   repulsion per attractive update. Smaller values reduce work and
+   *   repulsion; larger values increase both, tending to separate unrelated
+   *   points more strongly. More samples do not guarantee a better projection.
+   *
+   * @param column - The column containing numeric vector embeddings.
+   * @param options - Optional projection settings.
+   * @param options.neighbors - Neighborhood size, including the point itself. Integer of at least 2, clamped to row count minus one. Defaults to 15.
+   * @param options.metric - Input distance metric: "euclidean" or "cosine". Defaults to "euclidean".
+   * @param options.epochs - Integer number of refinement passes, at least 1. Defaults to 200.
+   * @param options.seed - Integer used to initialize random choices. Defaults to 42.
+   * @param options.minDistance - Grouping distance parameter between 0 and 1. Defaults to 0.1.
+   * @param options.learningRate - Finite, positive initial learning rate. Defaults to 1.
+   * @param options.negativeSamples - Integer number of samples used to separate unrelated points, at least 1. Defaults to 5.
+   * @returns The table, so methods can be chained.
+   * @category Vector Search
+   *
+   * @example
+   * ```ts
+   * await table.umap("embedding", {
+   *   metric: "cosine",
+   *   seed: 42,
+   * }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table.umap("embedding", {
+   *   neighbors: 30,
+   *   minDistance: 0.25,
+   * }).selectColumns(["label", "umapX", "umapY"]).log();
+   * ```
+   */
+  umap(
+    column: string,
+    options: {
+      neighbors?: number;
+      metric?: "euclidean" | "cosine";
+      epochs?: number;
+      seed?: number;
+      minDistance?: number;
+      learningRate?: number;
+      negativeSamples?: number;
+    } = {},
+  ): this {
+    umap(this, column, options);
     return this;
   }
 
@@ -4892,39 +4972,44 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Assigns bins for specified column values based on an interval size.
+   * Adds numeric start and end columns for bins of the specified interval size.
+   * Each bin includes its start and excludes its end: `start <= value < end`.
+   * A value exactly on an end boundary belongs to the next bin. Null source
+   * values produce null in both output columns.
    *
-   * @param column - The column containing values from which bins will be computed.
-   * @param interval - The interval size for binning the values.
-   * @param newColumn - The name of the new column where the bins will be stored.
+   * @param column - The numeric column containing values from which bins will be computed.
+   * @param interval - The finite, positive interval size for binning the values.
+   * @param startColumn - The required name of the new numeric column containing inclusive bin starts.
+   * @param endColumn - The required name of the new numeric column containing exclusive bin ends. Must differ from startColumn.
    * @param options - An optional object with configuration options:
-   * @param options.startValue - The starting value for binning. Defaults to the minimum value in the specified column.
+   * @param options.startValue - The finite starting value for binning, no greater than the minimum source value. Defaults to the minimum value in the specified column.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
-   * // Assigns a bin for each row in a new 'bins' column based on 'column1' values, with an interval of 10.
-   * // If the minimum value in 'column1' is 5, the bins will follow this pattern: "[5-14]", "[15-24]", etc.
-   * await table.bins("column1", 10, "bins").log();
+   * // If the minimum is 5, bins have boundaries 5 and 15, 15 and 25, etc.
+   * await table.bins("column1", 10, "binStart", "binEnd").log();
    * ```
    *
    * @example
    * ```ts
-   * // Assigns bins starting at a specific value (0) with an interval of 10.
-   * // The bins will follow this pattern: "[0-9]", "[10-19]", "[20-29]", etc.
-   * await table.bins("column1", 10, "bins", { startValue: 0 }).log();
+   * // Bins start at 0: a value of 10 has binStart 10 and binEnd 20.
+   * await table
+   *   .bins("column1", 10, "binStart", "binEnd", { startValue: 0 })
+   *   .log();
    * ```
    */
   bins(
     column: string,
     interval: number,
-    newColumn: string,
+    startColumn: string,
+    endColumn: string,
     options: {
       startValue?: number;
     } = {},
   ): this {
-    bins(this, column, interval, newColumn, options);
+    bins(this, column, interval, startColumn, endColumn, options);
     return this;
   }
 
@@ -8255,8 +8340,10 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Logs a specified number of rows from the table to the console. By default, the first 10 rows are logged.
+   * Logs up to a specified number of rows from the table to the console. By default, the first 10 rows are logged.
    * You can optionally log the column types and filter the data based on conditions.
+   * The footer reports the total number of matching rows and, only when some rows
+   * are omitted, the number actually shown (for example, `100 rows in total / showing 15 rows`).
    * SQL dates and timestamps retain their native precision for display, including
    * temporal infinities. Lists and objects are stringified using the same nested
    * representations as `getData()`, then truncated according to `charsToLog`.
@@ -8269,7 +8356,7 @@ export default class SimpleTable extends Simple {
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    *
    * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
-   * @param options.count - The number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
+   * @param options.count - The maximum number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
    * @param options.types - Whether to log the column types along with the data. Defaults to the value set in the SimpleDB instance.
    * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
    * @returns A promise that resolves to the table, so methods can be chained.
