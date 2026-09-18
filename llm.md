@@ -3872,8 +3872,8 @@ column, between their timestamps. The `strictOrdering` option defaults to
 `true`, rejecting zero-duration gaps. These options only work with
 `direction: "outgoing"` or `direction: "incoming"`.
 
-Every connection remains eligible as a one-step route. Incoming searches follow
-actual earlier predecessors and emit them in backward search order.
+The minimum gap applies only between consecutive connections, not before the
+first connection.
 
 Routes are numbered from zero by comparing their sequences of connection IDs,
 element by element. Rows are sorted by `pathId`, then `step`. Reordering the
