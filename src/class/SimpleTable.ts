@@ -3381,7 +3381,8 @@ export default class SimpleTable extends Simple {
    * tie for shortest, all of them are returned. By default, the shortest
    * route uses the fewest connections. Use the `weight` option to find the
    * route with the smallest sum of values from a numeric column, such as
-   * travel time. Routes never repeat a node.
+   * travel time. A route cannot visit the same node twice, but different
+   * routes can share the same nodes.
    *
    * The `direction` option lets you follow connections from source to target,
    * from target to source, or in either direction. Each connection needs its
