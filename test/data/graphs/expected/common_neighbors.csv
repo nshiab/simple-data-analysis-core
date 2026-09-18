@@ -1,0 +1,9 @@
+case,node
+baseline-B-C-outgoing,D
+baseline-B-C-incoming,A
+baseline-B-C-both,A
+baseline-B-C-both,D
+common-A-B-outgoing,A
+common-A-B-outgoing,C
+common-A-B-both,A
+common-A-B-both,C

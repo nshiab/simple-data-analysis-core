@@ -1,0 +1,4 @@
+case,node,componentId,order
+numeric,0,0,1
+numeric,2,0,2
+numeric,10,0,3
