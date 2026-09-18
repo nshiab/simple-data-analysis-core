@@ -3392,9 +3392,9 @@ By default, connection direction is ignored. With the `mode` option set to
 "strong", nodes belong to the same group only if each can reach all the others
 by following connections from source to target.
 
-The result has `node` and `componentId` columns. Static calls return one row per
-node, sorted by node. Static groups are numbered from zero in order of their
-smallest node ID.
+The result has `node` and `componentId` columns. Without `startTimeColumn` or
+`endTimeColumn`, each node appears once, and rows are sorted by node. Groups are
+numbered from zero in order of their smallest node ID.
 
 Use the `startTimeColumn` or `endTimeColumn` options to follow connections in
 chronological order. The `minGapMs` option sets the minimum gap between
