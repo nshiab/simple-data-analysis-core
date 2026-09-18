@@ -99,13 +99,13 @@ export default function connectedComponents(
         temporalOptions,
       ),
     outputSchema: (schema) => ({
+      componentId: "BIGINT",
       node: validateInputs(
         schema,
         sourceColumn,
         targetColumn,
         temporalOptions,
       ).endpoints.idType,
-      componentId: "BIGINT",
     }),
   });
 }
@@ -198,7 +198,7 @@ function connectedComponentsSelect(
     return `WITH RECURSIVE ${common}, ${
       buildWeakGraphComponentsSql(edges, nodes, labels, roots)
     }
-    SELECT ${q("labels")}.${q("node")}, ${q("roots")}.${q("componentId")}
+    SELECT ${q("roots")}.${q("componentId")}, ${q("labels")}.${q("node")}
     FROM ${labels} AS ${q("labels")}
     INNER JOIN ${roots} AS ${q("roots")}
       ON ${q("labels")}.${q("__root_key")} =
@@ -239,7 +239,7 @@ function connectedComponentsSelect(
       FROM (SELECT DISTINCT ${q("__root_key")} FROM ${members})
         AS ${q("distinct_roots")}
     )
-    SELECT ${q("members")}.${q("node")}, ${q("roots")}.${q("componentId")}
+    SELECT ${q("roots")}.${q("componentId")}, ${q("members")}.${q("node")}
     FROM ${members} AS ${q("members")}
     INNER JOIN ${roots} AS ${q("roots")}
       ON ${q("members")}.${q("__root_key")} =

@@ -3392,7 +3392,7 @@ By default, connection direction is ignored. With the `mode` option set to
 "strong", nodes belong to the same group only if each can reach all the others
 by following connections from source to target.
 
-The result has `node` and `componentId` columns. Without `startTimeColumn` or
+The result has `componentId` and `node` columns. Without `startTimeColumn` or
 `endTimeColumn`, each node appears once, and rows are sorted by node. Groups are
 numbered from zero in order of their smallest node ID.
 
@@ -3462,12 +3462,12 @@ await table
   .log();
 ```
 
-| node | componentId |
-| ---- | ----------: |
-| A    |           0 |
-| B    |           0 |
-| C    |           1 |
-| D    |           1 |
+| componentId | node |
+| ----------: | ---- |
+|           0 | A    |
+|           0 | B    |
+|           1 | C    |
+|           1 | D    |
 
 The next two examples each start with this chain of connections:
 
@@ -3484,11 +3484,11 @@ await graph
   .log();
 ```
 
-| node | componentId |
-| ---- | ----------: |
-| A    |           0 |
-| B    |           0 |
-| C    |           0 |
+| componentId | node |
+| ----------: | ---- |
+|           0 | A    |
+|           0 | B    |
+|           0 | C    |
 
 With the `mode` option set to "strong", each node forms its own group. A can
 reach B and C, but neither can get back to A:
@@ -3501,11 +3501,11 @@ await graph
   .log();
 ```
 
-| node | componentId |
-| ---- | ----------: |
-| A    |           0 |
-| B    |           1 |
-| C    |           2 |
+| componentId | node |
+| ----------: | ---- |
+|           0 | A    |
+|           1 | B    |
+|           2 | C    |
 
 Adding C -> A would let every node reach the others, so all three would belong
 to the same group in "strong" mode too.
@@ -3532,12 +3532,12 @@ await transactions
   .log();
 ```
 
-| node | componentId |
-| ---- | ----------: |
-| A    |           0 |
-| B    |           0 |
-| B    |           1 |
-| C    |           1 |
+| componentId | node |
+| ----------: | ---- |
+|           0 | A    |
+|           0 | B    |
+|           1 | B    |
+|           1 | C    |
 
 #### `topologicalSort`
 

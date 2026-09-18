@@ -95,7 +95,7 @@ define the test's schema.
 | `distances()`           | `expected/distances.csv`            | `start,node,distance`                           |
 | `shortestPath()`        | `expected/shortest_path.csv`        | `pathId,step,edgeId,source,target,weight,total` |
 | `paths()`               | `expected/paths.csv`                | `pathId,step,edgeId,source,target,weight,total` |
-| `connectedComponents()` | `expected/connected_components.csv` | `node,componentId`                              |
+| `connectedComponents()` | `expected/connected_components.csv` | `componentId,node`                              |
 | `findCycles()`          | `expected/find_cycles.csv`          | `pathId,step,edgeId,source,target,weight,total` |
 | `topologicalSort()`     | `expected/topological_sort.csv`     | `node,componentId,order`                        |
 

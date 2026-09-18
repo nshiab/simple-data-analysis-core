@@ -2937,7 +2937,7 @@ export default class SimpleTable extends Simple {
    * option set to "strong", nodes belong to the same group only if each can
    * reach all the others by following connections from source to target.
    *
-   * The result has `node` and `componentId` columns. Without `startTimeColumn`
+   * The result has `componentId` and `node` columns. Without `startTimeColumn`
    * or `endTimeColumn`, each node appears once, and rows are sorted by node.
    * Groups are numbered from zero in order of their smallest node ID.
    *
@@ -2971,12 +2971,12 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | componentId |
-   * | --- | ---: |
-   * | A | 0 |
-   * | B | 0 |
-   * | C | 1 |
-   * | D | 1 |
+   * | componentId | node |
+   * | ---: | --- |
+   * | 0 | A |
+   * | 0 | B |
+   * | 1 | C |
+   * | 1 | D |
    *
    * The next two examples each start with this chain of connections:
    *
@@ -2994,11 +2994,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | componentId |
-   * | --- | ---: |
-   * | A | 0 |
-   * | B | 0 |
-   * | C | 0 |
+   * | componentId | node |
+   * | ---: | --- |
+   * | 0 | A |
+   * | 0 | B |
+   * | 0 | C |
    *
    * With the `mode` option set to "strong", each node forms its own group. A
    * can reach B and C, but neither can get back to A:
@@ -3012,11 +3012,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | componentId |
-   * | --- | ---: |
-   * | A | 0 |
-   * | B | 1 |
-   * | C | 2 |
+   * | componentId | node |
+   * | ---: | --- |
+   * | 0 | A |
+   * | 1 | B |
+   * | 2 | C |
    *
    * Adding C -> A would let every node reach the others, so all three would
    * belong to the same group in "strong" mode too.
@@ -3044,12 +3044,12 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | node | componentId |
-   * | --- | ---: |
-   * | A | 0 |
-   * | B | 0 |
-   * | B | 1 |
-   * | C | 1 |
+   * | componentId | node |
+   * | ---: | --- |
+   * | 0 | A |
+   * | 0 | B |
+   * | 1 | B |
+   * | 1 | C |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.

@@ -207,7 +207,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
       "weight",
       "total",
     ],
-    "connected_components.csv": ["case", "node", "componentId"],
+    "connected_components.csv": ["case", "componentId", "node"],
     "find_cycles.csv": [
       "case",
       "pathId",

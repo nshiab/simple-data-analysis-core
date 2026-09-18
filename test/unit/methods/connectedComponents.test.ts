@@ -164,6 +164,65 @@ Deno.test("connectedComponents strong mode requires mutual directed reachability
   }
 });
 
+Deno.test("connectedComponents keeps queued and SQL column order aligned in every mode", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = [
+      { source: "A", target: "B", time: new Date("2025-01-01T00:00:00Z") },
+      { source: "B", target: "A", time: new Date("2025-01-01T00:00:00Z") },
+    ];
+    const cases = [
+      { name: "weak", options: { outputTable: true } },
+      {
+        name: "strong",
+        options: { mode: "strong" as const, outputTable: true },
+      },
+      {
+        name: "chronological",
+        options: {
+          mode: "strong" as const,
+          outputTable: true,
+          startTimeColumn: "time",
+          strictOrdering: false,
+        },
+      },
+    ];
+
+    for (const { name, options } of cases) {
+      const result = sdb.newTable(`${name}ColumnOrder`).loadArray(rows)
+        .connectedComponents("source", "target", options);
+      const componentOp = result.pendingOps.findLast((operation) =>
+        operation.kind === "fusable" &&
+        operation.method === "connectedComponents()"
+      );
+      if (
+        componentOp?.kind !== "fusable" ||
+        componentOp.outputSchema === undefined
+      ) {
+        throw new Error(
+          `Missing queued connectedComponents() schema for ${name}`,
+        );
+      }
+      assertEquals(
+        Object.keys(componentOp.outputSchema({
+          source: "VARCHAR",
+          target: "VARCHAR",
+          time: "TIMESTAMP",
+        })),
+        ["componentId", "node"],
+      );
+
+      result.filter("node = 'B'").convert({ node: "string" });
+      const data = await result.getData();
+      assertEquals(await result.getColumns(), ["componentId", "node"]);
+      assertEquals(Object.keys(data[0]), ["componentId", "node"]);
+      assertEquals(data, [{ componentId: 0, node: "B" }]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("connectedComponents matches every shared fixture oracle case", async () => {
   const cases = [
     ["baseline-weak", "baseline", "weak"],
@@ -281,9 +340,10 @@ Deno.test("connectedComponents preserves exact numeric IDs and numeric ordering"
       { node: 10, componentId: 1 },
       { node: 20, componentId: 2 },
     ]);
+    assertEquals(await numeric.getColumns(), ["componentId", "node"]);
     assertEquals(await numeric.getTypes(), {
-      node: "BIGINT",
       componentId: "BIGINT",
+      node: "BIGINT",
     });
 
     const wide = sdb.newTable("wideComponents");
@@ -339,7 +399,7 @@ Deno.test("connectedComponents uses fixed names for custom columns and preserves
       { node: "B", componentId: 0 },
       { node: "C", componentId: 0 },
     ]);
-    assertEquals(await custom.getColumns(), ["node", "componentId"]);
+    assertEquals(await custom.getColumns(), ["componentId", "node"]);
 
     const empty = sdb.newTable("emptyComponents");
     await sdb.customQuery(
@@ -347,9 +407,10 @@ Deno.test("connectedComponents uses fixed names for custom columns and preserves
     );
     empty.connectedComponents("source", "target");
     assertEquals(await empty.getData(), []);
+    assertEquals(await empty.getColumns(), ["componentId", "node"]);
     assertEquals(await empty.getTypes(), {
-      node: "VARCHAR",
       componentId: "BIGINT",
+      node: "VARCHAR",
     });
   } finally {
     await sdb.close();
@@ -365,7 +426,7 @@ Deno.test("connectedComponents supports overwrite and source-preserving outputs"
       defaultOverwrite.connectedComponents("source", "target"),
       defaultOverwrite,
     );
-    assertEquals(await defaultOverwrite.getColumns(), ["node", "componentId"]);
+    assertEquals(await defaultOverwrite.getColumns(), ["componentId", "node"]);
 
     const explicitOverwrite = sdb.newTable("explicitOverwrite")
       .loadArray([{ source: "A", target: "B" }]);
@@ -376,6 +437,7 @@ Deno.test("connectedComponents supports overwrite and source-preserving outputs"
       explicitOverwrite,
     );
     assertEquals(await explicitOverwrite.getRowCount(), 2);
+    assertEquals(await explicitOverwrite.getColumns(), ["componentId", "node"]);
 
     const source = sdb.newTable("preservedComponents")
       .loadArray([{ source: "A", target: "B" }]);
@@ -384,6 +446,7 @@ Deno.test("connectedComponents supports overwrite and source-preserving outputs"
     }).filter("node = 'B'");
     assertEquals(named.name, "namedComponents");
     assertEquals(await named.getData(), [{ node: "B", componentId: 0 }]);
+    assertEquals(await named.getColumns(), ["componentId", "node"]);
     assertEquals(await source.getData(), [{ source: "A", target: "B" }]);
 
     const generated = source.connectedComponents("source", "target", {
@@ -393,6 +456,7 @@ Deno.test("connectedComponents supports overwrite and source-preserving outputs"
     assertEquals(generated.name.startsWith("table"), true);
     assertEquals(generated.name === source.name, false);
     assertEquals(await generated.getRowCount(), 2);
+    assertEquals(await generated.getColumns(), ["componentId", "node"]);
     assertEquals(await source.getColumns(), ["source", "target"]);
   } finally {
     await sdb.close();
@@ -579,6 +643,7 @@ Deno.test("connectedComponents output records its source as a cache dependency",
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
     assertEquals(computationRuns, 2);
+    assertEquals(await output.getColumns(), ["componentId", "node"]);
     assertEquals(partitions(await output.getData()), [["A", "B"], ["C", "D"]]);
   } finally {
     await secondSdb.close();
@@ -759,9 +824,10 @@ Deno.test("connectedComponents preserves empty numeric schemas in both modes", a
         outputTable: true,
       });
       assertEquals(await result.getData(), []);
+      assertEquals(await result.getColumns(), ["componentId", "node"]);
       assertEquals(await result.getTypes(), {
-        node: "BIGINT",
         componentId: "BIGINT",
+        node: "BIGINT",
       });
     }
   } finally {
@@ -785,9 +851,10 @@ Deno.test("connectedComponents preserves exact decimal identity and labels in bo
         mode,
         outputTable: true,
       });
+      assertEquals(await result.getColumns(), ["componentId", "node"]);
       assertEquals(await result.getTypes(), {
-        node: "DECIMAL(38,0)",
         componentId: "BIGINT",
+        node: "DECIMAL(38,0)",
       });
       assertEquals(await result.convert({ node: "string" }).getData(), [
         { node: "-10", componentId: 0 },
@@ -1153,9 +1220,10 @@ Deno.test("connectedComponents rejects invalid events and preserves valid empty 
       startTimeColumn: "time",
     });
     assertEquals(await emptyResult.getData(), []);
+    assertEquals(await emptyResult.getColumns(), ["componentId", "node"]);
     assertEquals(await emptyResult.getTypes(), {
-      node: "VARCHAR",
       componentId: "BIGINT",
+      node: "VARCHAR",
     });
     const invalid = sdb.newTable("invalidOnlyTemporalComponents");
     await sdb.customQuery(`CREATE TABLE "${invalid.name}" AS
@@ -1362,6 +1430,7 @@ Deno.test("connectedComponents preserves temporal queues, outputs, and option sn
     ]);
     assertEquals(result.name, "temporalComponentOutput");
     assertEquals(await result.getData(), [{ node: "B", componentId: 0 }]);
+    assertEquals(await result.getColumns(), ["componentId", "node"]);
     assertEquals(await source.getData(), [
       { source: "X", target: "Y", time: "2025-01-02T00:00:00Z" },
     ]);
@@ -1408,6 +1477,7 @@ Deno.test("connectedComponents temporal output records its source cache dependen
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
     assertEquals(computationRuns, 2);
+    assertEquals(await output.getColumns(), ["componentId", "node"]);
     assertEquals(await output.getData(), [
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },

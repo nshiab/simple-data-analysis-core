@@ -75,8 +75,8 @@ export default function buildChronologicalGraphComponentsSql(
       search,
     })
   }
-    SELECT ${q("nodes")}.${q("node")},
-      ${q("numbered")}.${q("componentId")}
+    SELECT ${q("numbered")}.${q("componentId")},
+      ${q("nodes")}.${q("node")}
     FROM ${numbered} AS ${q("numbered")}
     CROSS JOIN unnest(${q("numbered")}.${q("__members")}) WITH ORDINALITY
       AS ${q("member")}(${q("__key")}, ${q("__order")})
