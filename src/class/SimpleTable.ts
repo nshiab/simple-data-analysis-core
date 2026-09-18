@@ -3385,9 +3385,11 @@ export default class SimpleTable extends Simple {
    * Different routes can still share the same nodes.
    *
    * The `direction` option lets you follow connections from source to target,
-   * from target to source, or in either direction. Each connection needs its
-   * own unique, non-null ID in the column named by `edgeId`. You can create
-   * these IDs with `addId()`.
+   * from target to source, or in either direction.
+   *
+   * Each connection needs a unique, non-null ID. Pass the name of the column
+   * containing these IDs as the `edgeId` argument. If your table is missing
+   * an ID column, you can easily create one with `addId()`.
    *
    * The result starts with `pathId`, `step`, `weight`, and `total`, followed
    * by all original columns in their original order, with their names and
@@ -3615,9 +3617,11 @@ export default class SimpleTable extends Simple {
   /**
    * Finds all routes between two different nodes without repeating a node
    * along a route. The `direction` option lets you follow connections from
-   * source to target, from target to source, or in either direction. Each
-   * connection needs its own unique, non-null ID in the column named by
-   * `edgeId`. You can create these IDs with `addId()`.
+   * source to target, from target to source, or in either direction.
+   *
+   * Each connection needs a unique, non-null ID. Pass the name of the column
+   * containing these IDs as the `edgeId` argument. If your table is missing
+   * an ID column, you can easily create one with `addId()`.
    *
    * The result starts with `pathId`, `step`, `weight`, and `total`, followed
    * by all original columns in their original order, with their names and
@@ -3860,8 +3864,9 @@ export default class SimpleTable extends Simple {
    * either direction. By default, connections are followed from source to
    * target.
    *
-   * Each connection needs its own unique, non-null ID in the column named by
-   * `edgeId`. You can create these IDs with `addId()`.
+   * Each connection needs a unique, non-null ID. Pass the name of the column
+   * containing these IDs as the `edgeId` argument. If your table is missing
+   * an ID column, you can easily create one with `addId()`.
    *
    * The result starts with `pathId`, `step`, `weight`, and `total`, followed
    * by all original columns in their original order, with their names and
