@@ -3630,9 +3630,8 @@ export default class SimpleTable extends Simple {
    * `true`, rejecting zero-duration gaps. These options only work with
    * `direction: "outgoing"` or `direction: "incoming"`.
    *
-   * Every valid connection remains eligible as a one-step route, with no gap
-   * imposed before it. Incoming routes follow actual earlier predecessors and
-   * remain oriented in search order from `start` to `end`.
+   * The minimum gap applies only between consecutive connections, not before
+   * the first connection.
    *
    * Routes are numbered from zero by comparing their sequences of connection
    * IDs, element by element. Rows are sorted by `pathId`, then `step`.
