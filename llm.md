@@ -3643,6 +3643,11 @@ target to source, or in either direction. The result has `start`, `node`, and
 `distance` columns, sorted by `start`, then by increasing `distance`, then by
 `node` to break ties. The closest nodes appear first for each start.
 
+Each row gives the shortest distance from `start` to `node`. Intermediate steps
+along the route are not returned. To get the steps between two different nodes,
+use `shortestPath()` for the shortest routes or `paths()` for all routes without
+repeated nodes.
+
 A starting node appears in its own results only when a self-connection or a
 route leads back to it. Its distance is the shortest actual return route, using
 at least one connection. With `direction: "both"`, this can mean following the
