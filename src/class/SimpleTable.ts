@@ -2949,15 +2949,9 @@ export default class SimpleTable extends Simple {
    * `true`, rejecting zero-duration gaps. These options require an explicitly
    * supplied `mode: "strong"`.
    *
-   * Chronological calls return every maximal group in which every pair of
-   * distinct nodes can reach each other in chronological order. The two
-   * directions can use independent journeys, and journeys can pass through
-   * nodes outside the group. Groups can overlap, so a node can have several
-   * result rows. They are numbered from zero by their complete sorted member
-   * lists, and rows are sorted by group then node. All groups are returned
-   * without a result cap; their number can grow exponentially. Nodes in every
-   * valid event are included, even when they form singleton groups. An empty
-   * input produces no rows.
+   * With these options, nodes are grouped when each can reach all the others
+   * in chronological order. Groups can overlap, so a node may appear in
+   * several rows with different `componentId` values.
    *
    * For the first example, we start with this data:
    *
