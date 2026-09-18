@@ -156,6 +156,38 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
 
   await secondSdb.close();
 });
+Deno.test("should preserve geometry projections when loading from cache", async () => {
+  let computationRuns = 0;
+  const createCompute = (table: SimpleTable) => () => {
+    computationRuns++;
+    table.loadGeoData("test/geodata/files/pointsInside.json");
+  };
+
+  const firstSdb = new SimpleDB();
+  const firstTable = firstSdb.newTable("cacheGeometryProjection");
+  await firstTable.cache(createCompute(firstTable));
+  assertEquals(
+    (await firstTable.getTypes()).geom,
+    "GEOMETRY('EPSG:4326')",
+  );
+  await firstSdb.close();
+
+  const secondSdb = new SimpleDB();
+  const secondTable = secondSdb.newTable("cacheGeometryProjection");
+  await secondTable.cache(createCompute(secondTable));
+
+  assertEquals(computationRuns, 1);
+  assertEquals(
+    (await secondTable.getTypes()).geom,
+    "GEOMETRY('EPSG:4326')",
+  );
+  assertEquals(
+    await secondTable.getProjection("geom"),
+    "GEOMETRY('EPSG:4326')",
+  );
+
+  await secondSdb.close();
+});
 Deno.test("should restore fixed array types and VSS indexes from cache", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {

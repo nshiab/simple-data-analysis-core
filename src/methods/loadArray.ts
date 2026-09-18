@@ -1,13 +1,13 @@
 import {
   arrayValue,
   type DuckDBConnection,
-  DuckDBDataChunk,
   DuckDBDateValue,
   DuckDBTimestampTZValue,
   DuckDBTimestampValue,
   DuckDBTimeValue,
   type DuckDBValue,
 } from "@duckdb/node-api";
+import appendColumnBatches from "../helpers/appendColumnBatches.ts";
 import prepareGeometry from "../helpers/prepareGeometry.ts";
 import prepareJSON from "../helpers/prepareJSON.ts";
 import geometryFromJSON from "../helpers/geometryFromJSON.ts";
@@ -206,26 +206,13 @@ export async function executePreparedArray(
       })`,
     );
 
-    const appender = await (simpleTable.connection as DuckDBConnection)
-      .createAppender(staged);
-
-    try {
-      const duckDBTypes = storageTypes.map((d) => parseDuckDBType(d));
-      // The maximum capacity of a DuckDB data chunk is 2048 rows.
-      const chunkSize = 2000;
-      for (let start = 0; start < rowCount; start += chunkSize) {
-        const end = Math.min(start + chunkSize, rowCount);
-        const dataChunk = DuckDBDataChunk.create(duckDBTypes, end - start);
-        for (let i = 0; i < keys.length; i++) {
-          dataChunk.setColumnValues(i, columnsData[i].slice(start, end));
-        }
-        appender.appendDataChunk(dataChunk);
-      }
-
-      appender.flushSync();
-    } finally {
-      appender.closeSync();
-    }
+    await appendColumnBatches(
+      simpleTable.connection as DuckDBConnection,
+      staged,
+      storageTypes.map((type) => parseDuckDBType(type)),
+      rowCount,
+      (column, start, end) => columnsData[column].slice(start, end),
+    );
     if (!needsConversion) return;
     // CTAS is atomic: conversion must finish before the destination is replaced.
     await simpleTable.sdb.customQuery(

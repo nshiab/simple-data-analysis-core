@@ -5,7 +5,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
 import queueOp from "../helpers/queueOp.ts";
 import { prepareArray } from "./loadArray.ts";
-import { DuckDBDataChunk } from "@duckdb/node-api";
+import appendColumnBatches from "../helpers/appendColumnBatches.ts";
 import readMutationRows from "../helpers/readMutationRows.ts";
 import parseDuckDBType from "../helpers/parseDuckDBType.ts";
 
@@ -224,32 +224,22 @@ async function executeUpdateWithJS(
             .join(", ")
         })`,
       );
-      const appender = await simpleTable.connection!.createAppender(
+      await appendColumnBatches(
+        simpleTable.connection!,
         scratch.name,
+        columnTypes,
+        modified.length,
+        (column, start, end) => {
+          const key = keys[column];
+          return outputGeometry.includes(key)
+            ? geometryData.get(key)!.slice(start, end)
+            : source.types.has(key)
+            ? modified.slice(start, end).map((row) =>
+              source.toNative(row[key], columnTypes[column])
+            )
+            : added!.columnsData[newKeys.indexOf(key)].slice(start, end);
+        },
       );
-      try {
-        for (let start = 0; start < modified.length; start += 2000) {
-          const end = Math.min(start + 2000, modified.length);
-          const chunk = DuckDBDataChunk.create(columnTypes, end - start);
-          for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            chunk.setColumnValues(
-              i,
-              outputGeometry.includes(key)
-                ? geometryData.get(key)!.slice(start, end)
-                : source.types.has(key)
-                ? modified.slice(start, end).map((row) =>
-                  source.toNative(row[key], columnTypes[i])
-                )
-                : added!.columnsData[newKeys.indexOf(key)].slice(start, end),
-            );
-          }
-          appender.appendDataChunk(chunk);
-        }
-        appender.flushSync();
-      } finally {
-        appender.closeSync();
-      }
       const projection = keys.map((key) =>
         outputGeometry.includes(key)
           ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
