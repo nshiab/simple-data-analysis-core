@@ -1,5 +1,5 @@
 {
-  "generator": "test/data/hdbscan/quality-generate.py",
+  "referenceImplementation": "Python hdbscan 0.8.44",
   "seed": 192044,
   "python": "3.13.7",
   "packages": {

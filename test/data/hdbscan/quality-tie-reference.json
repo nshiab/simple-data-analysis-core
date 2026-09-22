@@ -1,5 +1,5 @@
 {
-  "generator": "test/data/hdbscan/quality-ties.py",
+  "referenceImplementation": "Python hdbscan 0.8.44",
   "packages": {
     "hdbscan": "0.8.44",
     "numpy": "2.2.6",

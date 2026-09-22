@@ -1,7 +1,0 @@
-hdbscan==0.8.44
-numpy==2.2.6
-scikit-learn==1.7.1
-scipy==1.16.1
-joblib==1.6.0
-threadpoolctl==3.6.0
-cloudpickle==3.1.2

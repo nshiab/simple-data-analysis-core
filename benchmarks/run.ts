@@ -108,24 +108,6 @@ async function localVersion(): Promise<string> {
   return `${config.version}/deno@${Deno.version.deno}`;
 }
 
-async function pythonVersions(): Promise<{
-  pandas: string;
-  geopandas: string;
-}> {
-  const output = await commandText({
-    command: "python3",
-    args: [
-      "-c",
-      "import sys,pandas,geopandas; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}|{pandas.__version__}|{geopandas.__version__}')",
-    ],
-  });
-  const [python, pandas, geopandas] = output.split("|");
-  return {
-    pandas: `pandas@${pandas}/python@${python}`,
-    geopandas: `geopandas@${geopandas}/python@${python}`,
-  };
-}
-
 async function rVersions(): Promise<{ tidyverse: string; sf: string }> {
   const output = await commandText({
     command: "Rscript",
@@ -207,36 +189,19 @@ async function profiledImplementations(): Promise<Implementation[]> {
 }
 
 async function implementations(): Promise<Implementation[]> {
-  const [local, python, r, duckdb] = await Promise.all([
+  const [local, r, duckdb] = await Promise.all([
     localVersion(),
-    pythonVersions(),
     rVersions(),
     rawDuckDBVersion(),
   ]);
   return [
     localImplementation(local),
     {
-      name: "pandas",
-      version: python.pandas,
-      command: () => ({
-        command: "python3",
-        args: [join(benchmarkDir, "tabular", "pandas.py")],
-      }),
-    },
-    {
       name: "tidyverse",
       version: r.tidyverse,
       command: () => ({
         command: "Rscript",
         args: [join(benchmarkDir, "tabular", "tidyverse.R")],
-      }),
-    },
-    {
-      name: "geopandas",
-      version: python.geopandas,
-      command: () => ({
-        command: "python3",
-        args: [join(benchmarkDir, "spatial", "geopandas.py")],
       }),
     },
     {
@@ -256,8 +221,8 @@ function forBenchmark(
   benchmark: BenchmarkName,
 ): Implementation[] {
   const names = benchmark === "tabular"
-    ? ["local", "pandas", "tidyverse", "duckdb"]
-    : ["local", "geopandas", "sf", "duckdb"];
+    ? ["local", "tidyverse", "duckdb"]
+    : ["local", "sf", "duckdb"];
   return names.map((name) => {
     const implementation = all.find((candidate) => candidate.name === name);
     if (implementation === undefined) {

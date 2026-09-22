@@ -34,7 +34,7 @@ Deno.test("cleaned benchmark outputs reject schema and value differences", async
       "time,station,station_name,tas,decade\n2020-01-01,1,Station,13,2020\n",
     );
     await assertRejects(
-      () => assertEquivalentCleanOutputs(expected, different, "pandas"),
+      () => assertEquivalentCleanOutputs(expected, different, "tidyverse"),
       Error,
       "1 row mismatches",
     );
@@ -43,7 +43,7 @@ Deno.test("cleaned benchmark outputs reject schema and value differences", async
       "time,station,station_name,tas\n2020-01-01,1,Station,12\n",
     );
     await assertRejects(
-      () => assertEquivalentCleanOutputs(expected, different, "pandas"),
+      () => assertEquivalentCleanOutputs(expected, different, "tidyverse"),
       Error,
       "cleaned output columns must be",
     );

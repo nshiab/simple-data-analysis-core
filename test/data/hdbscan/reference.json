@@ -235,7 +235,7 @@
       ]
     }
   ],
-  "generator": "test/data/hdbscan/generate_reference.py",
+  "referenceImplementation": "Python hdbscan 0.8.44",
   "packages": {
     "cloudpickle": "3.1.2",
     "hdbscan": "0.8.44",

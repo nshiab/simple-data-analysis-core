@@ -27,8 +27,7 @@ type Fixture = {
   }[];
 };
 
-// Python hdbscan 0.8.44 fixtures; regenerate with test/data/hdbscan/generate_*.py
-// using that directory's pinned requirements.txt.
+// Precomputed hdbscan 0.8.44 reference inputs and expected outputs.
 const fixture = JSON.parse(
   await Deno.readTextFile(
     new URL("../../data/hdbscan/reference.json", import.meta.url),

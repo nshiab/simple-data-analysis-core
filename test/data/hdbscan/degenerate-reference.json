@@ -1,5 +1,5 @@
 {
-  "generator": "test/data/hdbscan/generate_degenerate_reference.py",
+  "referenceImplementation": "Python hdbscan 0.8.44",
   "python": "3.13.7",
   "packages": {
     "hdbscan": "0.8.44",

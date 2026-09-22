@@ -26,7 +26,7 @@ function versionDetails(row: Aggregate): {
   library: string;
   runtime: string;
 } {
-  const runtimeMatch = row.version.match(/\/(deno|python|R)@([^/]+)$/);
+  const runtimeMatch = row.version.match(/\/(deno|R)@([^/]+)$/);
   const libraryVersion = runtimeMatch?.index === undefined
     ? row.version
     : row.version.slice(0, runtimeMatch.index);
@@ -45,7 +45,7 @@ function versionDetails(row: Aggregate): {
     } else {
       const name = libraryVersion.slice(0, separator);
       const version = libraryVersion.slice(separator + 1);
-      library = `${name === "geopandas" ? "GeoPandas" : name} ${version}`;
+      library = `${name} ${version}`;
     }
   }
   if (runtimeMatch === null) {
@@ -55,7 +55,6 @@ function versionDetails(row: Aggregate): {
   const version = runtimeMatch[2];
   const runtimeName: { [key: string]: string } = {
     deno: "Deno",
-    python: "Python",
     R: "R",
   };
   return {
@@ -85,9 +84,7 @@ function table(rows: Aggregate[]): string {
     const names: Record<string, string> = {
       local: "SDA-core",
       duckdb: "DuckDB",
-      pandas: "pandas",
       tidyverse: "tidyverse",
-      geopandas: "GeoPandas",
       sf: "sf",
     };
     return [

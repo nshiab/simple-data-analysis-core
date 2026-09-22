@@ -82,20 +82,18 @@ in the database, in the order the methods were called.
 
 These are end-to-end workflow comparisons.
 
-These benchmarks compare SDA-core with raw DuckDB and popular Python and R
-libraries, measuring duration and peak memory.
+These benchmarks compare SDA-core with raw DuckDB and R libraries, measuring
+duration and peak memory.
 
 They were run on a MacBook Pro with an Apple M4 Max and 64 GB of memory.
 
 <!-- benchmark-results:start -->
 
 **Tabular versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6);
-SDA-core 2.0.5 (Deno 2.9.6); pandas 3.0.5 (Python 3.14.7); tidyverse 2.0.0 (R
-4.6.1).
+SDA-core 2.0.5 (Deno 2.9.6); tidyverse 2.0.0 (R 4.6.1).
 
 **Spatial versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6);
-SDA-core 2.0.5 (Deno 2.9.6); GeoPandas 1.1.4 (Python 3.14.7); sf 1.1.2 (R
-4.6.1).
+SDA-core 2.0.5 (Deno 2.9.6); sf 1.1.2 (R 4.6.1).
 
 ### Tabular workload
 
@@ -108,7 +106,6 @@ and export the sorted results.
 | --------- | -------------: | ------------------: | ---------------: | ----------------: |
 | DuckDB    |  1.30 ± 0.03 s |               -9.7% |         2,457 MB |             -2.7% |
 | SDA-core  |  1.44 ± 0.03 s |            baseline |         2,524 MB |          baseline |
-| pandas    | 30.08 ± 0.07 s |            +1987.9% |         4,700 MB |            +86.2% |
 | tidyverse | 82.62 ± 0.22 s |            +5634.4% |         8,178 MB |           +224.0% |
 
 ### Spatial workload
@@ -119,12 +116,11 @@ in `benchmarks/data/`, we remove missing coordinates, create points, join trees
 to neighbourhoods, then count trees per neighbourhood and export the sorted
 results.
 
-| Library   | Mean duration | Duration difference | Mean peak memory | Memory difference |
-| --------- | ------------: | ------------------: | ---------------: | ----------------: |
-| DuckDB    | 0.78 ± 0.00 s |               -5.1% |           255 MB |             -5.8% |
-| SDA-core  | 0.82 ± 0.01 s |            baseline |           271 MB |          baseline |
-| GeoPandas | 1.25 ± 0.01 s |              +51.4% |           294 MB |             +8.5% |
-| sf        | 1.80 ± 0.01 s |             +118.9% |           490 MB |            +81.1% |
+| Library  | Mean duration | Duration difference | Mean peak memory | Memory difference |
+| -------- | ------------: | ------------------: | ---------------: | ----------------: |
+| DuckDB   | 0.78 ± 0.00 s |               -5.1% |           255 MB |             -5.8% |
+| SDA-core | 0.82 ± 0.01 s |            baseline |           271 MB |          baseline |
+| sf       | 1.80 ± 0.01 s |             +118.9% |           490 MB |            +81.1% |
 
 <!-- benchmark-results:end -->
 
