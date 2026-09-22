@@ -1,4 +1,5 @@
 import { assertEquals } from "@std/assert";
+import { DuckDBListValue } from "@duckdb/node-api";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 Deno.test("should load rapidfuzz and compute pairs in one query", async () => {
@@ -22,6 +23,42 @@ Deno.test("should load rapidfuzz and compute pairs in one query", async () => {
   assertEquals(rapidfuzzQueries[0].includes("WITH uniques AS"), true);
 
   await sdb.close();
+});
+
+Deno.test("should preserve canonical choices across disconnected clusters for every strategy", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (
+      const strategy of [
+        "mostCommon",
+        "longestString",
+        "shortestString",
+        "mostCentral",
+        "maxScore",
+      ] as const
+    ) {
+      const table = sdb.newTable();
+      const rows = Array.from({ length: 30 }, (_, i) => {
+        const prefix = `${String(i).padStart(3, "0")}:`;
+        return [{ name: prefix + "Paris" }, { name: prefix + "Pariss" }];
+      }).flat();
+      await table.loadArray([...rows, { name: null }])
+        .fuzzyClean("name", "canonical", 90, {
+          strategy,
+          prefilterPrefixLength: 4,
+        }).run();
+      assertEquals(await table.getData(), [
+        ...rows.map(({ name }) => ({
+          name,
+          canonical: name.slice(0, 4) +
+            (strategy === "longestString" ? "Pariss" : "Paris"),
+        })),
+        { name: null, canonical: null },
+      ]);
+    }
+  } finally {
+    await sdb.close();
+  }
 });
 
 Deno.test("should bind replacement mapping values", async () => {
@@ -48,7 +85,10 @@ Deno.test("should bind replacement mapping values", async () => {
   await table.getData();
 
   assertEquals(mappingSQL.includes(marker), false);
-  assertEquals(mappingValues.includes(marker), true);
+  assertEquals(mappingValues, [
+    new DuckDBListValue(["OConnor"]),
+    new DuckDBListValue([marker]),
+  ]);
 
   await sdb.close();
 });

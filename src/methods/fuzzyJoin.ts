@@ -114,6 +114,24 @@ async function executeFuzzyJoin(
 
   const method = options.method ?? "ratio";
   const similarityColumn = options.similarityColumn;
+  const queryOptions = mergeOptions(leftTable, {
+    table: outputTable.name,
+    method: "fuzzyJoin()",
+    parameters: {
+      leftColumn,
+      rightColumn,
+      rightTable: rightTable.name,
+      threshold,
+      options,
+    },
+  });
+  const deduplicate = await shouldDeduplicateFuzzyJoin(
+    leftTable,
+    rightTable,
+    leftColumn,
+    rightColumn,
+    queryOptions,
+  );
 
   // The right table's copy of a column shared with the left table (only
   // rightColumn can be shared, checked above) is excluded from the SELECT
@@ -136,23 +154,52 @@ async function executeFuzzyJoin(
       similarityColumn,
       rightSelect,
       options.prefilterPrefixLength,
+      deduplicate,
     );
 
   await queryDB(
     leftTable,
     sql,
-    mergeOptions(leftTable, {
-      table: outputTable.name,
-      method: "fuzzyJoin()",
-      parameters: {
-        leftColumn,
-        rightColumn,
-        rightTable: rightTable.name,
-        threshold,
-        options,
-      },
-    }),
+    queryOptions,
   );
+}
+
+async function shouldDeduplicateFuzzyJoin(
+  leftTable: SimpleTable,
+  rightTable: SimpleTable,
+  leftColumn: string,
+  rightColumn: string,
+  queryOptions: Parameters<typeof queryDB>[2],
+): Promise<boolean> {
+  const left = quoteIdentifier(leftTable.name);
+  const right = quoteIdentifier(rightTable.name);
+  const counts = (await queryDB(
+    leftTable,
+    `SELECT (SELECT COUNT(*) FROM ${left}) AS left_count,
+      (SELECT COUNT(*) FROM ${right}) AS right_count`,
+    { ...queryOptions, returnData: true },
+  ))![0];
+  const leftCount = Number(counts.left_count);
+  const rightCount = Number(counts.right_count);
+  const comparisons = leftCount * rightCount;
+  // Avoid distinct scans for small joins and short lookup tables. For larger
+  // joins, require at least a twofold reduction to pay for grouping and rejoining.
+  if (comparisons < 100_000 || Math.min(leftCount, rightCount) < 32) {
+    return false;
+  }
+  const distinct = (await queryDB(
+    leftTable,
+    `SELECT
+      (SELECT COUNT(DISTINCT ENCODE(${
+      quoteIdentifier(leftColumn)
+    })) FROM ${left}) AS left_count,
+      (SELECT COUNT(DISTINCT ENCODE(${
+      quoteIdentifier(rightColumn)
+    })) FROM ${right}) AS right_count`,
+    { ...queryOptions, returnData: true },
+  ))![0];
+  return Number(distinct.left_count) * Number(distinct.right_count) <=
+    comparisons / 2;
 }
 
 function fuzzyJoinQuery(
@@ -166,6 +213,7 @@ function fuzzyJoinQuery(
   similarityColumn: string | undefined,
   rightSelect: string,
   prefilterPrefixLength?: number,
+  deduplicate = false,
 ) {
   const leftExpression = `${quoteIdentifier(leftTable)}.${
     quoteIdentifier(leftColumn)
@@ -181,29 +229,69 @@ function fuzzyJoinQuery(
     { decimals: 2, prefilterPrefixLength },
   );
 
+  let cte = "";
+  let from = `FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
+    quoteIdentifier(rightTable)
+  } ON ${condition}`;
+  let score = scoreExpression;
+  if (deduplicate) {
+    const matches = quoteIdentifier(
+      `__sda_fuzzy_matches_${crypto.randomUUID().replaceAll("-", "")}`,
+    );
+    const match = buildFuzzyMatchSql(
+      "l.value",
+      "r.value",
+      method,
+      threshold,
+      { decimals: 2, prefilterPrefixLength },
+    );
+    // Keep the original value's collation for prefix matching, but use byte
+    // keys for deduplication and expansion: fuzzy scores distinguish case even
+    // when an input column has a case-insensitive collation.
+    cte = `WITH ${matches} AS MATERIALIZED (
+      SELECT l.key AS left_key, r.key AS right_key,
+        ${match.scoreExpression} AS score
+      FROM (
+        SELECT DISTINCT ${quoteIdentifier(leftColumn)} AS value,
+          ENCODE(${quoteIdentifier(leftColumn)}) AS key
+        FROM ${quoteIdentifier(leftTable)}
+        WHERE ${quoteIdentifier(leftColumn)} IS NOT NULL
+      ) l
+      INNER JOIN (
+        SELECT DISTINCT ${quoteIdentifier(rightColumn)} AS value,
+          ENCODE(${quoteIdentifier(rightColumn)}) AS key
+        FROM ${quoteIdentifier(rightTable)}
+        WHERE ${quoteIdentifier(rightColumn)} IS NOT NULL
+      ) r ON ${match.condition}
+    )`;
+    from = `FROM ${quoteIdentifier(leftTable)}
+      LEFT JOIN ${matches} ON ENCODE(${leftExpression}) = ${matches}.left_key
+      LEFT JOIN ${quoteIdentifier(rightTable)}
+        ON ENCODE(${rightExpression}) = ${matches}.right_key`;
+    score = `${matches}.score`;
+  }
+
   if (similarityColumn) {
     return `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable)} AS
+${cte}
 SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS ${
       quoteIdentifier(similarityColumn)
     }
 FROM (
   SELECT ${
       quoteIdentifier(leftTable)
-    }.*, ${rightSelect}, ${scoreExpression} AS "_sda_score"
-  FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
-      quoteIdentifier(rightTable)
-    } ON ${condition}
+    }.*, ${rightSelect}, ${score} AS "_sda_score"
+  ${from}
 ) _sda
 ORDER BY ${quoteIdentifier(leftColumn)}, "_sda_score" DESC;\n`;
   }
 
   return `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable)} AS
+${cte}
 SELECT *
 FROM (
   SELECT ${quoteIdentifier(leftTable)}.*, ${rightSelect}
-  FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
-    quoteIdentifier(rightTable)
-  } ON ${condition}
+  ${from}
 ) _sda
 ORDER BY ${quoteIdentifier(leftColumn)}, ${quoteIdentifier(rightColumn)};\n`;
 }
