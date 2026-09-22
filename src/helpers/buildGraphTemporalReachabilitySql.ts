@@ -50,6 +50,8 @@ export default function buildGraphTemporalReachabilitySql(
     ? startsSelect
     : startsSelect(edgesRelation);
 
+  // Materialized event IDs stay fixed; UNION bounds states to starts × events,
+  // including equal-time cycles, because the last event determines all next steps.
   return {
     edgesRelation,
     reachableRelation,

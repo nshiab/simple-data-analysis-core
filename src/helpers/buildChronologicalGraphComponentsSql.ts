@@ -9,6 +9,8 @@ export default function buildChronologicalGraphComponentsSql(
   temporal: PreparedGraphTemporalSql,
 ): string {
   const q = quoteIdentifier;
+  // Temporal mutual reachability is not transitive: groups are maximal cliques
+  // that may overlap. Returning every group has exponential worst-case output.
   const reachability = buildGraphTemporalReachabilitySql(
     prepared,
     (edges) =>

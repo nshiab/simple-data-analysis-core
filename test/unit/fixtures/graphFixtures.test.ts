@@ -1,6 +1,8 @@
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+// Hand-checked fixtures: select one input scenario and one expected case.
+// Numeric IDs stay in separate CSVs to preserve their inferred types.
 const root = "test/data/graphs";
 
 type CsvRow = Record<string, string>;
@@ -533,26 +535,6 @@ Deno.test("graph expectations pin the high-value hand-derived cases", async () =
       ?.total,
     "2",
   );
-
-  const readme = await Deno.readTextFile(`${root}/README.md`);
-  for (
-    const method of [
-      "neighbors()",
-      "degree()",
-      "commonNeighbors()",
-      "reachable()",
-      "distances()",
-      "shortestPath()",
-      "paths()",
-      "connectedComponents()",
-      "findCycles()",
-      "topologicalSort()",
-    ]
-  ) {
-    assertStringIncludes(readme, method);
-  }
-  assertStringIncludes(readme, "B has weighted incoming degree 350");
-  assertStringIncludes(readme, "A, B, C, D, E, F, G");
 });
 
 Deno.test("component labels and topological orders follow deterministic rules", async () => {

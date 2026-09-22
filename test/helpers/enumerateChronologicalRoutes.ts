@@ -53,6 +53,7 @@ export function enumerateChronologicalRoutes<Node, EdgeId>(
     if (steps.length >= options.maxSteps) return;
     for (let index = 0; index < events.length; index++) {
       const event = events[index];
+      // This oracle skips invalid events; public methods reject the whole input.
       if (!isValidEvent(event) || usedEvents.has(index)) continue;
       const connects = direction === "outgoing"
         ? Object.is(event.source, node)

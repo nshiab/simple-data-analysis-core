@@ -356,6 +356,8 @@ function temporalShortestPathSelect(
   const startsSelect = `SELECT ${q("start")},
         ${prepared.key(q("start"))} AS ${q("__key")}
       FROM (SELECT ${route.endpointValue} AS ${q("start")}) AS ${q("values")}`;
+  // Non-negative weights and no maximum gap let cycles be removed from walks.
+  // Their optimum bounds simple routes; retain separate histories for all ties.
   const costs = buildGraphTemporalCostStateSql(
     prepared,
     startsSelect,

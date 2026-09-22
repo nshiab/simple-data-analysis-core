@@ -35,6 +35,7 @@ export default function queueGraphResult(
     });
   }
 
+  // A separate barrier keeps invalid-event checks observable after LIMIT 0.
   const preflight = result.preflight;
   if (preflight !== undefined) {
     queueOp(outputTable, {

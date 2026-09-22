@@ -57,6 +57,8 @@ export default function buildGraphTemporalCostStateSql(
     ? startsSelect
     : startsSelect(edgesRelation);
 
+  // Only costs for the same start and physical event can dominate each other.
+  // Strict improvements and non-negative weights terminate even zero-cost cycles.
   return {
     costRelation,
     edgesRelation,
