@@ -6,9 +6,6 @@ import type SimpleTable from "../class/SimpleTable.ts";
  * Uses `getTypes()` to inspect column types and checks for any column
  * whose type normalizes to `"geometry"`.
  *
- * @param table - The SimpleTable instance to inspect.
- * @returns `true` if at least one geometry column exists, `false` otherwise.
- *
  * @example
  * ```ts
  * const hasGeo = await hasGeometryColumn(table);
@@ -16,6 +13,10 @@ import type SimpleTable from "../class/SimpleTable.ts";
  *   console.log("This table contains geometry columns");
  * }
  * ```
+ *
+ * @param table - The SimpleTable instance to inspect.
+ *
+ * @returns `true` if at least one geometry column exists, `false` otherwise.
  */
 export default async function hasGeometryColumn(
   table: SimpleTable,

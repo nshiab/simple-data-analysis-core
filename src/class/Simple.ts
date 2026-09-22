@@ -53,6 +53,15 @@ export default class Simple {
    * execution while forwarding every argument. To run custom SQL, use
    * `SimpleDB.customQuery()` instead.
    *
+   * @example
+   * ```ts
+   * const original = table.runQuery;
+   * table.runQuery = (query, connection, returnData, options) => {
+   *   console.log(query);
+   *   return original(query, connection, returnData, options);
+   * };
+   * ```
+   *
    * @param query - The exact SQL statement to execute.
    * @param connection - The DuckDB connection that executes the statement.
    * @param returnData - Whether to convert and return result rows.
@@ -64,15 +73,6 @@ export default class Simple {
    * @param options.logSQL - Whether to log the SQL immediately before execution.
    * @param options.explainSQL - Whether to log a supported DuckDB query plan before execution.
    * @returns The converted rows when requested, otherwise `null`.
-   *
-   * @example
-   * ```ts
-   * const original = table.runQuery;
-   * table.runQuery = (query, connection, returnData, options) => {
-   *   console.log(query);
-   *   return original(query, connection, returnData, options);
-   * };
-   * ```
    */
   runQuery!: (
     query: string,

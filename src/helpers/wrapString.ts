@@ -4,13 +4,6 @@
  * will be broken at the character boundary. This function is primarily used
  * for preparing text to be displayed in console tables.
  *
- * @param str - The string to wrap.
- * @param maxWidth - The maximum width of each line.
- * @param wordWrap - If true, attempts to break at word boundaries. If false,
- *   breaks at character boundaries. Defaults to `true`.
- * @returns The wrapped string with newline characters inserted at appropriate
- *   positions.
- *
  * @example
  * ```typescript
  * const text = "This is a very long sentence that needs to be wrapped";
@@ -30,6 +23,16 @@
  * // Output: Thisisaver
  * //         ylongword
  * ```
+ *
+ * @param str - The string to wrap.
+ *
+ * @param maxWidth - The maximum width of each line.
+ *
+ * @param wordWrap - If true, attempts to break at word boundaries. If false,
+ *   breaks at character boundaries. Defaults to `true`.
+ *
+ * @returns The wrapped string with newline characters inserted at appropriate
+ *   positions.
  */
 export default function wrapString(
   str: string,

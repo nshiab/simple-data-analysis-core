@@ -1,25 +1,31 @@
 /**
  * Rounds a number based on specified criteria: a fixed number of decimal places or to a specific number of significant digits.
  *
- * @param number - The number to be rounded.
- * @param options - An object containing options for rounding.
- * @param options.decimals - The number of decimal places to keep when rounding.
- * @param options.significantDigits - The number of significant digits to retain.
- * @returns The rounded number.
- * @throws {Error} If more than one rounding option is provided.
- *
  * @example
  * ```ts
  * // Round to one decimal place.
  * const result = round(1234.567, { decimals: 1 });
  * console.log(result); // 1234.6
  * ```
+ *
  * @example
  * ```ts
  * // Round to 3 significant digits.
  * const result = round(0.004622, { significantDigits: 3 });
  * console.log(result); // 0.00462
  * ```
+ *
+ * @param number - The number to be rounded.
+ *
+ * @param options - An object containing options for rounding.
+ *
+ * @param options.decimals - The number of decimal places to keep when rounding.
+ *
+ * @param options.significantDigits - The number of significant digits to retain.
+ *
+ * @returns The rounded number.
+ *
+ * @throws {Error} If more than one rounding option is provided.
  */
 function round(
   number: number,
@@ -49,40 +55,49 @@ function round(
 /**
  * Formats a number with thousands separators, decimals, abbreviations, and more.
  *
- * @param number - The number to be formatted.
- * @param options - An object containing various formatting options.
- * @param options.decimals - The number of decimal places to round to.
- * @param options.significantDigits - The number of significant digits to round to.
- * @param options.abbreviation - If `true`, the number will be abbreviated (e.g., 1,200,000 becomes "1.2M").
- * @param options.prefix - A string to prepend before the formatted number.
- * @param options.suffix - A string to append after the formatted number.
- *
- * @returns The formatted number as a string.
- *
  * @example
  * ```ts
  * // Basic usage: Format a number with thousands separator.
  * const num1 = formatNumber(1234567.89);
  * console.log(num1); // "1,234,567.89"
  * ```
+ *
  * @example
  * ```ts
  * // With significant digits and suffix.
  * const num2 = formatNumber(66.666, { significantDigits: 3, suffix: "%" });
  * console.log(num2); // "66.7%"
  * ```
+ *
  * @example
  * ```ts
  * // Abbreviation.
  * const num3 = formatNumber(12000, { abbreviation: true });
  * console.log(num3); // "12K"
  * ```
+ *
  * @example
  * ```ts
  * // With decimal places.
  * const num4 = formatNumber(123.456, { decimals: 1 });
  * console.log(num4); // "123.5"
  * ```
+ *
+ * @param number - The number to be formatted.
+ *
+ * @param options - An object containing various formatting options.
+ *
+ * @param options.decimals - The number of decimal places to round to.
+ *
+ * @param options.significantDigits - The number of significant digits to round to.
+ *
+ * @param options.abbreviation - If `true`, the number will be abbreviated (e.g., 1,200,000 becomes "1.2M").
+ *
+ * @param options.prefix - A string to prepend before the formatted number.
+ *
+ * @param options.suffix - A string to append after the formatted number.
+ *
+ * @returns The formatted number as a string.
  */
 export default function formatNumber(
   number: number,

@@ -4,11 +4,6 @@ import type { TableSchema } from "./pendingOps.ts";
 /**
  * Returns the only geometry column in a table schema.
  *
- * @param types - The table schema to inspect.
- * @param method - The SDA method requesting a geometry column.
- * @param tableName - The name of the table represented by the schema.
- * @returns The name of the only geometry column.
- *
  * @example
  * ```ts
  * const column = findGeoColumnFromSchema(
@@ -17,6 +12,14 @@ import type { TableSchema } from "./pendingOps.ts";
  *   "places",
  * );
  * ```
+ *
+ * @param types - The table schema to inspect.
+ *
+ * @param method - The SDA method requesting a geometry column.
+ *
+ * @param tableName - The name of the table represented by the schema.
+ *
+ * @returns The name of the only geometry column.
  */
 export default function findGeoColumnFromSchema(
   types: TableSchema,

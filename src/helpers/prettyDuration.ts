@@ -3,14 +3,6 @@
  *
  * The function can calculate the duration from a given start time to the current time, or between a specified start and end time. It provides options for logging the output directly to the console and adding custom prefixes or suffixes to the formatted string. Note that for simplicity, months are approximated as 30 days and years as 365 days.
  *
- * @param start - The starting point of the duration. This can be a `Date` object or a Unix timestamp (number of milliseconds since epoch).
- * @param options - Optional settings to customize the duration formatting and output.
- *   @param options.log - If `true`, the formatted duration string will be logged to the console. Defaults to `false`.
- *   @param options.end - The ending point of the duration. This can be a `Date` object or a Unix timestamp. If omitted, the current time (`Date.now()`) will be used as the end point.
- *   @param options.prefix - A string to prepend to the formatted duration string (e.g., "Elapsed time: ").
- *   @param options.suffix - A string to append to the formatted duration string (e.g., " (Task completed)").
- * @returns A human-readable string representing the duration.
- *
  * @example
  * ```ts
  * // A starting Date somewhere in your code.
@@ -20,6 +12,7 @@
  * const duration = prettyDuration(startDate);
  * console.log(duration); // Returns something like "22 days, 6 h, 3 min, 15 sec, 3 ms"
  * ```
+ *
  * @example
  * ```ts
  * // If you want to console.log it directly, set the `log` option to `true`.
@@ -28,6 +21,7 @@
  * // ... some operations ...
  * prettyDuration(startDateForLog, { log: true });
  * ```
+ *
  * @example
  * ```ts
  * // You can also use a prefix and/or suffix for the output string.
@@ -36,6 +30,7 @@
  * prettyDuration(startDateWithPrefixSuffix, { log: true, prefix: "Elapsed time: ", suffix: " (Main function)" });
  * // Returns and logs something like "Total duration: 3 min, 15 sec, 3 ms (Main function)"
  * ```
+ *
  * @example
  * ```ts
  * // If you want to format the duration between two specific dates, use the `end` option.
@@ -44,6 +39,17 @@
  * const specificDuration = prettyDuration(start, { end });
  * console.log(specificDuration); // Returns "22 days, 6 h, 3 min, 15 sec, 0 ms"
  * ```
+ *
+ * @param start - The starting point of the duration. This can be a `Date` object or a Unix timestamp (number of milliseconds since epoch).
+ *
+ * @param options - Optional settings to customize the duration formatting and output.
+ *   @param options.log - If `true`, the formatted duration string will be logged to the console. Defaults to `false`.
+ *   @param options.end - The ending point of the duration. This can be a `Date` object or a Unix timestamp. If omitted, the current time (`Date.now()`) will be used as the end point.
+ *   @param options.prefix - A string to prepend to the formatted duration string (e.g., "Elapsed time: ").
+ *   @param options.suffix - A string to append to the formatted duration string (e.g., " (Task completed)").
+ *
+ * @returns A human-readable string representing the duration.
+ *
  * @category Formatting
  */
 export default function prettyDuration(

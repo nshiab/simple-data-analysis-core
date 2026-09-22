@@ -33,12 +33,6 @@ export default class SDAError extends Error {
   /**
    * Creates an error that preserves the failing query and its original cause.
    *
-   * @param options - Details of the failed query.
-   * @param options.method - The SDA method that triggered the query, or `null`.
-   * @param options.parameters - The method's arguments, or `null`.
-   * @param options.query - The SQL statement that failed.
-   * @param options.cause - The original error thrown while executing the query.
-   *
    * @example
    * ```ts
    * const error = new SDAError({
@@ -49,6 +43,12 @@ export default class SDAError extends Error {
    * });
    * console.log(error.method, error.cause);
    * ```
+   *
+   * @param options - Details of the failed query.
+   * @param options.method - The SDA method that triggered the query, or `null`.
+   * @param options.parameters - The method's arguments, or `null`.
+   * @param options.query - The SQL statement that failed.
+   * @param options.cause - The original error thrown while executing the query.
    */
   constructor(
     options: {

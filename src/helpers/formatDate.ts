@@ -17,12 +17,6 @@ const MONTHS = [
  * Formats a `Date` object into a human-readable string using only the format
  * strings actually used in the project.
  *
- * @param date - The `Date` object to format.
- * @param format - The format string to use. Only `"Month DD, YYYY, at HH:MM period"` and `"Month DD"` are supported.
- * @param options - Optional settings.
- * @param options.utc - If `true`, format the date in UTC instead of local time. Defaults to `false`.
- * @returns The formatted date string.
- *
  * @example
  * ```ts
  * // Format a date with time (local time).
@@ -30,18 +24,30 @@ const MONTHS = [
  * const formatted = formatDate(date, "Month DD, YYYY, at HH:MM period");
  * console.log(formatted); // "January 1, 2023, at 1:35 a.m."
  * ```
+ *
  * @example
  * ```ts
  * // Format a date as month and day only (UTC).
  * const formatted = formatDate(new Date("2023-01-01"), "Month DD", { utc: true });
  * console.log(formatted); // "January 1"
  * ```
+ *
  * @example
  * ```ts
  * // Minutes of ":00" are omitted.
  * const formatted = formatDate(new Date("2023-01-01T01:00:00"), "Month DD, YYYY, at HH:MM period", { utc: true });
  * console.log(formatted); // "January 1, 2023, at 1 a.m."
  * ```
+ *
+ * @param date - The `Date` object to format.
+ *
+ * @param format - The format string to use. Only `"Month DD, YYYY, at HH:MM period"` and `"Month DD"` are supported.
+ *
+ * @param options - Optional settings.
+ *
+ * @param options.utc - If `true`, format the date in UTC instead of local time. Defaults to `false`.
+ *
+ * @returns The formatted date string.
  */
 export default function formatDate(
   date: Date,

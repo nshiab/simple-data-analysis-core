@@ -23,12 +23,6 @@ import { executePreparedArray, prepareArray } from "../methods/loadArray.ts";
  * inputs or overwritten as outputs; use updateWithJS() for editable GeoJSON.
  * This SQL-only preservation path accepts any source CRS.
  *
- * @param table - Table to enrich.
- * @param inputColumns - Columns available to the callback.
- * @param outputColumns - Generated columns to add or replace.
- * @param generate - Produces one result per input row, in input order.
- * @param options - Controls the maximum rows read, generated, and staged at once.
- * @returns Resolves after merging the generated columns into the table.
  * @example
  * ```ts
  * queueAsyncBarrier(table, {
@@ -40,6 +34,18 @@ import { executePreparedArray, prepareArray } from "../methods/loadArray.ts";
  * });
  * await table.log();
  * ```
+ *
+ * @param table - Table to enrich.
+ *
+ * @param inputColumns - Columns available to the callback.
+ *
+ * @param outputColumns - Generated columns to add or replace.
+ *
+ * @param generate - Produces one result per input row, in input order.
+ *
+ * @param options - Controls the maximum rows read, generated, and staged at once.
+ *
+ * @returns Resolves after merging the generated columns into the table.
  */
 export default async function updateColumnsWithJS(
   table: SimpleTable,

@@ -13,19 +13,6 @@ type DuckDBValue = NativeDuckDBValue;
  * Starts the database on first use and applies its SQL logging settings.
  * Extension authors can construct `options` with `mergeOptions()`.
  *
- * @param simple - The table or database that owns the query.
- * @param query - The SQL statement to execute.
- * @param options - Query execution and diagnostic settings.
- * @param options.table - The table name used for diagnostics, or `null`.
- * @param options.method - The calling method used for diagnostics, or `null`.
- * @param options.parameters - Arguments included in error diagnostics, or `null`.
- * @param options.rowsToLog - The caller's row-display limit, retained for compatibility.
- * @param options.charsToLog - The caller's per-cell display limit, retained for compatibility.
- * @param options.returnData - Whether to convert and return the result rows.
- * @param options.values - DuckDB-native values bound to SQL placeholders, in order.
- * @param options.noClean - Whether to preserve the SQL text without cleaning it.
- * @returns Converted rows when `returnData` is true, otherwise `null`.
- *
  * @example
  * ```ts
  * import { mergeOptions, queryDB, quoteIdentifier } from "@nshiab/simple-data-analysis-core/helpers";
@@ -40,6 +27,30 @@ type DuckDBValue = NativeDuckDBValue;
  * }));
  * await table.log();
  * ```
+ *
+ * @param simple - The table or database that owns the query.
+ *
+ * @param query - The SQL statement to execute.
+ *
+ * @param options - Query execution and diagnostic settings.
+ *
+ * @param options.table - The table name used for diagnostics, or `null`.
+ *
+ * @param options.method - The calling method used for diagnostics, or `null`.
+ *
+ * @param options.parameters - Arguments included in error diagnostics, or `null`.
+ *
+ * @param options.rowsToLog - The caller's row-display limit, retained for compatibility.
+ *
+ * @param options.charsToLog - The caller's per-cell display limit, retained for compatibility.
+ *
+ * @param options.returnData - Whether to convert and return the result rows.
+ *
+ * @param options.values - DuckDB-native values bound to SQL placeholders, in order.
+ *
+ * @param options.noClean - Whether to preserve the SQL text without cleaning it.
+ *
+ * @returns Converted rows when `returnData` is true, otherwise `null`.
  */
 export default async function queryDB(
   simple: SimpleTable | SimpleDB,

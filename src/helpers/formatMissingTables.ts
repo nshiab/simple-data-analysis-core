@@ -3,11 +3,6 @@ import quoteIdentifier from "./quoteIdentifier.ts";
 /**
  * Formats a missing-table error with the requested and available table names.
  *
- * @param method - The SDA method looking up the tables.
- * @param missingTables - The requested table names that were not found.
- * @param availableTables - The table names currently available.
- * @returns An actionable missing-table error message.
- *
  * @example
  * ```ts
  * const message = formatMissingTables(
@@ -16,6 +11,14 @@ import quoteIdentifier from "./quoteIdentifier.ts";
  *   ["votes", "districts"],
  * );
  * ```
+ *
+ * @param method - The SDA method looking up the tables.
+ *
+ * @param missingTables - The requested table names that were not found.
+ *
+ * @param availableTables - The table names currently available.
+ *
+ * @returns An actionable missing-table error message.
  */
 export default function formatMissingTables(
   method: string,

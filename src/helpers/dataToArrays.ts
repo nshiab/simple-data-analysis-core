@@ -1,10 +1,6 @@
 /**
  * Transforms an array of objects into an object of arrays. This function is the inverse of `arraysToData` and is useful for converting data from a row-based format to a columnar format.
  *
- * @param data An array of objects. Each object is expected to have the same set of keys.
- *
- * @returns An object where each key maps to an array of values, effectively representing the data in a columnar format.
- *
  * @example
  * ```ts
  * // Basic usage with a simple dataset
@@ -24,6 +20,7 @@
  * //   city: ['New York', 'London', 'Paris']
  * // }
  * ```
+ *
  * @example
  * ```ts
  * // Preparing data for statistical analysis
@@ -43,6 +40,11 @@
  * //   humidity: [60, 65, 55]
  * // }
  * ```
+ *
+ * @param data An array of objects. Each object is expected to have the same set of keys.
+ *
+ * @returns An object where each key maps to an array of values, effectively representing the data in a columnar format.
+ *
  * @category Formatting
  */
 

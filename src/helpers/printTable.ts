@@ -7,19 +7,6 @@ import wrapString from "./wrapString.ts";
  * handles multi-line content, making it ideal for displaying data with long
  * column names and text values.
  *
- * @param data - An array of objects representing the rows of the table. Each
- *   object should have string keys.
- * @param options - Optional configuration for table rendering.
- * @param options.maxColumnWidth - The maximum width for any column (default:
- *   `75`). Headers and values exceeding this width will be wrapped at word
- *   boundaries.
- * @param options.minColumnWidth - The minimum width for any column (default:
- *   `3`).
- * @param options.typesRowIndex - The index of a row that contains type
- *   annotations (e.g. `"VARCHAR/string"`). This row will be rendered in grey.
- *   If omitted, no row is treated as a types row.
- * @returns void - The table is printed directly to the console.
- *
  * @example
  * ```typescript
  * const data = [
@@ -40,6 +27,24 @@ import wrapString from "./wrapString.ts";
  * ];
  * printTable([types, ...data], { typesRowIndex: 0 });
  * ```
+ *
+ * @param data - An array of objects representing the rows of the table. Each
+ *   object should have string keys.
+ *
+ * @param options - Optional configuration for table rendering.
+ *
+ * @param options.maxColumnWidth - The maximum width for any column (default:
+ *   `75`). Headers and values exceeding this width will be wrapped at word
+ *   boundaries.
+ *
+ * @param options.minColumnWidth - The minimum width for any column (default:
+ *   `3`).
+ *
+ * @param options.typesRowIndex - The index of a row that contains type
+ *   annotations (e.g. `"VARCHAR/string"`). This row will be rendered in grey.
+ *   If omitted, no row is treated as a types row.
+ *
+ * @returns void - The table is printed directly to the console.
  */
 export default function printTable(
   data: { [key: string]: unknown }[],

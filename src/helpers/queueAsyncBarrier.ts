@@ -17,13 +17,6 @@ import queueOp from "./queueOp.ts";
  * the failing table's remaining chain is aborted, but unexecuted work for other
  * tables is requeued for their next observation.
  *
- * @param simpleTable - The table whose chain owns the asynchronous work.
- * @param operation - The asynchronous extension operation to queue.
- * @param operation.method - The public method name used for diagnostics.
- * @param operation.parameters - A snapshot of the public method parameters used for diagnostics.
- * @param operation.execute - The asynchronous work to run at the barrier's position in the chain.
- * @returns Nothing. The public builder should return its target table.
- *
  * @example
  * ```ts
  * import type { SimpleTable } from "@nshiab/simple-data-analysis-core";
@@ -42,6 +35,18 @@ import queueOp from "./queueOp.ts";
  *   return table;
  * }
  * ```
+ *
+ * @param simpleTable - The table whose chain owns the asynchronous work.
+ *
+ * @param operation - The asynchronous extension operation to queue.
+ *
+ * @param operation.method - The public method name used for diagnostics.
+ *
+ * @param operation.parameters - A snapshot of the public method parameters used for diagnostics.
+ *
+ * @param operation.execute - The asynchronous work to run at the barrier's position in the chain.
+ *
+ * @returns Nothing. The public builder should return its target table.
  */
 export default function queueAsyncBarrier(
   simpleTable: SimpleTable,

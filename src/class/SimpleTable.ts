@@ -179,7 +179,6 @@ import type { PendingOp } from "../helpers/pendingOps.ts";
  * Represents a table within a SimpleDB database, capable of handling tabular, geospatial, and vector data.
  * SimpleTable instances are typically created via a SimpleDB instance.
  *
- * @category Main
  * @example
  * ```ts
  * // Create a SimpleDB instance (in-memory by default)
@@ -210,6 +209,7 @@ import type { PendingOp } from "../helpers/pendingOps.ts";
  * // Close the database connection
  * await sdb.close();
  * ```
+ * @category Main
  */
 
 export default class SimpleTable extends Simple {
@@ -218,12 +218,11 @@ export default class SimpleTable extends Simple {
   /**
    * Name of the table in the database.
    *
-   * @category Properties
-   *
    * @example
    * ```ts
    * console.log(table.name); // e.g., "employees"
    * ```
+   * @category Properties
    */
   get name(): string {
     return this.#name;
@@ -232,14 +231,13 @@ export default class SimpleTable extends Simple {
    * The definitions of the indexes belonging to the table, if any. Do not
    * mutate this array directly.
    *
-   * @defaultValue `[]`
-   * @category Properties
-   *
    * @example
    * ```ts
    * console.log(table.indexes);
    * // [{ kind: "vss", name: "vss_cosine_index_articles", ... }]
    * ```
+   * @defaultValue `[]`
+   * @category Properties
    */
   indexes: (
     | {
@@ -321,9 +319,6 @@ export default class SimpleTable extends Simple {
    * identically to `SimpleDB.run()`; call `sdb.run()` when your intent is to
    * flush the database rather than this specific table.
    *
-   * @returns A promise that resolves to the table once the queued methods have been executed.
-   * @category Table Management
-   *
    * @example
    * ```ts
    * // Nothing is observed after convert(), so run() executes the chain.
@@ -333,6 +328,8 @@ export default class SimpleTable extends Simple {
    *   .run();
    * await table.log();
    * ```
+   * @returns A promise that resolves to the table once the queued methods have been executed.
+   * @category Table Management
    */
   async run(): Promise<this> {
     await flushAllTables(this.sdb);
@@ -343,16 +340,15 @@ export default class SimpleTable extends Simple {
    * Renames the current table.
    * The new name must not belong to another registered table, ignoring ASCII letter case.
    *
-   * @param name - The new name for the table.
-   * @returns A promise that resolves to the renamed table.
-   * @category Table Management
-   *
    * @example
    * ```ts
    * // Rename the table to "new_employees"
    * await table.renameTable("new_employees");
    * await table.log();
    * ```
+   * @param name - The new name for the table.
+   * @returns A promise that resolves to the renamed table.
+   * @category Table Management
    */
   async renameTable(name: string): Promise<this> {
     await renameTable(this, name);
@@ -363,10 +359,6 @@ export default class SimpleTable extends Simple {
   /**
    * Sets the data types for columns in a new table. If the table already exists, it will be replaced.
    * To convert the types of an existing table, use the `.convert()` method instead.
-   *
-   * @param types - An object specifying the column names and their target data types (JavaScript or SQL types), including JSON, FLOAT[n] vectors, and GEOMETRY with a CRS.
-   * @returns The table, so methods can be chained.
-   * @category Table Management
    *
    * @example
    * ```ts
@@ -387,6 +379,9 @@ export default class SimpleTable extends Simple {
    *   geom: "GEOMETRY('EPSG:4326')",
    * }).log();
    * ```
+   * @param types - An object specifying the column names and their target data types (JavaScript or SQL types), including JSON, FLOAT[n] vectors, and GEOMETRY with a CRS.
+   * @returns The table, so methods can be chained.
+   * @category Table Management
    */
   setTypes(types: {
     [key: string]:
@@ -427,12 +422,6 @@ export default class SimpleTable extends Simple {
    *
    * Declare `JSON` for general nested data, `FLOAT[n]` for a fixed-size float
    * vector, or `GEOMETRY('EPSG:4326')` for GeoJSON geometries in WGS84.
-   *
-   * @param rows - An array of objects, where each object represents a row and its properties represent columns.
-   * @param options - Options for loading the array, captured when called.
-   * @param options.columnTypes - Types for specific columns. Required for array and object cells; omitted scalar columns are inferred, and all-null columns default to VARCHAR. Values must be compatible with the selected type without losing information.
-   * @returns The table, so methods can be chained.
-   * @category Importing Data
    *
    * @example
    * ```ts
@@ -488,6 +477,11 @@ export default class SimpleTable extends Simple {
    *   geom: { type: "Point", coordinates: [-73.57, 45.50] },
    * }], { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
    * ```
+   * @param rows - An array of objects, where each object represents a row and its properties represent columns.
+   * @param options - Options for loading the array, captured when called.
+   * @param options.columnTypes - Types for specific columns. Required for array and object cells; omitted scalar columns are inferred, and all-null columns default to VARCHAR. Values must be compatible with the selected type without losing information.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
    */
   loadArray(
     rows: { [key: string]: unknown }[],
@@ -536,31 +530,6 @@ export default class SimpleTable extends Simple {
    * Supported file formats include CSV, JSON, Parquet, and Excel.
    *
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param files - The path(s) or URL(s) of the file(s) containing the data to be loaded.
-   * @param options - An optional object with configuration options:
-   * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
-   * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
-   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Can reference source columns excluded from `columns`.
-   * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
-   * @param options.includeFilename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
-   * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
-   * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred. Geometry types are not supported; use loadGeoData() instead.
-   * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
-   * @param options.header - A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
-   * @param options.allText - A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
-   * @param options.delim - The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
-   * @param options.skip - The number of lines to skip at the beginning of the file. Applicable to CSV files. Defaults to `0`.
-   * @param options.nullPadding - If `true`, when a row has fewer columns than expected, the remaining columns on the right will be padded with `NULL` values. Defaults to `false`.
-   * @param options.ignoreErrors - If `true`, parsing errors encountered will be ignored, and rows with errors will be skipped. Defaults to `false`.
-   * @param options.compression - The compression type of the file. Applicable to CSV files. Defaults to `none`.
-   * @param options.strict - If `true`, an error will be thrown when encountering any issues. If `false`, structurally incorrect files will be parsed tentatively. Defaults to `true`.
-   * @param options.encoding - The encoding of the file. Applicable to CSV files. Defaults to `utf-8`.
-   * @param options.jsonFormat - The format of JSON files ("unstructured", "newlineDelimited", "array"). By default, the format is inferred.
-   * @param options.records - A boolean indicating whether each line in a newline-delimited JSON file represents a record. Applicable to JSON files. By default, it's inferred.
-   * @param options.sheet - A string indicating a specific sheet to import from an Excel file. By default, the first sheet is imported.
-   * @returns The table, so methods can be chained.
-   * @category Importing Data
    *
    * @example
    * ```ts
@@ -615,6 +584,30 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   * @param files - The path(s) or URL(s) of the file(s) containing the data to be loaded.
+   * @param options - An optional object with configuration options:
+   * @param options.fileType - The type of file to load ("csv", "dsv", "json", "parquet", "excel"). Defaults to being inferred from the file extension.
+   * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Can reference source columns excluded from `columns`.
+   * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
+   * @param options.includeFilename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
+   * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
+   * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred. Geometry types are not supported; use loadGeoData() instead.
+   * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
+   * @param options.header - A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
+   * @param options.allText - A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
+   * @param options.delim - The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.
+   * @param options.skip - The number of lines to skip at the beginning of the file. Applicable to CSV files. Defaults to `0`.
+   * @param options.nullPadding - If `true`, when a row has fewer columns than expected, the remaining columns on the right will be padded with `NULL` values. Defaults to `false`.
+   * @param options.ignoreErrors - If `true`, parsing errors encountered will be ignored, and rows with errors will be skipped. Defaults to `false`.
+   * @param options.compression - The compression type of the file. Applicable to CSV files. Defaults to `none`.
+   * @param options.strict - If `true`, an error will be thrown when encountering any issues. If `false`, structurally incorrect files will be parsed tentatively. Defaults to `true`.
+   * @param options.encoding - The encoding of the file. Applicable to CSV files. Defaults to `utf-8`.
+   * @param options.jsonFormat - The format of JSON files ("unstructured", "newlineDelimited", "array"). By default, the format is inferred.
+   * @param options.records - A boolean indicating whether each line in a newline-delimited JSON file represents a record. Applicable to JSON files. By default, it's inferred.
+   * @param options.sheet - A string indicating a specific sheet to import from an Excel file. By default, the first sheet is imported.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
    */
   loadData(
     files: string | string[],
@@ -655,14 +648,6 @@ export default class SimpleTable extends Simple {
    * Results are cached as Parquet files in `.sda-cache/statcan` by default.
    * Cached data does not expire unless a TTL is provided.
    *
-   * @param pid - The Statistics Canada Product ID. Eight-digit PIDs, ten-digit view PIDs, and hyphenated table identifiers are accepted.
-   * @param options - Optional retrieval and cache settings.
-   * @param options.lang - The language of the table data. Defaults to `"en"`.
-   * @param options.cache - Whether to read and write the cache. Defaults to `true`.
-   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the entry reaches that age.
-   * @returns The table, so methods can be chained.
-   * @category Importing Data
-   *
    * @example
    * ```ts
    * await sdb
@@ -682,6 +667,13 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   * @param pid - The Statistics Canada Product ID. Eight-digit PIDs, ten-digit view PIDs, and hyphenated table identifiers are accepted.
+   * @param options - Optional retrieval and cache settings.
+   * @param options.lang - The language of the table data. Defaults to `"en"`.
+   * @param options.cache - Whether to read and write the cache. Defaults to `true`.
+   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the entry reaches that age.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
    */
   loadStatCanData(
     pid: string,
@@ -712,20 +704,6 @@ export default class SimpleTable extends Simple {
    * research, and journalistic purposes. Before using it, review Yahoo's terms
    * and any applicable data-provider restrictions.
    *
-   * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
-   * @param startDate - The inclusive UTC start of the requested range.
-   * @param endDate - The inclusive UTC end of the requested range. The UTC day,
-   * hour, or minute containing this instant is included, according to
-   * `interval`.
-   * @param interval - The interval between observations: daily, hourly, or every
-   * minute.
-   * @returns The table, so methods can be chained.
-   * @throws {RangeError} If either date is invalid or `endDate` is before `startDate`.
-   * @throws {Error} If Yahoo rejects the request or returns no data.
-   * @see https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html
-   * @see https://help.yahoo.com/kb/finance/SLN2310.html
-   * @category Importing Data
-   *
    * @example
    * ```ts
    * // Request daily observations using explicit UTC boundaries.
@@ -751,6 +729,19 @@ export default class SimpleTable extends Simple {
    *   )
    *   .log();
    * ```
+   * @param symbol - The stock or index symbol, such as `"AAPL"` or `"^GSPTSE"`.
+   * @param startDate - The inclusive UTC start of the requested range.
+   * @param endDate - The inclusive UTC end of the requested range. The UTC day,
+   * hour, or minute containing this instant is included, according to
+   * `interval`.
+   * @param interval - The interval between observations: daily, hourly, or every
+   * minute.
+   * @returns The table, so methods can be chained.
+   * @throws {RangeError} If either date is invalid or `endDate` is before `startDate`.
+   * @throws {Error} If Yahoo rejects the request or returns no data.
+   * @see https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html
+   * @see https://help.yahoo.com/kb/finance/SLN2310.html
+   * @category Importing Data
    */
   loadYahooFinanceData(
     symbol: string,
@@ -765,14 +756,6 @@ export default class SimpleTable extends Simple {
   /**
    * Loads geospatial data from an external file or URL into the table.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param file - The path or URL of the external file containing the geospatial data.
-   * @param options - An optional object with configuration options:
-   * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
-   * @param options.columns - The columns to load. Include the geometry column that should remain in the resulting table, usually `"geom"`. By default, all columns are loaded.
-   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -818,6 +801,13 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   * @param file - The path or URL of the external file containing the geospatial data.
+   * @param options - An optional object with configuration options:
+   * @param options.toEPSG4326 - If `true`, the method will attempt to reproject the data to EPSG:4326 (WGS84).
+   * @param options.columns - The columns to load. Include the geometry column that should remain in the resulting table, usually `"geom"`. By default, all columns are loaded.
+   * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before materialization and reprojection. Can reference source columns excluded from `columns`. Geometry conditions use the source coordinate system.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   loadGeoData(
     file: string,
@@ -841,23 +831,6 @@ export default class SimpleTable extends Simple {
    * The default Overpass endpoint is a shared public service. Follow the [Overpass public-instance usage guidelines](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html), and configure another endpoint or run your own instance for high-volume usage.
    *
    * OpenStreetMap data is licensed under the [Open Data Commons Open Database License](https://www.openstreetmap.org/copyright). Public use requires [OpenStreetMap attribution](https://osmfoundation.org/wiki/Licence/Attribution_Guidelines), and distributing OSM or derivative databases can trigger the licence's share-alike requirements.
-   *
-   * @param source - The local path or remote URL of an existing `.osm` or `.osm.pbf` file, or a bounding box to query through Overpass.
-   * @param source.west - The western longitude, between -180 and 180 and less than `east`.
-   * @param source.south - The southern latitude, between -90 and 90 and less than `north`.
-   * @param source.east - The eastern longitude, between -180 and 180 and greater than `west`.
-   * @param source.north - The northern latitude, between -90 and 90 and greater than `south`.
-   * @param options - Loading options. When `source` is a bounding box, `options.filters` must be provided.
-   * @param options.filters - For a bounding-box query, one `[key, value]` tuple or an array of tuples. Array entries are combined as a union. A raw Overpass QL filter fragment string is also accepted.
-   * @param options.endpoint - The Overpass interpreter endpoint. Defaults to `https://overpass-api.de/api/interpreter`.
-   * @param options.timeout - A positive integer timeout in seconds, applied to both the Overpass query and HTTP request. If omitted, the endpoint's default query timeout applies and no HTTP request timeout is set.
-   * @param options.cache - Whether to read and write the processed GeoParquet cache. Defaults to `true`.
-   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the processed entry reaches that age. Cannot be combined with `cache: false`.
-   * @param options.retries - Additional network retries after the initial request. Defaults to `3`, for up to four attempts. Network-only; passing it for a local path throws an error.
-   * @param options.retryDelay - Base retry delay in seconds. Defaults to `5`, producing deterministic delays of 5, 10, and 20 seconds. A longer valid `Retry-After` value takes precedence. Network-only; passing it for a local path throws an error.
-   * @param options.verbose - Whether to log OpenStreetMap cache, network, Osmium, cleanup, and timing lifecycle details. Defaults to `false`. `SimpleDB({ cacheVerbose: true })` also enables these messages and is not overridden by `verbose: false`.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -905,6 +878,22 @@ export default class SimpleTable extends Simple {
    *   { filters: `["amenity"~"school|college"]` },
    * ).log();
    * ```
+   * @param source - The local path or remote URL of an existing `.osm` or `.osm.pbf` file, or a bounding box to query through Overpass.
+   * @param source.west - The western longitude, between -180 and 180 and less than `east`.
+   * @param source.south - The southern latitude, between -90 and 90 and less than `north`.
+   * @param source.east - The eastern longitude, between -180 and 180 and greater than `west`.
+   * @param source.north - The northern latitude, between -90 and 90 and greater than `south`.
+   * @param options - Loading options. When `source` is a bounding box, `options.filters` must be provided.
+   * @param options.filters - For a bounding-box query, one `[key, value]` tuple or an array of tuples. Array entries are combined as a union. A raw Overpass QL filter fragment string is also accepted.
+   * @param options.endpoint - The Overpass interpreter endpoint. Defaults to `https://overpass-api.de/api/interpreter`.
+   * @param options.timeout - A positive integer timeout in seconds, applied to both the Overpass query and HTTP request. If omitted, the endpoint's default query timeout applies and no HTTP request timeout is set.
+   * @param options.cache - Whether to read and write the processed GeoParquet cache. Defaults to `true`.
+   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the processed entry reaches that age. Cannot be combined with `cache: false`.
+   * @param options.retries - Additional network retries after the initial request. Defaults to `3`, for up to four attempts. Network-only; passing it for a local path throws an error.
+   * @param options.retryDelay - Base retry delay in seconds. Defaults to `5`, producing deterministic delays of 5, 10, and 20 seconds. A longer valid `Retry-After` value takes precedence. Network-only; passing it for a local path throws an error.
+   * @param options.verbose - Whether to log OpenStreetMap cache, network, Osmium, cleanup, and timing lifecycle details. Defaults to `false`. `SimpleDB({ cacheVerbose: true })` also enables these messages and is not overridden by `verbose: false`.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   loadOpenStreetMap(
     source: string | {
@@ -936,19 +925,6 @@ export default class SimpleTable extends Simple {
    * method requires an FTS index and creates one automatically when needed.
    * DuckDB FTS indexes do not update automatically when the table changes; use
    * `overwrite: true` to rebuild the index after modifying the table.
-   *
-   * @param idColumn - The column containing the document identifiers.
-   * @param textColumn - The column containing the text to search.
-   * @param options - An optional object with configuration options:
-   * @param options.stemmer - The stemmer to use for the FTS index. Supports multiple languages or "none" to disable stemming. Defaults to "porter".
-   * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
-   * @param options.ignore - The regular expression of patterns to be ignored. Defaults to "(\\.|[^a-z])+".
-   * @param options.stripAccents - A boolean indicating whether to remove accents. Defaults to true.
-   * @param options.lower - A boolean indicating whether to convert all text to lowercase. Defaults to true.
-   * @param options.overwrite - A boolean indicating whether to overwrite the existing FTS index. Defaults to false.
-   * @param options.verbose - If `true`, logs FTS index creation status. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Text Search
    *
    * @example
    * ```ts
@@ -984,6 +960,18 @@ export default class SimpleTable extends Simple {
    * // Logs: 'Creating FTS index on "Recipe" column...'
    * // Logs: "FTS index created successfully."
    * ```
+   * @param idColumn - The column containing the document identifiers.
+   * @param textColumn - The column containing the text to search.
+   * @param options - An optional object with configuration options:
+   * @param options.stemmer - The stemmer to use for the FTS index. Supports multiple languages or "none" to disable stemming. Defaults to "porter".
+   * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
+   * @param options.ignore - The regular expression of patterns to be ignored. Defaults to "(\\.|[^a-z])+".
+   * @param options.stripAccents - A boolean indicating whether to remove accents. Defaults to true.
+   * @param options.lower - A boolean indicating whether to convert all text to lowercase. Defaults to true.
+   * @param options.overwrite - A boolean indicating whether to overwrite the existing FTS index. Defaults to false.
+   * @param options.verbose - If `true`, logs FTS index creation status. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Text Search
    */
   createFtsIndex(
     idColumn: string,
@@ -1036,16 +1024,6 @@ export default class SimpleTable extends Simple {
    * If a VSS index already exists on the table, this method will skip creation and log a message (when verbose is enabled), unless the `overwrite` option is set to `true`.
    * The index definition is recorded in {@link indexes}.
    *
-   * @param column - The name of the column containing vector embeddings (must be FLOAT array type).
-   * @param options - An optional object with configuration options:
-   * @param options.overwrite - If `true`, drops and recreates the index even if it already exists. Defaults to `false`.
-   * @param options.verbose - If `true`, logs VSS index creation status. Defaults to `false`.
-   * @param options.efConstruction - The number of candidate vertices to consider during index construction. Higher values result in more accurate indexes but increase build time. Defaults to 128.
-   * @param options.efSearch - The number of candidate vertices to consider during search. Higher values result in more accurate searches but increase search time. Defaults to 64.
-   * @param options.M - The maximum number of neighbors to keep for each vertex in the graph. Higher values result in more accurate indexes but increase build time and memory usage. Defaults to 16.
-   * @returns The table, so methods can be chained.
-   * @category Vector Search
-   *
    * @example
    * ```ts
    * // Load data that already contains an embedding column
@@ -1081,6 +1059,15 @@ export default class SimpleTable extends Simple {
    *   M: 32,
    * }).log();
    * ```
+   * @param column - The name of the column containing vector embeddings (must be FLOAT array type).
+   * @param options - An optional object with configuration options:
+   * @param options.overwrite - If `true`, drops and recreates the index even if it already exists. Defaults to `false`.
+   * @param options.verbose - If `true`, logs VSS index creation status. Defaults to `false`.
+   * @param options.efConstruction - The number of candidate vertices to consider during index construction. Higher values result in more accurate indexes but increase build time. Defaults to 128.
+   * @param options.efSearch - The number of candidate vertices to consider during search. Higher values result in more accurate searches but increase search time. Defaults to 64.
+   * @param options.M - The maximum number of neighbors to keep for each vertex in the graph. Higher values result in more accurate indexes but increase build time and memory usage. Defaults to 16.
+   * @returns The table, so methods can be chained.
+   * @category Vector Search
    */
   createVssIndex(
     column: string,
@@ -1131,18 +1118,6 @@ export default class SimpleTable extends Simple {
    *   repulsion; larger values increase both, tending to separate unrelated
    *   points more strongly. More samples do not guarantee a better projection.
    *
-   * @param column - The column containing numeric vector embeddings.
-   * @param options - Optional projection settings.
-   * @param options.neighbors - Neighborhood size, including the point itself. Integer of at least 2, clamped to row count minus one. Defaults to 15.
-   * @param options.metric - Input distance metric: "euclidean" or "cosine". Defaults to "euclidean".
-   * @param options.epochs - Integer number of refinement passes, at least 1. Defaults to 200.
-   * @param options.seed - Integer used to initialize random choices. Defaults to 42.
-   * @param options.minDistance - Grouping distance parameter between 0 and 1. Defaults to 0.1.
-   * @param options.learningRate - Finite, positive initial learning rate. Defaults to 1.
-   * @param options.negativeSamples - Integer number of samples used to separate unrelated points, at least 1. Defaults to 5.
-   * @returns The table, so methods can be chained.
-   * @category Vector Search
-   *
    * @example
    * ```ts
    * await table.umap("embedding", {
@@ -1158,6 +1133,17 @@ export default class SimpleTable extends Simple {
    *   minDistance: 0.25,
    * }).selectColumns(["label", "umapX", "umapY"]).log();
    * ```
+   * @param column - The column containing numeric vector embeddings.
+   * @param options - Optional projection settings.
+   * @param options.neighbors - Neighborhood size, including the point itself. Integer of at least 2, clamped to row count minus one. Defaults to 15.
+   * @param options.metric - Input distance metric: "euclidean" or "cosine". Defaults to "euclidean".
+   * @param options.epochs - Integer number of refinement passes, at least 1. Defaults to 200.
+   * @param options.seed - Integer used to initialize random choices. Defaults to 42.
+   * @param options.minDistance - Grouping distance parameter between 0 and 1. Defaults to 0.1.
+   * @param options.learningRate - Finite, positive initial learning rate. Defaults to 1.
+   * @param options.negativeSamples - Integer number of samples used to separate unrelated points, at least 1. Defaults to 5.
+   * @returns The table, so methods can be chained.
+   * @category Vector Search
    */
   umap(
     column: string,
@@ -1189,6 +1175,26 @@ export default class SimpleTable extends Simple {
    * Set `approximate: true` to use approximate clustering, which can produce
    * different results, including between repeated runs.
    *
+   * @example
+   * ```ts
+   * // Cluster numeric columns and add membership and outlier scores.
+   * await table
+   *   .hdbscan(["height", "weight"], "cluster", {
+   *     minClusterSize: 5,
+   *     membershipScoreColumn: "membership",
+   *     outlierScoreColumn: "outlierScore",
+   *   })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Scale vector dimensions before clustering.
+   * await table
+   *   .normalizeVector("features", "scaledFeatures")
+   *   .hdbscan("scaledFeatures", "cluster")
+   *   .log();
+   * ```
    * @param columns - A numeric vector column, or numeric scalar columns in
    * feature-dimension order.
    * @param newColumn - The cluster-label column to create.
@@ -1216,27 +1222,6 @@ export default class SimpleTable extends Simple {
    * `1 - membershipScore`.
    * @returns The table, so methods can be chained.
    * @category Vector Search
-   *
-   * @example
-   * ```ts
-   * // Cluster numeric columns and add membership and outlier scores.
-   * await table
-   *   .hdbscan(["height", "weight"], "cluster", {
-   *     minClusterSize: 5,
-   *     membershipScoreColumn: "membership",
-   *     outlierScoreColumn: "outlierScore",
-   *   })
-   *   .log();
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Scale vector dimensions before clustering.
-   * await table
-   *   .normalizeVector("features", "scaledFeatures")
-   *   .hdbscan("scaledFeatures", "cluster")
-   *   .log();
-   * ```
    */
   hdbscan(
     columns: string | string[],
@@ -1264,27 +1249,6 @@ export default class SimpleTable extends Simple {
    * DuckDB FTS indexes do not update automatically when the source table
    * changes; use `overwriteIndex: true` to rebuild the index after modifying
    * the table.
-   *
-   * @param text - The search query text to match against the text column.
-   * @param idColumn - The name of the column containing unique identifiers for each row.
-   * @param textColumn - The name of the column containing the text to search.
-   * @param count - The number of top-ranked results to return.
-   * @param options - An optional object with configuration options:
-   * @param options.outputTable - The name of a new table where the results will be stored. If not provided, the current table will be replaced with the search results.
-   * @param options.verbose - If `true`, logs FTS index creation status. Defaults to `false`.
-   * @param options.k - The BM25 k parameter controlling term frequency saturation. Defaults to 1.2.
-   * @param options.b - The BM25 b parameter controlling document length normalization (0-1 range). Defaults to 0.75.
-   * @param options.stemmer - The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
-   * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
-   * @param options.ignore - The regular expression of patterns to be ignored. Defaults to "(\\.|[^a-z])+".
-   * @param options.stripAccents - A boolean indicating whether to remove accents. Defaults to true.
-   * @param options.lower - A boolean indicating whether to convert all text to lowercase. Defaults to true.
-   * @param options.overwriteIndex - If `true`, drops and recreates the FTS index even if it already exists. Defaults to `false`.
-   * @param options.conjunctive - If `true`, all terms in the query string must be present in order for a document to be retrieved. Defaults to `false`.
-   * @param options.minScore - A threshold to filter out results with a BM25 score below this value.
-   * @param options.scoreColumn - If provided, the BM25 score will be included in the output table under this column name.
-   * @returns A table instance containing the search results, ordered by relevance (best matches first), so methods can be chained.
-   * @category Text Search
    *
    * @example
    * ```ts
@@ -1359,6 +1323,26 @@ export default class SimpleTable extends Simple {
    *   conjunctive: true,
    * }).log();
    * ```
+   * @param text - The search query text to match against the text column.
+   * @param idColumn - The name of the column containing unique identifiers for each row.
+   * @param textColumn - The name of the column containing the text to search.
+   * @param count - The number of top-ranked results to return.
+   * @param options - An optional object with configuration options:
+   * @param options.outputTable - The name of a new table where the results will be stored. If not provided, the current table will be replaced with the search results.
+   * @param options.verbose - If `true`, logs FTS index creation status. Defaults to `false`.
+   * @param options.k - The BM25 k parameter controlling term frequency saturation. Defaults to 1.2.
+   * @param options.b - The BM25 b parameter controlling document length normalization (0-1 range). Defaults to 0.75.
+   * @param options.stemmer - The language stemmer to apply for word normalization. Supports multiple languages or "none" to disable stemming. Defaults to 'porter'.
+   * @param options.stopwords - The table containing the stopwords to use for the FTS index. Supports multiple languages or "none" to disable stopwords. Defaults to "english".
+   * @param options.ignore - The regular expression of patterns to be ignored. Defaults to "(\\.|[^a-z])+".
+   * @param options.stripAccents - A boolean indicating whether to remove accents. Defaults to true.
+   * @param options.lower - A boolean indicating whether to convert all text to lowercase. Defaults to true.
+   * @param options.overwriteIndex - If `true`, drops and recreates the FTS index even if it already exists. Defaults to `false`.
+   * @param options.conjunctive - If `true`, all terms in the query string must be present in order for a document to be retrieved. Defaults to `false`.
+   * @param options.minScore - A threshold to filter out results with a BM25 score below this value.
+   * @param options.scoreColumn - If provided, the BM25 score will be included in the output table under this column name.
+   * @returns A table instance containing the search results, ordered by relevance (best matches first), so methods can be chained.
+   * @category Text Search
    */
   bm25(
     text: string,
@@ -1422,10 +1406,6 @@ export default class SimpleTable extends Simple {
   /**
    * Inserts rows, provided as an array of JavaScript objects, into the table.
    *
-   * @param rows - An array of objects, where each object represents a row to be inserted and its properties correspond to column names.
-   * @returns The table, so methods can be chained.
-   * @category Importing Data
-   *
    * @example
    * ```ts
    * // Insert new rows into the table
@@ -1435,6 +1415,9 @@ export default class SimpleTable extends Simple {
    * ];
    * await table.insertRows(newRows).log();
    * ```
+   * @param rows - An array of objects, where each object represents a row to be inserted and its properties correspond to column names.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
    */
   insertRows(rows: { [key: string]: unknown }[]): this {
     insertRows(this, rows);
@@ -1443,12 +1426,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`.
-   *
-   * @param tables - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
-   * @param options - An optional object with configuration options:
-   * @param options.unifyColumns - A boolean indicating whether to unify the columns of the tables. If `true`, missing columns in a table will be filled with `NULL` values. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Importing Data
    *
    * @example
    * ```ts
@@ -1467,6 +1444,11 @@ export default class SimpleTable extends Simple {
    * // Insert rows from multiple tables, unifying columns. Missing columns will be filled with NULL.
    * await tableA.insertTables(["tableB", "tableC"], { unifyColumns: true }).log();
    * ```
+   * @param tables - The name(s) of the table(s) or SimpleTable instance(s) from which rows will be inserted.
+   * @param options - An optional object with configuration options:
+   * @param options.unifyColumns - A boolean indicating whether to unify the columns of the tables. If `true`, missing columns in a table will be filled with `NULL` values. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
    */
   insertTables(
     tables: SimpleTable | SimpleTable[],
@@ -1479,6 +1461,11 @@ export default class SimpleTable extends Simple {
   /**
    * Fetches sample data from the simple-data-analysis-core GitHub repository.
    *
+   * @example
+   * ```ts
+   * // Load the fires sample data
+   * await table.loadSample("fires").log();
+   * ```
    * @param sample - The name of the sample to load.
    *
    * Tabular data:
@@ -1492,12 +1479,6 @@ export default class SimpleTable extends Simple {
    * - "firesGeo": [firesCanada2023.geojson](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.geojson)
    *
    * @category Importing Data
-   *
-   * @example
-   * ```ts
-   * // Load the fires sample data
-   * await table.loadSample("fires").log();
-   * ```
    */
   loadSample(
     sample:
@@ -1518,15 +1499,6 @@ export default class SimpleTable extends Simple {
    * If `conditions`, `limit`, and `offset` are all used, they are applied in this order: `conditions` (WHERE clause) first, then `offset`, and finally `limit` (LIMIT).
    *
    * Note that cloning large tables can be a slow operation.
-   *
-   * @param nameOrOptions - Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
-   * @param nameOrOptions.name - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
-   * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
-   * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
-   * @param nameOrOptions.limit - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
-   * @param nameOrOptions.offset - The number of rows to skip before starting to clone rows.
-   * @returns A new table instance containing the cloned data, so methods can be chained.
-   * @category Table Management
    *
    * @example
    * ```ts
@@ -1580,6 +1552,14 @@ export default class SimpleTable extends Simple {
    *   limit: 100
    * }).log();
    * ```
+   * @param nameOrOptions - Either a string specifying the name of the new table, or an optional object with configuration options. If not provided, a default name (e.g., "table1", "table2") will be generated.
+   * @param nameOrOptions.name - The name of the new table to be created in the database. If not provided, a default name (e.g., "table1", "table2") will be generated.
+   * @param nameOrOptions.conditions - A SQL `WHERE` clause condition to filter the data during cloning. Defaults to no condition (clones all rows).
+   * @param nameOrOptions.columns - An array of column names to include in the cloned table. If not provided, all columns will be included.
+   * @param nameOrOptions.limit - The number of rows to include in the cloned table. If provided, only the first X rows (potentially after filtering and offset) will be cloned.
+   * @param nameOrOptions.offset - The number of rows to skip before starting to clone rows.
+   * @returns A new table instance containing the cloned data, so methods can be chained.
+   * @category Table Management
    */
   clone(
     nameOrOptions: string | {
@@ -1596,16 +1576,15 @@ export default class SimpleTable extends Simple {
   /**
    * Clones an existing column in this table, creating a new column with identical values.
    *
-   * @param column - The name of the original column to clone.
-   * @param newColumn - The name of the new column to be created.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
-   *
    * @example
    * ```ts
    * // Clone 'firstName' column as 'contactName'
    * await table.cloneColumn("firstName", "contactName").log();
    * ```
+   * @param column - The name of the original column to clone.
+   * @param newColumn - The name of the new column to be created.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   cloneColumn(column: string, newColumn: string): this {
     cloneColumn(this, column, newColumn);
@@ -1617,14 +1596,6 @@ export default class SimpleTable extends Simple {
    * This is useful for time-series analysis or comparing values across different time points.
    *
    * **Important:** The offset is applied based on the current row order in the table. For meaningful results, ensure your data is sorted appropriately (e.g., by date/time for time-series analysis) before calling this method.
-   *
-   * @param column - The name of the original column.
-   * @param newColumn - The name of the new column to be created with offset values.
-   * @param options - An optional object with configuration options:
-   * @param options.offset - The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
-   * @param options.by - A column name or an array of column names to partition by. The offset is applied independently within each group.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
    *
    * @example
    * ```ts
@@ -1655,6 +1626,13 @@ export default class SimpleTable extends Simple {
    *   by: ["stock_symbol", "exchange"],
    * }).log();
    * ```
+   * @param column - The name of the original column.
+   * @param newColumn - The name of the new column to be created with offset values.
+   * @param options - An optional object with configuration options:
+   * @param options.offset - The number of rows to offset the values. A positive number shifts values downwards (later rows), a negative number shifts values upwards (earlier rows). Defaults to `1`.
+   * @param options.by - A column name or an array of column names to partition by. The offset is applied independently within each group.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   cloneColumnWithOffset(
     column: string,
@@ -1670,14 +1648,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Fills `NULL` values in specified columns. By default, each `NULL` is replaced with the last non-`NULL` value from the preceding row. When `interpolate` is `true`, `NULL` values are replaced using linear interpolation (or extrapolation at the ends). Pass `interpolateBy` with a real numeric or date column name to use it as the X-axis, so that interpolated values are proportional to the actual distances between X-axis values rather than treating every row as equidistant. When `interpolateBy` is set, `interpolate` is automatically assumed `true`.
-   *
-   * @param columns - The column(s) for which to fill `NULL` values.
-   * @param options - An optional object with configuration options:
-   * @param options.by - A column name or an array of column names to partition by. The fill is applied independently within each group.
-   * @param options.interpolate - If `true`, replaces `NULL` values with linearly interpolated values using DuckDB's `fill()` window function. When `interpolateBy` is not set, row positions are used as the X-axis, treating rows as equidistant. For `NULL` values at the ends, linear extrapolation is used. Both the column values and the X-axis values must support arithmetic. If `false` or omitted, the previous non-`NULL` value is used instead. Automatically assumed `true` when `interpolateBy` is set.
-   * @param options.interpolateBy - A column name to use as the X-axis for interpolation instead of equidistant row positions. When provided, `interpolate` is automatically assumed `true`. Use this when rows are not evenly spaced (e.g., timestamps or non-uniform numeric indices) so that interpolated values are proportional to the actual distance between X-axis values.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -1720,6 +1690,13 @@ export default class SimpleTable extends Simple {
    * // interpolateBy implies interpolate: true, so this is equivalent to the previous example
    * await table.fill("value", { interpolateBy: "x" }).log();
    * ```
+   * @param columns - The column(s) for which to fill `NULL` values.
+   * @param options - An optional object with configuration options:
+   * @param options.by - A column name or an array of column names to partition by. The fill is applied independently within each group.
+   * @param options.interpolate - If `true`, replaces `NULL` values with linearly interpolated values using DuckDB's `fill()` window function. When `interpolateBy` is not set, row positions are used as the X-axis, treating rows as equidistant. For `NULL` values at the ends, linear extrapolation is used. Both the column values and the X-axis values must support arithmetic. If `false` or omitted, the previous non-`NULL` value is used instead. Automatically assumed `true` when `interpolateBy` is set.
+   * @param options.interpolateBy - A column name to use as the X-axis for interpolation instead of equidistant row positions. When provided, `interpolate` is automatically assumed `true`. Use this when rows are not evenly spaced (e.g., timestamps or non-uniform numeric indices) so that interpolated values are proportional to the actual distance between X-axis values.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   fill(
     columns: string | string[],
@@ -1738,12 +1715,6 @@ export default class SimpleTable extends Simple {
    * If no columns are specified, all columns are sorted from left to right in ascending order.
    *
    * Order-preserving transformations after a sort retain that order. Operations such as joins, grouping, aggregation, and sampling do not guarantee input order; chain `sort()` after them when deterministic output order matters.
-   *
-   * @param order - An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
-   * @param options - An optional object with configuration options:
-   * @param options.lang - An object mapping column names to language codes for collation (e.g., `{ column1: "fr" }`). See DuckDB Collations documentation for more details: https://duckdb.org/docs/sql/expressions/collations.
-   * @returns The table, so methods can be chained.
-   * @category Restructuring Data
    *
    * @example
    * ```ts
@@ -1768,6 +1739,11 @@ export default class SimpleTable extends Simple {
    * // Sort 'column1' considering French accents
    * await table.sort({ column1: "asc" }, { lang: { column1: "fr" } }).log();
    * ```
+   * @param order - An object mapping column names to their sorting order: `"asc"` for ascending or `"desc"` for descending. If `null`, all columns are sorted ascendingly.
+   * @param options - An optional object with configuration options:
+   * @param options.lang - An object mapping column names to language codes for collation (e.g., `{ column1: "fr" }`). See DuckDB Collations documentation for more details: https://duckdb.org/docs/sql/expressions/collations.
+   * @returns The table, so methods can be chained.
+   * @category Restructuring Data
    */
   sort(
     order: { [key: string]: "asc" | "desc" } | null = null,
@@ -1782,10 +1758,6 @@ export default class SimpleTable extends Simple {
   /**
    * Selects specific columns in the table, removing all others.
    *
-   * @param columns - The name or an array of names of the columns to be selected.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
-   *
    * @example
    * ```ts
    * // Select only the 'firstName' and 'lastName' columns, removing all other columns.
@@ -1797,6 +1769,9 @@ export default class SimpleTable extends Simple {
    * // Select only the 'productName' column.
    * await table.selectColumns("productName").log();
    * ```
+   * @param columns - The name or an array of names of the columns to be selected.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   selectColumns(columns: string | string[]): this {
     selectColumns(this, columns);
@@ -1806,15 +1781,14 @@ export default class SimpleTable extends Simple {
   /**
    * Skips the first `n` rows of the table, effectively removing them.
    *
-   * @param count - The number of rows to skip from the beginning of the table.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
-   *
    * @example
    * ```ts
    * // Skip the first 10 rows of the table
    * await table.skip(10).log();
    * ```
+   * @param count - The number of rows to skip from the beginning of the table.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   skip(count: number): this {
     skip(this, count);
@@ -1824,16 +1798,15 @@ export default class SimpleTable extends Simple {
   /**
    * Checks if a column with the specified name exists in the table.
    *
-   * @param column - The name of the column to check.
-   * @returns A promise that resolves to `true` if the column exists, `false` otherwise.
-   * @category Column Operations
-   *
    * @example
    * ```ts
    * // Check if the table has a column named "age"
    * const hasAgeColumn = await table.hasColumn("age");
    * console.log(hasAgeColumn); // Output: true or false
    * ```
+   * @param column - The name of the column to check.
+   * @returns A promise that resolves to `true` if the column exists, `false` otherwise.
+   * @category Column Operations
    */
   async hasColumn(column: string): Promise<boolean> {
     const columns = await this.getColumns();
@@ -1842,12 +1815,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Selects random rows from the table, removing all others. You can optionally specify a seed to ensure repeatable sampling.
-   *
-   * @param count - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
-   * @param options - An optional object with configuration options:
-   * @param options.seed - A number specifying the seed for repeatable sampling. Using the same seed will always yield the same random rows. Defaults to a random seed.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -1866,6 +1833,11 @@ export default class SimpleTable extends Simple {
    * // Select random rows with a specific seed for repeatable results
    * await table.sample("10%", { seed: 123 }).log();
    * ```
+   * @param count - The number of rows to select (e.g., `100`) or a percentage string (e.g., `"10%"`) specifying the sampling size.
+   * @param options - An optional object with configuration options:
+   * @param options.seed - A number specifying the seed for repeatable sampling. Using the same seed will always yield the same random rows. Defaults to a random seed.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   sample(
     count: number | string,
@@ -1879,13 +1851,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Selects a specified number of rows from this table. An offset can be applied to skip initial rows, and the results can be output to a new table.
-   *
-   * @param count - The number of rows to select.
-   * @param options - An optional object with configuration options:
-   * @param options.offset - The number of rows to skip from the beginning of the table before selecting. Defaults to `0`.
-   * @param options.outputTable - If `true`, the selected rows will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be modified. Defaults to `false`.
-   * @returns A table instance containing the selected rows (either the current table or a new table), so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -1910,6 +1875,12 @@ export default class SimpleTable extends Simple {
    * // Select 75 rows and store them in a new table named "top_customers"
    * const topCustomersTable = await table.selectRows(75, { outputTable: "top_customers" }).log();
    * ```
+   * @param count - The number of rows to select.
+   * @param options - An optional object with configuration options:
+   * @param options.offset - The number of rows to skip from the beginning of the table before selecting. Defaults to `0`.
+   * @param options.outputTable - If `true`, the selected rows will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be modified. Defaults to `false`.
+   * @returns A table instance containing the selected rows (either the current table or a new table), so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   selectRows(
     count: number | string,
@@ -1921,11 +1892,6 @@ export default class SimpleTable extends Simple {
   /**
    * Removes duplicate rows from this table, keeping only unique rows.
    * Note that the resulting data order might differ from the original.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.on - A column name or an array of column names to consider when identifying duplicates. If specified, duplicates are determined based only on the values in these columns. If omitted, all columns are considered.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -1944,6 +1910,10 @@ export default class SimpleTable extends Simple {
    * // Remove duplicate rows based on 'firstName' and 'lastName' columns
    * await table.removeDuplicates({ on: ["firstName", "lastName"] }).log();
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.on - A column name or an array of column names to consider when identifying duplicates. If specified, duplicates are determined based only on the values in these columns. If omitted, all columns are considered.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   removeDuplicates(
     options: {
@@ -1957,13 +1927,6 @@ export default class SimpleTable extends Simple {
   /**
    * Removes rows with missing values from this table.
    * By default, missing values include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`, `"NaN"`, `"undefined"`, and empty strings `""`.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.columns - A string or an array of strings specifying the columns to consider for missing values. If omitted, all columns are considered.
-   * @param options.missingValues - An array of values to be treated as missing values instead of the default ones. Defaults to `["undefined", "NaN", "null", "NULL", ""]`.
-   * @param options.invert - A boolean indicating whether to invert the condition. If `true`, only rows containing missing values will be kept. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -1988,6 +1951,12 @@ export default class SimpleTable extends Simple {
    * // Remove rows where 'age' is missing or is equal to -1
    * await table.removeMissing({ columns: "age", missingValues: [-1] }).log();
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.columns - A string or an array of strings specifying the columns to consider for missing values. If omitted, all columns are considered.
+   * @param options.missingValues - An array of values to be treated as missing values instead of the default ones. Defaults to `["undefined", "NaN", "null", "NULL", ""]`.
+   * @param options.invert - A boolean indicating whether to invert the condition. If `true`, only rows containing missing values will be kept. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   removeMissing(
     options: {
@@ -2002,13 +1971,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Trims specified characters from the beginning, end, or both sides of string values in the given columns.
-   *
-   * @param columns - The column name or an array of column names to trim.
-   * @param options - An optional object with configuration options:
-   * @param options.character - The string to trim. Defaults to whitespace characters.
-   * @param options.side - The side to trim: `"left"` (removes from the beginning), `"right"` (removes from the end), or `"both"` (removes from both sides). Defaults to `"both"`.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -2027,6 +1989,12 @@ export default class SimpleTable extends Simple {
    * // Right-trim whitespace from 'description' and 'notes' columns
    * await table.trim(["description", "notes"], { side: "right" }).log();
    * ```
+   * @param columns - The column name or an array of column names to trim.
+   * @param options - An optional object with configuration options:
+   * @param options.character - The string to trim. Defaults to whitespace characters.
+   * @param options.side - The side to trim: `"left"` (removes from the beginning), `"right"` (removes from the end), or `"both"` (removes from both sides). Defaults to `"both"`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   trim(
     columns: string | string[],
@@ -2042,10 +2010,6 @@ export default class SimpleTable extends Simple {
   /**
    * Filters rows from this table based on SQL conditions. Note that it's often faster to use the `removeRows` method for simple removals.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -2070,6 +2034,9 @@ export default class SimpleTable extends Simple {
    * // Keep rows where 'lastPurchaseDate' is on or after '2023-01-01'
    * await table.filter(`lastPurchaseDate >= '2023-01-01'`).log();
    * ```
+   * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"column1 > 10 AND column2 = 'value'"`).
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   filter(conditions: string): this {
     filter(this, conditions);
@@ -2078,10 +2045,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Keeps rows in this table that have specific values in specified columns, removing all other rows.
-   *
-   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns. Use `null` to keep rows where a column is `NULL`.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -2100,6 +2063,9 @@ export default class SimpleTable extends Simple {
    * // Keep only rows where 'status' is NULL
    * await table.keepValues({ status: null }).log();
    * ```
+   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns. Use `null` to keep rows where a column is `NULL`.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   keepValues(
     columnsAndValues: { [key: string]: unknown },
@@ -2110,10 +2076,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Removes rows from this table that have specific values in specified columns.
-   *
-   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns. Use `null` to remove rows where a column is `NULL`; otherwise, `NULL` rows are retained.
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -2132,6 +2094,9 @@ export default class SimpleTable extends Simple {
    * // Remove rows where 'status' is NULL
    * await table.removeValues({ status: null }).log();
    * ```
+   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns. Use `null` to remove rows where a column is `NULL`; otherwise, `NULL` rows are retained.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   removeValues(
     columnsAndValues: { [key: string]: unknown },
@@ -2143,10 +2108,6 @@ export default class SimpleTable extends Simple {
   /**
    * Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"fruit = 'apple'"`).
-   * @returns The table, so methods can be chained.
-   * @category Selecting or Filtering Data
    *
    * @example
    * ```ts
@@ -2171,6 +2132,9 @@ export default class SimpleTable extends Simple {
    * // Remove rows where 'category' is 'Electronics' OR 'Appliances'
    * await table.removeRows(`category === 'Electronics' || category === 'Appliances'`).log(); // Using JS syntax
    * ```
+   * @param conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"fruit = 'apple'"`).
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
    */
   removeRows(conditions: string): this {
     removeRows(this, conditions);
@@ -2180,12 +2144,6 @@ export default class SimpleTable extends Simple {
   /**
    * Renames one or more columns in the table. Throws if a source column does
    * not exist, so a typo fails loudly instead of being silently ignored.
-   *
-   * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
-   * @param options - Configuration options.
-   * @param options.strict - Whether to verify the source columns exist before renaming. Defaults to `true`. Set to `false` to skip the check and its schema lookup when you know the columns exist and are renaming across many tables where the extra round-trip adds up.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
    *
    * @example
    * ```ts
@@ -2204,6 +2162,11 @@ export default class SimpleTable extends Simple {
    * // Skip the existence check when renaming across many tables
    * await table.renameColumns({ "product_id": "productId" }, { strict: false }).log();
    * ```
+   * @param names - An object mapping old column names to their new column names (e.g., `{ "oldName": "newName", "anotherOld": "anotherNew" }`).
+   * @param options - Configuration options.
+   * @param options.strict - Whether to verify the source columns exist before renaming. Defaults to `true`. Set to `false` to skip the check and its schema lookup when you know the columns exist and are renaming across many tables where the extra round-trip adds up.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   renameColumns(
     names: { [key: string]: string },
@@ -2216,15 +2179,14 @@ export default class SimpleTable extends Simple {
   /**
    * Cleans column names by removing non-alphanumeric characters and formatting them to camel case.
    *
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
-   *
    * @example
    * ```ts
    * // Clean all column names in the table
    * // e.g., "First Name" becomes "firstName", "Product ID" becomes "productId"
    * await table.cleanColumnNames().log();
    * ```
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   cleanColumnNames(): this {
     queueOp(this, {
@@ -2358,13 +2320,6 @@ export default class SimpleTable extends Simple {
    *
    * When converting strings to numbers, commas (often used as thousand separators) will be automatically removed before conversion.
    *
-   * @param types - An object mapping column names to their target data types for conversion, including JSON, FLOAT[n] vectors, and GEOMETRY with a CRS.
-   * @param options - An optional object with configuration options:
-   * @param options.strict - If `false`, values that cannot be converted will be replaced by `NULL` instead of throwing an error. Defaults to `true`.
-   * @param options.datetimeFormat - A string specifying the format for date and time conversions. Uses `strftime` and `strptime` functions from DuckDB. For format specifiers, see [DuckDB's documentation](https://duckdb.org/docs/sql/functions/dateformat).
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Convert 'column1' to string and 'column2' to integer (JavaScript types)
@@ -2417,6 +2372,12 @@ export default class SimpleTable extends Simple {
    *   .convert({ details: "JSON", embedding: "FLOAT[3]", geom: "GEOMETRY('EPSG:4326')" })
    *   .log();
    * ```
+   * @param types - An object mapping column names to their target data types for conversion, including JSON, FLOAT[n] vectors, and GEOMETRY with a CRS.
+   * @param options - An optional object with configuration options:
+   * @param options.strict - If `false`, values that cannot be converted will be replaced by `NULL` instead of throwing an error. Defaults to `true`.
+   * @param options.datetimeFormat - A string specifying the format for date and time conversions. Uses `strftime` and `strptime` functions from DuckDB. For format specifiers, see [DuckDB's documentation](https://duckdb.org/docs/sql/functions/dateformat).
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   convert(
     types: {
@@ -2454,14 +2415,13 @@ export default class SimpleTable extends Simple {
   /**
    * Removes the table from the database. After this operation, invoking methods on this SimpleTable instance will result in an error.
    *
-   * @returns A promise that resolves after the table is removed.
-   * @category Table Management
-   *
    * @example
    * ```ts
    * // Remove the current table from the database
    * await table.removeTable();
    * ```
+   * @returns A promise that resolves after the table is removed.
+   * @category Table Management
    */
   async removeTable(): Promise<this> {
     await removeTable(this);
@@ -2470,10 +2430,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Removes one or more columns from this table.
-   *
-   * @param columns - The name or an array of names of the columns to be removed.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
    *
    * @example
    * ```ts
@@ -2486,6 +2442,9 @@ export default class SimpleTable extends Simple {
    * // Remove a single column named 'tempColumn'
    * await table.removeColumns("tempColumn").log();
    * ```
+   * @param columns - The name or an array of names of the columns to be removed.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   removeColumns(columns: string | string[]): this {
     removeColumns(this, columns);
@@ -2495,12 +2454,6 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
    * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param newColumn - The name of the new column to be added.
-   * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`, `"JSON"`, `"FLOAT[3]"`, `"GEOMETRY('EPSG:4326')"`).
-   * @param definition - A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
    *
    * @example
    * ```ts
@@ -2532,6 +2485,11 @@ export default class SimpleTable extends Simple {
    *   .addColumn("embedding", "FLOAT[3]", "[0.25, 0.5, 0.75]")
    *   .log();
    * ```
+   * @param newColumn - The name of the new column to be added.
+   * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`, `"JSON"`, `"FLOAT[3]"`, `"GEOMETRY('EPSG:4326')"`).
+   * @param definition - A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   addColumn(
     newColumn: string,
@@ -2572,12 +2530,6 @@ export default class SimpleTable extends Simple {
    *
    * IDs are not globally unique: separate tables can generate the same IDs.
    *
-   * @param newColumn - The name of the new ID column.
-   * @param options - An optional object with configuration options.
-   * @param options.prefix - Text to place before each row number. Supplying this option, including an empty string, creates string IDs.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
-   *
    * @example
    * ```ts
    * // Add numeric IDs: 0, 1, 2, ...
@@ -2593,6 +2545,11 @@ export default class SimpleTable extends Simple {
    *   .addId("edgeId", { prefix: "flight-" })
    *   .log();
    * ```
+   * @param newColumn - The name of the new ID column.
+   * @param options - An optional object with configuration options.
+   * @param options.prefix - Text to place before each row number. Supplying this option, including an empty string, creates string IDs.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   addId(
     newColumn: string,
@@ -4316,11 +4273,6 @@ export default class SimpleTable extends Simple {
    * values produce `NULL` extracted values. Parts extracted from
    * `TIMESTAMP WITH TIME ZONE` values use UTC.
    *
-   * @param column - The temporal column from which to extract components.
-   * @param parts - A part to extract using its name as the new column, or an object mapping each custom new-column name to the part it should contain.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
-   *
    * @example
    * ```ts
    * // Add a column named 'year' from the 'publishedAt' timestamp
@@ -4335,6 +4287,10 @@ export default class SimpleTable extends Simple {
    *   publicationMonth: "month",
    * }).log();
    * ```
+   * @param column - The temporal column from which to extract components.
+   * @param parts - A part to extract using its name as the new column, or an object mapping each custom new-column name to the part it should contain.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   extractDatePart(
     column: string,
@@ -4370,12 +4326,6 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a new column to the table containing the row number, starting at 0 (like an index).
    *
-   * @param newColumn - The name of the new column that will store the row number.
-   * @param options - An optional object with configuration options:
-   * @param options.by - A column name or an array of column names to partition by. The row number restarts at 0 within each group.
-   * @returns The table, so methods can be chained.
-   * @category Column Operations
-   *
    * @example
    * ```ts
    * // Add a new column named 'rowNumber' with the row number for each row
@@ -4387,6 +4337,11 @@ export default class SimpleTable extends Simple {
    * // Add a new column named 'rowNumber' with the row number for each 'category'
    * await table.addRowNumber("rowNumber", { by: "category" }).log();
    * ```
+   * @param newColumn - The name of the new column that will store the row number.
+   * @param options - An optional object with configuration options:
+   * @param options.by - A column name or an array of column names to partition by. The row number restarts at 0 within each group.
+   * @returns The table, so methods can be chained.
+   * @category Column Operations
    */
   addRowNumber(
     newColumn: string,
@@ -4399,12 +4354,6 @@ export default class SimpleTable extends Simple {
   /**
    * Performs a cross join operation with another table. A cross join returns the Cartesian product of the rows from both tables, meaning all possible pairs of rows will be in the resulting table.
    * This means that if the left table has `n` rows and the right table has `m` rows, the result will have `n * m` rows.
-   *
-   * @param rightTable - The SimpleTable instance to cross join with.
-   * @param options - An optional object with configuration options:
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A table instance containing the cross-joined data (either the current table or a new table), so methods can be chained.
-   * @category Table Operations
    *
    * @example
    * ```ts
@@ -4423,6 +4372,11 @@ export default class SimpleTable extends Simple {
    * // Perform a cross join with 'tableB' and store the results in a new table named 'tableC'
    * const tableC = await tableA.crossJoin(tableB, { outputTable: "tableC" }).log();
    * ```
+   * @param rightTable - The SimpleTable instance to cross join with.
+   * @param options - An optional object with configuration options:
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @returns A table instance containing the cross-joined data (either the current table or a new table), so methods can be chained.
+   * @category Table Operations
    */
   crossJoin(
     rightTable: SimpleTable,
@@ -4437,14 +4391,6 @@ export default class SimpleTable extends Simple {
    * Merges the data of this table (considered the left table) with another table (the right table) based on a common column or multiple columns.
    * Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
-   *
-   * @param rightTable - The SimpleTable instance to be joined with this table.
-   * @param options - An optional object with configuration options:
-   * @param options.on - The column(s) to join on. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
-   * @param options.type - The type of join operation to perform. Possible values are `"inner"`, `"left"` (default), `"right"`, or `"full"`.
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A table instance containing the joined data (either the current table or a new table), so methods can be chained.
-   * @category Table Operations
    *
    * @example
    * ```ts
@@ -4463,6 +4409,13 @@ export default class SimpleTable extends Simple {
    * // Perform a join on multiple columns ('name' and 'category')
    * await tableA.join(tableB, { on: ["name", "category"] }).log();
    * ```
+   * @param rightTable - The SimpleTable instance to be joined with this table.
+   * @param options - An optional object with configuration options:
+   * @param options.on - The column(s) to join on. If omitted, the method automatically searches for a column name that exists in both tables. Can be a single string or an array of strings for multiple join keys.
+   * @param options.type - The type of join operation to perform. Possible values are `"inner"`, `"left"` (default), `"right"`, or `"full"`.
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @returns A table instance containing the joined data (either the current table or a new table), so methods can be chained.
+   * @category Table Operations
    */
 
   join(
@@ -4492,22 +4445,6 @@ export default class SimpleTable extends Simple {
    * If a similarity score column is added to the results, the rows will be ordered alphabetically by the left column, and then by descending similarity score within each group of identical left column values. Otherwise, the rows will be order alphabetically by the left column and then by the right column.
    *
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
-   *
-   * @param rightTable - The SimpleTable instance to be joined with this table.
-   * @param leftColumn - The name of the column in this (left) table containing the text to compare.
-   * @param rightColumn - The name of the column in the right table containing the text to compare.
-   * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
-   * @param options - An optional object with configuration options:
-   * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
-   *   - `"ratio"`: Overall similarity (Levenshtein-based).
-   *   - `"partial_ratio"`: Best partial/substring similarity.
-   *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
-   *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @param options.prefilterPrefixLength - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
-   * @returns A table instance containing the fuzzy-joined data (either the current table or a new table), so methods can be chained.
-   * @category Table Operations
    *
    * @example
    * ```ts
@@ -4540,6 +4477,21 @@ export default class SimpleTable extends Simple {
    *   similarityColumn: "matchScore",
    * }).log();
    * ```
+   * @param rightTable - The SimpleTable instance to be joined with this table.
+   * @param leftColumn - The name of the column in this (left) table containing the text to compare.
+   * @param rightColumn - The name of the column in the right table containing the text to compare.
+   * @param threshold - The minimum similarity score (0–100) required for two rows to be joined. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
+   * @param options - An optional object with configuration options:
+   * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
+   *   - `"ratio"`: Overall similarity (Levenshtein-based).
+   *   - `"partial_ratio"`: Best partial/substring similarity.
+   *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
+   *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
+   * @param options.similarityColumn - If provided, a column with this name is added to the result containing the similarity score (0–100). If omitted, the score is not included in the output.
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @param options.prefilterPrefixLength - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
+   * @returns A table instance containing the fuzzy-joined data (either the current table or a new table), so methods can be chained.
+   * @category Table Operations
    */
   fuzzyJoin(
     rightTable: SimpleTable,
@@ -4582,25 +4534,6 @@ export default class SimpleTable extends Simple {
    * Similarity is computed using the [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension,
    * which is installed and loaded automatically.
    *
-   * @param column - The name of the column containing the strings to normalize.
-   * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
-   * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
-   * @param options - An optional object with configuration options:
-   * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
-   *   - `"ratio"`: Overall similarity.
-   *   - `"partial_ratio"`: Best partial/substring similarity.
-   *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
-   *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
-   * @param options.strategy - The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`.
-   *   - `"mostCommon"`: Keep the value that appears most frequently in the original column.
-   *   - `"longestString"`: Keep the longest string in the cluster.
-   *   - `"shortestString"`: Keep the shortest string in the cluster.
-   *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
-   *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
-   * @param options.prefilterPrefixLength - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Normalize 'city' into a new 'cityClean' column, keeping the most common string per cluster with a threshold of 80
@@ -4627,6 +4560,24 @@ export default class SimpleTable extends Simple {
    * // Normalize 'category' in-place, keeping the longest string in each cluster and a threshold of 80
    * await table.fuzzyClean("category", "category", 80, { strategy: "longestString" }).log();
    * ```
+   * @param column - The name of the column containing the strings to normalize.
+   * @param newColumn - The name of the column to write the normalized values to. Use the same name as `column` to normalize in-place.
+   * @param threshold - The minimum similarity score (0–100) for two strings to be considered duplicates. For `method: "ratio"`, a length-based pre-filter is automatically applied based on the threshold to improve performance without losing accuracy.
+   * @param options - An optional object with configuration options:
+   * @param options.method - The rapidfuzz similarity algorithm to use. Defaults to `"ratio"`.
+   *   - `"ratio"`: Overall similarity.
+   *   - `"partial_ratio"`: Best partial/substring similarity.
+   *   - `"token_sort_ratio"`: Similarity after sorting tokens (words), useful for reordered words.
+   *   - `"token_set_ratio"`: Similarity based on sets of tokens, ignoring duplicates and word order.
+   * @param options.strategy - The strategy for choosing the canonical value within each cluster of similar strings. Defaults to `"mostCommon"`.
+   *   - `"mostCommon"`: Keep the value that appears most frequently in the original column.
+   *   - `"longestString"`: Keep the longest string in the cluster.
+   *   - `"shortestString"`: Keep the shortest string in the cluster.
+   *   - `"mostCentral"`: Keep the string with the highest total similarity score to all other cluster members (the most "central" string).
+   *   - `"maxScore"`: Keep the string that participates in the single highest-scoring pairwise match within the cluster.
+   * @param options.prefilterPrefixLength - An optional prefix length. Only strings sharing the same first N characters are compared. Note that prefix filtering is lossy (e.g. "John" vs. "Phon" will not match despite high similarity).
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   fuzzyClean(
     column: string,
@@ -4653,14 +4604,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Replaces specified strings in the selected columns.
-   *
-   * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
-   * @param replacements - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
-   * @param options - An optional object with configuration options:
-   * @param options.entireString - A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
-   * @param options.regex - A boolean indicating whether the `oldString` should be treated as a regular expression for global replacement. Cannot be used with `entireString: true`. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -4691,6 +4634,13 @@ export default class SimpleTable extends Simple {
    * // Replace "%" with "" in all columns
    * await table.replace("all", { "%": "" }).log();
    * ```
+   * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
+   * @param replacements - An object mapping old strings to new strings (e.g., `{ "oldValue": "newValue" }`).
+   * @param options - An optional object with configuration options:
+   * @param options.entireString - A boolean indicating whether the entire cell content must match the `oldString` for replacement to occur. Defaults to `false` (replaces substrings).
+   * @param options.regex - A boolean indicating whether the `oldString` should be treated as a regular expression for global replacement. Cannot be used with `entireString: true`. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   replace(
     columns: "all" | string | string[],
@@ -4707,10 +4657,6 @@ export default class SimpleTable extends Simple {
   /**
    * Converts string values in the specified columns to lowercase.
    *
-   * @param columns - The column name or an array of column names to be converted to lowercase.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Convert strings in 'column1' to lowercase
@@ -4722,6 +4668,9 @@ export default class SimpleTable extends Simple {
    * // Convert strings in 'column1' and 'column2' to lowercase
    * await table.lower(["column1", "column2"]).log();
    * ```
+   * @param columns - The column name or an array of column names to be converted to lowercase.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   lower(columns: string | string[]): this {
     lower(this, columns);
@@ -4730,10 +4679,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Converts string values in the specified columns to uppercase.
-   *
-   * @param columns - The column name or an array of column names to be converted to uppercase.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -4746,6 +4691,9 @@ export default class SimpleTable extends Simple {
    * // Convert strings in 'column1' and 'column2' to uppercase
    * await table.upper(["column1", "column2"]).log();
    * ```
+   * @param columns - The column name or an array of column names to be converted to uppercase.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   upper(columns: string | string[]): this {
     upper(this, columns);
@@ -4754,10 +4702,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Capitalizes the first letter of each string in the specified columns and converts the rest of the string to lowercase.
-   *
-   * @param columns - The column name or an array of column names to be capitalized.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -4770,6 +4714,9 @@ export default class SimpleTable extends Simple {
    * // Capitalize strings in 'column1' and 'column2'
    * await table.capitalize(["column1", "column2"]).log();
    * ```
+   * @param columns - The column name or an array of column names to be capitalized.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   capitalize(columns: string | string[]): this {
     capitalize(this, columns);
@@ -4778,11 +4725,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Truncates string values in a specified column to a maximum number of characters.
-   *
-   * @param column - The column name containing strings to be truncated.
-   * @param length - The maximum number of characters to keep.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -4795,6 +4737,10 @@ export default class SimpleTable extends Simple {
    * // Truncate strings in 'name' column to 10 characters
    * await table.truncate("name", 10).log();
    * ```
+   * @param column - The column name containing strings to be truncated.
+   * @param length - The maximum number of characters to keep.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   truncate(column: string, length: number): this {
     truncate(this, column, length);
@@ -4807,16 +4753,6 @@ export default class SimpleTable extends Simple {
    * The columns must contain string (VARCHAR) values. An error is thrown if any
    * column is of a different type. `null` values remain `null`. If any string
    * already exceeds the target length, an error is thrown (no silent truncation).
-   *
-   * @param columns - The column name(s) containing strings to be padded.
-   * @param length - The target length of the padded strings.
-   * @param options - An optional object with configuration options:
-   * @param options.side - Which side to pad. `'left'` (default) or `'right'`.
-   * @param options.character - The character to use for padding. Defaults to `'0'`.
-   * @returns The table, so methods can be chained.
-   * @throws {Error} If any column is not of string (VARCHAR) type.
-   * @throws {Error} If any string value exceeds the target length.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -4838,6 +4774,15 @@ export default class SimpleTable extends Simple {
    * await table.pad(["id", "code"], 5, { side: "left", character: "-" }).log();
    * // Result: '1' -> '----1', '23' -> '---23'
    * ```
+   * @param columns - The column name(s) containing strings to be padded.
+   * @param length - The target length of the padded strings.
+   * @param options - An optional object with configuration options:
+   * @param options.side - Which side to pad. `'left'` (default) or `'right'`.
+   * @param options.character - The character to use for padding. Defaults to `'0'`.
+   * @returns The table, so methods can be chained.
+   * @throws {Error} If any column is not of string (VARCHAR) type.
+   * @throws {Error} If any string value exceeds the target length.
+   * @category Updating Data
    */
   pad(
     columns: string | string[],
@@ -4852,13 +4797,6 @@ export default class SimpleTable extends Simple {
    * Splits strings in a specified column by a separator and extracts a substring at a given index, storing the result in a new or existing column.
    * If the index is out of bounds, an empty string will be returned for that row.
    *
-   * @param column - The name of the column containing the strings to be split.
-   * @param separator - The substring to use as a delimiter for splitting the strings.
-   * @param index - The zero-based index of the substring to extract after splitting. For example, `0` for the first part, `1` for the second, etc.
-   * @param newColumn - The name of the column where the extracted substrings will be stored. To overwrite the original column, use the same name as `column`.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Split 'address' by comma and extract the second part (index 1) into a new 'city' column
@@ -4872,6 +4810,12 @@ export default class SimpleTable extends Simple {
    * // e.g., "document.pdf" -> "document"
    * await table.splitExtract("filename", ".", 0, "filename").log();
    * ```
+   * @param column - The name of the column containing the strings to be split.
+   * @param separator - The substring to use as a delimiter for splitting the strings.
+   * @param index - The zero-based index of the substring to extract after splitting. For example, `0` for the first part, `1` for the second, etc.
+   * @param newColumn - The name of the column where the extracted substrings will be stored. To overwrite the original column, use the same name as `column`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   splitExtract(
     column: string,
@@ -4889,14 +4833,6 @@ export default class SimpleTable extends Simple {
    * Each part of the split string will be stored in a separate column. The number of columns created is determined by the length of the `newColumns` array.
    * If a row has fewer parts than the number of new columns, a warning will be logged and the extra columns will contain empty strings (unless `strict` is set to `false`).
    * If a row has more parts than the number of new columns, an error will be thrown unless `strict` is set to `false`.
-   *
-   * @param column - The name of the column containing the strings to be split.
-   * @param separator - The substring to use as a delimiter for splitting the strings.
-   * @param newColumns - An array of column names for the extracted parts.
-   * @param options - Optional configuration.
-   * @param options.strict - If `false`, skips all validation checks (both max and min parts). Defaults to `true`.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -4917,6 +4853,13 @@ export default class SimpleTable extends Simple {
    * // Skip validation for performance
    * await table.splitSpread("data", "|", ["col1", "col2"], { strict: false }).log();
    * ```
+   * @param column - The name of the column containing the strings to be split.
+   * @param separator - The substring to use as a delimiter for splitting the strings.
+   * @param newColumns - An array of column names for the extracted parts.
+   * @param options - Optional configuration.
+   * @param options.strict - If `false`, skips all validation checks (both max and min parts). Defaults to `true`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   splitSpread(
     column: string,
@@ -4933,17 +4876,16 @@ export default class SimpleTable extends Simple {
   /**
    * Extracts a specific number of characters from the beginning (left side) of string values in the specified column.
    *
-   * @param column - The name of the column containing the strings to be modified.
-   * @param count - The number of characters to extract from the left side of each string.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Replace strings in 'productCode' with their first two characters
    * // e.g., "ABC-123" becomes "AB"
    * await table.firstChars("productCode", 2).log();
    * ```
+   * @param column - The name of the column containing the strings to be modified.
+   * @param count - The number of characters to extract from the left side of each string.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   firstChars(column: string, count: number): this {
     firstChars(this, column, count);
@@ -4953,17 +4895,16 @@ export default class SimpleTable extends Simple {
   /**
    * Extracts a specific number of characters from the end (right side) of string values in the specified column.
    *
-   * @param column - The name of the column containing the strings to be modified.
-   * @param count - The number of characters to extract from the right side of each string.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Replace strings in 'productCode' with their last two characters
    * // e.g., "ABC-123" becomes "23"
    * await table.lastChars("productCode", 2).log();
    * ```
+   * @param column - The name of the column containing the strings to be modified.
+   * @param count - The number of characters to extract from the right side of each string.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   lastChars(column: string, count: number): this {
     lastChars(this, column, count);
@@ -4972,11 +4913,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Replaces `NULL` values in the specified columns with a given value.
-   *
-   * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
-   * @param value - The value to replace `NULL` occurrences with.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5001,6 +4937,10 @@ export default class SimpleTable extends Simple {
    * // Replace NULL values in all columns with 0
    * await table.replaceNulls("all", 0).log();
    * ```
+   * @param columns - The column name, an array of column names, or `"all"` to apply the replacement to every column in the table.
+   * @param value - The value to replace `NULL` occurrences with.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   replaceNulls(
     columns: "all" | string | string[],
@@ -5013,13 +4953,6 @@ export default class SimpleTable extends Simple {
   /**
    * Concatenates values from specified columns into a new column.
    *
-   * @param columns - An array of column names whose values will be concatenated.
-   * @param newColumn - The name of the new column to store the concatenated values.
-   * @param options - An optional object with configuration options:
-   * @param options.separator - The string used to separate concatenated values. Defaults to an empty string (`""`).
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Concatenate 'firstName' and 'lastName' into a new 'fullName' column
@@ -5031,6 +4964,12 @@ export default class SimpleTable extends Simple {
    * // Concatenate 'city' and 'country' into 'location', separated by a comma and space
    * await table.concatenate(["city", "country"], "location", { separator: ", " }).log();
    * ```
+   * @param columns - An array of column names whose values will be concatenated.
+   * @param newColumn - The name of the new column to store the concatenated values.
+   * @param options - An optional object with configuration options:
+   * @param options.separator - The string used to separate concatenated values. Defaults to an empty string (`""`).
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   concatenate(
     columns: string[],
@@ -5053,11 +4992,6 @@ export default class SimpleTable extends Simple {
    * All values must be string, otherwise an error will be thrown. Use the `convert()` method first to convert non-string columns to string.
    *
    * If a column value is `NULL`, it will be replaced by `'Unknown'` in the concatenated result.
-   *
-   * @param columns - An array of column names whose values will be concatenated with labels.
-   * @param newColumn - The name of the new column to create with the concatenated values.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5091,6 +5025,10 @@ export default class SimpleTable extends Simple {
    *   .convert({ age: "string", salary: "string" })
    *   .rowToText(["name", "age", "salary"], "profile").log();
    * ```
+   * @param columns - An array of column names whose values will be concatenated with labels.
+   * @param newColumn - The name of the new column to create with the concatenated values.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   rowToText(
     columns: string[],
@@ -5109,13 +5047,6 @@ export default class SimpleTable extends Simple {
    * Mixed numeric types require an explicit `type` option. Casting exact
    * decimals or large integers to FLOAT or DOUBLE can lose precision.
    *
-   * @param columns - Numeric scalar columns to combine, in vector dimension order.
-   * @param newColumn - The name of the vector column to create.
-   * @param options - Optional vector element type settings.
-   * @param options.type - Cast every element to `"float"` or `"double"`. Required when the input column types differ.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * await table
@@ -5129,6 +5060,12 @@ export default class SimpleTable extends Simple {
    *   .rowToVector(["count", "score"], "features", { type: "double" })
    *   .log();
    * ```
+   * @param columns - Numeric scalar columns to combine, in vector dimension order.
+   * @param newColumn - The name of the vector column to create.
+   * @param options - Optional vector element type settings.
+   * @param options.type - Cast every element to `"float"` or `"double"`. Required when the input column types differ.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   rowToVector(
     columns: string[],
@@ -5153,16 +5090,6 @@ export default class SimpleTable extends Simple {
    * DOUBLE can lose precision. With `"dimensionMinMax"`, a dimension whose
    * converted values are all equal cannot be normalized.
    *
-   * @param column - The numeric vector column to normalize.
-   * @param newColumn - The output column. Use the source column's name to
-   * replace the source column with the normalized DOUBLE vector.
-   * @param options - Normalization settings.
-   * @param options.normalization - `"dimensionMinMax"` scales each dimension
-   * across rows; `"rowL2"` scales each row to unit length. Defaults to
-   * `"dimensionMinMax"`.
-   * @returns The table, so methods can be chained.
-   * @category Vector Operations
-   *
    * @example
    * ```ts
    * // Scale each dimension across rows to [0, 1] in a new column.
@@ -5178,6 +5105,15 @@ export default class SimpleTable extends Simple {
    *   .normalizeVector("features", "features", { normalization: "rowL2" })
    *   .log();
    * ```
+   * @param column - The numeric vector column to normalize.
+   * @param newColumn - The output column. Use the source column's name to
+   * replace the source column with the normalized DOUBLE vector.
+   * @param options - Normalization settings.
+   * @param options.normalization - `"dimensionMinMax"` scales each dimension
+   * across rows; `"rowL2"` scales each row to unit length. Defaults to
+   * `"dimensionMinMax"`.
+   * @returns The table, so methods can be chained.
+   * @category Vector Operations
    */
   normalizeVector(
     column: string,
@@ -5202,16 +5138,6 @@ export default class SimpleTable extends Simple {
    * with invertible, numerically stable covariance. Invalid inputs leave the
    * source unchanged.
    *
-   * @param columns - A numeric vector column, or numeric scalar columns in feature order.
-   * @param referencePoint - One finite number per feature dimension; may be outside the dataset.
-   * @param newColumn - The name of the new DOUBLE distance column.
-   * @param options - Optional output settings.
-   * @param options.similarityScoreColumn - A new DOUBLE column for the dataset-relative
-   * score `1 - distance / maxDistance`. Exact matches score 1 and the farthest
-   * rows score 0; if all distances are zero, every score is 1.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // Measure distance from a reference height and weight.
@@ -5229,6 +5155,15 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   * @param columns - A numeric vector column, or numeric scalar columns in feature order.
+   * @param referencePoint - One finite number per feature dimension; may be outside the dataset.
+   * @param newColumn - The name of the new DOUBLE distance column.
+   * @param options - Optional output settings.
+   * @param options.similarityScoreColumn - A new DOUBLE column for the dataset-relative
+   * score `1 - distance / maxDistance`. Exact matches score 1 and the farthest
+   * rows score 0; if all distances are zero, every score is 1.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   mahalanobis(
     columns: string | string[],
@@ -5244,11 +5179,6 @@ export default class SimpleTable extends Simple {
    * Unnests (expands) rows by splitting a column's string values into multiple rows based on a separator.
    *
    * Each value in the specified column is split using the provided separator, and a new row is created for each resulting substring. All other column values are duplicated across the newly created rows.
-   *
-   * @param column - The name of the column containing string values to be split and unnested.
-   * @param separator - The delimiter string used to split the column values.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5267,6 +5197,10 @@ export default class SimpleTable extends Simple {
    * //         { city: "Montreal", neighborhoods: "Griffintown" }]
    * await table.unnest("neighborhoods", " / ").log();
    * ```
+   * @param column - The name of the column containing string values to be split and unnested.
+   * @param separator - The delimiter string used to split the column values.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   unnest(column: string, separator: string): this {
     unnest(this, column, separator);
@@ -5277,12 +5211,6 @@ export default class SimpleTable extends Simple {
    * Repeats rows based on the values in a column.
    *
    * If a row has a value of 3 in the specified column, it will be repeated 3 times. If the value is 0 or negative, the row will be removed.
-   *
-   * @param column - The name of the column containing the number of times each row should be repeated.
-   * @param options - An optional object with configuration options:
-   * @param options.index - The name of a new column to store the index of the repeated row (starting at 0).
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5299,6 +5227,11 @@ export default class SimpleTable extends Simple {
    * // After:  [{ id: 1, count: 2, category: "A", copyId: 0 }, { id: 1, count: 2, category: "A", copyId: 1 },
    * //          { id: 2, count: 3, category: "B", copyId: 0 }, { id: 2, count: 3, category: "B", copyId: 1 }, { id: 2, count: 3, category: "B", copyId: 2 }]
    * ```
+   * @param column - The name of the column containing the number of times each row should be repeated.
+   * @param options - An optional object with configuration options:
+   * @param options.index - The name of a new column to store the index of the repeated row (starting at 0).
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   repeatRows(
     column: string,
@@ -5312,12 +5245,6 @@ export default class SimpleTable extends Simple {
    * Nests (collapses) rows by aggregating a column's values into a single string per group, separated by a delimiter.
    *
    * This is the inverse operation of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
-   *
-   * @param column - The name of the column whose values will be aggregated and concatenated.
-   * @param separator - The delimiter string used to join the column values.
-   * @param by - The column name or an array of column names to group by.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5337,6 +5264,11 @@ export default class SimpleTable extends Simple {
    * // After:  [{ country: "Canada", city: "Montreal", tags: "red,blue" }]
    * await table.nest("tags", ",", ["country", "city"]).log();
    * ```
+   * @param column - The name of the column whose values will be aggregated and concatenated.
+   * @param separator - The delimiter string used to join the column values.
+   * @param by - The column name or an array of column names to group by.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   nest(
     column: string,
@@ -5349,13 +5281,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Rounds numeric values in specified columns.
-   *
-   * @param columns - The column name or an array of column names containing numeric values to be rounded.
-   * @param options - An optional integer specifying the number of decimal places, or an object with configuration options:
-   * @param options.decimals - The number of decimal places to round to. Defaults to `0` (rounds to the nearest integer).
-   * @param options.method - The rounding method to use: `"round"` (rounds to the nearest integer, with halves rounding up), `"ceiling"` (rounds up to the nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults to `"round"`.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5386,6 +5311,12 @@ export default class SimpleTable extends Simple {
    * // Round 'column1' values to 2 decimal places using the shorthand
    * await table.round("column1", 2).log();
    * ```
+   * @param columns - The column name or an array of column names containing numeric values to be rounded.
+   * @param options - An optional integer specifying the number of decimal places, or an object with configuration options:
+   * @param options.decimals - The number of decimal places to round to. Defaults to `0` (rounds to the nearest integer).
+   * @param options.method - The rounding method to use: `"round"` (rounds to the nearest integer, with halves rounding up), `"ceiling"` (rounds up to the nearest integer), or `"floor"` (rounds down to the nearest integer). Defaults to `"round"`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   round(
     columns: string | string[],
@@ -5404,13 +5335,6 @@ export default class SimpleTable extends Simple {
    * Adds independently generated uniform random noise to numeric values in one or more columns.
    * Each changed value receives an offset between `-max` and `max`. Selected integer and decimal columns become `DOUBLE` columns so fractional noise is retained. This method adds random jitter; it does not provide anonymization or differential privacy guarantees.
    *
-   * @param columns - The numeric column name or array of numeric column names to which noise will be added. When multiple columns are provided, each value receives an independent random offset.
-   * @param max - The maximum absolute offset, expressed in each column's units. Must be a finite number greater than or equal to `0`.
-   * @param options - An optional object with configuration options:
-   * @param options.onlyDuplicates - If `true`, adds noise only to values that occur more than once in their column. Each selected column is evaluated independently, and every occurrence of a duplicated value is changed. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
-   *
    * @example
    * ```ts
    * // Add an offset between -0.01 and 0.01 to every value
@@ -5424,6 +5348,12 @@ export default class SimpleTable extends Simple {
    *   onlyDuplicates: true,
    * }).log();
    * ```
+   * @param columns - The numeric column name or array of numeric column names to which noise will be added. When multiple columns are provided, each value receives an independent random offset.
+   * @param max - The maximum absolute offset, expressed in each column's units. Must be a finite number greater than or equal to `0`.
+   * @param options - An optional object with configuration options:
+   * @param options.onlyDuplicates - If `true`, adds noise only to values that occur more than once in their column. Each selected column is evaluated independently, and every occurrence of a duplicated value is changed. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   addNoise(
     columns: string | string[],
@@ -5437,11 +5367,6 @@ export default class SimpleTable extends Simple {
   /**
    * Updates values in a specified column using a SQL expression.
    * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param column - The name of the column to be updated.
-   * @param definition - The SQL expression used to set the new values in the column (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -5470,6 +5395,10 @@ export default class SimpleTable extends Simple {
    *   .updateColumn("count", "details.count")
    *   .log();
    * ```
+   * @param column - The name of the column to be updated.
+   * @param definition - The SQL expression used to set the new values in the column (e.g., `"column1 * 2"`, `"UPPER(column_name)"`).
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   updateColumn(column: string, definition: string): this {
     updateColumn(this, column, definition);
@@ -5478,15 +5407,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Assigns ranks to rows in a new column based on the values of a specified column.
-   *
-   * @param column - The column containing the values to be used for ranking.
-   * @param newColumn - The name of the new column where the ranks will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.order - The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
-   * @param options.by - The column name or an array of column names to rank by. Ranks are assigned independently within each group.
-   * @param options.dense - A boolean indicating whether to use dense ranking (no gaps). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -5511,6 +5431,14 @@ export default class SimpleTable extends Simple {
    * // Compute ranks by both 'department' and 'city'
    * await table.ranks("sales", "salesRank", { by: ["department", "city"] }).log();
    * ```
+   * @param column - The column containing the values to be used for ranking.
+   * @param newColumn - The name of the new column where the ranks will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.order - The order of values for ranking: `"asc"` for ascending (default) or `"desc"` for descending.
+   * @param options.by - The column name or an array of column names to rank by. Ranks are assigned independently within each group.
+   * @param options.dense - A boolean indicating whether to use dense ranking (no gaps). If `true`, ranks will be consecutive integers (e.g., 1, 2, 2, 3). If `false` (default), ranks might have gaps (e.g., 1, 2, 2, 4).
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   ranks(
     column: string,
@@ -5527,14 +5455,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Assigns quantiles to rows in a new column based on specified column values.
-   *
-   * @param column - The column containing values from which quantiles will be assigned.
-   * @param count - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
-   * @param newColumn - The name of the new column where the assigned quantiles will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Quantiles are assigned independently within each group.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -5553,6 +5473,13 @@ export default class SimpleTable extends Simple {
    * // Assigns quartiles (4 quantiles) to 'sales' data, storing results in 'salesQuartile'
    * await table.quantiles("sales", 4, "salesQuartile").log();
    * ```
+   * @param column - The column containing values from which quantiles will be assigned.
+   * @param count - The number of quantiles to divide the data into (e.g., `4` for quartiles, `10` for deciles).
+   * @param newColumn - The name of the new column where the assigned quantiles will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Quantiles are assigned independently within each group.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   quantiles(
     column: string,
@@ -5572,15 +5499,6 @@ export default class SimpleTable extends Simple {
    * A value exactly on an end boundary belongs to the next bin. Null source
    * values produce null in both output columns.
    *
-   * @param column - The numeric column containing values from which bins will be computed.
-   * @param interval - The finite, positive interval size for binning the values.
-   * @param startColumn - The required name of the new numeric column containing inclusive bin starts.
-   * @param endColumn - The required name of the new numeric column containing exclusive bin ends. Must differ from startColumn.
-   * @param options - An optional object with configuration options:
-   * @param options.startValue - The finite starting value for binning, no greater than the minimum source value. Defaults to the minimum value in the specified column.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // If the minimum is 5, bins have boundaries 5 and 15, 15 and 25, etc.
@@ -5594,6 +5512,14 @@ export default class SimpleTable extends Simple {
    *   .bins("column1", 10, "binStart", "binEnd", { startValue: 0 })
    *   .log();
    * ```
+   * @param column - The numeric column containing values from which bins will be computed.
+   * @param interval - The finite, positive interval size for binning the values.
+   * @param startColumn - The required name of the new numeric column containing inclusive bin starts.
+   * @param endColumn - The required name of the new numeric column containing exclusive bin ends. Must differ from startColumn.
+   * @param options - An optional object with configuration options:
+   * @param options.startValue - The finite starting value for binning, no greater than the minimum source value. Defaults to the minimum value in the specified column.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   bins(
     column: string,
@@ -5688,16 +5614,6 @@ export default class SimpleTable extends Simple {
    * option can therefore increase the table's row count. If null values leave
    * a row without the requested rank, the new columns contain null.
    *
-   * @param columns - The numeric columns to rank within each row.
-   * @param options - The output columns and ranking configuration. At least one of `nameColumn` or `valueColumn` is required.
-   * @param options.nameColumn - The name of a new column containing the selected source column's name.
-   * @param options.valueColumn - The name of a new column containing the selected source column's value.
-   * @param options.rank - The one-based rank to select. Must not exceed the number of supplied columns. Defaults to `1`.
-   * @param options.order - The ranking order: `"desc"` ranks the highest value first and `"asc"` ranks the lowest value first. Defaults to `"desc"`.
-   * @param options.ties - How to handle a tie at the requested rank: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // Add the name and value of the highest-scoring party on each row.
@@ -5716,6 +5632,15 @@ export default class SimpleTable extends Simple {
    *   order: "asc",
    * }).log();
    * ```
+   * @param columns - The numeric columns to rank within each row.
+   * @param options - The output columns and ranking configuration. At least one of `nameColumn` or `valueColumn` is required.
+   * @param options.nameColumn - The name of a new column containing the selected source column's name.
+   * @param options.valueColumn - The name of a new column containing the selected source column's value.
+   * @param options.rank - The one-based rank to select. Must not exceed the number of supplied columns. Defaults to `1`.
+   * @param options.order - The ranking order: `"desc"` ranks the highest value first and `"asc"` ranks the lowest value first. Defaults to `"desc"`.
+   * @param options.ties - How to handle a tie at the requested rank: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   rowRanks(
     columns: string[],
@@ -5800,15 +5725,6 @@ export default class SimpleTable extends Simple {
   /**
    * Computes proportions vertically over a column's values, relative to the sum of all values in that column or group.
    *
-   * @param column - The column containing values for which proportions will be computed. The proportions are calculated based on the sum of values in the specified column.
-   * @param newColumn - The name of the new column where the proportions will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Proportions are calculated independently within each group.
-   * @param options.base - A finite positive value that the proportions in the column or each group sum to before rounding. Defaults to `1`.
-   * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // Add a new column 'perc' with each 'column1' value divided by the sum of all 'column1' values
@@ -5832,6 +5748,14 @@ export default class SimpleTable extends Simple {
    * // Compute proportions for 'sales' by 'region' and 'product_type'
    * await table.columnProportions("sales", "sales_proportion", { by: ["region", "product_type"] }).log();
    * ```
+   * @param column - The column containing values for which proportions will be computed. The proportions are calculated based on the sum of values in the specified column.
+   * @param newColumn - The name of the new column where the proportions will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Proportions are calculated independently within each group.
+   * @param options.base - A finite positive value that the proportions in the column or each group sum to before rounding. Defaults to `1`.
+   * @param options.decimals - The number of decimal places to round the computed proportions. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   columnProportions(
     column: string,
@@ -5849,16 +5773,6 @@ export default class SimpleTable extends Simple {
   /**
    * Creates a summary table from selected columns, optionally grouped by other columns.
    * This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
-   *
-   * @param options - An object with configuration options for summarization:
-   * @param options.columns - The column name or an array of column names to summarize. If omitted, only the row count is returned.
-   * @param options.by - The column name or an array of column names to group by.
-   * @param options.stats - The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array (e.g., `["min", "max"]`), or an object mapping output column names to statistics (e.g., `{ avgSalary: "mean" }`). Supported statistics are `"count"`, `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`.
-   * @param options.decimals - The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as columns must be of the same type for aggregation.
-   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -5934,6 +5848,15 @@ export default class SimpleTable extends Simple {
    * // Summarize 'timestamp_column' by converting to milliseconds first
    * await table.summarize({ columns: "timestamp_column", datesToMs: true, stats: "mean" }).log();
    * ```
+   * @param options - An object with configuration options for summarization:
+   * @param options.columns - The column name or an array of column names to summarize. If omitted, only the row count is returned.
+   * @param options.by - The column name or an array of column names to group by.
+   * @param options.stats - The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array (e.g., `["min", "max"]`), or an object mapping output column names to statistics (e.g., `{ avgSalary: "mean" }`). Supported statistics are `"count"`, `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`.
+   * @param options.decimals - The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as columns must be of the same type for aggregation.
+   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+   * @category Analyzing Data
    */
   summarize(
     options: {
@@ -5998,14 +5921,6 @@ export default class SimpleTable extends Simple {
    * string is also used as its row label; pass an object to customize that
    * label. If `options.stats` is omitted, every supported stat is added.
    *
-   * @param columns - The numeric column name, an array of numeric column names, or `"all"` to summarize every numeric column.
-   * @param labelColumn - The existing string column in which stat row labels will be written.
-   * @param options - An optional object with configuration options:
-   * @param options.stats - A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
-   * @param options.position - Whether to add the summary rows at the `"top"` or `"bottom"` of the table. Defaults to `"bottom"`.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // Add a total row for every numeric column, labelled "sum" in "region".
@@ -6031,6 +5946,13 @@ export default class SimpleTable extends Simple {
    *   ],
    * }).log();
    * ```
+   * @param columns - The numeric column name, an array of numeric column names, or `"all"` to summarize every numeric column.
+   * @param labelColumn - The existing string column in which stat row labels will be written.
+   * @param options - An optional object with configuration options:
+   * @param options.stats - A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
+   * @param options.position - Whether to add the summary rows at the `"top"` or `"bottom"` of the table. Defaults to `"bottom"`.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   addSummaryRows(
     columns: "all" | string | string[],
@@ -6097,13 +6019,6 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the cumulative sum of values in a column. For this method to work properly, ensure your data is sorted first.
    *
-   * @param column - The name of the column storing the values to be accumulated.
-   * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Accumulation is performed independently within each group.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // Compute the cumulative sum of 'sales' in a new 'cumulativeSales' column
@@ -6123,6 +6038,12 @@ export default class SimpleTable extends Simple {
    * // Compute the cumulative sum of 'revenue' by 'region' and 'product_category'
    * await table.accumulate("revenue", "cumulativeRevenue", { by: ["region", "product_category"] }).log();
    * ```
+   * @param column - The name of the column storing the values to be accumulated.
+   * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Accumulation is performed independently within each group.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   accumulate(
     column: string,
@@ -6139,17 +6060,6 @@ export default class SimpleTable extends Simple {
    * Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
    * For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
    * For this method to work properly, ensure your data is sorted by the relevant column(s) first.
-   *
-   * @param column - The name of the column storing the values to be aggregated.
-   * @param newColumn - The name of the new column in which the computed rolling values will be stored.
-   * @param stat - The aggregation function to apply: `"min"`, `"max"`, `"mean"`, `"median"`, or `"sum"`.
-   * @param preceding - The number of preceding rows to include in the rolling window.
-   * @param following - The number of following rows to include in the rolling window.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Rolling statistics are computed independently within each group.
-   * @param options.decimals - The number of decimal places to round the aggregated values. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -6169,6 +6079,16 @@ export default class SimpleTable extends Simple {
    * // Compute a rolling maximum of 'temperature' rounded to 1 decimal place
    * await table.rolling("temperature", "rollingMaxTemp", "max", 2, 2, { decimals: 1 }).log();
    * ```
+   * @param column - The name of the column storing the values to be aggregated.
+   * @param newColumn - The name of the new column in which the computed rolling values will be stored.
+   * @param stat - The aggregation function to apply: `"min"`, `"max"`, `"mean"`, `"median"`, or `"sum"`.
+   * @param preceding - The number of preceding rows to include in the rolling window.
+   * @param following - The number of following rows to include in the rolling window.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Rolling statistics are computed independently within each group.
+   * @param options.decimals - The number of decimal places to round the aggregated values. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   rolling(
     column: string,
@@ -6196,15 +6116,6 @@ export default class SimpleTable extends Simple {
   /**
    * Calculates correlations between columns. If no `x` and `y` columns are specified, the method computes the correlations for all numeric column combinations.
    * Note that correlation is symmetrical: the correlation of `x` with `y` is the same as `y` with `x`.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.x - The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
-   * @param options.y - The name of the column for the y-values. It can be provided only when `options.x` is also set. If both are omitted, correlations will be computed for all numeric column pairs.
-   * @param options.by - The column name or an array of column names to group by. Correlations are calculated independently within each group.
-   * @param options.decimals - The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A table instance containing the correlation results (either the current table or a new table), so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -6235,6 +6146,14 @@ export default class SimpleTable extends Simple {
    * // Compute correlations, rounded to 2 decimal places
    * await table.correlations({ decimals: 2 }).log();
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.x - The name of the column for the x-values. If omitted, correlations will be computed for all numeric columns.
+   * @param options.y - The name of the column for the y-values. It can be provided only when `options.x` is also set. If both are omitted, correlations will be computed for all numeric column pairs.
+   * @param options.by - The column name or an array of column names to group by. Correlations are calculated independently within each group.
+   * @param options.decimals - The number of decimal places to round the correlation values. Defaults to `undefined` (no rounding).
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @returns A table instance containing the correlation results (either the current table or a new table), so methods can be chained.
+   * @category Analyzing Data
    */
   correlations(
     options: {
@@ -6252,15 +6171,6 @@ export default class SimpleTable extends Simple {
    * Performs linear regression analysis. The results include the slope, the y-intercept, and the R-squared value.
    * If no `x` and `y` columns are specified, the method computes linear regression analysis for all numeric column permutations.
    * Note that linear regression analysis is asymmetrical: the linear regression of `x` over `y` is not the same as `y` over `x`.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.x - The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
-   * @param options.y - The name of the column for the dependent variable (y-values). It can be provided only when `options.x` is also set. If both are omitted, linear regressions will be computed for all numeric column permutations.
-   * @param options.by - The column name or an array of column names to group by. Linear regressions are calculated independently within each group.
-   * @param options.decimals - The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A table instance containing the linear regression results (either the current table or a new table), so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -6291,6 +6201,14 @@ export default class SimpleTable extends Simple {
    * // Compute linear regressions, rounded to 3 decimal places
    * await table.linearRegressions({ decimals: 3 }).log();
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.x - The name of the column for the independent variable (x-values). If omitted, linear regressions will be computed for all numeric columns as x.
+   * @param options.y - The name of the column for the dependent variable (y-values). It can be provided only when `options.x` is also set. If both are omitted, linear regressions will be computed for all numeric column permutations.
+   * @param options.by - The column name or an array of column names to group by. Linear regressions are calculated independently within each group.
+   * @param options.decimals - The number of decimal places to round the regression values (slope, intercept, r-squared). Defaults to `undefined` (no rounding).
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @returns A table instance containing the linear regression results (either the current table or a new table), so methods can be chained.
+   * @category Analyzing Data
    */
   linearRegressions(
     options: {
@@ -6307,13 +6225,6 @@ export default class SimpleTable extends Simple {
   /**
    * Identifies outliers in a specified column using the Interquartile Range (IQR) method.
    *
-   * @param column - The name of the column in which outliers will be identified.
-   * @param newColumn - The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Outliers are detected independently within each group.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
-   *
    * @example
    * ```ts
    * // Look for outliers in the 'age' column and store results in a new 'isOutlier' column
@@ -6325,6 +6236,12 @@ export default class SimpleTable extends Simple {
    * // Look for outliers in 'salary' by 'gender'
    * await table.outliersIQR("salary", "salaryOutlier", { by: "gender" }).log();
    * ```
+   * @param column - The name of the column in which outliers will be identified.
+   * @param newColumn - The name of the new column where the boolean results (`TRUE` for outlier, `FALSE` otherwise) will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Outliers are detected independently within each group.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   outliersIQR(
     column: string,
@@ -6339,14 +6256,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Computes the Z-score for values in a specified column.
-   *
-   * @param column - The name of the column for which Z-scores will be calculated.
-   * @param newColumn - The name of the new column where the computed Z-scores will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Z-scores are calculated independently within each group.
-   * @param options.decimals - The number of decimal places to round the Z-score values. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -6365,6 +6274,13 @@ export default class SimpleTable extends Simple {
    * // Calculate Z-scores for 'score', rounded to 2 decimal places
    * await table.zScore("score", "scoreZScore", { decimals: 2 }).log();
    * ```
+   * @param column - The name of the column for which Z-scores will be calculated.
+   * @param newColumn - The name of the new column where the computed Z-scores will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Z-scores are calculated independently within each group.
+   * @param options.decimals - The number of decimal places to round the Z-score values. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   zScore(
     column: string,
@@ -6380,15 +6296,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Normalizes the values in a column using min-max normalization.
-   *
-   * @param column - The name of the column in which values will be normalized.
-   * @param newColumn - The name of the new column where normalized values will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.by - The column name or an array of column names to partition by. Normalization is performed independently within each group.
-   * @param options.decimals - The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
-   * @param options.range - The inclusive range to scale normalized values to, as `[minimum, maximum]`. Both values must be finite and the minimum must be less than the maximum. Defaults to `[0, 1]`.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -6413,6 +6320,14 @@ export default class SimpleTable extends Simple {
    * // Normalize 'score' values to a range from 0 to 10
    * await table.normalize("score", "scaledScore", { range: [0, 10] }).log();
    * ```
+   * @param column - The name of the column in which values will be normalized.
+   * @param newColumn - The name of the new column where normalized values will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.by - The column name or an array of column names to partition by. Normalization is performed independently within each group.
+   * @param options.decimals - The number of decimal places to round the normalized values. Defaults to `undefined` (no rounding).
+   * @param options.range - The inclusive range to scale normalized values to, as `[minimum, maximum]`. Both values must be finite and the minimum must be less than the maximum. Defaults to `[0, 1]`.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   normalize(
     column: string,
@@ -6433,20 +6348,6 @@ export default class SimpleTable extends Simple {
    * The reference can be calculated from the indexed column with a statistic, read from exactly one row selected by another column's value, or read from the unique row where another column reaches its minimum or maximum. With `options.by`, references are calculated or selected independently within each group. Null values in the indexed column remain null when their group has a valid reference. The operation throws when a group has no unique selected row or its reference value is null or zero.
    *
    * Exact temporal references are compared at their full DuckDB precision. JavaScript `Date` objects only have millisecond precision and always represent an instant. Construct them with an explicit timezone, such as `new Date("2001-01-01T00:00:00Z")`; date-time strings without `Z` or an offset use the user's local timezone.
-   *
-   * @param column - The numeric column containing the values to index.
-   * @param newColumn - The name of the new column where indexed values will be stored.
-   * @param reference - A statistic calculated from `column`, a column and exact non-null `equals` value selecting a row, or a column and `at` set to `min` or `max` selecting its unique extreme row. The selected row's `column` value becomes the reference.
-   * @param reference.stat - The statistic used to calculate the reference directly from the indexed column.
-   * @param reference.column - The column used to select an exact reference row or its unique minimum or maximum row.
-   * @param reference.equals - The non-null value used to select an exact reference row. Its JavaScript type must be compatible with the reference column's DuckDB type; string, numeric, boolean, and temporal values are not coerced across type families. Date values should be constructed with an explicit timezone.
-   * @param reference.at - Selects the unique row where `reference.column` reaches its minimum or maximum.
-   * @param options - An optional object with configuration options.
-   * @param options.by - A column name or an array of column names to partition by. The reference is calculated independently within each group.
-   * @param options.base - The finite positive value assigned to the reference. Defaults to `100`.
-   * @param options.decimals - A finite non-negative integer specifying the number of decimal places to retain. By default, values are not rounded.
-   * @returns The table, so methods can be chained.
-   * @category Analyzing Data
    *
    * @example
    * ```ts
@@ -6483,6 +6384,19 @@ export default class SimpleTable extends Simple {
    *   at: "min",
    * }, { by: "country" }).log();
    * ```
+   * @param column - The numeric column containing the values to index.
+   * @param newColumn - The name of the new column where indexed values will be stored.
+   * @param reference - A statistic calculated from `column`, a column and exact non-null `equals` value selecting a row, or a column and `at` set to `min` or `max` selecting its unique extreme row. The selected row's `column` value becomes the reference.
+   * @param reference.stat - The statistic used to calculate the reference directly from the indexed column.
+   * @param reference.column - The column used to select an exact reference row or its unique minimum or maximum row.
+   * @param reference.equals - The non-null value used to select an exact reference row. Its JavaScript type must be compatible with the reference column's DuckDB type; string, numeric, boolean, and temporal values are not coerced across type families. Date values should be constructed with an explicit timezone.
+   * @param reference.at - Selects the unique row where `reference.column` reaches its minimum or maximum.
+   * @param options - An optional object with configuration options.
+   * @param options.by - A column name or an array of column names to partition by. The reference is calculated independently within each group.
+   * @param options.base - The finite positive value assigned to the reference. Defaults to `100`.
+   * @param options.decimals - A finite non-negative integer specifying the number of decimal places to retain. By default, values are not rounded.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
    */
   indexValues(
     column: string,
@@ -6531,13 +6445,6 @@ export default class SimpleTable extends Simple {
    * are ignored; create new columns on the returned rows to store additional
    * attributes. All geometry columns must use EPSG:4326; use reproject() first
    * if needed.
-   *
-   * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
-   * @param options - An optional object with configuration options:
-   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. This limits input rows per batch, but does not eliminate conversion work or bound geometry size or callback output expansion. The modifier function is called once per batch. Tables with a column named `rowid` or `__sda_rowid` (case-insensitive) are rejected before the modifier runs; rename the column or omit batchSize.
-   * @param options.columnTypes - Explicit types for newly added columns, following loadArray's columnTypes contract. Declare geometry as GEOMETRY('EPSG:4326'); geometry is never inferred from object shape. Existing columns cannot be redeclared.
-   * @returns The table, so methods can be chained.
-   * @category Updating Data
    *
    * @example
    * ```ts
@@ -6601,6 +6508,12 @@ export default class SimpleTable extends Simple {
    *     ...row, geom: { type: "Point", coordinates: [row.longitude, row.latitude] },
    *   })), { columnTypes: { geom: "GEOMETRY('EPSG:4326')" } }).log();
    * ```
+   * @param dataModifier - A synchronous or asynchronous function that takes the existing rows (as an array of objects) and returns the modified rows (as an array of objects).
+   * @param options - An optional object with configuration options:
+   * @param options.batchSize - If provided, rows are processed in batches of this size instead of all at once, so large tables don't have to be materialized entirely in memory. This limits input rows per batch, but does not eliminate conversion work or bound geometry size or callback output expansion. The modifier function is called once per batch. Tables with a column named `rowid` or `__sda_rowid` (case-insensitive) are rejected before the modifier runs; rename the column or omit batchSize.
+   * @param options.columnTypes - Explicit types for newly added columns, following loadArray's columnTypes contract. Declare geometry as GEOMETRY('EPSG:4326'); geometry is never inferred from object shape. Existing columns cannot be redeclared.
+   * @returns The table, so methods can be chained.
+   * @category Updating Data
    */
   updateWithJS(
     dataModifier:
@@ -6632,15 +6545,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the schema of the table, including column names and their data types.
    *
-   * @returns A promise that resolves to an array of objects, where each object represents a column with its name and data type.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the schema of the table
    * const schema = await table.getSchema();
    * console.table(schema); // Log the schema in a readable table format
    * ```
+   * @returns A promise that resolves to an array of objects, where each object represents a column with its name and data type.
+   * @category Getting Data
    */
   async getSchema(): Promise<
     {
@@ -6653,15 +6565,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns descriptive statistical information about the columns, including details like data types, number of null values, and distinct values.
    *
-   * @returns A promise that resolves to an array of objects, each representing descriptive statistics for a column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get and log descriptive information about the table's columns
    * const description = await table.getDescription();
    * console.table(description);
    * ```
+   * @returns A promise that resolves to an array of objects, each representing descriptive statistics for a column.
+   * @category Getting Data
    */
   async getDescription(): Promise<
     {
@@ -6674,15 +6585,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the name of the table.
    *
-   * @returns The name of the table as a string.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the table name
    * const tableName = table.getName();
    * console.log(tableName); // e.g., "employees"
    * ```
+   * @returns The name of the table as a string.
+   * @category Getting Data
    */
   getName(): string {
     return this.name;
@@ -6691,15 +6601,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns a list of all column names in the table.
    *
-   * @returns A promise that resolves to an array of strings, where each string is a column name.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get all column names from the table
    * const columns = await table.getColumns();
    * console.log(columns); // e.g., ["id", "name", "age"]
    * ```
+   * @returns A promise that resolves to an array of strings, where each string is a column name.
+   * @category Getting Data
    */
   async getColumns(): Promise<string[]> {
     return await getColumns(this);
@@ -6716,12 +6625,6 @@ export default class SimpleTable extends Simple {
    * Produces identical output to `journalism-format`'s `normalizeString()` function
    * for all common cases including accented Latin characters.
    *
-   * @param column The column containing the text to normalize
-   * @param newColumn The column to store the normalized results
-   * @param options Configuration options
-   * @param options.stripPunctuation Strip punctuation and underscores (default: true)
-   *
-   * @returns The table, so methods can be chained.
    * @example
    * ```ts
    * // Normalize text column and store in new column
@@ -6738,6 +6641,12 @@ export default class SimpleTable extends Simple {
    * // "https://Example.com/path" → "https://example.com/path"
    * ```
    *
+   * @param column The column containing the text to normalize
+   * @param newColumn The column to store the normalized results
+   * @param options Configuration options
+   * @param options.stripPunctuation Strip punctuation and underscores (default: true)
+   *
+   * @returns The table, so methods can be chained.
    * @category Text Processing
    */
   normalizeString(
@@ -6752,15 +6661,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the number of columns in the table.
    *
-   * @returns A promise that resolves to a number representing the total count of columns.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the number of columns in the table
    * const columnCount = await table.getColumnCount();
    * console.log(columnCount); // e.g., 3
    * ```
+   * @returns A promise that resolves to a number representing the total count of columns.
+   * @category Getting Data
    */
   async getColumnCount(): Promise<number> {
     const result = (await getColumns(this)).length;
@@ -6772,16 +6680,15 @@ export default class SimpleTable extends Simple {
    * Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
    * `NULL` input values produce `NULL` counts.
    *
-   * @param column - The name of the column containing the strings to count.
-   * @param newColumn - The name of the new column where the character counts will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Text Processing
-   *
    * @example
    * ```ts
    * // Add a character count for each value in the 'name' column
    * await table.addCharacterCount("name", "nameCharacterCount").log();
    * ```
+   * @param column - The name of the column containing the strings to count.
+   * @param newColumn - The name of the new column where the character counts will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Text Processing
    */
   addCharacterCount(column: string, newColumn: string): this {
     addCharacterCount(this, column, newColumn);
@@ -6792,16 +6699,15 @@ export default class SimpleTable extends Simple {
    * Adds a new column containing the word count for each string in the specified column.
    * A word is any contiguous sequence of non-whitespace characters. Spaces, tabs, and line breaks separate words. Punctuation is not removed, so a standalone punctuation sequence counts as a word. Text without whitespace counts as one word, regardless of language. Empty or whitespace-only strings produce `0`, and `NULL` input values produce `NULL` counts.
    *
-   * @param column - The name of the column containing the strings to count.
-   * @param newColumn - The name of the new column where the word counts will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Text Processing
-   *
    * @example
    * ```ts
    * // Add a word count for each value in the 'article' column
    * await table.addWordCount("article", "wordCount").log();
    * ```
+   * @param column - The name of the column containing the strings to count.
+   * @param newColumn - The name of the new column where the word counts will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Text Processing
    */
   addWordCount(column: string, newColumn: string): this {
     addWordCount(this, column, newColumn);
@@ -6812,16 +6718,15 @@ export default class SimpleTable extends Simple {
    * Returns the total number of characters in a column storing strings.
    * Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
    *
-   * @param column - The name of the string column to count characters from.
-   * @returns A promise that resolves to the total number of characters across all rows in the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the total number of characters in the 'name' column
    * const totalChars = await table.getCharacterCount("name");
    * console.log(totalChars); // e.g., 523
    * ```
+   * @param column - The name of the string column to count characters from.
+   * @returns A promise that resolves to the total number of characters across all rows in the specified column.
+   * @category Getting Data
    */
   async getCharacterCount(column: string): Promise<number> {
     return await getCharacterCount(this, column);
@@ -6830,11 +6735,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the number of rows in the table.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
-   * @returns A promise that resolves to a number representing the total count of rows.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -6849,6 +6749,10 @@ export default class SimpleTable extends Simple {
    * const bookCount = await table.getRowCount({ conditions: "category = 'Book'" });
    * console.log(bookCount);
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+   * @returns A promise that resolves to a number representing the total count of rows.
+   * @category Getting Data
    */
   async getRowCount(options: { conditions?: string } = {}): Promise<number> {
     return await getRowCount(this, options);
@@ -6857,15 +6761,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the total number of values in the table (number of columns multiplied by the number of rows).
    *
-   * @returns A promise that resolves to a number representing the total count of values.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the total number of values in the table
    * const valueCount = await table.getValueCount();
    * console.log(valueCount); // e.g., 300 (if 3 columns and 100 rows)
    * ```
+   * @returns A promise that resolves to a number representing the total count of values.
+   * @category Getting Data
    */
   async getValueCount(): Promise<number> {
     const result = (await this.getColumnCount()) * (await this.getRowCount());
@@ -6875,15 +6778,14 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the data types of all columns in the table.
    *
-   * @returns A promise that resolves to an object where keys are column names and values are their corresponding data types (e.g., `{ "id": "BIGINT", "name": "VARCHAR" }`).
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the data types of all columns
    * const dataTypes = await table.getTypes();
    * console.log(dataTypes);
    * ```
+   * @returns A promise that resolves to an object where keys are column names and values are their corresponding data types (e.g., `{ "id": "BIGINT", "name": "VARCHAR" }`).
+   * @category Getting Data
    */
   async getTypes(): Promise<{
     [key: string]: string;
@@ -6897,14 +6799,13 @@ export default class SimpleTable extends Simple {
    * the hash scans the complete table inside DuckDB without transferring its
    * rows to JavaScript.
    *
-   * @returns A promise that resolves to a SHA-256 hash string.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * const hash = await table.getHash();
    * console.log(hash); // e.g., "8f14e45fceea..."
    * ```
+   * @returns A promise that resolves to a SHA-256 hash string.
+   * @category Getting Data
    */
   async getHash(): Promise<string> {
     return await getHash(this);
@@ -6914,16 +6815,15 @@ export default class SimpleTable extends Simple {
    * Returns all values from a specific column.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param column - The name of the column from which to retrieve values.
-   * @returns A promise that resolves to an array containing all values from the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get all values from the 'productName' column
    * const productNames = await table.getValues("productName");
    * console.log(productNames); // e.g., ["Laptop", "Mouse", "Keyboard"]
    * ```
+   * @param column - The name of the column from which to retrieve values.
+   * @returns A promise that resolves to an array containing all values from the specified column.
+   * @category Getting Data
    */
   async getValues(
     column: string,
@@ -6935,16 +6835,15 @@ export default class SimpleTable extends Simple {
    * Returns the minimum value from a specific column.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param column - The name of the column from which to retrieve the minimum value.
-   * @returns A promise that resolves to the minimum value of the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the minimum value from the 'price' column
    * const minPrice = await table.getMin("price");
    * console.log(minPrice); // e.g., 10.50
    * ```
+   * @param column - The name of the column from which to retrieve the minimum value.
+   * @returns A promise that resolves to the minimum value of the specified column.
+   * @category Getting Data
    */
   async getMin(
     column: string,
@@ -6956,16 +6855,15 @@ export default class SimpleTable extends Simple {
    * Returns the maximum value from a specific column.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param column - The name of the column from which to retrieve the maximum value.
-   * @returns A promise that resolves to the maximum value of the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the maximum value from the 'price' column
    * const maxPrice = await table.getMax("price");
    * console.log(maxPrice); // e.g., 99.99
    * ```
+   * @param column - The name of the column from which to retrieve the maximum value.
+   * @returns A promise that resolves to the maximum value of the specified column.
+   * @category Getting Data
    */
   async getMax(
     column: string,
@@ -6977,16 +6875,15 @@ export default class SimpleTable extends Simple {
    * Returns the extent (minimum and maximum values) of a specific column as an array.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param column - The name of the column from which to retrieve the extent.
-   * @returns A promise that resolves to an array `[min, max]` containing the minimum and maximum values of the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the extent of the 'temperature' column
    * const tempExtent = await table.getExtent("temperature");
    * console.log(tempExtent); // e.g., [15.2, 30.1]
    * ```
+   * @param column - The name of the column from which to retrieve the extent.
+   * @returns A promise that resolves to an array `[min, max]` containing the minimum and maximum values of the specified column.
+   * @category Getting Data
    */
   async getExtent(
     column: string,
@@ -7002,12 +6899,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the mean (average) value from a specific numeric column.
    *
-   * @param column - The name of the numeric column from which to retrieve the mean value.
-   * @param options - An optional object with configuration options:
-   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the mean value of the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the mean of the 'age' column
@@ -7021,6 +6912,11 @@ export default class SimpleTable extends Simple {
    * const meanSalary = await table.getMean("salary", { decimals: 2 });
    * console.log(meanSalary); // e.g., 55000.23
    * ```
+   * @param column - The name of the numeric column from which to retrieve the mean value.
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves to the mean value of the specified column.
+   * @category Getting Data
    */
   async getMean(
     column: string,
@@ -7033,12 +6929,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the median value from a specific numeric column.
-   *
-   * @param column - The name of the numeric column from which to retrieve the median value.
-   * @param options - An optional object with configuration options:
-   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the median value of the specified column.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7053,6 +6943,11 @@ export default class SimpleTable extends Simple {
    * const medianSalary = await table.getMedian("salary", { decimals: 2 });
    * console.log(medianSalary); // e.g., 50000.00
    * ```
+   * @param column - The name of the numeric column from which to retrieve the median value.
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves to the median value of the specified column.
+   * @category Getting Data
    */
   async getMedian(
     column: string,
@@ -7066,16 +6961,15 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the sum of values from a specific numeric column.
    *
-   * @param column - The name of the numeric column from which to retrieve the sum.
-   * @returns A promise that resolves to the sum of values in the specified column.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the sum of the 'quantity' column
    * const totalQuantity = await table.getSum("quantity");
    * console.log(totalQuantity); // e.g., 1250
    * ```
+   * @param column - The name of the numeric column from which to retrieve the sum.
+   * @returns A promise that resolves to the sum of values in the specified column.
+   * @category Getting Data
    */
   async getSum(column: string): Promise<number> {
     return await getSum(this, column);
@@ -7083,12 +6977,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the skewness of values from a specific numeric column.
-   *
-   * @param column - The name of the numeric column from which to retrieve the skewness.
-   * @param options - An optional object with configuration options:
-   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the skewness value of the specified column.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7103,6 +6991,11 @@ export default class SimpleTable extends Simple {
    * const valuesSkew = await table.getSkew("values", { decimals: 2 });
    * console.log(valuesSkew); // e.g., -0.25
    * ```
+   * @param column - The name of the numeric column from which to retrieve the skewness.
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves to the skewness value of the specified column.
+   * @category Getting Data
    */
   async getSkew(
     column: string,
@@ -7115,12 +7008,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the standard deviation of values from a specific numeric column.
-   *
-   * @param column - The name of the numeric column from which to retrieve the standard deviation.
-   * @param options - An optional object with configuration options:
-   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the standard deviation value of the specified column.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7135,6 +7022,11 @@ export default class SimpleTable extends Simple {
    * const scoreStdDev = await table.getStdDev("score", { decimals: 3 });
    * console.log(scoreStdDev); // e.g., 12.345
    * ```
+   * @param column - The name of the numeric column from which to retrieve the standard deviation.
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves to the standard deviation value of the specified column.
+   * @category Getting Data
    */
   async getStdDev(
     column: string,
@@ -7147,12 +7039,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the variance of values from a specific numeric column.
-   *
-   * @param column - The name of the numeric column from which to retrieve the variance.
-   * @param options - An optional object with configuration options:
-   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the variance value of the specified column.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7167,6 +7053,11 @@ export default class SimpleTable extends Simple {
    * const valuesVariance = await table.getVariance("values", { decimals: 2 });
    * console.log(valuesVariance); // e.g., 10.23
    * ```
+   * @param column - The name of the numeric column from which to retrieve the variance.
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves to the variance value of the specified column.
+   * @category Getting Data
    */
   async getVariance(
     column: string,
@@ -7179,13 +7070,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Returns the value of a specific quantile from the values in a given numeric column.
-   *
-   * @param column - The name of the numeric column from which to calculate the quantile.
-   * @param quantile - The quantile to calculate, expressed as a number between 0 and 1 (e.g., `0.25` for the first quartile, `0.5` for the median, `0.75` for the third quartile).
-   * @param options - An optional object with configuration options:
-   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
-   * @returns A promise that resolves to the quantile value of the specified column.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7200,6 +7084,12 @@ export default class SimpleTable extends Simple {
    * const ninetiethPercentile = await table.getQuantile("score", 0.9, { decimals: 2 });
    * console.log(ninetiethPercentile); // e.g., 88.55
    * ```
+   * @param column - The name of the numeric column from which to calculate the quantile.
+   * @param quantile - The quantile to calculate, expressed as a number between 0 and 1 (e.g., `0.25` for the first quartile, `0.5` for the median, `0.75` for the third quartile).
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - The number of decimal places to round the result to. Defaults to `undefined` (no rounding).
+   * @returns A promise that resolves to the quantile value of the specified column.
+   * @category Getting Data
    */
   async getQuantile(
     column: string,
@@ -7213,16 +7103,15 @@ export default class SimpleTable extends Simple {
    * Returns unique values from a specific column. The values are returned in ascending order.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param column - The name of the column from which to retrieve unique values.
-   * @returns A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get unique values from the 'category' column
    * const uniqueCategories = await table.getUniques("category");
    * console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
    * ```
+   * @param column - The name of the column from which to retrieve unique values.
+   * @returns A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
+   * @category Getting Data
    */
   async getUniques(
     column: string,
@@ -7234,11 +7123,6 @@ export default class SimpleTable extends Simple {
    * Returns the first row of the table, optionally filtered by SQL conditions.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
-   * @returns A promise that resolves to an object representing the first row, or `null` if no rows match the conditions.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7253,6 +7137,10 @@ export default class SimpleTable extends Simple {
    * const firstRowBooks = await table.getFirstRow({ conditions: `category === 'Book'` }); // Using JS syntax
    * console.log(firstRowBooks);
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+   * @returns A promise that resolves to an object representing the first row, or `null` if no rows match the conditions.
+   * @category Getting Data
    */
   async getFirstRow(
     options: {
@@ -7271,11 +7159,6 @@ export default class SimpleTable extends Simple {
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param options - An optional object with configuration options:
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
-   * @returns A promise that resolves to an object representing the last row, or `null` if no rows match the conditions.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the very last row of the table
@@ -7289,6 +7172,10 @@ export default class SimpleTable extends Simple {
    * const lastRowBooks = await table.getLastRow({ conditions: `category === 'Book'` }); // Using JS syntax
    * console.log(lastRowBooks);
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+   * @returns A promise that resolves to an object representing the last row, or `null` if no rows match the conditions.
+   * @category Getting Data
    */
   async getLastRow(
     options: {
@@ -7307,12 +7194,6 @@ export default class SimpleTable extends Simple {
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
-   * @param count - The number of rows to return from the top of the table.
-   * @param options - An optional object with configuration options:
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Books'"`).
-   * @returns A promise that resolves to an array of objects representing the top `n` rows.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get the first 10 rows of the table
@@ -7326,6 +7207,11 @@ export default class SimpleTable extends Simple {
    * const top5Books = await table.getTop(5, { conditions: `category === 'Books'` }); // Using JS syntax
    * console.log(top5Books);
    * ```
+   * @param count - The number of rows to return from the top of the table.
+   * @param options - An optional object with configuration options:
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Books'"`).
+   * @returns A promise that resolves to an array of objects representing the top `n` rows.
+   * @category Getting Data
    */
   async getTop(
     count: number,
@@ -7345,13 +7231,6 @@ export default class SimpleTable extends Simple {
    * By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
-   *
-   * @param count - The number of rows to return from the bottom of the table.
-   * @param options - An optional object with configuration options:
-   * @param options.originalOrder - A boolean indicating whether the rows should be returned in their original order (`true`) or in reverse order (last row first, `false`). Defaults to `false`.
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Books'"`).
-   * @returns A promise that resolves to an array of objects representing the bottom `n` rows.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7373,6 +7252,12 @@ export default class SimpleTable extends Simple {
    * const bottom5Books = await table.getBottom(5, { conditions: `category === 'Books'` });
    * console.log(bottom5Books);
    * ```
+   * @param count - The number of rows to return from the bottom of the table.
+   * @param options - An optional object with configuration options:
+   * @param options.originalOrder - A boolean indicating whether the rows should be returned in their original order (`true`) or in reverse order (last row first, `false`). Defaults to `false`.
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Books'"`).
+   * @returns A promise that resolves to an array of objects representing the bottom `n` rows.
+   * @category Getting Data
    */
   async getBottom(
     count: number,
@@ -7392,13 +7277,6 @@ export default class SimpleTable extends Simple {
    * Returns a single row that matches the specified conditions. If no row matches or if more than one row matches, an error is thrown by default.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
-   *
-   * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
-   * @param options - Optional settings:
-   * @param options.strict - If `false`, no error will be thrown when no row or more than one row match the condition. With no match, `null` is returned; with multiple matches, the first row is returned. Defaults to `true`.
-   * @returns A promise that resolves to an object representing the matched row, or `null` if `strict` is `false` and no row matches.
-   * @throws {Error} If `strict` is `true` and no row or more than one row matches the conditions.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7420,6 +7298,12 @@ export default class SimpleTable extends Simple {
    * const flexibleRow = await table.getRow(`status = 'pending'`, { strict: false });
    * console.log(flexibleRow);
    * ```
+   * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
+   * @param options - Optional settings:
+   * @param options.strict - If `false`, no error will be thrown when no row or more than one row match the condition. With no match, `null` is returned; with multiple matches, the first row is returned. Defaults to `true`.
+   * @returns A promise that resolves to an object representing the matched row, or `null` if `strict` is `false` and no row matches.
+   * @throws {Error} If `strict` is `true` and no row or more than one row matches the conditions.
+   * @category Getting Data
    */
   async getRow(
     conditions: string,
@@ -7465,13 +7349,6 @@ export default class SimpleTable extends Simple {
    * them, `BIGINT`, `UBIGINT`, `HUGEINT`, `UHUGEINT`, and `DECIMAL` values remain
    * strings to preserve precision, even for small integers.
    *
-   * @param options - An optional object with configuration options:
-   * @param options.columns - An array of column names to include in the result. If omitted, all columns will be included.
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
-   * @param options.limit - The maximum number of rows to return. Must be an integer greater than or equal to `0`.
-   * @returns A promise that resolves to an array of objects, where each object represents a row in the table.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Get all data from the table
@@ -7510,6 +7387,12 @@ export default class SimpleTable extends Simple {
    * // [{ ids: ["42", "9007199254740993"], details: { count: 2, amount: "123.450" } }]
    * await nested.log();
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.columns - An array of column names to include in the result. If omitted, all columns will be included.
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+   * @param options.limit - The maximum number of rows to return. Must be an integer greater than or equal to `0`.
+   * @returns A promise that resolves to an array of objects, where each object represents a row in the table.
+   * @category Getting Data
    */
   async getData(
     options: {
@@ -7535,12 +7418,6 @@ export default class SimpleTable extends Simple {
    * larger than the available memory can be iterated. Avoid running other
    * queries on the same database while iterating.
    *
-   * @param options - An optional object with configuration options:
-   * @param options.columns - The column name or an array of column names to include. If omitted, all columns are streamed.
-   * @param options.conditions - A SQL `WHERE` clause condition to filter the rows.
-   * @returns An async generator yielding one row object at a time.
-   * @category Getting Data
-   *
    * @example
    * ```ts
    * // Stream all rows
@@ -7556,6 +7433,11 @@ export default class SimpleTable extends Simple {
    *   console.log(row);
    * }
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.columns - The column name or an array of column names to include. If omitted, all columns are streamed.
+   * @param options.conditions - A SQL `WHERE` clause condition to filter the rows.
+   * @returns An async generator yielding one row object at a time.
+   * @category Getting Data
    */
   stream(
     options: {
@@ -7571,12 +7453,6 @@ export default class SimpleTable extends Simple {
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values are first converted as they are in `getData()`, then
    * serialized using UTC date and timestamp text.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.columns - An array of column names to include in the CSV. If omitted, all columns will be included.
-   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
-   * @returns A promise that resolves to a CSV-formatted string representation of the table data.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -7598,6 +7474,11 @@ export default class SimpleTable extends Simple {
    * const booksDataCSV = await table.getDataAsCSV({ columns: ["title", "author"], conditions: `category === 'Book'` });
    * console.log(booksDataCSV);
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.columns - An array of column names to include in the CSV. If omitted, all columns will be included.
+   * @param options.conditions - The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+   * @returns A promise that resolves to a CSV-formatted string representation of the table data.
+   * @category Getting Data
    */
   async getDataAsCSV(options: {
     columns?: string | string[];
@@ -7612,14 +7493,6 @@ export default class SimpleTable extends Simple {
   /**
    * Creates point geometries from latitude (y) and longitude (x) columns.
    *
-   * @param latColumn - The name of the column storing the latitude (y-coordinate) values.
-   * @param lonColumn - The name of the column storing the longitude (x-coordinate) values.
-   * @param newColumn - The name of the new column where the point geometries will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.projection - The projection of the coordinates. Defaults to EPSG:4326 (WGS84), passed as `"EPSG:4326"`.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Create point geometries in a new 'geom' column using latitude (y) and longitude (x) columns.
@@ -7633,6 +7506,13 @@ export default class SimpleTable extends Simple {
    * // Create point geometries from coordinates in a projected coordinate system
    * await table.createPoints("y", "x", "geom", { projection: "EPSG:3347" }).log();
    * ```
+   * @param latColumn - The name of the column storing the latitude (y-coordinate) values.
+   * @param lonColumn - The name of the column storing the longitude (x-coordinate) values.
+   * @param newColumn - The name of the new column where the point geometries will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.projection - The projection of the coordinates. Defaults to EPSG:4326 (WGS84), passed as `"EPSG:4326"`.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   createPoints(
     latColumn: string,
@@ -7647,12 +7527,6 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with boolean values indicating the validity of geometries.
    *
-   * @param newColumn - The name of the new column where the boolean results (`TRUE` for valid, `FALSE` for invalid) will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries to be checked. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Check if geometries are valid and store results in a new 'isValid' column
@@ -7665,6 +7539,11 @@ export default class SimpleTable extends Simple {
    * // Check validity of geometries in a specific column named 'myGeom'
    * await table.addGeoValidity("isValidMyGeom", { column: "myGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the boolean results (`TRUE` for valid, `FALSE` for invalid) will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries to be checked. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   addGeoValidity(
     newColumn: string,
@@ -7676,12 +7555,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Adds a column with the number of vertices (points) in each geometry.
-   *
-   * @param newColumn - The name of the new column where the vertex counts will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -7695,6 +7568,11 @@ export default class SimpleTable extends Simple {
    * // Add vertex counts for geometries in a specific column named 'myGeom'
    * await table.addVertexCount("myGeomVertices", { column: "myGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the vertex counts will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   addVertexCount(
     newColumn: string,
@@ -7707,10 +7585,6 @@ export default class SimpleTable extends Simple {
   /**
    * Attempts to make invalid geometries valid without removing any vertices.
    *
-   * @param column - The name of the column storing the geometries to be fixed. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Fix invalid geometries in the default geometry column
@@ -7722,6 +7596,9 @@ export default class SimpleTable extends Simple {
    * // Fix invalid geometries in a specific column named 'myGeom'
    * await table.fixGeo("myGeom").log();
    * ```
+   * @param column - The name of the column storing the geometries to be fixed. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   fixGeo(column?: string): this {
     fixGeo(this, column);
@@ -7730,12 +7607,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Adds a column with boolean values indicating whether geometries are closed (e.g., polygons) or open (e.g., linestrings).
-   *
-   * @param newColumn - The name of the new column where the boolean results (`TRUE` for closed, `FALSE` for open) will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -7748,6 +7619,11 @@ export default class SimpleTable extends Simple {
    * // Check closed status of geometries in a specific column named 'boundaryGeom'
    * await table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the boolean results (`TRUE` for closed, `FALSE` for open) will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   addGeoClosedStatus(
     newColumn: string,
@@ -7760,12 +7636,6 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`, `"POLYGON"`) for each geometry.
    *
-   * @param newColumn - The name of the new column where the geometry types will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Add a new column 'geometryType' with the type of each geometry
@@ -7777,6 +7647,11 @@ export default class SimpleTable extends Simple {
    * // Get the geometry type for geometries in a specific column named 'featureGeom'
    * await table.addGeoType("featureType", { column: "featureGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the geometry types will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   addGeoType(
     newColumn: string,
@@ -7790,10 +7665,6 @@ export default class SimpleTable extends Simple {
    * Flips the coordinate order of geometries in a specified column (e.g., from `[longitude (x), latitude (y)]` to `[latitude (y), longitude (x)]` or vice-versa).
    * **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
    *
-   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Flip coordinates in the default geometry column
@@ -7805,6 +7676,9 @@ export default class SimpleTable extends Simple {
    * // Flip coordinates in a specific column named 'myGeom'
    * await table.flipCoordinates("myGeom").log();
    * ```
+   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   flipCoordinates(column?: string): this {
     flipCoordinates(this, column);
@@ -7817,14 +7691,6 @@ export default class SimpleTable extends Simple {
    * Points are sampled uniformly within the requested distance using the spherical direct geodesic (destination-point) formula and the same spherical Earth model as DuckDB's `ST_Distance_Sphere()`. This accounts for longitude scale changing with latitude. This method adds random jitter; it does not provide anonymization or differential privacy guarantees.
    *
    * This method supports only `POINT` geometries in `EPSG:4326`. Null and empty geometries are preserved.
-   *
-   * @param maxDistance - The maximum great-circle displacement in the selected unit. Must be a finite number greater than or equal to `0` and no greater than half Earth's circumference.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the EPSG:4326 point geometry column. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.unit - The unit of `maxDistance`: `"m"` for metres or `"km"` for kilometres. Defaults to `"m"`.
-   * @param options.onlyDuplicates - If `true`, moves only points whose complete original geometry occurs more than once in the selected geometry column. Every point in a duplicated group is moved. Defaults to `false`.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -7841,6 +7707,13 @@ export default class SimpleTable extends Simple {
    *   onlyDuplicates: true,
    * }).log();
    * ```
+   * @param maxDistance - The maximum great-circle displacement in the selected unit. Must be a finite number greater than or equal to `0` and no greater than half Earth's circumference.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the EPSG:4326 point geometry column. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.unit - The unit of `maxDistance`: `"m"` for metres or `"km"` for kilometres. Defaults to `"m"`.
+   * @param options.onlyDuplicates - If `true`, moves only points whose complete original geometry occurs more than once in the selected geometry column. Every point in a duplicated group is moved. Defaults to `false`.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   addGeoNoise(
     maxDistance: number,
@@ -7857,12 +7730,6 @@ export default class SimpleTable extends Simple {
   /**
    * Reduces the precision of geometries in a specified column to a given number of decimal places.
    *
-   * @param decimals - The number of decimal places to keep in the coordinates of the geometries.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Reduce the precision of geometries in the default column to 3 decimal places
@@ -7874,6 +7741,11 @@ export default class SimpleTable extends Simple {
    * // Reduce the precision of geometries in a specific column named 'myGeom' to 2 decimal places
    * await table.reducePrecision(2, { column: "myGeom" }).log();
    * ```
+   * @param decimals - The number of decimal places to keep in the coordinates of the geometries.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   reducePrecision(
     decimals: number,
@@ -7886,12 +7758,6 @@ export default class SimpleTable extends Simple {
   /**
    * Reprojects the geometries in a specified column to another Spatial Reference System (SRS).
    *
-   * @param crs - The target SRS (e.g., `"EPSG:3347"`, or `"EPSG:4326"` for EPSG:4326 (WGS84)).
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Reproject geometries in the default column to EPSG:3347 (NAD83/Statistics Canada Lambert)
@@ -7903,6 +7769,11 @@ export default class SimpleTable extends Simple {
    * // Reproject geometries in a specific column named 'myGeom' to EPSG:3347
    * await table.reproject("EPSG:3347", { column: "myGeom" }).log();
    * ```
+   * @param crs - The target SRS (e.g., `"EPSG:3347"`, or `"EPSG:4326"` for EPSG:4326 (WGS84)).
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   reproject(
     crs: string,
@@ -7915,14 +7786,6 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
-   *
-   * @param newColumn - The name of the new column where the computed areas will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.unit - The unit for the computed area: `"m2"` (square meters) or `"km2"` (square kilometers). Defaults to `"m2"`.
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.decimals - The number of decimal places to round the computed areas. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -7947,6 +7810,13 @@ export default class SimpleTable extends Simple {
    * // Compute the area of geometries in a specific column named 'myGeom'
    * await table.area("myGeomArea", { column: "myGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the computed areas will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.unit - The unit for the computed area: `"m2"` (square meters) or `"km2"` (square kilometers). Defaults to `"m2"`.
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the computed areas. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   area(
     newColumn: string,
@@ -7963,14 +7833,6 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
-   *
-   * @param newColumn - The name of the new column where the computed lengths will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.unit - The unit for the computed length: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.decimals - The number of decimal places to round the computed lengths. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -7995,6 +7857,13 @@ export default class SimpleTable extends Simple {
    * // Compute the length of geometries in a specific column named 'routeGeom'
    * await table.length("routeLength", { column: "routeGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the computed lengths will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.unit - The unit for the computed length: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the computed lengths. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   length(
     newColumn: string,
@@ -8011,14 +7880,6 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
-   *
-   * @param newColumn - The name of the new column where the computed perimeters will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.unit - The unit for the computed perimeter: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.decimals - The number of decimal places to round the computed perimeters. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -8043,6 +7904,13 @@ export default class SimpleTable extends Simple {
    * // Compute the perimeter of geometries in a specific column named 'landParcelGeom'
    * await table.perimeter("landParcelPerimeter", { column: "landParcelGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the computed perimeters will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.unit - The unit for the computed perimeter: `"m"` (meters) or `"km"` (kilometers). Defaults to `"m"`.
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the computed perimeters. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   perimeter(
     newColumn: string,
@@ -8060,13 +7928,6 @@ export default class SimpleTable extends Simple {
    * Computes a buffer (a polygon representing a specified distance around a geometry) for geometries in a specified column.
    * The distance is in the Spatial Reference System (SRS) unit of the input geometries.
    *
-   * @param newColumn - The name of the new column where the buffered geometries will be stored.
-   * @param distance - The distance for the buffer. This value is in the units of the geometry's SRS.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Create a buffer of 1 unit around geometries in the default column, storing results in 'bufferedGeom'
@@ -8078,6 +7939,12 @@ export default class SimpleTable extends Simple {
    * // Create a buffer of 10 units around geometries in a specific column named 'pointsGeom'
    * await table.buffer("pointsBuffer", 10, { column: "pointsGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the buffered geometries will be stored.
+   * @param distance - The distance for the buffer. This value is in the units of the geometry's SRS.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   buffer(
     newColumn: string,
@@ -8092,20 +7959,6 @@ export default class SimpleTable extends Simple {
    * Merges the data of this table (considered the left table) with another table (the right table) based on a spatial relationship.
    * Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
-   *
-   * @param rightTable - The SimpleTable instance to be joined with this table.
-   * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"withinDistance"` (geometries of the left table are within a specified distance of geometries in the right table).
-   * @param options - An optional object with configuration options:
-   * @param options.leftColumn - The name of the column storing geometries in the left table (this table). If omitted, the method attempts to find one.
-   * @param options.rightColumn - The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
-   * @param options.type - The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
-   * @param options.distance - Required if `method` is `"withinDistance"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
-   * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 (WGS84) input), or `"spheroid"` (uses meters, requires EPSG:4326 (WGS84) input, most accurate but slowest).
-   * @param options.excludeLeftGeometry - Whether to exclude the selected `leftColumn` geometry from the result. Defaults to `false`.
-   * @param options.excludeRightGeometry - Whether to exclude the selected `rightColumn` geometry from the result. Defaults to `false`.
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A table instance containing the spatially joined data (either the current table or a new table), so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -8151,6 +8004,19 @@ export default class SimpleTable extends Simple {
    *   outputTable: true,
    * }).log();
    * ```
+   * @param rightTable - The SimpleTable instance to be joined with this table.
+   * @param method - The spatial join method to use: `"intersect"` (geometries overlap), `"inside"` (geometries of the left table are entirely within geometries of the right table), or `"withinDistance"` (geometries of the left table are within a specified distance of geometries in the right table).
+   * @param options - An optional object with configuration options:
+   * @param options.leftColumn - The name of the column storing geometries in the left table (this table). If omitted, the method attempts to find one.
+   * @param options.rightColumn - The name of the column storing geometries in the right table. If omitted, the method attempts to find one.
+   * @param options.type - The type of join operation to perform: `"inner"`, `"left"` (default), `"right"`, or `"full"`. For some types (like `"inside"`), the table order is important.
+   * @param options.distance - Required if `method` is `"withinDistance"`. The target distance for the spatial join. The unit depends on `distanceMethod`.
+   * @param options.distanceMethod - The method for distance calculations: `"srs"` (default, uses the SRS unit), `"haversine"` (uses meters, requires EPSG:4326 (WGS84) input), or `"spheroid"` (uses meters, requires EPSG:4326 (WGS84) input, most accurate but slowest).
+   * @param options.excludeLeftGeometry - Whether to exclude the selected `leftColumn` geometry from the result. Defaults to `false`.
+   * @param options.excludeRightGeometry - Whether to exclude the selected `rightColumn` geometry from the result. Defaults to `false`.
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @returns A table instance containing the spatially joined data (either the current table or a new table), so methods can be chained.
+   * @category Geospatial
    */
   joinGeo(
     rightTable: SimpleTable,
@@ -8182,17 +8048,16 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the intersection of two sets of geometries, creating new geometries where they overlap.
    *
-   * @param column1 - The name of the first column storing geometries.
-   * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the computed intersection geometries will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Compute the intersection of geometries in 'geomA' and 'geomB' columns, storing results in 'intersectGeom'
    * await table.intersection("geomA", "geomB", "intersectGeom").log();
    * ```
+   * @param column1 - The name of the first column storing geometries.
+   * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
+   * @param newColumn - The name of the new column where the computed intersection geometries will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   intersection(
     column1: string,
@@ -8206,17 +8071,16 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the geometric difference between two geometries, returning the portion of the first geometry that does not intersect the second.
    *
-   * @param column1 - The name of the column storing the geometries from which the second geometries will be subtracted.
-   * @param column2 - The name of the column storing the geometries to subtract. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the geometric differences will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Subtract 'geomB' from 'geomA', storing the result in 'geomA_minus_geomB'
    * await table.difference("geomA", "geomB", "geomA_minus_geomB").log();
    * ```
+   * @param column1 - The name of the column storing the geometries from which the second geometries will be subtracted.
+   * @param column2 - The name of the column storing the geometries to subtract. Both columns must have the same projection.
+   * @param newColumn - The name of the new column where the geometric differences will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   difference(
     column1: string,
@@ -8230,10 +8094,6 @@ export default class SimpleTable extends Simple {
   /**
    * Fills holes in polygon geometries.
    *
-   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Fill holes in geometries in the default geometry column
@@ -8245,6 +8105,9 @@ export default class SimpleTable extends Simple {
    * // Fill holes in geometries in a specific column named 'polygonGeom'
    * await table.fillHoles("polygonGeom").log();
    * ```
+   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   fillHoles(column?: string): this {
     fillHoles(this, column);
@@ -8254,17 +8117,16 @@ export default class SimpleTable extends Simple {
   /**
    * Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE` otherwise.
    *
-   * @param column1 - The name of the first column storing geometries.
-   * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the boolean results (`TRUE` for intersection, `FALSE` otherwise) will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Check if geometries in 'geomA' and 'geomB' intersect, storing results in 'doIntersect'
    * await table.intersects("geomA", "geomB", "doIntersect").log();
    * ```
+   * @param column1 - The name of the first column storing geometries.
+   * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
+   * @param newColumn - The name of the new column where the boolean results (`TRUE` for intersection, `FALSE` otherwise) will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   intersects(
     column1: string,
@@ -8278,17 +8140,16 @@ export default class SimpleTable extends Simple {
   /**
    * Returns `TRUE` if every point of a geometry in `column` is covered by a geometry in `containerColumn`, including their boundaries, and `FALSE` otherwise.
    *
-   * @param column - The name of the column storing the geometries to be tested for containment.
-   * @param containerColumn - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the boolean results (`TRUE` when covered, `FALSE` otherwise) will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Check if geometries in 'pointGeom' are covered by 'polygonGeom', storing results in 'isCovered'
    * await table.coveredBy("pointGeom", "polygonGeom", "isCovered").log();
    * ```
+   * @param column - The name of the column storing the geometries to be tested for containment.
+   * @param containerColumn - The name of the column storing the geometries to be tested as containers. Both columns must have the same projection.
+   * @param newColumn - The name of the new column where the boolean results (`TRUE` when covered, `FALSE` otherwise) will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   coveredBy(
     column: string,
@@ -8302,17 +8163,16 @@ export default class SimpleTable extends Simple {
   /**
    * Computes the union of two geometries, creating a new geometry that represents the merged area of both.
    *
-   * @param column1 - The name of the first column storing geometries.
-   * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
-   * @param newColumn - The name of the new column where the computed union geometries will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Compute the union of geometries in 'geomA' and 'geomB', storing results in 'unionGeom'
    * await table.union("geomA", "geomB", "unionGeom").log();
    * ```
+   * @param column1 - The name of the first column storing geometries.
+   * @param column2 - The name of the second column storing geometries. Both columns must have the same projection.
+   * @param newColumn - The name of the new column where the computed union geometries will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   union(
     column1: string,
@@ -8327,17 +8187,16 @@ export default class SimpleTable extends Simple {
    * Extracts the latitude (y) and longitude (x) coordinates from point geometries.
    * The input geometry is assumed to be in EPSG:4326 (WGS84).
    *
-   * @param column - The name of the column storing the point geometries.
-   * @param latColumn - The name of the new column where the extracted latitude (y-coordinate) values will be stored.
-   * @param lonColumn - The name of the new column where the extracted longitude (x-coordinate) values will be stored.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Extract latitude (y) and longitude (x) from 'geom' into new 'lat' and 'lon' columns.
    * await table.extractLatLon("geom", "lat", "lon").log();
    * ```
+   * @param column - The name of the column storing the point geometries.
+   * @param latColumn - The name of the new column where the extracted latitude (y-coordinate) values will be stored.
+   * @param lonColumn - The name of the new column where the extracted longitude (x-coordinate) values will be stored.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   extractLatLon(
     column: string,
@@ -8351,13 +8210,6 @@ export default class SimpleTable extends Simple {
   /**
    * Simplifies geometries while preserving their overall coverage. A higher tolerance results in more significant simplification.
    *
-   * @param tolerance - A numeric value representing the simplification tolerance. A higher value leads to greater simplification.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.simplifyBoundary - If `true` (default), the boundary of the geometries will also be simplified. If `false`, only the interior of the geometries will be simplified, preserving the original boundary.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Simplify geometries in the default column with a tolerance of 0.1
@@ -8369,6 +8221,12 @@ export default class SimpleTable extends Simple {
    * // Simplify geometries in 'myGeom' column, preserving the boundary
    * await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false }).log();
    * ```
+   * @param tolerance - A numeric value representing the simplification tolerance. A higher value leads to greater simplification.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.simplifyBoundary - If `true` (default), the boundary of the geometries will also be simplified. If `false`, only the interior of the geometries will be simplified, preserving the original boundary.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   simplify(
     tolerance: number,
@@ -8382,12 +8240,6 @@ export default class SimpleTable extends Simple {
    * Computes the centroid of geometries.
    * The values are returned in the SRS unit of the input geometries.
    *
-   * @param newColumn - The name of the new column where the computed centroid geometries will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Compute the centroid of geometries in the default column, storing results in 'centerPoint'
@@ -8399,6 +8251,11 @@ export default class SimpleTable extends Simple {
    * // Compute the centroid of geometries in a specific column named 'areaGeom'
    * await table.centroid("areaCentroid", { column: "areaGeom" }).log();
    * ```
+   * @param newColumn - The name of the new column where the computed centroid geometries will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   centroid(
     newColumn: string,
@@ -8410,12 +8267,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Generates a random point within the geometries of a specified column.
-   *
-   * @param newColumn - The name of the new column where the random points will be stored.
-   * @param tries - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries within which the random points will be generated. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.strict - If `false`, the method will not throw an error if some points cannot be generated. Corresponding rows will have `NULL` in the new column. Defaults to `true`.
    *
    * @example
    * ```ts
@@ -8434,6 +8285,11 @@ export default class SimpleTable extends Simple {
    * // Generate a random point for each geometry, but don't throw if some points cannot be generated
    * await table.randomPoint("pointInArea", 1, { strict: false }).log();
    * ```
+   * @param newColumn - The name of the new column where the random points will be stored.
+   * @param tries - The number of points to generate within the bounding box of each geometry to find one that is within the geometry itself.
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries within which the random points will be generated. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.strict - If `false`, the method will not throw an error if some points cannot be generated. Corresponding rows will have `NULL` in the new column. Defaults to `true`.
    */
   randomPoint(
     newColumn: string,
@@ -8449,16 +8305,6 @@ export default class SimpleTable extends Simple {
    * By default, the distance is calculated in the Spatial Reference System (SRS) unit of the input geometries.
    * You can optionally specify `"spheroid"` or `"haversine"` methods to get results in meters or kilometers.
    * If using `"spheroid"` or `"haversine"`, the input geometries must be in EPSG:4326 (WGS84).
-   *
-   * @param column1 - The name of the first column storing geometries.
-   * @param column2 - The name of the second column storing geometries.
-   * @param newColumn - The name of the new column where the computed distances will be stored.
-   * @param options - An optional object with configuration options:
-   * @param options.method - The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326 (WGS84)), or `"spheroid"` (meters, requires EPSG:4326 (WGS84), most accurate but slowest).
-   * @param options.unit - If `method` is `"spheroid"` or `"haversine"`, you can choose between `"m"` (meters, default) or `"km"` (kilometers).
-   * @param options.decimals - The number of decimal places to round the distance values. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -8486,6 +8332,15 @@ export default class SimpleTable extends Simple {
    * // Input geometries must be in EPSG:4326 (WGS84).
    * await table.distance("area1", "area2", "distance_spheroid_km", { method: "spheroid", unit: "km" }).log();
    * ```
+   * @param column1 - The name of the first column storing geometries.
+   * @param column2 - The name of the second column storing geometries.
+   * @param newColumn - The name of the new column where the computed distances will be stored.
+   * @param options - An optional object with configuration options:
+   * @param options.method - The method to use for distance calculations: `"srs"` (default, uses SRS unit), `"haversine"` (meters, requires EPSG:4326 (WGS84)), or `"spheroid"` (meters, requires EPSG:4326 (WGS84), most accurate but slowest).
+   * @param options.unit - If `method` is `"spheroid"` or `"haversine"`, you can choose between `"m"` (meters, default) or `"km"` (kilometers).
+   * @param options.decimals - The number of decimal places to round the distance values. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   distance(
     column1: string,
@@ -8504,10 +8359,6 @@ export default class SimpleTable extends Simple {
   /**
    * Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
    *
-   * @param column - The name of the column storing the geometries to be unnested. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Unnest geometries in the default column
@@ -8519,6 +8370,9 @@ export default class SimpleTable extends Simple {
    * // Unnest geometries in a specific column named 'multiGeom'
    * await table.unnestGeo("multiGeom").log();
    * ```
+   * @param column - The name of the column storing the geometries to be unnested. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   unnestGeo(column?: string): this {
     unnestGeo(this, column);
@@ -8527,12 +8381,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Adds the bounding box coordinates of geometries in a specified column as four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
-   *
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries for which the bounding box will be computed. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.decimals - The number of decimal places to round the bounding box coordinates. Defaults to `undefined` (no rounding).
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -8547,6 +8395,11 @@ export default class SimpleTable extends Simple {
    * await table.addBoundingBox({ column: "geom", decimals: 2 }).log();
    * // The table now has minLon, minLat, maxLon, and maxLat columns with values rounded to 2 decimal places.
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries for which the bounding box will be computed. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - The number of decimal places to round the bounding box coordinates. Defaults to `undefined` (no rounding).
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   addBoundingBox(
     options: {
@@ -8560,14 +8413,6 @@ export default class SimpleTable extends Simple {
 
   /**
    * Aggregates geometries in a specified column based on a chosen aggregation method.
-   *
-   * @param method - The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
-   * @param options - An optional object with configuration options:
-   * @param options.column - The name of the column storing the geometries to be aggregated. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options.by - The column name or an array of column names to group by. Geometries are aggregated independently within each group.
-   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
-   * @returns A table instance containing the aggregated geometries (either the current table or a new table), so methods can be chained.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -8586,6 +8431,13 @@ export default class SimpleTable extends Simple {
    * // Aggregate geometries in 'regions' column into their intersection, storing results in a new table
    * const intersectionTable = await table.aggregateGeo("intersection", { column: "regions", outputTable: true }).log();
    * ```
+   * @param method - The aggregation method to apply: `"union"` (combines all geometries into a single multi-geometry) or `"intersection"` (computes the intersection of all geometries).
+   * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries to be aggregated. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.by - The column name or an array of column names to group by. Geometries are aggregated independently within each group.
+   * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
+   * @returns A table instance containing the aggregated geometries (either the current table or a new table), so methods can be chained.
+   * @category Geospatial
    */
   aggregateGeo(
     method: "union" | "intersection",
@@ -8601,10 +8453,6 @@ export default class SimpleTable extends Simple {
   /**
    * Transforms closed linestring geometries into polygon geometries.
    *
-   * @param column - The name of the column storing the linestring geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns The table, so methods can be chained.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Transform closed linestrings in the default geometry column into polygons
@@ -8616,6 +8464,9 @@ export default class SimpleTable extends Simple {
    * // Transform closed linestrings in a specific column named 'routeLines' into polygons
    * await table.linesToPolygons("routeLines").log();
    * ```
+   * @param column - The name of the column storing the linestring geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns The table, so methods can be chained.
+   * @category Geospatial
    */
   linesToPolygons(column?: string): this {
     linesToPolygons(this, column);
@@ -8625,10 +8476,6 @@ export default class SimpleTable extends Simple {
   /**
    * Returns the bounding box of geometries in `[minLon, minLat, maxLon, maxLat]` order.
    * By default, the method will try to find the column with the geometries. The input geometry is assumed to be in EPSG:4326 (WGS84).
-   *
-   * @param column - The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @returns A promise that resolves to an array `[minLon, minLat, maxLon, maxLat]` representing the bounding box.
-   * @category Geospatial
    *
    * @example
    * ```ts
@@ -8643,6 +8490,9 @@ export default class SimpleTable extends Simple {
    * const areaBbox = await table.getBoundingBox("areaGeom");
    * console.log(areaBbox);
    * ```
+   * @param column - The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @returns A promise that resolves to an array `[minLon, minLat, maxLon, maxLat]` representing the bounding box.
+   * @category Geospatial
    */
   async getBoundingBox(
     column?: string,
@@ -8655,12 +8505,6 @@ export default class SimpleTable extends Simple {
    * Each row becomes a Feature: the selected geometry column becomes its geometry,
    * and the remaining columns become its properties.
    * If the table has multiple geometry columns, you must specify which one to use.
-   *
-   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
-   * @param options - An optional object with configuration options:
-   * @param options.rewind - If `true`, rewinds the coordinates of polygons to follow the spherical winding order (important for D3.js). Defaults to `false`.
-   * @returns A promise that resolves to a GeoJSON object representing the table's geospatial data.
-   * @category Getting Data
    *
    * @example
    * ```ts
@@ -8682,6 +8526,11 @@ export default class SimpleTable extends Simple {
    * const rewoundGeojson = await table.getGeoData(undefined, { rewind: true });
    * console.log(rewoundGeojson);
    * ```
+   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options - An optional object with configuration options:
+   * @param options.rewind - If `true`, rewinds the coordinates of polygons to follow the spherical winding order (important for D3.js). Defaults to `false`.
+   * @returns A promise that resolves to a GeoJSON object representing the table's geospatial data.
+   * @category Getting Data
    */
   async getGeoData(
     column?: string,
@@ -8701,14 +8550,6 @@ export default class SimpleTable extends Simple {
    * Writes the table's data to a file in various formats (CSV, JSON, Parquet, DuckDB, SQLite).
    * Tables with geometry columns must use `writeGeoData()` instead.
    * If the specified path does not exist, it will be created.
-   *
-   * @param file - The absolute path to the output file (e.g., `"./output.csv"`, `"./output.json"`).
-   * @param options - An optional object with configuration options:
-   * @param options.compression - A boolean indicating whether to compress the output file. If `true`, CSV and JSON files will be compressed with GZIP, while Parquet files will use ZSTD. Defaults to `false`.
-   * @param options.dataAsArrays - For JSON files only. If `true`, JSON files are written as a single object with arrays for each column (e.g., `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This can reduce file size for web projects. You can use the `arraysToData` function from the [journalism-format library](https://jsr.io/@nshiab/journalism-format/doc/~/arraysToData) to convert it back.
-   * @param options.formatDates - For CSV and JSON files only. If `true`, date and timestamp columns will be formatted as ISO 8601 strings (e.g., `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category File Operations
    *
    * @example
    * ```ts
@@ -8746,6 +8587,13 @@ export default class SimpleTable extends Simple {
    * // Write JSON data with dates formatted as ISO strings
    * await table.writeData("./output_dates.json", { formatDates: true });
    * ```
+   * @param file - The absolute path to the output file (e.g., `"./output.csv"`, `"./output.json"`).
+   * @param options - An optional object with configuration options:
+   * @param options.compression - A boolean indicating whether to compress the output file. If `true`, CSV and JSON files will be compressed with GZIP, while Parquet files will use ZSTD. Defaults to `false`.
+   * @param options.dataAsArrays - For JSON files only. If `true`, JSON files are written as a single object with arrays for each column (e.g., `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This can reduce file size for web projects. You can use the `arraysToData` function from the [journalism-format library](https://jsr.io/@nshiab/journalism-format/doc/~/arraysToData) to convert it back.
+   * @param options.formatDates - For CSV and JSON files only. If `true`, date and timestamp columns will be formatted as ISO 8601 strings (e.g., `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category File Operations
    */
   async writeData(
     file: string,
@@ -8762,16 +8610,6 @@ export default class SimpleTable extends Simple {
   /**
    * Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
    * If the specified path does not exist, it will be created.
-   *
-   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`, `"./output.shp.zip"`). A `.shp.zip` extension writes a ZIP archive using fast DEFLATE compression. Creating the archive temporarily requires enough disk space for both the uncompressed Shapefile and the ZIP, and ZIP archives are limited to 4 GB.
-   * @param options - An optional object with configuration options:
-   * @param options.precision - For GeoJSON, the maximum number of figures after the decimal separator to write in coordinates. Defaults to `undefined` (full precision).
-   * @param options.compression - For GeoParquet, if `true`, uses ZSTD compression; otherwise, uses DuckDB's default SNAPPY compression. SNAPPY prioritizes faster compression, while ZSTD typically produces smaller files but takes longer to write. Read performance depends on the data and storage because smaller files can reduce I/O. This option is not supported for GeoJSON or Shapefiles. Defaults to `false`.
-   * @param options.rewind - For GeoJSON, if `true`, rewinds the coordinates of polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
-   * @param options.metadata - For GeoJSON, an object to be added as top-level metadata to the GeoJSON output.
-   * @param options.formatDates - For GeoJSON, if `true`, formats date and timestamp columns to ISO 8601 strings. Defaults to `false`.
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category File Operations
    *
    * @example
    * ```ts
@@ -8805,6 +8643,15 @@ export default class SimpleTable extends Simple {
    *   metadata: { source: "SimpleDataAnalysis" },
    * });
    * ```
+   * @param file - The absolute path to the output file (e.g., `"./output.geojson"`, `"./output.geoparquet"`, `"./shapefile-folder/output.shp"`, `"./output.shp.zip"`). A `.shp.zip` extension writes a ZIP archive using fast DEFLATE compression. Creating the archive temporarily requires enough disk space for both the uncompressed Shapefile and the ZIP, and ZIP archives are limited to 4 GB.
+   * @param options - An optional object with configuration options:
+   * @param options.precision - For GeoJSON, the maximum number of figures after the decimal separator to write in coordinates. Defaults to `undefined` (full precision).
+   * @param options.compression - For GeoParquet, if `true`, uses ZSTD compression; otherwise, uses DuckDB's default SNAPPY compression. SNAPPY prioritizes faster compression, while ZSTD typically produces smaller files but takes longer to write. Read performance depends on the data and storage because smaller files can reduce I/O. This option is not supported for GeoJSON or Shapefiles. Defaults to `false`.
+   * @param options.rewind - For GeoJSON, if `true`, rewinds the coordinates of polygons to follow the right-hand rule (RFC 7946). Defaults to `false`.
+   * @param options.metadata - For GeoJSON, an object to be added as top-level metadata to the GeoJSON output.
+   * @param options.formatDates - For GeoJSON, if `true`, formats date and timestamp columns to ISO 8601 strings. Defaults to `false`.
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category File Operations
    */
   async writeGeoData(
     file: string,
@@ -8846,13 +8693,6 @@ export default class SimpleTable extends Simple {
    * cache file; their definitions are stored as metadata and used to rebuild
    * the indexes on every cache hit. If loading the entry or restoring its
    * indexes fails, the computation runs again and replaces the cache entry.
-   *
-   * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
-   * @param options - An optional object with configuration options:
-   * @param options.inputs - An ordered array of additional values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` dependencies read by `compute` are tracked automatically, and the table being cached is already tracked, so neither needs to be included here.
-   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the entry reaches that age. The cache is also invalidated when the `compute` function, the table, or an input changes.
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category Caching
    *
    * @example
    * ```ts
@@ -8922,6 +8762,12 @@ export default class SimpleTable extends Simple {
    * }, { inputs: [year] });
    * await summary.log();
    * ```
+   * @param compute - A function wrapping the computations to be cached. It receives the table on which `cache()` was called. This function will be executed on the first run or if the cached data is invalid/expired.
+   * @param options - An optional object with configuration options:
+   * @param options.inputs - An ordered array of additional values captured by `compute` that affect its result. Each position is compared structurally across runs, so adding, removing, moving, or changing an input invalidates the cache. Functions and class constructors are compared by source. `SimpleTable` dependencies read by `compute` are tracked automatically, and the table being cached is already tracked, so neither needs to be included here.
+   * @param options.ttl - Cache lifetime in seconds. Omit for no expiration, use `0` to refresh the matching cache entry immediately, or provide a positive value to refresh once the entry reaches that age. The cache is also invalidated when the `compute` function, the table, or an input changes.
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category Caching
    */
   async cache(
     compute: (table: this) => void | Promise<void>,
@@ -8949,13 +8795,6 @@ export default class SimpleTable extends Simple {
    * coloring. Column width is independent of the content truncation budget.
    *
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   *
-   * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
-   * @param options.count - The maximum number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
-   * @param options.types - Whether to log the column types along with the data. Defaults to the value set in the SimpleDB instance.
-   * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category Logging
    *
    * @example
    * ```ts
@@ -8986,6 +8825,12 @@ export default class SimpleTable extends Simple {
    * // Log rows where 'status' is 'active' (using JS syntax for conditions)
    * await table.log({ conditions: `status === 'active'` });
    * ```
+   * @param options - Either the number of rows to log (a specific number or `"all"`) or an object with configuration options:
+   * @param options.count - The maximum number of rows to log. Defaults to 10 or the value set in the SimpleDB instance. Use `"all"` to log all rows.
+   * @param options.types - Whether to log the column types along with the data. Defaults to the value set in the SimpleDB instance.
+   * @param options.conditions - A SQL `WHERE` clause condition to filter the data before logging. Defaults to no condition.
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category Logging
    */
   async log(
     options: "all" | number | {
@@ -9001,15 +8846,6 @@ export default class SimpleTable extends Simple {
   /**
    * Generates and logs a histogram of a numeric column to the console.
    *
-   * @param values - The name of the numeric column for which to generate the histogram.
-   * @param options - An optional object with configuration options:
-   * @param options.bins - The number of bins (intervals) to use for the histogram. Defaults to 10.
-   * @param options.formatLabels - A function to format the labels for the histogram bins. It receives the lower and upper bounds of each bin as arguments.
-   * @param options.compact - If `true`, the histogram will be displayed in a more compact format. Defaults to `false`.
-   * @param options.width - The maximum width of the histogram bars in characters.
-   * @returns A promise that resolves when the histogram has been logged to the console.
-   * @category Dataviz
-   *
    * @example
    * // Basic histogram of the 'temperature' column
    * ```typescript
@@ -9024,19 +8860,26 @@ export default class SimpleTable extends Simple {
    *   formatLabels: (min, max) => `${min}-${max} years`,
    * });
    * ```
+   * @param values - The name of the numeric column for which to generate the histogram.
+   * @param options - An optional object with configuration options:
+   * @param options.bins - The number of bins (intervals) to use for the histogram. Defaults to 10.
+   * @param options.formatLabels - A function to format the labels for the histogram bins. It receives the lower and upper bounds of each bin as arguments.
+   * @param options.compact - If `true`, the histogram will be displayed in a more compact format. Defaults to `false`.
+   * @param options.width - The maximum width of the histogram bars in characters.
+   * @returns A promise that resolves when the histogram has been logged to the console.
+   * @category Dataviz
    */
   /**
    * Logs descriptive information about the columns in the table to the console. This includes details such as data types, number of null values, and number of distinct values for each column.
    * It internally calls the `getDescription` method to retrieve the descriptive statistics.
-   *
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category Logging
    *
    * @example
    * ```ts
    * // Log descriptive information for all columns in the table
    * await table.logDescription();
    * ```
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category Logging
    */
   async logDescription(): Promise<this> {
     await this.run();
@@ -9059,15 +8902,14 @@ export default class SimpleTable extends Simple {
   /**
    * Retrieves the projection of a specified geospatial column.
    *
-   * @param column - The name of the geospatial column for which to retrieve the projection.
-   * @returns A promise that resolves to the projection of the specified column.
-   * @category Geospatial
-   *
    * @example
    * ```ts
    * // Get the projection of the 'geom' column
    * const projection = await table.getProjection("geom");
    * ```
+   * @param column - The name of the geospatial column for which to retrieve the projection.
+   * @returns A promise that resolves to the projection of the specified column.
+   * @category Geospatial
    */
   async getProjection(column: string): Promise<string> {
     const res = (await this.sdb.customQuery(
@@ -9084,14 +8926,13 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the projections of the geospatial data (if any) to the console.
    *
-   * @returns A promise that resolves to the SimpleTable instance after logging the projections.
-   * @category Logging
-   *
    * @example
    * ```ts
    * // Log the geospatial projections of the table
    * await table.logProjections();
    * ```
+   * @returns A promise that resolves to the SimpleTable instance after logging the projections.
+   * @category Logging
    */
   async logProjections(): Promise<this> {
     console.log(`\nTable ${this.name} projections:`);
@@ -9115,14 +8956,13 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the types of all columns in the table to the console.
    *
-   * @returns A promise that resolves to the SimpleTable instance after logging the column types.
-   * @category Logging
-   *
    * @example
    * ```ts
    * // Log the data types of all columns in the table
    * await table.logTypes();
    * ```
+   * @returns A promise that resolves to the SimpleTable instance after logging the column types.
+   * @category Logging
    */
   async logTypes(): Promise<this> {
     console.log(`\nTable ${this.name} types:`);
@@ -9133,12 +8973,6 @@ export default class SimpleTable extends Simple {
   /**
    * Logs unique values for a specified column to the console. By default, a maximum of 100 values are logged (depending on your runtime).
    * You can optionally stringify the values to see them all.
-   *
-   * @param column - The name of the column from which to retrieve and log unique values.
-   * @param options - An optional object with configuration options:
-   * @param options.stringify - If `true`, converts the unique values to a JSON string before logging. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance after logging the unique values.
-   * @category Logging
    *
    * @example
    * ```ts
@@ -9151,6 +8985,11 @@ export default class SimpleTable extends Simple {
    * // Logs unique values for the column "name" and stringifies them
    * await table.logUniques("name", { stringify: true });
    * ```
+   * @param column - The name of the column from which to retrieve and log unique values.
+   * @param options - An optional object with configuration options:
+   * @param options.stringify - If `true`, converts the unique values to a JSON string before logging. Defaults to `false`.
+   * @returns A promise that resolves to the SimpleTable instance after logging the unique values.
+   * @category Logging
    */
   async logUniques(
     column: string,
@@ -9169,11 +9008,6 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the columns in the table to the console. You can optionally include their data types.
    *
-   * @param options - An optional object with configuration options:
-   * @param options.types - If `true`, logs the column names along with their data types. Defaults to `false`.
-   * @returns A promise that resolves to the SimpleTable instance after logging the columns.
-   * @category Logging
-   *
    * @example
    * ```ts
    * // Log only the column names
@@ -9185,6 +9019,10 @@ export default class SimpleTable extends Simple {
    * // Log column names along with their types
    * await table.logColumns({ types: true });
    * ```
+   * @param options - An optional object with configuration options:
+   * @param options.types - If `true`, logs the column names along with their data types. Defaults to `false`.
+   * @returns A promise that resolves to the SimpleTable instance after logging the columns.
+   * @category Logging
    */
   async logColumns(options: { types?: boolean } = {}): Promise<this> {
     console.log(`\nTable ${this.name} columns:`);
@@ -9200,14 +9038,13 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the total number of rows in the table to the console.
    *
-   * @returns A promise that resolves to the SimpleTable instance after logging the row count.
-   * @category Logging
-   *
    * @example
    * ```ts
    * // Log the total number of rows in the table
    * await table.logRowCount();
    * ```
+   * @returns A promise that resolves to the SimpleTable instance after logging the row count.
+   * @category Logging
    */
   async logRowCount(): Promise<this> {
     const rowCount = await this.getRowCount();
@@ -9221,12 +9058,6 @@ export default class SimpleTable extends Simple {
    * Uses the same precision-preserving temporal display, nested stringification,
    * numeric coloring, and `charsToLog` truncation as `log()`. Unsafe top-level
    * large integers throw, just as with `getData()`.
-   *
-   * @param count - The number of rows to log from the bottom of the table. Defaults to the table's `rowsToLog` option if not specified.
-   * @param options - An optional object with logging preferences.
-   * @param options.originalOrder - If true, the rows are displayed in their original order (top to bottom). Defaults to false.
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category Logging
    *
    * @example
    * ```ts
@@ -9245,6 +9076,11 @@ export default class SimpleTable extends Simple {
    * // Log the last 5 rows in original order (top to bottom)
    * await table.logBottom(5, { originalOrder: true });
    * ```
+   * @param count - The number of rows to log from the bottom of the table. Defaults to the table's `rowsToLog` option if not specified.
+   * @param options - An optional object with logging preferences.
+   * @param options.originalOrder - If true, the rows are displayed in their original order (top to bottom). Defaults to false.
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category Logging
    */
   async logBottom(
     count?: number,
@@ -9257,15 +9093,14 @@ export default class SimpleTable extends Simple {
   /**
    * Logs the extent (minimum and maximum values) of a numeric column to the console.
    *
-   * @param column - The name of the numeric column for which to log the extent.
-   * @returns A promise that resolves to the table, so methods can be chained.
-   * @category Logging
-   *
    * @example
    * ```ts
    * // Log the extent of the 'price' column
    * await table.logExtent("price");
    * ```
+   * @param column - The name of the numeric column for which to log the extent.
+   * @returns A promise that resolves to the table, so methods can be chained.
+   * @category Logging
    */
   async logExtent(column: string): Promise<this> {
     const extent = await this.getExtent(column);

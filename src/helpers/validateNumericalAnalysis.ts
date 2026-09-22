@@ -5,12 +5,6 @@ import type { TableSchema } from "./pendingOps.ts";
 /**
  * Validates the column options shared by numerical pair analyses.
  *
- * @param types - The schema of the table being analyzed.
- * @param options - The optional x and y columns selected by the caller.
- * @param method - The SDA method performing the analysis.
- * @param tableName - The name of the table being analyzed.
- * @returns All numeric columns in the table schema.
- *
  * @example
  * ```ts
  * const columns = validateNumericalAnalysis(
@@ -20,6 +14,16 @@ import type { TableSchema } from "./pendingOps.ts";
  *   "measurements",
  * );
  * ```
+ *
+ * @param types - The schema of the table being analyzed.
+ *
+ * @param options - The optional x and y columns selected by the caller.
+ *
+ * @param method - The SDA method performing the analysis.
+ *
+ * @param tableName - The name of the table being analyzed.
+ *
+ * @returns All numeric columns in the table schema.
  */
 export default function validateNumericalAnalysis(
   types: TableSchema,
