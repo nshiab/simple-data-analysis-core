@@ -1530,6 +1530,80 @@ await table.umap("embedding", {
 }).selectColumns(["label", "umapX", "umapY"]).log();
 ```
 
+#### `hdbscan`
+
+Groups rows with similar numeric features using HDBSCAN, without requiring a
+predefined number of clusters. Adds a VARCHAR column containing `"cluster-0"`,
+`"cluster-1"`, etc., or `"noise"` for rows outside clusters. Labels identify
+groups, not their rank.
+
+Accepts a numeric vector column or several numeric scalar columns. Features are
+used as supplied. If their scales differ, consider preparing them with
+`normalize()`, `zScore()`, or `normalizeVector()` before clustering.
+
+Exact clustering is the default and can be expensive for large datasets. Set
+`approximate: true` to use approximate clustering, which can produce different
+results, including between repeated runs.
+
+##### Signature
+
+```typescript
+hdbscan(columns: string | string[], newColumn: string, options?: { minClusterSize?: number; minSamples?: number; metric?: "euclidean" | "cosine"; allowSingleCluster?: boolean; approximate?: boolean; membershipScoreColumn?: string; outlierScoreColumn?: string }): this;
+```
+
+##### Parameters
+
+- **`columns`**: A numeric vector column, or numeric scalar columns in
+  feature-dimension order.
+- **`newColumn`**: The cluster-label column to create.
+- **`options`**: HDBSCAN clustering and output settings.
+- **`options.minClusterSize`**: Minimum cluster size, from `2` through the row
+  count. Defaults to `5`.
+- **`options.minSamples`**: Number of neighbors used to estimate local density,
+  excluding the point itself. Higher values make clustering more conservative,
+  generally labeling more rows as noise. Set this separately to adjust density
+  sensitivity independently of minimum cluster size. Defaults to
+  `minClusterSize`.
+- **`options.metric`**: Use `"euclidean"` to compare feature values, or
+  `"cosine"` to compare vector direction regardless of overall magnitude.
+  Defaults to `"euclidean"`.
+- **`options.allowSingleCluster`**: Allow a result with just one cluster,
+  possibly alongside noise. Defaults to `false`. Setting this to `true` can
+  favor one broad group, even when there is little meaningful structure.
+- **`options.approximate`**: Use approximate clustering. Defaults to `false`.
+- **`options.membershipScoreColumn`**: Optional DOUBLE column for membership
+  strength from `0` to `1`. Higher values indicate stronger membership in the
+  assigned cluster; noise scores `0`.
+- **`options.outlierScoreColumn`**: Optional DOUBLE column for outlier scores
+  from `0` to `1`. Higher values indicate more unusual rows relative to their
+  surroundings, including within clusters. This is not necessarily
+  `1 - membershipScore`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Cluster numeric columns and add membership and outlier scores.
+await table
+  .hdbscan(["height", "weight"], "cluster", {
+    minClusterSize: 5,
+    membershipScoreColumn: "membership",
+    outlierScoreColumn: "outlierScore",
+  })
+  .log();
+```
+
+```ts
+// Scale vector dimensions before clustering.
+await table
+  .normalizeVector("features", "scaledFeatures")
+  .hdbscan("scaledFeatures", "cluster")
+  .log();
+```
+
 #### `bm25`
 
 Searches a text column using DuckDB's BM25 ranking function, which scores
@@ -5537,6 +5611,152 @@ await table.rowToText(
 await table
   .convert({ age: "string", salary: "string" })
   .rowToText(["name", "age", "salary"], "profile").log();
+```
+
+#### `rowToVector`
+
+Combines numeric scalar columns into a fixed-size vector. The input column order
+determines the vector dimension order, and null values remain null vector
+elements.
+
+When all input columns have the same numeric type, that type is preserved. Mixed
+numeric types require an explicit `type` option. Casting exact decimals or large
+integers to FLOAT or DOUBLE can lose precision.
+
+##### Signature
+
+```typescript
+rowToVector(columns: string[], newColumn: string, options?: { type?: "float" | "double" }): this;
+```
+
+##### Parameters
+
+- **`columns`**: Numeric scalar columns to combine, in vector dimension order.
+- **`newColumn`**: The name of the vector column to create.
+- **`options`**: Optional vector element type settings.
+- **`options.type`**: Cast every element to `"float"` or `"double"`. Required
+  when the input column types differ.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+await table
+  .rowToVector(["height", "weight"], "measurements")
+  .log();
+```
+
+```ts
+await table
+  .rowToVector(["count", "score"], "features", { type: "double" })
+  .log();
+```
+
+#### `normalizeVector`
+
+Normalizes a numeric vector column. By default, each dimension is scaled
+independently to `[0, 1]` across rows: all first elements together, all second
+elements together, and so on. With `normalization: "rowL2"`, each row is scaled
+to Euclidean unit length while preserving its direction; zero vectors remain
+zero.
+
+The input may be a numeric LIST or fixed-size ARRAY. The output is a fixed-size
+DOUBLE ARRAY. Converting large integers and exact decimals to DOUBLE can lose
+precision. With `"dimensionMinMax"`, a dimension whose converted values are all
+equal cannot be normalized.
+
+##### Signature
+
+```typescript
+normalizeVector(column: string, newColumn: string, options?: { normalization?: "dimensionMinMax" | "rowL2" }): this;
+```
+
+##### Parameters
+
+- **`column`**: The numeric vector column to normalize.
+- **`newColumn`**: The output column. Use the source column's name to replace
+  the source column with the normalized DOUBLE vector.
+- **`options`**: Normalization settings.
+- **`options.normalization`**: `"dimensionMinMax"` scales each dimension across
+  rows; `"rowL2"` scales each row to unit length. Defaults to
+  `"dimensionMinMax"`.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Scale each dimension across rows to [0, 1] in a new column.
+await table
+  .normalizeVector("features", "scaledFeatures")
+  .log();
+```
+
+```ts
+// Replace each vector with its unit-length version; zero vectors stay zero.
+await table
+  .normalizeVector("features", "features", { normalization: "rowL2" })
+  .log();
+```
+
+#### `mahalanobis`
+
+Calculates each row's Mahalanobis distance from a supplied reference point and
+stores it in a new DOUBLE column. Sample covariance (`n - 1`) is estimated from
+the dataset, independently of the reference point.
+
+Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
+Reference values follow the same dimension order. Inputs are converted privately
+to DOUBLE, which can lose precision for large integers and exact decimals;
+source columns and types remain unchanged.
+
+Requires more rows than dimensions and finite, non-null, consistent features
+with invertible, numerically stable covariance. Invalid inputs leave the source
+unchanged.
+
+##### Signature
+
+```typescript
+mahalanobis(columns: string | string[], referencePoint: number[], newColumn: string, options?: { similarityScoreColumn?: string }): this;
+```
+
+##### Parameters
+
+- **`columns`**: A numeric vector column, or numeric scalar columns in feature
+  order.
+- **`referencePoint`**: One finite number per feature dimension; may be outside
+  the dataset.
+- **`newColumn`**: The name of the new DOUBLE distance column.
+- **`options`**: Optional output settings.
+- **`options.similarityScoreColumn`**: A new DOUBLE column for the
+  dataset-relative score `1 - distance / maxDistance`. Exact matches score 1 and
+  the farthest rows score 0; if all distances are zero, every score is 1.
+
+##### Returns
+
+The table, so methods can be chained.
+
+##### Examples
+
+```ts
+// Measure distance from a reference height and weight.
+await table
+  .mahalanobis(["height", "weight"], [175, 70], "distance")
+  .log();
+```
+
+```ts
+// Compare feature vectors and add a dataset-relative similarity score.
+await table
+  .mahalanobis("features", [175, 70], "distance", {
+    similarityScoreColumn: "similarity",
+  })
+  .log();
 ```
 
 #### `unnest`

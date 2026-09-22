@@ -198,6 +198,7 @@ function temporalUnits(
   type: string,
   unit: "microsecond" | "nanosecond",
 ): string {
+  // Widen before scaling/subtraction to preserve precision and the DATE range.
   const scale = unit === "nanosecond" ? 1000n : 1n;
   if (type === "DATE") {
     return `(CAST(date_diff('day', DATE '1970-01-01', ${expression}) AS HUGEINT) * ${

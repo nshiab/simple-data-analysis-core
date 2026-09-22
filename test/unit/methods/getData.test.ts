@@ -1,6 +1,41 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("getData returns prototype-named columns as own data properties", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("prototype_values");
+    for (
+      const [expression, expected] of [
+        ["42", 42],
+        ["NULL::DOUBLE", null],
+        ["{'retained': true}", { retained: true }],
+      ] as const
+    ) {
+      await sdb.customQuery(
+        `CREATE OR REPLACE TABLE prototype_values AS
+        SELECT ${expression} AS "__proto__", 'retained' AS constructor`,
+      );
+      const [row] = await table.getData();
+      assertEquals(Object.keys(row), ["__proto__", "constructor"]);
+      assertEquals(row["__proto__"], expected);
+      assertEquals<unknown>(row.constructor, "retained");
+      assertEquals(Object.getPrototypeOf(row), Object.prototype);
+      assertEquals(
+        Object.getOwnPropertyDescriptor(row, "__proto__"),
+        {
+          value: expected,
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        },
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("getData returns vector elements and nulls instead of display labels", async () => {
   const sdb = new SimpleDB();
   try {
