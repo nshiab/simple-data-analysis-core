@@ -13,6 +13,7 @@ type Outputs = {
   probabilities: ArrayLike<number>;
   outlierScores: ArrayLike<number>;
 };
+// Regenerate with test/data/hdbscan/quality-generate.py and its pinned requirements.
 const fixture = JSON.parse(
   await Deno.readTextFile(
     new URL("../../data/hdbscan/quality-reference.json", import.meta.url),

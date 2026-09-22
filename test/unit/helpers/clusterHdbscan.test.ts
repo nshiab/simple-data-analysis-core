@@ -218,6 +218,8 @@ Deno.test("HDBSCAN validates the full hierarchy identifier range before allocati
   }
 });
 
+// Python evaluates the same MST to isolate our deterministic tie ordering.
+// Regenerate with quality-native.ts piped to quality-ties.py in test/data/hdbscan/.
 const tieReferences = JSON.parse(
   await Deno.readTextFile(
     new URL("../../data/hdbscan/quality-tie-reference.json", import.meta.url),
