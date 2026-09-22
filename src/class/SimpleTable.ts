@@ -1176,75 +1176,54 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Clusters multivariate numeric rows with HDBSCAN and appends categorical
-   * cluster labels. Pass one numeric LIST or fixed-size ARRAY column, or an
-   * array of numeric scalar columns. Scalar columns may have mixed numeric
-   * types. Internal DOUBLE conversion can lose precision for large integers
-   * and exact decimals; all source columns and their types remain unchanged.
-   * Nulls, non-finite values, empty vectors, inconsistent dimensions, and
-   * zero-norm cosine vectors reject the whole operation. Cosine calculations
-   * internally rescale extreme vector magnitudes while preserving direction
-   * and source values. Non-finite computed distances also reject the operation.
+   * Groups rows with similar numeric features using HDBSCAN, without requiring
+   * a predefined number of clusters. Adds a VARCHAR column containing
+   * `"cluster-0"`, `"cluster-1"`, etc., or `"noise"` for rows outside clusters.
+   * Labels identify groups, not their rank.
    *
-   * Exact clustering is the default. Set `approximate: true` to use DuckDB's
-   * HNSW candidate search with deterministic connectivity repair; approximation
-   * can change clusters, noise, membership strengths, and outlier scores.
-   * Repeated approximate runs can change partitions and noise assignments for
-   * unchanged ordered inputs. Exact mode evaluates all row pairs and can be
-   * expensive for large inputs; row count never enables approximation.
-   * Equal mutual-reachability weights use deterministic endpoint ordering;
-   * tied boundary assignments and scores can differ from Python hdbscan.
-   * `minSamples` counts other points and defaults to `minClusterSize`, matching
-   * Python hdbscan and differing from scikit-learn's built-in HDBSCAN count.
-   * Excess-of-mass selection is used internally. Allowing a single cluster
-   * permits root selection but can still leave early departures as noise.
+   * Accepts a numeric vector column or several numeric scalar columns. Features
+   * are used as supplied. If their scales differ, consider preparing them with
+   * `normalize()`, `zScore()`, or `normalizeVector()` before clustering.
    *
-   * HDBSCAN uses feature values as supplied. Different units can dominate
-   * Euclidean distance. Scalar features can be prepared explicitly with
-   * `normalize()` or `zScore()`; vector dimensions can be min-max scaled with
-   * `normalizeVector()`. Scaling is optional, and HDBSCAN does not require the
-   * range `[0, 1]` or unit-length vectors.
-   *
-   * Membership values measure cluster strength rather than a calibrated
-   * probability of correctness; noise has strength zero. Larger GLOSH values
-   * indicate more outlier-like observations and are not simply one minus
-   * membership strength. Numeric cluster IDs have no ordinal meaning and may
-   * change when data or settings change.
-   * Numeric labels are `-1` for noise and `0`, `1`, and so on for clusters;
-   * string labels are `"noise"`, `"cluster-0"`, `"cluster-1"`, and so on.
-   * When a point's reference cluster maximum density is infinite, outlier
-   * scores use finite limiting values: points that depart at finite density
-   * receive `1`, and points that remain to infinite density receive `0`.
+   * Exact clustering is the default and can be expensive for large datasets.
+   * Set `approximate: true` to use approximate clustering, which can produce
+   * different results, including between repeated runs.
    *
    * @param columns - A numeric vector column, or numeric scalar columns in
    * feature-dimension order.
    * @param newColumn - The cluster-label column to create.
    * @param options - HDBSCAN clustering and output settings.
-   * @param options.minClusterSize - Safe integer from `2` through the row count.
-   * Defaults to `5`.
-   * @param options.minSamples - Other points used for core distance. Defaults
-   * to `minClusterSize`. Must be a positive safe integer smaller than the row
-   * count.
-   * @param options.metric - Distance metric. Defaults to `"euclidean"`.
-   * @param options.allowSingleCluster - Permit selection of the root cluster.
-   * Defaults to `true`.
-   * @param options.approximate - Opt into approximate HNSW candidates. Defaults
-   * to `false`.
-   * @param options.labels - Store labels as `INTEGER` numbers or `VARCHAR`
-   * strings. Defaults to `"number"`.
-   * @param options.probabilityColumn - Optional DOUBLE membership-strength
-   * output column.
-   * @param options.outlierScoreColumn - Optional DOUBLE GLOSH outlier-score
-   * output column.
+   * @param options.minClusterSize - Minimum cluster size, from `2` through the
+   * row count. Defaults to `5`.
+   * @param options.minSamples - Number of neighbors used to estimate local
+   * density, excluding the point itself. Higher values make clustering more
+   * conservative, generally labeling more rows as noise. Set this separately
+   * to adjust density sensitivity independently of minimum cluster size.
+   * Defaults to `minClusterSize`.
+   * @param options.metric - Use `"euclidean"` to compare feature values, or
+   * `"cosine"` to compare vector direction regardless of overall magnitude.
+   * Defaults to `"euclidean"`.
+   * @param options.allowSingleCluster - Allow a result with just one cluster,
+   * possibly alongside noise. Defaults to `false`. Setting this to `true` can
+   * favor one broad group, even when there is little meaningful structure.
+   * @param options.approximate - Use approximate clustering. Defaults to `false`.
+   * @param options.membershipScoreColumn - Optional DOUBLE column for membership
+   * strength from `0` to `1`. Higher values indicate stronger membership in the
+   * assigned cluster; noise scores `0`.
+   * @param options.outlierScoreColumn - Optional DOUBLE column for outlier
+   * scores from `0` to `1`. Higher values indicate more unusual rows relative to
+   * their surroundings, including within clusters. This is not necessarily
+   * `1 - membershipScore`.
    * @returns The table, so methods can be chained.
    * @category Vector Search
    *
    * @example
    * ```ts
+   * // Cluster numeric columns and add membership and outlier scores.
    * await table
    *   .hdbscan(["height", "weight"], "cluster", {
    *     minClusterSize: 5,
-   *     probabilityColumn: "membership",
+   *     membershipScoreColumn: "membership",
    *     outlierScoreColumn: "outlierScore",
    *   })
    *   .log();
@@ -1252,9 +1231,10 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Scale vector dimensions before clustering.
    * await table
    *   .normalizeVector("features", "scaledFeatures")
-   *   .hdbscan("scaledFeatures", "cluster", { labels: "string" })
+   *   .hdbscan("scaledFeatures", "cluster")
    *   .log();
    * ```
    */
@@ -1267,8 +1247,7 @@ export default class SimpleTable extends Simple {
       metric?: "euclidean" | "cosine";
       allowSingleCluster?: boolean;
       approximate?: boolean;
-      labels?: "number" | "string";
-      probabilityColumn?: string;
+      membershipScoreColumn?: string;
       outlierScoreColumn?: string;
     } = {},
   ): this {
@@ -5210,47 +5189,54 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Calculates each row's ordinary Mahalanobis distance from the dataset
-   * centroid and stores it in a new DOUBLE column. The covariance matrix is
-   * estimated from the same dataset using sample covariance (`n - 1`).
+   * Calculates each row's Mahalanobis distance from a supplied reference point
+   * and stores it in a new DOUBLE column. Sample covariance (`n - 1`) is
+   * estimated from the dataset, independently of the reference point.
    *
-   * Pass one numeric LIST or fixed-size ARRAY column, or pass an array of one
-   * or more numeric scalar columns. Scalar columns may use different numeric
-   * types. Inputs are converted privately to DOUBLE for calculation, which can
-   * lose precision for large integers and exact decimals; source columns and
-   * their types remain unchanged.
+   * Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
+   * Reference values follow the same dimension order. Inputs are converted
+   * privately to DOUBLE, which can lose precision for large integers and exact
+   * decimals; source columns and types remain unchanged.
    *
-   * The dataset must have more observations than feature dimensions (`n > d`).
-   * This is necessary but does not guarantee an invertible covariance matrix:
-   * constant or linearly dependent features also cause the operation to fail.
-   * Numerically unstable covariance is rejected too; rescale extreme feature
-   * units or remove nearly dependent features before retrying. Null or
-   * non-finite feature values, empty vectors, and inconsistent vector lengths
-   * fail the whole operation without creating the output column.
+   * Requires more rows than dimensions and finite, non-null, consistent features
+   * with invertible, numerically stable covariance. Invalid inputs leave the
+   * source unchanged.
    *
-   * @param columns - A numeric vector column, or numeric scalar columns in
-   * feature-dimension order.
-   * @param newColumn - The name of the DOUBLE distance column to create. An
-   * existing column name is rejected.
+   * @param columns - A numeric vector column, or numeric scalar columns in feature order.
+   * @param referencePoint - One finite number per feature dimension; may be outside the dataset.
+   * @param newColumn - The name of the new DOUBLE distance column.
+   * @param options - Optional output settings.
+   * @param options.similarityScoreColumn - A new DOUBLE column for the dataset-relative
+   * score `1 - distance / maxDistance`. Exact matches score 1 and the farthest
+   * rows score 0; if all distances are zero, every score is 1.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    *
    * @example
    * ```ts
+   * // Measure distance from a reference height and weight.
    * await table
-   *   .mahalanobis(["height", "weight"], "distance")
+   *   .mahalanobis(["height", "weight"], [175, 70], "distance")
    *   .log();
    * ```
    *
    * @example
    * ```ts
+   * // Compare feature vectors and add a dataset-relative similarity score.
    * await table
-   *   .mahalanobis("features", "distance")
+   *   .mahalanobis("features", [175, 70], "distance", {
+   *     similarityScoreColumn: "similarity",
+   *   })
    *   .log();
    * ```
    */
-  mahalanobis(columns: string | string[], newColumn: string): this {
-    mahalanobis(this, columns, newColumn);
+  mahalanobis(
+    columns: string | string[],
+    referencePoint: number[],
+    newColumn: string,
+    options: { similarityScoreColumn?: string } = {},
+  ): this {
+    mahalanobis(this, columns, referencePoint, newColumn, options);
     return this;
   }
 

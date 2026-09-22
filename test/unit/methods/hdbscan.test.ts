@@ -67,6 +67,13 @@ const degenerateFixture = JSON.parse(
   ),
 ) as DegenerateFixture;
 
+function clusterNumber(label: unknown): number {
+  assert(typeof label === "string");
+  if (label === "noise") return -1;
+  assert(/^cluster-\d+$/.test(label));
+  return Number(label.slice("cluster-".length));
+}
+
 function assertSamePartition(actual: number[], expected: number[]): void {
   assertEquals(
     actual.map((label) => label < 0),
@@ -130,12 +137,13 @@ for (const reference of fixture.cases) {
         minClusterSize: reference.minClusterSize,
         minSamples: reference.minSamples,
         metric: reference.metric,
-        probabilityColumn: "membership",
+        allowSingleCluster: fixture.referenceSettings.allow_single_cluster,
+        membershipScoreColumn: "membership",
         outlierScoreColumn: "outlier",
       }).run();
       const data = await table.getData();
       assertSamePartition(
-        data.map((row) => Number(row.cluster)),
+        data.map((row) => clusterNumber(row.cluster)),
         reference.labels,
       );
       assertClose(
@@ -156,7 +164,7 @@ for (const reference of fixture.cases) {
       );
       assertEquals(await table.getTypes(), {
         ...typesBefore,
-        cluster: "INTEGER",
+        cluster: "VARCHAR",
         membership: "DOUBLE",
         outlier: "DOUBLE",
       });
@@ -184,11 +192,14 @@ for (const [caseIndex, reference] of degenerateFixture.cases.entries()) {
         minSamples: degenerateFixture.settings.min_samples,
         metric: degenerateFixture.settings.metric,
         allowSingleCluster: reference.allowSingleCluster,
-        probabilityColumn: "membership",
+        membershipScoreColumn: "membership",
         outlierScoreColumn: "outlier",
       }).run();
       const data = await table.getData();
-      assertEquals(data.map((row) => row.cluster), reference.labels);
+      assertEquals(
+        data.map((row) => clusterNumber(row.cluster)),
+        reference.labels,
+      );
       assertClose(
         data.map((row) => Number(row.membership)),
         reference.probabilities,
@@ -262,7 +273,7 @@ Deno.test("hdbscan keeps native large-offset Euclidean separations", async () =>
     await table.hdbscan("features", "cluster", {
       minClusterSize: 2,
       minSamples: 1,
-      probabilityColumn: "membership",
+      membershipScoreColumn: "membership",
       outlierScoreColumn: "outlier",
     }).run();
     assert(
@@ -276,7 +287,7 @@ Deno.test("hdbscan keeps native large-offset Euclidean separations", async () =>
   }
 });
 
-Deno.test("hdbscan defaults select one identical cluster and omit optional scores", async () => {
+Deno.test("hdbscan defaults to noise for one group and allows opting into a single cluster", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS
@@ -284,19 +295,22 @@ Deno.test("hdbscan defaults select one identical cluster and omit optional score
       FROM range(6) rows(i)`);
     const table = sdb.newTable("source");
     await table.hdbscan("features", "cluster").run();
-    assertEquals((await table.getData()).map((row) => row.cluster), [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    ]);
+    assertEquals(
+      (await table.getData()).map((row) => row.cluster),
+      new Array(6).fill("noise"),
+    );
     assertEquals(Object.keys(await table.getTypes()), [
       "id",
       "features",
       "cluster",
     ]);
+    await table.hdbscan("features", "singleCluster", {
+      allowSingleCluster: true,
+    }).run();
+    assertEquals(
+      (await table.getData()).map((row) => row.singleCluster),
+      new Array(6).fill("cluster-0"),
+    );
     assertEquals(await scratchRelations(sdb), []);
   } finally {
     await sdb.close();
@@ -314,8 +328,7 @@ Deno.test("hdbscan handles all noise, exact string labels, and antipodal cosine 
       minClusterSize: 3,
       minSamples: 1,
       allowSingleCluster: false,
-      labels: "string",
-      probabilityColumn: "membership",
+      membershipScoreColumn: "membership",
       outlierScoreColumn: "outlier",
     }).run();
     const noise = await table.getData();
@@ -334,7 +347,6 @@ Deno.test("hdbscan handles all noise, exact string labels, and antipodal cosine 
       minSamples: 1,
       metric: "cosine",
       allowSingleCluster: false,
-      labels: "string",
     }).run();
     const labels = (await table.getData()).map((row) => String(row.cluster));
     assertEquals(new Set(labels.slice(0, 3)).size, 1);
@@ -363,13 +375,14 @@ Deno.test("hdbscan approximate full-candidate cases quantify zero reference devi
         minClusterSize: reference.minClusterSize,
         minSamples: reference.minSamples,
         metric: reference.metric,
+        allowSingleCluster: fixture.referenceSettings.allow_single_cluster,
         approximate: true,
-        probabilityColumn: "membership",
+        membershipScoreColumn: "membership",
         outlierScoreColumn: "outlier",
       }).run();
       const data = await table.getData();
       assertSamePartition(
-        data.map((row) => Number(row.cluster)),
+        data.map((row) => clusterNumber(row.cluster)),
         reference.labels,
       );
       assertClose(
@@ -420,7 +433,7 @@ Deno.test("hdbscan supports mixed scalar types, fixed ARRAY, LIST, and explicit 
         allowSingleCluster: false,
       }).run();
       const data = await table.getData();
-      const actual = data.map((row) => Number(row.cluster));
+      const actual = data.map((row) => clusterNumber(row.cluster));
       if (expected === undefined) expected = actual;
       else assertSamePartition(actual, expected);
       assertEquals(
@@ -429,7 +442,7 @@ Deno.test("hdbscan supports mixed scalar types, fixed ARRAY, LIST, and explicit 
       );
       assertEquals(await table.getTypes(), {
         ...typesBefore,
-        cluster: "INTEGER",
+        cluster: "VARCHAR",
       });
     }
 
@@ -456,8 +469,8 @@ Deno.test("hdbscan supports mixed scalar types, fixed ARRAY, LIST, and explicit 
       .run();
     const scaled = await table.getData();
     assertSamePartition(
-      scaled.map((row) => Number(row.scalarCluster)),
-      scaled.map((row) => Number(row.vectorCluster)),
+      scaled.map((row) => clusterNumber(row.scalarCluster)),
+      scaled.map((row) => clusterNumber(row.vectorCluster)),
     );
     assertEquals(await scratchRelations(sdb), []);
   } finally {
@@ -486,9 +499,9 @@ Deno.test("hdbscan uses raw feature scales until the caller explicitly normalize
         allowSingleCluster: false,
       }).run();
     const data = await table.getData();
-    assertEquals(data.map((row) => row.raw), [-1, -1, -1, -1, -1, -1]);
+    assertEquals(data.map((row) => row.raw), new Array(6).fill("noise"));
     assertSamePartition(
-      data.map((row) => Number(row.scaled)),
+      data.map((row) => clusterNumber(row.scaled)),
       [0, 0, 0, 1, 1, 1],
     );
     assertEquals(await scratchRelations(sdb), []);
@@ -508,8 +521,7 @@ Deno.test("hdbscan validates options and small-input boundaries without clamping
     [{ metric: "manhattan" }, 'metric must be "euclidean" or "cosine"'],
     [{ allowSingleCluster: 1 }, "allowSingleCluster must be a boolean"],
     [{ approximate: "yes" }, "approximate must be a boolean"],
-    [{ labels: "category" }, 'labels must be "number" or "string"'],
-    [{ probabilityColumn: 1 }, "probabilityColumn must be a string"],
+    [{ membershipScoreColumn: 1 }, "membershipScoreColumn must be a string"],
     [{ outlierScoreColumn: false }, "outlierScoreColumn must be a string"],
   ];
   const sdb = new SimpleDB();
@@ -574,7 +586,10 @@ Deno.test("hdbscan validates options and small-input boundaries without clamping
       minClusterSize: 2,
       minSamples: 1,
     }).run();
-    assertEquals((await table.getData()).map((row) => row.cluster), [0, 0]);
+    assertEquals((await table.getData()).map((row) => row.cluster), [
+      "noise",
+      "noise",
+    ]);
 
     await sdb.customQuery(`CREATE OR REPLACE TABLE source AS
       SELECT i::INTEGER AS id,[0.0]::DOUBLE[1] AS features
@@ -582,14 +597,12 @@ Deno.test("hdbscan validates options and small-input boundaries without clamping
     await table.hdbscan("features", "cluster", {
       minClusterSize: 5,
       minSamples: 4,
+      allowSingleCluster: true,
     }).run();
-    assertEquals((await table.getData()).map((row) => row.cluster), [
-      0,
-      0,
-      0,
-      0,
-      0,
-    ]);
+    assertEquals(
+      (await table.getData()).map((row) => row.cluster),
+      new Array(5).fill("cluster-0"),
+    );
     assertEquals(await scratchRelations(sdb), []);
   } finally {
     await sdb.close();
@@ -681,17 +694,17 @@ Deno.test("hdbscan rejects invalid feature specifications and all output collisi
     const before = await table.getData();
     for (
       const [output, options] of [
-        ["cluster", { probabilityColumn: "CLUSTER" }],
+        ["cluster", { membershipScoreColumn: "CLUSTER" }],
         [
           "group",
-          { probabilityColumn: "score", outlierScoreColumn: "SCORE" },
+          { membershipScoreColumn: "score", outlierScoreColumn: "SCORE" },
         ],
       ] as const
     ) {
       await assertRejects(
         () => table.hdbscan("features", output, options).run(),
         Error,
-        options.probabilityColumn === "CLUSTER"
+        options.membershipScoreColumn === "CLUSTER"
           ? "source column already exists"
           : "refer to the same column",
       );
@@ -748,22 +761,24 @@ Deno.test("hdbscan snapshots inputs, composes in the queue, and is exactly repea
       minClusterSize: 3,
       minSamples: 1,
       allowSingleCluster: false,
-      labels: "number" as const,
     };
     table.filter("keep")
       .hdbscan(columns, "first", options)
       .hdbscan(["x", "y"], "second", options)
-      .hdbscan(["x", "y"], "named", { ...options, labels: "string" })
-      .selectColumns(["id", "first", "second", "named"]);
+      .selectColumns(["id", "first", "second"]);
     columns[0] = "missing";
     options.minSamples = 99;
     const data = await table.getData();
     assertEquals(data.map((row) => row.id), [30, 10, 20, 40, 50, 60]);
     assertEquals(data.map((row) => row.first), data.map((row) => row.second));
-    assertEquals(
-      data.map((row) => row.named),
-      data.map((row) => `cluster-${row.first}`),
-    );
+    assertSamePartition(data.map((row) => clusterNumber(row.first)), [
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+    ]);
     assertEquals(await scratchRelations(sdb), []);
   } finally {
     await sdb.close();
@@ -791,7 +806,7 @@ Deno.test("hdbscan preserves file-backed order, exact payload types, and indexes
       minClusterSize: 3,
       minSamples: 1,
       allowSingleCluster: false,
-      probabilityColumn: "membership",
+      membershipScoreColumn: "membership",
       outlierScoreColumn: "outlier",
     }).run();
     const after = await table.getData();
@@ -802,7 +817,7 @@ Deno.test("hdbscan preserves file-backed order, exact payload types, and indexes
     assertEquals(after.map((row) => row.id), [30, 10, 20, 40, 50, 60]);
     assertEquals(await table.getTypes(), {
       ...typesBefore,
-      cluster: "INTEGER",
+      cluster: "VARCHAR",
       membership: "DOUBLE",
       outlier: "DOUBLE",
     });
@@ -847,7 +862,7 @@ for (const approximate of [false, true]) {
             minSamples: 1,
             approximate,
             allowSingleCluster: false,
-            probabilityColumn: "membership",
+            membershipScoreColumn: "membership",
             outlierScoreColumn: "outlier",
           }).run()
         );
@@ -882,7 +897,7 @@ Deno.test("hdbscan validates output identifiers before feature preparation", asy
       const [name, options] of [
         ["", {}],
         ["bad\0name", {}],
-        ["cluster", { probabilityColumn: "" }],
+        ["cluster", { membershipScoreColumn: "" }],
         ["cluster", { outlierScoreColumn: "bad\0name" }],
       ] as const
     ) {
@@ -931,12 +946,13 @@ for (const approximate of [false, true]) {
           approximate,
           minClusterSize: reference.minClusterSize,
           minSamples: reference.minSamples,
-          probabilityColumn: "membership",
+          allowSingleCluster: fixture.referenceSettings.allow_single_cluster,
+          membershipScoreColumn: "membership",
           outlierScoreColumn: "outlier",
         }).run();
         const data = await table.getData();
         assertSamePartition(
-          data.map((row) => Number(row.cluster)),
+          data.map((row) => clusterNumber(row.cluster)),
           reference.labels,
         );
         assertClose(
@@ -975,7 +991,7 @@ Deno.test("hdbscan Euclidean preserves results under a large common offset", asy
       const data = await table.hdbscan(["x", "y"], "cluster", {
         minClusterSize: 2,
         minSamples: 1,
-        probabilityColumn: "membership",
+        membershipScoreColumn: "membership",
         outlierScoreColumn: "outlier",
       }).getData();
       const results = data.map(({ cluster, membership, outlier }) => ({
@@ -985,7 +1001,7 @@ Deno.test("hdbscan Euclidean preserves results under a large common offset", asy
       }));
       if (expected === undefined) {
         expected = results;
-        assertSamePartition(data.map((row) => Number(row.cluster)), [
+        assertSamePartition(data.map((row) => clusterNumber(row.cluster)), [
           0,
           0,
           0,

@@ -12,6 +12,7 @@ export default async function computeMahalanobisDistances(
     vectorColumn: string;
   },
   model: CovarianceModel,
+  referencePoint?: number[],
 ): Promise<{
   relation: string;
   rowIdColumn: string;
@@ -32,6 +33,22 @@ export default async function computeMahalanobisDistances(
   };
   const originSql = vectorLiteral(origins);
   const offsetSql = vectorLiteral(meanOffsets);
+  if (
+    referencePoint !== undefined &&
+    (referencePoint.length !== dimensions ||
+      referencePoint.some((value) => !Number.isFinite(value)))
+  ) {
+    throw new Error(
+      "Mahalanobis reference point must contain one finite number per dimension.",
+    );
+  }
+  // Direct subtraction retains exact matches and tiny reference offsets that
+  // would be lost by subtracting the centroid from both points separately.
+  const centeredValue = referencePoint === undefined
+    ? `(value - array_extract(${originSql}, dimension)) - array_extract(${offsetSql}, dimension)`
+    : `value - array_extract(${
+      vectorLiteral(Float64Array.from(referencePoint))
+    }, dimension)`;
   const whitening = covarianceWhitening(model);
   const suffix = crypto.randomUUID().replaceAll("-", "");
   const relation = `__sda_mahalanobis_distances_${suffix}`;
@@ -69,14 +86,18 @@ export default async function computeMahalanobisDistances(
       WITH centered AS MATERIALIZED (
         SELECT ${quoteIdentifier(input.rowIdColumn)} AS row_id,
           list_transform(${quoteIdentifier(input.vectorColumn)},
-            (value, dimension) -> (value - array_extract(${originSql}, dimension)) -
-              array_extract(${offsetSql}, dimension))::DOUBLE[${dimensions}] AS vector
+            (value, dimension) -> ${centeredValue})::DOUBLE[${dimensions}] AS vector
         FROM ${quoteIdentifier(input.relation)}
+      ), components AS MATERIALIZED (
+        SELECT row_id, abs(array_inner_product(weight, vector)) AS component
+        FROM centered CROSS JOIN ${quoteIdentifier(weights)}
+      ), magnitudes AS (
+        SELECT row_id, max(component) AS magnitude FROM components GROUP BY row_id
       )
-      SELECT row_id, sqrt(sum(pow(array_inner_product(weight, vector), 2)))
-        AS distance
-      FROM centered CROSS JOIN ${quoteIdentifier(weights)}
-      GROUP BY row_id`);
+      SELECT row_id, CASE WHEN magnitude = 0 THEN 0::DOUBLE
+        ELSE magnitude * sqrt(sum(pow(component / magnitude, 2))) END AS distance
+      FROM components JOIN magnitudes USING (row_id)
+      GROUP BY row_id, magnitude`);
     const invalid = Number(
       (await connection.runAndReadAll(
         `SELECT count(*) FROM ${quoteIdentifier(relation)}

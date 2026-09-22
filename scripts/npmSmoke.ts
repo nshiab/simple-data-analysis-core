@@ -175,19 +175,22 @@ try {
   ])
     .rowToVector(["x", "y"], "features", { type: "double" })
     .normalizeVector("features", "scaled")
-    .mahalanobis(["x", "y"], "distance")
+    .mahalanobis(["x", "y"], [1, 2], "distance", { similarityScoreColumn: "similarity" })
     .hdbscan("scaled", "cluster", {
-      minClusterSize: 2, minSamples: 1, labels: "string",
-      probabilityColumn: "membership", outlierScoreColumn: "outlier",
+      minClusterSize: 2, minSamples: 1,
+      membershipScoreColumn: "membership", outlierScoreColumn: "outlier",
     });
   const multivariateRows = await multivariate.getData();
   const multivariateTypes = await multivariate.getTypes();
   if (multivariateRows.length !== 5 || multivariateTypes.features !== "DOUBLE[2]" ||
       multivariateTypes.scaled !== "DOUBLE[2]" || multivariateTypes.cluster !== "VARCHAR" ||
+      multivariateTypes.similarity !== "DOUBLE" || multivariateRows[0].similarity !== 1 ||
+      multivariateRows[0].distance !== 0 ||
       !multivariateRows.every((row, index) => row.id === index + 1 &&
         row.features[0] === row.x && row.features[1] === row.y &&
         row.scaled.every((value) => Number.isFinite(value) && value >= 0 && value <= 1) &&
         Number.isFinite(row.distance) && Number.isFinite(row.membership) &&
+        Number.isFinite(row.similarity) && row.similarity >= 0 && row.similarity <= 1 &&
         Number.isFinite(row.outlier) &&
         (row.cluster === "noise" || row.cluster.startsWith("cluster-")))) {
     throw new Error("Expected multivariate methods to compose and preserve source rows");
@@ -196,7 +199,7 @@ try {
   const prototypeTable = sdb.newTable("prototype_smoke")
     .rowToVector(["__proto__"], "features")
     .normalizeVector("features", "features")
-    .mahalanobis(["__proto__"], "distance");
+    .mahalanobis(["__proto__"], [1], "distance");
   const prototypeTypes = await prototypeTable.getTypes();
   const prototypeRows = await prototypeTable.getData();
   if (!Object.hasOwn(prototypeTypes, "__proto__") || prototypeTypes["__proto__"] !== "DOUBLE" ||

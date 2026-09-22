@@ -32,7 +32,11 @@ Deno.test("distance scratch tables are cleaned on success and numerical failure"
       `UPDATE "source "" rows" SET "vector "" values" = [1e308]::DOUBLE[1]`,
     );
     await assertRejects(
-      () => computeMahalanobisDistances(connection, input, model),
+      () =>
+        computeMahalanobisDistances(connection, input, {
+          ...model,
+          ...factorCovariance([0.25], 1),
+        }),
       Error,
       "non-finite",
     );

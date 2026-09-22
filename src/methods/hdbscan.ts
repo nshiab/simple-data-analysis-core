@@ -37,10 +37,9 @@ async function execute(
   const {
     minClusterSize = 5,
     metric = "euclidean",
-    allowSingleCluster = true,
+    allowSingleCluster = false,
     approximate = false,
-    labels = "number",
-    probabilityColumn,
+    membershipScoreColumn,
     outlierScoreColumn,
   } = options;
   const minSamples = options.minSamples ?? minClusterSize;
@@ -66,13 +65,11 @@ async function execute(
   if (typeof approximate !== "boolean") {
     throw new Error("hdbscan() approximate must be a boolean.");
   }
-  if (!(["number", "string"] as unknown[]).includes(labels)) {
-    throw new Error('hdbscan() labels must be "number" or "string".');
-  }
   if (
-    probabilityColumn !== undefined && typeof probabilityColumn !== "string"
+    membershipScoreColumn !== undefined &&
+    typeof membershipScoreColumn !== "string"
   ) {
-    throw new Error("hdbscan() probabilityColumn must be a string.");
+    throw new Error("hdbscan() membershipScoreColumn must be a string.");
   }
   if (
     outlierScoreColumn !== undefined &&
@@ -82,9 +79,10 @@ async function execute(
   }
 
   const sourceColumns = Object.keys(await table.getTypes());
-  const outputNames = [newColumn, probabilityColumn, outlierScoreColumn].filter(
-    (name): name is string => name !== undefined,
-  );
+  const outputNames = [newColumn, membershipScoreColumn, outlierScoreColumn]
+    .filter(
+      (name): name is string => name !== undefined,
+    );
   validateOutputNames(sourceColumns, outputNames);
 
   const prepared = await prepareNumericFeatures(
@@ -198,8 +196,8 @@ async function execute(
     const gloshColumn = "glosh";
     const resultColumns = [
       "row_id INTEGER",
-      `${labelColumn} ${labels === "number" ? "INTEGER" : "VARCHAR"}`,
-      probabilityColumn === undefined
+      `${labelColumn} VARCHAR`,
+      membershipScoreColumn === undefined
         ? undefined
         : `${membershipColumn} DOUBLE`,
       outlierScoreColumn === undefined ? undefined : `${gloshColumn} DOUBLE`,
@@ -209,8 +207,8 @@ async function execute(
     );
     const outputTypes = [
       INTEGER,
-      labels === "number" ? INTEGER : VARCHAR,
-      ...(probabilityColumn === undefined ? [] : [DOUBLE]),
+      VARCHAR,
+      ...(membershipScoreColumn === undefined ? [] : [DOUBLE]),
       ...(outlierScoreColumn === undefined ? [] : [DOUBLE]),
     ];
     await appendColumnBatches(
@@ -228,17 +226,12 @@ async function execute(
         if (column === 1) {
           return Array.from(
             result.labels.subarray(start, end),
-            (label) =>
-              labels === "number"
-                ? label
-                : label < 0
-                ? "noise"
-                : `cluster-${label}`,
+            (label) => label < 0 ? "noise" : `cluster-${label}`,
           );
         }
-        const probabilityIndex = probabilityColumn === undefined ? -1 : 2;
+        const membershipIndex = membershipScoreColumn === undefined ? -1 : 2;
         return Array.from(
-          column === probabilityIndex
+          column === membershipIndex
             ? result.probabilities.subarray(start, end)
             : result.outlierScores.subarray(start, end),
         );
@@ -248,9 +241,9 @@ async function execute(
       name: newColumn,
       expression: `r.${q(labelColumn)}`,
     }];
-    if (probabilityColumn !== undefined) {
+    if (membershipScoreColumn !== undefined) {
       publicationOutputs.push({
-        name: probabilityColumn,
+        name: membershipScoreColumn,
         expression: `r.${q(membershipColumn)}`,
       });
     }
