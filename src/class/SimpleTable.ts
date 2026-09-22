@@ -4442,9 +4442,6 @@ export default class SimpleTable extends Simple {
    * (the right table) based on string similarity between two text columns. Uses the
    * [rapidfuzz](https://query.farm/duckdb_extension_rapidfuzz) DuckDB community extension.
    *
-   * Repeated comparison values may be scored once and then expanded back to their original rows.
-   * Duplicate rows and all qualifying matches are preserved.
-   *
    * If a similarity score column is added to the results, the rows will be ordered alphabetically by the left column, and then by descending similarity score within each group of identical left column values. Otherwise, the rows will be order alphabetically by the left column and then by the right column.
    *
    * This operation might create temporary files in a `.tmp` folder; consider adding `.tmp` to your `.gitignore`.
