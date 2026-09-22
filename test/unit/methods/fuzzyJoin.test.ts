@@ -1,5 +1,250 @@
 import { assert, assertEquals, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+import buildFuzzyMatchSql from "../../../src/helpers/buildFuzzyMatchSql.ts";
+import quoteIdentifier from "../../../src/helpers/quoteIdentifier.ts";
+
+Deno.test("should preserve every repeated-value match across scorers, thresholds and prefix filters", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable("left input");
+    const right = sdb.newTable('right "input');
+    const leftColumn = 'left "value';
+    const rightColumn = "right value";
+    const names = ["Alice", "Alicee", "café", "cafe", "😀", "😀😀", "", null];
+    const leftRows = Array.from(
+      { length: 40 },
+      (_, i) =>
+        [...names, "only-left"].map((name) => ({ id: i, [leftColumn]: name })),
+    ).flat();
+    const rightRows = Array.from(
+      { length: 40 },
+      (_, i) =>
+        [...names, "only-right"].map((name) => ({
+          rightId: i,
+          [rightColumn]: name,
+        })),
+    ).flat();
+    await left.loadArray(leftRows).run();
+    await right.loadArray(rightRows).run();
+    const queries: string[] = [];
+    const original = left.runQuery;
+    left.runQuery = (query, ...args) => {
+      queries.push(query);
+      return original(query, ...args);
+    };
+    await sdb.customQuery("INSTALL rapidfuzz FROM community; LOAD rapidfuzz");
+    const q = quoteIdentifier;
+    for (
+      const method of [
+        "ratio",
+        "partial_ratio",
+        "token_sort_ratio",
+        "token_set_ratio",
+      ] as const
+    ) {
+      for (const threshold of [0, 80, 100]) {
+        for (const prefix of [undefined, 1]) {
+          // Exercise both projection/order modes for each scorer and threshold.
+          const similarityColumn = prefix === undefined
+            ? 'match "score'
+            : undefined;
+          const { scoreExpression, condition } = buildFuzzyMatchSql(
+            `l.${q(leftColumn)}`,
+            `r.${q(rightColumn)}`,
+            method,
+            threshold,
+            { decimals: 2, prefilterPrefixLength: prefix },
+          );
+          await sdb.customQuery(`CREATE OR REPLACE TABLE expected AS
+            SELECT l.*, r.*${
+            similarityColumn
+              ? `, ${scoreExpression} AS ${q(similarityColumn)}`
+              : ""
+          }
+            FROM ${q(left.name)} l LEFT JOIN ${
+            q(right.name)
+          } r ON ${condition}`);
+          const output = await left.fuzzyJoin(
+            right,
+            leftColumn,
+            rightColumn,
+            threshold,
+            {
+              method,
+              similarityColumn,
+              prefilterPrefixLength: prefix,
+              outputTable: "joined",
+            },
+          ).run();
+          assertEquals(
+            (await sdb.connection!.runAndReadAll(`
+            (FROM joined EXCEPT ALL FROM expected)
+            UNION ALL (FROM expected EXCEPT ALL FROM joined)`))
+              .getRowObjectsJS(),
+            [],
+            `${method}, ${threshold}, prefix ${prefix}`,
+          );
+          assertEquals(await output.getColumns(), [
+            "id",
+            leftColumn,
+            "rightId",
+            rightColumn,
+            ...(similarityColumn ? [similarityColumn] : []),
+          ]);
+          await sdb.removeTables("joined");
+        }
+      }
+    }
+    assertEquals(
+      queries.filter((query) => query.includes("AS MATERIALIZED")).length,
+      24,
+    );
+    assertEquals(await left.getData(), leftRows);
+    assertEquals(await right.getData(), rightRows);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("should match repeated values byte-for-byte with case-insensitive columns", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable("collatedLeft");
+    const right = sdb.newTable("collatedRight");
+    await sdb.customQuery(`
+      CREATE TABLE collatedLeft (id INTEGER, name VARCHAR COLLATE NOCASE);
+      INSERT INTO collatedLeft SELECT i, n FROM range(180) t(i), (VALUES ('Alice'), ('alice')) t(n);
+      CREATE TABLE collatedRight (rightId INTEGER, candidate VARCHAR COLLATE NOCASE);
+      INSERT INTO collatedRight SELECT i, n FROM range(180) t(i), (VALUES ('Alice'), ('alice')) t(n)`);
+    for (const threshold of [80, 100]) {
+      const output = await left.fuzzyJoin(
+        right,
+        "name",
+        "candidate",
+        threshold,
+        {
+          prefilterPrefixLength: 1,
+          similarityColumn: "score",
+          outputTable: "collatedResult",
+        },
+      ).run();
+      // At 80 both cases match (prefix equality inherits NOCASE); at 100
+      // only byte-identical strings match. Expansion must never multiply them.
+      assertEquals(
+        await output.getRowCount(),
+        threshold === 80 ? 129600 : 64800,
+      );
+      assertEquals(
+        (await sdb.connection!.runAndReadAll(`SELECT * FROM collatedResult
+        WHERE score != ROUND(rapidfuzz_ratio(name, candidate), 2)
+          OR score < ${threshold}`)).getRowObjectsJS(),
+        [],
+      );
+      await sdb.removeTables("collatedResult");
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("should preserve empty and null-only inputs when choosing a join strategy", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const [leftRows, rightRows] of [[0, 400], [400, 0], [400, 400]]) {
+      const left = sdb.newTable("nullableLeft");
+      const right = sdb.newTable("nullableRight");
+      await sdb.customQuery(`CREATE OR REPLACE TABLE nullableLeft AS
+        SELECT i AS id, NULL::VARCHAR AS name FROM range(${leftRows}) t(i);
+        CREATE OR REPLACE TABLE nullableRight AS
+        SELECT i AS rightId, 'value' AS candidate FROM range(${rightRows}) t(i)`);
+      await left.fuzzyJoin(right, "name", "candidate", 0, {
+        similarityColumn: "score",
+      }).run();
+      assertEquals(await left.getRowCount(), leftRows);
+      assertEquals(
+        (await sdb.connection!.runAndReadAll(`SELECT * FROM nullableLeft
+        WHERE name IS NOT NULL OR rightId IS NOT NULL OR candidate IS NOT NULL OR score IS NOT NULL`))
+          .getRowObjectsJS(),
+        [],
+      );
+      assertEquals(await left.getColumns(), [
+        "id",
+        "name",
+        "rightId",
+        "candidate",
+        "score",
+      ]);
+      await sdb.removeTables(["nullableLeft", "nullableRight"]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("should retain score ordering when repeated matches are expanded", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const left = sdb.newTable("sortedLeft");
+    const right = sdb.newTable("sortedRight");
+    await left.loadArray(Array.from({ length: 400 }, () => ({ name: "Alice" })))
+      .run();
+    await right.loadArray(
+      Array.from({ length: 200 }, () => [
+        { candidate: "Alicee" },
+        { candidate: "Alice" },
+      ]).flat(),
+    ).run();
+    await left.fuzzyJoin(right, "name", "candidate", 80, {
+      similarityColumn: "score",
+    }).run();
+    const rows = await left.getData();
+    assertEquals(rows.length, 160000);
+    assertEquals(rows[0].score, 100);
+    assertEquals(rows.at(-1)!.score, 90.91);
+    for (let i = 1; i < rows.length; i++) {
+      assert(Number(rows[i - 1].score) >= Number(rows[i].score));
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("should expand repetition on either side and preserve a shared right key column", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const leftCopies of [1, 32]) {
+      const rightCopies = leftCopies === 1 ? 32 : 1;
+      const left = sdb.newTable("repeatLeft");
+      const right = sdb.newTable("repeatRight");
+      await sdb.customQuery(`CREATE OR REPLACE TABLE repeatLeft AS
+        SELECT i AS id, md5(i::VARCHAR) AS name, 'original' AS candidate
+        FROM range(64) t(i), range(${leftCopies});
+        CREATE OR REPLACE TABLE repeatRight AS
+        SELECT i AS rightId, md5(i::VARCHAR) AS candidate
+        FROM range(64) t(i), range(${rightCopies})`);
+      await left.fuzzyJoin(right, "name", "candidate", 100, {
+        similarityColumn: "score",
+      }).run();
+      assertEquals(await left.getRowCount(), 2048);
+      assertEquals(
+        (await sdb.connection!.runAndReadAll(`SELECT * FROM repeatLeft
+        WHERE candidate != 'original' OR score != 100 OR id != rightId`))
+          .getRowObjectsJS(),
+        [],
+      );
+      assertEquals(await left.getColumns(), [
+        "id",
+        "name",
+        "candidate",
+        "rightId",
+        "score",
+      ]);
+      await sdb.removeTables(["repeatLeft", "repeatRight"]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
 
 Deno.test("should perform a basic left fuzzy join and include all left table rows", async () => {
   const sdb = new SimpleDB();
