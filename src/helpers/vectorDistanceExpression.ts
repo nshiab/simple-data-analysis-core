@@ -1,4 +1,7 @@
-/** Build a DOUBLE-precision distance expression for prepared vector aliases. */
+/**
+ * Build a DOUBLE-precision distance expression for prepared vector aliases.
+ * Cosine callers first stabilize their private rows with stabilizeCosineVectors.
+ */
 export default function vectorDistanceExpression(
   left: string,
   right: string,

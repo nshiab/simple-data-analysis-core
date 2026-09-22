@@ -91,7 +91,7 @@ Deno.test("vector neighbor search supports the smallest datasets", async () => {
 });
 
 for (const search of ["exact", "hnsw"] as const) {
-  Deno.test(`vector neighbor ${search} rejects zero cosine vectors and non-finite norms`, async () => {
+  Deno.test(`vector neighbor ${search} rejects zero cosine vectors and overflowing Euclidean search`, async () => {
     const db = await DuckDBInstance.create(":memory:");
     const connection = await db.connect();
     try {
@@ -106,7 +106,7 @@ for (const search of ["exact", "hnsw"] as const) {
             names,
           ),
         Error,
-        search === "hnsw" ? "nonzero cosine norms" : "nonzero vectors",
+        "nonzero vectors",
       );
       await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.rows} AS
         SELECT * FROM (VALUES (0,[1e308,1e308]::DOUBLE[2]),
@@ -228,6 +228,30 @@ Deno.test("HNSW supports all-row self-inclusive neighborhoods and restores setti
       ))
         .getRowsJS()[0][0],
       "filter_pushdown",
+    );
+  } finally {
+    connection.closeSync();
+    db.closeSync();
+  }
+});
+
+Deno.test("exact Euclidean neighbors accept a large common coordinate offset", async () => {
+  const db = await DuckDBInstance.create(":memory:");
+  const connection = await db.connect();
+  try {
+    await connection.run(`CREATE TEMP TABLE ${names.rows} AS SELECT * FROM
+      (VALUES (0,[1e160,0]::DOUBLE[2]),(1,[1e160,1]::DOUBLE[2]),
+        (2,[1e160,4]::DOUBLE[2])) t(vertex,vec)`);
+    await buildVectorNeighbors(
+      connection,
+      { count: 3, dimensions: 2, neighborCount: 1 },
+      { metric: "euclidean", search: "exact", includeSelf: false },
+      names,
+    );
+    assertEquals(
+      (await connection.runAndReadAll(`SELECT source,target,distance
+      FROM ${names.neighbors} ORDER BY source`)).getRowsJS(),
+      [[0, 1, 1], [1, 0, 1], [2, 1, 3]],
     );
   } finally {
     connection.closeSync();

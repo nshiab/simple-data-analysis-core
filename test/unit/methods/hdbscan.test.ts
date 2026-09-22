@@ -643,7 +643,7 @@ Deno.test("hdbscan rejects malformed and non-finite features with no publication
         `CREATE TABLE source AS SELECT i,[CASE WHEN i=0 THEN -1.7976931348623157e308 ELSE 1.7976931348623157e308 END]::DOUBLE[1] AS features
         FROM range(3) rows(i)`,
       columns: "features",
-      message: "finite vector norms",
+      message: "non-finite value",
     },
   ];
   for (const testCase of cases) {
@@ -896,6 +896,104 @@ Deno.test("hdbscan validates output identifiers before feature preparation", asy
     );
     assertEquals(await table.getData(), before);
     assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (const approximate of [false, true]) {
+  Deno.test(`hdbscan ${approximate ? "approximate" : "exact"} cosine preserves partitions and scores at extreme vector scales`, async () => {
+    const reference = fixture.cases.find((entry) => entry.metric === "cosine")!;
+    const sdb = new SimpleDB();
+    try {
+      for (const [index, scale] of [1e100, 1e-100, 1e200, 1e-200].entries()) {
+        await sdb.customQuery(
+          `CREATE OR REPLACE TABLE scaled_source_${index} AS SELECT * FROM (VALUES
+        ${
+            reference.vectors.map((vector, id) =>
+              `(${id},[${
+                vector.map((value) => value * scale).join(",")
+              }]::DOUBLE[${vector.length}])`
+            ).join(",")
+          }
+      ) rows(id,features)`,
+        );
+        const table = sdb.newTable(`scaled_source_${index}`);
+        const before = await table.getData();
+        const types = await table.getTypes();
+        await table.hdbscan("features", "cluster", {
+          metric: "cosine",
+          approximate,
+          minClusterSize: reference.minClusterSize,
+          minSamples: reference.minSamples,
+          probabilityColumn: "membership",
+          outlierScoreColumn: "outlier",
+        }).run();
+        const data = await table.getData();
+        assertSamePartition(
+          data.map((row) => Number(row.cluster)),
+          reference.labels,
+        );
+        assertClose(
+          data.map((row) => Number(row.membership)),
+          reference.probabilities,
+        );
+        assertClose(
+          data.map((row) => Number(row.outlier)),
+          reference.outlierScores,
+        );
+        assertEquals(
+          data.map(({ id, features }) => ({ id, features })),
+          before,
+        );
+        assertEquals((await table.getTypes()).features, types.features);
+        assertEquals(await scratchRelations(sdb), []);
+      }
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("hdbscan Euclidean preserves results under a large common offset", async () => {
+  const sdb = new SimpleDB();
+  try {
+    let expected:
+      | { cluster: unknown; membership: unknown; outlier: unknown }[]
+      | undefined;
+    for (const x of [0, 1e160]) {
+      const table = sdb.newTable().loadArray(
+        [0, 1, 2, 10, 11, 12].map((y) => ({ x, y })),
+      );
+      const before = await table.getData();
+      const types = await table.getTypes();
+      const data = await table.hdbscan(["x", "y"], "cluster", {
+        minClusterSize: 2,
+        minSamples: 1,
+        probabilityColumn: "membership",
+        outlierScoreColumn: "outlier",
+      }).getData();
+      const results = data.map(({ cluster, membership, outlier }) => ({
+        cluster,
+        membership,
+        outlier,
+      }));
+      if (expected === undefined) {
+        expected = results;
+        assertSamePartition(data.map((row) => Number(row.cluster)), [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+        ]);
+      } else assertEquals(results, expected);
+      assertEquals(data.map(({ x, y }) => ({ x, y })), before);
+      const afterTypes = await table.getTypes();
+      assertEquals({ x: afterTypes.x, y: afterTypes.y }, types);
+      assertEquals(await scratchRelations(sdb), []);
+    }
   } finally {
     await sdb.close();
   }

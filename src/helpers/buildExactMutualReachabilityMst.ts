@@ -1,6 +1,7 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
 import readScalarNumber from "./readScalarNumber.ts";
 import vectorDistanceExpression from "./vectorDistanceExpression.ts";
+import stabilizeCosineVectors from "./stabilizeCosineVectors.ts";
 import validateVectorRowIds from "./validateVectorRowIds.ts";
 
 /** Private, already-quoted relation names owned and cleaned up by the caller. */
@@ -20,6 +21,7 @@ export type MutualReachabilityTables = {
  * point. Prim's algorithm retains one frontier edge per unvisited point. This
  * costs O(n²d) distance work, O(n) stored algorithm state, and O(n) sequential
  * DuckDB statements; it is intended as the exact correctness baseline.
+ * Cosine preparation may rescale the private vec column, preserving direction.
  * All supplied scratch names are already quoted, distinct, and caller-owned;
  * the caller must drop them in finally on both success and failure.
  */
@@ -43,21 +45,8 @@ export default async function buildExactMutualReachabilityMst(
     );
   }
   await validateVectorRowIds(connection, names.rows, count);
-  if (
-    await readScalarNumber(
-      connection,
-      `SELECT count(*) FROM ${names.rows}
-       WHERE NOT isfinite(array_inner_product(vec,vec))
-       ${
-        options.metric === "cosine" ? "OR array_inner_product(vec,vec)=0" : ""
-      }`,
-    )
-  ) {
-    throw new Error(
-      options.metric === "cosine"
-        ? "Exact HDBSCAN requires finite vector norms and cosine distance requires nonzero vectors."
-        : "Exact HDBSCAN requires finite vector norms.",
-    );
+  if (options.metric === "cosine") {
+    await stabilizeCosineVectors(connection, names.rows);
   }
   const distance = vectorDistanceExpression("a.vec", "b.vec", options.metric);
   await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.coreDistances}

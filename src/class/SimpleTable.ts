@@ -1182,7 +1182,9 @@ export default class SimpleTable extends Simple {
    * types. Internal DOUBLE conversion can lose precision for large integers
    * and exact decimals; all source columns and their types remain unchanged.
    * Nulls, non-finite values, empty vectors, inconsistent dimensions, and
-   * zero-norm cosine vectors reject the whole operation.
+   * zero-norm cosine vectors reject the whole operation. Cosine calculations
+   * internally rescale extreme vector magnitudes while preserving direction
+   * and source values. Non-finite computed distances also reject the operation.
    *
    * Exact clustering is the default. Set `approximate: true` to use DuckDB's
    * HNSW candidate search with deterministic connectivity repair; approximation

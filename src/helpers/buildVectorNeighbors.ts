@@ -1,6 +1,7 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
 import readScalarNumber from "./readScalarNumber.ts";
 import vectorDistanceExpression from "./vectorDistanceExpression.ts";
+import stabilizeCosineVectors from "./stabilizeCosineVectors.ts";
 import validateVectorRowIds from "./validateVectorRowIds.ts";
 
 /** Private, already-quoted relation names owned and cleaned up by the caller. */
@@ -31,7 +32,8 @@ type NeighborOptions = {
  * is true, the source is rank 0 and consumes one of those rows. Otherwise all
  * rows are other points. Ranks are zero-based and ties use target id order.
  * Input rows have unique contiguous `vertex` ids from 0 through count-1 and
- * validated, non-null, fixed-size DOUBLE `vec` values.
+ * validated, non-null, fixed-size DOUBLE `vec` values. Cosine preparation may
+ * rescale this private vec column, preserving direction.
  *
  * The caller owns every supplied scratch relation and must drop them after
  * success or failure. Approximate search only approximates candidate retrieval;
@@ -58,24 +60,25 @@ export default async function buildVectorNeighbors(
       `Neighbor count must be a safe integer between 1 and ${maximum}.`,
     );
   }
-  const normExpression = options.search === "hnsw"
-    ? `array_inner_product(vec::FLOAT[${dimensions}],vec::FLOAT[${dimensions}])`
-    : "array_inner_product(vec,vec)";
-  if (
-    await readScalarNumber(
-      connection,
-      `SELECT count(*) FROM ${names.rows} WHERE
-        NOT isfinite(${normExpression})
-        ${options.metric === "cosine" ? `OR ${normExpression}=0` : ""}`,
-    )
-  ) {
-    throw new Error(
-      options.search === "hnsw"
-        ? "HNSW requires vectors with finite FLOAT norms (and nonzero cosine norms)."
-        : options.metric === "cosine"
-        ? "Neighbor search requires finite vector norms and cosine distance requires nonzero vectors."
-        : "Neighbor search requires finite vector norms.",
-    );
+  if (options.metric === "cosine") {
+    await stabilizeCosineVectors(connection, names.rows);
+  }
+  // FLOAT representation limits apply only to the HNSW search vectors.
+  // Exact Euclidean distance does not require representable squared norms.
+  if (options.search === "hnsw") {
+    const normExpression =
+      `array_inner_product(vec::FLOAT[${dimensions}],vec::FLOAT[${dimensions}])`;
+    if (
+      await readScalarNumber(
+        connection,
+        `SELECT count(*) FROM ${names.rows} WHERE NOT isfinite(${normExpression})
+          ${options.metric === "cosine" ? `OR ${normExpression}=0` : ""}`,
+      )
+    ) {
+      throw new Error(
+        "HNSW requires vectors with finite FLOAT norms (and nonzero cosine norms).",
+      );
+    }
   }
 
   const distanceFunction = options.metric === "cosine"
