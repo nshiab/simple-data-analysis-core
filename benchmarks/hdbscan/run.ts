@@ -86,6 +86,12 @@ const quickCases: Case[] = [
   },
 ];
 const quick = Deno.args.includes("--quick");
+const approximateOnly = Deno.args.includes("--approximate-only");
+const repeatArgument = Deno.args.find((value) => value.startsWith("--repeat="));
+const repetitions = Number(repeatArgument?.slice("--repeat=".length) ?? 1);
+if (!Number.isSafeInteger(repetitions) || repetitions < 1) {
+  throw new Error("--repeat must be a positive integer.");
+}
 const outputArgument = Deno.args.find((value) => value.startsWith("--output="));
 const output = outputArgument?.slice("--output=".length) ??
   new URL("../.work/hdbscan-results.json", import.meta.url).pathname;
@@ -202,7 +208,30 @@ const hardware = {
 };
 const results: Result[] = [];
 await Deno.mkdir(dirname(output), { recursive: true });
-for (const input of quick ? quickCases : fullCases) {
+const cases = (quick ? quickCases : fullCases).filter((input) =>
+  !approximateOnly || input.approximate
+);
+const sources = [
+  "buildApproximateMutualReachabilityMst",
+  "buildSparseMutualReachabilityMst",
+  "buildVectorNeighbors",
+  "vectorDistanceExpression",
+  "stabilizeCosineVectors",
+  "clusterHdbscan",
+];
+const sourceHashes = Object.fromEntries(
+  await Promise.all(sources.map(async (name) => {
+    const bytes = await Deno.readFile(
+      new URL(`../../src/helpers/${name}.ts`, import.meta.url),
+    );
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    return [
+      name,
+      Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join(""),
+    ];
+  })),
+);
+for (const input of Array.from({ length: repetitions }, () => cases).flat()) {
   console.error(
     `hdbscan rows=${input.rows} dimensions=${input.dimensions} metric=${input.metric} approximate=${input.approximate} payload=${input.payload}`,
   );
@@ -214,14 +243,27 @@ for (const input of quick ? quickCases : fullCases) {
       {
         hardware,
         quick,
+        approximateOnly,
+        repetitions,
+        measuredAt: new Date().toISOString(),
+        sourceHashes,
         threads: 8,
         scope:
           "public hdbscan() from numeric feature preparation through graph construction, hierarchy, scoring, and atomic publication",
         dataset: "deterministic eight-group trigonometric vectors",
         approximateConstants: {
-          candidateNeighbors: "max(minSamples, 15)",
-          representativesPerComponent: 8,
-          anchorPrimMaximumComponents: 256,
+          candidateNeighbors: "min(n-1,max(minSamples,64))",
+          rerankingCandidates: "min(n,2*k+1)",
+          hnsw: {
+            efConstruction: 256,
+            efSearch: "max(512,2*k)",
+            M: 32,
+            constructionThreads: 1,
+            cosineRetrieval:
+              "L2 on DOUBLE-normalized then FLOAT-cast unit vectors",
+          },
+          repair:
+            "all members; min(dimensions,8) coordinate and 16 deterministic random projection sweeps",
         },
         timeLimitMilliseconds,
         memoryLimitBytes,

@@ -33,14 +33,22 @@ scratch table and index. The report also records cluster/noise counts, elapsed
 public-method time, peak sampled RSS, process high-water RSS, hardware, runtime
 versions, metric, parameters, and approximation mode.
 
-Approximate mode uses `k=max(minSamples,15)`, up to eight actual-point
-representatives per disconnected component, complete anchor Prim for at most 256
-components, and an adjacent-anchor chain beyond that. HNSW candidate retrieval
-is not guaranteed reproducible; repeated measurements can yield different
-approximate graphs and final scores. The exact implementation has quadratic
-distance work plus sequential Prim updates and is expected to reach the
-100,000-row stopping time; the harness records that result without changing the
-public method to approximate mode.
+Approximate mode uses a larger reranked candidate budget, serialized HNSW
+construction, unit-L2 candidate retrieval for cosine, and all-member projection
+sweeps for disconnected components. The
+[improvement report](approximation-improvements.md) records the algorithm, exact
+comparisons, repeated output hashes, runtime, memory, and remaining
+approximation errors. Run only the new approximate cases twice with
+`--approximate-only --repeat=2`.
+
+The exact implementation has quadratic distance work plus sequential Prim
+updates and is expected to reach the 100,000-row stopping time; the harness
+records that result without changing the public method to approximate mode.
+
+The results below describe the original implementation, before those changes:
+`k=max(minSamples,15)`, eight representatives per component, anchor Prim up to
+256 components, and an adjacent-anchor chain beyond that. Their JSON provenance
+and measurements remain unchanged.
 
 ## Recorded results (2026-09-15)
 

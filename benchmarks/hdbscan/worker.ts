@@ -116,6 +116,19 @@ try {
       }.`,
     );
   }
+  // Canonicalize clusters by their first source row before hashing. This
+  // detects changed partitions independently of incidental numeric labels.
+  const outputHashes = (await sdb.connection!.runAndReadAll(`
+    WITH canonical AS (
+      SELECT id,cluster,membership,outlier,
+        min(id) OVER (PARTITION BY cluster) AS first_member
+      FROM source
+    )
+    SELECT sha256(string_agg(CASE WHEN cluster<0 THEN '-1' ELSE first_member::VARCHAR END,',' ORDER BY id)),
+      sha256(string_agg((cluster<0)::VARCHAR,',' ORDER BY id)),
+      sha256(string_agg(membership::VARCHAR,',' ORDER BY id)),
+      sha256(string_agg(outlier::VARCHAR,',' ORDER BY id))
+    FROM canonical`)).getRowsJS()[0].map(String);
   const duckdbVersion = String(
     (await sdb.connection!.runAndReadAll("SELECT version()"))
       .getRowsJS()[0][0],
@@ -139,6 +152,10 @@ try {
     noiseRows,
     clusterCount,
     scratchObjects,
+    partitionHash: outputHashes[0],
+    noiseHash: outputHashes[1],
+    membershipHash: outputHashes[2],
+    gloshHash: outputHashes[3],
     payloadHash,
     duckdbVersion,
   }));

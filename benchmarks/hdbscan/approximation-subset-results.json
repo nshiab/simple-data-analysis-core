@@ -1,0 +1,999 @@
+{
+  "measuredAt": "2026-09-22T15:29:33.818Z",
+  "scope": "moderate graph/hierarchy quality, not end-to-end performance or a resource-bound claim",
+  "software": {
+    "deno": "2.9.6",
+    "duckdb": "v1.5.5",
+    "threads": 1,
+    "referencePackages": {
+      "hdbscan": "0.8.44",
+      "numpy": "2.2.6",
+      "scikit-learn": "1.7.1",
+      "scipy": "1.16.1",
+      "joblib": "1.6.0",
+      "threadpoolctl": "3.6.0",
+      "cloudpickle": "3.1.2"
+    }
+  },
+  "dataset": "2048 evenly spaced source ids from each 100000-row deterministic benchmark formula; generated in JS DOUBLE",
+  "sourceHashes": {
+    "buildApproximateMutualReachabilityMst": "59097f3e14ffddd50e1e2c23674c186abdda03099f3fcaf78d70271533f813eb",
+    "buildExactMutualReachabilityMst": "a086b8456ae3aadd58eff95dfa7e590efefbd8759d0508148d62d64ca14686b7",
+    "clusterHdbscan": "1a89e2bf372310d1c3995e468098052da1c346c40259f2a2f5366d275b061667",
+    "buildVectorNeighbors": "7749b8b4e538f8dc98209e25a1960497f48c9ece6f41b798bbb8ef8fa4ad6ad0",
+    "buildSparseMutualReachabilityMst": "1aa66729696630e5acbdc1855d2a85ecb94e9358adb70a9a1563177b30a0591e",
+    "stabilizeCosineVectors": "25e2d63c98610a36c65f9e2dfadc56e949e95cd5d9db5bec0e2831086c581dca",
+    "vectorDistanceExpression": "71b39b356f98693f6bd7ad5176f53a1a1c86025579225933c30412a5a482574f"
+  },
+  "cases": [
+    {
+      "name": "benchmark-subset-4d-euclidean",
+      "rows": 2048,
+      "dimensions": 4,
+      "metric": "euclidean",
+      "minSamples": 15,
+      "minClusterSize": 25,
+      "allowSingleCluster": true,
+      "mode": "hnsw",
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 449.7313330000002,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 17.438198673666587,
+            "exact": 17.436446121719328
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 150519,
+          "mstHash": "10285430462848769305",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.0599841277224584e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.1582399496039573e-18
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "e5cb54dfac9069f388637fd5aee073ecf58d95a30f548f3c4ee2f57454842614"
+        },
+        {
+          "repeat": 1,
+          "elapsedMs": 431.2773339999999,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 17.438198673666587,
+            "exact": 17.436446121719328
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 150519,
+          "mstHash": "10285430462848769305",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.0599841277224584e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.1582399496039573e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "e5cb54dfac9069f388637fd5aee073ecf58d95a30f548f3c4ee2f57454842614"
+        },
+        {
+          "repeat": 2,
+          "elapsedMs": 423.25649999999996,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 17.438198673666587,
+            "exact": 17.436446121719328
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 150519,
+          "mstHash": "10285430462848769305",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.0599841277224584e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.1582399496039573e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "e5cb54dfac9069f388637fd5aee073ecf58d95a30f548f3c4ee2f57454842614"
+        },
+        {
+          "repeat": 3,
+          "elapsedMs": 426.15025000000014,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 17.438198673666587,
+            "exact": 17.436446121719328
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 150519,
+          "mstHash": "10285430462848769305",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.0599841277224584e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.1582399496039573e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "e5cb54dfac9069f388637fd5aee073ecf58d95a30f548f3c4ee2f57454842614"
+        },
+        {
+          "repeat": 4,
+          "elapsedMs": 425.3885419999997,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 17.438198673666587,
+            "exact": 17.436446121719328
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 150519,
+          "mstHash": "10285430462848769305",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.0599841277224584e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 2.1582399496039573e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "e5cb54dfac9069f388637fd5aee073ecf58d95a30f548f3c4ee2f57454842614"
+        }
+      ]
+    },
+    {
+      "name": "benchmark-subset-128d-cosine",
+      "rows": 2048,
+      "dimensions": 128,
+      "metric": "cosine",
+      "minSamples": 15,
+      "minClusterSize": 25,
+      "allowSingleCluster": true,
+      "mode": "hnsw",
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 904.9867080000004,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            4.659296019005055e-7,
+            6.439743586793929e-8
+          ],
+          "mstWeight": {
+            "approximate": 1.3049963721642834,
+            "exact": 1.3013260702542842
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 175787,
+          "mstHash": "14554605220821264332",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.03288850825377754,
+              "mean": 0.004225292469295984
+            },
+            "gloshError": {
+              "max": 0.03288850825377755,
+              "mean": 0.004225292469295982
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "cbf14ba77dfd57fe999912f7a1e13e2ccacaaf69f17edfb497695d4510db75da"
+        },
+        {
+          "repeat": 1,
+          "elapsedMs": 903.5867500000004,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            4.659296019005055e-7,
+            6.439743586793929e-8
+          ],
+          "mstWeight": {
+            "approximate": 1.3049963721642834,
+            "exact": 1.3013260702542842
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 175787,
+          "mstHash": "14554605220821264332",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.03288850825377754,
+              "mean": 0.004225292469295984
+            },
+            "gloshError": {
+              "max": 0.03288850825377755,
+              "mean": 0.004225292469295982
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "cbf14ba77dfd57fe999912f7a1e13e2ccacaaf69f17edfb497695d4510db75da"
+        },
+        {
+          "repeat": 2,
+          "elapsedMs": 880.3623329999991,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            4.659296019005055e-7,
+            6.439743586793929e-8
+          ],
+          "mstWeight": {
+            "approximate": 1.3049963721642834,
+            "exact": 1.3013260702542842
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 175787,
+          "mstHash": "14554605220821264332",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.03288850825377754,
+              "mean": 0.004225292469295984
+            },
+            "gloshError": {
+              "max": 0.03288850825377755,
+              "mean": 0.004225292469295982
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "cbf14ba77dfd57fe999912f7a1e13e2ccacaaf69f17edfb497695d4510db75da"
+        },
+        {
+          "repeat": 3,
+          "elapsedMs": 873.3344579999994,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            4.659296019005055e-7,
+            6.439743586793929e-8
+          ],
+          "mstWeight": {
+            "approximate": 1.3049963721642834,
+            "exact": 1.3013260702542842
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 175787,
+          "mstHash": "14554605220821264332",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.03288850825377754,
+              "mean": 0.004225292469295984
+            },
+            "gloshError": {
+              "max": 0.03288850825377755,
+              "mean": 0.004225292469295982
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "cbf14ba77dfd57fe999912f7a1e13e2ccacaaf69f17edfb497695d4510db75da"
+        },
+        {
+          "repeat": 4,
+          "elapsedMs": 887.1330419999995,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            4.659296019005055e-7,
+            6.439743586793929e-8
+          ],
+          "mstWeight": {
+            "approximate": 1.3049963721642834,
+            "exact": 1.3013260702542842
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 175787,
+          "mstHash": "14554605220821264332",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.03288850825377754,
+              "mean": 0.004225292469295984
+            },
+            "gloshError": {
+              "max": 0.03288850825377755,
+              "mean": 0.004225292469295982
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "cbf14ba77dfd57fe999912f7a1e13e2ccacaaf69f17edfb497695d4510db75da"
+        }
+      ]
+    },
+    {
+      "name": "benchmark-subset-128d-euclidean",
+      "rows": 2048,
+      "dimensions": 128,
+      "metric": "euclidean",
+      "minSamples": 15,
+      "minClusterSize": 25,
+      "allowSingleCluster": true,
+      "mode": "hnsw",
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 710.5641669999968,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0.001199190896887109,
+            0.00007133948939229678
+          ],
+          "mstWeight": {
+            "approximate": 335.4856344368222,
+            "exact": 335.182836683157
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 168106,
+          "mstHash": "6746073718504626681",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.006312136646204003,
+              "mean": 0.0006110923339742928
+            },
+            "gloshError": {
+              "max": 0.006312136646203994,
+              "mean": 0.0006110923339742961
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "0d94b469355275d0c104d92508b7930e09a0474fd8c3071a88b8046662bfe500"
+        },
+        {
+          "repeat": 1,
+          "elapsedMs": 713.3838749999995,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0.001199190896887109,
+            0.00007133948939229678
+          ],
+          "mstWeight": {
+            "approximate": 335.4856344368222,
+            "exact": 335.182836683157
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 168106,
+          "mstHash": "6746073718504626681",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.006312136646204003,
+              "mean": 0.0006110923339742928
+            },
+            "gloshError": {
+              "max": 0.006312136646203994,
+              "mean": 0.0006110923339742961
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "0d94b469355275d0c104d92508b7930e09a0474fd8c3071a88b8046662bfe500"
+        },
+        {
+          "repeat": 2,
+          "elapsedMs": 691.3214580000022,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0.001199190896887109,
+            0.00007133948939229678
+          ],
+          "mstWeight": {
+            "approximate": 335.4856344368222,
+            "exact": 335.182836683157
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 168106,
+          "mstHash": "6746073718504626681",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.006312136646204003,
+              "mean": 0.0006110923339742928
+            },
+            "gloshError": {
+              "max": 0.006312136646203994,
+              "mean": 0.0006110923339742961
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "0d94b469355275d0c104d92508b7930e09a0474fd8c3071a88b8046662bfe500"
+        },
+        {
+          "repeat": 3,
+          "elapsedMs": 683.5861250000016,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0.001199190896887109,
+            0.00007133948939229678
+          ],
+          "mstWeight": {
+            "approximate": 335.4856344368222,
+            "exact": 335.182836683157
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 168106,
+          "mstHash": "6746073718504626681",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.006312136646204003,
+              "mean": 0.0006110923339742928
+            },
+            "gloshError": {
+              "max": 0.006312136646203994,
+              "mean": 0.0006110923339742961
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "0d94b469355275d0c104d92508b7930e09a0474fd8c3071a88b8046662bfe500"
+        },
+        {
+          "repeat": 4,
+          "elapsedMs": 695.1085830000011,
+          "candidateComponents": 8,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0.001199190896887109,
+            0.00007133948939229678
+          ],
+          "mstWeight": {
+            "approximate": 335.4856344368222,
+            "exact": 335.182836683157
+          },
+          "candidateBudgetFraction": 0.03126526624328285,
+          "finalEdges": 168106,
+          "mstHash": "6746073718504626681",
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0.006312136646204003,
+              "mean": 0.0006110923339742928
+            },
+            "gloshError": {
+              "max": 0.006312136646203994,
+              "mean": 0.0006110923339742961
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 8,
+              "reference": 8
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 2096128,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "51ff763887757c791f18d342751275ac3c0bfd975c68e0d9edf91aa89e09a749",
+          "scoreHash": "0d94b469355275d0c104d92508b7930e09a0474fd8c3071a88b8046662bfe500"
+        }
+      ]
+    }
+  ]
+}

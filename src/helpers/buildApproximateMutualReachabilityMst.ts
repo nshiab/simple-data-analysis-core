@@ -1,17 +1,16 @@
 import { DOUBLE, type DuckDBConnection, INTEGER } from "@duckdb/node-api";
 import appendColumnBatches from "./appendColumnBatches.ts";
+import buildSparseMutualReachabilityMst from "./buildSparseMutualReachabilityMst.ts";
 import buildVectorNeighbors from "./buildVectorNeighbors.ts";
 import inspectGraphConnectivity from "./inspectGraphConnectivity.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import vectorDistanceExpression from "./vectorDistanceExpression.ts";
 
-type WeightedEdge = { source: number; target: number; distance: number };
-type ComponentPair = { left: number; right: number };
-
 /**
  * Build an explicitly approximate mutual-reachability MST. HNSW supplies a
- * bounded k-neighbor candidate graph; disconnected components are repaired
- * with deterministic edges between at most eight actual representatives.
+ * high-recall k-neighbor candidate graph; disconnected components are repaired
+ * with deterministic all-member projection sweeps. Neither step guarantees the
+ * complete graph's MST.
  */
 export default async function buildApproximateMutualReachabilityMst(
   connection: DuckDBConnection,
@@ -38,7 +37,7 @@ export default async function buildApproximateMutualReachabilityMst(
   ) as { [Key in keyof typeof names]: string };
   const neighborCount = Math.min(
     input.count - 1,
-    Math.max(input.minSamples, 15),
+    Math.max(input.minSamples, 64),
   );
   await buildVectorNeighbors(
     connection,
@@ -47,7 +46,19 @@ export default async function buildApproximateMutualReachabilityMst(
       dimensions: input.dimensions,
       neighborCount,
     },
-    { metric: options.metric, search: "hnsw", includeSelf: false },
+    {
+      metric: options.metric,
+      search: "hnsw",
+      includeSelf: false,
+      hnsw: {
+        efConstruction: 256,
+        efSearch: Math.max(512, neighborCount * 2),
+        connectivity: 32,
+        candidateCount: Math.min(input.count, neighborCount * 2 + 1),
+        singleThreaded: true,
+        cosineAsL2: true,
+      },
+    },
     {
       rows: quoted.rows,
       neighbors: quoted.neighbors,
@@ -85,7 +96,11 @@ export default async function buildApproximateMutualReachabilityMst(
       bridgeCandidates: names.bridgeCandidates,
     },
   );
-  const mst = await sparseKruskal(connection, quoted.edges, input.count);
+  const mst = await buildSparseMutualReachabilityMst(
+    connection,
+    quoted.edges,
+    input.count,
+  );
   await connection.run(
     `CREATE OR REPLACE TEMP TABLE ${quoted.mst}
       (source INTEGER,target INTEGER,distance DOUBLE)`,
@@ -134,59 +149,85 @@ export async function repairApproximateConnectivity(
   const componentCount = maximumComponent + 1;
   if (componentCount > 1) {
     await createComponentRows(connection, names.components, componentOf);
-    await connection.run(
-      `CREATE OR REPLACE TEMP TABLE ${quoted.representatives} AS
-       WITH ranked AS (
-         SELECT c.component,r.vertex,r.vec,d.distance AS core_distance,
-           row_number() OVER (PARTITION BY c.component ORDER BY r.vertex)-1
-             AS member_rank,
-           count(*) OVER (PARTITION BY c.component) AS component_size
-         FROM ${quoted.components} c
-         JOIN ${quoted.rows} r USING(vertex)
-         JOIN ${quoted.coreDistances} d USING(vertex)
-       ), sampled AS (
-         SELECT component,vertex,vec,core_distance FROM ranked,
-           range(0,8) samples(sample)
-         WHERE sample<least(component_size,8)
-           AND member_rank=CASE WHEN component_size=1 THEN 0 ELSE
-             floor(sample*(component_size-1)/(least(component_size,8)-1)) END
-       )
-       SELECT * FROM sampled`,
+    // Each sweep examines every point, rather than a fixed representative
+    // sample. Consecutive component runs in the projected order provide a
+    // connected backbone, while multiple directions offer alternative edges.
+    // We also connect each member of a run to the nearest projected endpoint
+    // in both adjacent runs. All weights are recomputed in the actual metric.
+    const dimensions = Number(
+      (await connection.runAndReadAll(
+        `SELECT len(vec) FROM ${quoted.rows} LIMIT 1`,
+      )).getRowsJS()[0][0],
     );
-    const pairs = componentCount <= 256
-      ? await planAnchorMst(
-        connection,
-        quoted.rows,
-        quoted.coreDistances,
-        quoted.components,
-        componentCount,
-        options.metric,
-      )
-      : await planAnchorChain(
-        connection,
-        quoted.rows,
-        quoted.components,
-      );
-    await createComponentPairs(connection, names.componentPairs, pairs);
+    await connection.run(
+      `CREATE OR REPLACE TEMP TABLE ${quoted.bridgeCandidates}
+      (source INTEGER,target INTEGER,distance DOUBLE)`,
+    );
     const rawDistance = vectorDistanceExpression(
       "a.vec",
       "b.vec",
       options.metric,
     );
-    await connection.run(
-      `CREATE OR REPLACE TEMP TABLE ${quoted.bridgeCandidates} AS
-       SELECT pair_id,least(a.vertex,b.vertex)::INTEGER AS source,
-         greatest(a.vertex,b.vertex)::INTEGER AS target,
-         greatest(a.core_distance,b.core_distance,${rawDistance})::DOUBLE
-           AS distance
-       FROM ${quoted.componentPairs} p
-       JOIN ${quoted.representatives} a ON a.component=p.left_component
-       JOIN ${quoted.representatives} b ON b.component=p.right_component`,
-    );
+    const projectionCount = Math.min(dimensions, 8) + (dimensions > 1 ? 16 : 0);
+    for (let projection = 0; projection < projectionCount; projection++) {
+      // Coordinate directions handle axis-aligned and one-dimensional data;
+      // fixed pseudo-random directions cover rotated component boundaries.
+      // Coefficients do not depend on table names, execution order, or RNG state.
+      const coefficients = Array.from(
+        { length: dimensions },
+        (_, dimension) => {
+          if (projection < Math.min(dimensions, 8)) {
+            return dimension === projection ? 1 : 0;
+          }
+          let hash = Math.imul(projection + 1, 0x9e3779b1) ^
+            Math.imul(dimension + 1, 0x85ebca6b);
+          hash = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
+          hash = Math.imul(hash ^ (hash >>> 15), 0x846ca68b);
+          return ((hash ^ (hash >>> 16)) >>> 0) / 0x100000000 * 2 - 1;
+        },
+      );
+      // Scaling each coordinate by the same global factor prevents overflow
+      // in the projection without changing its ordering. Unit directions are
+      // the appropriate search geometry for cosine.
+      const vector = options.metric === "cosine"
+        ? `list_transform(r.vec,x -> x/sqrt(array_inner_product(r.vec,r.vec)))::DOUBLE[${dimensions}]`
+        : `list_transform(r.vec,x -> x/scale.maximum)::DOUBLE[${dimensions}]`;
+      await connection.run(
+        `CREATE OR REPLACE TEMP TABLE ${quoted.representatives} AS
+        WITH projected AS (
+          SELECT r.vertex,c.component,
+            array_inner_product(${vector},[${
+          coefficients.join(",")
+        }]::DOUBLE[${dimensions}]) AS position
+          FROM ${quoted.rows} r JOIN ${quoted.components} c USING(vertex)
+          CROSS JOIN (SELECT greatest(1,max(list_max(list_transform(vec,x -> abs(x))))) AS maximum FROM ${quoted.rows}) scale
+        ), ordered AS (
+          SELECT *,lag(component) OVER w AS previous_component,
+            lead(component) OVER w AS next_component,
+            lag(vertex) OVER w AS previous_vertex,
+            lead(vertex) OVER w AS next_vertex
+          FROM projected WINDOW w AS (ORDER BY position,vertex)
+        )
+        SELECT vertex,
+          last_value(CASE WHEN component != previous_component THEN previous_vertex END IGNORE NULLS)
+            OVER (ORDER BY position,vertex ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS left_vertex,
+          first_value(CASE WHEN component != next_component THEN next_vertex END IGNORE NULLS)
+            OVER (ORDER BY position,vertex ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS right_vertex
+        FROM ordered;
+        INSERT INTO ${quoted.bridgeCandidates}
+        SELECT least(a.vertex,b.vertex)::INTEGER,greatest(a.vertex,b.vertex)::INTEGER,
+          greatest(ca.distance,cb.distance,${rawDistance})::DOUBLE
+        FROM (SELECT vertex,unnest([left_vertex,right_vertex]) AS target FROM ${quoted.representatives}) p
+        JOIN ${quoted.rows} a ON a.vertex=p.vertex
+        JOIN ${quoted.rows} b ON b.vertex=p.target
+        JOIN ${quoted.coreDistances} ca ON ca.vertex=a.vertex
+        JOIN ${quoted.coreDistances} cb ON cb.vertex=b.vertex`,
+      );
+    }
     const invalidBridgeDistances = Number(
       (await connection.runAndReadAll(
         `SELECT count(*) FROM ${quoted.bridgeCandidates}
-         WHERE distance IS NULL OR NOT isfinite(distance)`,
+       WHERE distance IS NULL OR NOT isfinite(distance)`,
       )).getRowsJS()[0][0],
     );
     if (invalidBridgeDistances > 0) {
@@ -194,13 +235,9 @@ export async function repairApproximateConnectivity(
         `Approximate HDBSCAN connectivity repair produced ${invalidBridgeDistances} non-finite candidate distances. Rescale the input features.`,
       );
     }
-    await connection.run(
-      `INSERT INTO ${quoted.edges}
-       SELECT source,target,distance FROM ${quoted.bridgeCandidates}
-       QUALIFY row_number() OVER (
-         PARTITION BY pair_id ORDER BY distance,source,target
-       )=1`,
-    );
+    await connection.run(`INSERT INTO ${quoted.edges}
+      SELECT source,target,min(distance) AS distance
+      FROM ${quoted.bridgeCandidates} GROUP BY source,target`);
   }
   const connectivity = await inspectGraphConnectivity(
     connection,
@@ -288,170 +325,4 @@ async function createComponentRows(
           column === 0 ? start + offset : componentOf[start + offset],
       ),
   );
-}
-
-async function planAnchorMst(
-  connection: DuckDBConnection,
-  rows: string,
-  coreDistances: string,
-  components: string,
-  componentCount: number,
-  metric: "euclidean" | "cosine",
-): Promise<ComponentPair[]> {
-  const rawDistance = vectorDistanceExpression("a.vec", "b.vec", metric);
-  const result = (await connection.runAndReadAll(
-    `WITH anchors AS (
-      SELECT c.component,r.vertex,r.vec,d.distance AS core_distance
-      FROM ${components} c JOIN ${rows} r USING(vertex)
-      JOIN ${coreDistances} d USING(vertex)
-      QUALIFY row_number() OVER (PARTITION BY c.component ORDER BY r.vertex)=1
-    )
-    SELECT a.component,b.component,
-      greatest(a.core_distance,b.core_distance,${rawDistance})::DOUBLE
-    FROM anchors a JOIN anchors b ON a.component<b.component
-    ORDER BY a.component,b.component`,
-  )).getRowsJS();
-  const weights = new Float64Array(componentCount * componentCount).fill(
-    Infinity,
-  );
-  for (const row of result) {
-    const left = Number(row[0]),
-      right = Number(row[1]),
-      weight = Number(row[2]);
-    if (!Number.isFinite(weight)) {
-      throw new Error(
-        "Approximate HDBSCAN anchor planning produced a non-finite distance.",
-      );
-    }
-    weights[left * componentCount + right] = weight;
-    weights[right * componentCount + left] = weight;
-  }
-  const visited = new Uint8Array(componentCount);
-  const best = new Float64Array(componentCount).fill(Infinity);
-  const parent = new Int32Array(componentCount).fill(-1);
-  visited[0] = 1;
-  for (let component = 1; component < componentCount; component++) {
-    best[component] = weights[component];
-    parent[component] = 0;
-  }
-  const pairs: ComponentPair[] = [];
-  for (let edge = 0; edge < componentCount - 1; edge++) {
-    let chosen = -1;
-    for (let component = 0; component < componentCount; component++) {
-      if (
-        !visited[component] &&
-        (chosen < 0 || best[component] < best[chosen] ||
-          (best[component] === best[chosen] && component < chosen))
-      ) chosen = component;
-    }
-    if (chosen < 0 || !Number.isFinite(best[chosen])) {
-      throw new Error("Approximate HDBSCAN anchor graph is disconnected.");
-    }
-    visited[chosen] = 1;
-    pairs.push({ left: parent[chosen], right: chosen });
-    for (let component = 0; component < componentCount; component++) {
-      const weight = weights[chosen * componentCount + component];
-      if (
-        !visited[component] &&
-        (weight < best[component] ||
-          (weight === best[component] && chosen < parent[component]))
-      ) {
-        best[component] = weight;
-        parent[component] = chosen;
-      }
-    }
-  }
-  return pairs;
-}
-
-async function planAnchorChain(
-  connection: DuckDBConnection,
-  rows: string,
-  components: string,
-): Promise<ComponentPair[]> {
-  const ordered = (await connection.runAndReadAll(
-    `SELECT c.component FROM ${components} c JOIN ${rows} r USING(vertex)
-     QUALIFY row_number() OVER (PARTITION BY c.component ORDER BY r.vertex)=1
-     ORDER BY array_extract(r.vec,1),r.vertex`,
-  )).getRowsJS().map((row) => Number(row[0]));
-  return ordered.slice(1).map((component, index) => ({
-    left: ordered[index],
-    right: component,
-  }));
-}
-
-async function createComponentPairs(
-  connection: DuckDBConnection,
-  name: string,
-  pairs: ComponentPair[],
-): Promise<void> {
-  await connection.run(
-    `CREATE OR REPLACE TEMP TABLE ${quoteIdentifier(name)}
-      (pair_id INTEGER,left_component INTEGER,right_component INTEGER)`,
-  );
-  await appendColumnBatches(
-    connection,
-    name,
-    [INTEGER, INTEGER, INTEGER],
-    pairs.length,
-    (column, start, end) =>
-      Array.from({ length: end - start }, (_, offset) => {
-        const index = start + offset;
-        return column === 0
-          ? index
-          : column === 1
-          ? pairs[index].left
-          : pairs[index].right;
-      }),
-  );
-}
-
-async function sparseKruskal(
-  connection: DuckDBConnection,
-  edges: string,
-  count: number,
-): Promise<WeightedEdge[]> {
-  const parent = new Int32Array(count);
-  const size = new Int32Array(count).fill(1);
-  for (let vertex = 0; vertex < count; vertex++) parent[vertex] = vertex;
-  const find = (start: number): number => {
-    let root = start;
-    while (parent[root] !== root) root = parent[root];
-    let current = start;
-    while (parent[current] !== current) {
-      const next = parent[current];
-      parent[current] = root;
-      current = next;
-    }
-    return root;
-  };
-  const mst: WeightedEdge[] = [];
-  const result = await connection.stream(
-    `SELECT source,target,distance FROM ${edges}
-     ORDER BY distance,source,target`,
-  );
-  while (mst.length < count - 1) {
-    const chunk = await result.fetchChunk();
-    if (!chunk || chunk.rowCount === 0) break;
-    const sources = chunk.getColumnVector(0);
-    const targets = chunk.getColumnVector(1);
-    const distances = chunk.getColumnVector(2);
-    for (let row = 0; row < chunk.rowCount && mst.length < count - 1; row++) {
-      const source = Number(sources.getItem(row));
-      const target = Number(targets.getItem(row));
-      const distance = Number(distances.getItem(row));
-      let left = find(source), right = find(target);
-      if (left === right) continue;
-      if (size[left] < size[right]) [left, right] = [right, left];
-      parent[right] = left;
-      size[left] += size[right];
-      mst.push({ source, target, distance });
-    }
-  }
-  if (mst.length !== count - 1) {
-    throw new Error(
-      "Approximate HDBSCAN candidate graph has no spanning tree.",
-    );
-  }
-  return mst;
 }

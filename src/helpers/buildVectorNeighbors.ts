@@ -23,6 +23,14 @@ type NeighborOptions = {
   metric: "euclidean" | "cosine";
   search: "exact" | "hnsw";
   includeSelf: boolean;
+  hnsw?: {
+    efConstruction: number;
+    efSearch: number;
+    connectivity: number;
+    candidateCount: number;
+    singleThreaded: boolean;
+    cosineAsL2: boolean;
+  };
 };
 
 /**
@@ -174,13 +182,38 @@ async function buildHnswCandidates(
   otherCount: number,
 ): Promise<void> {
   const { count, dimensions, neighborCount } = input;
-  await connection.run(`INSTALL vss; LOAD vss;
-    CREATE OR REPLACE TEMP TABLE ${names.search} AS
-    SELECT vertex,vec::FLOAT[${dimensions}] AS vec
-    FROM ${names.rows} ORDER BY vertex;
-    CREATE INDEX ${names.hnsw} ON ${names.search} USING HNSW(vec)
-    WITH (metric='${options.metric === "cosine" ? "cosine" : "l2sq"}',
-      ef_construction=128,ef_search=128,M=16)`);
+  const settings = options.hnsw;
+  const cosineAsL2 = options.metric === "cosine" && settings?.cosineAsL2;
+  // Euclidean distance on unit vectors has the same mathematical ordering as
+  // cosine. Computing differences avoids FLOAT dot-product cancellation for
+  // near-collinear vectors; final metric distances still use source DOUBLEs.
+  const searchVector = cosineAsL2
+    ? "list_transform(vec,x -> x/sqrt(array_inner_product(vec,vec)))"
+    : "vec";
+  const previousThreads = Number(
+    (await connection.runAndReadAll(
+      "SELECT current_setting('threads')",
+    )).getRowsJS()[0][0],
+  );
+  try {
+    if (settings?.singleThreaded) await connection.run("SET threads=1");
+    await connection.run(`INSTALL vss; LOAD vss;
+      CREATE OR REPLACE TEMP TABLE ${names.search} AS
+      SELECT vertex,${searchVector}::FLOAT[${dimensions}] AS vec
+      FROM ${names.rows} ORDER BY vertex;
+      CREATE INDEX ${names.hnsw} ON ${names.search} USING HNSW(vec)
+      WITH (metric='${
+      options.metric === "cosine" && !cosineAsL2 ? "cosine" : "l2sq"
+    }',
+        ef_construction=${settings?.efConstruction ?? 128},
+        ef_search=${settings?.efSearch ?? 128},M=${
+      settings?.connectivity ?? 16
+    })`);
+  } finally {
+    if (settings?.singleThreaded) {
+      await connection.run(`SET threads=${previousThreads}`);
+    }
+  }
   const previous = String(
     (await connection.runAndReadAll(
       "SELECT current_setting('disabled_optimizers')",
@@ -198,12 +231,16 @@ async function buildHnswCandidates(
     );
     // Preserve UMAP's established candidate budget when self is included.
     // Excluding self needs one extra result because HNSW normally returns it.
-    const candidateCount = options.includeSelf
-      ? Math.max(otherCount + 1, Math.min(neighborCount + 1, count - 1))
-      : Math.min(otherCount + 1, count);
+    const candidateCount = settings?.candidateCount ??
+      (options.includeSelf
+        ? Math.max(otherCount + 1, Math.min(neighborCount + 1, count - 1))
+        : Math.min(otherCount + 1, count));
+    const candidateDistanceFunction = cosineAsL2
+      ? "array_distance"
+      : distanceFunction;
     const query = `SELECT a.vertex AS source,b.vertex AS target,b.distance
       FROM ${names.search} a,LATERAL (
-        SELECT vertex,${distanceFunction}(vec,a.vec) AS distance
+        SELECT vertex,${candidateDistanceFunction}(vec,a.vec) AS distance
         FROM ${names.search} ORDER BY distance LIMIT ${candidateCount}
       ) b`;
     // Carry ids and scalar distances through the candidate relation. Recompute

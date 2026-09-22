@@ -1,5 +1,10 @@
 # HDBSCAN approximation quality
 
+This report preserves the original implementation's measurements. See the
+[improvement report](approximation-improvements.md) for the current candidate
+search and repair strategy, new native-exact comparisons, and repeated 100k
+output hashes. The historical JSON below remains unchanged.
+
 [quality-results.json](quality-results.json) records a moderate, one-thread
 DuckDB 1.5.5 comparison against pinned exact Python hdbscan 0.8.44, using
 [reproducible fixtures](../../test/data/hdbscan/quality-README.md). It measures

@@ -1,0 +1,1463 @@
+{
+  "measuredAt": "2026-09-22T15:29:12.587Z",
+  "scope": "moderate graph/hierarchy quality, not end-to-end performance or a resource-bound claim",
+  "software": {
+    "deno": "2.9.6",
+    "duckdb": "v1.5.5",
+    "threads": 1,
+    "referencePackages": {
+      "hdbscan": "0.8.44",
+      "numpy": "2.2.6",
+      "scikit-learn": "1.7.1",
+      "scipy": "1.16.1",
+      "joblib": "1.6.0",
+      "threadpoolctl": "3.6.0",
+      "cloudpickle": "3.1.2"
+    }
+  },
+  "dataset": "pinned Python quality fixtures",
+  "fixtureSha256": "b72aae2bb0778844c0b36346144782891dc50a21e187c217dd11f95416037050",
+  "sourceHashes": {
+    "buildApproximateMutualReachabilityMst": "59097f3e14ffddd50e1e2c23674c186abdda03099f3fcaf78d70271533f813eb",
+    "buildExactMutualReachabilityMst": "a086b8456ae3aadd58eff95dfa7e590efefbd8759d0508148d62d64ca14686b7",
+    "clusterHdbscan": "1a89e2bf372310d1c3995e468098052da1c346c40259f2a2f5366d275b061667",
+    "buildVectorNeighbors": "7749b8b4e538f8dc98209e25a1960497f48c9ece6f41b798bbb8ef8fa4ad6ad0",
+    "buildSparseMutualReachabilityMst": "1aa66729696630e5acbdc1855d2a85ecb94e9358adb70a9a1563177b30a0591e",
+    "stabilizeCosineVectors": "25e2d63c98610a36c65f9e2dfadc56e949e95cd5d9db5bec0e2831086c581dca",
+    "vectorDistanceExpression": "71b39b356f98693f6bd7ad5176f53a1a1c86025579225933c30412a5a482574f"
+  },
+  "cases": [
+    {
+      "name": "euclidean-arcs-densities-noise",
+      "rows": 512,
+      "dimensions": 2,
+      "metric": "euclidean",
+      "minSamples": 10,
+      "minClusterSize": 24,
+      "allowSingleCluster": false,
+      "mode": "hnsw",
+      "exactNativeVersusPython": {
+        "clusters": {
+          "actual": 4,
+          "reference": 4
+        },
+        "noise": {
+          "actual": 35,
+          "reference": 34,
+          "changedRows": 1
+        },
+        "coMembership": {
+          "disagreeingPairs": 101,
+          "totalPairs": 130816,
+          "changedRows": 102
+        },
+        "membershipError": {
+          "max": 0.059613678100660664,
+          "mean": 0.00011643296507422745
+        },
+        "gloshError": {
+          "max": 0.0877216025807459,
+          "mean": 0.00023908410285171207
+        }
+      },
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 100.29270800000006,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 102.08147851517464,
+            "exact": 102.08147851517464
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19464,
+          "mstHash": "7791726726214454919",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 34,
+              "changedRows": 1
+            },
+            "coMembership": {
+              "disagreeingPairs": 101,
+              "totalPairs": 130816,
+              "changedRows": 102
+            },
+            "membershipError": {
+              "max": 0.059613678100660664,
+              "mean": 0.00011643296507422485
+            },
+            "gloshError": {
+              "max": 0.0877216025807459,
+              "mean": 0.00023908410285170917
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3306690738754696e-16,
+              "mean": 2.0816681711721685e-17
+            },
+            "gloshError": {
+              "max": 3.191891195797325e-16,
+              "mean": 2.1241892251243344e-17
+            }
+          },
+          "partitionHash": "814697c0bc29e79c3ab2626e703700be30dac8e7018d0921a4df48869c47d86e",
+          "scoreHash": "81ef906e1e6afab114cef386b29b20f58a00d888c672e97a8186cf17da855fa9"
+        },
+        {
+          "repeat": 1,
+          "elapsedMs": 91.93016699999998,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 102.08147851517464,
+            "exact": 102.08147851517464
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19464,
+          "mstHash": "7791726726214454919",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 34,
+              "changedRows": 1
+            },
+            "coMembership": {
+              "disagreeingPairs": 101,
+              "totalPairs": 130816,
+              "changedRows": 102
+            },
+            "membershipError": {
+              "max": 0.059613678100660664,
+              "mean": 0.00011643296507422485
+            },
+            "gloshError": {
+              "max": 0.0877216025807459,
+              "mean": 0.00023908410285170917
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3306690738754696e-16,
+              "mean": 2.0816681711721685e-17
+            },
+            "gloshError": {
+              "max": 3.191891195797325e-16,
+              "mean": 2.1241892251243344e-17
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "814697c0bc29e79c3ab2626e703700be30dac8e7018d0921a4df48869c47d86e",
+          "scoreHash": "81ef906e1e6afab114cef386b29b20f58a00d888c672e97a8186cf17da855fa9"
+        },
+        {
+          "repeat": 2,
+          "elapsedMs": 89.03420900000003,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 102.08147851517464,
+            "exact": 102.08147851517464
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19464,
+          "mstHash": "7791726726214454919",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 34,
+              "changedRows": 1
+            },
+            "coMembership": {
+              "disagreeingPairs": 101,
+              "totalPairs": 130816,
+              "changedRows": 102
+            },
+            "membershipError": {
+              "max": 0.059613678100660664,
+              "mean": 0.00011643296507422485
+            },
+            "gloshError": {
+              "max": 0.0877216025807459,
+              "mean": 0.00023908410285170917
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3306690738754696e-16,
+              "mean": 2.0816681711721685e-17
+            },
+            "gloshError": {
+              "max": 3.191891195797325e-16,
+              "mean": 2.1241892251243344e-17
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "814697c0bc29e79c3ab2626e703700be30dac8e7018d0921a4df48869c47d86e",
+          "scoreHash": "81ef906e1e6afab114cef386b29b20f58a00d888c672e97a8186cf17da855fa9"
+        },
+        {
+          "repeat": 3,
+          "elapsedMs": 86.575916,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 102.08147851517464,
+            "exact": 102.08147851517464
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19464,
+          "mstHash": "7791726726214454919",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 34,
+              "changedRows": 1
+            },
+            "coMembership": {
+              "disagreeingPairs": 101,
+              "totalPairs": 130816,
+              "changedRows": 102
+            },
+            "membershipError": {
+              "max": 0.059613678100660664,
+              "mean": 0.00011643296507422485
+            },
+            "gloshError": {
+              "max": 0.0877216025807459,
+              "mean": 0.00023908410285170917
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3306690738754696e-16,
+              "mean": 2.0816681711721685e-17
+            },
+            "gloshError": {
+              "max": 3.191891195797325e-16,
+              "mean": 2.1241892251243344e-17
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "814697c0bc29e79c3ab2626e703700be30dac8e7018d0921a4df48869c47d86e",
+          "scoreHash": "81ef906e1e6afab114cef386b29b20f58a00d888c672e97a8186cf17da855fa9"
+        },
+        {
+          "repeat": 4,
+          "elapsedMs": 86.42912499999989,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 102.08147851517464,
+            "exact": 102.08147851517464
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19464,
+          "mstHash": "7791726726214454919",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 34,
+              "changedRows": 1
+            },
+            "coMembership": {
+              "disagreeingPairs": 101,
+              "totalPairs": 130816,
+              "changedRows": 102
+            },
+            "membershipError": {
+              "max": 0.059613678100660664,
+              "mean": 0.00011643296507422485
+            },
+            "gloshError": {
+              "max": 0.0877216025807459,
+              "mean": 0.00023908410285170917
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3306690738754696e-16,
+              "mean": 2.0816681711721685e-17
+            },
+            "gloshError": {
+              "max": 3.191891195797325e-16,
+              "mean": 2.1241892251243344e-17
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 35,
+              "reference": 35,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "814697c0bc29e79c3ab2626e703700be30dac8e7018d0921a4df48869c47d86e",
+          "scoreHash": "81ef906e1e6afab114cef386b29b20f58a00d888c672e97a8186cf17da855fa9"
+        }
+      ]
+    },
+    {
+      "name": "cosine-curved-arcs-densities-noise",
+      "rows": 512,
+      "dimensions": 3,
+      "metric": "cosine",
+      "minSamples": 10,
+      "minClusterSize": 24,
+      "allowSingleCluster": false,
+      "mode": "hnsw",
+      "exactNativeVersusPython": {
+        "clusters": {
+          "actual": 4,
+          "reference": 4
+        },
+        "noise": {
+          "actual": 22,
+          "reference": 22,
+          "changedRows": 0
+        },
+        "coMembership": {
+          "disagreeingPairs": 0,
+          "totalPairs": 130816,
+          "changedRows": 0
+        },
+        "membershipError": {
+          "max": 3.3577585156763234e-12,
+          "mean": 1.2042321176530715e-13
+        },
+        "gloshError": {
+          "max": 0.0658709223227758,
+          "mean": 0.00025730829046011655
+        }
+      },
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 98.30620900000008,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 8.131384722763862,
+            "exact": 8.131384722763862
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19348,
+          "mstHash": "1415473021898839551",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3577585156763234e-12,
+              "mean": 1.2042369266826295e-13
+            },
+            "gloshError": {
+              "max": 0.0658709223227758,
+              "mean": 0.0002573082904601153
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 2.229602475410132e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 5.72594272343907e-18
+            }
+          },
+          "partitionHash": "db2522d8126e39da80fbc2ce981984fcddfc1cf4fcd68e23a4b35840c79951ca",
+          "scoreHash": "0963f504ecce4f43e951d0114aae6bf7b1fc7420e72e668952c79eabc3e248e9"
+        },
+        {
+          "repeat": 1,
+          "elapsedMs": 88.69183399999997,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 8.131384722763862,
+            "exact": 8.131384722763862
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19348,
+          "mstHash": "1415473021898839551",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3577585156763234e-12,
+              "mean": 1.2042369266826295e-13
+            },
+            "gloshError": {
+              "max": 0.0658709223227758,
+              "mean": 0.0002573082904601153
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 2.229602475410132e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 5.72594272343907e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "db2522d8126e39da80fbc2ce981984fcddfc1cf4fcd68e23a4b35840c79951ca",
+          "scoreHash": "0963f504ecce4f43e951d0114aae6bf7b1fc7420e72e668952c79eabc3e248e9"
+        },
+        {
+          "repeat": 2,
+          "elapsedMs": 89.64204099999984,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 8.131384722763862,
+            "exact": 8.131384722763862
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19348,
+          "mstHash": "1415473021898839551",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3577585156763234e-12,
+              "mean": 1.2042369266826295e-13
+            },
+            "gloshError": {
+              "max": 0.0658709223227758,
+              "mean": 0.0002573082904601153
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 2.229602475410132e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 5.72594272343907e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "db2522d8126e39da80fbc2ce981984fcddfc1cf4fcd68e23a4b35840c79951ca",
+          "scoreHash": "0963f504ecce4f43e951d0114aae6bf7b1fc7420e72e668952c79eabc3e248e9"
+        },
+        {
+          "repeat": 3,
+          "elapsedMs": 87.41879199999994,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 8.131384722763862,
+            "exact": 8.131384722763862
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19348,
+          "mstHash": "1415473021898839551",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3577585156763234e-12,
+              "mean": 1.2042369266826295e-13
+            },
+            "gloshError": {
+              "max": 0.0658709223227758,
+              "mean": 0.0002573082904601153
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 2.229602475410132e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 5.72594272343907e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "db2522d8126e39da80fbc2ce981984fcddfc1cf4fcd68e23a4b35840c79951ca",
+          "scoreHash": "0963f504ecce4f43e951d0114aae6bf7b1fc7420e72e668952c79eabc3e248e9"
+        },
+        {
+          "repeat": 4,
+          "elapsedMs": 85.9540420000003,
+          "candidateComponents": 1,
+          "neighborCount": 64,
+          "coreDistanceError": [
+            0,
+            0
+          ],
+          "mstWeight": {
+            "approximate": 8.131384722763862,
+            "exact": 8.131384722763862
+          },
+          "candidateBudgetFraction": 0.12524461839530332,
+          "finalEdges": 19348,
+          "mstHash": "1415473021898839551",
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 3.3577585156763234e-12,
+              "mean": 1.2042369266826295e-13
+            },
+            "gloshError": {
+              "max": 0.0658709223227758,
+              "mean": 0.0002573082904601153
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 2.229602475410132e-18
+            },
+            "gloshError": {
+              "max": 2.220446049250313e-16,
+              "mean": 5.72594272343907e-18
+            }
+          },
+          "versusPrevious": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 22,
+              "reference": 22,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 130816,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "db2522d8126e39da80fbc2ce981984fcddfc1cf4fcd68e23a4b35840c79951ca",
+          "scoreHash": "0963f504ecce4f43e951d0114aae6bf7b1fc7420e72e668952c79eabc3e248e9"
+        }
+      ]
+    },
+    {
+      "name": "forced-chain-two-tracks",
+      "rows": 257,
+      "dimensions": 2,
+      "metric": "euclidean",
+      "minSamples": 3,
+      "minClusterSize": 12,
+      "allowSingleCluster": false,
+      "mode": "forced-chain",
+      "exactNativeVersusPython": {
+        "clusters": {
+          "actual": 2,
+          "reference": 2
+        },
+        "noise": {
+          "actual": 0,
+          "reference": 0,
+          "changedRows": 0
+        },
+        "coMembership": {
+          "disagreeingPairs": 0,
+          "totalPairs": 32896,
+          "changedRows": 0
+        },
+        "membershipError": {
+          "max": 6.151745779447992e-13,
+          "mean": 1.4199622886937313e-14
+        },
+        "gloshError": {
+          "max": 0.0001989584785479745,
+          "mean": 0.000039666427646359726
+        }
+      },
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 26.197083999999904,
+          "forcedCandidateComponents": 257,
+          "coreDistances": "exact native core distances",
+          "neighborRetrieval": "none: controlled repair-only sensitivity probe",
+          "selectedBridgeDistances": [
+            0.06250000795978214,
+            0.06250001050458998,
+            0.06250007891118882,
+            0.06250008654381312,
+            0.06250009452857311,
+            0.06250023602369077,
+            0.06250024909036411,
+            0.06250045883853918,
+            0.06250047697788765,
+            0.06250077803002649,
+            0.06250080157901715,
+            0.06250115203393854,
+            0.0625011806251104,
+            0.0625015987252095,
+            0.0625016323383493,
+            0.06250215639938715,
+            0.06250219535585094,
+            0.06250275243773845,
+            0.06250279636309064,
+            0.06250342003204455,
+            0.06250351809909262,
+            0.06250351809909262,
+            0.06250421247686007,
+            0.06250421247686007,
+            0.06250426658149434,
+            0.06250426658149434,
+            0.06250502658234405,
+            0.06250502658234405,
+            0.06250508554950834,
+            0.06250508554950834,
+            0.06250597442424165,
+            0.06250597442424165,
+            0.06250603854443394,
+            0.06250603854443394,
+            0.06250693257741306,
+            0.06250693257741306,
+            0.06250700147012139,
+            0.06250700147012139,
+            0.06250795933180354,
+            0.06250795933180354,
+            0.06250803294833603,
+            0.06250803294833603,
+            0.06250913225007015,
+            0.06250913225007015,
+            0.06250921085987608,
+            0.06250921085987608,
+            0.06251029859842096,
+            0.06251029859842096,
+            0.06251038182074402,
+            0.06251038182074402,
+            0.06251153116914705,
+            0.06251153116914705,
+            0.06251161894517701,
+            0.06251161894517701,
+            0.06251170703425855,
+            0.06251170703425855,
+            0.06251292135897116,
+            0.06251292135897116,
+            0.06251301393532249,
+            0.06251301393532249,
+            0.06251428814184262,
+            0.0625143851400516,
+            0.06251571832808628,
+            0.0625158196796209,
+            0.06251592132997592,
+            0.06251731654052459,
+            0.06251742246753203,
+            0.06251887466530101,
+            0.06251898479413139,
+            0.06252060720615067,
+            0.06252072174161671,
+            0.0625222885576101,
+            0.06252240713071429,
+            0.06252402766099263,
+            0.06252415018799193,
+            0.06252594968245881,
+            0.0625260763413388,
+            0.06252780434337488,
+            0.0625279347740908,
+            0.06252971286115841,
+            0.06252998133339543,
+            0.06253181158383973,
+            0.06253194952402802,
+            0.06253382722380332,
+            0.06253396864502496,
+            0.0625358924686644,
+            0.0625358924686644,
+            0.06253603727109508,
+            0.06253618230389338,
+            0.06253815394214507,
+            0.0625383022467888,
+            0.06254031716432015,
+            0.06254046863614805,
+            0.06254267994319548,
+            0.06254283468321349,
+            0.06254493460762198,
+            0.06254509229127826,
+            0.06254723103869564,
+            0.06254739155474616,
+            0.06254755226275005,
+            0.06254973085160906,
+            0.06254989427086571,
+            0.06255210853180104,
+            0.06255227454704658,
+            0.06255452291837157,
+            0.06255469141252447,
+            0.06255486007394465,
+            0.06255714316292164,
+            0.06255731417614407,
+            0.06255962806946137,
+            0.06255980131390887,
+            0.06256231973373219,
+            0.0625624952287487,
+            0.06256486766026556,
+            0.06256504513215243,
+            0.06256744329757812,
+            0.06256762262125075,
+            0.06257022587951422,
+            0.06257040704336131,
+            0.06257285307247988,
+            0.06257303582528874,
+            0.06257550234905082,
+            0.06257568656206412,
+            0.06257568656206412,
+            0.06257587087139309,
+            0.06257835738625449,
+            0.06257854301699756,
+            0.06258104641651539,
+            0.06258123323792208,
+            0.06258375175892142,
+            0.06258393963941959,
+            0.06258412758836235,
+            0.06258666031559328,
+            0.06258684918214122,
+            0.06258939335074319,
+            0.06258958300191966,
+            0.06259232712301199,
+            0.06259251746543625,
+            0.06259507961373365,
+            0.06259527046403338,
+            0.06259783853676369,
+            0.06259802976061973,
+            0.06259822100536265,
+            0.06260079341335835,
+            0.06260098488776907,
+            0.06260355947760393,
+            0.06260375104696092,
+            0.06260632600727221,
+            0.06260651753680506,
+            0.06260670905859195,
+            0.06260928241119347,
+            0.06260947374910708,
+            0.06261204372541232,
+            0.06261223474488194,
+            0.0626149901042055,
+            0.06261518063458617,
+            0.06261773788958676,
+            0.06261792782393834,
+            0.06262047616911497,
+            0.06262066537390794,
+            0.06262339136005088,
+            0.0626235796376522,
+            0.06262610386630285,
+            0.06262629113983026,
+            0.0626288009863226,
+            0.06262898712417,
+            0.06262917317852822,
+            0.06263166569620393,
+            0.06263185047506714,
+            0.06263432497394242,
+            0.06263450834749218,
+            0.06263696308919081,
+            0.06263714492861236,
+            0.06263732665706558,
+            0.06263975836642885,
+            0.06263993842423193,
+            0.06264234682542992,
+            0.06264252508613022,
+            0.06264508482629591,
+            0.06264526102701524,
+            0.06264761584739147,
+            0.06264778999350273,
+            0.06265011637246108,
+            0.06265028834170931,
+            0.06265046015573877,
+            0.0626527543178435,
+            0.06265292382599835,
+            0.06265518619104372,
+            0.06265535327435433,
+            0.06265758225458543,
+            0.06265774679579739,
+            0.06265791115669239,
+            0.06266010271072596,
+            0.0626602644061393,
+            0.06266241936611573,
+            0.0626625782826009,
+            0.06266485116274287,
+            0.06266500698460004,
+            0.0626670814521674,
+            0.06266723426666627,
+            0.06266926758652196,
+            0.0626694172864827,
+            0.06267155451302489,
+            0.06267170076670564,
+            0.06267364444753976,
+            0.06267378737195528,
+            0.06267568562458632,
+            0.06267582511952474,
+            0.06267596437334842,
+            0.06267781258071661,
+            0.06267794830058487,
+            0.06267974836222416,
+            0.06267974836222416,
+            0.06267988045299562,
+            0.06267988045299562,
+            0.06268163110709783,
+            0.06268163110709783,
+            0.06268175947618371,
+            0.06268175947618371,
+            0.06268188758420888,
+            0.06268188758420888,
+            0.06268358405311461,
+            0.06268358405311461,
+            0.06268370834335078,
+            0.06268370834335078,
+            0.06268535290502908,
+            0.06268535290502908,
+            0.06268547329037116,
+            0.06268547329037116,
+            0.06268718118841604,
+            0.06268718118841604,
+            0.06268729730522422,
+            0.06268729730522422,
+            0.06268883084070997,
+            0.06268883084070997,
+            0.06268894288116145,
+            0.06268894288116145,
+            0.06269042109138474,
+            0.06269042109138474,
+            0.06269052897697901,
+            0.06269052897697901,
+            0.06269205448143293,
+            0.06269205448143293,
+            0.0626921578409366,
+            0.0626921578409366,
+            0.06269351832581,
+            0.06269351832581,
+            0.06269361737734135,
+            0.06269361737734135,
+            0.0626949194846669,
+            0.0626949194846669,
+            0.0940108768060027,
+            0.09406364436505504,
+            0.09512207274355132,
+            0.09540609153438076,
+            3.9850053547648168
+          ],
+          "versusPython": {
+            "clusters": {
+              "actual": 2,
+              "reference": 2
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 32896,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 6.150635556423367e-13,
+              "mean": 1.4199622886937313e-14
+            },
+            "gloshError": {
+              "max": 0.0001989584785479745,
+              "mean": 0.000039666427646359726
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 2,
+              "reference": 2
+            },
+            "noise": {
+              "actual": 0,
+              "reference": 0,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 32896,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 8.639867895915615e-19
+            },
+            "gloshError": {
+              "max": 1.1102230246251565e-16,
+              "mean": 8.639867895915615e-19
+            }
+          },
+          "partitionHash": "a1d7538fa9ed7ea4b4c7cbe86994305c22c12a7758af0cc7a00d2badab74b6e8",
+          "scoreHash": "8291a25590151478e23015be246c03bd0fc2f94d3749f11e38ec68ab767ccad3"
+        }
+      ]
+    },
+    {
+      "name": "forced-representative-miss",
+      "rows": 20,
+      "dimensions": 1,
+      "metric": "euclidean",
+      "minSamples": 1,
+      "minClusterSize": 3,
+      "allowSingleCluster": false,
+      "mode": "forced-representative",
+      "exactNativeVersusPython": {
+        "clusters": {
+          "actual": 4,
+          "reference": 4
+        },
+        "noise": {
+          "actual": 2,
+          "reference": 2,
+          "changedRows": 0
+        },
+        "coMembership": {
+          "disagreeingPairs": 0,
+          "totalPairs": 190,
+          "changedRows": 0
+        },
+        "membershipError": {
+          "max": 0,
+          "mean": 0
+        },
+        "gloshError": {
+          "max": 0,
+          "mean": 0
+        }
+      },
+      "repetitions": [
+        {
+          "repeat": 0,
+          "elapsedMs": 4.475709000000279,
+          "forcedCandidateComponents": 2,
+          "coreDistances": "exact native core distances",
+          "neighborRetrieval": "none: controlled repair-only sensitivity probe",
+          "minimumCrossEdge": 0.1,
+          "selectedBridgeDistances": [
+            0.1,
+            99.9,
+            101
+          ],
+          "versusUnrestrictedCrossBridge": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 2,
+              "reference": 2,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 190,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0.000010010010009997572,
+              "mean": 0.0000010010010009997573
+            }
+          },
+          "unrestrictedCrossBridgeVersusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 2,
+              "reference": 2,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 190,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0.000010010010009997572,
+              "mean": 0.0000010010010009997573
+            }
+          },
+          "versusPython": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 2,
+              "reference": 2,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 190,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "versusNativeExact": {
+            "clusters": {
+              "actual": 4,
+              "reference": 4
+            },
+            "noise": {
+              "actual": 2,
+              "reference": 2,
+              "changedRows": 0
+            },
+            "coMembership": {
+              "disagreeingPairs": 0,
+              "totalPairs": 190,
+              "changedRows": 0
+            },
+            "membershipError": {
+              "max": 0,
+              "mean": 0
+            },
+            "gloshError": {
+              "max": 0,
+              "mean": 0
+            }
+          },
+          "partitionHash": "14a8af922987779b7918e297d13e3d71d0d704868984bbe6a3e24046af196024",
+          "scoreHash": "fa9b5b01acecd6cf8f8dd07ffaf4ab0d37a79ede87869a00c300764e72c51287"
+        }
+      ]
+    }
+  ]
+}

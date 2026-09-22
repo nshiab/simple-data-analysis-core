@@ -92,7 +92,7 @@ Deno.test("clusterHdbscan rejects null MST cells before numeric coercion", async
   }
 });
 
-Deno.test("representative repair stays bounded and exposes a missed true component edge", async () => {
+Deno.test("projection repair includes the true component edge missed by representative sampling", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -131,16 +131,15 @@ Deno.test("representative repair stays bounded and exposes a missed true compone
     const representativeIds = (await connection.runAndReadAll(
       "SELECT vertex FROM representatives ORDER BY vertex",
     )).getRowsJS().flat().map(Number);
-    assert(!representativeIds.includes(4));
-    assert(!representativeIds.includes(14));
-    assertEquals(representativeIds.length, 16);
+    assert(representativeIds.includes(4));
+    assert(representativeIds.includes(14));
+    assertEquals(representativeIds.length, 20);
     const bridge = Number(
       (await connection.runAndReadAll(
-        "SELECT distance FROM edges WHERE source<10 AND target>=10",
+        "SELECT min(distance) FROM edges WHERE source<10 AND target>=10",
       )).getRowsJS()[0][0],
     );
-    assert(bridge > 0.1);
-    assertAlmostEquals(bridge, 101, 1e-12);
+    assertAlmostEquals(bridge, 0.1, 1e-12);
     assertEquals(
       await inspectGraphConnectivity(connection, '"edges"', 20),
       { componentCount: 1, sizes: [20] },
@@ -151,7 +150,7 @@ Deno.test("representative repair stays bounded and exposes a missed true compone
   }
 });
 
-Deno.test("representative repair uses the adjacent-anchor chain beyond 256 components", async () => {
+Deno.test("projection repair stays connected beyond 256 components", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -180,7 +179,7 @@ Deno.test("representative repair uses the adjacent-anchor chain beyond 256 compo
     assertEquals(componentCount, count);
     assertEquals(
       Number(
-        (await connection.runAndReadAll("SELECT count(*) FROM component_pairs"))
+        (await connection.runAndReadAll("SELECT count(*) FROM edges"))
           .getRowsJS()[0][0],
       ),
       count - 1,

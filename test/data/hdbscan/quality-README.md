@@ -8,7 +8,7 @@ From the repository root, with that environment activated:
 
 ```sh
 python test/data/hdbscan/quality-generate.py > test/data/hdbscan/quality-reference.json
-deno run -A benchmarks/hdbscan/quality.ts > benchmarks/hdbscan/quality-results.json
+deno run -A benchmarks/hdbscan/quality.ts > benchmarks/.work/current-quality-results.json
 python test/data/hdbscan/quality-ties.py > test/data/hdbscan/quality-tie-reference.json
 ```
 
@@ -20,6 +20,11 @@ semantics. The two 512-point cases contain curved shapes, different densities,
 and noise under Euclidean and cosine metrics. Two smaller cases isolate the
 representative and chain repair seams; they are controlled topology probes, not
 outputs expected from the default HNSW graph at those sizes.
+
+The committed `quality-results.json` preserves the original approximation
+measurements used by `quality-ties.py`; do not replace it with a new
+approximation run. Current approximation evidence is documented in
+[the improvement report](../../../benchmarks/hdbscan/approximation-improvements.md).
 
 `quality-ties.py` feeds the recorded native MST, sorted by distance and
 canonical endpoints, directly to Python's linkage, condensation, EOM, and GLOSH

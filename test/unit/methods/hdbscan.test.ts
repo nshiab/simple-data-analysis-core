@@ -817,53 +817,56 @@ Deno.test("hdbscan preserves file-backed order, exact payload types, and indexes
   }
 });
 
-Deno.test("hdbscan rolls back all outputs and cleans scratch after commit failure", async () => {
-  const sdb = new SimpleDB();
-  try {
-    await sdb.customQuery(
-      `CREATE TABLE source AS SELECT id,[x,y]::DOUBLE[2] AS features
+for (const approximate of [false, true]) {
+  Deno.test(`hdbscan ${approximate ? "approximate" : "exact"} rolls back all outputs and cleans scratch after commit failure`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      await sdb.customQuery(
+        `CREATE TABLE source AS SELECT id,[x,y]::DOUBLE[2] AS features
       FROM (VALUES
         (1,0,0),(2,0,1),(3,1,0),(4,10,10),(5,10,11),(6,11,10)
       ) rows(id,x,y);
       CREATE UNIQUE INDEX source_id ON source(id)`,
-    );
-    const table = sdb.newTable("source");
-    const before = await table.getData();
-    const typesBefore = await table.getTypes();
-    const connection = sdb.connection!;
-    const original = connection.run;
-    const failure = new Error("Simulated HDBSCAN publication commit failure");
-    connection.run = function (...args) {
-      if (args[0] === "COMMIT") return Promise.reject(failure);
-      return original.apply(this, args);
-    };
-    try {
-      const error = await assertRejects(() =>
-        table.hdbscan("features", "cluster", {
-          minClusterSize: 3,
-          minSamples: 1,
-          allowSingleCluster: false,
-          probabilityColumn: "membership",
-          outlierScoreColumn: "outlier",
-        }).run()
       );
-      assertStrictEquals(error, failure);
+      const table = sdb.newTable("source");
+      const before = await table.getData();
+      const typesBefore = await table.getTypes();
+      const connection = sdb.connection!;
+      const original = connection.run;
+      const failure = new Error("Simulated HDBSCAN publication commit failure");
+      connection.run = function (...args) {
+        if (args[0] === "COMMIT") return Promise.reject(failure);
+        return original.apply(this, args);
+      };
+      try {
+        const error = await assertRejects(() =>
+          table.hdbscan("features", "cluster", {
+            minClusterSize: 3,
+            minSamples: 1,
+            approximate,
+            allowSingleCluster: false,
+            probabilityColumn: "membership",
+            outlierScoreColumn: "outlier",
+          }).run()
+        );
+        assertStrictEquals(error, failure);
+      } finally {
+        connection.run = original;
+      }
+      assertEquals(await table.getData(), before);
+      assertEquals(await table.getTypes(), typesBefore);
+      assertEquals(
+        (await connection.runAndReadAll(
+          "SELECT index_name FROM duckdb_indexes() WHERE table_name='source'",
+        )).getRowsJS(),
+        [["source_id"]],
+      );
+      assertEquals(await scratchRelations(sdb), []);
     } finally {
-      connection.run = original;
+      await sdb.close();
     }
-    assertEquals(await table.getData(), before);
-    assertEquals(await table.getTypes(), typesBefore);
-    assertEquals(
-      (await connection.runAndReadAll(
-        "SELECT index_name FROM duckdb_indexes() WHERE table_name='source'",
-      )).getRowsJS(),
-      [["source_id"]],
-    );
-    assertEquals(await scratchRelations(sdb), []);
-  } finally {
-    await sdb.close();
-  }
-});
+  });
+}
 
 Deno.test("hdbscan validates output identifiers before feature preparation", async () => {
   const sdb = new SimpleDB();

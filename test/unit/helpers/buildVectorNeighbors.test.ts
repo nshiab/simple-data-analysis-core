@@ -258,3 +258,84 @@ Deno.test("exact Euclidean neighbors accept a large common coordinate offset", a
     db.closeSync();
   }
 });
+
+Deno.test("unit-L2 cosine candidates retain close angular neighbors and restore threads", async () => {
+  const db = await DuckDBInstance.create(":memory:");
+  const connection = await db.connect();
+  try {
+    await connection.run(`SET threads=4;
+      CREATE TEMP TABLE ${names.rows} AS SELECT i::INTEGER AS vertex,
+        [cos(i*0.000001),sin(i*0.000001)]::DOUBLE[2] AS vec FROM range(256) t(i)`);
+    const input = { count: 256, dimensions: 2, neighborCount: 10 };
+    await buildVectorNeighbors(connection, input, {
+      metric: "cosine",
+      search: "exact",
+      includeSelf: false,
+    }, names);
+    const expected = (await connection.runAndReadAll(
+      `SELECT * FROM ${names.neighbors} ORDER BY source,rank`,
+    )).getRowsJS();
+    await buildVectorNeighbors(connection, input, {
+      metric: "cosine",
+      search: "hnsw",
+      includeSelf: false,
+      hnsw: {
+        efConstruction: 256,
+        efSearch: 512,
+        connectivity: 32,
+        candidateCount: 129,
+        singleThreaded: true,
+        cosineAsL2: true,
+      },
+    }, names);
+    assertEquals(
+      (await connection.runAndReadAll(
+        `SELECT * FROM ${names.neighbors} ORDER BY source,rank`,
+      )).getRowsJS(),
+      expected,
+    );
+    assertEquals(
+      (await connection.runAndReadAll("SELECT current_setting('threads')"))
+        .getRowsJS()[0][0],
+      4n,
+    );
+    await connection.run(`DROP TABLE ${names.search}`);
+    const original = connection.run;
+    connection.run = function (...args) {
+      if (args[0].includes("CREATE INDEX")) {
+        return Promise.reject(new Error("injected index failure"));
+      }
+      return original.apply(this, args);
+    };
+    try {
+      await assertRejects(
+        () =>
+          buildVectorNeighbors(connection, input, {
+            metric: "cosine",
+            search: "hnsw",
+            includeSelf: false,
+            hnsw: {
+              efConstruction: 256,
+              efSearch: 512,
+              connectivity: 32,
+              candidateCount: 129,
+              singleThreaded: true,
+              cosineAsL2: true,
+            },
+          }, names),
+        Error,
+        "injected index failure",
+      );
+    } finally {
+      connection.run = original;
+    }
+    assertEquals(
+      (await connection.runAndReadAll("SELECT current_setting('threads')"))
+        .getRowsJS()[0][0],
+      4n,
+    );
+  } finally {
+    connection.closeSync();
+    db.closeSync();
+  }
+});

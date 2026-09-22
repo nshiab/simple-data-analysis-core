@@ -3,6 +3,7 @@ import { assert } from "@std/assert";
 import buildApproximateMutualReachabilityMst, {
   repairApproximateConnectivity,
 } from "../../src/helpers/buildApproximateMutualReachabilityMst.ts";
+import buildSparseMutualReachabilityMst from "../../src/helpers/buildSparseMutualReachabilityMst.ts";
 import buildExactMutualReachabilityMst from "../../src/helpers/buildExactMutualReachabilityMst.ts";
 import clusterHdbscan from "../../src/helpers/clusterHdbscan.ts";
 import vectorDistanceExpression from "../../src/helpers/vectorDistanceExpression.ts";
@@ -21,6 +22,7 @@ type Case = Outputs & {
   allowSingleCluster: boolean;
   mode: string;
   coreDistances: number[];
+  synthetic?: boolean;
 };
 const fixturePath = new URL(
   "../../test/data/hdbscan/quality-reference.json",
@@ -91,9 +93,40 @@ const canonicalLabels = (labels: number[]) => {
     return mapping.get(label)!;
   });
 };
+const benchmarkSubsets = Deno.args.includes("--benchmark-subsets");
+const cases: Case[] = benchmarkSubsets
+  ? ([{ dimensions: 4, metric: "euclidean" }, {
+    dimensions: 128,
+    metric: "cosine",
+  }, { dimensions: 128, metric: "euclidean" }] as const).map((
+    { dimensions, metric },
+  ) => ({
+    name: `benchmark-subset-${dimensions}d-${metric}`,
+    synthetic: true,
+    vectors: Array.from({ length: 2048 }, (_, row) => {
+      const i = Math.floor(row * 100000 / 2048);
+      return Array.from(
+        { length: dimensions },
+        (_, j) =>
+          2 + Math.sin(((i % 8) + 1) * (j + 1) * 0.17320508075688773) +
+          Math.cos(((i % 8) + 3) * (j + 2) * 0.10101525445522107) +
+          0.01 * Math.sin((i + 1) * (j + 1) * 0.000123),
+      );
+    }),
+    metric,
+    minSamples: 15,
+    minClusterSize: 25,
+    allowSingleCluster: true,
+    mode: "hnsw",
+    labels: [],
+    probabilities: [],
+    outlierScores: [],
+    coreDistances: [],
+  }))
+  : fixture.cases;
 const allResults: unknown[] = [];
 let duckdbVersion = "";
-for (const reference of fixture.cases) {
+for (const reference of cases) {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -132,7 +165,9 @@ for (const reference of fixture.cases) {
       },
     );
     const exact = await cluster('"exact_mst"');
-    const exactComparison = compare(exact, reference);
+    const exactComparison = reference.synthetic
+      ? undefined
+      : compare(exact, reference);
     const repetitions: unknown[] = [];
     let previous: Outputs | undefined;
     for (
@@ -167,6 +202,21 @@ for (const reference of fixture.cases) {
         result = await cluster('"mst"');
         metadata = {
           ...stats,
+          coreDistanceError: (await connection.runAndReadAll(
+            "SELECT max(abs(a.distance-b.distance)),avg(abs(a.distance-b.distance)) FROM core a JOIN exact_core b USING(vertex)",
+          )).getRowsJS()[0].map(Number),
+          mstWeight: {
+            approximate: Number(
+              (await connection.runAndReadAll(
+                "SELECT fsum(distance ORDER BY source,target) FROM mst",
+              )).getRowsJS()[0][0],
+            ),
+            exact: Number(
+              (await connection.runAndReadAll(
+                "SELECT fsum(distance ORDER BY source,target) FROM exact_mst",
+              )).getRowsJS()[0][0],
+            ),
+          },
           candidateBudgetFraction: stats.neighborCount / (count - 1),
           finalEdges: Number(
             (await connection.runAndReadAll("SELECT count(*) FROM edges"))
@@ -213,14 +263,26 @@ for (const reference of fixture.cases) {
           { metric: reference.metric },
           names,
         );
-        result = await cluster('"edges"');
+        const repairedMst = await buildSparseMutualReachabilityMst(
+          connection,
+          '"edges"',
+          count,
+        );
+        await connection.run(
+          `CREATE OR REPLACE TEMP TABLE mst AS SELECT * FROM (VALUES ${
+            repairedMst.map((edge) =>
+              `(${edge.source},${edge.target},${edge.distance})`
+            ).join(",")
+          }) t(source,target,distance)`,
+        );
+        result = await cluster('"mst"');
         metadata = {
           forcedCandidateComponents: before,
           coreDistances: "exact native core distances",
           neighborRetrieval: "none: controlled repair-only sensitivity probe",
           minimumCrossEdge,
           selectedBridgeDistances: (await connection.runAndReadAll(
-            "SELECT distance FROM bridge_candidates QUALIFY row_number() OVER(PARTITION BY pair_id ORDER BY distance,source,target)=1 ORDER BY pair_id",
+            "SELECT distance FROM mst WHERE (source,target) IN (SELECT source,target FROM bridge_candidates) ORDER BY distance,source,target",
           )).getRowsJS().map((row) => Number(row[0])),
           ...(optimalCandidate
             ? {
@@ -241,7 +303,9 @@ for (const reference of fixture.cases) {
         repeat,
         elapsedMs: performance.now() - started,
         ...metadata,
-        versusPython: compare(result, reference),
+        ...(reference.synthetic
+          ? {}
+          : { versusPython: compare(result, reference) }),
         versusNativeExact: compare(result, exact),
         ...(previous ? { versusPrevious: compare(result, previous) } : {}),
         partitionHash: await digest(
@@ -263,9 +327,11 @@ for (const reference of fixture.cases) {
       allowSingleCluster: reference.allowSingleCluster,
       mode: reference.mode,
       exactNativeVersusPython: exactComparison,
-      exactNativeOutputs: exact,
-      exactNativeMst:
-        (await connection.runAndReadAll("SELECT * FROM exact_mst")).getRowsJS()
+      exactNativeOutputs: Deno.args.includes("--summary") ? undefined : exact,
+      exactNativeMst: Deno.args.includes("--summary")
+        ? undefined
+        : (await connection.runAndReadAll("SELECT * FROM exact_mst"))
+          .getRowsJS()
           .map((row) => row.map(Number)),
       repetitions,
     });
@@ -281,6 +347,8 @@ const sourceHashes = Object.fromEntries(
       "buildExactMutualReachabilityMst",
       "clusterHdbscan",
       "buildVectorNeighbors",
+      "buildSparseMutualReachabilityMst",
+      "stabilizeCosineVectors",
       "vectorDistanceExpression",
     ].map(
       async (name) => [
@@ -305,7 +373,10 @@ console.log(JSON.stringify(
       threads: 1,
       referencePackages: fixture.packages,
     },
-    fixtureSha256: await digest(fixtureText),
+    dataset: benchmarkSubsets
+      ? "2048 evenly spaced source ids from each 100000-row deterministic benchmark formula; generated in JS DOUBLE"
+      : "pinned Python quality fixtures",
+    fixtureSha256: benchmarkSubsets ? undefined : await digest(fixtureText),
     sourceHashes,
     cases: allResults,
   },
