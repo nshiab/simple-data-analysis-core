@@ -27,11 +27,26 @@ Deno.test("benchmark helpers parse quoted CSV fields", () => {
 });
 
 Deno.test("benchmark helpers rotate values without mutating the input", () => {
-  const values = ["sda", "tidyverse", "duckdb"];
-  assertEquals(rotateValues(values, 1), ["tidyverse", "duckdb", "sda"]);
-  assertEquals(rotateValues(values, 4), ["tidyverse", "duckdb", "sda"]);
-  assertEquals(rotateValues(values, -1), ["duckdb", "sda", "tidyverse"]);
-  assertEquals(values, ["sda", "tidyverse", "duckdb"]);
+  const values = ["sda", "pandas", "tidyverse", "duckdb"];
+  assertEquals(rotateValues(values, 1), [
+    "pandas",
+    "tidyverse",
+    "duckdb",
+    "sda",
+  ]);
+  assertEquals(rotateValues(values, 5), [
+    "pandas",
+    "tidyverse",
+    "duckdb",
+    "sda",
+  ]);
+  assertEquals(rotateValues(values, -1), [
+    "duckdb",
+    "sda",
+    "pandas",
+    "tidyverse",
+  ]);
+  assertEquals(values, ["sda", "pandas", "tidyverse", "duckdb"]);
   assertEquals(rotateValues([], 3), []);
 });
 
@@ -40,14 +55,14 @@ Deno.test("benchmark helpers validate tabular results with numeric tolerance", (
     "station,station_name,decade,mean\n1,Montréal,1990,2.5\n2,Québec,2000,-1\n";
   const equivalent =
     "station,station_name,decade,mean\n2,Québec,2000,-1\n1,Montréal,1990,2.50000000001\n";
-  assertEquivalentResults(expected, equivalent, "tabular", "tidyverse");
+  assertEquivalentResults(expected, equivalent, "tabular", "pandas");
   assertThrows(
     () =>
       assertEquivalentResults(
         expected,
         equivalent.replace("2.50000000001", "2.6"),
         "tabular",
-        "tidyverse",
+        "pandas",
       ),
     Error,
     "raw DuckDB produced 2.5",
