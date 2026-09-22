@@ -1,12 +1,13 @@
 """Isolate hierarchy semantics and tie sensitivity with identical recorded MSTs.
 
-Run after quality.ts writes benchmarks/hdbscan/quality-results.json. Only the
-order of the identified equal-weight edges changes in the alternative probes.
+Read native MSTs and outputs from quality-native.ts on stdin. Only the order
+of the identified equal-weight edges changes in the alternative probes.
 """
 import importlib.metadata
 import json
 from pathlib import Path
 import hashlib
+import sys
 
 import numpy as np
 from hdbscan._hdbscan_linkage import label
@@ -14,11 +15,10 @@ from hdbscan.hdbscan_ import _tree_to_labels
 from hdbscan._hdbscan_tree import outlier_scores
 
 base = Path(__file__).resolve().parent
-root = base.parents[2]
 expected = dict(line.split("==") for line in (base / "requirements.txt").read_text().splitlines() if line)
 packages = {name: importlib.metadata.version(name) for name in expected}
 assert packages == expected
-report_text = (root / "benchmarks/hdbscan/quality-results.json").read_text()
+report_text = sys.stdin.read()
 reports = json.loads(report_text)
 refs = {c["name"]: c for c in json.loads((base / "quality-reference.json").read_text())["cases"]}
 
@@ -36,7 +36,7 @@ def outputs(mst, ref):
 
 
 cases = []
-for report in reports["cases"][:2]:
+for report in reports["cases"]:
     ref = refs[report["name"]]
     mst = sorted(report["exactNativeMst"], key=lambda e: (e[2], min(e[:2]), max(e[:2])))
     common, tree = outputs(mst, ref)

@@ -50,8 +50,7 @@ Regenerating the two original fixtures changed:
 
 `degenerate-reference.json` includes a small condensed-tree probe whose point 0
 GLOSH score is `0.8` with the corrected traversal; the earlier reference
-returned `0`. Historical feasibility benchmarks were actually recorded with
-0.8.40 and have not been relabeled as 0.8.44 runs.
+returned `0`.
 
 Source provenance: the official PyPI `hdbscan-0.8.44.tar.gz` SHA-256 is
 `1ac6196fabdd42072284b60c9be7b9b504b5f4f25cf7a551a8af29a3c7963a4d`. Its
