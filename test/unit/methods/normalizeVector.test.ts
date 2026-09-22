@@ -3,6 +3,7 @@ import {
   assertAlmostEquals,
   assertEquals,
   assertRejects,
+  assertThrows,
 } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
@@ -256,11 +257,15 @@ Deno.test("normalizeVector agrees with scalar min-max preparation", async () => 
         { type: "double" },
       )
       .normalizeVector("features", "scaled")
+      .normalizeVector("features", "explicit", {
+        normalization: "dimensionMinMax",
+      })
       .run();
 
     for (const row of await table.getData()) {
       assert(Array.isArray(row.reference));
       assertVectorAlmostEquals(row.scaled, row.reference as number[]);
+      assertEquals(row.explicit, row.scaled);
     }
   } finally {
     await sdb.close();
@@ -511,6 +516,113 @@ Deno.test("normalizeVector rolls back an overwrite when an HNSW index cannot sup
       )).getRowsJS(),
       [["vss_cosine_index_source"]],
     );
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("normalizeVector rowL2 preserves direction, zero vectors, source types, and row order", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
+      (3, [3,4,0]::INTEGER[]),
+      (1, [-3,0,4]::INTEGER[]),
+      (2, [0,0,0]::INTEGER[]),
+      (3, [3,4,0]::INTEGER[])
+    ) rows(id,features)`);
+    const table = sdb.newTable("source");
+    const before = await table.getData();
+    await table.normalizeVector("features", "unit", {
+      normalization: "rowL2",
+    }).run();
+    const data = await table.getData();
+    assertEquals(data.map(({ unit: _unit, ...source }) => source), before);
+    assertEquals((await table.getTypes()).features, "INTEGER[]");
+    assertEquals((await table.getTypes()).unit, "DOUBLE[3]");
+    const expected = [[0.6, 0.8, 0], [-0.6, 0, 0.8], [0, 0, 0], [0.6, 0.8, 0]];
+    data.forEach((row, index) =>
+      assertVectorAlmostEquals(row.unit, expected[index])
+    );
+
+    // Removing every other row must not change this row's normalized vector.
+    await table.filter("id = 1").normalizeVector("features", "FEATURES", {
+      normalization: "rowL2",
+    }).run();
+    assertVectorAlmostEquals((await table.getData())[0].features, expected[1]);
+    assertEquals(Object.keys(await table.getTypes()), [
+      "id",
+      "features",
+      "unit",
+    ]);
+    assertEquals((await table.getTypes()).features, "DOUBLE[3]");
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("normalizeVector rowL2 handles extreme finite magnitudes without losing unit length", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
+      ([1.7976931348623157e308, -1.7976931348623157e308]::DOUBLE[2]),
+      ([5e-324, -5e-324]::DOUBLE[2]),
+      ([3e-300, 4e-300]::DOUBLE[2]),
+      ([1.7976931348623157e308, 5e-324]::DOUBLE[2]),
+      ([-5e-324, 0]::DOUBLE[2])
+    ) rows(features)`);
+    const table = sdb.newTable("source");
+    await table.normalizeVector("features", "unit", {
+      normalization: "rowL2",
+    }).run();
+    const expected = [
+      [Math.SQRT1_2, -Math.SQRT1_2],
+      [Math.SQRT1_2, -Math.SQRT1_2],
+      [0.6, 0.8],
+      [1, 0],
+      [-1, 0],
+    ];
+    (await table.getData()).forEach((row, index) => {
+      assertVectorAlmostEquals(row.unit, expected[index]);
+      assert(Array.isArray(row.unit));
+      assertAlmostEquals(Math.hypot(...row.unit as number[]), 1, 1e-12);
+    });
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("normalizeVector captures queued normalization options and rejects invalid modes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
+      ([3,4]::INTEGER[2]), ([6,8]::INTEGER[2])
+    ) rows(features)`);
+    const table = sdb.newTable("source");
+    const options: { normalization?: "dimensionMinMax" | "rowL2" } = {
+      normalization: "rowL2",
+    };
+    table.normalizeVector("features", "unit", options);
+    options.normalization = "dimensionMinMax";
+    table.normalizeVector("features", "scaled", options);
+    options.normalization = "rowL2";
+    const data = await table.getData();
+    for (const row of data) assertVectorAlmostEquals(row.unit, [0.6, 0.8]);
+    assertEquals(data.map((row) => row.scaled), [[0, 0], [1, 1]]);
+
+    for (const normalization of ["rowl2", "minMax", "", null, 1, false]) {
+      assertThrows(
+        () =>
+          table.normalizeVector("features", "invalid", {
+            normalization: normalization as "rowL2",
+          }),
+        Error,
+        'options.normalization must be "dimensionMinMax" or "rowL2"',
+      );
+    }
+    assertEquals(await table.getData(), data);
     assertEquals(await scratchRelations(sdb), []);
   } finally {
     await sdb.close();

@@ -5122,7 +5122,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Combines numeric scalar columns into a fixed-size DuckDB vector. The input
+   * Combines numeric scalar columns into a fixed-size vector. The input
    * column order determines the vector dimension order, and null values remain
    * null vector elements.
    *
@@ -5163,33 +5163,30 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Scales each dimension of a numeric vector column independently to the
-   * range `[0, 1]` across all rows. All first elements are scaled together,
-   * all second elements together, and so on. This is different from scaling
-   * each row to unit length.
+   * Normalizes a numeric vector column. By default, each dimension is scaled
+   * independently to `[0, 1]` across rows: all first elements together, all
+   * second elements together, and so on. With `normalization: "rowL2"`, each
+   * row is scaled to Euclidean unit length while preserving its direction;
+   * zero vectors remain zero.
    *
    * The input may be a numeric LIST or fixed-size ARRAY. The output is a
    * fixed-size DOUBLE ARRAY. Converting large integers and exact decimals to
-   * DOUBLE can lose precision. A dimension whose converted values are all
-   * equal cannot be normalized and causes the operation to fail.
-   *
-   * Existing DuckDB indexes are preserved. Overwriting an indexed FLOAT
-   * vector with DOUBLE fails if its HNSW index cannot support that type;
-   * publish to a new column or remove the incompatible index first. Failures
-   * leave the source values, types, and indexes intact.
-   *
-   * Scaling changes the relative contribution of vector dimensions and is an
-   * explicit modeling choice. Algorithms such as HDBSCAN do not universally
-   * require values in `[0, 1]`.
+   * DOUBLE can lose precision. With `"dimensionMinMax"`, a dimension whose
+   * converted values are all equal cannot be normalized.
    *
    * @param column - The numeric vector column to normalize.
    * @param newColumn - The output column. Use the source column's name to
-   * overwrite it atomically with the normalized DOUBLE vector.
+   * replace the source column with the normalized DOUBLE vector.
+   * @param options - Normalization settings.
+   * @param options.normalization - `"dimensionMinMax"` scales each dimension
+   * across rows; `"rowL2"` scales each row to unit length. Defaults to
+   * `"dimensionMinMax"`.
    * @returns The table, so methods can be chained.
    * @category Vector Operations
    *
    * @example
    * ```ts
+   * // Scale each dimension across rows to [0, 1] in a new column.
    * await table
    *   .normalizeVector("features", "scaledFeatures")
    *   .log();
@@ -5197,13 +5194,18 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Replace each vector with its unit-length version; zero vectors stay zero.
    * await table
-   *   .normalizeVector("features", "features")
+   *   .normalizeVector("features", "features", { normalization: "rowL2" })
    *   .log();
    * ```
    */
-  normalizeVector(column: string, newColumn: string): this {
-    normalizeVector(this, column, newColumn);
+  normalizeVector(
+    column: string,
+    newColumn: string,
+    options: { normalization?: "dimensionMinMax" | "rowL2" } = {},
+  ): this {
+    normalizeVector(this, column, newColumn, options);
     return this;
   }
 
