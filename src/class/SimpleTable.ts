@@ -1971,11 +1971,20 @@ export default class SimpleTable extends Simple {
 
   /**
    * Trims specified characters from the beginning, end, or both sides of string values in the given columns.
+   * Pass `"all"` to trim every string (VARCHAR) column, leaving other types unchanged.
+   * If there are no string columns, `"all"` leaves the table unchanged.
+   * Use `["all"]` to trim a column literally named `all`.
    *
    * @example
    * ```ts
    * // Trim whitespace from 'column1'
    * await table.trim("column1").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Trim whitespace from every string column
+   * await table.trim("all").log();
    * ```
    *
    * @example
@@ -1989,7 +1998,7 @@ export default class SimpleTable extends Simple {
    * // Right-trim whitespace from 'description' and 'notes' columns
    * await table.trim(["description", "notes"], { side: "right" }).log();
    * ```
-   * @param columns - The column name or an array of column names to trim.
+   * @param columns - The column name, an array of column names, or `"all"` to trim every string (VARCHAR) column.
    * @param options - An optional object with configuration options:
    * @param options.character - The string to trim. Defaults to whitespace characters.
    * @param options.side - The side to trim: `"left"` (removes from the beginning), `"right"` (removes from the end), or `"both"` (removes from both sides). Defaults to `"both"`.
@@ -1997,7 +2006,7 @@ export default class SimpleTable extends Simple {
    * @category Updating Data
    */
   trim(
-    columns: string | string[],
+    columns: "all" | string | string[],
     options: {
       character?: string;
       side?: "left" | "right" | "both";
@@ -4604,6 +4613,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Replaces specified strings in the selected columns.
+   * Use `["all"]` to target a column literally named `all`.
    *
    * @example
    * ```ts
@@ -4913,6 +4923,7 @@ export default class SimpleTable extends Simple {
 
   /**
    * Replaces `NULL` values in the specified columns with a given value.
+   * Use `["all"]` to target a column literally named `all`.
    *
    * @example
    * ```ts
