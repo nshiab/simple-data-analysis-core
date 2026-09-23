@@ -44,11 +44,19 @@ Checksums (SHA-256):
 
 ## Similarity example
 
-The example uses sample 100 as a reference and `mahalanobis()` to compare all 13
-chemical measurements. `sampleId` and `cultivar` are excluded from the features.
-Sample covariance is estimated from all 178 rows before excluding the reference
-and selecting its ten closest matches. Smaller distances indicate closer
-chemical profiles, not taste similarity or wine quality.
+The example defines a custom wine profile and uses `mahalanobis()` to compare
+all 13 chemical measurements. `sampleId` and `cultivar` are excluded from the
+features. Sample covariance is estimated from all 178 source rows before the
+custom wine is inserted. The ten closest matches are selected without removing
+any dataset wines from the table.
+
+For visualization, the custom profile is inserted with `sampleId: 0` and no
+cultivar. All 179 profiles are converted to vectors, each dimension is scaled to
+[0, 1], and UMAP projects them into two dimensions with seed 42. The test checks
+that this preserves measurements and similarity scores and produces finite
+coordinates. The layout uses Euclidean distance on scaled measurements; visual
+proximity is not the Mahalanobis ranking. Smaller Mahalanobis distances indicate
+closer chemical profiles, not taste similarity or wine quality.
 
 The expected results in `test/unit/examples/wineSimilarity.test.ts` were
 computed independently with NumPy 2.3.5 using the following calculation. NumPy
@@ -60,13 +68,14 @@ import numpy as np
 
 data = np.loadtxt("test/data/files/wine.csv", delimiter=",", skiprows=1)
 x = data[:, 2:]
-delta = x - x[99]
+our_wine = np.array([12.5, 1.8, 2.2, 20, 95, 2.3, 2.1, 0.35, 1.6, 3.5, 1.05, 2.8, 600])
+delta = x - our_wine
 covariance = np.cov(x, rowvar=False, ddof=1)
 distances = np.sqrt(
     np.einsum("ij,ji->i", delta, np.linalg.solve(covariance, delta.T))
 )
 nearest = sorted(
-    (i for i in range(len(x)) if i != 99),
+    range(len(x)),
     key=lambda i: (distances[i], i),
 )[:10]
 print([(i + 1, distances[i]) for i in nearest])
