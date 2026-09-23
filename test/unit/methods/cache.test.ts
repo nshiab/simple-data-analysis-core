@@ -19,6 +19,110 @@ if (existsSync("./.sda-cache")) {
   rmSync("./.sda-cache", { recursive: true });
 }
 
+Deno.test("should reuse cache after callback whitespace and comment changes", async () => {
+  let computationRuns = 0;
+  const sources = [
+    "run(); table.loadArray([{ value: 1 }]);",
+    "run();  table.loadArray([{ value: 1 }]);",
+    `// A formatter can wrap and indent the callback.
+    run();
+    table.loadArray([
+      /* The data is unchanged. */ { value: 1 },
+    ]);`,
+    "run()\ntable.loadArray([{value:1}])",
+  ];
+  for (const source of sources) {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("cacheCallbackFormatting");
+      // Construct source explicitly so transpilation cannot erase the changes.
+      const compute = new Function("run", `return (table) => {${source}}`)(
+        () => computationRuns++,
+      ) as (table: SimpleTable) => void;
+      await table.cache(compute);
+      assertEquals(await table.getData(), [{ value: 1 }]);
+    } finally {
+      await sdb.close();
+    }
+  }
+  assertEquals(computationRuns, 1);
+});
+
+Deno.test("should invalidate cache for meaningful whitespace and literal changes", async () => {
+  const cases = [
+    ['"a b"', '"a  b"', "a b", "a  b"],
+    ["`a b`", "`a  b`", "a b", "a  b"],
+    [
+      'String(/a b/.test("a b"))',
+      'String(/a  b/.test("a b"))',
+      "true",
+      "false",
+    ],
+    [
+      '(() => { return "yes"; })() ?? "no"',
+      '(() => { return\n"yes"; })() ?? "no"',
+      "yes",
+      "no",
+    ],
+    [
+      '"https://host/* first */"',
+      '"https://host/* second */"',
+      "https://host/* first */",
+      "https://host/* second */",
+    ],
+  ];
+  for (
+    const [index, [before, after, firstValue, secondValue]] of cases.entries()
+  ) {
+    let computationRuns = 0;
+    for (
+      const [expression, expected] of [[before, firstValue], [
+        after,
+        secondValue,
+      ]]
+    ) {
+      const sdb = new SimpleDB();
+      try {
+        const table = sdb.newTable(`cacheMeaningfulWhitespace${index}`);
+        const compute = new Function(
+          "run",
+          `return (table) => { run(); table.loadArray([{ value: ${expression} }]); }`,
+        )(() => computationRuns++) as (table: SimpleTable) => void;
+        await table.cache(compute);
+        assertEquals(await table.getData(), [{ value: expected }]);
+      } finally {
+        await sdb.close();
+      }
+    }
+    assertEquals(computationRuns, 2);
+  }
+});
+
+Deno.test("should reuse cache after function and class input formatting changes", async () => {
+  let computationRuns = 0;
+  const compute = (table: SimpleTable) => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+  for (
+    const source of [
+      "return [value => value + 1, class Strategy { run() { return 1; } }];",
+      `return [(value) => /* comment */ value+1,
+      class Strategy { run () { return 1 } }];`,
+    ]
+  ) {
+    const sdb = new SimpleDB();
+    try {
+      await sdb.newTable("cacheFormattedCodeInputs").cache(compute, {
+        inputs: new Function(source)() as unknown[],
+      });
+    } finally {
+      await sdb.close();
+    }
+  }
+  assertEquals(computationRuns, 1);
+});
+
 Deno.test("should log a warning, not an error, when no data or table", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();

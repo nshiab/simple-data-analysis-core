@@ -9,6 +9,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import crypto from "node:crypto";
 import flushAllTables from "../helpers/flushAllTables.ts";
 import prettyDuration from "../helpers/prettyDuration.ts";
+import normalizeCacheCode from "../helpers/normalizeCacheCode.ts";
 import {
   cacheEntryExpired,
   cacheLoadMessage,
@@ -95,7 +96,7 @@ export default async function cache<Table extends SimpleTable>(
     cacheSources = JSON.parse(readFileSync(cacheSourcesPath, "utf-8"));
   }
 
-  const functionBody = compute.toString();
+  const functionBody = normalizeCacheCode(compute.toString());
   const entryGeneration = peekTableGeneration(table) ?? null;
   const inputs = options.inputs?.filter((input) => input !== table) ?? [];
   const hasInputs = inputs.length > 0;

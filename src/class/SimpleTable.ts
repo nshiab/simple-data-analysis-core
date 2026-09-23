@@ -8682,6 +8682,9 @@ export default class SimpleTable extends Simple {
    * Caches the results of computations in `./.sda-cache`.
    * You should add `./.sda-cache` to your `.gitignore` file.
    *
+   * Callback code and function/class inputs ignore comments, indentation, and
+   * line wrapping where safe.
+   *
    * `cache()` automatically tracks whether earlier SDA operations changed the
    * table. It also records every other already registered `SimpleTable` read
    * through `SimpleTable` methods while `compute` runs and invalidates the
