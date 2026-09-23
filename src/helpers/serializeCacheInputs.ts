@@ -1,5 +1,6 @@
 import SimpleTable from "../class/SimpleTable.ts";
 import { getTableGeneration } from "./tableGeneration.ts";
+import normalizeCacheCode from "./normalizeCacheCode.ts";
 
 /**
  * Converts cache inputs to a deterministic, type-tagged representation.
@@ -48,7 +49,7 @@ function serializeValue(
     case "function":
       return JSON.stringify([
         "function",
-        Function.prototype.toString.call(value),
+        normalizeCacheCode(Function.prototype.toString.call(value)),
       ]);
     case "symbol":
       throw new TypeError(`cache() ${path} cannot be a symbol.`);
