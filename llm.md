@@ -1,7 +1,7 @@
 # The Simple Data Analysis (Core) Library
 
 - Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.1.0`
+- Version: `2.1.1`
 
 To install the library with Deno, use:
 
@@ -2410,17 +2410,20 @@ await table.removeMissing({ columns: "age", missingValues: [-1] }).log();
 #### `trim`
 
 Trims specified characters from the beginning, end, or both sides of string
-values in the given columns.
+values in the given columns. Pass `"all"` to trim every string (VARCHAR) column,
+leaving other types unchanged. If there are no string columns, `"all"` leaves
+the table unchanged. Use `["all"]` to trim a column literally named `all`.
 
 ##### Signature
 
 ```typescript
-trim(columns: string | string[], options?: { character?: string; side?: "left" | "right" | "both" }): this;
+trim(columns: "all" | string | string[], options?: { character?: string; side?: "left" | "right" | "both" }): this;
 ```
 
 ##### Parameters
 
-- **`columns`**: The column name or an array of column names to trim.
+- **`columns`**: The column name, an array of column names, or `"all"` to trim
+  every string (VARCHAR) column.
 - **`options`**: An optional object with configuration options:
 - **`options.character`**: The string to trim. Defaults to whitespace
   characters.
@@ -2437,6 +2440,11 @@ The table, so methods can be chained.
 ```ts
 // Trim whitespace from 'column1'
 await table.trim("column1").log();
+```
+
+```ts
+// Trim whitespace from every string column
+await table.trim("all").log();
 ```
 
 ```ts
@@ -5090,7 +5098,8 @@ await table.fuzzyClean("category", "category", 80, {
 
 #### `replace`
 
-Replaces specified strings in the selected columns.
+Replaces specified strings in the selected columns. Use `["all"]` to target a
+column literally named `all`.
 
 ##### Signature
 
@@ -5473,7 +5482,8 @@ await table.lastChars("productCode", 2).log();
 
 #### `replaceNulls`
 
-Replaces `NULL` values in the specified columns with a given value.
+Replaces `NULL` values in the specified columns with a given value. Use
+`["all"]` to target a column literally named `all`.
 
 ##### Signature
 
