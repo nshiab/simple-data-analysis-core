@@ -1,0 +1,20 @@
+payer,payee,amount
+Mill,Farm,2400
+Bakery,Mill,1800
+Cafe,Bakery,1200
+Grocer,Farm,1600
+Grocer,Dairy,1400
+Bakery,Dairy,600
+Cafe,Dairy,400
+Farm,Grocer,300
+Dairy,Farm,500
+Farm,Repair Shop,700
+Repair Shop,Carpenter,450
+Carpenter,Sawmill,1500
+Builder,Sawmill,2000
+Builder,Carpenter,1100
+Inn,Builder,1700
+Inn,Laundry,800
+Laundry,Repair Shop,350
+Sawmill,Repair Shop,500
+Carpenter,Inn,250
