@@ -415,6 +415,8 @@ export default class SimpleTable extends Simple {
    * numbers, bigints, strings, booleans, and Date values. Array and object cells
    * require an explicit supported type in columnTypes. Types can also be
    * specified for scalar columns instead of inferred from their values.
+   * Inferred bigints use signed 64-bit `BIGINT`; values outside that range throw
+   * when written instead of wrapping.
    *
    * JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
    * instant is preserved, but JavaScript `Date` does not retain the timezone or
@@ -6450,6 +6452,9 @@ export default class SimpleTable extends Simple {
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
    * Before writing a JavaScript callback, check for an existing SDA method that
    * performs the same operation; it will usually be faster and more efficient.
+   * Existing integer and enum columns retain their types. Fractional or
+   * out-of-range integers and unknown enum members throw when written. Failed
+   * updates preserve the original table and discard their staged writes.
    *
    * If the table has geometry columns, the callback can read and modify their
    * GeoJSON geometry objects directly. Extra properties added to these objects

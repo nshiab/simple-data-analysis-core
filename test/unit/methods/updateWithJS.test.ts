@@ -1,6 +1,80 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+for (const batchSize of [undefined, 1000]) {
+  for (
+    const { type, initial, invalid, message } of [
+      {
+        type: "INTEGER",
+        initial: "2147483647",
+        invalid: 2147483648,
+        message: "int32 range",
+      },
+      {
+        type: "INTEGER",
+        initial: "-2147483648",
+        invalid: 1.5,
+        message: "not an integer",
+      },
+      {
+        type: "UINTEGER",
+        initial: "4294967295",
+        invalid: -1,
+        message: "uint32 range",
+      },
+      {
+        type: "BIGINT",
+        initial: "9223372036854775807",
+        invalid: 9223372036854775808n,
+        message: "int64 range",
+      },
+      {
+        type: "ENUM('ok', '__proto__')",
+        initial: "'__proto__'",
+        invalid: "unknown",
+        message: "not a member",
+      },
+    ]
+  ) {
+    Deno.test(`updateWithJS rejects ${String(invalid)} for ${type} without replacing data (${batchSize})`, async () => {
+      const sdb = new SimpleDB();
+      try {
+        const table = sdb.newTable("validated_updates");
+        await sdb.customQuery(`CREATE TABLE validated_updates AS
+          SELECT i::INTEGER AS id, (${initial})::${type} AS value
+          FROM range(2001) t(i)`);
+        const query =
+          "SELECT id, value::VARCHAR AS value FROM validated_updates ORDER BY id";
+        const before = await sdb.customQuery(query, { returnData: true });
+        const types = await table.getTypes();
+        await assertRejects(
+          () =>
+            table.updateWithJS((rows) =>
+              rows.map((row) => ({
+                ...row,
+                value: row.id === 2000 ? invalid : row.value,
+              })), { batchSize }).run(),
+          Error,
+          message,
+        );
+        assertEquals(
+          await sdb.customQuery(query, { returnData: true }),
+          before,
+        );
+        assertEquals(await table.getTypes(), types);
+        assertEquals(await sdb.getTableNames(), ["validated_updates"]);
+        await table.updateWithJS((rows) => rows, { batchSize }).run();
+        assertEquals(
+          await sdb.customQuery(query, { returnData: true }),
+          before,
+        );
+      } finally {
+        await sdb.close();
+      }
+    });
+  }
+}
+
 Deno.test("should update the data from the table with a javascript function and reinsert it into the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

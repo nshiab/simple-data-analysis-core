@@ -124,6 +124,44 @@ try {
   if (actual !== expected) {
     throw new Error(\`Expected \${expected}, received \${actual}\`);
   }
+  const integerTable = sdb.newTable("integer_smoke");
+  await integerTable.loadArray([
+    { value: -2147483648 }, { value: 2147483647 }, { value: null },
+  ], { columnTypes: { value: "INTEGER" } }).run();
+  const integerRows = JSON.stringify(await integerTable.getData());
+  for (const invalid of [2147483648, 1.5]) {
+    let rejected = false;
+    try {
+      await integerTable.updateWithJS((rows) => rows.map((row) =>
+        row.value === null ? { value: invalid } : row), { batchSize: 1 }).run();
+    } catch (error) {
+      rejected = /int32 range|not an integer/.test(String(error));
+    }
+    if (!rejected || JSON.stringify(await integerTable.getData()) !== integerRows) {
+      throw new Error("Expected invalid integers to throw and preserve the table");
+    }
+  }
+  const bigintTable = sdb.newTable("bigint_smoke");
+  await bigintTable.loadArray([
+    { value: -9223372036854775808n }, { value: 9223372036854775807n },
+  ]).run();
+  const bigintRows = await sdb.customQuery(
+    'SELECT value::VARCHAR AS value FROM bigint_smoke ORDER BY rowid',
+    { returnData: true },
+  );
+  if (JSON.stringify(bigintRows) !== JSON.stringify([
+    { value: "-9223372036854775808" }, { value: "9223372036854775807" },
+  ])) {
+    throw new Error("Expected exact BIGINT boundaries");
+  }
+  let overflowRejected = false;
+  try {
+    await bigintTable.loadArray([{ value: 9223372036854775808n }]).run();
+  } catch (error) {
+    overflowRejected = String(error).includes("int64 range");
+  }
+  if (!overflowRejected) throw new Error("Expected BIGINT overflow to throw");
+  await bigintTable.loadArray([{ value: 42n }]).run();
   const jsonTable = sdb.newTable("json_smoke").loadArray([{
     payload: { tags: ["station"], active: true },
     vector: [1, 2, 3],
