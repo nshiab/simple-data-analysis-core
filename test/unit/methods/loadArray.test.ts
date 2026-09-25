@@ -7,6 +7,44 @@ import { DuckDBTimeValue } from "@duckdb/node-api";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
+Deno.test("loadArray preserves inferred BIGINT limits and rejects overflow across chunks", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("bigint_limits");
+    await table.loadArray([
+      { value: -9223372036854775808n },
+      { value: 9223372036854775807n },
+      { value: null },
+    ]).run();
+    assertEquals(await table.getTypes(), { value: "BIGINT" });
+    assertEquals(
+      await sdb.customQuery(
+        "SELECT value::VARCHAR AS value FROM bigint_limits ORDER BY rowid",
+        { returnData: true },
+      ),
+      [{ value: "-9223372036854775808" }, { value: "9223372036854775807" }, {
+        value: null,
+      }],
+    );
+    for (const overflow of [-9223372036854775809n, 9223372036854775808n]) {
+      await assertRejects(
+        () =>
+          table.loadArray(Array.from({ length: 2001 }, (_, i) => ({
+            value: i === 2000 ? overflow : BigInt(i),
+          }))).run(),
+        Error,
+        "bigint out of int64 range",
+      );
+      // A failed write must release its appender and leave the queue usable.
+      await table.loadArray([{ value: 42n }]).run();
+      assertEquals(await table.getData(), [{ value: 42 }]);
+      assertEquals(await sdb.getTableNames(), ["bigint_limits"]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("should load an array of objects into a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
