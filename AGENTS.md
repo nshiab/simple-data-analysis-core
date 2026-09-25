@@ -32,6 +32,16 @@
 
 ### Phase 2: Implementation (DURING Development)
 
+- **Performance and Recovery:** Optimize for rerunnable analysis scripts,
+  including watch mode. Add copies solely for rollback or recovery only when
+  recovery is an explicit requirement. Prefer direct writes and reuse completed
+  result tables to avoid redundant materialization. Keep staging or snapshots
+  needed for correct computation, stable row identity, type conversion, or
+  documented behavior; temporary tables and transactions are not inherently
+  wasteful. When adding or removing full-table copies, explain each copy's
+  purpose, benchmark representative workloads, and report runtime and memory
+  tradeoffs. Preserve input validation and resource cleanup, and document
+  failure behavior accurately.
 - **Public API Organization:** Give every public method a matching
   implementation file at `src/methods/<methodName>.ts` and test file at
   `test/unit/methods/<methodName>.test.ts`. Shared internal logic may live in a
