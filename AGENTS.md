@@ -32,9 +32,9 @@
 
 ### Phase 2: Implementation (DURING Development)
 
-- **Performance and Recovery:** Optimize for rerunnable scripts. Add recovery-only
-  copies only when explicitly required; keep staging needed for correctness.
-  Benchmark changes to full-table copies.
+- **Performance and Recovery:** Optimize for rerunnable scripts. Add
+  recovery-only copies only when explicitly required; keep staging needed for
+  correctness. Benchmark changes to full-table copies.
 - **Public API Organization:** Give every public method a matching
   implementation file at `src/methods/<methodName>.ts` and test file at
   `test/unit/methods/<methodName>.test.ts`. Shared internal logic may live in a
