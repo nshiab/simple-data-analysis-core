@@ -132,7 +132,7 @@ import addNoise from "../methods/addNoise.ts";
 import rowToText from "../methods/rowToText.ts";
 import rowToVector from "../methods/rowToVector.ts";
 import normalizeVector from "../methods/normalizeVector.ts";
-import mahalanobis from "../methods/mahalanobis.ts";
+import similarityMahalanobis from "../methods/similarityMahalanobis.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
@@ -5138,9 +5138,12 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Calculates each row's Mahalanobis distance from a supplied reference point
-   * and stores it in a new DOUBLE column. Sample covariance (`n - 1`) is
-   * estimated from the dataset, independently of the reference point.
+   * Measures numeric profile similarity using each row's Mahalanobis distance
+   * from a supplied reference point and stores it in a new DOUBLE column.
+   * Smaller distances indicate more similar profiles. Optionally adds a
+   * dataset-relative similarity score, where larger values mean more similar.
+   * Sample covariance (`n - 1`) is estimated from the dataset, independently
+   * of the reference point.
    *
    * Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
    * Reference values follow the same dimension order. Inputs are converted
@@ -5155,7 +5158,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Measure distance from a reference height and weight.
    * await table
-   *   .mahalanobis(["height", "weight"], [175, 70], "distance")
+   *   .similarityMahalanobis(["height", "weight"], [175, 70], "distance")
    *   .log();
    * ```
    *
@@ -5163,7 +5166,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Compare feature vectors and add a dataset-relative similarity score.
    * await table
-   *   .mahalanobis("features", [175, 70], "distance", {
+   *   .similarityMahalanobis("features", [175, 70], "distance", {
    *     similarityScoreColumn: "similarity",
    *   })
    *   .log();
@@ -5178,13 +5181,13 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
-  mahalanobis(
+  similarityMahalanobis(
     columns: string | string[],
     referencePoint: number[],
     newColumn: string,
     options: { similarityScoreColumn?: string } = {},
   ): this {
-    mahalanobis(this, columns, referencePoint, newColumn, options);
+    similarityMahalanobis(this, columns, referencePoint, newColumn, options);
     return this;
   }
 
