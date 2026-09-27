@@ -111,7 +111,7 @@ Deno.test("covariance consumes shared mixed-scalar feature preparation", async (
     const prepared = await prepareNumericFeatures(
       sdb.newTable("source"),
       { kind: "scalars", columns: ["count", "score"] },
-      { method: "mahalanobis()" },
+      { method: "similarityMahalanobis()" },
     );
     try {
       const model = await computeCovariance(sdb.connection!, {

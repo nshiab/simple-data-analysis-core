@@ -5716,11 +5716,16 @@ await table
   .log();
 ```
 
-#### `mahalanobis`
+#### `similarityMahalanobis`
 
-Calculates each row's Mahalanobis distance from a supplied reference point and
-stores it in a new DOUBLE column. Sample covariance (`n - 1`) is estimated from
-the dataset, independently of the reference point.
+Measures numeric profile similarity using each row's Mahalanobis distance from a
+supplied reference point and stores it in a new DOUBLE column. Smaller distances
+indicate more similar profiles. Optionally adds a dataset-relative similarity
+score, where larger values mean more similar. Sample covariance (`n - 1`) is
+estimated from the dataset, independently of the reference point.
+
+Accounts for differences in feature scales and correlations between features,
+making it useful for comparing profiles with measurements in different units.
 
 Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
 Reference values follow the same dimension order. Inputs are converted privately
@@ -5734,7 +5739,7 @@ unchanged.
 ##### Signature
 
 ```typescript
-mahalanobis(columns: string | string[], referencePoint: number[], newColumn: string, options?: { similarityScoreColumn?: string }): this;
+similarityMahalanobis(columns: string | string[], referencePoint: number[], newColumn: string, options?: { similarityScoreColumn?: string }): this;
 ```
 
 ##### Parameters
@@ -5758,14 +5763,14 @@ The table, so methods can be chained.
 ```ts
 // Measure distance from a reference height and weight.
 await table
-  .mahalanobis(["height", "weight"], [175, 70], "distance")
+  .similarityMahalanobis(["height", "weight"], [175, 70], "distance")
   .log();
 ```
 
 ```ts
 // Compare feature vectors and add a dataset-relative similarity score.
 await table
-  .mahalanobis("features", [175, 70], "distance", {
+  .similarityMahalanobis("features", [175, 70], "distance", {
     similarityScoreColumn: "similarity",
   })
   .log();

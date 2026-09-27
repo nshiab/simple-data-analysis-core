@@ -141,7 +141,7 @@ Deno.test("prepareNumericFeatures reports invalid scalar row counts and affected
         prepareNumericFeatures(
           sdb.newTable("source"),
           { kind: "scalars", columns: ["a", "b"] },
-          { method: "mahalanobis()" },
+          { method: "similarityMahalanobis()" },
         ),
       Error,
       'Found 2 invalid rows. Affected columns: "a" (2 rows), "b" (1 row)',

@@ -213,7 +213,7 @@ try {
   ])
     .rowToVector(["x", "y"], "features", { type: "double" })
     .normalizeVector("features", "scaled")
-    .mahalanobis(["x", "y"], [1, 2], "distance", { similarityScoreColumn: "similarity" })
+    .similarityMahalanobis(["x", "y"], [1, 2], "distance", { similarityScoreColumn: "similarity" })
     .hdbscan("scaled", "cluster", {
       minClusterSize: 2, minSamples: 1,
       membershipScoreColumn: "membership", outlierScoreColumn: "outlier",
@@ -237,7 +237,7 @@ try {
   const prototypeTable = sdb.newTable("prototype_smoke")
     .rowToVector(["__proto__"], "features")
     .normalizeVector("features", "features")
-    .mahalanobis(["__proto__"], [1], "distance");
+    .similarityMahalanobis(["__proto__"], [1], "distance");
   const prototypeTypes = await prototypeTable.getTypes();
   const prototypeRows = await prototypeTable.getData();
   if (!Object.hasOwn(prototypeTypes, "__proto__") || prototypeTypes["__proto__"] !== "DOUBLE" ||

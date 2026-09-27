@@ -41,7 +41,7 @@ async function scratchRelations(sdb: SimpleDB): Promise<string[]> {
   )).getRowsJS().map((row) => String(row[0]));
 }
 
-Deno.test("mahalanobis matches the pinned NumPy 2.3.4 public-method fixture", async () => {
+Deno.test("similarityMahalanobis matches the pinned NumPy 2.3.4 public-method fixture", async () => {
   assertEquals(fixture.numpyVersion, "2.3.4");
   const sdb = new SimpleDB();
   try {
@@ -53,10 +53,11 @@ Deno.test("mahalanobis matches the pinned NumPy 2.3.4 public-method fixture", as
     }
     ) rows(id, observation, feature, value, label)`);
     const table = sdb.newTable("source");
+    assertEquals("mahalanobis" in table, false);
     const before = await table.getData();
     const typesBefore = await table.getTypes();
 
-    await table.mahalanobis(
+    await table.similarityMahalanobis(
       ["observation", "feature", "value"],
       fixture.data[0].map((_, i) =>
         fixture.data.reduce((sum, row) => sum + row[i], 0) / fixture.data.length
@@ -83,7 +84,7 @@ Deno.test("mahalanobis matches the pinned NumPy 2.3.4 public-method fixture", as
   }
 });
 
-Deno.test("mahalanobis accepts every numeric scalar type and computes one-dimensional absolute sample z-scores", async () => {
+Deno.test("similarityMahalanobis accepts every numeric scalar type and computes one-dimensional absolute sample z-scores", async () => {
   const scalarTypes = [
     "TINYINT",
     "SMALLINT",
@@ -109,7 +110,7 @@ Deno.test("mahalanobis accepts every numeric scalar type and computes one-dimens
         SELECT i::INTEGER AS id, i::${type} AS feature
         FROM range(3) rows(i)`);
       const typeBefore = (await table.getTypes()).feature;
-      await table.mahalanobis(["feature"], [1], "distance").run();
+      await table.similarityMahalanobis(["feature"], [1], "distance").run();
       assertClose(
         (await table.getData()).map((row) => Number(row.distance)),
         [1, 0, 1],
@@ -124,7 +125,7 @@ Deno.test("mahalanobis accepts every numeric scalar type and computes one-dimens
   }
 });
 
-Deno.test("mahalanobis accepts mixed scalar types and numeric ARRAY and LIST vectors", async () => {
+Deno.test("similarityMahalanobis accepts mixed scalar types and numeric ARRAY and LIST vectors", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("source");
@@ -155,7 +156,7 @@ Deno.test("mahalanobis accepts mixed scalar types and numeric ARRAY and LIST vec
         ) rows(id, x, y, label)`);
       const before = await table.getData();
       const typesBefore = await table.getTypes();
-      await table.mahalanobis(
+      await table.similarityMahalanobis(
         columns,
         typeof columns === "string"
           ? [0, 0]
@@ -178,7 +179,7 @@ Deno.test("mahalanobis accepts mixed scalar types and numeric ARRAY and LIST vec
   }
 });
 
-Deno.test("mahalanobis is invariant to translation and independent feature units", async () => {
+Deno.test("similarityMahalanobis is invariant to translation and independent feature units", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT *,
@@ -191,13 +192,17 @@ Deno.test("mahalanobis is invariant to translation and independent feature units
       ) rows(x, y)`);
     const table = sdb.newTable("source");
     await table
-      .mahalanobis(["x", "y"], [1, 2], "base")
-      .mahalanobis(
+      .similarityMahalanobis(["x", "y"], [1, 2], "base")
+      .similarityMahalanobis(
         ["translated_x", "translated_y"],
         [1e12 + 1, -1e12 + 2],
         "translated",
       )
-      .mahalanobis(["scaled_x", "scaled_y"], [1e-120, -2e120], "scaled")
+      .similarityMahalanobis(
+        ["scaled_x", "scaled_y"],
+        [1e-120, -2e120],
+        "scaled",
+      )
       .run();
     const data = await table.getData();
     const base = data.map((row) => Number(row.base));
@@ -209,7 +214,7 @@ Deno.test("mahalanobis is invariant to translation and independent feature units
   }
 });
 
-Deno.test("mahalanobis rejects invalid scalar and vector rows with actionable diagnostics", async () => {
+Deno.test("similarityMahalanobis rejects invalid scalar and vector rows with actionable diagnostics", async () => {
   const invalidCases = [
     {
       sql: `CREATE TABLE source AS SELECT * FROM (VALUES
@@ -258,7 +263,7 @@ Deno.test("mahalanobis rejects invalid scalar and vector rows with actionable di
       const table = sdb.newTable("source");
       const before = await table.getData();
       const error = await assertRejects(() =>
-        table.mahalanobis(
+        table.similarityMahalanobis(
           columns,
           typeof columns === "string"
             ? [0, 0]
@@ -276,7 +281,7 @@ Deno.test("mahalanobis rejects invalid scalar and vector rows with actionable di
   }
 });
 
-Deno.test("mahalanobis rejects missing, duplicate, and nonnumeric feature specifications", async () => {
+Deno.test("similarityMahalanobis rejects missing, duplicate, and nonnumeric feature specifications", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -294,7 +299,7 @@ Deno.test("mahalanobis rejects missing, duplicate, and nonnumeric feature specif
     ) {
       await assertRejects(
         () =>
-          table.mahalanobis(
+          table.similarityMahalanobis(
             columns,
             typeof columns === "string"
               ? [0, 0]
@@ -311,7 +316,7 @@ Deno.test("mahalanobis rejects missing, duplicate, and nonnumeric feature specif
   }
 });
 
-Deno.test("mahalanobis rejects insufficient, singular, and unrepresentable covariance", async () => {
+Deno.test("similarityMahalanobis rejects insufficient, singular, and unrepresentable covariance", async () => {
   const cases = [
     {
       sql: `CREATE TABLE source AS SELECT * FROM (VALUES
@@ -355,7 +360,7 @@ Deno.test("mahalanobis rejects insufficient, singular, and unrepresentable covar
       const typesBefore = await table.getTypes();
       await assertRejects(
         () =>
-          table.mahalanobis(
+          table.similarityMahalanobis(
             columns,
             typeof columns === "string"
               ? [0, 0]
@@ -373,7 +378,7 @@ Deno.test("mahalanobis rejects insufficient, singular, and unrepresentable covar
   }
 });
 
-Deno.test("mahalanobis rejects output collisions before invalid input preparation using ASCII folding", async () => {
+Deno.test("similarityMahalanobis rejects output collisions before invalid input preparation using ASCII folding", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT
@@ -381,7 +386,7 @@ Deno.test("mahalanobis rejects output collisions before invalid input preparatio
     const table = sdb.newTable("source");
     const before = await table.getData();
     await assertRejects(
-      () => table.mahalanobis("features", [0], "DISTANCE").run(),
+      () => table.similarityMahalanobis("features", [0], "DISTANCE").run(),
       Error,
       "column already exists",
     );
@@ -393,14 +398,14 @@ Deno.test("mahalanobis rejects output collisions before invalid input preparatio
       (0.0,0.0,'a'), (1.0,2.0,'b'), (2.0,1.0,'c'), (4.0,5.0,'d')
     ) rows(x,y,"É")`,
     );
-    await table.mahalanobis(["x", "y"], [0, 0], "é").run();
+    await table.similarityMahalanobis(["x", "y"], [0, 0], "é").run();
     assertEquals(Object.keys(await table.getTypes()), ["x", "y", "É", "é"]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("mahalanobis composes with queued operations and snapshots columns, reference, and options", async () => {
+Deno.test("similarityMahalanobis composes with queued operations and snapshots columns, reference, and options", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -412,7 +417,7 @@ Deno.test("mahalanobis composes with queued operations and snapshots columns, re
     const reference = [0, 0];
     const options = { similarityScoreColumn: "similarity" };
     table.filter("keep")
-      .mahalanobis(columns, reference, "distance", options)
+      .similarityMahalanobis(columns, reference, "distance", options)
       .selectColumns(["id", "distance", "similarity"]);
     columns[0] = "missing";
     columns.push("alsoMissing");
@@ -437,8 +442,10 @@ Deno.test("mahalanobis composes with queued operations and snapshots columns, re
   }
 });
 
-Deno.test("mahalanobis preserves a file-backed table, its row order, types, and indexes", async () => {
-  const directory = await Deno.makeTempDir({ prefix: "sda-mahalanobis-" });
+Deno.test("similarityMahalanobis preserves a file-backed table, its row order, types, and indexes", async () => {
+  const directory = await Deno.makeTempDir({
+    prefix: "sda-similarityMahalanobis-",
+  });
   const sdb = new SimpleDB({ file: `${directory}/analysis.duckdb` });
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -451,7 +458,7 @@ Deno.test("mahalanobis preserves a file-backed table, its row order, types, and 
     const table = sdb.newTable("source");
     const before = await table.getData();
     const typesBefore = await table.getTypes();
-    await table.mahalanobis(["x", "y"], [0, 0], "distance", {
+    await table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
       similarityScoreColumn: "similarity",
     }).run();
     const after = await table.getData();
@@ -480,7 +487,7 @@ Deno.test("mahalanobis preserves a file-backed table, its row order, types, and 
   }
 });
 
-Deno.test("mahalanobis rolls back publication and cleans scratch state after commit failure", async () => {
+Deno.test("similarityMahalanobis rolls back publication and cleans scratch state after commit failure", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -499,7 +506,7 @@ Deno.test("mahalanobis rolls back publication and cleans scratch state after com
     };
     try {
       const error = await assertRejects(() =>
-        table.mahalanobis(["x", "y"], [0, 0], "distance", {
+        table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
           similarityScoreColumn: "similarity",
         }).run()
       );
@@ -521,7 +528,7 @@ Deno.test("mahalanobis rolls back publication and cleans scratch state after com
   }
 });
 
-Deno.test("mahalanobis preserves quoted vectors, exact typed payloads, and HNSW indexes", async () => {
+Deno.test("similarityMahalanobis preserves quoted vectors, exact typed payloads, and HNSW indexes", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT id,
@@ -541,7 +548,11 @@ Deno.test("mahalanobis preserves quoted vectors, exact typed payloads, and HNSW 
       FROM source`;
     const before = (await sdb.connection!.runAndReadAll(sourceQuery))
       .getRowsJS();
-    await table.mahalanobis('FEATURE " VALUES', [3, 3], 'Computed " distance')
+    await table.similarityMahalanobis(
+      'FEATURE " VALUES',
+      [3, 3],
+      'Computed " distance',
+    )
       .run();
     assertEquals(
       (await sdb.connection!.runAndReadAll(sourceQuery)).getRowsJS(),
@@ -573,7 +584,7 @@ Deno.test("mahalanobis preserves quoted vectors, exact typed payloads, and HNSW 
   }
 });
 
-Deno.test("mahalanobis numerical failure aborts later queued operations and permits retry", async () => {
+Deno.test("similarityMahalanobis numerical failure aborts later queued operations and permits retry", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS
@@ -584,7 +595,7 @@ Deno.test("mahalanobis numerical failure aborts later queued operations and perm
     const typesBefore = await table.getTypes();
     await assertRejects(
       () =>
-        table.mahalanobis("features", [0, 0], "distance")
+        table.similarityMahalanobis("features", [0, 0], "distance")
           .selectColumns(["distance"]).run(),
       Error,
       "linearly dependent",
@@ -592,7 +603,7 @@ Deno.test("mahalanobis numerical failure aborts later queued operations and perm
     assertEquals(await table.getData(), before);
     assertEquals(await table.getTypes(), typesBefore);
     assertEquals(await scratchRelations(sdb), []);
-    await table.mahalanobis(["id"], [1.5], "distance").run();
+    await table.similarityMahalanobis(["id"], [1.5], "distance").run();
     assertClose(
       (await table.getData()).map((row) => Number(row.distance)),
       [1.5, 0.5, 0.5, 1.5].map((value) => value / Math.sqrt(5 / 3)),
@@ -614,7 +625,7 @@ Deno.test("multivariate chaining preserves physical column order for integer-lik
     assertEquals(await table.getColumns(), ["2", "1", "payload"]);
     await table.rowToVector(["2", "1"], "0")
       .normalizeVector("0", "0")
-      .mahalanobis("0", [0.5, 0.5], "3").run();
+      .similarityMahalanobis("0", [0.5, 0.5], "3").run();
     assertEquals(await table.getColumns(), ["2", "1", "payload", "0", "3"]);
     const data = await table.getData();
     assertEquals(
@@ -632,16 +643,16 @@ Deno.test("multivariate chaining preserves physical column order for integer-lik
   }
 });
 
-Deno.test("mahalanobis uses the supplied scalar or vector reference and dataset-relative similarity", async () => {
+Deno.test("similarityMahalanobis uses the supplied scalar or vector reference and dataset-relative similarity", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT i AS id,
       i::DOUBLE AS x, [i::DOUBLE]::DOUBLE[1] AS vector FROM range(3) rows(i)`);
     const table = sdb.newTable("source");
-    await table.mahalanobis(["x"], [0], "distance", {
+    await table.similarityMahalanobis(["x"], [0], "distance", {
       similarityScoreColumn: "score",
     })
-      .mahalanobis("vector", [4], "outside", {
+      .similarityMahalanobis("vector", [4], "outside", {
         similarityScoreColumn: "outside_score",
       })
       .run();
@@ -657,7 +668,7 @@ Deno.test("mahalanobis uses the supplied scalar or vector reference and dataset-
   }
 });
 
-Deno.test("mahalanobis follows reference dimension order with correlated sample covariance", async () => {
+Deno.test("similarityMahalanobis follows reference dimension order with correlated sample covariance", async () => {
   const sdb = new SimpleDB();
   try {
     // Sample covariance = [[4/3, 4/3], [4/3, 8/3]].
@@ -666,8 +677,8 @@ Deno.test("mahalanobis follows reference dimension order with correlated sample 
       FROM (VALUES (0,0), (2,0), (2,2), (0,-2)) rows(x,y)`,
     );
     const table = sdb.newTable("source");
-    await table.mahalanobis(["x", "y"], [3, -1], "distance")
-      .mahalanobis("reversed", [-1, 3], "reversed_distance").run();
+    await table.similarityMahalanobis(["x", "y"], [3, -1], "distance")
+      .similarityMahalanobis("reversed", [-1, 3], "reversed_distance").run();
     for (const row of await table.getData()) {
       // Evaluate using the direct 2x2 inverse to keep the oracle independent.
       const dx = Number(row.x) - 3;
@@ -685,17 +696,17 @@ Deno.test("mahalanobis follows reference dimension order with correlated sample 
   }
 });
 
-Deno.test("mahalanobis retains finite extreme distances and tiny reference offsets", async () => {
+Deno.test("similarityMahalanobis retains finite extreme distances and tiny reference offsets", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(
       "CREATE TABLE source AS SELECT i::DOUBLE AS x FROM range(3) rows(i)",
     );
     const table = sdb.newTable("source");
-    await table.mahalanobis(["x"], [1e308], "huge", {
+    await table.similarityMahalanobis(["x"], [1e308], "huge", {
       similarityScoreColumn: "score",
     })
-      .mahalanobis(["x"], [1e-200], "tiny").run();
+      .similarityMahalanobis(["x"], [1e-200], "tiny").run();
     const data = await table.getData();
     assertEquals(data.map((row) => row.huge), [1e308, 1e308, 1e308]);
     assertEquals(data.map((row) => row.score), [0, 0, 0]);
@@ -707,7 +718,7 @@ Deno.test("mahalanobis retains finite extreme distances and tiny reference offse
   }
 });
 
-Deno.test("mahalanobis validates reference values and dimensions without changing the source", async () => {
+Deno.test("similarityMahalanobis validates reference values and dimensions without changing the source", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(
@@ -728,7 +739,8 @@ Deno.test("mahalanobis validates reference values and dimensions without changin
       ]
     ) {
       assertThrows(
-        () => table.mahalanobis(["x"], reference as number[], "distance"),
+        () =>
+          table.similarityMahalanobis(["x"], reference as number[], "distance"),
         Error,
         "nonempty array of finite numbers",
       );
@@ -736,7 +748,7 @@ Deno.test("mahalanobis validates reference values and dimensions without changin
     for (const columns of [["x"], "vector"] as (string | string[])[]) {
       await assertRejects(
         () =>
-          table.mahalanobis(columns, [1, 2, 3], "distance", {
+          table.similarityMahalanobis(columns, [1, 2, 3], "distance", {
             similarityScoreColumn: "score",
           }).run(),
         Error,
@@ -750,7 +762,7 @@ Deno.test("mahalanobis validates reference values and dimensions without changin
   }
 });
 
-Deno.test("mahalanobis validates both output names before preparing invalid features", async () => {
+Deno.test("similarityMahalanobis validates both output names before preparing invalid features", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(
@@ -772,7 +784,7 @@ Deno.test("mahalanobis validates both output names before preparing invalid feat
     for (const { distance, score, message } of cases) {
       await assertRejects(
         () =>
-          table.mahalanobis("features", [0], distance, {
+          table.similarityMahalanobis("features", [0], distance, {
             similarityScoreColumn: score,
           }).run(),
         Error,
@@ -786,7 +798,7 @@ Deno.test("mahalanobis validates both output names before preparing invalid feat
   }
 });
 
-Deno.test("mahalanobis leaves both outputs unpublished when a reference produces unrepresentable distances", async () => {
+Deno.test("similarityMahalanobis leaves both outputs unpublished when a reference produces unrepresentable distances", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(
@@ -798,7 +810,7 @@ Deno.test("mahalanobis leaves both outputs unpublished when a reference produces
     const types = await table.getTypes();
     await assertRejects(
       () =>
-        table.mahalanobis(["x"], [1e308], "distance", {
+        table.similarityMahalanobis(["x"], [1e308], "distance", {
           similarityScoreColumn: "score",
         }).run(),
       Error,
