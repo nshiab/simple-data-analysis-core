@@ -1078,6 +1078,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     }
 
     const cleanupErrors: unknown[] = [];
+    const cacheCleanupMessages: string[] = [];
     if (this.db instanceof DuckDBInstance) {
       try {
         this.connection.closeSync();
@@ -1096,34 +1097,17 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       if (existsSync(tmpDir)) {
         rmSync(tmpDir, { recursive: true });
       }
-      cleanCache(this);
+      // Defer cache logs until after the summary, while timing cleanup too.
+      cleanCache(this, (message) => cacheCleanupMessages.push(message));
     } catch (error) {
       cleanupErrors.push(error);
     }
     this.lifecycleState = "closed";
 
-    if (operationError !== undefined && cleanupErrors.length > 0) {
-      throw new AggregateError(
-        [operationError, ...cleanupErrors],
-        "Pending execution and database cleanup both failed.",
-        { cause: operationError },
-      );
-    }
-    if (operationError !== undefined) {
-      throw operationError;
-    }
-    if (cleanupErrors.length === 1) {
-      throw cleanupErrors[0];
-    }
-    if (cleanupErrors.length > 1) {
-      throw new AggregateError(
-        cleanupErrors,
-        "Multiple errors occurred while cleaning up the database.",
-        { cause: cleanupErrors[0] },
-      );
-    }
-
-    if (typeof this.durationStart === "number") {
+    if (
+      operationError === undefined && cleanupErrors.length === 0 &&
+      typeof this.durationStart === "number"
+    ) {
       let string = prettyDuration(this.durationStart, {
         prefix: "\n\nSimpleDB ran for ",
       });
@@ -1144,6 +1128,34 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       }
 
       console.log(`${string}\n`);
+    }
+
+    for (const message of cacheCleanupMessages) {
+      console.log(message);
+    }
+    if (cacheCleanupMessages.length > 0) {
+      console.log();
+    }
+
+    if (operationError !== undefined && cleanupErrors.length > 0) {
+      throw new AggregateError(
+        [operationError, ...cleanupErrors],
+        "Pending execution and database cleanup both failed.",
+        { cause: operationError },
+      );
+    }
+    if (operationError !== undefined) {
+      throw operationError;
+    }
+    if (cleanupErrors.length === 1) {
+      throw cleanupErrors[0];
+    }
+    if (cleanupErrors.length > 1) {
+      throw new AggregateError(
+        cleanupErrors,
+        "Multiple errors occurred while cleaning up the database.",
+        { cause: cleanupErrors[0] },
+      );
     }
 
     return await this;

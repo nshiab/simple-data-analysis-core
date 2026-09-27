@@ -268,3 +268,50 @@ Deno.test("column generation retains SQL geometry and rejects selected geometry 
     await sdb.close();
   }
 });
+
+Deno.test("column generation writes typed null batches and reordered numeric column names", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("typed batches");
+    await table.loadArray(Array.from({ length: 9 }, (_, n) => ({ n }))).run();
+    await updateColumnsWithJS(
+      table,
+      ["n"],
+      ["2", "1", "date", "flag"],
+      (rows) =>
+        Promise.resolve(
+          rows.map(({ n }) =>
+            Number(n) < 3 || Number(n) >= 6
+              ? { "1": null, "2": null, date: null, flag: null }
+              : {
+                "1": 9007199254740993n,
+                "2": [Number(n), 1],
+                date: new Date("2025-01-01T00:00:00Z"),
+                flag: true,
+              }
+          ),
+        ),
+      { batchSize: 3 },
+    );
+    assertEquals(await table.getTypes(), {
+      n: "DOUBLE",
+      "2": "FLOAT[2]",
+      "1": "BIGINT",
+      date: "TIMESTAMP",
+      flag: "BOOLEAN",
+    });
+    assertEquals(
+      await sdb.customQuery(
+        `SELECT count(*) AS n FROM "typed batches" WHERE
+      (n >= 3 AND n < 6 AND "1" = 9007199254740993 AND "2"[1] = n
+        AND date = TIMESTAMP '2025-01-01' AND flag)
+      OR ((n < 3 OR n >= 6) AND "1" IS NULL AND "2" IS NULL AND date IS NULL AND flag IS NULL)`,
+        { returnData: true },
+      ),
+      [{ n: 9 }],
+    );
+    assertEquals(await sdb.getTableNames(), ["typed batches"]);
+  } finally {
+    await sdb.close();
+  }
+});

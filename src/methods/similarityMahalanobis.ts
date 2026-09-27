@@ -7,9 +7,9 @@ import publishPreparedColumns from "../helpers/publishPreparedColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
-type Options = NonNullable<Parameters<SimpleTable["mahalanobis"]>[3]>;
+type Options = NonNullable<Parameters<SimpleTable["similarityMahalanobis"]>[3]>;
 
-export default function mahalanobis(
+export default function similarityMahalanobis(
   table: SimpleTable,
   columns: string | string[],
   referencePoint: number[],
@@ -23,7 +23,7 @@ export default function mahalanobis(
     )
   ) {
     throw new Error(
-      "mahalanobis() referencePoint must be a nonempty array of finite numbers in feature-dimension order.",
+      "similarityMahalanobis() referencePoint must be a nonempty array of finite numbers in feature-dimension order.",
     );
   }
   const selected = typeof columns === "string" ? columns : [...columns];
@@ -31,7 +31,7 @@ export default function mahalanobis(
   const settings = { ...options };
   queueOp(table, {
     kind: "barrier",
-    method: "mahalanobis()",
+    method: "similarityMahalanobis()",
     parameters: {
       columns: selected,
       referencePoint: reference,
@@ -57,19 +57,19 @@ async function execute(
   for (const name of outputNames) {
     if (typeof name !== "string" || name.length === 0 || name.includes("\0")) {
       throw new Error(
-        "mahalanobis() output column names must be nonempty strings without null characters.",
+        "similarityMahalanobis() output column names must be nonempty strings without null characters.",
       );
     }
     const folded = foldIdentifier(name);
     if (seen.has(folded)) {
       throw new Error(
-        "mahalanobis() distance and similarity score columns must have different names (case-insensitive).",
+        "similarityMahalanobis() distance and similarity score columns must have different names (case-insensitive).",
       );
     }
     seen.add(folded);
     if (sourceColumns.some((column) => foldIdentifier(column) === folded)) {
       throw new Error(
-        `mahalanobis() cannot create ${
+        `similarityMahalanobis() cannot create ${
           quoteIdentifier(name)
         } because that column already exists. Remove it first or choose a different name.`,
       );
@@ -81,12 +81,12 @@ async function execute(
     typeof columns === "string"
       ? { kind: "vector", column: columns }
       : { kind: "scalars", columns },
-    { method: "mahalanobis()" },
+    { method: "similarityMahalanobis()" },
   );
   try {
     if (referencePoint.length !== prepared.dimensions) {
       throw new Error(
-        `mahalanobis() referencePoint must contain ${prepared.dimensions} values in feature-dimension order; received ${referencePoint.length}.`,
+        `similarityMahalanobis() referencePoint must contain ${prepared.dimensions} values in feature-dimension order; received ${referencePoint.length}.`,
       );
     }
     const model = await computeCovariance(table.connection!, {
@@ -117,7 +117,7 @@ async function execute(
         });
       }
       await publishPreparedColumns(table, prepared, {
-        method: "mahalanobis()",
+        method: "similarityMahalanobis()",
         parameters: { columns, referencePoint, newColumn, options },
         result: {
           relation: distances.relation,

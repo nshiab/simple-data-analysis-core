@@ -1316,7 +1316,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   ]);
   await sdb.close();
 });
-Deno.test("should clean the cache when calling close", async () => {
+Deno.test("should clean the cache and log cleanup after the duration when calling close", async () => {
   if (existsSync("./.sda-cache")) {
     rmSync("./.sda-cache", { recursive: true });
   }
@@ -1346,7 +1346,15 @@ Deno.test("should clean the cache when calling close", async () => {
   writeFileSync(".sda-cache/sources.json", JSON.stringify(cacheSources));
   writeFileSync(".sda-cache/testForCache.json", JSON.stringify("Hi!"));
 
-  await sdb.close();
+  sdb.cacheTimeSaved = 1000;
+  const logs = await captureConsoleLogs(() => sdb.close());
+  const cleanupMessage =
+    "Removing unused file from cache: ./.sda-cache/testForCache.json";
+  const lines = logs.split("\n");
+  assertEquals(lines, ["", "", lines[2], "", cleanupMessage, ""]);
+  assertStringIncludes(lines[2], "SimpleDB ran for ");
+  assertStringIncludes(lines[2], "saved by using the cache");
+  assertEquals(await captureConsoleLogs(() => sdb.close()), "");
 
   const cacheSourcesIdsUpdated = Object.keys(
     JSON.parse(readFileSync(".sda-cache/sources.json", "utf-8")),

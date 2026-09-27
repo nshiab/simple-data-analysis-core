@@ -2,7 +2,9 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import readMutationRows from "./readMutationRows.ts";
 import { retainRegisteredTables } from "./tableRegistry.ts";
-import { executePreparedArray, prepareArray } from "../methods/loadArray.ts";
+import { prepareArray } from "../methods/loadArray.ts";
+import appendColumnBatches from "./appendColumnBatches.ts";
+import parseDuckDBType from "./parseDuckDBType.ts";
 
 /**
  * Generates columns from selected input columns, keeping other SQL values in
@@ -96,7 +98,6 @@ export default async function updateColumnsWithJS(
   const id = `__sda_id_${suffix}`;
   const snapshot = `__sda_source_${suffix}`;
   const staged = table.sdb.newTable(`__sda_generated_${suffix}`);
-  const batch = table.sdb.newTable(`__sda_batch_${suffix}`);
   const q = quoteIdentifier;
   try {
     // A SQL snapshot gives every row a stable identity, including duplicate rows
@@ -127,21 +128,20 @@ export default async function updateColumnsWithJS(
         throw new Error("Column generation must return one row per input row.");
       }
       // Generated vectors retain this helper's existing inference contract.
-      await executePreparedArray(
-        batch,
-        prepareArray(generated.map((row, i) => ({
-          ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
-          [id]: ids[i],
-        }))),
+      const prepared = prepareArray(generated.map((row, i) => ({
+        ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
+        [id]: ids[i],
+      })));
+      const batchTypes = new Map(
+        prepared.keys.map((name, i) => [name, prepared.types[i]]),
       );
-      const batchTypes = await batch.getTypes();
       for (const name of outputColumns) {
         const nonNull = generated.some((row) =>
           row[name] !== null && row[name] !== undefined
         );
         if (!nonNull) continue;
         const previous = knownTypes.get(name);
-        const current = batchTypes[name];
+        const current = batchTypes.get(name)!;
         if (previous !== undefined && previous !== current) {
           throw new Error(
             `Generated column ${
@@ -162,16 +162,24 @@ export default async function updateColumnsWithJS(
       }
       if (!hasRows) {
         await table.sdb.customQuery(
-          `CREATE TEMP TABLE ${q(staged.name)} AS SELECT * FROM ${
-            q(batch.name)
-          }`,
+          `CREATE TEMP TABLE ${q(staged.name)} (${
+            prepared.keys.map((name, i) => `${q(name)} ${prepared.types[i]}`)
+              .join(", ")
+          })`,
         );
         hasRows = true;
-      } else {
-        await table.sdb.customQuery(
-          `INSERT INTO ${q(staged.name)} SELECT * FROM ${q(batch.name)}`,
-        );
       }
+      // All-null batches use the column's established type, avoiding a separate
+      // batch table and SQL copy just to cast nulls into the staged schema.
+      await appendColumnBatches(
+        table.connection!,
+        staged.name,
+        prepared.keys.map((name, i) =>
+          parseDuckDBType(knownTypes.get(name) ?? prepared.types[i])
+        ),
+        prepared.rowCount,
+        (column, start, end) => prepared.columnsData[column].slice(start, end),
+      );
     }
     if (!hasRows) return;
     const outputs = new Map(
@@ -204,11 +212,11 @@ export default async function updateColumnsWithJS(
     await table.sdb.customQuery(
       `DROP TABLE IF EXISTS ${q(snapshot)}; DROP TABLE IF EXISTS ${
         q(staged.name)
-      }; DROP TABLE IF EXISTS ${q(batch.name)};`,
+      };`,
     );
     retainRegisteredTables(
       table.sdb,
-      (item) => item !== staged && item !== batch,
+      (item) => item !== staged,
     );
   }
 }

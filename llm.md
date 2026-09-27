@@ -1,7 +1,7 @@
 # The Simple Data Analysis (Core) Library
 
 - Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.1.1`
+- Version: `2.1.3`
 
 To install the library with Deno, use:
 
@@ -781,7 +781,9 @@ await table.setTypes({
 Loads an array of JavaScript objects into the table. Types are inferred for
 numbers, bigints, strings, booleans, and Date values. Array and object cells
 require an explicit supported type in columnTypes. Types can also be specified
-for scalar columns instead of inferred from their values.
+for scalar columns instead of inferred from their values. Inferred bigints use
+signed 64-bit `BIGINT`; values outside that range throw when written instead of
+wrapping.
 
 JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
 instant is preserved, but JavaScript `Date` does not retain the timezone or
@@ -5714,11 +5716,16 @@ await table
   .log();
 ```
 
-#### `mahalanobis`
+#### `similarityMahalanobis`
 
-Calculates each row's Mahalanobis distance from a supplied reference point and
-stores it in a new DOUBLE column. Sample covariance (`n - 1`) is estimated from
-the dataset, independently of the reference point.
+Measures numeric profile similarity using each row's Mahalanobis distance from a
+supplied reference point and stores it in a new DOUBLE column. Smaller distances
+indicate more similar profiles. Optionally adds a dataset-relative similarity
+score, where larger values mean more similar. Sample covariance (`n - 1`) is
+estimated from the dataset, independently of the reference point.
+
+Accounts for differences in feature scales and correlations between features,
+making it useful for comparing profiles with measurements in different units.
 
 Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
 Reference values follow the same dimension order. Inputs are converted privately
@@ -5732,7 +5739,7 @@ unchanged.
 ##### Signature
 
 ```typescript
-mahalanobis(columns: string | string[], referencePoint: number[], newColumn: string, options?: { similarityScoreColumn?: string }): this;
+similarityMahalanobis(columns: string | string[], referencePoint: number[], newColumn: string, options?: { similarityScoreColumn?: string }): this;
 ```
 
 ##### Parameters
@@ -5756,14 +5763,14 @@ The table, so methods can be chained.
 ```ts
 // Measure distance from a reference height and weight.
 await table
-  .mahalanobis(["height", "weight"], [175, 70], "distance")
+  .similarityMahalanobis(["height", "weight"], [175, 70], "distance")
   .log();
 ```
 
 ```ts
 // Compare feature vectors and add a dataset-relative similarity score.
 await table
-  .mahalanobis("features", [175, 70], "distance", {
+  .similarityMahalanobis("features", [175, 70], "distance", {
     similarityScoreColumn: "similarity",
   })
   .log();
@@ -7028,7 +7035,9 @@ array of objects. This method offers high flexibility for data manipulation but
 can be slow for large tables as it involves transferring data between DuckDB and
 JavaScript. Before writing a JavaScript callback, check for an existing SDA
 method that performs the same operation; it will usually be faster and more
-efficient.
+efficient. Existing integer and enum columns retain their types. Fractional or
+out-of-range integers and unknown enum members throw when written. The original
+table is replaced after all callback results have been converted successfully.
 
 If the table has geometry columns, the callback can read and modify their
 GeoJSON geometry objects directly. Extra properties added to these objects are
@@ -9718,6 +9727,9 @@ await table.writeGeoData("./output_high_precision.geojson", {
 
 Caches the results of computations in `./.sda-cache`. You should add
 `./.sda-cache` to your `.gitignore` file.
+
+Callback code and function/class inputs ignore comments, indentation, and line
+wrapping where safe.
 
 `cache()` automatically tracks whether earlier SDA operations changed the table.
 It also records every other already registered `SimpleTable` read through

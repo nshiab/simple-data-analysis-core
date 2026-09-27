@@ -1,6 +1,80 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+for (const batchSize of [undefined, 1000]) {
+  for (
+    const { type, initial, invalid, message } of [
+      {
+        type: "INTEGER",
+        initial: "2147483647",
+        invalid: 2147483648,
+        message: "int32 range",
+      },
+      {
+        type: "INTEGER",
+        initial: "-2147483648",
+        invalid: 1.5,
+        message: "not an integer",
+      },
+      {
+        type: "UINTEGER",
+        initial: "4294967295",
+        invalid: -1,
+        message: "uint32 range",
+      },
+      {
+        type: "BIGINT",
+        initial: "9223372036854775807",
+        invalid: 9223372036854775808n,
+        message: "int64 range",
+      },
+      {
+        type: "ENUM('ok', '__proto__')",
+        initial: "'__proto__'",
+        invalid: "unknown",
+        message: "not a member",
+      },
+    ]
+  ) {
+    Deno.test(`updateWithJS rejects ${String(invalid)} for ${type} without replacing data (${batchSize})`, async () => {
+      const sdb = new SimpleDB();
+      try {
+        const table = sdb.newTable("validated_updates");
+        await sdb.customQuery(`CREATE TABLE validated_updates AS
+          SELECT i::INTEGER AS id, (${initial})::${type} AS value
+          FROM range(2001) t(i)`);
+        const query =
+          "SELECT id, value::VARCHAR AS value FROM validated_updates ORDER BY id";
+        const before = await sdb.customQuery(query, { returnData: true });
+        const types = await table.getTypes();
+        await assertRejects(
+          () =>
+            table.updateWithJS((rows) =>
+              rows.map((row) => ({
+                ...row,
+                value: row.id === 2000 ? invalid : row.value,
+              })), { batchSize }).run(),
+          Error,
+          message,
+        );
+        assertEquals(
+          await sdb.customQuery(query, { returnData: true }),
+          before,
+        );
+        assertEquals(await table.getTypes(), types);
+        assertEquals(await sdb.getTableNames(), ["validated_updates"]);
+        await table.updateWithJS((rows) => rows, { batchSize }).run();
+        assertEquals(
+          await sdb.customQuery(query, { returnData: true }),
+          before,
+        );
+      } finally {
+        await sdb.close();
+      }
+    });
+  }
+}
+
 Deno.test("should update the data from the table with a javascript function and reinsert it into the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
@@ -1004,6 +1078,112 @@ for (const batchSize of [undefined, 1]) {
       );
       assertEquals(await table.getData(), expected);
       assertEquals(await sdb.getTableNames(), ["json_updates"]);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
+
+Deno.test("batched updates align changing column order and retain SQL casts for inferred types", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("changing batches");
+    await table.loadArray([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }])
+      .updateWithJS(
+        (rows) =>
+          rows.map(({ id }) =>
+            id === 1
+              ? { id, added: null }
+              : id === 2
+              ? { added: 20, id }
+              : id === 3
+              ? { id }
+              : { id, added: "forty" }
+          ),
+        { batchSize: 1 },
+      ).run();
+    assertEquals(await table.getData(), [
+      { id: 1, added: null },
+      { id: 2, added: "20.0" },
+      { id: 3, added: null },
+      { id: 4, added: "forty" },
+    ]);
+    assertEquals(await sdb.getTableNames(), ["changing batches"]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("updateWithJS replaces indexed tables and keeps compatible views usable", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable('quoted".table');
+    await sdb.customQuery(
+      `CREATE TABLE "quoted"".table" (id INTEGER PRIMARY KEY, value INTEGER);
+      INSERT INTO "quoted"".table" VALUES (1, 10), (2, 20);
+      CREATE INDEX value_index ON "quoted"".table" (value);
+      CREATE VIEW updated_view AS SELECT * FROM "quoted"".table"`,
+    );
+    await table.updateWithJS((rows) =>
+      rows.map((row) => ({
+        ...row,
+        value: Number(row.value) * 2,
+      })), { batchSize: 1 }).run();
+    assertEquals(
+      await sdb.customQuery("SELECT * FROM updated_view ORDER BY id", {
+        returnData: true,
+      }),
+      [{ id: 1, value: 20 }, { id: 2, value: 40 }],
+    );
+    // Replacement, like CTAS, does not carry destination constraints or indexes.
+    await sdb.customQuery('INSERT INTO "quoted"".table" VALUES (1, 60)');
+    assertEquals(
+      await sdb.customQuery("SELECT count(*) AS n FROM duckdb_indexes()", {
+        returnData: true,
+      }),
+      [{ n: 0 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (const shadow of ["temporary", "search path"]) {
+  Deno.test(`updateWithJS publishes in the creation schema with a ${shadow} source`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("shadowed");
+      if (shadow === "temporary") {
+        await sdb.customQuery(`CREATE TABLE shadowed AS SELECT 0 AS value;
+          CREATE TEMP TABLE shadowed AS SELECT 10 AS value`);
+      } else {
+        await sdb.customQuery(`CREATE SCHEMA source;
+          CREATE TABLE source.shadowed AS SELECT 10 AS value;
+          SET search_path = 'main,source'`);
+      }
+      await table.updateWithJS((rows) =>
+        rows.map((row) => ({
+          value: Number(row.value) + 1,
+        }))
+      ).run();
+      const catalog =
+        (await sdb.connection!.runAndReadAll("SELECT current_database()"))
+          .getRows()[0][0];
+      assertEquals(
+        await sdb.customQuery(`SELECT * FROM "${catalog}".main.shadowed`, {
+          returnData: true,
+        }),
+        [{ value: 11 }],
+      );
+      assertEquals(
+        await sdb.customQuery(
+          `SELECT * FROM ${
+            shadow === "temporary" ? "temp.main" : "source"
+          }.shadowed`,
+          { returnData: true },
+        ),
+        [{ value: 10 }],
+      );
     } finally {
       await sdb.close();
     }

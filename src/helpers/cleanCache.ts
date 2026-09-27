@@ -1,7 +1,10 @@
 import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import type SimpleDB from "../class/SimpleDB.ts";
 
-export default function cleanCache(sdb: SimpleDB) {
+export default function cleanCache(
+  sdb: SimpleDB,
+  log: (message: string) => void = console.log,
+) {
   if (sdb.cacheSourcesUsed.length > 0) {
     const cacheSources = JSON.parse(
       readFileSync(".sda-cache/sources.json", "utf-8"),
@@ -10,7 +13,7 @@ export default function cleanCache(sdb: SimpleDB) {
       if (!sdb.cacheSourcesUsed.includes(cacheId)) {
         if (cacheSources[cacheId].file !== null) {
           sdb.cacheVerbose &&
-            console.log(
+            log(
               `Removing unused file from cache: ${cacheSources[cacheId].file}`,
             );
           unlinkSync(cacheSources[cacheId].file);

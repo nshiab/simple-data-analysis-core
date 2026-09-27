@@ -132,7 +132,7 @@ import addNoise from "../methods/addNoise.ts";
 import rowToText from "../methods/rowToText.ts";
 import rowToVector from "../methods/rowToVector.ts";
 import normalizeVector from "../methods/normalizeVector.ts";
-import mahalanobis from "../methods/mahalanobis.ts";
+import similarityMahalanobis from "../methods/similarityMahalanobis.ts";
 import replaceNulls from "../methods/replaceNulls.ts";
 import pad from "../methods/pad.ts";
 import replace from "../methods/replace.ts";
@@ -415,6 +415,8 @@ export default class SimpleTable extends Simple {
    * numbers, bigints, strings, booleans, and Date values. Array and object cells
    * require an explicit supported type in columnTypes. Types can also be
    * specified for scalar columns instead of inferred from their values.
+   * Inferred bigints use signed 64-bit `BIGINT`; values outside that range throw
+   * when written instead of wrapping.
    *
    * JavaScript `Date` values are inferred as DuckDB `TIMESTAMP` values. Their
    * instant is preserved, but JavaScript `Date` does not retain the timezone or
@@ -5136,9 +5138,15 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Calculates each row's Mahalanobis distance from a supplied reference point
-   * and stores it in a new DOUBLE column. Sample covariance (`n - 1`) is
-   * estimated from the dataset, independently of the reference point.
+   * Measures numeric profile similarity using each row's Mahalanobis distance
+   * from a supplied reference point and stores it in a new DOUBLE column.
+   * Smaller distances indicate more similar profiles. Optionally adds a
+   * dataset-relative similarity score, where larger values mean more similar.
+   * Sample covariance (`n - 1`) is estimated from the dataset, independently
+   * of the reference point.
+   *
+   * Accounts for differences in feature scales and correlations between features,
+   * making it useful for comparing profiles with measurements in different units.
    *
    * Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
    * Reference values follow the same dimension order. Inputs are converted
@@ -5153,7 +5161,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Measure distance from a reference height and weight.
    * await table
-   *   .mahalanobis(["height", "weight"], [175, 70], "distance")
+   *   .similarityMahalanobis(["height", "weight"], [175, 70], "distance")
    *   .log();
    * ```
    *
@@ -5161,7 +5169,7 @@ export default class SimpleTable extends Simple {
    * ```ts
    * // Compare feature vectors and add a dataset-relative similarity score.
    * await table
-   *   .mahalanobis("features", [175, 70], "distance", {
+   *   .similarityMahalanobis("features", [175, 70], "distance", {
    *     similarityScoreColumn: "similarity",
    *   })
    *   .log();
@@ -5176,13 +5184,13 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
-  mahalanobis(
+  similarityMahalanobis(
     columns: string | string[],
     referencePoint: number[],
     newColumn: string,
     options: { similarityScoreColumn?: string } = {},
   ): this {
-    mahalanobis(this, columns, referencePoint, newColumn, options);
+    similarityMahalanobis(this, columns, referencePoint, newColumn, options);
     return this;
   }
 
@@ -6450,6 +6458,10 @@ export default class SimpleTable extends Simple {
    * This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
    * Before writing a JavaScript callback, check for an existing SDA method that
    * performs the same operation; it will usually be faster and more efficient.
+   * Existing integer and enum columns retain their types. Fractional or
+   * out-of-range integers and unknown enum members throw when written. The
+   * original table is replaced after all callback results have been converted
+   * successfully.
    *
    * If the table has geometry columns, the callback can read and modify their
    * GeoJSON geometry objects directly. Extra properties added to these objects
