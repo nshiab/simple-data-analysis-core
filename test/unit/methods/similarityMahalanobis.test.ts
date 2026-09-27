@@ -829,3 +829,113 @@ Deno.test("similarityMahalanobis leaves both outputs unpublished when a referenc
     await sdb.close();
   }
 });
+
+Deno.test("similarityMahalanobis snapshots object references in selected column order and supports boolean scores", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("profiles").loadArray([
+      { x: 0, y: 0 },
+      { x: 1, y: 2 },
+      { x: 2, y: 1 },
+      { x: 3, y: 4 },
+    ]);
+    const reference = { y: 2, extra: null, x: 1 };
+    const columns = ["x", "y"];
+    const options = { similarityScoreColumn: true };
+    table.similarityMahalanobis(columns, reference, "objectDistance", options);
+    reference.x = 100;
+    reference.y = 100;
+    columns.reverse();
+    options.similarityScoreColumn = false;
+    await table.similarityMahalanobis(["x", "y"], [1, 2], "arrayDistance", {
+      similarityScoreColumn: "customScore",
+    }).run();
+    for (const row of await table.getData()) {
+      assertEquals(row.objectDistance, row.arrayDistance);
+      assertEquals(row.similarity, row.customScore);
+    }
+    await table.similarityMahalanobis(["x", "y"], { x: 1, y: 2 }, "noScore", {
+      similarityScoreColumn: false,
+    }).run();
+    assertEquals(await table.getColumns(), [
+      "x",
+      "y",
+      "objectDistance",
+      "similarity",
+      "arrayDistance",
+      "customScore",
+      "noScore",
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("similarityMahalanobis rejects missing and invalid object features without queuing changes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("profiles").loadArray([{ x: 0 }, { x: 1 }, {
+      x: 2,
+    }]);
+    const before = await table.getData();
+    for (const reference of [{}, Object.create({ x: 1 }) as { x: number }]) {
+      assertThrows(
+        () => table.similarityMahalanobis(["x"], reference, "distance"),
+        Error,
+        'missing its own value for feature "x"',
+      );
+    }
+    for (
+      const x of [null, undefined, "1", true, NaN, Infinity, -Infinity, 1n, [1]]
+    ) {
+      assertThrows(
+        () => table.similarityMahalanobis(["x"], { x }, "distance"),
+        Error,
+        'feature "x" must be a finite number',
+      );
+    }
+    assertThrows(
+      () => table.similarityMahalanobis("x", { x: 1 }, "distance"),
+      Error,
+      "object referencePoint requires an array of scalar feature column names",
+    );
+    assertEquals(await table.getData(), before);
+    assertEquals(await scratchRelations(sdb), []);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("similarityMahalanobis checks default score name collisions", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("profiles").loadArray([{ x: 0 }, { x: 1 }, {
+      x: 2,
+    }]);
+    await assertRejects(
+      () =>
+        table.similarityMahalanobis(["x"], { x: 1 }, "SIMILARITY", {
+          similarityScoreColumn: true,
+        }).run(),
+      Error,
+      "different names",
+    );
+    await table.renameColumns({ x: "Similarity" }).run();
+    await assertRejects(
+      () =>
+        table.similarityMahalanobis(
+          ["Similarity"],
+          { Similarity: 1 },
+          "distance",
+          {
+            similarityScoreColumn: true,
+          },
+        ).run(),
+      Error,
+      "column already exists",
+    );
+    assertEquals(await table.getColumns(), ["Similarity"]);
+  } finally {
+    await sdb.close();
+  }
+});
