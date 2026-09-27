@@ -5724,6 +5724,9 @@ indicate more similar profiles. Optionally adds a dataset-relative similarity
 score, where larger values mean more similar. Sample covariance (`n - 1`) is
 estimated from the dataset, independently of the reference point.
 
+Accounts for differences in feature scales and correlations between features,
+making it useful for comparing profiles with measurements in different units.
+
 Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
 Reference values follow the same dimension order. Inputs are converted privately
 to DOUBLE, which can lose precision for large integers and exact decimals;
