@@ -53,10 +53,10 @@ Deno.test("wine similarity example filters red wines and finds five named matche
       2.27,
     ]);
     wines.similarityMahalanobis(
-      features,
-      features.map((column) => Number(reference[column])),
+      ["acidity", "intensity", "sweetness", "tannin"],
+      reference,
       "distance",
-      { similarityScoreColumn: "similarity" },
+      { similarityScoreColumn: true },
     );
     const measured = await wines.getData();
     assertEquals(

@@ -5149,8 +5149,11 @@ export default class SimpleTable extends Simple {
    * making it useful for comparing profiles with measurements in different units.
    *
    * Pass one numeric LIST or ARRAY column, or an array of numeric scalar columns.
-   * Reference values follow the same dimension order. Inputs are converted
-   * privately to DOUBLE, which can lose precision for large integers and exact
+   * Reference arrays follow the same dimension order. For scalar columns, a
+   * reference object supplies its own finite numeric values by column name; extra
+   * fields are ignored. Reference values are captured when this method is called.
+   * Inputs are converted privately to DOUBLE, which can lose precision for large
+   * integers and exact
    * decimals; source columns and types remain unchanged.
    *
    * Requires more rows than dimensions and finite, non-null, consistent features
@@ -5174,21 +5177,33 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Compare profiles directly with a row and use the default score column.
+   * const reference = await table.getFirstRow();
+   * if (!reference) throw new Error("The table is empty.");
+   * await table
+   *   .similarityMahalanobis(["height", "weight"], reference, "distance", {
+   *     similarityScoreColumn: true,
+   *   })
+   *   .log();
+   * ```
    * @param columns - A numeric vector column, or numeric scalar columns in feature order.
-   * @param referencePoint - One finite number per feature dimension; may be outside the dataset.
+   * @param referencePoint - An array of finite numbers in feature order, or an object with an own finite numeric value for each scalar feature column; may be outside the dataset.
    * @param newColumn - The name of the new DOUBLE distance column.
    * @param options - Optional output settings.
-   * @param options.similarityScoreColumn - A new DOUBLE column for the dataset-relative
-   * score `1 - distance / maxDistance`. Exact matches score 1 and the farthest
+   * @param options.similarityScoreColumn - A custom name, or true for a new DOUBLE column named "similarity"; false or omitted adds no score. The dataset-relative
+   * score is `1 - distance / maxDistance`. Exact matches score 1 and the farthest
    * rows score 0; if all distances are zero, every score is 1.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
   similarityMahalanobis(
     columns: string | string[],
-    referencePoint: number[],
+    referencePoint: number[] | { [key: string]: unknown },
     newColumn: string,
-    options: { similarityScoreColumn?: string } = {},
+    options: { similarityScoreColumn?: string | boolean } = {},
   ): this {
     similarityMahalanobis(this, columns, referencePoint, newColumn, options);
     return this;

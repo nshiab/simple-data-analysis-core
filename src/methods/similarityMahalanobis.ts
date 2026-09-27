@@ -12,10 +12,40 @@ type Options = NonNullable<Parameters<SimpleTable["similarityMahalanobis"]>[3]>;
 export default function similarityMahalanobis(
   table: SimpleTable,
   columns: string | string[],
-  referencePoint: number[],
+  referencePoint: number[] | { [key: string]: unknown },
   newColumn: string,
   options: Options = {},
 ): void {
+  const selected = typeof columns === "string" ? columns : [...columns];
+  if (
+    !Array.isArray(referencePoint) && referencePoint !== null &&
+    typeof referencePoint === "object"
+  ) {
+    if (typeof selected === "string") {
+      throw new Error(
+        "similarityMahalanobis() an object referencePoint requires an array of scalar feature column names; use a numeric array for a vector column.",
+      );
+    }
+    const referenceObject = referencePoint;
+    referencePoint = selected.map((column) => {
+      if (!Object.hasOwn(referenceObject, column)) {
+        throw new Error(
+          `similarityMahalanobis() referencePoint is missing its own value for feature ${
+            quoteIdentifier(column)
+          }.`,
+        );
+      }
+      const value = referenceObject[column];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(
+          `similarityMahalanobis() referencePoint feature ${
+            quoteIdentifier(column)
+          } must be a finite number.`,
+        );
+      }
+      return value;
+    });
+  }
   if (
     !Array.isArray(referencePoint) || referencePoint.length === 0 ||
     Array.from(referencePoint).some((value) =>
@@ -26,7 +56,6 @@ export default function similarityMahalanobis(
       "similarityMahalanobis() referencePoint must be a nonempty array of finite numbers in feature-dimension order.",
     );
   }
-  const selected = typeof columns === "string" ? columns : [...columns];
   const reference = [...referencePoint];
   const settings = { ...options };
   queueOp(table, {
@@ -50,9 +79,14 @@ async function execute(
   options: Options,
 ): Promise<void> {
   const sourceColumns = Object.keys(await table.getTypes());
-  const outputNames = options.similarityScoreColumn === undefined
+  const scoreColumn = options.similarityScoreColumn === true
+    ? "similarity"
+    : options.similarityScoreColumn === false
+    ? undefined
+    : options.similarityScoreColumn;
+  const outputNames = scoreColumn === undefined
     ? [newColumn]
-    : [newColumn, options.similarityScoreColumn];
+    : [newColumn, scoreColumn];
   const seen = new Set<string>();
   for (const name of outputNames) {
     if (typeof name !== "string" || name.length === 0 || name.includes("\0")) {
@@ -109,9 +143,9 @@ async function execute(
     try {
       const distance = `r.${quoteIdentifier(distances.distanceColumn)}`;
       const outputs = [{ name: newColumn, expression: distance }];
-      if (options.similarityScoreColumn !== undefined) {
+      if (scoreColumn !== undefined) {
         outputs.push({
-          name: options.similarityScoreColumn,
+          name: scoreColumn,
           expression:
             `CASE WHEN max(${distance}) OVER () = 0 THEN 1::DOUBLE ELSE 1 - ${distance} / max(${distance}) OVER () END`,
         });
