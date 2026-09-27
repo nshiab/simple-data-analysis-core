@@ -6453,8 +6453,9 @@ export default class SimpleTable extends Simple {
    * Before writing a JavaScript callback, check for an existing SDA method that
    * performs the same operation; it will usually be faster and more efficient.
    * Existing integer and enum columns retain their types. Fractional or
-   * out-of-range integers and unknown enum members throw when written. Failed
-   * updates preserve the original table and discard their staged writes.
+   * out-of-range integers and unknown enum members throw when written. The
+   * original table is replaced after all callback results have been converted
+   * successfully.
    *
    * If the table has geometry columns, the callback can read and modify their
    * GeoJSON geometry objects directly. Extra properties added to these objects

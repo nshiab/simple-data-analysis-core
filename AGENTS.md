@@ -32,6 +32,10 @@
 
 ### Phase 2: Implementation (DURING Development)
 
+- **Performance and Recovery:** Optimize for rerunnable scripts. Avoid table
+  copies used only to restore data after errors unless explicitly required. Keep
+  temporary tables needed to compute correct results. Measure changes to
+  full-table copying using the existing benchmark suite.
 - **Public API Organization:** Give every public method a matching
   implementation file at `src/methods/<methodName>.ts` and test file at
   `test/unit/methods/<methodName>.test.ts`. Shared internal logic may live in a

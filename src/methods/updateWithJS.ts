@@ -115,6 +115,7 @@ async function executeUpdateWithJS(
 
   try {
     let first = true;
+    let accumulatorSchema: string | undefined;
     let lastRowid: bigint | null = null;
     let sawRows = false;
     let outputOffset = 0;
@@ -218,15 +219,25 @@ async function executeUpdateWithJS(
           : source.types.get(key) ??
             parseDuckDBType(added!.types[newKeys.indexOf(key)])
       );
-      await simpleTable.sdb.customQuery(
-        `CREATE OR REPLACE TABLE ${quoteIdentifier(scratch.name)} (${
-          keys.map((key, i) => `${quoteIdentifier(key)} ${columnTypes[i]}`)
-            .join(", ")
-        })`,
+      const schema = JSON.stringify(
+        keys.map((key, i) => [key, columnTypes[i].toString()]),
       );
+      // Append matching native batches directly. SQL still handles conversion
+      // and BY NAME alignment when a callback changes the batch schema.
+      const direct = outputGeometry.length === 0 && outputJSON.length === 0 &&
+        (first || schema === accumulatorSchema);
+      const destination = direct ? accumulator : scratch.name;
+      if (!direct || first) {
+        await simpleTable.sdb.customQuery(
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(destination)} (${
+            keys.map((key, i) => `${quoteIdentifier(key)} ${columnTypes[i]}`)
+              .join(", ")
+          })`,
+        );
+      }
       await appendColumnBatches(
         simpleTable.connection!,
-        scratch.name,
+        destination,
         columnTypes,
         modified.length,
         (column, start, end) => {
@@ -249,7 +260,10 @@ async function executeUpdateWithJS(
           ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
           : quoteIdentifier(key)
       ).join(", ");
-      if (first) {
+      if (direct) {
+        accumulatorSchema = schema;
+        first = false;
+      } else if (first) {
         await simpleTable.sdb.customQuery(
           `CREATE OR REPLACE TABLE ${
             quoteIdentifier(accumulator)
@@ -272,10 +286,20 @@ async function executeUpdateWithJS(
       );
     }
 
+    // Publish the completed ordinary table without copying its rows again.
+    // Qualify the creation namespace: a temporary table or a later search-path
+    // schema can shadow the name without being the destination of replacement.
+    const namespace = await simpleTable.connection!.runAndReadAll(
+      "SELECT current_database(), current_schema()",
+    );
+    const prefix = namespace.getRows()[0].map((name) =>
+      quoteIdentifier(String(name))
+    ).join(".");
     await simpleTable.sdb.customQuery(
-      `CREATE OR REPLACE TABLE ${
+      `DROP TABLE IF EXISTS ${prefix}.${quoteIdentifier(simpleTable.name)};
+ALTER TABLE ${prefix}.${quoteIdentifier(accumulator)} RENAME TO ${
         quoteIdentifier(simpleTable.name)
-      } AS SELECT * FROM ${quoteIdentifier(accumulator)}`,
+      };`,
     );
   } finally {
     await simpleTable.sdb.customQuery(
