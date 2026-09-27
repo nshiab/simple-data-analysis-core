@@ -1,79 +1,113 @@
-# Wine recognition dataset
+# Named wines and taste profiles
 
-`wine.csv` contains all 178 rows and 13 chemical and optical measurements from
-the UCI Wine dataset, representing wines from one Italian region and three
-cultivars. The original class codes `1`, `2`, and `3` are retained as
-`cultivar`; cultivar names are not provided. There are 59, 71, and 48 samples
-respectively.
+`wine.csv` contains all 2,000 rows from MrBridge's **Vivino Burgundy Wines 2026:
+Ratings & Tastes** dataset, with nine selected columns. Acidity, intensity,
+sweetness, and tannin are Vivino taste-profile scores, not laboratory
+measurements. Their calculation and calibration are not documented in the
+source.
 
 ## Source and license
 
-Aeberhard, S. & Forina, M. (1992). Wine [Dataset]. UCI Machine Learning
-Repository. <https://doi.org/10.24432/C5PC7J>.
+- Creator: [MrBridge](https://mr-bridge.com).
+- Dataset:
+  [Vivino Burgundy Wines 2026: Ratings & Tastes](https://huggingface.co/datasets/Mr-Bridge/vivino-bourgogne-wines-2026).
+- Source revision: `959c60f9431f1e25d857d18baec77ecb596b3a64`.
+- [Pinned CSV](https://huggingface.co/datasets/Mr-Bridge/vivino-bourgogne-wines-2026/resolve/959c60f9431f1e25d857d18baec77ecb596b3a64/data.csv).
+- [Source description and license](https://huggingface.co/datasets/Mr-Bridge/vivino-bourgogne-wines-2026/blob/959c60f9431f1e25d857d18baec77ecb596b3a64/README.md).
 
-- Dataset: <https://archive.ics.uci.edu/dataset/109/wine>
-- Download: <https://archive.ics.uci.edu/static/public/109/wine.zip>
-- License:
-  [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
-
-The dataset retains its CC BY 4.0 license; the repository's MIT license does not
-replace it. Attribution and modification details should accompany
-redistribution.
+The source was collected from Vivino by MrBridge and is distributed under
+[Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/).
+This prepared CSV is an adaptation under the same CC BY-SA 4.0 license. The
+repository's MIT license does not replace the dataset license. Retain
+attribution, the license link, and these modification details when
+redistributing the data.
 
 ## Preparation
 
-Extract `wine.data` from the UCI archive, prepend this header, and insert a
-one-based `sampleId` following the original row order. These IDs are local
-labels, not identifiers supplied by UCI. Preserve the existing class and
-measurement values, their numeric text, and row order. The source has no missing
-values; no rows were removed and no measurements were imputed or normalized.
+Select these nine columns, retaining their original names, values, and row
+order:
 
 ```text
-sampleId,cultivar,alcohol,malicAcid,ash,ashAlkalinity,magnesium,totalPhenols,flavanoids,nonflavanoidPhenols,proanthocyanins,colorIntensity,hue,od280Od315,proline
+fullName,wineType,regionName,acidity,intensity,sweetness,tannin,vintageYear,isNatural
 ```
 
-Measurement columns follow UCI's original feature order. `ashAlkalinity`
-represents "Alcalinity of ash" and `od280Od315` represents "OD280/OD315 of
-diluted wines".
+The file contains 1,026 red, 941 white, 21 rosé, eight dessert, three sparkling,
+and one fortified wine. No rows are removed, scores imputed, or names invented.
+All red wines have complete finite acidity, intensity, sweetness, and tannin
+scores. Other types have missing tannin; dessert and fortified wines also lack
+all three other scores, and sparkling wines lack sweetness. Empty cells retain
+missing values, which DuckDB reads as NULL. `vintageYear` is missing in 1,804
+rows and is not used in the comparison. `isNatural` is read as BOOLEAN.
+
+Names are copied as supplied, including a vintage when present. There are two
+repeated names in the full file, belonging to distinct source wine IDs; both are
+retained. Names are unique within the red-wine subset. Source wine IDs and URLs,
+prices, ratings, and review text are omitted. Taste profiles must not be
+interpreted as verified vintage-specific measurements.
+
+To reproduce, save the pinned CSV as `data.csv` and run this Python script:
+
+```python
+import csv
+
+columns = [
+    "fullName", "wineType", "regionName", "acidity", "intensity",
+    "sweetness", "tannin", "vintageYear", "isNatural",
+]
+with open("data.csv", encoding="utf-8", newline="") as source:
+    rows = list(csv.DictReader(source))
+assert len(rows) == 2000
+with open("wine.csv", "w", encoding="utf-8", newline="") as output:
+    writer = csv.DictWriter(output, fieldnames=columns, lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({column: row[column] for column in columns})
+```
 
 Checksums (SHA-256):
 
-- Original `wine.data`:
-  `6be6b1203f3d51df0b553a70e57b8a723cd405683958204f96d23d7cd6aea659`
+- Original `data.csv`:
+  `c0274c82b328d8a96621deb9a49a6abf45c77ffe29aa8be2bcd0952a56d36aaa`
 - Prepared `wine.csv`:
-  `213dfb3e1e0ec94d0802f259fc586c78c5714eab01c4a2b6f554e1bc1a045762`
+  `d07e6ced9c351b378cc80d74cbb14fb6e9bd7badaf91e558f9dd7bf0677013fa`
 
 ## Similarity example
 
-The example retrieves sample 100 by its ID and uses `similarityMahalanobis()` to
-compare its 13 measurements with every row. Wine names are not provided in the
-source dataset. `sampleId` and `cultivar` are excluded from the features.
+The example first filters to red wines with a tannin score, leaving 1,026 rows.
+It retrieves **Louis Jadot Bourgogne Pinot Noir** by name and compares its
+acidity, intensity, sweetness, and tannin with every remaining wine using
+`similarityMahalanobis()`. The other five columns are metadata and do not enter
+the calculation.
 
-Covariance and similarity scores are calculated from all 178 samples before
-excluding sample 100 and selecting the five closest matches. The score is
-`1 - distance / maxDistance`, relative to the complete dataset; it is not a
-probability or a prediction of taste or quality. The example logs only sample
-IDs, distances, and scores, rounded to three decimals.
+Covariance and similarity scores are calculated from all 1,026 red wines before
+excluding the reference wine and selecting the five closest matches. The score
+is `1 - distance / maxDistance`, relative to this subset; it is not a
+probability or a prediction of personal enjoyment. The example logs names,
+distances, and scores, rounded to three decimals.
 
 The expected results in `test/unit/examples/wineSimilarity.test.ts` were
 computed independently with NumPy 2.3.5 using the following calculation. NumPy
-is only used to document the reference calculation; the example and tests run
-with Deno.
+is only used for this reference calculation; the example and tests run with
+Deno.
 
 ```python
+import csv
 import numpy as np
 
-data = np.loadtxt("test/data/files/wine.csv", delimiter=",", skiprows=1)
-x = data[:, 2:]
-delta = x - x[99]
+with open("test/data/files/wine.csv", encoding="utf-8", newline="") as source:
+    rows = [r for r in csv.DictReader(source) if r["wineType"] == "Red" and r["tannin"] != ""]
+features = ["acidity", "intensity", "sweetness", "tannin"]
+x = np.array([[float(r[f]) for f in features] for r in rows])
+reference = next(i for i, r in enumerate(rows) if r["fullName"] == "Louis Jadot Bourgogne Pinot Noir")
+delta = x - x[reference]
 covariance = np.cov(x, rowvar=False, ddof=1)
 distances = np.sqrt(
     np.einsum("ij,ji->i", delta, np.linalg.solve(covariance, delta.T))
 )
 similarities = 1 - distances / distances.max()
 nearest = sorted(
-    (i for i in range(len(x)) if i != 99),
-    key=lambda i: (distances[i], i),
+    (i for i in range(len(x)) if i != reference),
+    key=lambda i: (distances[i], rows[i]["fullName"]),
 )[:5]
-print([(i + 1, distances[i], similarities[i]) for i in nearest])
+print([(rows[i]["fullName"], distances[i], similarities[i]) for i in nearest])
 ```

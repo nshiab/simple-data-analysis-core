@@ -1,179 +1,2001 @@
-sampleId,cultivar,alcohol,malicAcid,ash,ashAlkalinity,magnesium,totalPhenols,flavanoids,nonflavanoidPhenols,proanthocyanins,colorIntensity,hue,od280Od315,proline
-1,1,14.23,1.71,2.43,15.6,127,2.8,3.06,.28,2.29,5.64,1.04,3.92,1065
-2,1,13.2,1.78,2.14,11.2,100,2.65,2.76,.26,1.28,4.38,1.05,3.4,1050
-3,1,13.16,2.36,2.67,18.6,101,2.8,3.24,.3,2.81,5.68,1.03,3.17,1185
-4,1,14.37,1.95,2.5,16.8,113,3.85,3.49,.24,2.18,7.8,.86,3.45,1480
-5,1,13.24,2.59,2.87,21,118,2.8,2.69,.39,1.82,4.32,1.04,2.93,735
-6,1,14.2,1.76,2.45,15.2,112,3.27,3.39,.34,1.97,6.75,1.05,2.85,1450
-7,1,14.39,1.87,2.45,14.6,96,2.5,2.52,.3,1.98,5.25,1.02,3.58,1290
-8,1,14.06,2.15,2.61,17.6,121,2.6,2.51,.31,1.25,5.05,1.06,3.58,1295
-9,1,14.83,1.64,2.17,14,97,2.8,2.98,.29,1.98,5.2,1.08,2.85,1045
-10,1,13.86,1.35,2.27,16,98,2.98,3.15,.22,1.85,7.22,1.01,3.55,1045
-11,1,14.1,2.16,2.3,18,105,2.95,3.32,.22,2.38,5.75,1.25,3.17,1510
-12,1,14.12,1.48,2.32,16.8,95,2.2,2.43,.26,1.57,5,1.17,2.82,1280
-13,1,13.75,1.73,2.41,16,89,2.6,2.76,.29,1.81,5.6,1.15,2.9,1320
-14,1,14.75,1.73,2.39,11.4,91,3.1,3.69,.43,2.81,5.4,1.25,2.73,1150
-15,1,14.38,1.87,2.38,12,102,3.3,3.64,.29,2.96,7.5,1.2,3,1547
-16,1,13.63,1.81,2.7,17.2,112,2.85,2.91,.3,1.46,7.3,1.28,2.88,1310
-17,1,14.3,1.92,2.72,20,120,2.8,3.14,.33,1.97,6.2,1.07,2.65,1280
-18,1,13.83,1.57,2.62,20,115,2.95,3.4,.4,1.72,6.6,1.13,2.57,1130
-19,1,14.19,1.59,2.48,16.5,108,3.3,3.93,.32,1.86,8.7,1.23,2.82,1680
-20,1,13.64,3.1,2.56,15.2,116,2.7,3.03,.17,1.66,5.1,.96,3.36,845
-21,1,14.06,1.63,2.28,16,126,3,3.17,.24,2.1,5.65,1.09,3.71,780
-22,1,12.93,3.8,2.65,18.6,102,2.41,2.41,.25,1.98,4.5,1.03,3.52,770
-23,1,13.71,1.86,2.36,16.6,101,2.61,2.88,.27,1.69,3.8,1.11,4,1035
-24,1,12.85,1.6,2.52,17.8,95,2.48,2.37,.26,1.46,3.93,1.09,3.63,1015
-25,1,13.5,1.81,2.61,20,96,2.53,2.61,.28,1.66,3.52,1.12,3.82,845
-26,1,13.05,2.05,3.22,25,124,2.63,2.68,.47,1.92,3.58,1.13,3.2,830
-27,1,13.39,1.77,2.62,16.1,93,2.85,2.94,.34,1.45,4.8,.92,3.22,1195
-28,1,13.3,1.72,2.14,17,94,2.4,2.19,.27,1.35,3.95,1.02,2.77,1285
-29,1,13.87,1.9,2.8,19.4,107,2.95,2.97,.37,1.76,4.5,1.25,3.4,915
-30,1,14.02,1.68,2.21,16,96,2.65,2.33,.26,1.98,4.7,1.04,3.59,1035
-31,1,13.73,1.5,2.7,22.5,101,3,3.25,.29,2.38,5.7,1.19,2.71,1285
-32,1,13.58,1.66,2.36,19.1,106,2.86,3.19,.22,1.95,6.9,1.09,2.88,1515
-33,1,13.68,1.83,2.36,17.2,104,2.42,2.69,.42,1.97,3.84,1.23,2.87,990
-34,1,13.76,1.53,2.7,19.5,132,2.95,2.74,.5,1.35,5.4,1.25,3,1235
-35,1,13.51,1.8,2.65,19,110,2.35,2.53,.29,1.54,4.2,1.1,2.87,1095
-36,1,13.48,1.81,2.41,20.5,100,2.7,2.98,.26,1.86,5.1,1.04,3.47,920
-37,1,13.28,1.64,2.84,15.5,110,2.6,2.68,.34,1.36,4.6,1.09,2.78,880
-38,1,13.05,1.65,2.55,18,98,2.45,2.43,.29,1.44,4.25,1.12,2.51,1105
-39,1,13.07,1.5,2.1,15.5,98,2.4,2.64,.28,1.37,3.7,1.18,2.69,1020
-40,1,14.22,3.99,2.51,13.2,128,3,3.04,.2,2.08,5.1,.89,3.53,760
-41,1,13.56,1.71,2.31,16.2,117,3.15,3.29,.34,2.34,6.13,.95,3.38,795
-42,1,13.41,3.84,2.12,18.8,90,2.45,2.68,.27,1.48,4.28,.91,3,1035
-43,1,13.88,1.89,2.59,15,101,3.25,3.56,.17,1.7,5.43,.88,3.56,1095
-44,1,13.24,3.98,2.29,17.5,103,2.64,2.63,.32,1.66,4.36,.82,3,680
-45,1,13.05,1.77,2.1,17,107,3,3,.28,2.03,5.04,.88,3.35,885
-46,1,14.21,4.04,2.44,18.9,111,2.85,2.65,.3,1.25,5.24,.87,3.33,1080
-47,1,14.38,3.59,2.28,16,102,3.25,3.17,.27,2.19,4.9,1.04,3.44,1065
-48,1,13.9,1.68,2.12,16,101,3.1,3.39,.21,2.14,6.1,.91,3.33,985
-49,1,14.1,2.02,2.4,18.8,103,2.75,2.92,.32,2.38,6.2,1.07,2.75,1060
-50,1,13.94,1.73,2.27,17.4,108,2.88,3.54,.32,2.08,8.90,1.12,3.1,1260
-51,1,13.05,1.73,2.04,12.4,92,2.72,3.27,.17,2.91,7.2,1.12,2.91,1150
-52,1,13.83,1.65,2.6,17.2,94,2.45,2.99,.22,2.29,5.6,1.24,3.37,1265
-53,1,13.82,1.75,2.42,14,111,3.88,3.74,.32,1.87,7.05,1.01,3.26,1190
-54,1,13.77,1.9,2.68,17.1,115,3,2.79,.39,1.68,6.3,1.13,2.93,1375
-55,1,13.74,1.67,2.25,16.4,118,2.6,2.9,.21,1.62,5.85,.92,3.2,1060
-56,1,13.56,1.73,2.46,20.5,116,2.96,2.78,.2,2.45,6.25,.98,3.03,1120
-57,1,14.22,1.7,2.3,16.3,118,3.2,3,.26,2.03,6.38,.94,3.31,970
-58,1,13.29,1.97,2.68,16.8,102,3,3.23,.31,1.66,6,1.07,2.84,1270
-59,1,13.72,1.43,2.5,16.7,108,3.4,3.67,.19,2.04,6.8,.89,2.87,1285
-60,2,12.37,.94,1.36,10.6,88,1.98,.57,.28,.42,1.95,1.05,1.82,520
-61,2,12.33,1.1,2.28,16,101,2.05,1.09,.63,.41,3.27,1.25,1.67,680
-62,2,12.64,1.36,2.02,16.8,100,2.02,1.41,.53,.62,5.75,.98,1.59,450
-63,2,13.67,1.25,1.92,18,94,2.1,1.79,.32,.73,3.8,1.23,2.46,630
-64,2,12.37,1.13,2.16,19,87,3.5,3.1,.19,1.87,4.45,1.22,2.87,420
-65,2,12.17,1.45,2.53,19,104,1.89,1.75,.45,1.03,2.95,1.45,2.23,355
-66,2,12.37,1.21,2.56,18.1,98,2.42,2.65,.37,2.08,4.6,1.19,2.3,678
-67,2,13.11,1.01,1.7,15,78,2.98,3.18,.26,2.28,5.3,1.12,3.18,502
-68,2,12.37,1.17,1.92,19.6,78,2.11,2,.27,1.04,4.68,1.12,3.48,510
-69,2,13.34,.94,2.36,17,110,2.53,1.3,.55,.42,3.17,1.02,1.93,750
-70,2,12.21,1.19,1.75,16.8,151,1.85,1.28,.14,2.5,2.85,1.28,3.07,718
-71,2,12.29,1.61,2.21,20.4,103,1.1,1.02,.37,1.46,3.05,.906,1.82,870
-72,2,13.86,1.51,2.67,25,86,2.95,2.86,.21,1.87,3.38,1.36,3.16,410
-73,2,13.49,1.66,2.24,24,87,1.88,1.84,.27,1.03,3.74,.98,2.78,472
-74,2,12.99,1.67,2.6,30,139,3.3,2.89,.21,1.96,3.35,1.31,3.5,985
-75,2,11.96,1.09,2.3,21,101,3.38,2.14,.13,1.65,3.21,.99,3.13,886
-76,2,11.66,1.88,1.92,16,97,1.61,1.57,.34,1.15,3.8,1.23,2.14,428
-77,2,13.03,.9,1.71,16,86,1.95,2.03,.24,1.46,4.6,1.19,2.48,392
-78,2,11.84,2.89,2.23,18,112,1.72,1.32,.43,.95,2.65,.96,2.52,500
-79,2,12.33,.99,1.95,14.8,136,1.9,1.85,.35,2.76,3.4,1.06,2.31,750
-80,2,12.7,3.87,2.4,23,101,2.83,2.55,.43,1.95,2.57,1.19,3.13,463
-81,2,12,.92,2,19,86,2.42,2.26,.3,1.43,2.5,1.38,3.12,278
-82,2,12.72,1.81,2.2,18.8,86,2.2,2.53,.26,1.77,3.9,1.16,3.14,714
-83,2,12.08,1.13,2.51,24,78,2,1.58,.4,1.4,2.2,1.31,2.72,630
-84,2,13.05,3.86,2.32,22.5,85,1.65,1.59,.61,1.62,4.8,.84,2.01,515
-85,2,11.84,.89,2.58,18,94,2.2,2.21,.22,2.35,3.05,.79,3.08,520
-86,2,12.67,.98,2.24,18,99,2.2,1.94,.3,1.46,2.62,1.23,3.16,450
-87,2,12.16,1.61,2.31,22.8,90,1.78,1.69,.43,1.56,2.45,1.33,2.26,495
-88,2,11.65,1.67,2.62,26,88,1.92,1.61,.4,1.34,2.6,1.36,3.21,562
-89,2,11.64,2.06,2.46,21.6,84,1.95,1.69,.48,1.35,2.8,1,2.75,680
-90,2,12.08,1.33,2.3,23.6,70,2.2,1.59,.42,1.38,1.74,1.07,3.21,625
-91,2,12.08,1.83,2.32,18.5,81,1.6,1.5,.52,1.64,2.4,1.08,2.27,480
-92,2,12,1.51,2.42,22,86,1.45,1.25,.5,1.63,3.6,1.05,2.65,450
-93,2,12.69,1.53,2.26,20.7,80,1.38,1.46,.58,1.62,3.05,.96,2.06,495
-94,2,12.29,2.83,2.22,18,88,2.45,2.25,.25,1.99,2.15,1.15,3.3,290
-95,2,11.62,1.99,2.28,18,98,3.02,2.26,.17,1.35,3.25,1.16,2.96,345
-96,2,12.47,1.52,2.2,19,162,2.5,2.27,.32,3.28,2.6,1.16,2.63,937
-97,2,11.81,2.12,2.74,21.5,134,1.6,.99,.14,1.56,2.5,.95,2.26,625
-98,2,12.29,1.41,1.98,16,85,2.55,2.5,.29,1.77,2.9,1.23,2.74,428
-99,2,12.37,1.07,2.1,18.5,88,3.52,3.75,.24,1.95,4.5,1.04,2.77,660
-100,2,12.29,3.17,2.21,18,88,2.85,2.99,.45,2.81,2.3,1.42,2.83,406
-101,2,12.08,2.08,1.7,17.5,97,2.23,2.17,.26,1.4,3.3,1.27,2.96,710
-102,2,12.6,1.34,1.9,18.5,88,1.45,1.36,.29,1.35,2.45,1.04,2.77,562
-103,2,12.34,2.45,2.46,21,98,2.56,2.11,.34,1.31,2.8,.8,3.38,438
-104,2,11.82,1.72,1.88,19.5,86,2.5,1.64,.37,1.42,2.06,.94,2.44,415
-105,2,12.51,1.73,1.98,20.5,85,2.2,1.92,.32,1.48,2.94,1.04,3.57,672
-106,2,12.42,2.55,2.27,22,90,1.68,1.84,.66,1.42,2.7,.86,3.3,315
-107,2,12.25,1.73,2.12,19,80,1.65,2.03,.37,1.63,3.4,1,3.17,510
-108,2,12.72,1.75,2.28,22.5,84,1.38,1.76,.48,1.63,3.3,.88,2.42,488
-109,2,12.22,1.29,1.94,19,92,2.36,2.04,.39,2.08,2.7,.86,3.02,312
-110,2,11.61,1.35,2.7,20,94,2.74,2.92,.29,2.49,2.65,.96,3.26,680
-111,2,11.46,3.74,1.82,19.5,107,3.18,2.58,.24,3.58,2.9,.75,2.81,562
-112,2,12.52,2.43,2.17,21,88,2.55,2.27,.26,1.22,2,.9,2.78,325
-113,2,11.76,2.68,2.92,20,103,1.75,2.03,.6,1.05,3.8,1.23,2.5,607
-114,2,11.41,.74,2.5,21,88,2.48,2.01,.42,1.44,3.08,1.1,2.31,434
-115,2,12.08,1.39,2.5,22.5,84,2.56,2.29,.43,1.04,2.9,.93,3.19,385
-116,2,11.03,1.51,2.2,21.5,85,2.46,2.17,.52,2.01,1.9,1.71,2.87,407
-117,2,11.82,1.47,1.99,20.8,86,1.98,1.6,.3,1.53,1.95,.95,3.33,495
-118,2,12.42,1.61,2.19,22.5,108,2,2.09,.34,1.61,2.06,1.06,2.96,345
-119,2,12.77,3.43,1.98,16,80,1.63,1.25,.43,.83,3.4,.7,2.12,372
-120,2,12,3.43,2,19,87,2,1.64,.37,1.87,1.28,.93,3.05,564
-121,2,11.45,2.4,2.42,20,96,2.9,2.79,.32,1.83,3.25,.8,3.39,625
-122,2,11.56,2.05,3.23,28.5,119,3.18,5.08,.47,1.87,6,.93,3.69,465
-123,2,12.42,4.43,2.73,26.5,102,2.2,2.13,.43,1.71,2.08,.92,3.12,365
-124,2,13.05,5.8,2.13,21.5,86,2.62,2.65,.3,2.01,2.6,.73,3.1,380
-125,2,11.87,4.31,2.39,21,82,2.86,3.03,.21,2.91,2.8,.75,3.64,380
-126,2,12.07,2.16,2.17,21,85,2.6,2.65,.37,1.35,2.76,.86,3.28,378
-127,2,12.43,1.53,2.29,21.5,86,2.74,3.15,.39,1.77,3.94,.69,2.84,352
-128,2,11.79,2.13,2.78,28.5,92,2.13,2.24,.58,1.76,3,.97,2.44,466
-129,2,12.37,1.63,2.3,24.5,88,2.22,2.45,.4,1.9,2.12,.89,2.78,342
-130,2,12.04,4.3,2.38,22,80,2.1,1.75,.42,1.35,2.6,.79,2.57,580
-131,3,12.86,1.35,2.32,18,122,1.51,1.25,.21,.94,4.1,.76,1.29,630
-132,3,12.88,2.99,2.4,20,104,1.3,1.22,.24,.83,5.4,.74,1.42,530
-133,3,12.81,2.31,2.4,24,98,1.15,1.09,.27,.83,5.7,.66,1.36,560
-134,3,12.7,3.55,2.36,21.5,106,1.7,1.2,.17,.84,5,.78,1.29,600
-135,3,12.51,1.24,2.25,17.5,85,2,.58,.6,1.25,5.45,.75,1.51,650
-136,3,12.6,2.46,2.2,18.5,94,1.62,.66,.63,.94,7.1,.73,1.58,695
-137,3,12.25,4.72,2.54,21,89,1.38,.47,.53,.8,3.85,.75,1.27,720
-138,3,12.53,5.51,2.64,25,96,1.79,.6,.63,1.1,5,.82,1.69,515
-139,3,13.49,3.59,2.19,19.5,88,1.62,.48,.58,.88,5.7,.81,1.82,580
-140,3,12.84,2.96,2.61,24,101,2.32,.6,.53,.81,4.92,.89,2.15,590
-141,3,12.93,2.81,2.7,21,96,1.54,.5,.53,.75,4.6,.77,2.31,600
-142,3,13.36,2.56,2.35,20,89,1.4,.5,.37,.64,5.6,.7,2.47,780
-143,3,13.52,3.17,2.72,23.5,97,1.55,.52,.5,.55,4.35,.89,2.06,520
-144,3,13.62,4.95,2.35,20,92,2,.8,.47,1.02,4.4,.91,2.05,550
-145,3,12.25,3.88,2.2,18.5,112,1.38,.78,.29,1.14,8.21,.65,2,855
-146,3,13.16,3.57,2.15,21,102,1.5,.55,.43,1.3,4,.6,1.68,830
-147,3,13.88,5.04,2.23,20,80,.98,.34,.4,.68,4.9,.58,1.33,415
-148,3,12.87,4.61,2.48,21.5,86,1.7,.65,.47,.86,7.65,.54,1.86,625
-149,3,13.32,3.24,2.38,21.5,92,1.93,.76,.45,1.25,8.42,.55,1.62,650
-150,3,13.08,3.9,2.36,21.5,113,1.41,1.39,.34,1.14,9.40,.57,1.33,550
-151,3,13.5,3.12,2.62,24,123,1.4,1.57,.22,1.25,8.60,.59,1.3,500
-152,3,12.79,2.67,2.48,22,112,1.48,1.36,.24,1.26,10.8,.48,1.47,480
-153,3,13.11,1.9,2.75,25.5,116,2.2,1.28,.26,1.56,7.1,.61,1.33,425
-154,3,13.23,3.3,2.28,18.5,98,1.8,.83,.61,1.87,10.52,.56,1.51,675
-155,3,12.58,1.29,2.1,20,103,1.48,.58,.53,1.4,7.6,.58,1.55,640
-156,3,13.17,5.19,2.32,22,93,1.74,.63,.61,1.55,7.9,.6,1.48,725
-157,3,13.84,4.12,2.38,19.5,89,1.8,.83,.48,1.56,9.01,.57,1.64,480
-158,3,12.45,3.03,2.64,27,97,1.9,.58,.63,1.14,7.5,.67,1.73,880
-159,3,14.34,1.68,2.7,25,98,2.8,1.31,.53,2.7,13,.57,1.96,660
-160,3,13.48,1.67,2.64,22.5,89,2.6,1.1,.52,2.29,11.75,.57,1.78,620
-161,3,12.36,3.83,2.38,21,88,2.3,.92,.5,1.04,7.65,.56,1.58,520
-162,3,13.69,3.26,2.54,20,107,1.83,.56,.5,.8,5.88,.96,1.82,680
-163,3,12.85,3.27,2.58,22,106,1.65,.6,.6,.96,5.58,.87,2.11,570
-164,3,12.96,3.45,2.35,18.5,106,1.39,.7,.4,.94,5.28,.68,1.75,675
-165,3,13.78,2.76,2.3,22,90,1.35,.68,.41,1.03,9.58,.7,1.68,615
-166,3,13.73,4.36,2.26,22.5,88,1.28,.47,.52,1.15,6.62,.78,1.75,520
-167,3,13.45,3.7,2.6,23,111,1.7,.92,.43,1.46,10.68,.85,1.56,695
-168,3,12.82,3.37,2.3,19.5,88,1.48,.66,.4,.97,10.26,.72,1.75,685
-169,3,13.58,2.58,2.69,24.5,105,1.55,.84,.39,1.54,8.66,.74,1.8,750
-170,3,13.4,4.6,2.86,25,112,1.98,.96,.27,1.11,8.5,.67,1.92,630
-171,3,12.2,3.03,2.32,19,96,1.25,.49,.4,.73,5.5,.66,1.83,510
-172,3,12.77,2.39,2.28,19.5,86,1.39,.51,.48,.64,9.899999,.57,1.63,470
-173,3,14.16,2.51,2.48,20,91,1.68,.7,.44,1.24,9.7,.62,1.71,660
-174,3,13.71,5.65,2.45,20.5,95,1.68,.61,.52,1.06,7.7,.64,1.74,740
-175,3,13.4,3.91,2.48,23,102,1.8,.75,.43,1.41,7.3,.7,1.56,750
-176,3,13.27,4.28,2.26,20,120,1.59,.69,.43,1.35,10.2,.59,1.56,835
-177,3,13.17,2.59,2.37,20,120,1.65,.68,.53,1.46,9.3,.6,1.62,840
-178,3,14.13,4.1,2.74,24.5,96,2.05,.76,.56,1.35,9.2,.61,1.6,560
+fullName,wineType,regionName,acidity,intensity,sweetness,tannin,vintageYear,isNatural
+Domaine Coche-Dury Meursault Les Rougeots 2020,White,Meursault,3.21,3.96,2.0,,2020.0,False
+Domaine du Comte Liger-Belair Vosne-Romanée Clos du Chateau Monopole 2001,Red,Vosne-Romanée,4.06,2.91,1.97,2.54,2001.0,False
+Domaine Roulot Meix Chavaux Meursault 2017,White,Meursault,3.48,3.53,1.5,,2017.0,False
+Domaine Armand Rousseau Gevrey-Chambertin 2019,Red,Gevrey-Chambertin,4.06,2.96,1.89,2.59,2019.0,False
+Domaine G. Roumier Chambolle-Musigny 2015,Red,Chambolle-Musigny,4.07,3.03,1.9,2.61,2015.0,False
+Domaine Roulot Meursault Les  Vireuils 2018,White,Meursault,3.27,3.75,1.6,,2018.0,False
+Domaine Bizot Vosne-Romanée 2017,Red,Vosne-Romanée,4.18,2.94,1.75,2.58,2017.0,True
+Domaine Bizot Les Réas Vosne-Romanée 2005,Red,Vosne-Romanée,4.22,3.1,2.52,2.27,2005.0,True
+Jacques-Frederic Mugnier Chambolle-Musigny 2005,Red,Chambolle-Musigny,4.01,2.74,1.87,2.47,2005.0,False
+Domaine Roulot Meursault Luchets 2012,White,Meursault,3.39,3.71,1.62,,2012.0,False
+Domaine Robert Chevillon Les Vaucrains Nuits Saint Georges 1er Cru 2000,Red,Nuits-Saint-Georges,4.19,3.05,1.68,2.81,2000.0,False
+Pierre Girardin Meursault 'Les Narvaux' 2023,White,Meursault,3.6,3.7,1.6,,2023.0,False
+Domaine Coche-Dury Meursault Rouge 2021,Red,Meursault,3.95,2.61,1.65,2.31,2021.0,False
+Pierre Girardin Meursault 'Les Vireuils' 2023,White,Meursault,3.84,3.53,1.46,,2023.0,False
+Domaine Coche-Dury Bourgogne Chardonnay 2020,White,Bourgogne,3.42,3.75,1.66,,2020.0,False
+Domaine des Perdrix Vosne-Romanée 2019,Red,Vosne-Romanée,4.03,3.15,1.66,2.96,2019.0,False
+Domaine Roulot Meursault Blanc 2019,White,Meursault,3.39,3.46,1.54,,2019.0,False
+Domaine Comte Georges de Vogüé Chambolle-Musigny 1996,Red,Chambolle-Musigny,4.11,2.97,1.72,2.62,1996.0,False
+René Bouvier Gevrey-Chambertin 2021,Red,Gevrey-Chambertin,4.1,2.69,1.24,2.33,2021.0,False
+François Mikulski Meursault Pré de Manche 2023,White,Meursault,3.23,3.92,1.54,,2023.0,False
+Château Philippe-Le-Hardi Chassagne-Montrachet 2023,White,Chassagne-Montrachet,3.02,3.82,1.28,,2023.0,False
+Jean Chartron Puligny-Montrachet 2023,White,Puligny-Montrachet,3.34,3.71,1.52,,2023.0,False
+Pierre Mayeul Nuits-Saint-Georges 2017,Red,Nuits-Saint-Georges,4.5,3.09,1.04,3.06,2017.0,False
+A.F. Gros Vosne-Romanee 'Aux Réas' 2022,Red,Vosne-Romanée,4.08,2.79,1.73,2.5,2022.0,False
+Francois et Antoine Jobard Meursault 2023,White,Meursault,3.52,3.73,1.7,,2023.0,False
+Pierre Girardin Puligny-Montrachet 'Les Enseignères' 2020,White,Puligny-Montrachet,3.51,4.09,1.16,,2020.0,False
+Domaine du Pavillon Meursault 'Clos de Magny' 2023,White,Meursault,3.22,4.0,1.25,,2023.0,False
+Manuel Olivier Vosne-Romanée 2020,Red,Vosne-Romanée,4.05,3.13,1.59,2.58,2020.0,False
+Christophe Patrice Chablis 2025,White,Chablis,3.94,2.69,1.48,,2025.0,False
+Louis Jadot Puligny-Montrachet 2023,White,Puligny-Montrachet,3.29,3.83,1.42,,2023.0,False
+Joseph Colin Puligny-Montrachet 'Le Trézin' 2022,White,Puligny-Montrachet,3.34,3.72,1.81,,2022.0,False
+Xavier Monnot Le Limozin Meursault 2022,White,Meursault,3.24,3.84,1.37,,2022.0,False
+Domaine Vincent Latour Meursault 'Clos des Magny' 2023,White,Meursault,3.36,3.78,1.99,,2023.0,False
+Domaine Vincent Latour Cuvée Saint Jean Meursault 2023,White,Meursault,3.3,3.74,1.65,,2023.0,False
+Xavier Monnot Meursault 'Les Chevalières' 2023,White,Meursault,3.23,3.62,1.85,,2023.0,False
+Etienne Sauzet Puligny-Montrachet 1983,White,Puligny-Montrachet,3.32,3.62,1.53,,1983.0,False
+Olivier Leflaive Puligny-Montrachet 2023,White,Puligny-Montrachet,3.43,3.69,1.52,,2023.0,False
+Joseph Drouhin Puligny-Montrachet 2023,White,Puligny-Montrachet,3.23,3.67,1.61,,2023.0,False
+Domaine Denis Mortet Gevrey-Chambertin Mes Cinq Terroirs 2023,Red,Gevrey-Chambertin,4.08,3.05,1.98,2.62,2023.0,False
+Louis Latour Puligny-Montrachet 2024,White,Puligny-Montrachet,3.16,3.67,1.48,,2024.0,False
+Domaine Jacques Prieur Meursault 'Clos de Mazeray' Blanc (Monopole) 2023,White,Meursault,3.25,3.73,1.74,,2023.0,False
+Domaine Humbert Frères Vieilles Vignes Gevrey-Chambertin 2023,Red,Gevrey-Chambertin,3.87,3.1,1.59,2.69,2023.0,False
+Domaine Marc Roy Clos Prieur Gevrey-Chambertin 2023,Red,Gevrey-Chambertin,3.99,3.27,1.71,2.69,2023.0,False
+Remoissenet Père & Fils Gevrey-Chambertin 2022,Red,Gevrey-Chambertin,4.1,2.99,1.71,2.63,2022.0,False
+Domaine Philippe Pernot-Belicard Puligny-Montrachet 2023,White,Puligny-Montrachet,3.33,3.58,1.81,,2023.0,False
+Domaine Alain Chavy Puligny-Montrachet 'Les Charmes' 2023,White,Puligny-Montrachet,3.3,3.81,1.61,,2023.0,False
+Benjamin Leroux Vosne-Romanee 2023,Red,Vosne-Romanée,4.12,2.82,1.5,2.51,2023.0,False
+Régnard Grand Régnard Chablis 2020,White,Chablis,3.94,2.95,1.39,,2020.0,False
+Olivier Leflaive Meursault Vireuils 2023,White,Meursault,3.41,3.65,1.48,,2023.0,False
+Jean-Philippe Fichet Meursault 'Les Gruyaches' 2023,White,Meursault,3.53,3.7,1.62,,2023.0,False
+Benjamin Leroux Meursault 'Les Vireuils' 2023,White,Meursault,3.32,3.78,1.78,,2023.0,False
+Domaine Michel Niellon Chassagne-Montrachet 1er Cru 'Les Champgains' Blanc 2022,White,Chassagne-Montrachet,3.32,3.66,1.65,,2022.0,False
+Comtesse Bernard de Chérisey Meursault Bois de Blagny 2021,White,Meursault,3.47,3.43,1.34,,2021.0,False
+Domaine Vincent Latour Meursault 'Les Grands Charrons' 2023,White,Meursault,3.22,3.88,1.58,,2023.0,False
+Domaine Gabriel et Paul Jouard Vieilles Vignes Chassagne-Montrachet 2023,Red,Chassagne-Montrachet,3.84,2.57,1.6,2.25,2023.0,False
+Bouzereau-Gruère Puligny-Montrachet 2024,White,Puligny-Montrachet,3.14,3.4,1.5,,2024.0,False
+Faiveley Puligny-Montrachet 1er Cru La Garenne 2023,White,Puligny-Montrachet,3.41,3.71,1.79,,2023.0,False
+Yves Boyer-Martenot Cuvée Fernand Boyer Meursault 2022,White,Meursault,3.4,3.73,1.57,,2022.0,False
+Domaine Roulot Meursault Tillets 2022,White,Meursault,3.36,3.61,1.52,,2022.0,False
+Louis Jadot Meursault 2020,White,Meursault,3.21,3.84,1.61,,2020.0,False
+Faiveley Gevrey-Chambertin Vieilles Vignes 2020,Red,Gevrey-Chambertin,4.11,3.06,1.71,2.57,2020.0,False
+François Mikulski Meursault Les Tillets 2023,White,Meursault,3.31,3.05,1.99,,2023.0,False
+Domaine Rougeot Bourgogne Côte d’Or La Monatine 2023,White,Bourgogne,3.13,3.75,1.28,,2023.0,False
+Alex Moreau Chassagne-Montrachet 2023,White,Chassagne-Montrachet,3.54,3.29,1.98,,2023.0,False
+Maison Leroy Nuits-Saint-Georges 2013,Red,Nuits-Saint-Georges,4.16,2.81,2.21,2.47,2013.0,False
+Pierre Girardin Meursault 'Le Limozin' 2023,White,Meursault,3.31,3.73,1.42,,2023.0,False
+Domaine Génot-Boulanger Meursault 'Les Meix Chavaux' 2023,White,Meursault,3.2,3.46,1.49,,2023.0,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Clos de la Chapelle Pouilly-Fuissé 2022,White,Pouilly-Fuissé,2.73,3.19,1.47,,2022.0,False
+Guillemard-Clerc Puligny-Montrachet 'Les Meix' 2022,White,Côte de Beaune,3.22,4.25,1.74,,2022.0,False
+Yves Boyer-Martenot Puligny-Montrachet 'Les Reuchaux' 2021,White,Puligny-Montrachet,3.17,3.88,1.39,,2021.0,False
+Bachelet-Monnot Chassagne-Montrachet 2021,White,Chassagne-Montrachet,3.34,3.7,1.67,,2021.0,False
+Jean-Claude Boisset Gevrey-Chambertin Les Murots 2018,Red,Gevrey-Chambertin,4.02,2.75,1.45,2.71,2018.0,False
+Albert Bichot Pouilly-Fuissé Premier Cru Clos Reyssie 2021,White,Pouilly-Fuissé,2.89,2.76,1.57,,2021.0,False
+Hudelot-Noëllat Chambolle-Musigny 2019,Red,Chambolle-Musigny,4.18,2.87,1.73,2.63,2019.0,False
+Château Fuissé Pouilly-Fuissé Le Clos Monopole 2023,White,Pouilly-Fuissé,2.89,3.21,1.76,,2023.0,False
+Domaine Robert Chevillon Les Chaignots Nuits-Saint-Georges 1er Cru 2010,Red,Nuits-Saint-Georges,4.14,3.12,1.5,2.7,2010.0,False
+Domaine Philippe Pernot-Belicard Puligny-Montrachet Composition Parcellaire 2023,White,Puligny-Montrachet,2.72,3.93,2.16,,2023.0,False
+Pierre Morey Meursault 'Clos le Meix Tavaux' 2023,White,Meursault,3.24,3.75,1.34,,2023.0,False
+Domaine Jean Grivot Vosne-Romanée 2021,Red,Vosne-Romanée,4.05,2.99,1.73,2.64,2021.0,False
+Domaine Leflaive Esprit Nuits-Saint-Georges 2020,Red,Nuits-Saint-Georges,3.87,2.89,1.74,2.61,2020.0,False
+Château Philippe-Le-Hardi Meursault 2023,White,Meursault,3.72,3.28,1.1,,2023.0,False
+Vincent Girardin Les Vieilles Vignes Puligny-Montrachet 2022,White,Puligny-Montrachet,3.34,3.78,1.37,,2022.0,False
+Maison Henri Boillot Bourgogne Blanc 2023,White,Bourgogne,3.44,3.69,1.43,,2023.0,False
+Morey-Coffinet Chassagne Montrachet 'Les Houillères' 2020,White,Chassagne-Montrachet,3.55,3.67,1.8,,2020.0,False
+Méo-Camuzet Vosne-Romanée 2021,Red,Vosne-Romanée,4.03,2.98,1.68,2.56,2021.0,False
+Domaine Leflaive Puligny-Montrachet 2023,White,Puligny-Montrachet,3.26,3.69,1.74,,2023.0,False
+Emmanuel Rouget Vosne-Romanée 2009,Red,Vosne-Romanée,3.99,2.91,1.94,2.53,2009.0,False
+Sylvain Pataille Marsannay 'Clos du Roy' 2020,Red,Marsannay,4.07,2.99,1.63,2.62,2020.0,True
+Domaine Trapet Gevrey-Chambertin Cuvée 1859 2019,Red,Gevrey-Chambertin,3.33,3.1,2.4,2.76,2019.0,False
+Domaine Jean-Michel Gaunoux Meursault 2022,White,Meursault,3.12,3.71,1.77,,2022.0,False
+Dugat-Py Vieilles Vignes Gevrey-Chambertin Cuvée Cœur de Roy 2016,Red,Gevrey-Chambertin,4.16,3.32,1.87,2.96,2016.0,False
+Georges Noëllat Nuits-Saint-Georges 2016,Red,Nuits-Saint-Georges,4.08,3.02,2.21,2.54,2016.0,False
+Pierre Boisson Meursault 'Les Grands Charrons' 2020,White,Meursault,3.5,3.98,1.7,,2020.0,False
+Jean Féry & Fils Nuits-Saint-Georges 2022,Red,Nuits-Saint-Georges,4.53,2.66,1.47,2.5,2022.0,False
+Joseph Drouhin Meursault 2023,White,Meursault,3.22,3.8,1.6,,2023.0,False
+Benjamin Leroux Meursault 2023,White,Meursault,3.26,3.68,1.8,,2023.0,False
+Gérard Mugneret Cuvée Précolombière Vosne-Romanée 2017,Red,Vosne-Romanée,4.16,3.2,1.44,2.56,2017.0,False
+Domaine Antonin Guyon Gevrey-Chambertin 'Carougeot' 2023,Red,Gevrey-Chambertin,4.22,3.33,1.43,3.11,2023.0,False
+Louis Jadot Chassagne-Montrachet Blanc 2023,White,Chassagne-Montrachet,3.19,3.76,1.7,,2023.0,False
+Bernard Rion Dame Juliette Vieilles Vignes Vosne-Romanée 2021,Red,Vosne-Romanée,3.36,3.57,1.47,2.45,2021.0,False
+Domaine Comte Georges de Vogüé Bourgogne Blanc 2012,White,Bourgogne,3.36,3.73,1.89,,2012.0,False
+François Mikulski Meursault 2023,White,Meursault,3.39,3.69,1.6,,2023.0,False
+Louis Latour Vosne-Romanée 2019,Red,Vosne-Romanée,3.99,2.86,1.4,2.44,2019.0,False
+Domaine Alain Chavy Puligny-Montrachet 2023,White,Puligny-Montrachet,3.34,3.77,1.49,,2023.0,False
+Château de Meursault Meursault Clos des Grands Charrons (Monopole) 2022,White,Meursault,3.3,3.84,1.35,,2022.0,False
+Domaine Armelle et Bernard Rion Cuvée Dame Marguerite Vieilles Vignes Nuits-Saint-Georges 2020,Red,Nuits-Saint-Georges,4.23,3.22,1.44,2.94,2020.0,False
+Domaine Fernand & Laurent Pillot Chassagne-Montrachet 2023,White,Chassagne-Montrachet,3.26,3.82,1.63,,2023.0,False
+David Moret Saint-Aubin 2023,White,Saint-Aubin,3.24,3.38,2.01,,2023.0,False
+Louis Jadot Saint-Aubin Blanc 2020,White,Saint-Aubin,3.29,3.36,1.44,,2020.0,False
+Domaine Edouard Confuron Vosne-Romanée Le Pré de la Folie 2022,Red,Vosne-Romanée,3.59,2.69,1.31,2.33,2022.0,False
+Francine et Olivier Savary Cuvée Raymond Bachelier Chablis Hommage 2024,White,Chablis,4.09,3.1,1.03,,2024.0,False
+Clos du Moulin Aux Moines Le Pré de Manche Meursault 2023,White,Meursault,3.0,3.58,2.0,,2023.0,False
+Charles Lachaux Gevrey-Chambertin 'En Reniard' 2019,Red,Gevrey-Chambertin,3.61,3.08,2.17,2.83,2019.0,False
+Jean-Luc & Eric Burguet Mes Favorites Vieilles Vignes Gevrey-Chambertin 2023,Red,Gevrey-Chambertin,4.16,3.07,1.8,2.62,2023.0,False
+Olivier Leflaive Meursault 2023,White,Meursault,3.35,3.81,1.41,,2023.0,False
+Domaine Antonin Guyon Gevrey-Chambertin 'La Justice' 2023,Red,Gevrey-Chambertin,4.18,2.95,1.58,2.67,2023.0,False
+Joseph Drouhin Chambolle-Musigny 2023,Red,Chambolle-Musigny,4.3,2.85,1.6,2.53,2023.0,False
+Benjamin Leroux Gevrey-Chambertin 2023,Red,Gevrey-Chambertin,4.09,2.91,1.71,2.61,2023.0,False
+Domaine de Montille Bourgogne Blanc Clos Du Château 2023,White,Bourgogne,3.4,3.67,1.51,,2023.0,False
+Domaine Sylvain Cathiard Vosne-Romanée 2021,Red,Vosne-Romanée,4.17,2.99,1.77,2.71,2021.0,False
+Rémi Jobard Meursault 'Sous La Velle' 2023,White,Meursault,3.42,3.59,1.53,,2023.0,False
+Domaine Marc Roy Gevrey-Chambertin Vieilles Vignes 2023,Red,Gevrey-Chambertin,4.17,2.99,1.51,2.59,2023.0,False
+Domaine Pierre Gelin Gevrey-Chambertin Clos de Meixvelle 2004,Red,Gevrey-Chambertin,3.96,2.95,1.96,2.57,2004.0,False
+Domaine Antonin Guyon Chambolle-Musigny Clos du Village Monopole 2023,Red,Chambolle-Musigny,4.1,2.76,1.64,2.57,2023.0,False
+Domaine Leflaive Pouilly-Fuissé 2023,White,Pouilly-Fuissé,3.08,3.18,1.44,,2023.0,False
+Lignier-Michelot Vieilles Vignes Chambolle-Musigny 2023,Red,Chambolle-Musigny,3.97,2.96,1.95,2.57,2023.0,False
+Domaine Bruno Clair Chambolle-Musigny 'Les Veroilles' 2023,Red,Chambolle-Musigny,4.13,2.81,1.63,2.43,2023.0,False
+Domaine Génot-Boulanger Meursault Clos du Cromin 2023,White,Meursault,3.27,3.71,1.46,,2023.0,False
+Pierre Morey Les Tessons Meursault 2023,White,Meursault,3.4,3.72,1.49,,2023.0,False
+Pierre Morey Meursault 2023,White,Meursault,3.52,3.6,1.64,,2023.0,False
+Domaine Bruno Clair Vosne-Romanée 'Les Champs Perdrix' 2021,Red,Vosne-Romanée,4.25,3.03,1.7,2.65,2021.0,False
+Patrice Rion Vieilles Vignes Chambolle-Musigny 2022,Red,Chambolle-Musigny,4.07,2.64,1.57,2.49,2022.0,False
+Domaine Rougeot Meursault 'Sous La Velle' 2023,White,Meursault,3.16,3.76,1.63,,2023.0,False
+Henri Prudhon & Fils Puligny-Montrachet Les Enseignères 2023,White,Puligny-Montrachet,3.25,3.69,1.66,,2023.0,False
+Rémi Jobard Meursault 'Les Chevalières' 2023,White,Meursault,3.43,3.66,1.63,,2023.0,False
+Domaine Jomain Fréres Puligny-Montrachet 2024,White,Puligny-Montrachet,3.39,3.68,1.34,,2024.0,False
+Domaine du Pavillon Meursault 2023,White,Meursault,3.32,3.87,1.47,,2023.0,False
+Domaine Jean Grivot Nuits-St-Georges Les Charmois 2023,Red,Nuits-Saint-Georges,4.08,2.85,1.61,2.67,2023.0,False
+Château Fuissé Les Brûlés Pouilly-Fuissé 2023,White,Pouilly-Fuissé,2.81,3.29,1.51,,2023.0,False
+Rémi Jobard Meursault 'Les Narvaux' 2022,White,Meursault,3.4,3.67,1.44,,2022.0,False
+Rémi Jobard Meursault 'En Luraule' 2006,White,Meursault,3.42,3.95,2.04,,2006.0,False
+A & Arlaud Vosne Romanée Aux Réas 2023,Red,Vosne-Romanée,4.19,3.18,1.51,2.81,2023.0,False
+Lignier-Michelot Cuvée Bertin Gevrey-Chambertin 2022,Red,Gevrey-Chambertin,3.97,3.13,1.89,2.64,2022.0,False
+Domaine Gabriel et Paul Jouard Chassagne-Montrachet Blanc 2023,White,Chassagne-Montrachet,3.45,3.83,1.36,,2023.0,False
+Domaine de Montille Nuits-Saint-Georges Aux Saints-Juliens 2023,Red,Nuits-Saint-Georges,4.3,2.98,1.39,2.67,2023.0,False
+Hubert Lignier Gevrey-Chambertin 'Les Seuvrées' 2020,Red,Gevrey-Chambertin,4.15,3.07,1.79,2.72,2020.0,False
+Domaine Rougeot Bourgogne Cote d'Or Les Grandes Gouttes 2023,White,Bourgogne,3.41,3.81,1.61,,2023.0,False
+Chartron et Trébuchet Meursault 2021,White,Meursault,3.32,3.98,1.58,,2021.0,False
+Domaine Frantz Chagnoleau Pastoral Pouilly-Fuissé 2024,White,Pouilly-Fuissé,2.63,3.43,1.28,,2024.0,False
+Gilles Morat Bélemnites Pouilly-Fuissé 2023,White,Pouilly-Fuissé,2.76,2.96,1.37,,2023.0,False
+Domaine Glantenay Chambolle-Musigny 2023,Red,Chambolle-Musigny,3.86,2.86,1.63,2.62,2023.0,False
+Domaine Jacques Prieur Meursault Clos De Mazeray Rouge (Monopole) 2023,Red,Meursault,3.88,2.64,1.9,2.14,2023.0,False
+Jean-Philippe Fichet Meursault 'Les Chevalières' 2023,White,Meursault,3.33,3.52,1.34,,2023.0,False
+Buisson-Charles Meursault 'Les Tessons' 2023,White,Meursault,3.08,3.89,2.01,,2023.0,False
+Château de Béru Orangerie Chablis 2022,White,Chablis,4.07,2.9,1.54,,2022.0,True
+Domaine Pattes Loup Chablis Vent d'Ange 2022,White,Chablis,3.93,3.03,1.58,,2022.0,True
+Pierre Girardin Éclat de Calcaire Bourgogne Chardonnay 2022,White,Bourgogne,3.49,3.58,1.34,,2022.0,False
+Pascal Marchand-Tawse Meursault 2023,White,Meursault,3.1,3.84,1.74,,2023.0,False
+Pierre Labet - François Labet Vieilles Vignes Gevrey-Chambertin 2021,Red,Gevrey-Chambertin,4.08,2.9,1.58,2.57,2021.0,False
+Les Parcellaires de Saulx Bourgogne Chardonnay 2022,White,Bourgogne,3.04,3.79,1.56,,2022.0,False
+Château Fuissé Pouilly-Fuissé Tête de Cuvée 2021,White,Pouilly-Fuissé,2.89,3.07,1.55,,2021.0,False
+Olivier Leflaive Chassagne-Montrachet 'Houillères' 2023,White,Chassagne-Montrachet,3.28,3.66,1.61,,2023.0,False
+Verget Les Combes Vieilles Vignes Pouilly-Fuissé 2024,White,Pouilly-Fuissé,2.93,3.21,1.46,,2024.0,False
+A & Arlaud Vosne-Romanée 2023,Red,Vosne-Romanée,4.13,3.11,1.88,2.55,2023.0,False
+Domaine Saumaize-Michelin Pouilly-Fuissé La Maréchaude 2023,White,Pouilly-Fuissé,3.05,2.87,1.38,,2023.0,False
+Sylvain Pataille Marsannay 'L'Ancestrale' 2022,Red,Marsannay,4.06,3.16,1.97,2.88,2022.0,True
+Albert Bichot Gevrey-Chambertin Les Evocelles 2022,Red,Gevrey-Chambertin,4.46,2.95,1.53,2.77,2022.0,False
+Domaine des Terres de Velle Chassagne-Montrachet 'La Platière' 2022,White,Chassagne-Montrachet,3.35,3.7,1.38,,2022.0,False
+Faiveley Nuits-Saint-Georges 'Les Montroziers' 2023,Red,Nuits-Saint-Georges,4.09,3.21,1.18,2.53,2023.0,False
+Jean Noël Gagnard Chassagne-Montrachet 'Champ Derriére' 2022,White,Chassagne-Montrachet,3.3,3.72,1.32,,2022.0,False
+Olivier Guyot Vieilles Vignes Chambolle-Musigny 2022,Red,Chambolle-Musigny,3.93,2.97,1.79,2.58,2022.0,False
+Domaine Frantz Chagnoleau La Roche Saint-Véran 2024,White,Saint-Véran,3.29,3.05,1.87,,2024.0,False
+Seguin-Manuel Vieilles Vignes Gevrey-Chambertin 2023,Red,Gevrey-Chambertin,4.42,2.99,1.73,2.41,2023.0,False
+Seguin-Manuel Vieilles Vignes Meursault 2023,White,Meursault,3.17,3.48,1.04,,2023.0,False
+Domaine Trapet Gevrey-Chambertin Ostrea 2018,Red,Gevrey-Chambertin,4.18,3.12,1.59,2.63,2018.0,False
+Lucien Muzard & Fils Meursault 'Les Meix Chavaux' 2024,White,Meursault,3.35,3.68,1.29,,2024.0,False
+Maxime Cheurlin-Noëllat Gevrey-Chambertin 'En Champs' 2022,Red,Gevrey-Chambertin,4.22,3.14,1.7,2.84,2022.0,False
+Domaine des Terres de Velle Puligny-Montrachet 2022,White,Puligny-Montrachet,3.47,3.21,1.4,,2022.0,False
+Michel Bouzereau Bourgogne Côte-d'Or Clos du Moulin 2023,White,Bourgogne,3.47,3.7,1.56,,2023.0,False
+Faiveley La Combe d'Orveau Chambolle-Musigny 1er Cru 2018,Red,Chambolle-Musigny,4.21,3.22,1.62,3.04,2018.0,False
+Domaine Frantz Chagnoleau La Fournaise Saint-Véran 2024,White,Saint-Véran,2.97,3.27,1.0,,2024.0,False
+Domaine Arnoux-Lachaux Vosne-Romanée 2017,Red,Vosne-Romanée,4.11,2.94,1.86,2.69,2017.0,False
+Seguin-Manuel Vieilles Vignes Nuits-Saint-Georges 2022,Red,Nuits-Saint-Georges,4.13,2.94,1.87,2.65,2022.0,False
+Famille Vincent Marie Antoinette Pouilly-Fuissé 2022,White,Pouilly-Fuissé,2.95,3.01,1.38,,2022.0,False
+J.A. Ferret Pouilly-Fuissé 2022,White,Pouilly-Fuissé,2.98,2.99,1.42,,2022.0,False
+Jean Féry & Fils Gevrey-Chambertin 2022,Red,Gevrey-Chambertin,3.94,2.91,2.07,2.24,2022.0,False
+Vincent Girardin Les Vieilles Vignes Meursault 2022,White,Meursault,3.42,3.71,1.57,,2022.0,False
+Domaine Bruno Clair La Charme Aux Prêtres Marsannay 2023,Red,Marsannay,4.2,2.94,1.41,2.34,2023.0,False
+Alexis Pollier Pouilly-Fuissé 2023,White,Pouilly-Fuissé,2.96,2.88,1.48,,2023.0,False
+Thibault Liger-Belair Chambolle-Musigny 2020,Red,Chambolle-Musigny,3.75,3.12,1.54,3.0,2020.0,False
+Domaine Tessier Meursault 2022,White,Meursault,3.45,4.08,1.57,,2022.0,False
+Sylvain Pataille Chardonnay Marsannay 2022,White,Marsannay,3.53,3.68,1.38,,2022.0,True
+René Bouvier Marsannay 'Le Finage' 2021,Red,Marsannay,4.2,2.92,1.52,2.54,2021.0,False
+Pierre Boisson Les Belles Côtes Bourgogne Blanc 2021,White,Bourgogne,3.23,3.84,1.17,,2021.0,False
+Bouchard Père & Fils Meursault Les Clous 2022,White,Meursault,3.24,3.83,1.6,,2022.0,False
+Michel Magnien Chambolle-Musigny 'Argillières' 2021,Red,Chambolle-Musigny,4.01,3.02,1.29,2.91,2021.0,False
+Domaine de La Romanée-Conti Marc de Bourgogne,Dessert,Côte de Nuits,,,,,,False
+Domaine de La Romanée-Conti Fine Bourgogne,Dessert,Bourgogne,,,,,,False
+Domaine Armand Rousseau Gevrey-Chambertin Clos du Château,Red,Gevrey-Chambertin,3.88,3.23,1.57,2.84,,False
+Domaine Armand Rousseau Vieux Marc de Bourgogne,Red,Bourgogne,4.13,2.5,1.0,2.0,,False
+Domaine G. Roumier Bourgogne Rouge,Red,Bourgogne,3.97,2.68,1.68,2.33,,False
+Domaine du Comte Liger-Belair La Colombiere Vosne-Romanée,Red,Vosne-Romanée,4.12,2.83,1.87,2.52,,False
+Domaine du Comte Liger-Belair Vosne-Romanée,Red,Vosne-Romanée,4.0,2.98,1.94,2.39,,False
+Domaine du Comte Liger-Belair Nuits-Saint-Georges Aux Lavieres,Red,Nuits-Saint-Georges,4.08,2.77,2.21,2.68,,False
+Jacques-Frederic Mugnier Nuits-Saint-Georges Clos des Fourches,Red,Nuits-Saint-Georges,4.12,3.13,1.52,2.7,,False
+Jacques-Frederic Mugnier Trente-Deux Chambolle-Musigny,Red,Chambolle-Musigny,4.07,3.62,1.62,2.94,,False
+Louis Jadot Bourgogne Pinot Noir,Red,Bourgogne,3.9,2.49,1.34,2.27,,False
+Louis Jadot Bourgogne Chardonnay,White,Bourgogne,3.3,3.79,1.4,,,False
+Louis Jadot Bourgogne Couvent des Jacobins,Red,Bourgogne,3.84,2.49,1.5,2.33,,False
+Louis Jadot Pouilly-Fuissé,White,Pouilly-Fuissé,2.97,2.98,1.34,,,False
+Louis Jadot Chablis,White,Chablis,4.0,2.98,1.31,,,False
+Louis Jadot Beaujolais,Red,Beaujolais,4.76,1.18,1.42,1.78,,False
+Louis Jadot Bourgogne Couvent Des Jacobins Blanc,White,Bourgogne,3.33,3.75,1.54,,,False
+Louis Jadot Château des Jacques Moulin-a-Vent Clos des Thorins,Red,Moulin-à-Vent,4.51,1.61,1.38,1.96,,False
+Louis Jadot Gevrey Chambertin,Red,Gevrey-Chambertin,4.1,2.9,1.56,2.54,,False
+Louis Jadot Château des Jacques Morgon,Red,Morgon,4.67,1.65,1.63,2.05,,False
+Louis Jadot Château des Jacques Moulin-à-Vent,Red,Moulin-à-Vent,4.51,1.73,1.52,1.99,,False
+Louis Jadot Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.86,2.71,1.64,2.14,,False
+Louis Jadot Chablis Cellier de La Sablière,White,Chablis,4.0,2.96,1.3,,,False
+Louis Jadot Château des Jacques Bourgogne Clos de Loyse,White,Bourgogne,3.21,3.87,1.25,,,False
+Louis Jadot Chambolle-Musigny,Red,Chambolle-Musigny,4.17,2.82,1.42,2.54,,False
+Louis Jadot Bourgogne Chardonnay Petites Pierres,White,Bourgogne,3.19,3.79,1.51,,,False
+Louis Jadot Les Remparts Bourgogne Chardonnay,White,Bourgogne,3.19,3.9,1.53,,,False
+Louis Jadot Bourgogne Pinot Noir Les Petites Pierres,Red,Bourgogne,3.8,2.54,1.16,2.16,,False
+Louis Jadot Marsannay Rosé,Rosé,Marsannay,3.08,2.66,1.44,,,False
+Louis Jadot Côte d'Or Bourgogne,Red,Bourgogne,3.76,2.52,1.64,2.26,,False
+Louis Jadot Cellier du Valvan Chablis,White,Chablis,3.84,2.86,1.62,,,False
+Louis Jadot Les Remparts Bourgogne Pinot Noir,Red,Bourgogne,3.9,2.43,1.81,2.17,,False
+Louis Jadot Marsannay,Red,Marsannay,4.21,2.85,1.51,2.74,,False
+Louis Jadot Chateau des Jacques Clos de Rochegrès Moulin-à-Vent,Red,Moulin-à-Vent,4.5,1.82,1.71,2.11,,False
+Louis Jadot Vosne-Romanée,Red,Vosne-Romanée,4.31,3.05,1.36,2.55,,False
+Louis Jadot Château des Jacques Morgon Roches Noires,Red,Morgon,4.58,1.82,1.53,2.16,,False
+Louis Jadot Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.24,3.09,1.34,2.67,,False
+Louis Jadot Pouilly-Fuissé les Petites Pierres,White,Pouilly-Fuissé,2.96,2.99,1.27,,,False
+Louis Jadot Château des Jacques Moulin-a-Vent Champ de Cour,Red,Moulin-à-Vent,4.53,1.77,1.51,1.9,,False
+Louis Jadot Saint-Véran,White,Saint-Véran,2.71,2.96,1.16,,,False
+Louis Jadot Château des Jacques Morgon Côte du Py,Red,Morgon,4.59,1.93,1.52,2.2,,False
+Louis Jadot Rosé De Marsannay Domaine Clair-Dau,Rosé,Marsannay,3.0,2.5,1.0,,,False
+Louis Jadot Chapelle Aux Loups Chablis,White,Chablis,3.88,3.06,1.35,,,False
+Louis Jadot Beaujolais-Quincié,Red,Beaujolais,4.56,1.4,1.42,1.72,,False
+Louis Jadot Château des Jacques Beaujolais Clos de Loyse,White,Beaujolais,3.1,2.98,2.39,,,False
+Louis Jadot Fleurie Poncereau,Red,Fleurie,4.69,1.48,1.34,1.91,,False
+Louis Jadot Château des Jacques Moulin-a-Vent Clos du Grand Carquelin,Red,Moulin-à-Vent,4.57,2.01,1.7,2.12,,False
+Louis Jadot Brouilly,Red,Brouilly,4.34,1.39,1.48,1.79,,False
+Louis Jadot Steel Chardonnay,White,Bourgogne,3.35,3.76,1.19,,,False
+Louis Jadot Château des Jacques Fleurie,Red,Fleurie,4.58,1.68,1.53,1.95,,False
+Louis Jadot Bourgogne Pinot Noir Les Pierres Rouges,Red,Bourgogne,3.79,2.58,1.32,2.19,,False
+Louis Jadot Pouilly-Fuissé Les Deux Versants,White,Pouilly-Fuissé,2.96,2.85,1.19,,,False
+Louis Jadot Saint Romain,White,Saint-Romain,3.35,3.77,1.52,,,False
+Domaine Coche-Dury Meursault Blanc,White,Meursault,3.41,3.81,1.7,,,False
+Domaine Coche-Dury Puligny-Montrachet Les Enseignères,White,Puligny-Montrachet,3.53,3.72,1.87,,,False
+Domaine Coche-Dury Bourgogne Pinot Noir,Red,Bourgogne,3.95,2.63,1.48,2.28,,False
+Domaine Coche-Dury Meursault Les Chevalieres,White,Meursault,3.35,3.93,1.74,,,False
+Domaine Coche-Dury Meursault Les Vireuils,White,Meursault,2.38,4.0,1.0,,,False
+Domaine des Comtes Lafon Meursault Clos de la Barre,White,Meursault,3.33,3.82,1.77,,,False
+Domaine des Comtes Lafon Meursault,White,Meursault,3.23,3.82,1.78,,,False
+Domaine des Comtes Lafon Meursault Désirée,White,Meursault,3.32,3.49,1.73,,,False
+Domaine des Comtes Lafon Meursault 'Clos de la Baronne',White,Meursault,3.59,3.65,1.39,,,False
+Domaine Comte Georges de Vogüé Marc de Bourgogne,Dessert,Bourgogne,,,,,,False
+Domaine Comte Georges de Vogüé Fine de Bourgogne,Dessert,Bourgogne,,,,,,False
+Pierre Girardin Éclat de Calcaire Bourgogne Pinot Noir,Red,Bourgogne,3.85,2.58,1.57,2.15,,False
+Pierre Girardin Éclat de Calcaire Meursault,White,Meursault,3.65,4.05,1.45,,,False
+Pierre Girardin Meursault 'Les Grands Charrons',White,Meursault,3.56,3.92,1.67,,,False
+Pierre Girardin Vosne-Romanée,Red,Vosne-Romanée,4.21,2.86,1.67,2.33,,False
+Pierre Girardin Puligny-Montrachet,White,Puligny-Montrachet,4.05,3.3,1.28,,,False
+Pierre Girardin Vosne-Romanée Les Hauts Beaumonts,Red,Vosne-Romanée,4.05,2.98,1.54,2.92,,False
+Pierre Girardin Gevrey-Chambertin,Red,Gevrey-Chambertin,4.4,3.16,1.88,2.78,,False
+Pierre Girardin Meursault 'Les Tillets',White,Meursault,3.69,4.02,1.21,,,False
+Pierre Girardin Meursault 'Les Meix Chavaux',White,Meursault,3.0,3.95,1.23,,,False
+Pierre Girardin Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.01,3.06,1.35,2.38,,False
+Pierre Girardin Les Casse-Têtes Meursault,White,Meursault,3.51,3.96,1.13,,,False
+Pierre Girardin Meursault 'Les Chevalières',White,Meursault,3.81,3.57,1.15,,,False
+Pierre Girardin Chassagne-Montrachet,White,Chassagne-Montrachet,3.52,3.38,1.43,,,False
+Emmanuel Rouget Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.9,2.8,1.72,2.45,,False
+Emmanuel Rouget Bourgogne,Red,Bourgogne,3.86,2.58,2.11,1.98,,False
+Robert Groffier Bourgogne Pinot Noir,Red,Bourgogne,3.78,2.57,1.79,2.2,,False
+Robert Groffier Les Seuvrées Gevrey-Chambertin,Red,Gevrey-Chambertin,4.09,3.04,1.67,2.52,,False
+Robert Groffier Gevrey-Chambertin,Red,Gevrey-Chambertin,4.29,2.84,1.58,2.51,,False
+Robert Groffier Chambolle-Musigny,Red,Chambolle-Musigny,3.06,3.0,1.2,2.71,,False
+Robert Groffier Bourgogne Chardonnay,White,Bourgogne,3.0,4.0,1.0,,,False
+Faiveley Pinot Noir Bourgogne,Red,Bourgogne,3.87,2.5,1.46,2.23,,False
+Faiveley Bourgogne Chardonnay,White,Bourgogne,3.28,3.69,1.32,,,False
+Faiveley Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.15,2.96,1.68,2.59,,False
+Faiveley Meursault,White,Meursault,3.25,3.78,1.65,,,False
+Faiveley Nuits-Saint-Georges Les Argillats,Red,Nuits-Saint-Georges,4.12,3.17,1.6,2.64,,False
+Faiveley Nuits-Saint-Georges 1er Cru Les Poréts,Red,Nuits-Saint-Georges,4.2,3.02,1.7,2.73,,False
+Faiveley Pinot Noir Bourgogne Paulée,Red,Bourgogne,3.94,2.52,1.36,2.2,,False
+Faiveley Chambolle-Musigny,Red,Chambolle-Musigny,4.04,2.74,1.59,2.61,,False
+Faiveley Gevrey-Chambertin,Red,Gevrey-Chambertin,4.14,2.94,1.44,2.56,,False
+Faiveley Puligny-Montrachet,White,Puligny-Montrachet,3.15,3.65,1.57,,,False
+Faiveley Vosne-Romanée,Red,Vosne-Romanée,4.18,2.92,1.71,2.67,,False
+Faiveley Nuits-Saint-Georges 1er Cru Clos de La Maréchale,Red,Nuits-Saint-Georges,4.3,3.14,1.56,2.81,,False
+Faiveley Chablis,White,Chablis,4.0,3.04,1.39,,,False
+Faiveley Nuits-Saint-Georges 1er Cru Les Damodes,Red,Nuits-Saint-Georges,4.11,3.09,1.72,2.82,,False
+Faiveley Nuits-Saint-Georges 1er Cru Aux Chaignots,Red,Nuits-Saint-Georges,4.29,2.99,1.5,2.79,,False
+Faiveley Gevrey-Chambertin Les Marchais,Red,Gevrey-Chambertin,4.22,3.02,1.44,2.57,,False
+Faiveley Marsannay,Red,Marsannay,4.06,2.97,1.64,2.58,,False
+Faiveley Nuits-Saint-Georges Les Lavières,Red,Nuits-Saint-Georges,4.17,2.82,1.83,2.67,,False
+Faiveley Pouilly-Fuissé,White,Pouilly-Fuissé,2.94,3.07,1.58,,,False
+Faiveley Nuits-Saint-Georges 1er Cru Aux Vignerondes,Red,Nuits-Saint-Georges,4.05,2.83,1.79,2.45,,False
+Faiveley Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.93,2.73,1.7,2.28,,False
+Faiveley Les Fuées Chambolle-Musigny 1er Cru,Red,Chambolle-Musigny,4.05,3.01,1.71,2.76,,False
+Faiveley Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.29,3.71,1.68,,,False
+Faiveley F de Faiveley Bourgogne Pinot Noir,Red,Bourgogne,3.8,2.71,1.33,2.07,,False
+Faiveley Marsannay 'Les Echezeaux',Red,Marsannay,4.29,2.75,1.68,2.48,,False
+Faiveley Puligny-Montrachet 1er Cru Les Folatières,White,Puligny-Montrachet,3.21,3.62,1.94,,,False
+Joseph Drouhin Drouhin - Vaudon Chablis Réserve De Vaudon,White,Chablis,3.96,2.93,1.29,,,False
+Joseph Drouhin Laforet Bourgogne Pinot Noir,Red,Bourgogne,3.89,2.46,1.34,2.21,,False
+Joseph Drouhin Côte de Beaune,Red,Côte de Beaune,3.79,2.58,1.46,2.21,,False
+Joseph Drouhin Bourgogne Chardonnay,White,Bourgogne,3.28,3.66,1.43,,,False
+Joseph Drouhin Laforet Bourgogne Chardonnay,White,Bourgogne,3.36,3.73,1.31,,,False
+Joseph Drouhin Saint-Véran,White,Saint-Véran,2.97,2.99,1.4,,,False
+Joseph Drouhin Pouilly-Fuissé,White,Pouilly-Fuissé,2.92,3.01,1.33,,,False
+Joseph Drouhin Drouhin - Vaudon Chablis,White,Chablis,3.98,2.97,1.18,,,False
+Joseph Drouhin Gevrey-Chambertin,Red,Gevrey-Chambertin,4.14,2.88,1.54,2.56,,False
+Joseph Drouhin Bourgogne Pinot Noir,Red,Bourgogne,3.81,2.54,1.35,2.23,,False
+Joseph Drouhin Vosne-Romanée,Red,Vosne-Romanée,4.13,2.8,1.53,2.51,,False
+Joseph Drouhin Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.33,3.72,1.44,,,False
+Joseph Drouhin Chassagne-Montrachet,Red,Chassagne-Montrachet,3.82,2.7,1.41,2.12,,False
+Joseph Drouhin Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.21,2.77,1.57,2.56,,False
+Joseph Drouhin Moulin-à-Vent,Red,Moulin-à-Vent,4.68,1.82,1.58,1.95,,False
+Joseph Drouhin Côte de Beaune Blanc,White,Côte de Beaune,3.37,3.61,1.55,,,False
+Joseph Drouhin Saint-Romain Blanc,White,Saint-Romain,3.33,3.64,1.53,,,False
+Joseph Drouhin Fleurie,Red,Fleurie,4.62,1.28,1.38,1.72,,False
+Joseph Drouhin Morgon,Red,Morgon,4.69,1.38,1.38,1.82,,False
+Joseph Drouhin Fleurie Hospice de Belleville,Red,Fleurie,4.58,1.32,1.41,1.7,,False
+Joseph Drouhin Morgon Hospice de Belleville,Red,Morgon,4.51,1.23,1.57,2.04,,False
+Joseph Drouhin Brouilly,Red,Brouilly,4.52,1.33,1.47,1.86,,False
+Joseph Drouhin Domaine des Hospice de Belleville Brouilly,Red,Brouilly,4.44,1.41,1.4,1.79,,False
+Joseph Drouhin Saint-Amour,Red,Saint-Amour,4.56,1.44,1.48,1.81,,False
+Joseph Drouhin Bourgogne Véro Pinot Noir,Red,Bourgogne,3.99,2.47,1.15,1.99,,False
+Joseph Drouhin Chassagne-Montrachet Marquis de Laguiche,White,Chassagne-Montrachet,3.18,3.87,1.55,,,False
+Raveneau Chablis,White,Chablis,4.03,2.93,1.37,,,False
+Jean-Claude Ramonet Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.34,3.58,1.55,,,False
+Jean-Claude Ramonet Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.93,2.66,1.61,2.22,,False
+Jean-Claude Ramonet Bourgogne Pinot Noir,Red,Bourgogne,3.82,2.45,1.69,2.26,,False
+Jean-Claude Ramonet Bourgogne Chardonnay,White,Bourgogne,3.27,3.43,1.53,,,False
+Jean-Claude Ramonet Puligny-Montrachet,White,Puligny-Montrachet,3.34,3.8,1.69,,,False
+Jean-Claude Ramonet Puligny-Montrachet 'Les Enseignères',White,Puligny-Montrachet,3.36,3.71,1.5,,,False
+Jean-Claude Ramonet Chardonnay Bourgogne 'Les Durots',White,Bourgogne,3.23,3.2,2.36,,,False
+Domaine Georges Mugneret-Gibourg Vosne-Romanée,Red,Vosne-Romanée,4.07,2.9,1.86,2.55,,False
+Domaine Georges Mugneret-Gibourg Bourgogne,Red,Bourgogne,3.84,2.61,1.72,2.29,,False
+Domaine Georges Mugneret-Gibourg La Colombière Vosne-Romanée,Red,Vosne-Romanée,4.05,2.84,1.66,2.67,,False
+Domaine Georges Mugneret-Gibourg Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.45,2.79,1.42,2.53,,False
+Domaine Georges Mugneret-Gibourg Bourgogne 'Les Lutenières',Red,Bourgogne,3.6,3.12,1.84,2.53,,False
+Domaine Georges Mugneret-Gibourg Nuits-Saint-Georges 'Au Bas de Combe',Red,Nuits-Saint-Georges,4.22,2.87,1.53,3.2,,False
+Domaine Dujac Chambolle-Musigny,Red,Chambolle-Musigny,4.2,3.04,1.49,2.72,,False
+Domaine Dujac Bourgogne Blanc,White,Bourgogne,3.32,3.9,1.42,,,False
+Domaine Dujac Marc de Bourgogne Hors d'Age,Dessert,Bourgogne,,,,,,False
+Méo-Camuzet Bourgogne Rouge,Red,Bourgogne,3.83,2.5,1.53,2.2,,False
+Méo-Camuzet Marsannay,Red,Marsannay,4.0,2.89,1.71,2.62,,False
+Méo-Camuzet Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.06,3.14,1.68,2.55,,False
+Méo-Camuzet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.14,3.11,2.12,2.55,,False
+Méo-Camuzet Chambolle-Musigny,Red,Chambolle-Musigny,4.01,3.08,1.62,2.51,,False
+Méo-Camuzet Hémisphère Nord Bourgogne Côte-d'Or,Red,Bourgogne,3.9,2.62,1.23,2.17,,False
+Méo-Camuzet Bourgogne Côte-d'Or,Red,Bourgogne,3.52,2.7,1.81,2.31,,False
+Méo-Camuzet Cuvée Étienne Camuzet Bourgogne Côte d'Or,Red,Bourgogne,3.68,2.79,1.66,2.09,,False
+Méo-Camuzet Hémisphère Sud Bourgogne Côte d'Or,Red,Bourgogne,3.81,2.69,1.66,2.46,,False
+Méo-Camuzet Bourgogne Blanc,White,Bourgogne,3.07,3.68,1.46,,,False
+Méo-Camuzet Saint-Romain Blanc,White,Saint-Romain,3.3,3.7,1.44,,,False
+Méo-Camuzet Meursault,White,Meursault,3.25,3.58,1.98,,,False
+Méo-Camuzet Saint-Aubin,White,Saint-Aubin,3.48,3.28,1.02,,,False
+Etienne Sauzet Bourgogne Chardonnay,White,Bourgogne,3.58,3.72,1.48,,,False
+Etienne Sauzet La Tufera Bourgogne,White,Bourgogne,3.21,3.79,1.2,,,False
+Etienne Sauzet Chassagne-Montrachet 'Les Encégnieres',White,Chassagne-Montrachet,3.22,3.3,1.54,,,False
+Etienne Sauzet Chassagne-Montrachet,White,Chassagne-Montrachet,3.01,3.87,1.08,,,False
+Domaine Leroy Vosne-Romanée 'Les Genaivrières',Red,Vosne-Romanée,4.02,2.78,2.21,2.49,,False
+Domaine Leroy Gevrey-Chambertin,Red,Gevrey-Chambertin,4.11,2.98,2.13,2.83,,False
+Domaine Leroy Nuits-Saint-Georges 'Les Boudots',Red,Nuits-Saint-Georges,4.12,3.09,2.01,2.66,,False
+Domaine Leroy Nuits-Saint-Georges 'Aux Lavières',Red,Nuits-Saint-Georges,4.3,3.07,1.63,2.61,,False
+Domaine Leroy Nuits-Saint-Georges 'Aux Allots',Red,Nuits-Saint-Georges,4.22,2.88,1.74,2.64,,False
+Domaine Leroy Chambolle-Musigny 'Les Fremiéres',Red,Chambolle-Musigny,4.2,3.17,2.14,2.69,,False
+Domaine Leroy Nuits-Saint-Georges 'Les Vignerondes',Red,Nuits-Saint-Georges,4.17,3.08,2.27,2.55,,False
+Domaine Leroy Nuits-Saint-Georges 'Aux Bas de Combe',Red,Nuits-Saint-Georges,4.19,2.93,1.44,2.83,,False
+Olivier Leflaive Bourgogne 'Les Sétilles',White,Bourgogne,3.39,3.77,1.41,,,False
+Olivier Leflaive Bourgogne Cuvée Margot,Red,Bourgogne,3.82,2.51,1.44,2.29,,False
+Olivier Leflaive Pinot Noir Bourgogne,Red,Bourgogne,3.8,2.58,1.41,2.32,,False
+Olivier Leflaive Bourgogne Chardonnay,White,Bourgogne,3.38,3.84,1.27,,,False
+Olivier Leflaive Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.85,2.6,1.43,2.11,,False
+Olivier Leflaive Chablis 'Les Deux Rives',White,Chablis,4.0,2.88,1.32,,,False
+Olivier Leflaive Oncle Vincent Bourgogne Blanc,White,Bourgogne,3.31,3.74,1.5,,,False
+Olivier Leflaive Puligny-Montrachet Enseignères,White,Puligny-Montrachet,3.38,3.78,1.54,,,False
+Olivier Leflaive Saint-Romain,White,Saint-Romain,3.27,3.88,1.48,,,False
+Olivier Leflaive Meursault Tillets,White,Meursault,3.41,3.69,1.41,,,False
+Olivier Leflaive Chassagne-Montrachet Pierres,White,Chassagne-Montrachet,3.39,3.64,1.27,,,False
+Olivier Leflaive Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.54,3.76,1.49,,,False
+Olivier Leflaive Meursault Les Clous,White,Meursault,3.39,4.04,1.42,,,False
+Olivier Leflaive Meursault Narvaux,White,Meursault,3.31,3.81,1.63,,,False
+Olivier Leflaive Saint-Romain Sous-Le-Chateâu,White,Saint-Romain,3.58,3.59,1.4,,,False
+Olivier Leflaive Puligny-Montrachet Les Meix,White,Puligny-Montrachet,3.29,4.04,1.64,,,False
+Olivier Leflaive Saint-Aubin,White,Saint-Aubin,3.41,3.72,1.07,,,False
+Olivier Leflaive Meursault Meix Chavaux,White,Meursault,3.32,3.96,1.28,,,False
+Olivier Leflaive Meursault Clos Du Cromin,White,Meursault,3.19,3.94,1.76,,,False
+Olivier Leflaive Puligny-Montrachet 'Les Levrons' Blanc,White,Puligny-Montrachet,2.83,3.33,1.89,,,False
+Olivier Leflaive Meursault 'Clos de La Velle',White,Meursault,3.51,3.78,1.78,,,False
+Olivier Leflaive Meursault Les Malpoiriers,Red,Meursault,3.4,2.41,1.44,2.52,,False
+Olivier Leflaive Bourgogne Cuvée Margoton Rosé,Rosé,Bourgogne,3.0,2.5,1.0,,,False
+Vincent Girardin Chardonnay Bourgogne Terroir Noble,White,Bourgogne,3.37,3.68,1.43,,,False
+Vincent Girardin Bourgogne Pinot Noir,Red,Bourgogne,3.77,2.66,1.51,2.39,,False
+Vincent Girardin Bourgogne Cuvée Saint-Vincent Rouge,Red,Bourgogne,3.87,2.61,1.4,2.19,,False
+Vincent Girardin Bourgogne Terroir Noble,Red,Bourgogne,3.9,2.45,1.38,2.22,,False
+Vincent Girardin Bourgogne Cuvée Saint-Vincent Blanc,White,Bourgogne,3.39,3.69,1.6,,,False
+Vincent Girardin Meursault 'Les Narvaux',White,Meursault,3.32,3.65,1.73,,,False
+Vincent Girardin Les Vieilles Vignes Pouilly-Fuissé,White,Pouilly-Fuissé,3.0,3.03,1.51,,,False
+Vincent Girardin Les Vieilles Vignes Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.83,2.71,1.41,2.03,,False
+Vincent Girardin Puligny-Montrachet 'Les Enseignères',White,Puligny-Montrachet,3.34,3.76,1.74,,,False
+Vincent Girardin Les Vieilles Vignes Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.45,3.68,1.57,,,False
+Vincent Girardin Emotion Pinot Noir,Red,Bourgogne,3.95,2.7,1.46,2.36,,False
+Vincent Girardin Gevrey-Chambertin Vieilles Vignes,Red,Gevrey-Chambertin,4.35,2.89,1.81,2.62,,False
+Vincent Girardin Meursault Les Grands Charrons,White,Meursault,3.34,3.85,1.45,,,False
+Vincent Girardin Les Vieilles Vignes Saint-Romain,White,Saint-Romain,3.57,3.62,1.3,,,False
+Vincent Girardin Meursault 'Les Tillets',White,Meursault,3.31,3.68,1.53,,,False
+Vincent Girardin Chardonnay Bourgogne Blanc Emotion,White,Bourgogne,3.16,3.81,1.64,,,False
+Vincent Girardin Meursault Le Tesson,White,Meursault,3.16,3.75,1.69,,,False
+Vincent Girardin Meursault 'Les Clous',White,Meursault,3.37,3.69,1.71,,,False
+Vincent Girardin Les Champs-Lins Chassagne-Montrachet Vieilles Vignes,White,Chassagne-Montrachet,3.4,3.8,1.16,,,False
+Vincent Girardin Les Vieilles Vignes Bourgogne Chardonnay,White,Bourgogne,3.28,3.63,1.21,,,False
+Vincent Girardin Domaine de La Tour du Bief Moulin-à-Vent,Red,Moulin-à-Vent,4.31,1.35,1.32,1.61,,False
+Vincent Girardin Pouilly-Fuissé Terroir de Fuissé,White,Pouilly-Fuissé,2.97,3.0,1.24,,,False
+Vincent Girardin Meursault Le Limozin,White,Meursault,3.68,3.72,1.17,,,False
+Vincent Girardin Les Vieilles Vignes Chambolle-Musigny,Red,Chambolle-Musigny,3.71,2.77,1.24,2.62,,False
+Vincent Girardin Les Champs-Lins Meursault  Vieilles Vignes,White,Meursault,2.86,4.06,1.55,,,False
+Vincent Girardin Domaine de La Tour Du Bief Moulin-à-Vent La Bernadine,Red,Moulin-à-Vent,4.66,2.25,1.25,2.52,,False
+Vincent Girardin Les Vieilles Vignes Bourgogne,Red,Bourgogne,4.03,2.5,1.24,2.73,,False
+Vincent Girardin Les Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.44,2.78,1.39,2.4,,False
+Vincent Girardin Domaine de la Tour du Bief Moulin-à-Vent Clos de La Tour,Red,Moulin-à-Vent,4.83,1.14,1.41,1.93,,False
+Vincent Girardin Domaine de la Tour du Bief Moulin-à-Ventles Hauts de la Rochelle,Red,Moulin-à-Vent,4.89,1.81,1.77,1.58,,False
+Domaine Blain-Gagnard Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.3,3.75,1.47,,,False
+Domaine Blain-Gagnard Puligny-Montrachet,White,Puligny-Montrachet,3.05,3.82,1.46,,,False
+Domaine Blain-Gagnard Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.99,2.71,1.39,2.45,,False
+Mommessin Les Papillons Gamay Noir Beaujolais,Red,Beaujolais,4.49,1.46,1.41,1.87,,False
+Mommessin Fleurie Réserve,Red,Fleurie,4.42,1.0,1.1,1.92,,False
+Mommessin Morgon Côte du Py,Red,Morgon,4.54,1.62,1.41,2.24,,False
+Mommessin Saint-Amour Les Grandes Mises,Red,Saint-Amour,4.34,1.84,1.62,2.05,,False
+Mommessin Beaujolais,Red,Beaujolais,4.41,1.29,1.26,1.72,,False
+Mommessin Fleurie Domaine de la Presle,Red,Fleurie,4.08,1.31,1.45,1.8,,False
+Mommessin Pinot Noir Bourgogne La Clé Saint-Pierre,Red,Bourgogne,3.92,2.44,1.2,2.38,,False
+Mommessin Fleurie,Red,Fleurie,4.53,1.36,1.75,1.7,,False
+Mommessin Moulin-à-Vent Domaine de Champ de Cour,Red,Moulin-à-Vent,4.6,1.37,1.45,2.03,,False
+Mommessin Beaujolais Grande Reserve Red,Red,Beaujolais,5.0,1.0,1.0,1.5,,False
+Mommessin Chardonnay Bourgogne La Clé Saint-Pierre,White,Bourgogne,3.19,3.92,1.5,,,False
+Mommessin Morgon,Red,Morgon,4.68,1.55,1.33,2.15,,False
+Mommessin Côte de Brouilly,Red,Côte de Brouilly,4.5,1.45,1.54,2.01,,False
+Mommessin Moulin-à-Vent Les Grandes Mises,Red,Moulin-à-Vent,4.23,1.86,1.38,2.21,,False
+Mommessin Morgon Domaine De Lathevalle,Red,Morgon,3.84,1.85,1.0,2.43,,False
+Mommessin Chablis,White,Chablis,4.01,2.97,1.12,,,False
+Mommessin Chambolle-Musigny,Red,Chambolle-Musigny,4.03,2.75,1.3,2.27,,False
+Mommessin Morgon Les Charmes Les Grandes Mises,Red,Morgon,4.71,1.67,1.55,2.11,,False
+Mommessin Pouilly-Fuissé,White,Pouilly-Fuissé,2.79,2.79,1.22,,,False
+Mommessin Réserve du Domaine de Champ de Cour Moulin-à-Vent,Red,Moulin-à-Vent,4.93,1.95,1.7,1.84,,False
+Mommessin Grand Caractere Morgon 'Grand Cras',Red,Morgon,3.96,2.47,1.83,2.61,,False
+Mommessin Fleurie Grandes Mises,Red,Fleurie,4.18,2.01,1.45,2.13,,False
+Mommessin Gevrey-Chambertin,Red,Gevrey-Chambertin,3.54,2.84,2.12,2.77,,False
+Mommessin Château de Briante Brouilly,Red,Brouilly,4.1,1.52,1.43,2.12,,False
+Mommessin Meursault,White,Meursault,3.09,4.0,1.58,,,False
+Mommessin Splendeur Nature Beaujolais,Red,Beaujolais,3.34,2.21,2.17,2.27,,False
+Mommessin Gamay'Fizz,Red,Beaujolais,4.71,1.09,1.87,1.52,,False
+Mommessin Brouilly,Red,Brouilly,4.36,1.42,1.33,1.78,,False
+Mommessin Beaujolais Blanc,White,Beaujolais,3.15,3.12,1.79,,,False
+Mommessin Côte de Brouilly Les Grandes Mises,Red,Côte de Brouilly,4.52,1.34,1.44,2.02,,False
+Mommessin Grand Caractere Saint-Amour,Red,Saint-Amour,4.88,1.71,1.0,2.07,,False
+"Mommessin Pouilly-Fuissé ""2 Terroirs""",White,Pouilly-Fuissé,3.05,3.16,1.22,,,False
+Mommessin Beaujolais Blanc Chardonnay Sur Calcaire Blanc,White,Beaujolais,2.99,3.0,2.1,,,False
+Mommessin Chardonnay Coteaux Bourguignons La Clé Saint-Pierre,White,Bourgogne,3.0,4.06,1.0,,,False
+Mommessin Moulin-à-Vent Domaine du Prieuré Saint-Romain,Red,Moulin-à-Vent,5.0,1.0,1.0,1.49,,False
+Mommessin Pouilly-Fuissé Réserve Du Chateau,White,Pouilly-Fuissé,2.5,3.0,1.0,,,False
+Mommessin Grand Caractere Côté de Brouilly,Red,Côte de Brouilly,4.11,1.69,1.5,2.0,,False
+Mommessin Grandeur Nature Beaujolais,Red,Beaujolais,4.0,2.0,2.0,2.25,,False
+Mommessin Beaujolais Petits Fruits Rouges,Red,Beaujolais,5.0,1.0,1.0,1.5,,False
+Mommessin Utopia Beaujolais Rosé,Rosé,Beaujolais,3.0,2.5,1.0,,,False
+Mommessin Morgon 'Grand Cras',Red,Morgon,4.43,1.96,1.22,1.8,,False
+Mommessin Morgon Côte du Py Les Grandes Mises,Red,Morgon,3.69,2.31,2.31,2.48,,False
+Mommessin Puligny-Montrachet,White,Puligny-Montrachet,3.15,3.79,1.12,,,False
+Mommessin Grenache Cuvée Saint Pierre Rosé,Rosé,Bourgogne,3.0,2.5,1.0,,,False
+Domaine Denis Mortet Gevrey-Chambertin Vieilles Vignes,Red,Gevrey-Chambertin,4.24,2.99,1.82,2.59,,False
+Domaine Denis Mortet Marsannay Les Longeroies,Red,Marsannay,4.07,3.01,1.58,2.51,,False
+Domaine Denis Mortet Gevrey-Chambertin,Red,Gevrey-Chambertin,3.97,3.0,1.67,2.49,,False
+Domaine Denis Mortet Bourgogne (Cuvée de Noble Souche),Red,Bourgogne,3.8,2.55,1.81,2.1,,False
+Domaine Denis Mortet Gevrey-Chambertin En Champs,Red,Gevrey-Chambertin,4.04,3.25,1.77,2.57,,False
+Domaine Denis Mortet Chardonnay Bourgogne Blanc,White,Bourgogne,3.25,4.01,1.27,,,False
+Domaine Denis Mortet Gevrey-Chambertin En Champs Vieille Vigne,Red,Gevrey-Chambertin,4.32,3.26,2.18,2.78,,False
+Domaine Denis Mortet Gevrey-Chambertin Au Dellé,Red,Gevrey-Chambertin,4.22,2.85,1.54,2.58,,False
+Domaine Denis Mortet Gevrey-Chambertin Combe-Du-Dessus,Red,Gevrey-Chambertin,3.56,2.92,2.18,2.52,,False
+Domaine Denis Mortet Gevrey-Chambertin En Motrot Monopole,Red,Gevrey-Chambertin,4.32,3.33,1.94,2.81,,False
+Domaine d'Auvenay (Lalou Bize Leroy) Meursault Les Narvaux,White,Meursault,3.22,3.87,2.05,,,True
+Domaine d'Auvenay (Lalou Bize Leroy) Puligny-Montrachet En la Richarde,White,Puligny-Montrachet,3.23,3.82,2.34,,,True
+Domaine d'Auvenay (Lalou Bize Leroy) Meursault Chaumes des Perrieres,White,Meursault,3.38,3.62,1.67,,,True
+Domaine d'Auvenay (Lalou Bize Leroy) Meursault,White,Meursault,3.18,3.89,1.98,,,True
+Domaine d'Auvenay (Lalou Bize Leroy) Puligny-Montrachet 'Les Enseigneres',White,Puligny-Montrachet,3.74,4.38,1.48,,,True
+Domaine Trapet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.13,2.93,1.62,2.6,,False
+Domaine Trapet Marsannay,Red,Marsannay,4.08,2.96,1.58,2.52,,False
+Domaine Trapet Bourgogne,Red,Bourgogne,3.9,2.52,1.53,2.18,,False
+Domaine Trapet Marsannay Blanc,White,Marsannay,3.27,3.72,2.1,,,False
+Domaine Trapet Bourgogne Blanc,White,Bourgogne,3.09,3.8,1.62,,,False
+Domaine Trapet Saint-Romain,White,Saint-Romain,3.45,3.61,1.59,,,False
+Benjamin Leroux Bourgogne Rouge,Red,Bourgogne,3.86,2.6,1.6,2.2,,False
+Benjamin Leroux Bourgogne Blanc,White,Bourgogne,3.47,3.54,1.51,,,False
+Benjamin Leroux Saint-Romain  'Sous le Château',White,Saint-Romain,3.29,3.56,1.65,,,False
+Benjamin Leroux Puligny-Montrachet,White,Puligny-Montrachet,3.15,3.73,1.54,,,False
+Benjamin Leroux Nuits-Saint-Georges 'Les Allots',Red,Nuits-Saint-Georges,4.17,2.93,1.64,2.69,,False
+Benjamin Leroux Nuits-St Georges,Red,Nuits-Saint-Georges,4.28,3.21,1.52,2.73,,False
+Benjamin Leroux Chambolle-Musigny,Red,Chambolle-Musigny,4.25,2.89,1.56,2.7,,False
+Benjamin Leroux Chassagne-Montrachet,White,Chassagne-Montrachet,3.19,3.88,1.49,,,False
+Benjamin Leroux Meursault 'Les Narvaux',White,Meursault,3.33,3.85,1.9,,,False
+Benjamin Leroux Gevrey-Chambertin 'Aux Etelois',Red,Gevrey-Chambertin,4.51,3.17,1.0,2.58,,False
+Domaine Leflaive Bourgogne Blanc,White,Bourgogne,3.51,3.83,1.54,,,False
+Domaine Leflaive Leflaive & Associes Bourgogne Blanc,White,Bourgogne,3.41,3.56,1.88,,,False
+Domaine Leflaive Leflaive & Associes Puligny-Montrachet,White,Puligny-Montrachet,3.12,3.58,1.96,,,False
+Domaine Leflaive Esprit Pouilly-Fuissé Le Clos Reyssier,White,Pouilly-Fuissé,2.97,2.88,1.19,,,False
+Domaine Leflaive Bourgogne,Red,Bourgogne,4.03,2.52,1.61,2.0,,False
+Domaine Leflaive Saint-Véran,White,Saint-Véran,2.55,3.09,1.17,,,False
+Domaine Leflaive Esprit Pouilly-Fuissé,White,Pouilly-Fuissé,2.89,3.2,1.9,,,False
+Domaine Leflaive La Chaneau Pouilly-Fuissé,White,Pouilly-Fuissé,2.77,3.5,1.68,,,False
+Domaine Leflaive Esprit Gevrey-Chambertin,Red,Gevrey-Chambertin,3.54,2.94,2.3,3.05,,False
+Domaine Leflaive Pouilly-Fuissé 'En Vigneraie',White,Pouilly-Fuissé,2.5,3.12,1.0,,,False
+Domaine Leflaive Esprit Saint-Romain Sous la Velle,White,Saint-Romain,3.0,3.5,2.0,,,False
+Bouchard Père & Fils Bourgogne Pinot Noir,Red,Bourgogne,3.89,2.45,1.29,2.16,,False
+Bouchard Père & Fils Bourgogne Pinot Noir (La Vignée),Red,Bourgogne,3.82,2.48,1.26,2.23,,False
+Bouchard Père & Fils Gevrey-Chambertin,Red,Gevrey-Chambertin,4.15,3.01,1.44,2.59,,False
+Bouchard Père & Fils Bourgogne Chardonnay (La Vignée),White,Bourgogne,3.16,3.69,1.41,,,False
+Bouchard Père & Fils Pouilly-Fuissé,White,Pouilly-Fuissé,2.98,2.9,1.43,,,False
+Bouchard Père & Fils Château de Beaune Bourgogne Le Chardonnay de Chardonnay,White,Bourgogne,3.18,3.79,1.3,,,False
+Bouchard Père & Fils Réserve Bourgogne Pinot Noir,Red,Bourgogne,3.91,2.47,1.39,2.21,,False
+Bouchard Père & Fils Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.26,3.07,1.52,2.68,,False
+Bouchard Père & Fils Chambolle-Musigny,Red,Chambolle-Musigny,3.98,2.76,1.6,2.51,,False
+Bouchard Père & Fils Bourgogne Coteaux des Moines Pinot Noir,Red,Bourgogne,3.71,2.63,1.66,2.23,,False
+Bouchard Père & Fils Bourgogne Le Chardonnay de Chardonnay,White,Bourgogne,3.11,3.78,1.45,,,False
+Bouchard Père & Fils Vosne-Romanée,Red,Vosne-Romanée,4.13,2.93,1.62,2.58,,False
+Bouchard Père & Fils Puligny-Montrachet Blanc,White,Puligny-Montrachet,3.32,3.65,1.52,,,False
+Bouchard Père & Fils Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.4,3.76,1.45,,,False
+Bouchard Père & Fils Meursault Blanc,White,Meursault,3.3,3.73,1.48,,,False
+Bouchard Père & Fils Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.85,2.6,1.41,2.33,,False
+Bouchard Père & Fils Chablis,White,Chablis,4.05,2.94,1.05,,,False
+Bouchard Père & Fils Pouilly-Fuissé Vignes Romanes,White,Pouilly-Fuissé,2.88,2.85,1.34,,,False
+Bouchard Père & Fils Bourgogne Réserve Chardonnay,White,Bourgogne,3.21,3.89,1.26,,,False
+Bouchard Père & Fils Bourgogne Les Coteaux des Moines,White,Bourgogne,3.53,3.59,1.28,,,False
+Bouchard Père & Fils Fleurie,Red,Fleurie,4.54,1.05,1.22,1.62,,False
+Bouchard Père & Fils Saint-Véran Blanc,White,Saint-Véran,2.76,2.71,1.5,,,False
+Bouchard Père & Fils Bourgogne Réserve Coteaux des Moines,Red,Bourgogne,3.76,2.56,1.33,2.06,,False
+Bouchard Père & Fils Cuvée Les Grands Chemins Gevrey-Chambertin,Red,Gevrey-Chambertin,4.08,2.73,1.36,2.87,,False
+Bouchard Père & Fils Cuvée Les Forges Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.24,3.21,1.12,2.64,,False
+Bouchard Père & Fils Moulin-à-Vent,Red,Moulin-à-Vent,4.02,2.66,1.44,2.75,,False
+Bouchard Père & Fils Vosne-Romanée du Château,Red,Vosne-Romanée,4.2,2.85,1.28,2.42,,False
+Bouchard Père & Fils Brouilly,Red,Brouilly,5.0,1.0,1.0,1.56,,False
+Domaine René Engel Vosne-Romanée,Red,Vosne-Romanée,4.08,2.91,1.79,2.66,,False
+Domaine Nicole Lamarche (François Lamarche) Vosne-Romanée Village,Red,Vosne-Romanée,4.27,2.97,1.74,2.73,,False
+Domaine Nicole Lamarche (François Lamarche) Bourgogne Rouge,Red,Bourgogne,3.89,2.53,1.66,2.43,,False
+Domaine Nicole Lamarche (François Lamarche) Vosne-Romanée,Red,Vosne-Romanée,4.16,2.82,1.22,2.72,,False
+Domaine Nicole Lamarche (François Lamarche) Vosne-Romanée La Grande Tête de Cuvée Monopole,Red,Vosne-Romanée,3.76,2.92,1.77,2.79,,False
+Domaine Nicole Lamarche (François Lamarche) Nuits-Saint-Georges Village,Red,Nuits-Saint-Georges,3.69,3.12,2.03,2.88,,False
+Domaine Rossignol-Trapet Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.18,2.86,1.5,2.63,,False
+Domaine Rossignol-Trapet Bourgogne Rouge,Red,Bourgogne,3.9,2.33,1.53,2.1,,False
+Domaine Rossignol-Trapet Aux Etelois Gevrey Chambertin,Red,Gevrey-Chambertin,4.2,3.05,1.51,2.76,,False
+Domaine Rossignol-Trapet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.32,2.97,1.28,2.56,,False
+Domaine Fourrier Vieille Vigne Gevrey-Chambertin,Red,Gevrey-Chambertin,4.12,2.93,1.88,2.61,,False
+Domaine Fourrier Bourgogne Pinot Noir,Red,Bourgogne,3.9,2.76,1.64,2.38,,False
+Domaine Fourrier Vieille Vigne Gevrey-Chambertin Aux Échezeaux,Red,Gevrey-Chambertin,4.18,2.98,1.61,2.66,,False
+Domaine Fourrier Bourgogne Blanc,White,Bourgogne,3.24,3.6,1.6,,,False
+Domaine Fourrier Vieille Vigne Chambolle-Musigny,Red,Chambolle-Musigny,4.08,2.79,1.38,2.59,,False
+Domaine Fourrier Vieille Vigne Vosne-Romanée Aux Reas,Red,Vosne-Romanée,4.2,2.68,1.78,2.58,,False
+Domaine Fourrier Gevrey-Chambertin,Red,Gevrey-Chambertin,4.06,3.02,1.42,2.32,,False
+Domaine Fourrier Vigne Comte de Chapelle Vieille Vigne Bourgogne Pinot Noir,Red,Bourgogne,3.53,2.81,1.99,2.88,,False
+Domaine Fourrier Vigne Comte de Chapelle Vieille Vigne Bourgogne Chardonnay,White,Bourgogne,3.23,3.33,2.0,,,False
+Domaine Fourrier Vigne Comte de Chapelle Vieille Vigne Meursault,White,Meursault,3.21,3.6,1.78,,,False
+Domaine Gros Frère et Soeur Vosne-Romanée,Red,Vosne-Romanée,3.98,3.1,1.91,2.68,,False
+Domaine Gros Frère et Soeur Bourgogne Rouge,Red,Bourgogne,3.97,2.51,1.68,2.26,,False
+Domaine Gros Frère et Soeur Chemin des Moines de Vergy,Red,Bourgogne,3.92,2.77,1.75,2.54,,False
+Domaine Gros Frère et Soeur Chardonnay,White,Bourgogne,3.15,3.42,1.88,,,False
+Domaine Gros Frère et Soeur Clos de la Fontaine Vosne-Romanee,Red,Vosne-Romanée,3.6,2.5,2.03,2.51,,False
+Hubert Lignier Gevrey-Chambertin,Red,Gevrey-Chambertin,3.98,3.01,1.8,2.66,,False
+Hubert Lignier Bourgogne Pinot Noir - Grand Chaliot,Red,Bourgogne,3.82,2.82,1.73,2.39,,False
+Hubert Lignier Regnard Gevrey-Chambertin Rouge,Red,Gevrey-Chambertin,4.33,2.84,1.8,2.61,,False
+Hubert Lignier Bourgogne Pinot Noir - Plant Gilbert,Red,Bourgogne,3.83,2.73,1.78,2.46,,False
+Hubert Lignier Vieilles Vignes Chambolle-Musigny,Red,Chambolle-Musigny,4.2,3.0,1.82,2.67,,False
+Hubert Lignier Chambolle-Musigny,Red,Chambolle-Musigny,4.35,2.75,1.73,2.75,,False
+Hubert Lignier Bourgogne Pinot Noir,Red,Bourgogne,3.72,2.47,1.77,2.32,,False
+Hubert Lignier Chambolle-Musigny 'Les Bussières',Red,Chambolle-Musigny,4.11,2.93,1.65,2.78,,False
+Hubert Lignier Nuits-St-Georges 'Les Poisets',Red,Nuits-Saint-Georges,4.41,3.02,1.31,3.04,,False
+Hubert Lignier Saint Romain,White,Saint-Romain,3.43,3.32,1.46,,,False
+Hubert Lignier Gevrey-Chambertin 'La Justice',Red,Gevrey-Chambertin,4.24,2.84,1.68,2.68,,False
+Hubert Lignier Bourgogne Pinot Noir Symbiose,Red,Bourgogne,3.97,2.5,1.26,2.44,,False
+Hubert Lignier Saint Romain 'Sous le Château',White,Saint-Romain,2.72,4.01,1.1,,,False
+Hubert Lignier Cuvée du Grand Cèdre Bourgogne Rosé,Rosé,Bourgogne,3.72,2.64,1.15,,,False
+Domaine Roulot Bourgogne Blanc,White,Bourgogne,3.45,3.61,1.38,,,False
+Domaine Roulot Tessons Clos de Mon Plaisir Meursault,White,Meursault,3.27,3.79,1.87,,,False
+Domaine Roulot Meursault Narvaux,White,Meursault,3.64,3.68,1.46,,,False
+Domaine Roulot r Meursault,White,Meursault,2.89,4.08,1.59,,,False
+Domaine Roulot Meursault Genevriéres,White,Meursault,3.2,3.81,1.13,,,False
+Domaine Roulot Meursault À Mon Plaisir - Clos du Haut Tesson,White,Meursault,3.26,3.59,1.15,,,False
+Domaine Roulot Bourgogne Rouge,Red,Bourgogne,3.16,2.49,1.0,1.87,,False
+Domaine Roulot Hors d'Age Fine de Bourgogne,Dessert,Bourgogne,,,,,,False
+Jean Chartron Vieilles Vignes Bourgogne Chardonnay,White,Bourgogne,3.42,3.76,1.43,,,False
+Jean Chartron Bourgogne Chardonnay 'Clos de la Combe',White,Bourgogne,3.21,3.77,1.27,,,False
+Jean Chartron Chassagne-Montrachet 'Les Benoites',White,Chassagne-Montrachet,3.1,3.99,1.52,,,False
+Jean Chartron Vieilles Vignes Puligny-Montrachet,White,Puligny-Montrachet,2.78,3.61,1.62,,,False
+Jean Chartron Vieilles Vignes Bourgogne Pinot Noir,Red,Bourgogne,4.07,2.36,1.2,2.16,,False
+Jean Chartron Chassagne-Montrachet,White,Chassagne-Montrachet,3.5,3.29,1.64,,,False
+Jean Chartron Bourgogne Pinot Noir  'Clos de la Combe',Red,Bourgogne,3.88,2.52,1.3,2.1,,False
+Jean Chartron Meursault 'Les Pierres',White,Meursault,3.12,3.92,1.18,,,False
+Jean Chartron Cuvée Eugénie Dupard Bourgogne Chardonnay,White,Bourgogne,3.13,3.9,1.84,,,False
+Jean Chartron Meursault,White,Meursault,3.12,3.84,1.44,,,False
+Jean Chartron Vieilles Vignes Bourgogne Chardonnay 'Les Deux Filles',White,Bourgogne,3.19,3.25,1.0,,,False
+A.F. Gros Bourgogne Pinot Noir,Red,Bourgogne,3.83,2.62,1.6,2.12,,False
+A.F. Gros Vosne-Romanée Clos de La Fontaine,Red,Vosne-Romanée,4.06,2.93,1.61,2.58,,False
+A.F. Gros Moulin-à-Vent en Mortperay,Red,Moulin-à-Vent,4.69,1.35,1.44,1.99,,False
+A.F. Gros Chambolle-Musigny,Red,Chambolle-Musigny,4.12,2.76,1.51,2.56,,False
+A.F. Gros Vosne-Romanée Maizières,Red,Vosne-Romanée,4.04,2.83,1.97,2.53,,False
+A.F. Gros Gevrey-Chambertin,Red,Gevrey-Chambertin,3.94,2.77,1.44,2.74,,False
+A.F. Gros Vosne-Romanée 'Les Chalandins',Red,Vosne-Romanée,3.61,2.53,1.86,2.31,,False
+A.F. Gros Gevrey-Chambertin 'Les Corvées',Red,Gevrey-Chambertin,4.2,3.09,2.36,2.59,,False
+Domaine Anne Gros Bourgogne Pinot Noir,Red,Bourgogne,3.81,2.68,1.63,2.33,,False
+Domaine Anne Gros Chambolle-Musigny La Combe d'Orveau,Red,Chambolle-Musigny,4.0,2.72,1.78,2.53,,False
+Domaine Anne Gros Bourgogne Chardonnay,White,Bourgogne,3.26,3.41,1.56,,,False
+Domaine Anne Gros Vosne-Romanée Les Barreaux,Red,Vosne-Romanée,3.99,2.81,1.61,2.82,,False
+Domaine Anne Gros Nuits-Saint-Georges Les Damodes,Red,Nuits-Saint-Georges,3.91,2.68,1.39,2.71,,False
+Domaine Anne Gros Le Clos de l’Église Bourgogne,White,Bourgogne,3.14,3.25,1.59,,,False
+Domaine Anne Gros Le Clos De L'Abbaye,Red,Bourgogne,4.2,2.25,1.33,2.19,,False
+Domaine Anne Gros Saint-Amour,Red,Saint-Amour,4.83,1.26,1.1,2.09,,False
+Domaine Anne Gros Saint-Véran,White,Saint-Véran,2.5,3.0,1.0,,,False
+Domaine Anne Gros Gevrey-Chambertin La Croix Des Champs,Red,Gevrey-Chambertin,4.5,2.81,1.51,2.49,,False
+Domaine Jacques Prieur Chardonnay Bourgogne,White,Bourgogne,3.24,3.63,1.58,,,False
+Domaine Jacques Prieur Clos Alexandra Pinot Noir Bourgogne,Red,Bourgogne,4.05,2.27,1.0,1.9,,False
+Domaine Jacques Prieur Clos Mathilde Chardonnay Bourgogne,White,Bourgogne,3.03,4.0,1.71,,,False
+Domaine Sylvain Cathiard Chambolle-Musigny 'Les Clos de l'Orme',Red,Chambolle-Musigny,4.17,2.91,1.9,2.61,,False
+Domaine Sylvain Cathiard Bourgogne,Red,Bourgogne,3.67,2.59,1.68,2.43,,False
+Domaine Sylvain Cathiard Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.34,2.92,1.17,2.88,,False
+Domaine Sylvain Cathiard Gevrey-Chambertin,Red,Gevrey-Chambertin,3.61,3.0,2.38,2.83,,False
+Domaine des Héritiers Louis Jadot La Roche des Demoiselles,Red,Bourgogne,3.65,2.5,1.0,2.0,,False
+Domaine Prieuré Roch Le Cloud Blanc,White,Bourgogne,3.24,3.83,1.63,,,True
+Domaine Prieuré Roch Le Clos Goillotte,Red,Vosne-Romanée,3.9,2.83,1.45,2.39,,True
+Domaine Prieuré Roch Les Hautes-Maizières,Red,Vosne-Romanée,3.89,2.77,1.74,2.58,,True
+Domaine Prieuré Roch Les Clous,Red,Vosne-Romanée,3.89,3.06,1.81,2.64,,True
+Domaine Prieuré Roch Gamay,Red,Bourgogne,3.91,2.52,1.88,2.24,,True
+Domaine Prieuré Roch Pinoterie,Red,Bourgogne,4.0,2.65,1.51,2.21,,True
+"Domaine Prieuré Roch Nuits ""1""",Red,Nuits-Saint-Georges,3.85,3.17,1.87,2.85,,True
+Domaine Prieuré Roch Roses,Rosé,Bourgogne,3.0,2.7,1.05,,,True
+Domaine Prieuré Roch Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.09,2.91,1.62,2.48,,True
+Louis Latour Bourgogne Pinot Noir,Red,Bourgogne,3.88,2.49,1.3,2.24,,False
+Louis Latour Bourgogne Chardonnay,White,Bourgogne,3.24,3.78,1.37,,,False
+Louis Latour Pouilly-Fuissé,White,Pouilly-Fuissé,2.97,2.96,1.28,,,False
+Louis Latour Bourgogne Cuvée Latour,Red,Bourgogne,3.81,2.49,1.44,2.25,,False
+Louis Latour Chablis,White,Chablis,3.97,2.97,1.25,,,False
+Louis Latour Marsannay Rouge,Red,Marsannay,4.18,2.91,1.33,2.58,,False
+Louis Latour Bourgogne Gamay,Red,Bourgogne,3.88,2.58,1.44,2.12,,False
+Louis Latour Chablis La Chanfleure,White,Chablis,3.92,3.03,1.3,,,False
+Louis Latour Chassagne-Montrachet,Red,Chassagne-Montrachet,3.77,2.67,1.36,2.3,,False
+Louis Latour Bourgogne Cuvée Latour Blanc,White,Bourgogne,3.32,3.77,1.4,,,False
+Louis Latour Gevrey-Chambertin,Red,Gevrey-Chambertin,4.24,2.98,1.42,2.52,,False
+Louis Latour Meursault Blanc,White,Meursault,3.28,3.59,1.49,,,False
+Louis Latour Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.42,3.71,1.34,,,False
+Louis Latour Saint-Véran Les Deux Moulins,White,Saint-Véran,2.81,2.95,1.22,,,False
+Louis Latour Pinot Noir Les Bastides,Red,Bourgogne,3.94,2.5,1.17,2.26,,False
+Louis Latour Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.31,2.74,1.28,2.52,,False
+Louis Latour Marsannay Blanc,White,Marsannay,3.38,3.76,1.32,,,False
+Louis Latour Brouilly,Red,Brouilly,4.56,1.7,1.26,1.82,,False
+Louis Latour Chambolle-Musigny,Red,Chambolle-Musigny,4.16,2.81,1.48,2.73,,False
+Louis Latour Saint-Véran,White,Saint-Véran,2.82,2.91,1.27,,,False
+Louis Latour Meursault Rouge,Red,Meursault,3.79,2.61,1.37,2.18,,False
+Louis Latour Les Terrasses Pinot Noir,Red,Bourgogne,3.94,2.58,1.27,2.38,,False
+Louis Latour Fleurie Les Garans,Red,Fleurie,4.88,1.24,1.42,1.84,,False
+Louis Latour Bourgogne Chameroy,Red,Bourgogne,4.01,2.7,1.06,2.25,,False
+Domaine Michel Niellon Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.27,3.78,1.62,,,False
+Domaine Michel Niellon Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.97,2.49,1.61,2.28,,False
+Domaine Michel Niellon Chardonnay Bourgogne,White,Bourgogne,3.14,3.79,1.6,,,False
+Hudelot-Noëllat Bourgogne Pinot Noir,Red,Bourgogne,3.88,2.48,1.58,2.18,,False
+Hudelot-Noëllat Vosne-Romanée,Red,Vosne-Romanée,4.19,2.9,1.6,2.71,,False
+Hudelot-Noëllat Clos des Ecoles Meursault,White,Meursault,3.35,3.46,1.77,,,False
+Hudelot-Noëllat Les Bas de Combes Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.22,2.96,1.56,2.7,,False
+Hudelot-Noëllat Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.51,2.75,1.21,2.76,,False
+Thibault Liger-Belair Les Deux Terres Bourgogne,Red,Bourgogne,3.93,2.65,1.56,2.37,,False
+Thibault Liger-Belair Les Grands Chaillots Bourgogne,Red,Bourgogne,3.87,2.62,1.58,2.35,,False
+Thibault Liger-Belair Les Vieilles Vignes Moulin-a-Vent,Red,Moulin-à-Vent,4.5,1.9,1.63,2.18,,False
+Thibault Liger-Belair Chardonnay Bourgogne,White,Bourgogne,3.25,3.83,1.54,,,False
+Thibault Liger-Belair Nuits-Saint-Georges 'La Charmotte',Red,Nuits-Saint-Georges,4.13,2.98,1.5,2.5,,False
+Thibault Liger-Belair Les Rouchaux Moulin-a-Vent,Red,Moulin-à-Vent,4.64,1.75,1.59,2.19,,False
+Thibault Liger-Belair Moulin-à-Vent 'La Roche',Red,Moulin-à-Vent,4.54,1.95,1.51,2.29,,False
+Thibault Liger-Belair Vosne Romanée 'Aux Réas',Red,Vosne-Romanée,4.02,2.97,1.73,2.5,,False
+Thibault Liger-Belair La Croix des Champs Gevrey-Chambertin,Red,Gevrey-Chambertin,4.1,3.02,1.62,2.56,,False
+Thibault Liger-Belair Bourgogne 'Les Charmes',White,Bourgogne,3.35,3.76,1.33,,,False
+Thibault Liger-Belair Vieilles Vignes Chambolle-Musigny,Red,Chambolle-Musigny,4.26,2.87,1.27,2.39,,False
+Thibault Liger-Belair Nuits-Saint-Georges 'Les Belles Croix',Red,Nuits-Saint-Georges,4.36,2.97,1.4,2.44,,False
+Thibault Liger-Belair Moulin-à-Vent 'Champ de Cour',Red,Moulin-à-Vent,4.38,2.32,1.44,2.43,,False
+Thibault Liger-Belair Bourgogne Pinot Noir,Red,Bourgogne,4.05,2.64,1.25,2.27,,False
+Thibault Liger-Belair Les Vignes Centenaires Moulin-a-Vent,Red,Moulin-à-Vent,4.61,1.27,1.43,1.65,,False
+Thibault Liger-Belair Gevrey-Chambertin 'En Créot',Red,Gevrey-Chambertin,3.98,2.78,1.62,2.59,,False
+Thibault Liger-Belair Les Fouchères Chambolle-Musigny,Red,Chambolle-Musigny,4.6,3.36,1.15,3.04,,False
+Thibault Liger-Belair Moulin à Vent 'Les Perrelles',Red,Moulin-à-Vent,4.73,2.13,1.27,1.92,,False
+Domaine Bizot Vosne-Romanée 'Les Jachées',Red,Vosne-Romanée,4.19,2.89,1.79,2.61,,True
+Domaine Bizot Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,3.86,3.22,1.82,2.81,,True
+Domaine Bizot Marsannay 'Clos du Roy',Red,Marsannay,4.1,2.59,1.97,2.75,,True
+Domaine Bizot Bourgogne 'Les Violettes',White,Bourgogne,3.33,4.13,2.38,,,True
+Domaine Denis Bachelet Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.05,2.99,1.65,2.63,,False
+Domaine Denis Bachelet Bourgogne Pinot Noir,Red,Bourgogne,3.87,2.7,1.59,2.31,,False
+Domaine Denis Bachelet Vieilles Vignes Gevrey-Chambertin Les Évocelles,Red,Gevrey-Chambertin,3.8,3.21,1.79,2.39,,False
+Jean Noël Gagnard Chassagne Montrachet 'Les Chaumes',White,Chassagne-Montrachet,3.1,3.82,1.53,,,False
+Jean Noël Gagnard Chassagne-Montrachet 'Les Masures',White,Chassagne-Montrachet,3.28,3.74,1.61,,,False
+Jean Noël Gagnard L'Estimée,Red,Chassagne-Montrachet,3.91,2.73,1.45,2.36,,False
+Jean Noël Gagnard Chassagne-Montrachet,Red,Chassagne-Montrachet,4.23,2.18,1.03,1.97,,False
+Jean Noël Gagnard Chassagne-Montrachet 'Pot Bois',White,Chassagne-Montrachet,3.33,3.53,1.8,,,False
+Château de Meursault Clos du Château Bourgogne Chardonnay,White,Bourgogne,3.31,3.76,1.39,,,False
+Château de Meursault Bourgogne du Château Pinot Noir,Red,Bourgogne,3.93,2.6,1.43,2.31,,False
+Château de Meursault Meursault du Château,White,Meursault,3.3,3.84,1.41,,,False
+Château de Meursault Chardonnay Bourgogne Terroir d’exception,White,Bourgogne,3.21,3.9,1.61,,,False
+Château de Meursault Meursault Le Limozin,White,Meursault,3.18,3.93,1.37,,,False
+Château de Meursault Bourgogne Chardonnay,White,Bourgogne,3.22,3.64,1.67,,,False
+Château de Meursault Clos du Château Monopole,White,Bourgogne,2.94,3.96,2.15,,,False
+Château de Meursault Pinot-Beurot,White,Bourgogne,3.12,3.73,1.23,,,False
+Château de Meursault Dressolles,White,Bourgogne,3.0,4.03,1.0,,,False
+Château de Meursault Marc du Chateau 10 Ans d'Age,Fortified,Bourgogne,,,,,,False
+Château de Meursault Chardonnay Bourgogne Blanc Vigne Des Lameroses,White,Bourgogne,3.0,4.0,1.0,,,False
+Domaine des Lambrays La Rosé Du Clos Bourgogne,Rosé,Bourgogne,3.0,2.5,1.0,,,False
+Domaine Tollot-Beaut Bourgogne Rouge,Red,Bourgogne,3.74,2.66,1.67,2.33,,False
+Domaine Tollot-Beaut Bourgogne Blanc,White,Bourgogne,3.41,3.72,1.58,,,False
+Mongeard-Mugneret Vosne-Romanée,Red,Vosne-Romanée,3.95,2.82,1.75,2.52,,False
+Mongeard-Mugneret Bourgogne Rouge (Pinot Noir),Red,Bourgogne,3.74,2.58,1.65,2.37,,False
+Mongeard-Mugneret Nuits-St-Georges Les Plateaux,Red,Nuits-Saint-Georges,4.02,2.9,1.67,2.52,,False
+Mongeard-Mugneret Vosne-Romanée Les Maizières Hautes,Red,Vosne-Romanée,4.0,3.07,1.89,2.68,,False
+Mongeard-Mugneret Bourgogne Blanc (Chardonnay),White,Bourgogne,3.25,3.73,1.71,,,False
+Mongeard-Mugneret Gevrey-Chambertin,Red,Gevrey-Chambertin,3.82,3.06,2.05,2.73,,False
+Mongeard-Mugneret Marsannay Clos Du Roy,White,Marsannay,3.46,3.93,1.4,,,False
+Mongeard-Mugneret Pinot Noir Bourgogne Cuvée Sapidus,Red,Bourgogne,3.95,2.68,1.8,2.34,,False
+Mongeard-Mugneret Chambolle-Musigny,Red,Chambolle-Musigny,3.76,2.77,1.84,2.82,,False
+Mongeard-Mugneret Bourgogne Rosé,Rosé,Bourgogne,2.71,2.32,1.0,,,False
+Mongeard-Mugneret Vosne-Romanée 1917,Red,Vosne-Romanée,4.0,2.74,1.49,2.52,,False
+Mongeard-Mugneret Nuits-St-Georges,Red,Nuits-Saint-Georges,3.95,3.41,2.16,2.4,,False
+Dugat-Py Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.09,3.32,1.83,2.8,,False
+Dugat-Py Bourgogne 'Cuvée Halinard',Red,Bourgogne,4.03,2.64,1.76,2.57,,False
+Dugat-Py Vieilles Vignes Gevrey-Chambertin Les Evocelles,Red,Gevrey-Chambertin,4.13,3.23,1.74,2.85,,False
+Dugat-Py Caves de L'Aumônerie du XI Siècle Bourgogne,Red,Bourgogne,3.75,2.67,1.21,2.41,,False
+Dugat-Py Bourgogne,Red,Bourgogne,3.72,2.78,1.35,2.51,,False
+Dugat-Py Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.15,3.43,1.69,2.94,,False
+Dugat-Py Caves de L'Aumônerie du XI Siècle Très Vieilles Vignes Meursault,White,Meursault,3.7,4.19,1.05,,,False
+Dugat-Py Vieilles Vigne Meursault,White,Meursault,3.1,3.65,1.59,,,False
+Dugat-Py Bourgogne Blanc,White,Bourgogne,3.38,3.37,2.01,,,False
+Dugat-Py Caves de L'Aumônerie du XI Siècle Très Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,3.92,3.0,1.83,2.87,,False
+Domaine Cecile Tremblay Vieilles Vignes Vosne-Romanee,Red,Vosne-Romanée,4.01,2.89,1.68,2.55,,True
+Domaine Cecile Tremblay Chambolle-Musigny Les Cabottes,Red,Chambolle-Musigny,4.1,2.78,1.52,2.56,,True
+Domaine Cecile Tremblay Côte d'Or Bourgogne,Red,Bourgogne,3.72,2.52,1.78,2.24,,True
+Domaine Cecile Tremblay Bourgogne La Croix Blanche,Red,Bourgogne,3.99,2.67,1.55,2.38,,True
+Domaine Cecile Tremblay Nuits-Saint-Georges Albuca,Red,Nuits-Saint-Georges,4.31,2.88,1.47,2.68,,True
+Domaine Cecile Tremblay Bourgogne La Fontaine,Red,Bourgogne,4.07,2.38,1.43,2.27,,True
+Domaine Cecile Tremblay Pinot Noir Bourgogne,Red,Bourgogne,3.75,2.71,1.96,2.17,,True
+Domaine Ponsot Bourgogne Cuvée du Pinson,Red,Bourgogne,3.99,2.55,2.07,2.15,,False
+Domaine Ponsot Gevrey-Chambertin Cuvée de l'Abeille,Red,Gevrey-Chambertin,4.05,2.91,1.57,2.62,,False
+Domaine Ponsot Saint-Romain Cuvée de la Mésange,White,Saint-Romain,3.48,3.7,1.75,,,False
+Domaine Ponsot Chambolle-Musigny Cuvée des Cigales,Red,Chambolle-Musigny,3.89,2.75,1.8,2.65,,False
+Domaine Ponsot Montrachet,White,Puligny-Montrachet,3.1,3.84,1.51,,,False
+Domaine Jean Gros Vosne-Romanée,Red,Vosne-Romanée,4.2,2.88,1.5,3.05,,False
+Château de La Maltroye Chassagne-Montrachet,White,Chassagne-Montrachet,3.27,3.83,1.78,,,False
+Château de La Maltroye Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.6,1.45,2.47,,False
+Château de La Maltroye Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.68,3.16,1.87,2.35,,False
+Château de La Maltroye Bourgogne Blanc,White,Bourgogne,3.38,3.68,1.67,,,False
+Olivier Bernstein Villages Gevrey-Chambertin,Red,Gevrey-Chambertin,4.06,3.13,1.66,2.73,,False
+Domaine Humbert Frères Gevrey-Chambertin,Red,Gevrey-Chambertin,3.96,2.71,1.28,2.44,,False
+Domaine Humbert Frères Bourgogne,Red,Bourgogne,3.67,2.45,1.16,2.27,,False
+Domaine Humbert Frères Bourgogne Côte d’Or,Red,Bourgogne,3.77,2.65,1.23,2.26,,False
+Domaine Humbert Frères Bourgogne Chardonnay,White,Bourgogne,3.13,3.9,1.0,,,False
+Xavier Monnot Les Grandes Coutures Chardonnay Bourgogne,White,Bourgogne,3.18,3.61,1.42,,,False
+Xavier Monnot Bourgogne Pinot Noir,Red,Bourgogne,3.94,2.73,1.44,2.19,,False
+Xavier Monnot Chassagne-Montrachet,White,Chassagne-Montrachet,3.59,3.47,1.48,,,False
+Xavier Monnot Puligny-Montrachet,White,Puligny-Montrachet,3.66,3.7,1.3,,,False
+Xavier Monnot Meursault,White,Meursault,3.35,3.99,1.0,,,False
+Xavier Monnot Vieilles Vignes Meursault,Red,Meursault,4.0,2.71,1.0,2.0,,False
+Domaine Taupenot-Merme Saint Romain,Red,Saint-Romain,3.88,2.54,1.59,2.37,,False
+Domaine Taupenot-Merme Gevrey Chambertin,Red,Gevrey-Chambertin,4.17,2.99,1.67,2.6,,False
+Domaine Taupenot-Merme Chambolle Musigny,Red,Chambolle-Musigny,4.05,2.82,1.56,2.58,,False
+Domaine Taupenot-Merme Bourgogne Passetoutgrains,Red,Bourgogne,3.85,2.45,1.55,2.35,,False
+Domaine Taupenot-Merme Bourgogne Pinot Noir,Red,Bourgogne,3.84,2.7,1.69,2.54,,False
+Domaine Taupenot-Merme Saint-Romain Blanc,White,Saint-Romain,3.36,3.63,1.6,,,False
+Laroche Chablis Saint-Martin,White,Chablis,4.01,2.94,1.28,,,False
+Laroche Chablis Les Chanoines,White,Chablis,3.96,2.96,1.37,,,False
+Laroche Bourgogne Réserve Chardonnay,White,Bourgogne,3.35,3.83,1.22,,,False
+Laroche L Chablis,White,Chablis,4.01,2.95,1.26,,,False
+Laroche Chablis,White,Chablis,3.72,2.92,1.44,,,False
+Laroche La Jouchère Chablis,White,Chablis,4.14,2.89,1.16,,,False
+Laroche Bourgogne Chardonnay,White,Bourgogne,3.03,3.74,1.38,,,False
+Laroche La Collegiale Chablis,White,Chablis,4.01,2.95,1.16,,,False
+Laroche Chablis Vieille Voye,White,Chablis,4.06,3.05,1.73,,,False
+Laroche Chablis Héritage du Chapitre,White,Chablis,4.02,2.28,1.44,,,False
+Laroche Domaine Laroche Chablis Cuvée Zéro,White,Chablis,3.75,3.53,1.2,,,False
+Laroche Bourgogne Chardonnay Barrique Réserve,White,Bourgogne,3.0,4.0,1.0,,,False
+Laroche L Bourgogne Réserve,White,Bourgogne,3.0,4.0,1.0,,,False
+Laroche Bourgogne Chardonnay Tête de Cuvée,White,Bourgogne,3.03,3.87,1.0,,,False
+Hospices de Beaune Pouilly-Fuissé Cuvée Françoise Poisard,White,Pouilly-Fuissé,2.84,2.97,1.78,,,False
+Hospices de Beaune Meursault Cuvée Loppin,White,Meursault,3.48,3.95,1.72,,,False
+Hospices de Beaune Saint-Romain Cuvée Joseph Menault,White,Saint-Romain,3.43,3.72,1.76,,,False
+Hospices de Beaune Meursault Cuvée Goureau,White,Meursault,3.04,4.0,1.46,,,False
+Hospices de Beaune Cuvée des Hospitaliers Bourgogne Pinot Noir,Red,Bourgogne,3.79,2.68,1.0,1.95,,False
+Jean-Jacques Confuron Nuits-Saint-Georges 'Les Fleurières',Red,Nuits-Saint-Georges,4.08,2.98,1.64,2.77,,False
+Jean-Jacques Confuron Chambolle-Musigny,Red,Chambolle-Musigny,4.05,3.08,1.79,2.71,,False
+Jean-Jacques Confuron Côte de Nuits-Villages 'Les Vignottes',Red,Côte de Nuits,4.12,3.15,1.8,2.6,,False
+Jean-Jacques Confuron Cuvée Jeunesse Bourgogne,Red,Bourgogne,3.89,2.63,1.86,2.04,,False
+Jean-Jacques Confuron Bourgogne Pinot Noir,Red,Bourgogne,3.95,2.41,1.0,2.11,,False
+Domaine Henri Boillot Meursault,White,Meursault,3.25,3.8,1.75,,,False
+Domaine Henri Boillot Puligny-Montrachet,White,Puligny-Montrachet,3.5,3.78,1.6,,,False
+Domaine de Montille Bourgogne Pinot Noir,Red,Bourgogne,3.86,2.56,1.49,2.29,,False
+Domaine de Montille Bourgogne Chardonnay,White,Bourgogne,3.37,3.57,1.53,,,False
+Domaine de Montille Puligny-Montrachet,White,Puligny-Montrachet,3.37,3.47,1.27,,,False
+Domaine de Montille Meursault Saint-Christophe,White,Meursault,3.42,3.68,1.78,,,False
+Domaine de Montille Chassagne-Montrachet,White,Chassagne-Montrachet,3.53,3.47,1.29,,,False
+Domaine de Montille Meursault 1er Cru Les Perrieres,White,Meursault,3.38,3.6,1.59,,,False
+Domaine de Montille Meursault Les Narvaux Dessous,White,Meursault,3.11,3.79,1.34,,,False
+Ardhuy Bourgogne Rouge,Red,Bourgogne,3.98,2.46,1.19,2.18,,False
+Ardhuy Gevrey Chambertin,Red,Gevrey-Chambertin,4.02,3.03,1.3,2.57,,False
+Ardhuy Meursault 'Les Pellans',White,Meursault,3.25,3.81,1.63,,,False
+Ardhuy Bourgogne Blanc,White,Bourgogne,3.35,3.79,1.35,,,False
+Ardhuy Bourgogne Cote d'Or Pinot Noir,Red,Bourgogne,3.59,2.52,1.51,2.39,,False
+Ardhuy Aux Herbues - Aux Argillats Nuits Saint Georges,Red,Nuits-Saint-Georges,4.19,3.04,1.83,3.16,,False
+Ardhuy Puligny Montrachet 'Le Trezin',White,Puligny-Montrachet,3.17,3.76,1.61,,,False
+Ardhuy Cuvée Prestige Bourgogne Pinot Noir 'Les Chaumottes',Red,Bourgogne,3.57,2.24,1.16,1.77,,False
+Ardhuy Les Chagniots Bourgogne Côte d'Or,Red,Bourgogne,3.71,3.03,1.15,2.02,,False
+Ardhuy Nuits Saint Georges,Red,Nuits-Saint-Georges,4.0,2.92,1.68,2.67,,False
+Louis Jadot - Domaine Gagey Couvent des Jacobins Pinot Noir,Red,Bourgogne,4.02,2.49,1.24,2.24,,False
+Louis Jadot - Domaine Gagey Marsannay Clos Du Roy,Red,Marsannay,4.26,2.74,1.68,2.64,,False
+Louis Jadot - Domaine Gagey Chambolle-Musigny Les Drazeys,Red,Chambolle-Musigny,4.18,2.8,1.48,2.66,,False
+Louis Jadot - Domaine Gagey Marsannay Le Chapitre,Red,Marsannay,4.4,2.91,1.0,2.66,,False
+Louis Jadot - Domaine Gagey Nuits-Saint-Georges 'Les Boudots',Red,Nuits-Saint-Georges,4.17,2.49,1.56,1.93,,False
+Philippe Pacalet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.04,2.97,1.6,2.59,,True
+Philippe Pacalet Nuits-Saint-Georges Rouge,Red,Nuits-Saint-Georges,4.17,2.85,1.68,2.53,,True
+Philippe Pacalet Beaujolais Vin de Primeur,Red,Beaujolais,4.43,1.54,1.99,1.93,,True
+Philippe Pacalet Chambolle-Musigny,Red,Chambolle-Musigny,4.07,2.54,1.53,2.58,,True
+Philippe Pacalet Moulin à Vent,Red,Moulin-à-Vent,4.64,1.78,1.61,2.21,,True
+Philippe Pacalet Meursault,White,Meursault,3.44,3.55,1.55,,,True
+Philippe Pacalet Bourgogne Vieilles Vigne,Red,Bourgogne,4.0,2.5,1.36,2.32,,True
+Philippe Pacalet Puligny-Montrachet,White,Puligny-Montrachet,3.58,3.49,1.38,,,True
+Philippe Pacalet Bulles,Sparkling,Bourgogne,3.55,3.55,,,,True
+Philippe Pacalet Bourgogne Pinot Noir,Red,Bourgogne,3.87,2.35,1.24,2.17,,True
+Philippe Pacalet Vosne-Romanée,Red,Vosne-Romanée,3.96,3.1,1.63,2.57,,True
+Philippe Pacalet Chassagne-Montrachet,White,Chassagne-Montrachet,3.49,3.68,1.32,,,True
+Philippe Pacalet Chénas,Red,Beaujolais,4.41,1.57,1.43,2.17,,True
+Philippe Pacalet Nuits-Saint-Georges Blanc,White,Nuits-Saint-Georges,3.51,3.56,1.5,,,True
+Philippe Pacalet Meursault Limozin,White,Meursault,3.82,3.7,1.61,,,False
+Henri Rebourseau Gevrey-Chambertin,Red,Gevrey-Chambertin,4.21,3.1,1.48,2.77,,False
+Henri Rebourseau Gevrey Chambertin Aux Corvées,Red,Gevrey-Chambertin,3.8,3.34,1.86,2.52,,False
+Henri Rebourseau La Brunelle Gevrey-Chambertin,Red,Gevrey-Chambertin,4.15,3.3,1.41,2.52,,False
+Maison Roche de Bellene Pinot Noir Bourgogne Vieilles Vignes,Red,Bourgogne,3.91,2.48,1.33,2.22,,False
+Maison Roche de Bellene Chardonnay Bourgogne Vieilles Vignes,White,Bourgogne,3.3,3.76,1.43,,,False
+Maison Roche de Bellene Cuvée Reserve Pinot Noir Bourgogne,Red,Bourgogne,3.94,2.51,1.29,2.3,,False
+Maison Roche de Bellene Gevrey-Chambertin Vieilles Vignes,Red,Gevrey-Chambertin,4.08,2.9,1.39,2.53,,False
+Maison Roche de Bellene Chassagne-Montrachet Vieilles Vignes,White,Chassagne-Montrachet,3.35,3.63,2.21,,,False
+Maison Roche de Bellene Meursault Vieilles Vignes,White,Meursault,3.41,3.65,1.49,,,False
+Maison Roche de Bellene Chambolle-Musigny Vieilles Vignes,Red,Chambolle-Musigny,4.05,2.75,1.58,2.42,,False
+Maison Roche de Bellene Saint-Aubin,White,Saint-Aubin,3.29,3.77,1.47,,,False
+Maison Roche de Bellene Cuvée Réserve Chardonnay Bourgogne,White,Bourgogne,3.36,3.82,1.51,,,False
+Maison Roche de Bellene Puligny-Montrachet Vieilles Vignes,White,Puligny-Montrachet,3.39,3.53,1.43,,,False
+Maison Roche de Bellene Vosne-Romanée Vieilles Vignes,Red,Vosne-Romanée,3.96,2.87,1.9,2.7,,False
+Maison Roche de Bellene Nuits-Saint-Georges Vieilles Vignes,Red,Nuits-Saint-Georges,4.18,2.9,1.74,2.77,,False
+Maison Roche de Bellene Meursault Les Charrons,White,Meursault,3.28,3.82,1.23,,,False
+Maison Roche de Bellene Cuvée Bellenos Rosé of Gamay Noir,Rosé,Bourgogne,3.0,2.5,1.0,,,False
+Maison Roche de Bellene Collection Bellenum Gevrey-Chambertin,Red,Gevrey-Chambertin,4.01,2.94,1.18,2.81,,False
+Maison Roche de Bellene Pinot Noir Bourgogne,Red,Bourgogne,4.01,2.41,1.07,2.09,,False
+Maison Roche de Bellene Collection Bellenum Meursault,White,Meursault,3.49,3.74,1.52,,,False
+Maison Roche de Bellene Chablis Vieilles Vignes,White,Chablis,3.47,2.89,1.37,,,False
+Maison Roche de Bellene Bourgogne Rouge,Red,Bourgogne,3.88,2.72,1.3,2.1,,False
+Maison Roche de Bellene Collection Bellenum Gevrey-Chambertin Vieilles Vignes,Red,Gevrey-Chambertin,4.04,3.19,1.08,2.59,,False
+Maison Roche de Bellene Bourgogne Chardonnay,White,Bourgogne,3.32,4.03,1.06,,,False
+Maison Roche de Bellene Saint-Véran,White,Saint-Véran,2.71,3.09,1.34,,,False
+Maison Roche de Bellene Collection Bellenum Chambolle-Musigny,Red,Chambolle-Musigny,3.61,3.2,1.87,2.67,,False
+Maison Roche de Bellene Vosne-Romanée,Red,Vosne-Romanée,3.63,3.19,2.05,2.8,,False
+Maison Roche de Bellene Collection Bellenum Chardonnay Bourgogne,White,Bourgogne,3.28,4.02,1.24,,,False
+Géantet-Pansiot Gevrey-Chambertin Vieilles Vignes,Red,Gevrey-Chambertin,4.12,3.07,1.7,2.64,,False
+Géantet-Pansiot Pinot Fin Bourgogne,Red,Bourgogne,3.79,2.71,1.82,2.43,,False
+Géantet-Pansiot Gevrey-Chambertin,Red,Gevrey-Chambertin,4.05,2.98,1.65,2.71,,False
+Géantet-Pansiot Chambolle-Musigny Vieilles Vignes,Red,Chambolle-Musigny,4.15,2.87,1.74,2.58,,False
+Géantet-Pansiot Marsannay Champs Perdrix,Red,Marsannay,3.8,3.18,1.42,2.59,,False
+Géantet-Pansiot Gevrey-Chambertin 'En Champs',Red,Gevrey-Chambertin,4.03,3.0,1.79,2.64,,False
+Géantet-Pansiot Gevrey-Chambertin 'Les Jeunes Rois',Red,Gevrey-Chambertin,4.15,2.89,1.48,2.57,,False
+Géantet-Pansiot Gevrey-Chambertin 'Les Evocelles',Red,Gevrey-Chambertin,4.03,2.87,1.79,2.63,,False
+Géantet-Pansiot Bourgogne Blanc,White,Bourgogne,3.47,3.81,1.45,,,False
+Géantet-Pansiot Bourgogne 'Les Bons Bâtons',Red,Bourgogne,3.57,2.55,1.41,1.96,,False
+Géantet-Pansiot Marsannay Blanc,White,Marsannay,3.81,3.63,1.12,,,False
+Géantet-Pansiot Marsannay,Red,Marsannay,3.57,3.19,2.21,2.88,,False
+Géantet-Pansiot Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.5,3.63,1.46,3.22,,False
+Arnaud Mortet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.11,3.2,1.87,2.54,,False
+Arnaud Mortet Ma Cuvée Gevrey-Chambertin,Red,Gevrey-Chambertin,4.09,3.36,1.82,2.98,,False
+Arnaud Mortet Cuvée de Très Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,3.47,3.08,2.48,3.01,,False
+Domaine Arnoux-Lachaux Chambolle-Musigny,Red,Chambolle-Musigny,4.14,2.82,1.78,2.59,,False
+Domaine Arnoux-Lachaux Pinot Fin Bourgogne,Red,Bourgogne,3.8,2.62,1.76,2.29,,False
+Domaine Arnoux-Lachaux Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.15,2.96,1.92,2.61,,False
+Domaine Arnoux-Lachaux Les Hautes Maizieres Vosne-Romanée,Red,Vosne-Romanée,4.12,2.99,1.81,2.67,,False
+Domaine Arnoux-Lachaux Nuits-Saint-Georges 'Les Poisets',Red,Nuits-Saint-Georges,4.2,2.98,1.98,2.69,,False
+Domaine Arnoux-Lachaux Pinot Noir Bourgogne,Red,Bourgogne,4.08,2.7,1.16,2.06,,False
+Domaine Robert Chevillon Vieilles Vignes Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.12,2.91,1.57,2.65,,False
+Domaine Robert Chevillon Bourgogne,Red,Bourgogne,3.84,2.73,1.67,2.48,,False
+Domaine Robert Chevillon Bourgogne Chardonnay,White,Bourgogne,3.11,3.93,1.32,,,False
+Domaine Robert Chevillon Vieilles Vignes Nuits-Saint-Georges Blanc,White,Nuits-Saint-Georges,2.86,4.0,1.35,,,False
+Domaine Robert Chevillon Nuits-Saint-Georges Blanc,White,Nuits-Saint-Georges,3.48,3.57,1.49,,,False
+Laurent Ponsot Cuvée des Peupliers Bourgogne,Red,Bourgogne,3.85,2.64,1.81,2.31,,False
+Laurent Ponsot Cuvée du Perce Neige Bourgogne,White,Bourgogne,3.33,3.74,1.79,,,False
+Laurent Ponsot Cuvée des Pandorea Meursault,White,Meursault,3.17,3.58,1.68,,,False
+Laurent Ponsot Cuvée du l'Aulne Gevrey-Chambertin,Red,Gevrey-Chambertin,3.99,3.07,1.91,2.67,,False
+Laurent Ponsot Cuvée de la Violette Chambolle-Musigny,Red,Chambolle-Musigny,3.93,2.74,2.13,2.7,,False
+Laurent Ponsot Cuvée du Cerisier Vosne-Romanée,Red,Vosne-Romanée,3.82,2.93,1.34,2.42,,False
+Laurent Ponsot Cuvée du Passiflore Saint-Romain,White,Saint-Romain,3.2,3.61,1.34,,,False
+Laurent Ponsot Cuvée du Mélèze Les Ergots Gevrey-Chambertin,Red,Gevrey-Chambertin,4.21,2.91,1.48,2.73,,False
+Jean-Marc Millot Vosne-Romanée,Red,Vosne-Romanée,3.93,2.99,1.84,2.46,,False
+Jean-Marc Millot Bourgogne,Red,Bourgogne,3.8,2.35,1.38,2.03,,False
+Jean-Marc Millot Gevrey-Chambertin,Red,Gevrey-Chambertin,3.37,3.17,2.57,2.77,,False
+Jean-Marc Millot Nuits-Saint-Georges Rouge,Red,Nuits-Saint-Georges,3.75,3.0,2.0,2.75,,False
+Domaine Arlaud Bourgogne Roncevie,Red,Bourgogne,3.77,2.68,1.76,2.33,,False
+Domaine Arlaud Gevrey-Chambertin,Red,Gevrey-Chambertin,4.21,3.07,1.54,2.69,,False
+Domaine Arlaud Chambolle-Musigny,Red,Chambolle-Musigny,3.95,2.87,1.79,2.58,,False
+Domaine Arlaud Cyprien Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.65,3.02,1.19,2.8,,False
+Domaine Arlaud Pinot Noir Bourgogne,Red,Bourgogne,3.99,2.78,1.06,2.06,,False
+J.M. Boillot Puligny-Montrachet,White,Puligny-Montrachet,3.36,3.67,1.46,,,False
+J.M. Boillot Bourgogne,Red,Bourgogne,3.86,2.62,1.21,2.3,,False
+J.M. Boillot Bourgogne Blanc,White,Bourgogne,3.36,3.42,1.52,,,False
+J.M. Boillot Meursault,White,Meursault,3.16,3.5,1.76,,,False
+J.M. Boillot Chassagne-Montrachet,White,Chassagne-Montrachet,3.41,3.58,1.63,,,False
+J.M. Boillot Meursault Les Charrons,White,Meursault,3.53,4.0,1.39,,,False
+J.M. Boillot Meursault Les Pellans,White,Meursault,3.0,4.03,1.0,,,False
+Domaine Jean Grivot Bourgogne Pinot Noir,Red,Bourgogne,3.8,2.58,1.59,2.33,,False
+Domaine Jean Grivot Vosne-Romanèe Bossières,Red,Vosne-Romanée,4.18,2.88,1.78,2.68,,False
+Domaine Jean Grivot Nuits-St-Georges Aux Lavières,Red,Nuits-Saint-Georges,4.05,2.78,1.5,2.66,,False
+Domaine Jean Grivot Chambolle-Musigny La Combe d'Orveau,Red,Chambolle-Musigny,4.2,2.77,1.66,2.6,,False
+Domaine Jean Grivot Chardonnay Bourgogne,White,Bourgogne,3.37,3.63,1.56,,,False
+Pierre-Yves Colin-Morey Saint-Aubin Le Banc,White,Saint-Aubin,3.44,3.77,1.54,,,False
+Pierre-Yves Colin-Morey Chardonnay Bourgogne,White,Bourgogne,3.43,3.77,1.46,,,False
+Pierre-Yves Colin-Morey Chassagne-Montrachet Les Ancegnières,White,Chassagne-Montrachet,3.34,3.76,1.6,,,False
+Pierre-Yves Colin-Morey Meursault Les Narvaux,White,Meursault,3.37,3.63,1.57,,,False
+Pierre-Yves Colin-Morey Vieilles Vignes Chassagne Montrachet,White,Chassagne-Montrachet,3.51,3.78,1.44,,,False
+Pierre-Yves Colin-Morey Rosé de Pinot Noir,Rosé,Bourgogne,3.21,3.3,1.03,,,False
+Pierre-Yves Colin-Morey Chassagne-Montrachet Premier Cru La Maltroie,White,Chassagne-Montrachet,3.39,3.71,1.49,,,False
+Pierre-Yves Colin-Morey Saint-Aubin,White,Saint-Aubin,3.44,3.8,1.68,,,False
+Pierre-Yves Colin-Morey Meursault,White,Meursault,3.37,3.92,1.58,,,False
+Pierre-Yves Colin-Morey Puligny-Montrachet Le Trezin,White,Puligny-Montrachet,3.36,3.72,1.7,,,False
+Pierre-Yves Colin-Morey Saint-Aubin La Pucelle,White,Saint-Aubin,3.59,3.64,1.31,,,False
+Pierre-Yves Colin-Morey Saint-Aubin Premier Cru Cuvée Marguerite,White,Saint-Aubin,3.29,3.75,1.99,,,False
+Pierre-Yves Colin-Morey Puligny Montrachet,White,Puligny-Montrachet,3.76,3.48,1.36,,,False
+Pierre-Yves Colin-Morey Vosne-Romanée,Red,Vosne-Romanée,4.26,3.36,1.32,2.49,,False
+Pierre-Yves Colin-Morey Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.09,2.64,1.38,2.39,,False
+Pierre-Yves Colin-Morey Meursault Les Vireuils,White,Meursault,3.16,3.45,1.34,,,False
+Pierre-Yves Colin-Morey Saint-Aubin Les Ebaupins,White,Saint-Aubin,3.41,3.87,1.17,,,False
+Domaine Bruno Clair Marsannay 'Les Grasses Têtes',Red,Marsannay,4.19,2.91,1.59,2.64,,False
+Domaine Bruno Clair Marsannay Rouge,Red,Marsannay,4.09,2.83,1.71,2.58,,False
+Domaine Bruno Clair Marsannay 'Les Longeroies',Red,Marsannay,4.13,2.87,1.59,2.63,,False
+Domaine Bruno Clair Marsannay Rosé,Rosé,Marsannay,2.91,2.87,1.21,,,False
+Domaine Bruno Clair Marsannay Blanc,White,Marsannay,3.42,3.56,1.4,,,False
+Domaine Bruno Clair Gevrey-Chambertin,Red,Gevrey-Chambertin,4.15,2.87,1.28,2.53,,False
+Domaine Bruno Clair Marsannay 'Les Vaudenelles',Red,Marsannay,4.32,2.76,1.55,2.62,,False
+Domaine Bruno Clair Source des Roches Marsannay Blanc,White,Marsannay,3.25,3.49,1.33,,,False
+Domaine Bruno Clair Bourgogne Blanc,White,Bourgogne,3.26,3.77,1.16,,,False
+Domaine Bruno Clair Marsannay 'Les Longeroies' La Murée,Red,Marsannay,4.29,3.03,1.9,2.57,,False
+Domaine Bruno Clair Le Centenaire Marsannay Rosé,Rosé,Marsannay,3.0,2.5,1.0,,,False
+Domaine Bruno Clair Marsannay Cuvée Isabelle,Red,Marsannay,3.99,2.87,1.05,2.42,,False
+Domaine Bruno Clair Marsannay Sélection Chardonnay Rosé,Rosé,Marsannay,2.97,2.5,1.0,,,False
+Domaine Bruno Clair Bourgogne Pinot Noir,Red,Bourgogne,3.65,2.32,1.0,2.38,,False
+Domaine Bruno Clair Marsannay 'Les Longeroies' Blanc,White,Marsannay,3.52,3.35,1.66,,,False
+Christian Moreau Pere & Fils Chablis,White,Chablis,3.97,2.99,1.36,,,False
+Christian Moreau Pere & Fils Les Pargues Chablis,White,Chablis,4.05,2.89,1.08,,,False
+Domaine Antonin Guyon Chambolle-Musigny 'Les Cras',Red,Chambolle-Musigny,4.14,2.88,1.47,2.61,,False
+Domaine Antonin Guyon Pinot Noir Bourgogne,Red,Bourgogne,3.58,2.54,1.32,2.11,,False
+Domaine Antonin Guyon Gevrey-Chambertin,Red,Gevrey-Chambertin,3.94,2.98,1.5,2.97,,False
+Domaine Antonin Guyon Chambolle-Musigny,Red,Chambolle-Musigny,3.98,2.82,2.12,2.47,,False
+Domaine Antonin Guyon Chardonnay Bourgogne,White,Bourgogne,3.57,3.62,1.29,,,False
+Domaine de la Vougeraie Pinot Noir Terres de Famille,Red,Bourgogne,3.81,2.54,1.6,2.3,,False
+Domaine de la Vougeraie Gevrey-Chambertin,Red,Gevrey-Chambertin,4.02,2.84,1.64,2.53,,False
+Domaine de la Vougeraie Gevrey-Chambertin Les Evocelles,Red,Gevrey-Chambertin,4.08,2.9,1.58,2.45,,False
+Domaine de la Vougeraie Côte de Beaune Les Pierres Blanches Rouge,Red,Côte de Beaune,3.81,2.82,1.49,2.07,,False
+Domaine de la Vougeraie Chardonnay Terres de Famille,White,Bourgogne,3.39,3.73,1.32,,,False
+Domaine de la Vougeraie Gevrey-Chambertin La Justice,Red,Gevrey-Chambertin,3.89,3.01,1.9,2.56,,False
+Domaine de la Vougeraie Côte de Beaune Les Pierres Blanches Blanc,White,Côte de Beaune,3.3,3.52,1.65,,,False
+Domaine de la Vougeraie Beaune La Montée Rouge,Red,Côte de Beaune,3.71,2.61,1.92,2.13,,False
+Domaine de la Vougeraie Puligny-Montrachet,White,Puligny-Montrachet,3.42,3.81,1.58,,,False
+Domaine de la Vougeraie Chambolle-Musigny,Red,Chambolle-Musigny,3.97,3.16,2.07,2.59,,False
+Domaine de la Vougeraie Puligny-Montrachet La Corvée des Vignes,White,Puligny-Montrachet,3.18,3.48,1.06,,,False
+Domaine de la Vougeraie Reunion de Famille Pinot Noir,Red,Bourgogne,3.57,2.5,1.16,1.96,,False
+Domaine Génot-Boulanger Puligny-Montrachet Les Nosroyes,White,Puligny-Montrachet,3.51,3.93,1.71,,,False
+Domaine Génot-Boulanger Chambolle-Musigny,Red,Chambolle-Musigny,4.25,2.84,1.52,2.4,,False
+Domaine Génot-Boulanger Bourgogne Pinot Noir,Red,Bourgogne,3.94,2.32,1.35,2.08,,False
+Domaine Génot-Boulanger Puligny-Montrachet 'Les Levrons',White,Puligny-Montrachet,2.81,3.68,1.37,,,False
+Domaine Génot-Boulanger Au Paupillot Puligny-Montrachet,White,Puligny-Montrachet,3.41,3.72,1.4,,,False
+Georges Noëllat Vosne-Romanée,Red,Vosne-Romanée,4.12,2.93,1.79,2.59,,False
+Georges Noëllat Bourgogne,Red,Bourgogne,3.88,2.62,1.82,2.27,,False
+Georges Noëllat Gevrey-Chambertin 'Aux Echezeaux ',Red,Gevrey-Chambertin,3.48,3.48,1.95,2.9,,False
+Domaine Pierre Gelin Bourgogne Pinot Noir,Red,Côte de Nuits,4.07,2.83,1.61,2.35,,False
+Domaine Pierre Gelin Le Dessus de Prielles Bourgogne,White,Bourgogne,3.4,3.62,1.7,,,False
+Domaine Pierre Gelin Bourgogne Aligoté,White,Bourgogne,3.0,4.0,1.0,,,False
+Francois Carillon Bourgogne Chardonnay,White,Bourgogne,3.28,3.78,1.55,,,False
+Francois Carillon Puligny-Montrachet,White,Puligny-Montrachet,3.33,3.68,1.61,,,False
+Francois Carillon Puligny-Montrachet Les Enseignieres,White,Puligny-Montrachet,3.26,3.89,1.76,,,False
+Francois Carillon Cap au Sud,White,Bourgogne,2.91,3.48,2.26,,,False
+Francois Carillon Le Clos du Vieux Château Puligny-Montrachet,White,Puligny-Montrachet,3.26,3.9,1.68,,,False
+Francois Carillon Chassagne-Montrachet,White,Chassagne-Montrachet,3.34,4.01,1.59,,,False
+Francois Carillon Bourgogne Pinot Noir,Red,Bourgogne,3.54,2.72,1.64,2.39,,False
+Francois Carillon 'Le Vieux Clos' Bourgogne Chardonnay,White,Bourgogne,3.3,3.81,1.49,,,False
+Francois Carillon Cuvée des 5 Siècles Bourgogne Chardonnay,White,Bourgogne,3.05,3.59,1.5,,,False
+Francois Carillon Saint-Romain 'Combe Bazin',White,Saint-Romain,3.6,4.07,1.0,,,False
+Francois Carillon Saint-Aubin,White,Saint-Aubin,3.57,3.9,1.0,,,False
+Lignier-Michelot Bourgogne Pinot Noir,Red,Bourgogne,3.88,2.58,1.37,2.13,,False
+Lignier-Michelot Nuits-Saint-Georges Premier Cru 'Les Murgers',Red,Nuits-Saint-Georges,4.33,3.06,1.48,3.01,,False
+Gagnard-Delagrange Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.82,2.86,1.46,2.43,,False
+Gagnard-Delagrange Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.52,4.03,1.89,,,False
+Jean Claude Bachelet & Fils Puligny-Montrachet 'Les Aubues',White,Puligny-Montrachet,3.33,3.57,1.57,,,False
+Jean Claude Bachelet & Fils Vieilles Vignes Chassagne-Montrachet,Red,Chassagne-Montrachet,3.34,2.39,1.23,2.42,,False
+Jean Claude Bachelet & Fils Chassagne-Montrachet,White,Côte de Beaune,3.39,3.98,1.62,,,False
+Jean Claude Bachelet & Fils Puligny-Montrachet,White,Puligny-Montrachet,3.11,3.56,1.57,,,False
+Jean Claude Bachelet & Fils Chassagne-Montrachet 'Les Encégnières',White,Côte de Beaune,3.36,3.6,1.39,,,False
+Jean Claude Bachelet & Fils Bourgogne Pinot Noir,Red,Bourgogne,3.83,2.45,1.0,2.47,,False
+Jean Claude Bachelet & Fils Bourgogne Chardonnay,White,Bourgogne,2.93,3.9,1.56,,,False
+Jean Claude Bachelet & Fils Chassagne-Montrachet Le Concis des Champs,Red,Chassagne-Montrachet,4.04,3.22,1.33,2.91,,False
+Michel Magnien Seuvrées-Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.24,2.98,1.52,2.61,,False
+Michel Magnien Bourgogne Pinot Noir,Red,Bourgogne,3.91,2.55,1.33,2.32,,False
+Michel Magnien Monopole Marsannay 'Mogottes',Red,Marsannay,4.03,2.79,1.7,2.58,,False
+Michel Magnien Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.15,3.21,1.5,2.45,,False
+Michel Magnien Marsannay 'Plantelle' Blanc,White,Marsannay,3.37,3.17,1.2,,,False
+Michel Magnien Gevrey-Chambertin 'Aux Echezeaux',Red,Gevrey-Chambertin,4.28,2.83,1.43,2.51,,False
+Michel Magnien Chambolle-Musigny 'Fremières',Red,Chambolle-Musigny,4.18,2.88,1.19,2.76,,False
+Michel Magnien Chambolle-Musigny,Red,Chambolle-Musigny,3.97,3.19,1.14,2.51,,False
+Michel Magnien Graviers Bourgogne,Red,Bourgogne,3.81,2.66,1.37,1.91,,False
+Michel Magnien Gevrey-Chambertin,Red,Gevrey-Chambertin,4.39,3.15,1.5,2.66,,False
+Michel Magnien Vieilles Vignes Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.53,2.88,1.11,2.48,,False
+Michel Magnien Bourgogne Chardonnay 'Bons Bâtons',White,Bourgogne,2.76,4.08,1.5,,,False
+Michel Magnien Bourgogne Côte d'Or Pinot Noir,Red,Bourgogne,3.81,3.11,1.0,2.58,,False
+Michel Magnien Gevrey-Chambertin 'Seuvrées',Red,Gevrey-Chambertin,4.54,2.62,1.0,2.55,,False
+Pierre Morey Bourgogne Chardonnay,White,Bourgogne,3.5,3.68,1.41,,,False
+Pierre Morey Bourgogne Pinot Noir,Red,Bourgogne,3.8,2.75,1.78,2.27,,False
+Pierre Morey Les Terres Meursault Blanches,White,Meursault,3.37,3.66,1.72,,,False
+Pierre Morey Les Durots Meursault,Red,Meursault,3.75,2.67,1.28,2.06,,False
+Domaine de l'Arlot Cuvée La Gerbotte Nuits-Saint-Georges Blanc,White,Nuits-Saint-Georges,3.17,3.86,1.72,,,False
+Domaine de l'Arlot Cuvée Le Petit Arlot Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.28,2.92,1.34,2.43,,False
+Domaine de l'Arlot Nuits-Saint-Georges Premier Cru Cuvée Hors Ligne,Red,Nuits-Saint-Georges,4.44,3.34,1.5,2.33,,False
+Remoissenet Père & Fils Bourgogne Renommée Blanc,White,Bourgogne,3.28,3.88,1.29,,,False
+Remoissenet Père & Fils Bourgogne Renommée Rouge,Red,Bourgogne,3.87,2.48,1.3,2.29,,False
+Remoissenet Père & Fils Vosne-Romanée,Red,Vosne-Romanée,4.03,2.86,1.43,2.44,,False
+Remoissenet Père & Fils Bourgogne,Red,Bourgogne,3.87,2.51,1.37,2.12,,False
+Remoissenet Père & Fils Puligny-Montrachet,White,Puligny-Montrachet,3.27,3.75,1.33,,,False
+Remoissenet Père & Fils Chassagne-Montrachet,White,Chassagne-Montrachet,3.14,3.97,1.73,,,False
+Remoissenet Père & Fils Pinot Noir Bourgogne,Red,Bourgogne,3.84,2.57,1.02,1.97,,False
+Remoissenet Père & Fils Saint-Romain,White,Saint-Romain,3.31,3.79,1.83,,,False
+Remoissenet Père & Fils Meursault Cuvée Maurice Chevalier,White,Meursault,3.21,3.88,1.56,,,False
+Remoissenet Père & Fils Chablis Amiral Vernon,White,Chablis,3.82,3.04,1.39,,,False
+Remoissenet Père & Fils Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.86,2.92,1.9,2.53,,False
+Remoissenet Père & Fils Pouilly-Fuissè,White,Pouilly-Fuissé,2.5,3.25,1.94,,,False
+Remoissenet Père & Fils Bourgogne Diamond Jubilee,Red,Bourgogne,3.95,2.61,1.55,2.36,,False
+Remoissenet Père & Fils Clément Fleurie,Red,Fleurie,4.57,1.66,1.59,1.85,,False
+Remoissenet Père & Fils Chablis,White,Chablis,4.06,3.03,1.46,,,False
+Remoissenet Père & Fils Chambolle-Musigny,Red,Chambolle-Musigny,3.88,2.92,1.67,2.28,,False
+Remoissenet Père & Fils Bourgogne Chardonnay,White,Bourgogne,3.56,3.62,1.02,,,False
+Remoissenet Père & Fils Meursault,Red,Meursault,3.71,2.82,1.07,2.1,,False
+Remoissenet Père & Fils Fleurie,Red,Fleurie,3.9,1.56,1.33,1.49,,False
+Remoissenet Père & Fils Meursault,White,Meursault,3.43,3.98,1.2,,,False
+Remoissenet Père & Fils Pinot Noir Bourgogne Cuvée Tradition,Red,Bourgogne,4.06,2.5,1.13,1.96,,False
+Remoissenet Père & Fils Gevrey-Chambertin Les Combottes Tête De Cuvée,Red,Gevrey-Chambertin,4.32,2.92,1.68,2.63,,False
+Maison Henri Boillot Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.59,1.63,2.32,,False
+Maison Henri Boillot Saint-Aubin,White,Saint-Aubin,3.29,3.81,1.6,,,False
+Maison Henri Boillot Chassagne-Montrachet,White,Chassagne-Montrachet,3.34,3.77,1.56,,,False
+Maison Henri Boillot Saint-Romain,White,Saint-Romain,3.15,4.01,1.99,,,False
+David Moret Meursault 'Les Narvaux',White,Meursault,3.15,3.84,1.85,,,False
+David Moret Saint-Romain,White,Saint-Romain,3.06,3.87,1.81,,,False
+David Moret Vieilles Vignes Chassagne-Montrachet,White,Chassagne-Montrachet,3.21,4.02,1.35,,,False
+David Moret Puligny-Montrachet,White,Puligny-Montrachet,3.21,3.89,1.65,,,False
+David Moret Chardonnay,White,Bourgogne,3.21,3.77,1.54,,,False
+David Moret Les Femelottes Bourgogne,White,Bourgogne,3.35,3.56,1.44,,,False
+David Moret Meursault 'Sous la velle',White,Meursault,3.22,3.99,1.99,,,False
+David Moret Pinot Noir,Red,Bourgogne,3.08,2.64,2.11,2.33,,False
+David Moret Le Clos Marsannay,Red,Marsannay,4.36,3.0,1.14,2.42,,False
+David Moret Vieilles Vignes Chambolle-Musigny,Red,Chambolle-Musigny,3.69,3.29,1.24,2.43,,False
+David Moret Les Belles Parcelles Bourgogne Pinot Noir,Red,Bourgogne,4.02,2.5,1.14,2.0,,False
+David Moret Meursault,White,Meursault,3.16,4.0,1.27,,,False
+Domaine des Beaumont Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,3.93,3.33,1.63,2.67,,False
+Domaine des Beaumont Bourgogne Pinot Noir,Red,Bourgogne,3.98,2.54,1.49,2.32,,False
+Domaine des Beaumont Chambolle-Musigny 'Les Chardannes',Red,Chambolle-Musigny,4.06,3.17,1.86,2.45,,False
+Domaine des Beaumont Gevrey-Chambertin,Red,Gevrey-Chambertin,4.35,2.75,1.03,2.55,,False
+Domaine des Beaumont Chambolle-Musigny,Red,Chambolle-Musigny,4.48,2.86,2.11,2.38,,False
+Camille Giroud Bourgogne Rouge,Red,Bourgogne,3.92,2.69,1.34,2.31,,False
+Camille Giroud Bourgogne Blanc,White,Bourgogne,3.47,3.74,1.27,,,False
+Camille Giroud Gevrey-Chambertin,Red,Gevrey-Chambertin,4.32,2.98,1.71,2.58,,False
+Camille Giroud Vosne-Romanée,Red,Vosne-Romanée,3.44,2.78,1.21,2.43,,False
+Camille Giroud Gevrey-Chambertin 'Les Crais',Red,Gevrey-Chambertin,3.98,3.11,1.79,2.66,,False
+Camille Giroud Marsannay 'Les Longeroies',Red,Marsannay,4.35,2.88,1.59,2.51,,False
+Camille Giroud Vosne-Romanée 'Les Chalandins',Red,Vosne-Romanée,4.28,2.68,1.36,2.63,,False
+Camille Giroud Meursault,White,Meursault,3.39,3.82,1.23,,,False
+Camille Giroud Saint-Romain Sous Le Château,White,Saint-Romain,3.67,3.91,1.19,,,False
+Camille Giroud Meursault 'Les Vireuils',White,Meursault,3.51,3.68,1.19,,,False
+Camille Giroud Saint-Romain,White,Saint-Romain,3.73,3.94,1.37,,,False
+Camille Giroud Cuvée L Bourgogne Pinot Noir,Red,Bourgogne,4.07,2.44,1.0,2.0,,False
+Camille Giroud Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.37,2.64,1.25,2.25,,False
+Camille Giroud Beaune,Red,Côte de Beaune,3.36,2.5,1.0,1.95,,False
+Camille Giroud Pouilly-Fuissé,White,Pouilly-Fuissé,2.63,3.0,1.0,,,False
+Domaine Perrot-Minot Gevrey-Chambertin,Red,Gevrey-Chambertin,4.18,3.03,1.82,2.61,,False
+Domaine Perrot-Minot Chambolle-Musigny,Red,Chambolle-Musigny,4.15,2.95,2.11,2.57,,False
+Domaine Perrot-Minot Vosne-Romanée,Red,Vosne-Romanée,4.22,3.07,1.55,2.66,,False
+Domaine Perrot-Minot Vieilles Vignes Bourgogne,Red,Bourgogne,3.92,2.68,1.49,2.32,,False
+Domaine Perrot-Minot Les Murgers des Cras Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.23,3.0,1.37,2.58,,False
+Domaine Perrot-Minot Bourgogne,Red,Bourgogne,3.74,2.6,2.02,2.26,,False
+Domaine Perrot-Minot Vosne-Romanée 'Champs Perdrix',Red,Vosne-Romanée,3.84,2.89,1.94,2.41,,False
+Domaine Perrot-Minot 'Justice des Seuvrées' Gevrey-Chambertin,Red,Gevrey-Chambertin,3.82,3.09,1.91,2.32,,False
+Domaine Perrot-Minot Vieilles Vignes Les Echanges Chambolle-Musigny  Premier Cru,Red,Chambolle-Musigny,4.29,2.77,1.61,2.48,,False
+Domaine Perrot-Minot Orme des Chalandins Vosne-Romanée,Red,Vosne-Romanée,4.11,3.18,1.56,2.9,,False
+Domaine Perrot-Minot La Gouzotte Bourgogne,Red,Bourgogne,3.74,2.62,1.81,2.32,,False
+Domaine Perrot-Minot Bourgogne 'Gravières des Chaponnières',Red,Bourgogne,3.91,2.7,1.75,2.21,,False
+Domaine Perrot-Minot Chambolle Musigny Vieilles Vignes,Red,Chambolle-Musigny,3.78,2.8,1.84,2.59,,False
+Domaine Perrot-Minot Orveaux des Bussières Chambolle-Musigny,Red,Chambolle-Musigny,4.19,3.27,1.28,2.81,,False
+Domaine Perrot-Minot Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,3.97,2.75,1.65,2.51,,False
+Domaine Perrot-Minot Vieilles Vignes Vosne Romanée 'Les Jacquines',Red,Vosne-Romanée,4.5,3.0,1.0,2.49,,False
+Domaine Perrot-Minot Cuvée Martine Pinot Noir,Red,Bourgogne,4.0,2.5,1.0,2.0,,False
+Gérard Raphet Gevrey-Chambertin,Red,Gevrey-Chambertin,3.84,2.89,1.5,2.49,,False
+Gérard Raphet Chambolle-Musigny,Red,Chambolle-Musigny,4.23,2.93,2.03,2.61,,False
+Gérard Raphet Bourgogne,Red,Bourgogne,3.98,2.53,1.52,2.07,,False
+Gérard Raphet Cuvée Unique Bourgogne 'Les Grands Champs',Red,Bourgogne,4.08,2.73,1.18,2.02,,False
+Gérard Raphet Gevrey-Chambertin 'Les Champs Chenys',Red,Gevrey-Chambertin,4.3,2.9,1.32,2.33,,False
+Gérard Raphet Cuvée Unique Chambolle-Musigny 'Les Bussieres',Red,Chambolle-Musigny,4.34,3.15,1.7,2.62,,False
+Gérard Raphet Gevrey-Chambertin Les Seuvrées,Red,Gevrey-Chambertin,4.51,2.7,1.1,2.15,,False
+Jean-Louis Chavy Puligny-Montrachet,White,Puligny-Montrachet,3.3,3.72,1.44,,,False
+Jean-Louis Chavy Bourgogne Chardonnay,White,Bourgogne,3.29,3.57,1.17,,,False
+Jean-Louis Chavy Puligny-Montrachet 'Les Charmes',White,Puligny-Montrachet,3.28,3.64,1.8,,,False
+Jean-Claude Boisset Pinot Noir Bourgogne 'Les Ursulines',Red,Bourgogne,3.92,2.47,1.39,2.27,,False
+Jean-Claude Boisset Chardonnay Bourgogne Les Ursulines,White,Bourgogne,3.28,3.7,1.42,,,False
+Jean-Claude Boisset Pinot Noir Bourgogne Nature D'Ursulines,Red,Bourgogne,3.91,2.54,1.42,2.46,,False
+Jean-Claude Boisset Chambolle-Musigny,Red,Chambolle-Musigny,4.19,2.87,1.42,2.65,,False
+Jean-Claude Boisset Pouilly-Fuissé,White,Pouilly-Fuissé,2.82,3.01,1.6,,,False
+Jean-Claude Boisset Charles de France Bourgogne Chardonnay,White,Bourgogne,3.27,3.57,1.13,,,False
+Jean-Claude Boisset Chablis,White,Chablis,4.03,3.06,1.48,,,False
+Jean-Claude Boisset Gevrey-Chambertin,Red,Gevrey-Chambertin,4.29,2.97,1.48,2.43,,False
+Jean-Claude Boisset Nuits-Saint-Georges Les Charbonnières,Red,Nuits-Saint-Georges,4.04,3.0,2.21,2.72,,False
+Jean-Claude Boisset Meursault Le Limozin,White,Meursault,3.29,3.49,1.54,,,False
+Jean-Claude Boisset Chardonnay Bourgogne,White,Bourgogne,3.24,3.89,1.32,,,False
+Jean-Claude Boisset Marsannay Blanc,White,Marsannay,3.24,3.62,1.51,,,False
+Jean-Claude Boisset Puligny-Montrachet Le Trezin,White,Puligny-Montrachet,3.45,3.88,1.41,,,False
+Jean-Claude Boisset Le Coteau des Bois Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.34,3.4,1.1,2.84,,False
+Jean-Claude Boisset Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.47,3.15,1.41,2.53,,False
+Jean-Claude Boisset Marsannay Rouge,Red,Marsannay,4.08,3.01,1.6,2.41,,False
+Jean-Claude Boisset Vosne-Romanée Les Jacquines,Red,Vosne-Romanée,4.32,2.84,1.73,2.43,,False
+Jean-Claude Boisset Pinot Noir Bourgogne,Red,Bourgogne,3.8,2.5,1.71,2.0,,False
+Jean-Claude Boisset Vosne-Romanée,Red,Vosne-Romanée,4.54,3.12,1.02,2.39,,False
+Jean-Claude Boisset Gevrey-Chambertin En Champs,Red,Gevrey-Chambertin,3.89,2.52,1.48,2.29,,False
+Jean-Claude Boisset La Côte Rotie Saint-Véran,White,Saint-Véran,2.75,3.18,1.0,,,False
+Jean-Claude Boisset Chambolle-Musigny Les Chardannes,Red,Chambolle-Musigny,4.53,2.81,1.86,2.48,,False
+Jean-Claude Boisset Chassagne-Montrachet,Red,Chassagne-Montrachet,4.07,2.5,1.0,2.0,,False
+Jean-Claude Boisset Gevrey-Chambertin Le Crèot,Red,Gevrey-Chambertin,4.26,2.68,1.28,2.0,,False
+Jean-Claude Boisset Bourgogne Chateau De Pierreux Monopole,Red,Bourgogne,4.12,2.77,1.11,2.38,,False
+Jean-Claude Boisset Saint-Véran Grande Bruyère,White,Saint-Véran,2.69,3.11,1.07,,,False
+Jean-Claude Boisset Pinot Noir Bourgogne Prince Philippe,Red,Bourgogne,4.0,2.66,1.64,2.29,,False
+Jean-Luc & Eric Burguet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.14,3.06,1.68,2.66,,False
+Jean-Luc & Eric Burguet Bourgogne 'Les Pince Vin',Red,Bourgogne,3.83,2.55,1.68,2.32,,False
+Jean-Luc & Eric Burguet Gevrey-Chambertin 'Symphonie',Red,Gevrey-Chambertin,4.19,3.07,1.5,2.56,,False
+Jean-Luc & Eric Burguet Vosne-Romanée,Red,Vosne-Romanée,4.1,2.93,1.62,2.71,,False
+Jean-Luc & Eric Burguet Chambolle-Musigny 'Les Echezeaux',Red,Chambolle-Musigny,4.16,2.67,1.61,2.28,,False
+Jean-Luc & Eric Burguet Gevrey-Chambertin 'Place des Lois',Red,Gevrey-Chambertin,3.71,3.32,1.61,2.4,,False
+Jean-Luc & Eric Burguet Tradition Gevrey-Chambertin,Red,Gevrey-Chambertin,4.11,2.97,1.25,2.33,,False
+Jean-Luc & Eric Burguet Meursault 'Sous La Velle',White,Meursault,3.04,3.79,1.21,,,False
+Jean-Luc & Eric Burguet Chambolle-Musigny 'Les Chardannes',Red,Chambolle-Musigny,3.97,3.02,1.1,2.31,,False
+Jean-Luc & Eric Burguet Gevrey-Chambertin 'La Justice',Red,Gevrey-Chambertin,3.71,2.98,1.64,2.49,,False
+Jean-Luc & Eric Burguet Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.4,2.81,2.42,2.99,,False
+Jean-Luc & Eric Burguet Gevrey-Chambertin 'En Reniard',Red,Gevrey-Chambertin,4.5,3.0,1.75,2.5,,False
+Chartron et Trébuchet Bourgogne Chardonnay,White,Bourgogne,3.24,3.63,1.38,,,False
+Chartron et Trébuchet Chablis,White,Chablis,4.11,2.85,1.28,,,False
+Chartron et Trébuchet Bourgogne Pinot Noir,Red,Bourgogne,3.74,2.46,1.25,2.21,,False
+Chartron et Trébuchet Pouilly-Fuissé,White,Pouilly-Fuissé,2.99,2.93,1.51,,,False
+Chartron et Trébuchet Cuvée de la Combe Bourgogne Chardonnay,White,Bourgogne,3.32,3.84,1.39,,,False
+Chartron et Trébuchet Puligny-Montrachet,White,Puligny-Montrachet,3.09,3.97,1.71,,,False
+Chartron et Trébuchet Chassagne-Montrachet,White,Chassagne-Montrachet,3.12,3.75,1.81,,,False
+Chartron et Trébuchet Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.35,2.76,1.08,3.04,,False
+Chartron et Trébuchet Saint-Romain,White,Saint-Romain,3.27,4.04,1.64,,,False
+Chartron et Trébuchet Cuvée de la Chapelle Pouilly-Fuissé,White,Pouilly-Fuissé,2.77,3.07,1.19,,,False
+Chartron et Trébuchet Saint-Véran,White,Saint-Véran,2.94,2.61,1.41,,,False
+Chartron et Trébuchet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.05,3.12,1.06,2.67,,False
+Chartron et Trébuchet Vosne-Romanée,Red,Vosne-Romanée,4.5,3.16,1.43,2.49,,False
+Domaine Gabriel et Paul Jouard Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.85,3.25,1.35,3.06,,False
+Maison Champy Bourgogne Pinot Noir Cuvée Edme,Red,Bourgogne,3.96,2.48,1.4,2.41,,False
+Maison Champy Bourgogne Chardonnay Cuvée Edme,White,Bourgogne,3.2,3.7,1.5,,,False
+Maison Champy Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.42,1.45,2.38,,False
+Maison Champy Bourgogne Chardonnay,White,Bourgogne,3.27,3.69,1.46,,,False
+Maison Champy Pouilly-Fuissé,White,Pouilly-Fuissé,3.18,2.79,1.4,,,False
+Maison Champy Gevrey-Chambertin Vieilles Vignes,Red,Gevrey-Chambertin,4.06,2.85,1.51,2.38,,False
+Maison Champy Vosne-Romanée,Red,Vosne-Romanée,3.99,2.64,1.42,2.54,,False
+Maison Champy Chablis,White,Chablis,4.03,3.19,1.54,,,False
+Maison Champy Meursault,White,Meursault,3.09,3.42,1.51,,,False
+Maison Champy Saint-Véran,White,Saint-Véran,2.54,3.24,2.01,,,False
+Maison Champy Puligny-Montrachet,White,Puligny-Montrachet,3.36,3.95,2.0,,,False
+Maison Champy Chassagne-Montrachet,White,Chassagne-Montrachet,3.13,3.36,1.49,,,False
+Maison Champy Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.24,2.79,1.64,2.6,,False
+Maison Champy Chambolle-Musigny,Red,Chambolle-Musigny,4.35,3.0,1.38,2.48,,False
+Maison Champy Chambolle-Musigny Les Bussiéres,Red,Chambolle-Musigny,4.23,3.03,1.11,2.5,,False
+Maison Champy Saint-Romain,White,Saint-Romain,3.21,4.0,1.0,,,False
+Maison Champy Marsannay,Red,Marsannay,4.52,3.0,1.24,2.52,,False
+Maison Champy Meursault Les Grands Charrons,White,Meursault,3.0,4.0,1.0,,,False
+Domaine Marquis d'Angerville Bourgogne Pinot Noir,Red,Bourgogne,3.8,2.72,1.57,2.11,,False
+Domaine Marquis d'Angerville Bourgogne Chardonnay,White,Bourgogne,3.19,3.42,1.46,,,False
+Domaine Marquis d'Angerville Petit Blanc,White,Bourgogne,3.52,2.76,1.14,,,False
+Domaine Latour-Giraud Cuvée Charles Maxime Meursault,White,Meursault,3.31,3.77,1.54,,,False
+Domaine Latour-Giraud Bourgogne Chardonnay,White,Bourgogne,3.2,3.82,1.39,,,False
+Domaine Latour-Giraud Meursault 'Les Narvaux',White,Meursault,3.38,3.63,1.72,,,False
+Domaine Latour-Giraud Cuvée Sélectionnée Meursault,White,Meursault,3.13,3.39,1.48,,,False
+Domaine des Croix Bourgogne Pinot Noir,Red,Bourgogne,3.77,2.5,1.02,2.09,,False
+Domaine des Croix Saint Romain Combe Bazin,White,Saint-Romain,3.27,3.5,1.91,,,False
+Domaine des Perdrix Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.16,2.99,1.72,2.67,,False
+Domaine des Perdrix Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.81,1.51,2.39,,False
+Domaine Alain Chavy Bourgogne Chardonnay,White,Bourgogne,3.47,3.76,1.18,,,False
+Domaine Alain Chavy Vielles Vignes Puligny-Montrachet,White,Puligny-Montrachet,3.49,3.6,1.19,,,False
+Domaine Alain Chavy Chassagne-Montrachet 'Les Chenes',White,Chassagne-Montrachet,3.41,3.51,1.11,,,False
+Domaine Alain Chavy Puligny-Montrachet 'Les 8 Climats',White,Puligny-Montrachet,2.92,3.12,1.77,,,False
+Maxime Cheurlin-Noëllat Chambolle-Musigny,Red,Chambolle-Musigny,3.73,2.73,1.52,2.44,,False
+Maxime Cheurlin-Noëllat Vosne-Romanée,Red,Vosne-Romanée,4.5,3.0,1.0,2.5,,False
+Maxime Cheurlin-Noëllat Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.12,3.01,1.6,2.75,,False
+Maxime Cheurlin-Noëllat Meursault,Red,Meursault,4.1,3.0,1.0,2.6,,False
+Maxime Cheurlin-Noëllat Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.75,3.0,2.0,2.75,,False
+René Bouvier Cuvée Le Chapitre Suivant Bourgogne,Red,Bourgogne,3.8,2.47,1.42,2.11,,False
+René Bouvier Gevrey-Chambertin 'La Justice',Red,Gevrey-Chambertin,4.1,3.02,1.45,2.61,,False
+René Bouvier Monopole Marsannay 'Le Clos',White,Marsannay,3.5,3.69,1.47,,,False
+René Bouvier Bourgogne Pinot Noir,Red,Bourgogne,3.78,2.44,1.33,2.32,,False
+René Bouvier Vieilles Vignes Marsannay 'Clos du Roy',Red,Marsannay,4.19,2.84,1.6,2.72,,False
+René Bouvier Racine du Temps Très Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.05,3.05,1.53,2.53,,False
+René Bouvier Gevrey-Chambertin 'Les Jeunes Rois',Red,Gevrey-Chambertin,3.96,2.85,1.54,2.35,,False
+René Bouvier Bourgogne Chardonnay,White,Bourgogne,3.3,3.38,1.36,,,False
+René Bouvier Marsannay 'En Ouzeloy',Red,Marsannay,4.29,2.9,1.27,2.73,,False
+René Bouvier Marsannay 'Champ Salomon',Red,Marsannay,4.28,3.08,1.09,2.38,,False
+René Bouvier Bourgogne 'Montre-Cul',Red,Bourgogne,3.96,2.6,1.21,2.13,,False
+René Bouvier Marsannay Sans Soufre Ajouté,Red,Marsannay,4.13,2.96,1.57,2.68,,False
+René Bouvier Vieilles Vignes Marsannay 'Longeroies',Red,Marsannay,4.42,2.78,1.7,2.49,,False
+René Bouvier Marsannay 'La Morisotte',Red,Marsannay,4.12,2.87,1.51,2.37,,False
+René Bouvier Vieilles Vignes Chambolle-Musigny,Red,Chambolle-Musigny,4.08,2.95,1.49,2.68,,False
+René Bouvier Vosne-Romanée,Red,Vosne-Romanée,4.06,3.13,1.17,2.58,,False
+René Bouvier Vosne-Romanée 'Les Croix Blanches',Red,Vosne-Romanée,4.22,3.16,1.11,2.31,,False
+René Bouvier Vieilles Vignes Marsannay,Red,Marsannay,3.42,3.0,2.44,2.86,,False
+René Bouvier Marsannay Les Longeroies Sans Soufre Ajouté,Red,Marsannay,4.15,3.59,1.11,2.89,,False
+René Bouvier Marsannay 1er Essai,Red,Marsannay,4.38,2.9,1.14,3.07,,False
+René Bouvier Chambolle-Musigny,Red,Chambolle-Musigny,4.52,3.0,1.0,2.81,,False
+François Mikulski Bourgogne Côte d’Or Chardonnay,White,Bourgogne,3.6,3.53,1.52,,,False
+François Mikulski Chardonnay Bourgogne,White,Bourgogne,3.45,3.8,1.53,,,False
+François Mikulski Bourgogne Côte d’Or Pinot Noir,Red,Bourgogne,3.81,2.32,1.37,2.25,,False
+François Mikulski Meursault 'Meix Chavaux',White,Meursault,3.5,3.76,1.34,,,False
+François Mikulski Pinot Noir Bourgogne,Red,Bourgogne,3.96,2.46,1.72,2.26,,False
+François Mikulski Saint-Aubin,White,Saint-Aubin,3.26,3.44,1.42,,,False
+François Mikulski Meursault 'Limozin',White,Meursault,3.1,3.58,1.65,,,False
+Château Philippe-Le-Hardi Vieilles Vignes Bourgogne Pinot Noir,Red,Bourgogne,3.79,2.57,1.43,2.29,,False
+Château Philippe-Le-Hardi Bourgogne Côte-d’Or Clos de la Chaise Dieu Monopole,White,Bourgogne,3.23,3.51,1.91,,,False
+Château Philippe-Le-Hardi Saint-Aubin 'En Vesvau',White,Saint-Aubin,2.94,3.91,1.21,,,False
+Château Philippe-Le-Hardi Bourgogne Chardonnay Vieilles Vignes,White,Bourgogne,3.37,3.77,1.54,,,False
+Château Philippe-Le-Hardi Gevrey-Chambertin,Red,Gevrey-Chambertin,4.18,2.8,1.65,2.88,,False
+Château Philippe-Le-Hardi Pressonnier Bourgogne Côte-D'Or,Red,Bourgogne,3.9,2.8,1.48,2.02,,False
+Château Philippe-Le-Hardi Chambolle-Musigny,Red,Chambolle-Musigny,4.5,2.96,1.0,2.49,,False
+Château Philippe-Le-Hardi Saint-Aubin Blanc,White,Saint-Aubin,3.03,3.93,1.01,,,False
+Château Philippe-Le-Hardi Puligny-Montrachet,White,Puligny-Montrachet,3.08,4.0,1.03,,,False
+Château Philippe-Le-Hardi Gevrey-Chambertin Champerrier du Dessus,Red,Gevrey-Chambertin,4.5,3.0,1.0,2.5,,False
+Château Philippe-Le-Hardi Bourgogne Pinot Noir,Red,Bourgogne,3.72,2.36,1.33,2.03,,False
+Château Philippe-Le-Hardi Chambolle-Musigny 'Les Condemennes',Red,Chambolle-Musigny,4.02,2.81,1.19,2.44,,False
+Henri Magnien Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.26,3.05,1.42,2.65,,False
+Henri Magnien Gevrey-Chambertin,Red,Gevrey-Chambertin,4.13,2.96,1.48,2.67,,False
+Henri Magnien Gevrey-Chambertin Champerrier,Red,Gevrey-Chambertin,4.28,3.17,1.9,2.74,,False
+Henri Magnien Bourgogne Côte d'Or Pinot Noir,Red,Bourgogne,4.03,2.84,1.93,2.3,,False
+Henri Magnien Moutier Bourgogne Pinot Noir,Red,Bourgogne,4.04,2.78,1.0,1.95,,False
+Henri Magnien 4 Carac' Terres,Red,Bourgogne,4.0,2.68,1.0,2.0,,False
+Domaine Vincent Latour Bourgogne Chardonnay,White,Bourgogne,3.21,3.65,1.38,,,False
+Domaine Vincent Latour Vieilles Vignes Meursault Rouge,Red,Meursault,3.92,2.44,1.51,2.25,,False
+Domaine Vincent Latour Meursault 'Clos des Meix Chavaux',White,Meursault,2.83,3.92,1.66,,,False
+Domaine Vincent Latour Saint-Aubin 'Cuvée Thomas',White,Saint-Aubin,3.27,3.71,1.12,,,False
+Domaine Vincent Latour Meursault 'Les Narvaux',White,Meursault,3.05,3.59,1.73,,,False
+Domaine Vincent Latour Chassagne-Montrachet 'Les Benoîtes',White,Chassagne-Montrachet,3.43,3.72,1.59,,,False
+Domaine Vincent Latour Vieilles Vignes Puligny-Montrachet,White,Puligny-Montrachet,2.82,3.92,1.09,,,False
+Domaine Vincent Latour Bourgogne Rouge,Red,Bourgogne,3.62,3.02,1.79,2.06,,False
+Domaine Vincent Latour Héritage Bourgogne Côte d'Or Chardonnay,White,Bourgogne,3.29,3.75,1.57,,,False
+Domaine Vincent Latour Meursault 'Les Pellans',Red,Meursault,4.0,2.5,1.0,2.0,,False
+Domaine Vincent Latour Saint-Romain Coeur de Roche,White,Saint-Romain,3.08,4.12,1.24,,,False
+Domaine Vincent Latour Meursault Rouge,Red,Meursault,4.0,2.4,1.0,1.6,,False
+Domaine Vincent Latour Meursault 'Les Pellans' Blanc,White,Meursault,3.0,3.5,2.0,,,False
+Domaine Vincent Latour Kimmeridgien Chablis,White,Chablis,4.0,3.0,1.0,,,False
+Domaine Jean-Michel Gaunoux Meursault 'Les Criots',Red,Meursault,4.01,2.43,1.61,2.08,,False
+Domaine Jean-Michel Gaunoux Bourgogne Pinot Fin,Red,Bourgogne,4.07,2.64,1.27,1.98,,False
+Francois et Antoine Jobard Meursault 'En la Barre',White,Meursault,3.27,3.76,1.9,,,False
+Francois et Antoine Jobard Bourgogne Blanc,White,Bourgogne,3.41,3.78,1.71,,,False
+Francois et Antoine Jobard Meursault 'Les Tillets',White,Meursault,3.29,3.69,1.54,,,False
+Francois et Antoine Jobard Puligny-Montrachet 'Le Trezin',White,Puligny-Montrachet,3.46,3.6,1.17,,,False
+Francois et Antoine Jobard Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.62,1.36,2.14,,False
+Francois et Antoine Jobard Clos le Meix Tavaux Meursault,White,Meursault,3.55,3.75,1.38,,,False
+Jean Féry & Fils Vosne-Romanée 'Aux Réas',Red,Vosne-Romanée,4.1,2.98,2.07,2.72,,False
+Jean Féry & Fils Puligny-Montrachet 'Les Nosroyes',White,Puligny-Montrachet,3.54,3.42,1.31,,,False
+Jean Féry & Fils Vosne-Romanée,Red,Vosne-Romanée,4.18,2.92,1.3,2.44,,False
+Jean Féry & Fils Meursault 'Les Dressoles',White,Meursault,3.3,3.41,1.61,,,False
+Jean Féry & Fils Bourgogne ‘Les Monatines’,White,Bourgogne,3.16,3.41,1.69,,,False
+Jean Féry & Fils Bourgogne Chardonnay,White,Bourgogne,3.16,3.75,1.88,,,False
+Jean Féry & Fils Bourgogne Pinot Noir,Red,Bourgogne,3.56,2.51,1.22,2.03,,False
+Jean Féry & Fils Meursault 'Les Narvaux',White,Meursault,2.99,3.43,1.46,,,False
+Jean Féry & Fils Puligny-Montrachet,White,Puligny-Montrachet,3.38,3.28,1.45,,,False
+Jean Féry & Fils Gevrey-Chambertin 'Les Crais',Red,Gevrey-Chambertin,4.19,2.77,1.79,2.61,,False
+Jean Féry & Fils Nuits-Saint-Georges 'Belle Croix',Red,Nuits-Saint-Georges,4.52,3.0,1.12,2.46,,False
+Jean Féry & Fils Vougeot 1er Cru,Red,Côte de Beaune,3.95,2.28,1.67,2.04,,False
+Jean Féry & Fils Meursault,Red,Meursault,4.03,2.5,1.0,2.0,,False
+Jean Féry & Fils Chambolle-Musigny 'La Belle Dame',Red,Chambolle-Musigny,3.77,2.95,1.98,2.74,,False
+Bernard Rion Bourgogne Côte d'Or,Red,Bourgogne,3.69,3.38,1.71,2.44,,False
+Bernard Rion Vieilles Vignes Chambolle Musigny 'Les Échezeaux',Red,Chambolle-Musigny,3.5,3.18,1.97,3.12,,False
+Bernard Rion La Croix Blanche Vieilles Vignes Bourgogne,Red,Bourgogne,3.59,2.68,1.68,2.29,,False
+Bernard Rion Bourgogne Chardonnay,White,Bourgogne,3.07,3.91,1.45,,,False
+Bernard Rion Dame Marguerite Vieilles Vignes Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.11,3.31,1.14,2.33,,False
+Bernard Rion Vieilles Vignes Marsannay 'En Sampagny',Red,Marsannay,3.75,3.0,2.0,2.75,,False
+Pierre Mayeul Gevrey Chambertin,Red,Gevrey-Chambertin,4.11,2.97,1.91,2.72,,False
+Pierre Mayeul Chassagne-Montrachet,Red,Chassagne-Montrachet,4.0,2.5,1.0,2.1,,False
+Pierre Mayeul Bourgogne Pinot Noir,Red,Bourgogne,4.05,2.5,1.0,2.0,,False
+Maison Michael Shaps Bourgogne Pinot Noir,Red,Bourgogne,4.13,2.61,1.18,2.38,,False
+Maison Michael Shaps Bourgogne Chardonnay,White,Bourgogne,3.39,3.76,1.13,,,False
+Maison Michael Shaps Meursault,White,Meursault,3.07,4.01,1.04,,,False
+Maison Michael Shaps Maison Dieu Vieilles Vignes Bourgogne,Red,Bourgogne,3.97,2.4,1.24,2.15,,False
+Maison Michael Shaps Morgon,Red,Morgon,4.94,1.33,1.2,1.82,,False
+Maison Michael Shaps Saint-Romain Blanc,White,Saint-Romain,3.25,3.3,1.0,,,False
+Maison Michael Shaps Les Crais Gevrey-Chambertin,Red,Gevrey-Chambertin,4.21,2.7,1.12,2.55,,False
+Maison Michael Shaps Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.4,2.75,1.05,2.71,,False
+Domaine A. et P. de Villaine Bourgogne Rouge,Red,Bourgogne,3.41,2.87,2.16,2.78,,False
+Domaine Glantenay Bourgogne Pinot Noir,Red,Bourgogne,3.93,2.77,1.59,2.17,,False
+Domaine Glantenay Maison Dieu Bourgogne Côte d’Or,Red,Bourgogne,3.96,2.09,1.17,1.92,,False
+Domaine Glantenay Les Lameroses Bourgogne Chardonnay,White,Bourgogne,3.07,4.06,1.11,,,False
+Domaine du Pavillon Meursault,Red,Meursault,3.95,2.56,1.06,1.94,,False
+Domaine du Pavillon Bourgogne,Red,Bourgogne,3.87,2.69,1.13,1.87,,False
+Domaine du Pavillon Bourgogne Côte d'Or Chardonnay,White,Bourgogne,3.06,4.05,1.33,,,False
+Julien Brocard La Boissonneuse Chablis,White,Chablis,3.97,3.09,1.46,,,False
+Julien Brocard 7éme Chablis,White,Chablis,4.14,3.02,1.17,,,True
+Domaine Jérémy Arnaud Les Veuillots Bois Bourgogne,White,Bourgogne,3.11,3.04,1.9,,,False
+Domaine Jérémy Arnaud Les Veuillots Ovoïde Bourgogne Blanc,White,Bourgogne,3.26,2.7,1.53,,,False
+Domaine Jérémy Arnaud Chablis Sous le Parc,White,Chablis,4.27,2.33,1.8,,,False
+Domaine Jérémy Arnaud Chablis 'Vallée Clabory',White,Chablis,4.29,3.09,1.13,,,False
+Domaine Parigot Meursault 'Les Vireuils Dessous',White,Meursault,3.23,3.92,1.51,,,False
+Domaine Parigot Meursault 'Le Limozin',White,Meursault,3.23,3.92,1.68,,,False
+Domaine Parigot Bourgogne Pinot Noir,Red,Bourgogne,4.0,2.5,1.0,2.0,,False
+Domaine Parigot Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.66,3.0,1.89,2.72,,False
+Serafin Père & Fils Gevrey-Chambertin,Red,Gevrey-Chambertin,4.07,3.0,1.72,2.68,,False
+Serafin Père & Fils Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.25,3.12,1.78,2.85,,False
+Serafin Père & Fils Bourgogne Rouge,Red,Bourgogne,3.89,2.78,1.54,2.52,,False
+Serafin Père & Fils Bourgogne Chardonnay,White,Bourgogne,3.25,3.74,1.47,,,False
+Manuel Olivier Bourgogne Pinot Noir,Red,Bourgogne,3.87,2.58,1.5,2.41,,False
+Manuel Olivier Bourgogne Chardonnay,White,Bourgogne,3.39,3.41,1.47,,,False
+Manuel Olivier Gevrey-Chambertin,Red,Gevrey-Chambertin,4.11,3.2,1.62,2.61,,False
+Manuel Olivier Meursault,White,Meursault,3.33,3.5,1.48,,,False
+Manuel Olivier Chambolle-Musigny,Red,Chambolle-Musigny,4.3,2.98,1.31,2.76,,False
+Manuel Olivier Nuits Saint Georges,Red,Nuits-Saint-Georges,3.87,2.9,1.61,2.72,,False
+Manuel Olivier Vosne-Romanee 'Les Damaudes',Red,Vosne-Romanée,4.26,3.35,1.57,2.71,,False
+Manuel Olivier Bourgogne Dijon Pinot Noir,Red,Bourgogne,3.5,2.75,2.0,2.5,,False
+Manuel Olivier Chablis,White,Chablis,4.06,3.0,1.0,,,False
+Domaine Castagnier Chambolle-Musigny,Red,Chambolle-Musigny,4.3,2.8,1.67,2.86,,False
+Domaine Castagnier Bourgogne,Red,Bourgogne,3.75,2.64,1.28,2.03,,False
+Domaine Castagnier Gevrey-Chambertin,Red,Gevrey-Chambertin,4.01,3.41,1.73,2.36,,False
+Domaine Confuron-Cotetidot Vosne-Romanée,Red,Vosne-Romanée,4.1,3.07,1.51,2.86,,False
+Domaine Confuron-Cotetidot Chambolle-Musigny,Red,Chambolle-Musigny,3.87,2.94,1.45,2.6,,False
+Domaine Confuron-Cotetidot Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.01,3.11,1.54,2.74,,False
+Domaine Confuron-Cotetidot Gevrey-Chambertin,Red,Gevrey-Chambertin,4.17,3.13,1.42,2.41,,False
+Domaine Confuron-Cotetidot Pinot Noir Bourgogne,Red,Bourgogne,4.0,2.91,1.22,2.4,,False
+Domaine Confuron-Cotetidot Chardonnay Bourgogne,White,Bourgogne,3.09,3.89,1.47,,,False
+Domaine Confuron-Cotetidot Clos du Cromin Meursault,White,Meursault,3.31,3.9,2.07,,,False
+Fontaine-Gagnard Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.3,3.7,1.56,,,False
+Fontaine-Gagnard Bourgogne Rouge,Red,Bourgogne,3.84,2.53,1.29,2.1,,False
+Fontaine-Gagnard Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.79,2.85,1.37,2.49,,False
+Fontaine-Gagnard Vieilles Vignes Chassagne-Montrachet,White,Chassagne-Montrachet,3.27,4.03,1.59,,,False
+Fontaine-Gagnard Bourgogne Blanc,White,Bourgogne,3.44,3.89,1.31,,,False
+Roblet-Monnot Pere et Fils Vieilles Vignes Bourgogne Pinot Noir,Red,Bourgogne,4.01,2.34,1.24,1.98,,False
+Roblet-Monnot Pere et Fils Bourgogne Pinot Noir,Red,Bourgogne,3.91,2.89,1.05,2.45,,False
+Roblet-Monnot Pere et Fils Chassagne-Montrachet,Red,Chassagne-Montrachet,4.12,2.5,1.49,2.22,,False
+Joseph Colin Compendium Saint-Aubin,White,Saint-Aubin,3.57,3.7,1.47,,,False
+Joseph Colin Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.35,3.53,1.58,,,False
+Joseph Colin Chassagne-Montrachet Premier Cru ‘Les Caillerets',White,Chassagne-Montrachet,3.04,3.72,2.21,,,False
+Joseph Colin Vieilles Vignes Chassagne-Montrachet,Red,Chassagne-Montrachet,3.49,2.68,1.24,2.21,,False
+Joseph Colin Bourgogne Blanc 'Les Hauts de la Combe',White,Bourgogne,3.24,3.31,2.38,,,False
+Joseph Colin Chassagne-Montrachet Hereditas,White,Chassagne-Montrachet,2.92,2.81,1.5,,,False
+Joseph Colin Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,4.21,2.61,1.3,2.12,,False
+Joseph Colin Bourgogne Blanc 'La Combe',White,Bourgogne,3.23,3.81,1.65,,,False
+Joseph Colin Mes Sept Terroirs Saint-Aubin,White,Saint-Aubin,3.1,4.0,1.0,,,False
+Domaine Hoffmann-Jayer Nuits-Saint-Georges 'Les Hauts Poirets',Red,Nuits-Saint-Georges,4.19,3.16,1.91,3.28,,False
+Comte Armand Bourgogne Condemaine,White,Bourgogne,3.58,3.89,1.25,,,False
+Comte Armand Meursault,White,Meursault,3.1,4.0,1.38,,,False
+Comte Armand Meursault 'Meix-Chavaux',White,Meursault,3.02,3.9,1.08,,,False
+La Pousse d'Or Chambolle-Musigny,Red,Chambolle-Musigny,4.17,2.83,1.83,2.6,,False
+Domaine Chanson Bourgogne Pinot Noir,Red,Bourgogne,3.85,2.48,1.42,2.24,,False
+Domaine Chanson Bourgogne Pinot Noir Réserve du Bastion,Red,Bourgogne,3.91,2.54,1.26,2.23,,False
+Domaine Chanson Chablis,White,Chablis,3.92,2.89,1.4,,,False
+Domaine Chanson Gevrey-Chambertin,Red,Gevrey-Chambertin,4.1,3.1,1.41,2.61,,False
+Domaine Chanson Bourgogne Chardonnay,White,Bourgogne,3.38,3.79,1.52,,,False
+Domaine Chanson Pouilly-Fuissé,White,Pouilly-Fuissé,2.95,3.11,1.39,,,False
+Domaine Chanson Meursault,White,Meursault,3.25,3.82,1.45,,,False
+Domaine Chanson Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.27,3.04,1.54,2.58,,False
+Domaine Chanson Marsannay,Red,Marsannay,4.27,2.86,1.48,2.6,,False
+Domaine Chanson Fleurie,Red,Fleurie,4.47,1.31,1.38,1.82,,False
+Domaine Chanson Chassagne-Montrachet,White,Chassagne-Montrachet,3.23,3.64,1.66,,,False
+Domaine Chanson Puligny-Montrachet,White,Puligny-Montrachet,3.41,3.71,1.77,,,False
+Domaine Chanson Saint-Véran,White,Saint-Véran,2.65,3.12,1.33,,,False
+Domaine Chanson Chardonnay Bourgogne Réserve Du Bastion,White,Bourgogne,3.33,3.96,1.34,,,False
+Domaine Chanson Réserve du Bastion Marsannay,Red,Marsannay,4.44,2.66,1.22,2.51,,False
+Domaine Chanson Vosne-Romanée,Red,Vosne-Romanée,4.15,2.84,1.52,2.92,,False
+Domaine Chanson Les Sureaux Chablis,White,Chablis,4.12,3.18,1.18,,,False
+Domaine Chanson Morgon,Red,Morgon,4.48,1.29,1.82,1.99,,False
+Domaine Chanson Pinot Noir Bourgogne Alexis Chanson,Red,Bourgogne,4.05,2.5,1.32,1.91,,False
+Domaine Chanson Moulin-A-Vent,Red,Moulin-à-Vent,4.7,1.02,1.52,1.89,,False
+Domaine Chanson Chambolle-Musigny,Red,Chambolle-Musigny,4.18,2.75,1.31,2.67,,False
+Domaine Chanson Les Sentiers de Beléne Pinot Noir Bourgogne,Red,Bourgogne,4.0,2.5,1.0,2.01,,False
+Domaine Chanson Chassagne-Montrachet,Red,Chassagne-Montrachet,4.02,2.81,1.0,2.4,,False
+Domaine Chanson Les Sentiers de Beléne Chablis,White,Chablis,4.06,3.0,1.11,,,False
+Domaine Chanson Les Sentiers de Beléne Gevrey-Chambertin,Red,Gevrey-Chambertin,4.41,2.86,1.47,3.04,,False
+Domaine Chanson Brouilly,Red,Brouilly,5.0,1.0,1.0,1.5,,False
+Domaine Marc Roy Les Champs Perdrix Marsannay,White,Marsannay,3.61,3.74,1.53,,,False
+Domaine Marc Roy La Justice Gevrey-Chambertin,Red,Gevrey-Chambertin,4.1,2.95,2.0,2.67,,False
+Domaine Marc Roy Cuvée Alexandrine Gevrey-Chambertin,Red,Gevrey-Chambertin,3.97,3.1,1.63,2.5,,False
+Domaine Marc Roy Bourgogne,Red,Bourgogne,3.82,2.64,1.35,2.5,,False
+Domaine Marc Roy Gevrey-Chambertin,Red,Gevrey-Chambertin,3.83,3.23,1.84,2.98,,False
+Bruno Colin Bourgogne Chardonnay,White,Bourgogne,3.33,3.74,1.56,,,False
+Bruno Colin Chassagne-Montrachet,White,Chassagne-Montrachet,3.3,3.82,1.53,,,False
+Bruno Colin Bourgogne Pinot Noir,Red,Bourgogne,3.83,2.54,1.3,2.13,,False
+Bruno Colin Vieilles Vignes  Chassagne-Montrachet,Red,Chassagne-Montrachet,3.7,2.53,1.61,2.18,,False
+Bruno Colin Caves du Chapitre Bourgogne  Pinot Noir,Red,Bourgogne,4.0,2.77,1.0,1.98,,False
+Matrot Bourgogne Chardonnay,White,Bourgogne,3.36,3.75,1.49,,,False
+Matrot Meursault Blanc,White,Meursault,3.35,3.69,1.51,,,False
+Matrot Meursault Rouge,Red,Meursault,3.84,2.64,1.47,2.17,,False
+Matrot Bourgogne Pinot Noir,Red,Bourgogne,3.91,2.51,1.64,2.18,,False
+Matrot Saint-Romain,White,Saint-Romain,3.27,3.6,1.41,,,False
+Matrot Meursault Les Chevalières,White,Meursault,3.35,4.02,1.18,,,False
+Matrot L'Effronté Moelleux,Dessert,Bourgogne,,,,,,False
+Domaine Drouhin-Laroze Gevrey-Chambertin,Red,Gevrey-Chambertin,4.14,3.0,1.61,2.65,,False
+Domaine Drouhin-Laroze Gevrey-Chambertin Dix Climats,Red,Gevrey-Chambertin,4.04,3.12,1.88,2.59,,False
+Domaine Drouhin-Laroze Côte d'Or Bourgogne Pinot Noir,Red,Bourgogne,3.79,2.72,1.68,2.19,,False
+Domaine Drouhin-Laroze Maison Laroze de Drouhin Pinot Noir Bourgogne,Red,Bourgogne,3.53,2.68,1.62,2.26,,False
+Domaine Drouhin-Laroze Maison Laroze de Drouhin Chardonnay Bourgogne,White,Bourgogne,3.04,3.82,1.47,,,False
+Domaine Drouhin-Laroze Côte d'Or Bourgogne Chardonnay,White,Bourgogne,3.2,3.61,1.57,,,False
+Domaine Drouhin-Laroze Chambolle-Musigny,Red,Chambolle-Musigny,3.97,2.81,1.68,2.74,,False
+Domaine Drouhin-Laroze Maison Laroze de Drouhin La Charmotte Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.4,3.12,1.46,2.86,,False
+Domaine Drouhin-Laroze Maison Laroze de Drouhin Gevrey-Chambertin,Red,Gevrey-Chambertin,3.87,2.7,1.82,2.33,,False
+Domaine Drouhin-Laroze Maison Laroze de Drouhin Les Grandes Rayes Gevrey-Chambertin,Red,Gevrey-Chambertin,4.23,3.12,1.6,3.08,,False
+Domaine Drouhin-Laroze La Roze Bourgogne Rosé,Rosé,Bourgogne,3.0,2.5,1.0,,,False
+Domaine Drouhin-Laroze Gevrey-Chambertin Sans Soufre,Red,Gevrey-Chambertin,2.98,3.32,1.81,2.72,,False
+Roland Lavantureux Chablis,White,Chablis,3.99,2.92,1.4,,,False
+Roland Lavantureux Vieilles Vignes Chablis,White,Chablis,4.04,3.13,1.43,,,False
+Roland Lavantureux Chablis Vauprin,White,Chablis,3.94,3.06,1.33,,,False
+Roland Lavantureux Chablis Vau Renard,White,Chablis,3.35,3.37,1.14,,,False
+Domaine Philippe Pernot-Belicard Vieilles Vignes Meursault,White,Meursault,3.14,3.87,1.4,,,False
+Domaine Philippe Pernot-Belicard Chardonnay Bourgogne,White,Bourgogne,3.4,3.83,1.22,,,False
+Domaine Michel & Sylvie Esmonin Gevrey-Chambertin,Red,Gevrey-Chambertin,4.09,3.04,1.76,2.7,,False
+Domaine Michel & Sylvie Esmonin Cuvée Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,3.99,3.32,1.82,2.87,,False
+Domaine Michel & Sylvie Esmonin Cuvée Sylvie Bourgogne,Red,Bourgogne,4.24,3.05,1.86,2.82,,False
+Domaine Michel & Sylvie Esmonin Bourgogne Chardonnay,White,Bourgogne,3.24,3.96,2.49,,,False
+Rémi Jobard Vieilles Vignes Bourgogne Côte d’Or,White,Bourgogne,3.5,3.7,1.41,,,False
+Rémi Jobard Bourgogne Blanc,White,Bourgogne,3.39,3.79,1.47,,,False
+Rémi Jobard Vignes Nouvelles Bourgogne Blanc,White,Bourgogne,3.44,3.64,1.4,,,False
+Rémi Jobard Bourgogne Blanc Vieilles Vignes,White,Bourgogne,3.47,3.83,1.41,,,False
+Rémi Jobard Two Son Meursault En Luraule,White,Meursault,3.44,3.57,1.45,,,False
+Rémi Jobard Le Jobard de Rémi,Red,Bourgogne,3.98,2.32,1.08,2.06,,False
+Rémi Jobard Meursault 'Le Limozin',White,Meursault,3.06,3.83,1.45,,,False
+Albert Bichot Bourgogne Vieilles Vignes de Pinot Noir,Red,Bourgogne,3.93,2.47,1.31,2.22,,False
+Albert Bichot Chablis,White,Chablis,3.96,2.97,1.33,,,False
+Albert Bichot Bourgogne Chardonnay (Vieilles Vignes),White,Bourgogne,3.22,3.84,1.33,,,False
+Albert Bichot Pouilly-Fuissé,White,Pouilly-Fuissé,2.94,2.98,1.3,,,False
+Albert Bichot Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.97,2.96,1.54,2.68,,False
+Albert Bichot Gevrey-Chambertin,Red,Gevrey-Chambertin,4.24,2.86,1.44,2.68,,False
+Albert Bichot Meursault,White,Meursault,3.27,3.83,1.88,,,False
+Albert Bichot Bourgogne Pinot Noir Origines,Red,Bourgogne,3.15,2.63,2.51,2.82,,False
+Albert Bichot Pinot Noir Bourgogne Secret de Famille,Red,Bourgogne,3.94,2.49,1.39,2.13,,False
+Albert Bichot Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.93,2.55,1.45,2.21,,False
+Albert Bichot Gevrey-Chambertin La Justice,Red,Gevrey-Chambertin,4.03,2.82,1.44,2.56,,False
+Albert Bichot Beaujolais Sèlection Parcellaire,Red,Beaujolais,4.46,1.57,1.57,1.92,,False
+Albert Bichot Chardonnay Bourgogne Réserve de l'Orangerie,White,Bourgogne,3.22,3.76,1.21,,,False
+Albert Bichot Vosne-Romanée,Red,Vosne-Romanée,4.15,2.79,1.5,2.51,,False
+Albert Bichot Chardonnay Bourgogne Secret de Famille,White,Bourgogne,3.28,3.84,1.26,,,False
+Albert Bichot Chablis La Cuvée Depaquit,White,Chablis,4.01,2.83,1.24,,,False
+Albert Bichot Bourgogne Grand Ordinaire,White,Bourgogne,3.25,3.54,1.12,,,False
+Albert Bichot Secret de Famille Bourgogne Côte d'Or Pinot Noir,Red,Bourgogne,3.85,2.68,1.39,2.25,,False
+Albert Bichot Mâcon-Lugny Les Charmes,White,Mâconnais,2.71,2.97,1.52,,,False
+Albert Bichot Chardonnay Bourgogne Les Cailloux,White,Bourgogne,3.14,3.46,2.16,,,False
+Albert Bichot Brouilly Roche Rosé,Red,Brouilly,4.28,1.35,1.7,2.03,,False
+Albert Bichot Fleurie La Madone,Red,Fleurie,4.38,1.39,1.44,1.95,,False
+Albert Bichot Puligny-Montrachet,White,Puligny-Montrachet,3.2,3.86,1.32,,,False
+Albert Bichot Saint-Véran,White,Saint-Véran,2.98,2.88,1.39,,,False
+Albert Bichot Château Gris Les Terrasses Monopole Nuits-Saint-Georges,White,Nuits-Saint-Georges,3.08,3.72,1.43,,,False
+Albert Bichot Secret de Famille Bourgogne Côte d'Or Chardonnay,White,Bourgogne,3.28,3.87,1.47,,,False
+Albert Bichot Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.4,3.63,1.6,,,False
+Albert Bichot Origines Bourgogne Chardonnay,White,Bourgogne,3.25,3.1,2.48,,,False
+Albert Bichot Les Charmes Morgon,Red,Morgon,4.67,1.35,1.51,2.08,,False
+Albert Bichot Chambolle-Musigny,Red,Chambolle-Musigny,3.94,2.47,1.33,2.23,,False
+Albert Bichot Gevrey-Chambertin La Cuvée du Gènèral Legrand,Red,Gevrey-Chambertin,4.17,3.21,1.4,2.55,,False
+Albert Bichot Pouilly-Fuissé Le Clos,White,Pouilly-Fuissé,2.92,3.16,1.79,,,False
+Albert Bichot Old Vines Bourgogne Pinot Noir,Red,Bourgogne,3.99,2.4,1.42,2.15,,False
+Albert Bichot Bourgogne Les Cailloux Rouge,Red,Bourgogne,3.79,2.59,1.29,2.19,,False
+Albert Bichot Pinot Noir Bourgogne Héritage 1831,Red,Bourgogne,3.97,2.38,1.22,1.93,,False
+Albert Bichot Chardonnay Bourgogne Domaine du Pavillon,White,Bourgogne,3.35,4.05,1.12,,,False
+Albert Bichot P.A. Larsen La Justice Gevrey-Chambertin,Red,Gevrey-Chambertin,4.02,2.76,1.4,2.89,,False
+Albert Bichot Gamay Bourgogne,Red,Bourgogne,3.82,2.45,1.38,2.13,,False
+Albert Bichot Chablis l'Orangerie du Château,White,Chablis,3.79,2.83,1.24,,,False
+Albert Bichot Saint-Romain Blanc,White,Saint-Romain,3.41,3.35,1.42,,,False
+Albert Bichot Chablis Reserve de l'Orangerie,White,Chablis,3.41,3.0,2.19,,,False
+Albert Bichot Bourgogne Pinot Noir Réserve de l'Orangerie,Red,Bourgogne,3.95,2.4,1.1,2.01,,False
+Albert Bichot Chardonnay Bourgogne Hèritage 1831,White,Bourgogne,3.36,4.0,1.37,,,False
+Domaine Christian Clerget Chambolle-Musigny,Red,Chambolle-Musigny,3.96,2.89,1.78,2.77,,False
+Domaine Christian Clerget Vosne-Romanée 'Les Violettes',Red,Vosne-Romanée,4.17,3.0,1.89,2.73,,False
+Domaine Christian Clerget Bourgogne,Red,Bourgogne,3.79,2.75,1.64,2.15,,False
+Domaine Christian Clerget Chambolle-Musigny Aux Croix,Red,Chambolle-Musigny,4.31,3.29,1.37,2.81,,False
+Régnard Chablis Saint Pierre,White,Chablis,3.98,2.93,1.32,,,False
+Régnard Bourgogne Pinot Noir,Red,Bourgogne,3.97,2.39,1.52,2.39,,False
+Régnard Bourgogne Retour des Flandres,Red,Bourgogne,3.79,2.93,1.33,1.99,,False
+Régnard Bourgogne Chardonnay,White,Bourgogne,3.73,3.56,1.19,,,False
+Régnard Chablis Millésime de Réserve,White,Chablis,4.09,2.97,1.41,,,False
+Régnard Meursault Terres Blanches,White,Meursault,3.48,3.72,2.14,,,False
+Régnard Pouilly-Fuissé L'Ancien Prieuré,White,Pouilly-Fuissé,3.13,2.92,1.15,,,False
+Régnard Chassagne-Montrachet,White,Chassagne-Montrachet,3.24,3.9,1.12,,,False
+Régnard Bourgogne Retour des Flandres Vieilles Vignes,Red,Bourgogne,3.69,2.63,1.33,2.1,,False
+Régnard Bourgogne Blanc Retour des Flandres,White,Bourgogne,3.3,3.95,1.31,,,False
+Régnard Régnard Réserve Bourgogne Chardonnay,White,Bourgogne,3.12,4.03,1.31,,,False
+Régnard Puligny-Montrachet,White,Puligny-Montrachet,3.13,4.03,1.78,,,False
+Régnard Saint-Véran Le Pavillon,White,Saint-Véran,3.17,3.03,1.15,,,False
+Régnard Pouilly-Fuissé Le Pavillon,White,Pouilly-Fuissé,2.67,2.48,1.57,,,False
+Régnard Régnard Réserve Bourgogne Pinot Fin,Red,Bourgogne,4.02,2.48,1.23,2.08,,False
+Régnard Gevrey-Chambertin,Red,Gevrey-Chambertin,4.22,3.2,1.04,2.41,,False
+Régnard Fleurie,Red,Fleurie,4.68,1.29,1.21,2.18,,False
+Régnard Brouilly La Fantaisie,Red,Brouilly,4.38,1.61,1.53,1.78,,False
+Régnard Moulin À Vent Grande Garde,Red,Moulin-à-Vent,4.83,1.47,1.08,1.9,,False
+Régnard Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.51,3.01,1.12,2.77,,False
+Régnard Moulin À Vent,Red,Moulin-à-Vent,4.62,1.45,1.49,1.86,,False
+Régnard Puligny-Montrachet Vieilles Vignes,White,Puligny-Montrachet,3.0,4.0,1.0,,,False
+Jean-Philippe Fichet Meursault,White,Meursault,3.35,3.78,1.45,,,False
+Jean-Philippe Fichet Meursault 'Le Tesson',White,Meursault,3.38,3.85,1.52,,,False
+Jean-Philippe Fichet Vieilles Vignes Bourgogne Blanc,White,Bourgogne,3.41,3.84,1.55,,,False
+Jean-Philippe Fichet Bourgogne Blanc,White,Bourgogne,3.46,3.79,1.28,,,False
+Jean-Philippe Fichet Meursault Le Meix Sous Le Château,White,Meursault,3.27,3.71,1.69,,,False
+Jean-Philippe Fichet Chassagne-Montrachet,White,Chassagne-Montrachet,3.11,3.97,1.22,,,False
+Jean-Philippe Fichet Bourgogne Rouge,Red,Bourgogne,4.03,2.63,1.0,2.03,,False
+Parent Bourgogne Pinot Noir,Red,Bourgogne,3.91,2.53,1.49,2.26,,False
+Parent Bourgogne Selection Pomone Pinot Noir,Red,Bourgogne,3.8,2.7,1.61,2.42,,False
+Parent Bourgogne Chardonnay,White,Bourgogne,3.25,3.73,1.09,,,False
+Parent Bourgogne Côte d’Or Pinot Noir,Red,Bourgogne,4.0,2.5,1.08,1.79,,False
+Parent Meursault,White,Meursault,3.24,4.0,1.0,,,False
+Domaine Sylvain Langoureau Saint-Aubin,White,Saint-Aubin,3.41,3.72,1.6,,,False
+Domaine Sylvain Langoureau Chassagne-Montrachet 'Les Voillenots Dessous',Red,Chassagne-Montrachet,3.59,2.61,1.48,2.18,,False
+Domaine Sylvain Langoureau Chassagne-Montrachet 'Les Houillères',White,Chassagne-Montrachet,3.31,3.78,1.87,,,False
+Domaine Sylvain Langoureau Chassagne-Montrachet 'Les Pierres',White,Chassagne-Montrachet,3.17,3.69,2.03,,,False
+Domaine Sylvain Langoureau Chassagne-Montrachet 'Les Perclos',White,Chassagne-Montrachet,3.19,3.85,1.6,,,False
+Robert Ampeau et Fils Meursault,White,Meursault,3.27,3.9,1.82,,,False
+Robert Ampeau et Fils Bourgogne,Red,Bourgogne,4.07,2.5,1.0,2.0,,False
+Robert Ampeau et Fils Bourgogne Blanc,White,Bourgogne,3.36,3.89,1.64,,,False
+Clos Frantin Les Murots Gevrey-Chambertin,Red,Gevrey-Chambertin,4.12,2.83,1.59,2.67,,False
+Clos Frantin Vosne-Romanée,Red,Vosne-Romanée,4.06,2.83,1.89,2.48,,False
+Clos Frantin Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.16,2.91,1.29,2.49,,False
+Clos Frantin Clos Frantin Bourgogne Cote d'Or Pinot Noir,Red,Bourgogne,3.99,2.53,1.12,1.94,,False
+Clos Frantin Gevrey-Chambertin,Red,Gevrey-Chambertin,4.39,2.4,1.06,2.34,,False
+David Duband Bourgogne,Red,Bourgogne,3.82,2.53,1.52,2.25,,False
+David Duband Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.08,2.81,1.55,2.55,,False
+David Duband Gevrey-Chambertin,Red,Gevrey-Chambertin,3.99,2.91,1.87,2.54,,False
+David Duband Vosne-Romanée,Red,Vosne-Romanée,3.96,2.73,1.54,2.55,,False
+David Duband Chambolle-Musigny,Red,Chambolle-Musigny,4.13,2.83,1.4,2.46,,False
+David Duband Bourgogne Chardonnay,White,Bourgogne,3.2,3.64,1.19,,,False
+David Duband Bourgogne Rosé,Rosé,Bourgogne,3.3,2.5,1.17,,,False
+David Duband Les Terres de Phileandre Marsannay,Red,Marsannay,3.48,3.07,2.48,2.9,,False
+Bouzereau-Gruère Meursault,White,Meursault,3.36,3.98,1.49,,,False
+Bouzereau-Gruère Meursault 'Les Tillets',White,Meursault,3.11,3.86,1.84,,,False
+Bouzereau-Gruère Chassagne-Montrachet,Red,Chassagne-Montrachet,3.51,2.82,1.29,2.25,,False
+Bouzereau-Gruère Bourgogne Chardonnay,White,Bourgogne,3.59,3.99,1.67,,,False
+Bouzereau-Gruère Meursault 'Limozin',White,Meursault,3.09,3.62,1.63,,,False
+Bouzereau-Gruère Bourgogne Rouge,Red,Bourgogne,3.74,2.38,1.29,2.13,,False
+Bouzereau-Gruère Les Grands Charrons Meursault,White,Meursault,3.37,3.96,1.37,,,False
+Bouzereau-Gruère Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,2.66,3.25,1.7,,,False
+Henri Darnat La Jumalie Bourgogne Chardonnay,White,Bourgogne,3.2,3.82,1.39,,,False
+Henri Darnat Meursault 'Clos du Domaine',White,Meursault,3.3,3.78,1.63,,,False
+Henri Darnat La Jumalie Bourgogne Pinot Noir,Red,Bourgogne,3.87,2.57,1.24,2.3,,False
+Henri Darnat Puligny-Montrachet,White,Puligny-Montrachet,3.42,3.85,1.42,,,False
+Henri Darnat Petite Jumalie Bourgogne,White,Bourgogne,3.3,3.67,1.67,,,False
+Henri Darnat Meursault,White,Meursault,2.9,4.1,1.86,,,False
+Yves Boyer-Martenot Meursault En l'Ormeau,White,Meursault,3.03,3.68,1.82,,,False
+Yves Boyer-Martenot Meursault 'Les Narvaux',White,Meursault,3.44,3.7,1.37,,,False
+Yves Boyer-Martenot Meursault 'Les Tillets',White,Meursault,3.3,3.94,1.7,,,False
+Yves Boyer-Martenot Meursault 'Les Chaumes',White,Meursault,3.16,3.78,1.47,,,False
+Yves Boyer-Martenot Bourgogne Blanc,White,Côte de Beaune,3.38,3.67,1.82,,,False
+Yves Boyer-Martenot Puligny-Montrachet,White,Puligny-Montrachet,3.01,4.18,1.72,,,False
+Yves Boyer-Martenot Meursault Rouge,Red,Meursault,3.98,2.63,1.65,2.25,,False
+Yves Boyer-Martenot 20 Mois d'Élevage Bourgogne Blanc,White,Bourgogne,2.96,3.74,1.15,,,False
+Yves Boyer-Martenot Bourgogne Côte d'Or Pinot Noir,Red,Bourgogne,4.01,2.5,1.04,2.04,,False
+Yves Boyer-Martenot Bourgogne Rouge,Red,Bourgogne,4.3,2.21,1.0,2.72,,False
+Yves Boyer-Martenot Meursault Blanc,White,Meursault,2.64,4.0,1.0,,,False
+Yves Boyer-Martenot Meursault 'Les Charrons',White,Meursault,2.74,4.2,1.0,,,False
+Domaine des Chezeaux Gevrey-Chambertin,Red,Gevrey-Chambertin,3.72,3.01,2.48,2.26,,False
+Domaine des Chezeaux Gevrey-Chambertin 'Clos des Chezeaux',Red,Gevrey-Chambertin,4.04,2.91,1.65,2.76,,False
+Louis Moreau Chablis,White,Chablis,3.91,2.93,1.37,,,False
+Louis Moreau Domaine de Biéville Chablis,White,Chablis,3.98,2.94,1.19,,,False
+Louis Moreau Domaine Jean de Bosmel Chablis,White,Chablis,3.71,2.98,1.32,,,False
+Louis Moreau Domaine du Cèdre Doré Chablis,White,Chablis,3.87,2.92,1.38,,,False
+Louis Moreau 'Les 8' Chablis,White,Chablis,3.92,2.89,1.13,,,False
+Louis Moreau Domaine la Vigne Blanche Chablis,White,Chablis,4.15,2.96,1.14,,,False
+Louis Moreau Bourgogne Chardonnay,White,Bourgogne,3.27,3.29,1.43,,,False
+Louis Moreau Domaine de Biéville Vieilles Vignes Chablis,White,Chablis,3.78,2.85,1.0,,,False
+Louis Moreau Domaine Jean de Bosmel Vieilles Vignes Chablis,White,Chablis,3.81,3.0,1.0,,,False
+Louis Moreau Le Clos Martin Chablis,White,Chablis,3.88,2.76,1.29,,,False
+Georges Lignier et Fils Gevrey-Chambertin,Red,Gevrey-Chambertin,4.16,3.07,1.78,2.6,,False
+Georges Lignier et Fils Chambolle-Musigny,Red,Chambolle-Musigny,3.89,2.97,1.51,2.57,,False
+Georges Lignier et Fils Marsannay Blanc,White,Marsannay,3.41,3.97,1.25,,,False
+Georges Lignier et Fils Marsannay Rouge,Red,Marsannay,4.54,2.52,1.62,2.37,,False
+Georges Lignier et Fils Champs de la Vigne Bourgogne,Red,Bourgogne,3.63,2.35,1.06,1.96,,False
+Patrick Piuze Terroir de Courgis Chablis,White,Chablis,4.03,3.03,1.41,,,False
+Patrick Piuze Terroir de Fyé Chablis,White,Chablis,3.96,2.99,1.41,,,False
+Patrick Piuze Terroirs de Chichée Chablis,White,Chablis,3.96,2.84,1.24,,,False
+Patrick Piuze Terroir de Chablis,White,Chablis,3.93,3.0,1.34,,,False
+Patrick Piuze Terroir Découverte Chablis,White,Chablis,4.04,2.94,1.44,,,False
+Patrick Piuze Chablis 'Terroir de La Chapelle',White,Chablis,4.04,2.82,1.33,,,False
+Patrick Piuze Bourgogne Tonnerre Les Boutots,White,Bourgogne,3.23,3.52,1.42,,,False
+Patrick Piuze Coteau de Fontenay Chablis,White,Chablis,3.88,2.93,1.36,,,False
+Patrick Piuze La Grand Vallée Chablis,White,Chablis,4.0,2.87,1.34,,,False
+Patrick Piuze Terroir de Fleys Chablis,White,Chablis,4.09,3.24,1.37,,,False
+"Patrick Piuze La Butte ""O"" Chablis",White,Chablis,4.03,2.94,1.14,,,False
+Patrick Piuze Val de Mer Chablis,White,Chablis,4.01,3.03,1.56,,,False
+Patrick Piuze Plateau de la Cornasse Chablis,White,Chablis,3.99,3.11,1.26,,,False
+Patrick Piuze Val de Mer Bourgogne Blanc,White,Bourgogne,3.44,3.86,1.29,,,False
+Patrick Piuze Bourgogne Chardonnay,White,Bourgogne,3.04,3.96,1.0,,,False
+Patrick Piuze Chablis Vallée Sébillon,White,Chablis,4.06,3.2,1.99,,,False
+Patrick Piuze Bourgogne Tonnerre,White,Bourgogne,3.12,4.0,1.0,,,False
+Domaine Joillot Bourgogne Pinot Noir,Red,Bourgogne,4.01,2.52,1.64,2.43,,False
+Domaine Joillot Bourgogne Côte-d'Or Pinot Noir,Red,Bourgogne,3.71,2.67,1.42,2.35,,False
+Domaine Joillot Puligny-Montrachet 'Le Trézin',White,Puligny-Montrachet,3.21,3.5,1.26,,,False
+Domaine Joillot Bourgogne Chardonnay,White,Bourgogne,3.06,4.09,1.0,,,False
+Domaine Nicolas Rossignol Bourgogne Pinot Noir,Red,Bourgogne,3.8,2.63,1.53,2.25,,False
+Domaine Nicolas Rossignol Cuvée l'Héritière Bourgogne,Red,Bourgogne,3.89,2.91,1.74,2.47,,False
+Domaine Nicolas Rossignol Bourgogne Chardonnay,White,Bourgogne,3.21,3.83,1.06,,,False
+Domaine Nicolas Rossignol Vieilles Vignes Bourgogne Pinot Noir,Red,Bourgogne,4.0,2.5,1.26,2.0,,False
+Pierre Guillemot Bourgogne,Red,Bourgogne,3.95,2.42,1.67,2.06,,False
+Philippe Gavignet Nuits-Saint-Georges 'Les Argillats',Red,Nuits-Saint-Georges,4.09,3.24,1.54,2.74,,False
+Philippe Gavignet Vieilles Vignes Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.74,3.18,1.62,2.53,,False
+Philippe Gavignet Bourgogne Pinot Noir,Red,Bourgogne,3.98,2.66,1.69,2.3,,False
+Philippe Gavignet Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.04,3.09,1.74,2.77,,False
+Philippe Gavignet Bourgogne Chardonnay,White,Bourgogne,2.79,3.31,1.79,,,False
+Philippe Gavignet Nuits-Saint-George 'La Charmotte',Red,Nuits-Saint-Georges,3.72,3.37,1.88,2.9,,False
+Buisson-Charles Vieilles Vignes Meursault,White,Meursault,3.38,3.79,1.85,,,False
+Buisson-Charles Hautes Coutures Bourgogne Chardonnay,White,Bourgogne,3.27,3.4,1.56,,,False
+Buisson-Charles Hautes Coutures Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.71,2.06,2.16,,False
+Buisson-Charles Bourgogne Pinot Noir,Red,Bourgogne,3.93,2.32,1.2,2.45,,False
+Buisson-Charles Meursault Vigne de 1945,White,Meursault,3.11,3.95,1.86,,,False
+Buisson-Charles Terroir de Vergisson Pouilly-Fuisse,White,Pouilly-Fuissé,2.78,3.0,2.0,,,False
+Buisson-Charles Meursault,White,Meursault,3.21,3.9,1.67,,,False
+Aurélien Verdet Bourgogne 'En Lutenière',Red,Bourgogne,3.76,2.61,1.52,2.05,,True
+Aurélien Verdet Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.99,2.93,1.43,2.57,,True
+Aurélien Verdet Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.27,2.93,1.66,2.45,,True
+Aurélien Verdet Gevrey-Chambertin,Red,Gevrey-Chambertin,4.02,3.18,1.29,2.88,,True
+Aurélien Verdet Chambolle-Musigny 'Les Condemennes',Red,Chambolle-Musigny,4.23,2.59,1.6,2.41,,True
+Aurélien Verdet Bourgogne Chardonnay,White,Bourgogne,3.61,3.94,1.76,,,True
+Aurélien Verdet Marsannay 'Champs Perdrix',Red,Marsannay,4.06,3.08,1.67,2.52,,True
+Aurélien Verdet Chambolle-Musigny,Red,Chambolle-Musigny,4.23,2.67,1.2,2.83,,True
+Moillard-Grivot Bourgogne Pinot Noir,Red,Bourgogne,3.92,2.46,1.35,2.25,,False
+Moillard-Grivot Meursault,White,Meursault,3.15,3.74,1.68,,,False
+Moillard-Grivot Gevrey-Chambertin,Red,Gevrey-Chambertin,4.38,2.87,1.52,2.45,,False
+Moillard-Grivot Bourgogne Chardonnay,White,Bourgogne,3.33,3.54,1.25,,,False
+Moillard-Grivot Chablis,White,Chablis,3.97,3.02,1.16,,,False
+Moillard-Grivot Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.23,2.95,1.09,3.12,,False
+Moillard-Grivot Vosne-Romanée,Red,Vosne-Romanée,4.31,2.86,1.68,2.26,,False
+Moillard-Grivot Saint-Romain,White,Saint-Romain,3.3,3.79,1.18,,,False
+Moillard-Grivot Chassagne-Montrachet,White,Chassagne-Montrachet,3.35,3.64,1.31,,,False
+Moillard-Grivot Signature Bourgogne Pinot Noir,Red,Bourgogne,3.6,2.49,1.68,2.22,,False
+Moillard-Grivot Pouilly-Fuissé,White,Pouilly-Fuissé,2.82,3.01,1.37,,,False
+Moillard-Grivot Signature Bourgogne Chardonnay,White,Bourgogne,2.94,3.74,1.29,,,False
+Moillard-Grivot Marsannay,Red,Marsannay,3.89,2.92,1.17,2.41,,False
+Moillard-Grivot Puligny-Montrachet,White,Puligny-Montrachet,2.98,3.82,1.36,,,False
+Moillard-Grivot Chambolle-Musigny,Red,Chambolle-Musigny,3.96,3.09,1.63,2.5,,False
+Moillard-Grivot Saint-Véran,White,Saint-Véran,3.39,2.96,1.44,,,False
+Moillard-Grivot Cent Cinquante Ans Bourgogne,Red,Bourgogne,3.93,2.5,1.0,1.99,,False
+Moillard-Grivot Gevrey-Chambertin 'La Croix des Champs',Red,Gevrey-Chambertin,4.5,3.0,1.0,2.5,,False
+Domaine Rougeot Saint-Romain La Combe Bazin,White,Saint-Romain,3.0,3.86,1.63,,,False
+Domaine Rougeot Bourgogne Chardonnay Les Grandes Gouttes,White,Bourgogne,3.49,3.51,1.49,,,False
+Domaine Rougeot Les Lameroses Bourgogne,Red,Bourgogne,3.84,2.8,1.34,2.41,,False
+Domaine Rougeot Dames Huguettes Bourgogne Hautes-Côtes de Nuits,Red,Côte de Nuits,4.28,2.73,1.51,3.08,,False
+Domaine Rougeot Bourgogne Chardonnay 'Clos des Six Ouvrées',White,Bourgogne,3.51,3.57,1.12,,,False
+Domaine Rougeot Bourgogne Pinot Noir,Red,Bourgogne,3.82,2.54,1.38,2.23,,False
+Domaine Rougeot Les Vaux,Red,Bourgogne,3.99,2.58,1.33,2.23,,False
+Domaine Rougeot Bourgogne Côte d’Or Les Lameroses,Red,Bourgogne,3.89,2.61,1.13,2.44,,False
+Domaine Rougeot Bourgogne Chardonnay,White,Bourgogne,3.29,3.45,1.62,,,False
+Domaine Rougeot Meursault Monatine,White,Meursault,3.23,3.44,1.56,,,False
+Domaine Rougeot Meursault Village,White,Meursault,3.02,3.64,1.04,,,False
+Domaine Rougeot Meursault,White,Meursault,3.0,3.67,1.78,,,False
+Domaine Rougeot Saint-Romain Les Poillanges,Red,Saint-Romain,3.04,1.53,1.13,1.45,,False
+Domaine Rougeot Pouilly-Fuissé Village,White,Pouilly-Fuissé,2.88,3.0,1.35,,,False
+Domaine Rougeot Bourgogne Côte d’Or Clos des Six Ouvrées Monopole,White,Bourgogne,3.37,3.48,1.37,,,False
+Domaine Rougeot Nuits-Saint-Georges Village,Red,Nuits-Saint-Georges,4.55,2.83,1.17,3.2,,False
+Domaine Rougeot Gevrey-Chambertin Village,Red,Gevrey-Chambertin,3.82,3.27,1.72,2.53,,False
+Domaine Rougeot Bourgogne Chardonnay 'La Monatine',White,Bourgogne,3.43,3.48,1.23,,,False
+Domaine Rougeot Saint-Romain Villages,Red,Saint-Romain,3.96,2.5,1.0,2.0,,False
+Domaine Rougeot La Justice Gevrey-Chambertin,Red,Gevrey-Chambertin,4.03,2.63,1.34,2.98,,False
+Domaine Rougeot Chambolle-Musigny,Red,Chambolle-Musigny,4.2,3.2,1.4,2.79,,False
+Alex Moreau Bourgogne Chardonnay,White,Bourgogne,3.27,3.11,2.43,,,False
+Alex Moreau Vieilles Vignes Chassagne-Montrachet,Red,Chassagne-Montrachet,3.99,3.06,1.39,2.77,,False
+Maison Leroy Bourgogne Rouge,Red,Bourgogne,3.87,2.65,1.63,2.25,,False
+Maison Leroy Bourgogne Blanc,White,Bourgogne,3.27,3.63,1.72,,,False
+Maison Leroy Vosne-Romanée,Red,Vosne-Romanée,4.17,3.06,2.19,2.58,,False
+Maison Leroy Bourgogne Gamay,Red,Bourgogne,4.1,2.42,1.66,2.27,,False
+Maison Leroy Meursault Blanc,White,Meursault,3.05,3.71,1.5,,,False
+Maison Leroy Bourgogne Blanc Fleurs de Vignes,White,Bourgogne,3.39,3.58,1.91,,,False
+Maison Leroy Beaujolais Rouge,Red,Beaujolais,4.28,1.67,1.82,1.63,,False
+Maison Leroy Maconnais Saint-Veran,White,Mâconnais,2.54,3.09,1.0,,,False
+Maison Leroy Bourgogne Leroy d'Auvenay,Red,Bourgogne,4.08,2.51,1.23,2.14,,False
+Maison Leroy Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.37,3.14,1.71,,,False
+Maison Leroy Meursault Rouge,Red,Meursault,3.62,2.54,1.81,2.11,,False
+Maison Leroy Chambolle-Musigny,Red,Chambolle-Musigny,4.24,3.01,1.93,2.44,,False
+Maison Leroy Chassagne-Montrachet 1er Cru Les Embrazées,White,Chassagne-Montrachet,3.08,3.69,1.6,,,False
+Maison Leroy Meursault Perrières,White,Meursault,3.12,3.95,2.07,,,False
+Maison Leroy Puligny-Montrachet,White,Puligny-Montrachet,3.51,3.28,1.48,,,False
+Maison Leroy Saint-Aubin,Red,Saint-Aubin,4.0,2.92,1.18,2.59,,False
+Maison Leroy Auvenay Le Grand Bourgogne,Red,Bourgogne,3.98,2.07,1.0,2.11,,False
+Maison Leroy Puligny-Montrachet Les Folatieres,White,Puligny-Montrachet,3.27,4.16,2.5,,,False
+Maison Leroy Meursault Les Charmes,Red,Meursault,4.0,2.48,2.64,2.0,,False
+Maison Leroy Chassagne-Montrachet Rouge,Red,Chassagne-Montrachet,3.99,2.6,1.22,2.27,,False
+Maison Leroy Hommage à l'An Bourgogne,Red,Bourgogne,4.04,2.49,1.09,2.35,,False
+Maison Leroy Gevrey-Chambertin Les Corbeaux,Red,Gevrey-Chambertin,4.49,2.99,2.0,2.5,,False
+Maison Leroy Puligny-Montrachet Les Charmes,Red,Puligny-Montrachet,3.91,2.38,1.0,2.09,,False
+Maison Leroy Marsannay,White,Marsannay,2.75,3.57,1.0,,,False
+Domaine Dominique Gallois Gevrey-Chambertin,Red,Gevrey-Chambertin,4.09,3.29,1.32,2.8,,False
+Domaine Dominique Gallois Pinot Noir Bourgogne,Red,Bourgogne,3.91,3.03,1.26,2.36,,False
+Domaine Dominique Gallois Vieilles Vignes Gevrey-Chambertin,Red,Gevrey-Chambertin,3.6,2.96,1.78,2.53,,False
+Domaine Dominique Gallois La Justice Gevrey-Chambertin,Red,Gevrey-Chambertin,4.38,3.2,1.0,2.97,,False
+Domaine Dominique Gallois Chardonnay Bourgogne,White,Bourgogne,3.23,4.0,1.0,,,False
+Vincent Dauvissat Chablís,White,Chablis,4.03,3.17,1.47,,,False
+Joseph Pascal Puligny-Montrachet Blanc,White,Puligny-Montrachet,3.44,3.67,1.31,,,False
+Joseph Pascal Puligny-Montrachet 'Les Enseignères',White,Puligny-Montrachet,3.53,3.66,1.34,,,False
+Joseph Pascal Puligny-Montrachet Rouge,Red,Puligny-Montrachet,3.57,2.5,1.55,2.07,,False
+Joseph Pascal Bourgogne Chardonnay,White,Bourgogne,3.43,3.92,1.38,,,False
+Joseph Pascal Meursault,White,Meursault,3.23,3.79,1.31,,,False
+Joseph Pascal Bourgogne Pinot Noir,Red,Bourgogne,3.99,2.52,1.22,2.17,,False
+Joseph Pascal Bourgogne Chardonnay 'Les Riaux',White,Bourgogne,3.24,3.85,1.62,,,False
+Joseph Pascal Chassagne-Montrachet,White,Chassagne-Montrachet,3.4,3.82,1.34,,,False
+Domaine Armelle et Bernard Rion Vieilles Vignes La Croix Blanche Bourgogne,Red,Bourgogne,4.0,2.75,1.6,2.16,,False
+Domaine Armelle et Bernard Rion Cuvée Dame Juliette Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,4.21,3.08,1.2,2.75,,False
+Domaine Armelle et Bernard Rion Vieilles Vignes Les Échezeaux Chambolle-Musigny,Red,Chambolle-Musigny,4.02,2.89,1.36,2.59,,False
+Domaine Armelle et Bernard Rion Vieilles Vignes Nuits-Saint-Georges 1er Cru 'Les Murgers',Red,Nuits-Saint-Georges,4.38,3.12,1.6,2.79,,False
+Domaine Armelle et Bernard Rion Vieilles Vignes Vosne-Romanée Pinot Noir,Red,Vosne-Romanée,4.31,3.05,1.42,2.6,,False
+Domaine Armelle et Bernard Rion Vosne Romanee,Red,Vosne-Romanée,4.06,3.3,1.38,2.94,,False
+Domaine Armelle et Bernard Rion Vieilles Vignes Meursault 'Sous La Velle',Red,Meursault,3.88,2.67,1.77,1.95,,False
+Domaine Armelle et Bernard Rion Cuvée Dame Juliette Vosne-Romanée,Red,Vosne-Romanée,4.4,2.69,1.83,2.6,,False
+Domaine Armelle et Bernard Rion Vieilles Vignes Nuits-Saint-Georges 'Les Laviéres',Red,Nuits-Saint-Georges,4.37,2.83,1.0,2.37,,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Vieilles Vignes Pouilly-Fuissé,White,Pouilly-Fuissé,2.69,3.15,1.46,,,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Pouilly-Fuissé 'Les Grands Climats',White,Pouilly-Fuissé,2.8,3.08,1.26,,,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Saint-Véran 'Madame Noly',White,Saint-Véran,2.63,3.23,1.62,,,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Pouilly-Fuisse 'Aux Bouthieres',White,Pouilly-Fuissé,3.07,2.97,1.94,,,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Saint-Véran 'Les Perriers',White,Saint-Véran,2.59,3.18,1.33,,,False
+Catherine et Pascal Rollet - Domaine de la Chapelle Pouilly-Fuissé 'AX-B',White,Pouilly-Fuissé,3.38,3.24,1.44,,,False
+Guillemard-Clerc Les Parties Bourgogne Blanc Chardonnay,White,Bourgogne,3.3,3.84,1.31,,,False
+Guillemard-Clerc Puligny-Montrachet 'Les Enseignières',White,Puligny-Montrachet,3.27,4.11,1.63,,,False
+Guillemard-Clerc La Rue Aux Vaches Puligny-Montrachet,White,Puligny-Montrachet,3.22,3.9,1.09,,,False
+Guillemard-Clerc Puligny-Montrachet 'Les Reuchaux',White,Puligny-Montrachet,3.25,4.03,1.49,,,False
+Guillemard-Clerc En Chevrots Saint-Romain,White,Saint-Romain,3.09,4.02,1.2,,,False
+Guillemard-Clerc Élégance Puligny-Montrachet,White,Puligny-Montrachet,2.71,3.8,1.49,,,False
+Guillemard-Clerc Bourgogne Chardonnay,White,Bourgogne,3.2,3.61,1.41,,,False
+Domaine des Terres de Velle Meursault,White,Meursault,3.33,3.78,1.18,,,False
+Domaine des Terres de Velle Vieilles Vignes Meursault Les Luchets,White,Meursault,3.17,3.95,1.14,,,False
+Jean-Marc Brocard Domaine Sainte Claire Chablis,White,Chablis,3.99,2.96,1.35,,,False
+Jean-Marc Brocard Chablis Sainte Claire Vieilles Vignes,White,Chablis,4.01,3.02,1.43,,,False
+Jean-Marc Brocard Chablis,White,Chablis,3.9,2.94,1.31,,,False
+Jean-Marc Brocard Chardonnay Bourgogne Kimmeridgien,White,Bourgogne,3.52,3.75,1.25,,,False
+Jean-Marc Brocard Chardonnay Bourgogne Jurassique,White,Bourgogne,3.33,3.76,1.24,,,False
+Jean-Marc Brocard Chardonnay Bourgogne,White,Bourgogne,3.38,3.66,1.3,,,False
+Jean-Marc Brocard Domaine Pierre de Prehy Chablis,White,Chablis,3.98,3.0,1.42,,,False
+Jean-Marc Brocard V.V. 1946 Vieilles Vignes Chablis,White,Chablis,3.96,3.22,1.67,,,False
+Jean-Marc Brocard Domaine de La Boissonneuse Chablis,White,Chablis,3.97,2.94,1.52,,,False
+Jean-Marc Brocard Chardonnay Bourgogne Portlandien,White,Bourgogne,3.1,3.64,1.65,,,False
+Jean-Marc Brocard Cuvée Prestige Chablis,White,Chablis,4.14,3.03,1.0,,,False
+Jean-Marc Brocard Les Manants Chablis,White,Chablis,3.94,3.0,1.35,,,False
+Jean-Marc Brocard Saint Marc Cuvée Prestige Chablis,White,Chablis,3.87,3.13,1.11,,,False
+Jean-Marc Brocard Bourgogne Pinot Noir,Red,Bourgogne,4.11,2.49,1.02,2.62,,False
+Jean-Marc Brocard Hellstrom Chablis,White,Chablis,4.0,3.0,1.0,,,False
+Jean-Marc Brocard Domaine Martin Bourgogne,White,Bourgogne,3.0,4.0,1.0,,,False
+Jean-Marc Brocard Belle Margote Bourgogne Chardonnay,White,Bourgogne,3.35,3.49,1.0,,,False
+Jean-Marc Brocard Grande Margote Bourgogne Chardonnay,White,Bourgogne,3.3,3.62,2.19,,,False
+Michel Bouzereau Meursault 'Les Grands Charrons',White,Meursault,3.21,3.63,1.63,,,False
+Michel Bouzereau Bourgogne Chardonnay,White,Bourgogne,3.31,3.69,1.78,,,False
+Michel Bouzereau Meursault 'Les Tessons',White,Meursault,3.23,3.79,1.5,,,False
+Michel Bouzereau Bourgogne Côte d'Or Chardonnay,White,Bourgogne,3.5,3.71,1.8,,,False
+Michel Bouzereau Meursault 'Le Limozin',White,Meursault,3.26,3.54,1.59,,,False
+Michel Bouzereau Bourgogne Pinot Noir,Red,Bourgogne,3.9,2.58,1.47,2.27,,False
+Michel Bouzereau Bourgogne Côte d'Or Pinot Noir,Red,Bourgogne,3.64,2.72,1.79,2.37,,False
+Domaine Yvon Clerget Meursault 'Les Chevalières',White,Meursault,3.25,3.38,2.06,,,False
+Domaine Yvon Clerget Bourgogne Pinot Noir,Red,Bourgogne,4.03,2.5,2.22,1.97,,False
+Domaine Yvon Clerget Bourgogne Chardonnay,White,Bourgogne,3.01,3.12,1.7,,,False
+Domaine Pierre Amiot et Fils Gevrey-Chambertin,Red,Gevrey-Chambertin,3.75,2.75,1.65,2.65,,False
+Domaine Pierre Amiot et Fils Bourgogne Rouge,Red,Bourgogne,3.84,2.78,1.16,2.73,,False
+Bachelet-Monnot Puligny-Montrachet,White,Puligny-Montrachet,3.45,3.77,1.53,,,False
+Bachelet-Monnot Bourgogne Rouge,Red,Bourgogne,3.89,2.6,1.66,2.27,,False
+Bachelet-Monnot Bourgogne Blanc,White,Bourgogne,3.28,3.6,1.6,,,False
+Bachelet-Monnot Meursault 'Clos du Cromin',White,Meursault,3.65,3.66,1.49,,,False
+Domaine Berthelemot Puligny-Montrachet 'Les Levrons',White,Puligny-Montrachet,3.26,3.7,1.82,,,False
+Domaine Berthelemot Puligny-Montrachet,White,Puligny-Montrachet,3.2,3.81,1.39,,,False
+Domaine Berthelemot Meursault,White,Meursault,3.33,3.39,1.49,,,False
+Domaine Berthelemot Meursault 'Les Tillets',White,Meursault,3.21,3.91,1.64,,,False
+Domaine Berthelemot Bourgogne 'Les Parties' Blanc,White,Bourgogne,3.07,4.0,1.18,,,False
+Domaine Berthelemot Vosne-Romanée,Red,Vosne-Romanée,4.16,3.09,1.77,2.56,,False
+Domaine Berthelemot Craite-Paille Gevrey-Chambertin Rouge,Red,Gevrey-Chambertin,4.27,2.96,1.1,2.56,,False
+Domaine Berthelemot Chambolle-Musigny,Red,Chambolle-Musigny,4.52,2.68,1.23,2.5,,False
+Dujac Fils et Père Gevrey-Chambertin,Red,Gevrey-Chambertin,4.07,2.92,1.49,2.55,,False
+Dujac Fils et Père Chambolle-Musigny,Red,Chambolle-Musigny,4.15,2.82,1.51,2.53,,False
+Dujac Fils et Père Puligny-Montrachet,White,Puligny-Montrachet,3.0,3.92,2.11,,,False
+Dujac Fils et Père Bourgogne,Red,Bourgogne,3.91,2.78,1.58,2.53,,False
+Dujac Fils et Père Bourgogne Blanc,White,Bourgogne,3.5,3.62,1.0,,,False
+Domaine Cottenceau Bourgogne 'Les Verchères',White,Bourgogne,3.58,3.43,1.07,,,False
+Domaine Cottenceau Montagny 'Les Dazés',White,Bourgogne,3.0,3.08,1.84,,,False
+Domaine Cottenceau Bourgogne Pinot Noir,Red,Bourgogne,3.71,2.78,2.12,2.56,,False
+Domaine William Fèvre Chablis,White,Chablis,4.01,2.95,1.31,,,False
+Château Fuissé Saint-Véran,White,Saint-Véran,2.96,2.99,1.6,,,False
+Château Fuissé Vieilles Vignes Pouilly-Fuissé,White,Pouilly-Fuissé,2.78,3.02,1.71,,,False
+Château Fuissé Les Combettes Pouilly-Fuissé,White,Pouilly-Fuissé,2.89,2.96,1.68,,,False
+Château Fuissé Bourgogne Blanc,White,Bourgogne,3.46,3.74,1.3,,,False
+Château Fuissé Collection Privée Pouilly-Fuissé,White,Pouilly-Fuissé,2.8,3.49,1.82,,,False
+Jayer Gilles Nuits-Saint-Georges 'Les Hauts Poirets',Red,Nuits-Saint-Georges,4.4,3.13,1.37,2.76,,False
+Domaine Joseph Roty Gevrey-Chambertin,Red,Gevrey-Chambertin,4.15,3.03,1.81,2.68,,False
+Domaine Joseph Roty Marsannay Rouge,Red,Marsannay,4.1,2.95,1.74,2.59,,False
+Domaine Joseph Roty Bourgogne,Red,Bourgogne,3.94,2.68,1.85,2.43,,False
+Domaine Joseph Roty Les Ouzeloy Marsannay,Red,Marsannay,4.01,2.86,1.57,2.52,,False
+Domaine Joseph Roty Champs Saint Etienne Marsannay,Red,Marsannay,4.26,2.94,1.61,2.72,,False
+Domaine Joseph Roty Gevrey-Chambertin Champs Chenys,Red,Gevrey-Chambertin,4.14,3.13,1.64,2.68,,False
+Domaine Joseph Roty Marsannay Rosé,Rosé,Marsannay,3.87,3.06,1.59,,,False
+Domaine Joseph Roty Quartier Marsannay,Red,Marsannay,4.47,2.97,1.0,2.41,,False
+Domaine Joseph Roty Cuvée de Pressonnier,Red,Bourgogne,4.19,2.87,1.3,2.72,,False
+Domaine Joseph Roty Marsannay Blanc,White,Marsannay,3.55,3.37,1.76,,,False
+Domaine Joseph Roty Cuvée de Boivin Marsannay,Red,Marsannay,4.24,2.91,1.93,2.84,,False
+Domaine Joseph Roty Cuvée de Clos de Jeu Marsannay,Red,Marsannay,4.36,3.47,1.47,2.49,,False
+Boudier Père & Fils Les Barrigards Bourgogne Pinot Noir,Red,Bourgogne,4.09,2.7,2.1,2.17,,False
+Boudier Père & Fils Bourgogne Pinot Noir,Red,Bourgogne,4.0,2.17,1.47,2.41,,False
+Dampt Frères Vieilles Vignes Chablis,White,Chablis,3.73,2.91,1.28,,,False
+Dampt Frères Les Beaumonts Chablis,White,Chablis,3.87,3.19,1.36,,,False
+Dampt Frères Chablis Tradition,White,Chablis,4.05,2.81,1.22,,,False
+Dampt Frères Le Parc du Château Bourgogne Pinot Noir,Red,Bourgogne,3.68,2.47,1.54,2.11,,False
+Dampt Frères Chevalier d'Éon Bourgogne Pinot Noir,Red,Bourgogne,3.79,2.74,1.64,2.3,,False
+Dampt Frères Bourgogne Pinot Noir,Red,Bourgogne,3.64,2.4,1.32,2.31,,False
+Dampt Frères Bréchain Vieilles Vignes Chablis,White,Chablis,3.86,3.46,1.8,,,False
+Dampt Frères Racineuil Bourgogne Pinot Noir,Red,Bourgogne,4.0,2.66,1.55,2.14,,False
+Dampt Frères Chablis Bréchain,White,Chablis,3.93,3.11,1.31,,,False
+Dampt Frères Lisa Blanche Chablis,White,Chablis,3.95,2.95,1.61,,,False
+Dampt Frères Chevalier d'Éon Cuvée du Verger Bourgogne,White,Bourgogne,3.41,4.02,1.33,,,False
+Dampt Frères Réserve du Domaine Chablis,White,Chablis,4.21,3.02,1.37,,,False
+Dampt Frères Chablis 'Les Vaudésirs',White,Chablis,3.32,3.04,2.04,,,False
+Dampt Frères Jeunes Vignes Chardonnay,White,Bourgogne,3.05,3.89,1.01,,,False
+Dampt Frères Chevalier d'Éon Bourgogne Rosé,Rosé,Bourgogne,3.0,2.5,1.0,,,False
+Domaine de Courcel Bourgogne Pinot Noir,Red,Bourgogne,3.63,2.86,1.56,2.21,,False
+Domaine de Courcel Bourgogne Chardonnay,White,Bourgogne,3.28,3.91,1.74,,,False
+Les Parcellaires de Saulx Bourgogne Pinot Noir,Red,Bourgogne,3.96,2.56,1.46,2.18,,False
+Les Parcellaires de Saulx Meursault 'Les Narvaux',White,Meursault,3.26,3.83,1.37,,,False
+Les Parcellaires de Saulx Gevrey-Chambertin,Red,Gevrey-Chambertin,3.82,2.91,1.95,2.61,,False
+Les Parcellaires de Saulx Vosne-Romanée,Red,Vosne-Romanée,4.21,3.59,1.76,3.18,,False
+Les Parcellaires de Saulx Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.5,2.83,1.13,2.81,,False
+Les Parcellaires de Saulx Saint-Romain 'Les Perrieres',White,Saint-Romain,3.13,4.07,1.38,,,False
+Les Parcellaires de Saulx Chambolle-Musigny,Red,Chambolle-Musigny,4.17,2.84,1.07,2.55,,False
+Les Parcellaires de Saulx En l’Ebaupin Saint-Aubin,White,Saint-Aubin,3.28,3.48,1.06,,,False
+Les Parcellaires de Saulx Les Evocelles Gevrey-Chambertin,Red,Gevrey-Chambertin,3.78,2.69,1.38,2.62,,False
+Les Parcellaires de Saulx Chablis,White,Chablis,4.0,3.0,1.0,,,False
+Domaine Adrien Besson Chablis,White,Chablis,3.61,3.16,1.69,,,False
+Morey-Coffinet Bourgogne Côte d'Or Chardonnay,White,Bourgogne,3.48,3.6,1.78,,,False
+Morey-Coffinet Chassagne Montrachet Rouge,Red,Chassagne-Montrachet,3.84,2.56,1.47,2.24,,False
+Morey-Coffinet Bourgogne Côte d'Or Pinot Noir,Red,Bourgogne,4.03,2.64,1.65,2.28,,False
+Morey-Coffinet Vieilles Vignes Chassagne Montrachet,Red,Chassagne-Montrachet,4.0,2.64,1.09,2.51,,False
+Morey-Coffinet Chassagne-Montrachet Blanc,White,Chassagne-Montrachet,3.82,3.74,1.58,,,False
+Morey-Coffinet Saint Romain 'Sous le Château',White,Saint-Romain,3.48,3.65,1.23,,,False
+Morey-Coffinet Meursault,White,Meursault,3.44,3.71,1.64,,,False
+Morey-Coffinet Puligny Montrachet 'Le Trézin',White,Puligny-Montrachet,4.08,3.72,1.26,,,False
+Morey-Coffinet Puligny Montrachet,White,Puligny-Montrachet,3.12,3.46,2.07,,,False
+Morey-Coffinet Meursault Vieilles Vignes,White,Meursault,3.18,3.49,1.84,,,False
+Morey-Coffinet Puligny Montrachet 'Corvée des Vignes',White,Puligny-Montrachet,2.63,3.53,1.51,,,False
+Morey-Coffinet Saint Romain,White,Saint-Romain,3.06,3.63,1.64,,,False
+Andre Cathiard Vosne-Romanée,Red,Vosne-Romanée,4.53,2.61,1.0,2.23,,False
+Andre Cathiard Nuits-Saint-Georges 'Les Meurgers',Red,Nuits-Saint-Georges,4.34,3.26,1.19,2.7,,False
+Sylvain Pataille Marsannay,Red,Marsannay,4.12,2.94,1.53,2.52,,True
+Sylvain Pataille Bourgogne Pinot Noir,Red,Bourgogne,3.94,2.61,1.59,2.25,,True
+Sylvain Pataille Marsannay 'Les Longeroies',Red,Marsannay,4.19,2.85,1.59,2.54,,True
+Sylvain Pataille Fleur de Pinot Marsannay Rosé,Rosé,Marsannay,3.94,3.12,1.21,,,True
+Sylvain Pataille Bourgogne 'Les Méchalots' Blanc,White,Bourgogne,3.38,3.81,1.39,,,True
+Sylvain Pataille Bourgogne 'Le Chapitre' Rouge,Red,Bourgogne,3.8,2.85,1.25,2.34,,True
+Sylvain Pataille Marsannay 'La Montagne',Red,Marsannay,4.22,2.89,1.54,2.47,,True
+Sylvain Pataille Marsannay 'En Clémengeots',Red,Marsannay,4.04,2.76,1.65,2.62,,True
+Sylvain Pataille Bourgogne 'Le Chapitre' Blanc,White,Bourgogne,3.51,3.79,1.49,,,True
+Sylvain Pataille Marsannay 'La Charme aux Prêtres',White,Marsannay,3.34,3.8,1.8,,,True
+Sylvain Pataille Marsannay 'Les Grasses Têtes',Red,Marsannay,4.39,3.09,1.7,2.46,,True
+Sylvain Pataille Marsannay 'Le Chapitre',Red,Marsannay,4.37,2.56,1.23,2.21,,True
+Sylvain Pataille Marsannay Chardonnay Rose,White,Marsannay,3.33,3.82,1.72,,,True
+Sylvain Pataille Pinotte! Bourgogne,Red,Bourgogne,3.97,2.51,1.15,2.05,,True
+Sylvain Pataille Marsannay Rosé,Rosé,Marsannay,3.0,2.5,1.0,,,True
+Michel Sarrazin Les Vieilles Vignes Bourgogne Pinot Noir,Red,Bourgogne,3.94,2.55,1.57,2.18,,False
+Michel Sarrazin Bourgogne Rouge,Red,Bourgogne,3.96,2.63,1.63,2.03,,False
+"Domaine Chanzy Bourgogne Pinot Noir ""Les Fortunés""",Red,Bourgogne,3.85,2.65,1.58,2.21,,False
+Domaine Chanzy Bourgogne Pinot Noir,Red,Bourgogne,4.0,2.44,1.33,2.06,,False
+Domaine Chanzy Les Fortunés Bourgogne Chardonnay,White,Bourgogne,3.43,3.85,1.24,,,False
+Domaine Chanzy Puligny-Montrachet 'Les Reuchaux',White,Puligny-Montrachet,3.0,3.56,1.35,,,False
+Domaine Chanzy Bourgogne Clos Michaud Monopole,Red,Bourgogne,3.76,2.5,1.78,2.41,,False
+Domaine Chanzy Les Fortunés Bourgogne Aligoté,White,Bourgogne,3.41,3.22,1.26,,,False
+Domaine Chanzy Vosne-Romanée 'La Croix Blanche',Red,Vosne-Romanée,4.04,3.06,1.76,2.71,,False
+Domaine Chanzy Bourgogne Chardonnay,White,Bourgogne,3.35,3.76,1.36,,,False
+Domaine Chanzy Bourgogne 'Clos de La Fortune' Blanc,White,Bourgogne,3.39,3.72,1.09,,,False
+Domaine Chanzy B Bourgogne Pinot Noir,Red,Bourgogne,4.05,2.5,1.26,2.12,,False
+Domaine Chanzy Bourgogne 'Clos de La Fortune' Rouge,Red,Bourgogne,4.17,2.5,1.0,2.11,,False
+Domaine Chanzy Meursault,White,Meursault,3.44,3.93,1.71,,,False
+Domaine Chanzy Bouzeron Vieilles Vignes 'Clos de La Fortune',White,Bourgogne,2.8,3.67,1.67,,,False
+Michel Gros Vosne Romanée,Red,Vosne-Romanée,4.05,2.77,1.53,2.58,,False
+Michel Gros Nuits-Saint-Georges,Red,Nuits-Saint-Georges,3.99,3.06,1.73,2.6,,False
+Michel Gros Nuits-Saint-Georges 'Les Chaliots',Red,Nuits-Saint-Georges,3.9,2.91,1.69,2.58,,False
+Michel Gros Chambolle-Musigny,Red,Chambolle-Musigny,3.9,3.12,1.4,2.55,,False
+Michel Gros Bourgogne Côte d'Or,Red,Bourgogne,3.96,2.81,1.45,2.74,,False
+Michel Gros Bourgogne,Red,Bourgogne,3.91,2.61,2.18,2.36,,False
+Michel Gros Gevrey-Chambertin 'La Platière',Red,Gevrey-Chambertin,4.5,3.01,1.17,2.5,,False
+Martelet de Cherisey Meursault 'Bois de Blagny',White,Meursault,3.19,3.47,1.72,,,False
+Martelet de Cherisey Comtesse de Chérisey Cuvée Léo Meursault,White,Meursault,3.0,3.55,1.94,,,False
+Domaine Pinson Chablis,White,Chablis,4.06,2.87,1.29,,,False
+Domaine Pinson Cuvée Mademoiselle Chablis,White,Chablis,3.8,3.01,1.41,,,False
+Morey-Blanc Meursault,White,Meursault,3.2,3.82,1.72,,,False
+Morey-Blanc Saint-Romain Sous Le Château,White,Saint-Romain,3.5,3.81,1.09,,,False
+Morey-Blanc Meursault Les Narvaux,White,Meursault,3.12,3.52,1.42,,,False
+Morey-Blanc Meursault Les Casse-Têtes,White,Meursault,3.25,3.92,1.86,,,False
+Morey-Blanc Saint-Romain,White,Saint-Romain,3.0,4.0,1.43,,,False
+Verget Grand Élevage Bourgogne,White,Bourgogne,3.42,3.93,1.62,,,False
+Verget Pouilly-Fuissé 'La Roche',White,Pouilly-Fuissé,2.81,3.12,1.6,,,False
+Verget Saint-Véran 'Lieu (Inter) dit',White,Saint-Véran,2.86,3.16,1.59,,,False
+Verget Terres de Pierres Pouilly-Fuissé,White,Pouilly-Fuissé,2.71,3.34,1.34,,,False
+Verget Terroirs de Davayé Saint-Véran,White,Saint-Véran,2.68,3.29,1.67,,,False
+Verget Vigne de Saint-Claude Saint-Veran,White,Saint-Véran,3.0,3.47,1.26,,,False
+Verget Terroirs de Vergisson Pouilly-Fuissé,White,Pouilly-Fuissé,2.97,3.45,1.44,,,False
+Verget Terres de Pierres Bourgogne,White,Bourgogne,3.24,3.69,1.31,,,False
+Verget Cuvée de la Butte Chablis,White,Chablis,3.8,3.14,1.38,,,False
+Verget Terres de Pierres Chablis,White,Chablis,4.11,2.97,1.23,,,False
+Verget Terroirs de Pouilly Les Combes Vieilles Vignes Pouilly-Fuissé,White,Pouilly-Fuissé,2.73,3.08,1.42,,,False
+Verget Grand Élevage Pouilly-Fuissé,White,Pouilly-Fuissé,2.43,3.22,1.98,,,False
+Verget Meursault 'Les Clous',White,Meursault,3.07,3.98,1.54,,,False
+Verget Terres de Pierres Saint-Véran,White,Saint-Véran,2.71,2.96,1.04,,,False
+Verget Pouilly-Fuissé 'Les Crays',White,Pouilly-Fuissé,3.03,3.07,1.72,,,False
+Verget Haut de la Roche Pouilly-Fuissé,White,Pouilly-Fuissé,2.5,3.49,1.0,,,False
+Verget Pouilly-Fuissé,White,Pouilly-Fuissé,2.57,3.17,1.91,,,False
+Verget Envers Et Contre Tout Chablis,White,Chablis,3.83,3.62,1.0,,,False
+Verget Terroirs de Vergisson Pouilly-Fuissé 'La Roche',White,Pouilly-Fuissé,2.55,3.0,1.0,,,False
+Verget Grand Élevage Meursault,White,Meursault,3.0,4.0,1.75,,,False
+Verget Grands Terroirs Oubliés Pouilly-Fuisse,White,Pouilly-Fuissé,2.7,3.0,1.79,,,False
+Verget La Mûre Pouilly-Fuissé 'Terroir de Solutré',White,Mâconnais,2.5,2.7,1.41,,,False
+Verget Meursault 'Tillets',White,Meursault,3.0,3.91,1.65,,,False
+Verget Chassagne-Montrachet Premier Cru,White,Chassagne-Montrachet,3.29,4.0,1.0,,,False
+Verget Saint-Véran 'Le Clos',White,Saint-Véran,2.96,3.22,1.17,,,False
+Verget Puligny-Montrachet 'Les Enseignères',White,Puligny-Montrachet,3.25,4.0,1.0,,,False
+Verget Chablis,White,Chablis,4.07,3.0,1.0,,,False
+Verget Tête de Cuvée Pouilly-Fuissé,White,Pouilly-Fuissé,3.13,3.0,1.0,,,False
+Verget Terroirs de Côte d'Or Bourgogne Blanc,White,Bourgogne,3.0,4.0,1.0,,,False
+Verget Pouilly Fuisse 'Les Vernays',White,Pouilly-Fuissé,2.95,3.74,1.0,,,False
+Le Puy de L'Ours Les Monsnières Côte de Beaune,White,Côte de Beaune,3.46,3.36,1.25,,,False
+Pierre Boisson Bourgogne Blanc,White,Bourgogne,3.52,3.67,1.25,,,False
+Pierre Boisson Meursault,White,Meursault,3.44,3.77,1.5,,,False
+Pierre Boisson Murgey de Limozin Bourgogne Blanc,White,Bourgogne,3.65,3.34,1.3,,,False
+Pierre Boisson Bourgogne Rouge,Red,Bourgogne,3.98,2.77,1.23,2.13,,False
+Pierre Boisson Meursault 'Les Criots',White,Meursault,3.54,3.73,1.49,,,False
+Pierre Boisson Les Herbeaux Bourgogne Blanc,White,Bourgogne,3.51,3.83,1.79,,,False
+Pierre Boisson Meursault 'Les Perchots’,White,Meursault,3.47,3.28,1.7,,,False
+Clos du Moulin Aux Moines Clos de la Perrière Monopole Bourgogne Blanc,White,Bourgogne,3.29,3.58,1.8,,,False
+Clos du Moulin Aux Moines Clos de la Perrière Monopole Bourgogne Rouge,Red,Bourgogne,3.83,2.58,1.58,2.17,,False
+Clos du Moulin Aux Moines Saint-Romain,White,Saint-Romain,3.57,3.86,1.77,,,False
+Clos du Moulin Aux Moines Bourgogne 'Aux Seurrets',Red,Bourgogne,3.72,2.46,1.42,2.31,,False
+Clos du Moulin Aux Moines Bourgogne Red,Red,Bourgogne,4.02,2.76,1.64,2.33,,False
+Clos du Moulin Aux Moines Saint-Romain 'Combe Bazin',White,Saint-Romain,3.0,3.1,2.18,,,False
+Clos du Moulin Aux Moines Saint-Romain 'Sous Roches',Red,Saint-Romain,4.02,2.67,1.0,2.0,,False
+Les Horées Le Vieux Sage Bourgogne Rouge,Red,Bourgogne,4.05,2.41,2.13,2.16,,False
+Les Horées Gevrey-Chambertin En Reniard,Red,Gevrey-Chambertin,4.17,2.97,1.59,2.68,,False
+Les Horées Des Six Ifs Bourgogne Rouge,Red,Bourgogne,3.37,2.81,2.08,2.74,,False
+Les Horées Bourgogne Rosé Bonheur,Rosé,Bourgogne,3.26,2.5,1.0,,,False
+Chavy-Chouet Les Femelottes Bourgogne Blanc,White,Bourgogne,3.4,3.69,1.44,,,False
+Chavy-Chouet La Taupe Bourgogne Rouge,Red,Bourgogne,3.8,2.51,1.37,2.16,,False
+Chavy-Chouet Les Enseignères Puligny-Montrachet,White,Puligny-Montrachet,3.24,3.54,1.58,,,False
+Chavy-Chouet Clos des Corvées de Citeau Meursault,White,Meursault,3.18,3.68,1.59,,,False
+Chavy-Chouet Meursault Les Casse-Tetes,White,Meursault,3.26,3.83,1.63,,,False
+Chavy-Chouet Meursault Les Narvaux,White,Meursault,3.26,3.85,1.39,,,False
+Chavy-Chouet Les Saussots Bourgogne Blanc,White,Bourgogne,3.31,3.66,1.24,,,False
+Chavy-Chouet Meursault Les Grands Charrons,White,Meursault,3.37,4.12,1.87,,,False
+Chavy-Chouet La Justice Gevrey-Chambertin,Red,Gevrey-Chambertin,3.79,3.09,1.54,2.56,,False
+Chavy-Chouet La Fille de Gamla Stan La Taupe Bourgogne Rouge,Red,Bourgogne,4.14,2.5,1.0,2.0,,False
+Chavy-Chouet Bourgogne Blanc 'Les Femelottes',White,Bourgogne,3.1,4.0,1.98,,,False
+Domaine de la Croix Senaillet Saint-Véran,White,Saint-Véran,2.94,2.92,1.46,,,False
+Domaine de la Croix Senaillet En Pommards Saint-Véran,White,Saint-Véran,3.03,2.81,1.47,,,False
+Domaine de la Croix Senaillet Saint-Véran 'Les Rochats',White,Saint-Véran,2.95,3.19,1.41,,,False
+Domaine de la Croix Senaillet Pouilly-Fuissé,White,Pouilly-Fuissé,3.04,3.02,1.75,,,False
+Domaine de la Croix Senaillet Domaine Martin Saint-Véran,White,Saint-Véran,3.08,2.89,1.16,,,False
+Domaine de la Croix Senaillet Les Buis Saint-Véran,White,Saint-Véran,2.87,2.67,1.8,,,False
+Domaine de la Croix Senaillet La Grande Bruyère Saint-Véran,White,Saint-Véran,3.04,3.05,1.67,,,False
+Domaine de la Croix Senaillet Romantic Bourgogne Chardonnay,White,Bourgogne,3.08,3.9,1.04,,,False
+Domaine de la Croix Senaillet Sans Soufre Ajouté Saint-Véran,White,Saint-Véran,3.22,3.39,1.23,,,False
+Domaine de la Croix Senaillet Saint-Véran Le Clos des Poncétys,White,Saint-Véran,2.5,3.0,1.0,,,False
+Gérard Mugneret Vosne-Romanée,Red,Vosne-Romanée,4.22,2.89,1.52,2.65,,False
+Gérard Mugneret Bourgogne Pinot Noir,Red,Bourgogne,3.89,2.83,1.67,2.49,,False
+Gérard Mugneret Cuvée Quatrain Vosne-Romanée,Red,Vosne-Romanée,4.33,3.06,1.2,2.58,,False
+Gérard Mugneret Bourgogne Les Rouges Champs,Red,Bourgogne,3.87,2.66,1.06,2.22,,False
+Gérard Mugneret Aux Vigneux Vosne-Romanée,Red,Vosne-Romanée,3.53,2.96,2.54,2.8,,False
+Gérard Mugneret Gevrey-Chambertin,Red,Gevrey-Chambertin,4.5,3.0,1.1,2.5,,False
+Jessiaume Père & Fils Bourgogne Pinot Noir,Red,Bourgogne,3.92,2.57,1.3,2.11,,False
+Jessiaume Père & Fils Bourgogne Chardonnay,White,Bourgogne,3.37,3.72,1.68,,,False
+Jessiaume Père & Fils Bourgogne Pinot Noir Les Perrières,Red,Bourgogne,3.21,3.08,1.9,2.69,,False
+Domaine Armand Heitz Bourgogne Blanc,White,Bourgogne,3.32,3.57,1.98,,,False
+Domaine Armand Heitz Meursault la Barre,White,Meursault,3.53,3.62,1.54,,,False
+Domaine Armand Heitz Bourgogne Pinot Noir,Red,Bourgogne,3.95,2.61,1.57,2.32,,False
+Domaine Armand Heitz Meursault Les Gruyaches,White,Meursault,3.25,3.61,1.78,,,False
+Domaine Armand Heitz Saint-Romain Combe Bazin,White,Saint-Romain,3.35,3.87,1.44,,,False
+Domaine Armand Heitz Meursault,White,Meursault,3.49,3.16,1.51,,,False
+Domaine Armand Heitz Chassagne-Montrachet,White,Chassagne-Montrachet,3.53,3.96,1.84,,,False
+Domaine Armand Heitz Blanc de Blancs Brut,Sparkling,Bourgogne,3.84,3.0,,,,False
+Domaine Armand Heitz Esprit de Terre,White,Bourgogne,3.11,4.0,1.0,,,False
+Domaine Armand Heitz Les Durots Bourgogne,White,Bourgogne,3.0,4.04,1.0,,,False
+Domaine Armand Heitz Connivence Armand Heitz + Aurélien Febvre,White,Bourgogne,3.27,3.92,1.84,,,False
+Domaine Armand Heitz Ostinato Rigore,White,Meursault,3.4,3.51,1.97,,,False
+Domaine Armand Heitz Blanc de Noirs,White,Bourgogne,3.58,3.74,1.36,,,False
+Domaine Armand Heitz Meursault Vireuils,White,Meursault,3.0,4.0,1.0,,,False
+Domaine Armand Heitz Gevrey-Chambertin 'Corvées',Red,Gevrey-Chambertin,3.75,3.45,1.27,2.98,,False
+Clos de la Chapelle Les Vignes Blanches Meursault,White,Meursault,3.0,4.0,1.0,,,False
+Guillemot-Michel Sophie Une Bulle,Sparkling,Bourgogne,3.38,3.87,,,,True
+Gilbert et Christine Felettig Vieilles Vignes Chambolle-Musigny,Red,Chambolle-Musigny,4.08,2.93,1.84,2.71,,False
+Gilbert et Christine Felettig Bourgogne Pinot Noir,Red,Bourgogne,3.76,2.54,1.62,2.15,,False
+Gilbert et Christine Felettig Clos le Village Chambolle-Musigny,Red,Chambolle-Musigny,4.21,2.88,1.82,2.83,,False
+Gilbert et Christine Felettig Vosne-Romanée,Red,Vosne-Romanée,4.0,2.73,1.84,2.62,,False
+Gilbert et Christine Felettig Gevrey-Chambertin La Justice,Red,Gevrey-Chambertin,4.13,2.98,1.73,2.66,,False
+Gilbert et Christine Felettig Nuits-Saint-Georges,Red,Nuits-Saint-Georges,4.13,2.87,1.67,2.93,,False
+Gilbert et Christine Felettig Marsannay Les Crais,Red,Marsannay,3.92,3.17,1.47,2.85,,False
+Gilbert et Christine Felettig Vieilles Vignes Vosne-Romanée,Red,Vosne-Romanée,3.98,3.11,1.83,2.83,,False
+Chandon de Briailles Louise Pinot Noir,Red,Bourgogne,3.56,2.43,1.57,2.08,,True
+Chandon de Briailles Gelée Royale Bourgogne Rouge,Red,Bourgogne,4.0,2.55,1.29,2.11,,True
+Marcel Servin Chablis,White,Chablis,4.03,3.14,1.3,,,False
+Marcel Servin Bourgogne Pinot Noir,Red,Bourgogne,4.0,2.33,1.13,2.52,,False
+Marcel Servin Bourgogne Chardonnay,White,Bourgogne,3.27,3.76,1.06,,,False
+Marcel Servin Ratafia de Chablis,Dessert,Chablis,,,,,,False
+Le Grappin Fleurie-Poncié,Red,Fleurie,4.58,1.62,1.65,1.97,,True
+Le Grappin Saint-Amour,Red,Saint-Amour,4.53,1.51,1.85,2.01,,True
+Le Grappin Côte de Brouilly,Red,Côte de Brouilly,4.77,1.32,1.36,2.01,,True
+Le Grappin Saint Aubin 'En L'Ebaupin',White,Saint-Aubin,3.49,3.85,1.43,,,True
+Le Grappin Fleurie,Red,Fleurie,4.68,1.44,1.07,1.51,,True
