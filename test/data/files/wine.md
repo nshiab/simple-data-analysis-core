@@ -1,9 +1,10 @@
 # Wine recognition dataset
 
-`wine.csv` contains all 178 rows and 13 chemical measurements from the UCI Wine
-dataset, representing wines from one Italian region and three cultivars. The
-original class codes `1`, `2`, and `3` are retained as `cultivar`; cultivar
-names are not provided. There are 59, 71, and 48 samples respectively.
+`wine.csv` contains all 178 rows and 13 chemical and optical measurements from
+the UCI Wine dataset, representing wines from one Italian region and three
+cultivars. The original class codes `1`, `2`, and `3` are retained as
+`cultivar`; cultivar names are not provided. There are 59, 71, and 48 samples
+respectively.
 
 ## Source and license
 
@@ -44,19 +45,15 @@ Checksums (SHA-256):
 
 ## Similarity example
 
-The example defines a custom wine profile and uses `mahalanobis()` to compare
-all 13 chemical measurements. `sampleId` and `cultivar` are excluded from the
-features. Sample covariance is estimated from all 178 source rows before the
-custom wine is inserted. The ten closest matches are selected without removing
-any dataset wines from the table.
+The example retrieves sample 100 by its ID and uses `similarityMahalanobis()` to
+compare its 13 measurements with every row. Wine names are not provided in the
+source dataset. `sampleId` and `cultivar` are excluded from the features.
 
-For visualization, the custom profile is inserted with `sampleId: 0` and no
-cultivar. All 179 profiles are converted to vectors, each dimension is scaled to
-[0, 1], and UMAP projects them into two dimensions with seed 42. The test checks
-that this preserves measurements and similarity scores and produces finite
-coordinates. The layout uses Euclidean distance on scaled measurements; visual
-proximity is not the Mahalanobis ranking. Smaller Mahalanobis distances indicate
-closer chemical profiles, not taste similarity or wine quality.
+Covariance and similarity scores are calculated from all 178 samples before
+excluding sample 100 and selecting the five closest matches. The score is
+`1 - distance / maxDistance`, relative to the complete dataset; it is not a
+probability or a prediction of taste or quality. The example logs only sample
+IDs, distances, and scores, rounded to three decimals.
 
 The expected results in `test/unit/examples/wineSimilarity.test.ts` were
 computed independently with NumPy 2.3.5 using the following calculation. NumPy
@@ -68,15 +65,15 @@ import numpy as np
 
 data = np.loadtxt("test/data/files/wine.csv", delimiter=",", skiprows=1)
 x = data[:, 2:]
-our_wine = np.array([12.5, 1.8, 2.2, 20, 95, 2.3, 2.1, 0.35, 1.6, 3.5, 1.05, 2.8, 600])
-delta = x - our_wine
+delta = x - x[99]
 covariance = np.cov(x, rowvar=False, ddof=1)
 distances = np.sqrt(
     np.einsum("ij,ji->i", delta, np.linalg.solve(covariance, delta.T))
 )
+similarities = 1 - distances / distances.max()
 nearest = sorted(
-    range(len(x)),
+    (i for i in range(len(x)) if i != 99),
     key=lambda i: (distances[i], i),
-)[:10]
-print([(i + 1, distances[i]) for i in nearest])
+)[:5]
+print([(i + 1, distances[i], similarities[i]) for i in nearest])
 ```
