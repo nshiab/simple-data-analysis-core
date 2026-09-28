@@ -42,10 +42,9 @@ Deno.test("wine similarity example filters red wines and finds five named matche
       ),
     );
 
-    const reference = await wines.getFirstRow({
-      conditions: "fullName === 'Louis Jadot Bourgogne Pinot Noir'",
-    });
-    assert(reference);
+    const reference = await wines.getRow(
+      "fullName === 'Louis Jadot Bourgogne Pinot Noir'",
+    );
     assertEquals(features.map((column) => reference[column]), [
       3.9,
       2.49,

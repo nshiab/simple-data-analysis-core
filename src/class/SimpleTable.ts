@@ -7,6 +7,7 @@ import csvFormat from "../helpers/csvFormat.ts";
 import getDescription from "../methods/getDescription.ts";
 import removeMissing from "../methods/removeMissing.ts";
 import getColumns from "../methods/getColumns.ts";
+import getRow from "../methods/getRow.ts";
 import getRowCount from "../methods/getRowCount.ts";
 import getCharacterCount from "../methods/getCharacterCount.ts";
 import addCharacterCount from "../methods/addCharacterCount.ts";
@@ -5181,8 +5182,7 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Compare profiles directly with a row and use the default score column.
-   * const reference = await table.getFirstRow();
-   * if (!reference) throw new Error("The table is empty.");
+   * const reference = await table.getRow("name === 'Alex'");
    * await table
    *   .similarityMahalanobis(["height", "weight"], reference, "distance", {
    *     similarityScoreColumn: true,
@@ -7312,7 +7312,7 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Returns a single row that matches the specified conditions. If no row matches or if more than one row matches, an error is thrown by default.
+   * Returns a single row that matches the specified conditions. Always throws if no row matches. By default, also throws if more than one row matches.
    * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
@@ -7332,15 +7332,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Get a row without throwing an error if multiple matches or no match
+   * // Get the first matching row when multiple rows may match
    * const flexibleRow = await table.getRow(`status = 'pending'`, { strict: false });
    * console.log(flexibleRow);
    * ```
    * @param conditions - The conditions to match, specified as a SQL `WHERE` clause.
    * @param options - Optional settings:
-   * @param options.strict - If `false`, no error will be thrown when no row or more than one row match the condition. With no match, `null` is returned; with multiple matches, the first row is returned. Defaults to `true`.
-   * @returns A promise that resolves to an object representing the matched row, or `null` if `strict` is `false` and no row matches.
-   * @throws {Error} If `strict` is `true` and no row or more than one row matches the conditions.
+   * @param options.strict - If `false`, returns the first row when multiple rows match. A missing match always throws. Defaults to `true`.
+   * @returns A promise that resolves to an object representing the matched row.
+   * @throws {Error} If no row matches, or if `strict` is `true` and more than one row matches the conditions.
    * @category Getting Data
    */
   async getRow(
@@ -7349,20 +7349,9 @@ export default class SimpleTable extends Simple {
   ): Promise<
     {
       [key: string]: unknown;
-    } | null
-  > {
-    const data = await this.getData({ conditions, limit: 2 });
-    if (options.strict !== false) {
-      if (data.length === 0) {
-        throw new Error(`No row found with condition \`${conditions}\`.`);
-      } else if (data.length > 1) {
-        throw new Error(
-          `More than one row found with condition \`${conditions}\`.`,
-        );
-      }
     }
-
-    return data[0] ?? null;
+  > {
+    return await getRow(this, conditions, options);
   }
 
   /**
