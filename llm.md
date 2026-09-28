@@ -5782,8 +5782,7 @@ await table
 
 ```ts
 // Compare profiles directly with a row and use the default score column.
-const reference = await table.getFirstRow();
-if (!reference) throw new Error("The table is empty.");
+const reference = await table.getRow("name === 'Alex'");
 await table
   .similarityMahalanobis(["height", "weight"], reference, "distance", {
     similarityScoreColumn: true,
@@ -8082,35 +8081,34 @@ console.log(bottom5Books);
 
 #### `getRow`
 
-Returns a single row that matches the specified conditions. If no row matches or
-if more than one row matches, an error is thrown by default. With the default
-`SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators
-(`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-Temporal values use the same JavaScript representations as `getData()`.
+Returns a single row that matches the specified conditions. Always throws if no
+row matches. By default, also throws if more than one row matches. With the
+default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style
+operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for
+unchanged SQL. Temporal values use the same JavaScript representations as
+`getData()`.
 
 ##### Signature
 
 ```typescript
-async getRow(conditions: string, options?: { strict?: boolean }): Promise<Record<string, unknown> | null>;
+async getRow(conditions: string, options?: { strict?: boolean }): Promise<Record<string, unknown>>;
 ```
 
 ##### Parameters
 
 - **`conditions`**: The conditions to match, specified as a SQL `WHERE` clause.
 - **`options`**: Optional settings:
-- **`options.strict`**: If `false`, no error will be thrown when no row or more
-  than one row match the condition. With no match, `null` is returned; with
-  multiple matches, the first row is returned. Defaults to `true`.
+- **`options.strict`**: If `false`, returns the first row when multiple rows
+  match. A missing match always throws. Defaults to `true`.
 
 ##### Returns
 
-A promise that resolves to an object representing the matched row, or `null` if
-`strict` is `false` and no row matches.
+A promise that resolves to an object representing the matched row.
 
 ##### Throws
 
-- **`Error`**: If `strict` is `true` and no row or more than one row matches the
-  conditions.
+- **`Error`**: If no row matches, or if `strict` is `true` and more than one row
+  matches the conditions.
 
 ##### Examples
 
@@ -8127,7 +8125,7 @@ console.log(rowById);
 ```
 
 ```ts
-// Get a row without throwing an error if multiple matches or no match
+// Get the first matching row when multiple rows may match
 const flexibleRow = await table.getRow(`status = 'pending'`, { strict: false });
 console.log(flexibleRow);
 ```

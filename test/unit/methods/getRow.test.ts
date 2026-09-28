@@ -44,13 +44,15 @@ Deno.test("should throw when more than one row matches", async () => {
   await sdb.close();
 });
 
-Deno.test("should not throw when no row matches and strict is false", async () => {
+Deno.test("should throw when no row matches and strict is false", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
-  const data = await table.getRow(`Name === 'Nobody'`, { strict: false });
-
-  assertEquals(data, null);
+  await assertRejects(
+    () => table.getRow(`Name === 'Nobody'`, { strict: false }),
+    Error,
+    "No row found",
+  );
   await sdb.close();
 });
 
@@ -60,7 +62,31 @@ Deno.test("should return the first row when more than one row matches and strict
   table.loadData("test/data/files/employees.csv");
   const data = await table.getRow(`Job === 'Clerk'`, { strict: false });
 
-  assertEquals(typeof data, "object");
-  assertEquals(data?.Job, "Clerk");
+  assertEquals(
+    data,
+    (await table.getData({ conditions: `Job === 'Clerk'` }))[0],
+  );
+  assertEquals(data.Job, "Clerk");
   await sdb.close();
+});
+
+Deno.test("should return a non-null row with explicit or dynamic strict options", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("data").loadArray([{ id: 1 }]);
+    const dynamicOptions: { strict?: boolean } = {
+      strict: true,
+    };
+    for (
+      const options of [{ strict: true }, { strict: false }, dynamicOptions]
+    ) {
+      const row: { [key: string]: unknown } = await table.getRow(
+        "id === 1",
+        options,
+      );
+      assertEquals(row.id, 1);
+    }
+  } finally {
+    await sdb.close();
+  }
 });
