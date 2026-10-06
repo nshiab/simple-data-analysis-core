@@ -2279,3 +2279,426 @@ Deno.test("route methods preserve queued typed metadata after generated columns"
     await sdb.close();
   }
 });
+
+Deno.test("shortestPath elapsed time selects fastest or cheapest and retains every primary tie", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable().loadArray(chronologicalRows([
+      {
+        edgeId: 1,
+        source: "A",
+        target: "B",
+        startTime: 0n,
+        endTime: 1n,
+        weight: 1,
+      },
+      {
+        edgeId: 2,
+        source: "B",
+        target: "D",
+        startTime: 100n,
+        endTime: 101n,
+        weight: 1,
+      },
+      {
+        edgeId: 3,
+        source: "A",
+        target: "C",
+        startTime: 10n,
+        endTime: 11n,
+        weight: 2,
+      },
+      {
+        edgeId: 4,
+        source: "C",
+        target: "D",
+        startTime: 12n,
+        endTime: 13n,
+        weight: 2,
+      },
+      {
+        edgeId: 5,
+        source: "A",
+        target: "E",
+        startTime: 20n,
+        endTime: 21n,
+        weight: 3,
+      },
+      {
+        edgeId: 6,
+        source: "E",
+        target: "D",
+        startTime: 22n,
+        endTime: 23n,
+        weight: 3,
+      },
+      {
+        edgeId: 7,
+        source: "A",
+        target: "F",
+        startTime: 30n,
+        endTime: 31n,
+        weight: 1,
+      },
+      {
+        edgeId: 8,
+        source: "F",
+        target: "D",
+        startTime: 35n,
+        endTime: 36n,
+        weight: 1,
+      },
+    ]));
+    for (const direction of ["outgoing", "incoming"] as const) {
+      for (const minimize of ["weight", "elapsedTime"] as const) {
+        const result = source.shortestPath(
+          "source",
+          "target",
+          "edgeId",
+          direction === "outgoing" ? "A" : "D",
+          direction === "outgoing" ? "D" : "A",
+          {
+            weight: "cost",
+            elapsedTime: true,
+            minimize,
+            direction,
+            startTimeColumn: "startTime",
+            endTimeColumn: "endTime",
+            outputTable: true,
+          },
+        );
+        const rows = await result.getData();
+        assertEquals(
+          rows.map((row) => [row.edgeId, row.total, row.elapsedTimeMs]),
+          minimize === "weight"
+            ? direction === "outgoing"
+              ? [[1, 1, 1], [2, 2, 101], [7, 1, 1], [8, 2, 6]]
+              : [[2, 1, 1], [1, 2, 101], [8, 1, 1], [7, 2, 6]]
+            : direction === "outgoing"
+            ? [[3, 2, 1], [4, 4, 3], [5, 3, 1], [6, 6, 3]]
+            : [[4, 2, 1], [3, 4, 3], [6, 3, 1], [5, 6, 3]],
+        );
+        assertEquals(Object.keys(await result.getTypes()).slice(0, 5), [
+          "pathId",
+          "step",
+          "weight",
+          "total",
+          "elapsedTimeMs",
+        ]);
+        assertEquals((await result.getTypes()).elapsedTimeMs, "DOUBLE");
+      }
+    }
+    const fastest = source.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "D",
+      {
+        elapsedTime: true,
+        startTimeColumn: "startTime",
+        endTimeColumn: "endTime",
+        outputTable: "fastestUnweighted",
+      },
+    );
+    assertEquals(fastest.name, "fastestUnweighted");
+    const data = await fastest.selectColumns([
+      "edgeId",
+      "weight",
+      "total",
+      "elapsedTimeMs",
+    ]).getData();
+    assertEquals(data, [
+      { edgeId: 3, weight: 1, total: 1, elapsedTimeMs: 1 },
+      { edgeId: 4, weight: 1, total: 2, elapsedTimeMs: 3 },
+      { edgeId: 5, weight: 1, total: 1, elapsedTimeMs: 1 },
+      { edgeId: 6, weight: 1, total: 2, elapsedTimeMs: 3 },
+    ]);
+    assertEquals((await source.getData()).length, 8);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath elapsed time uses the first selected departure and bounded native cost states", async () => {
+  const sdb = new SimpleDB();
+  const observer = observeSdaQueries(sdb);
+  try {
+    const rows = await sdb.newTable().loadArray(chronologicalRows([
+      {
+        edgeId: 1,
+        source: "A",
+        target: "B",
+        startTime: 0n,
+        endTime: 1n,
+        weight: 1,
+      },
+      {
+        edgeId: 2,
+        source: "A",
+        target: "B",
+        startTime: 9n,
+        endTime: 10n,
+        weight: 1,
+      },
+      {
+        edgeId: 3,
+        source: "B",
+        target: "D",
+        startTime: 11n,
+        endTime: 12n,
+        weight: 1,
+      },
+      {
+        edgeId: 4,
+        source: "B",
+        target: "A",
+        startTime: 11n,
+        endTime: 12n,
+        weight: 0,
+      },
+    ])).shortestPath("source", "target", "edgeId", "A", "D", {
+      elapsedTime: true,
+      startTimeColumn: "startTime",
+      endTimeColumn: "endTime",
+    }).getData();
+    assertEquals(rows.map((row) => [row.edgeId, row.elapsedTimeMs]), [[2, 1], [
+      3,
+      3,
+    ]]);
+    const query = observer.queries.find((entry) =>
+      entry.query.includes("graph_shortest_routes")
+    )?.query ?? "";
+    assertStringIncludes(query, "USING KEY");
+    assertStringIncludes(query, '"__journey_anchor"');
+    assertStringIncludes(query, '<= "best_total"."distance"');
+    assertEquals(query.match(/row_number\(\) OVER \(\)/g)?.length, 1);
+  } finally {
+    observer.restore();
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath elapsed time preserves fractional milliseconds and native nanosecond minima", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const fractional = sdb.newTable("fractionalElapsedShortest");
+    await sdb.customQuery(`CREATE TABLE "fractionalElapsedShortest" AS
+      SELECT * FROM (VALUES
+        (1, 'A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000000001', TIMESTAMP_NS '2025-01-01 00:00:00.000000501'),
+        (2, 'B', 'D', TIMESTAMP_NS '2025-01-01 00:00:00.000001001', TIMESTAMP_NS '2025-01-01 00:00:00.000001501')
+      ) edges(edgeId, source, target, departure, arrival)`);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const rows = await fractional.shortestPath(
+        "source",
+        "target",
+        "edgeId",
+        direction === "outgoing" ? "A" : "D",
+        direction === "outgoing" ? "D" : "A",
+        {
+          elapsedTime: true,
+          direction,
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+          outputTable: true,
+        },
+      ).getData();
+      assertEquals(rows.map((row) => row.elapsedTimeMs), [0.0005, 0.0015]);
+    }
+    const wide = sdb.newTable("wideElapsedShortest");
+    await sdb.customQuery(`CREATE TABLE "wideElapsedShortest" AS
+      SELECT * FROM (VALUES
+        (1, 'A', 'D', TIMESTAMP_NS '2024-01-01 00:00:00', TIMESTAMP_NS '2025-01-01 00:00:00.000000001'),
+        (2, 'A', 'D', TIMESTAMP_NS '2024-01-01 00:00:00', TIMESTAMP_NS '2025-01-01 00:00:00')
+      ) edges(edgeId, source, target, departure, arrival)`);
+    const rows = await wide.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "D",
+      {
+        elapsedTime: true,
+        startTimeColumn: "departure",
+        endTimeColumn: "arrival",
+      },
+    ).getData();
+    assertEquals(rows.map((row) => row.edgeId), [2]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath elapsed options reject missing metrics and output column collisions", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const unqueued = sdb.newTable();
+    const chronological = {
+      startTimeColumn: "departure",
+      endTimeColumn: "arrival",
+    };
+    for (
+      const options of [
+        { elapsedTime: true },
+        { elapsedTime: true, startTimeColumn: "departure" },
+        { elapsedTime: true, endTimeColumn: "arrival" },
+        { ...chronological, elapsedTime: true, weight: "cost" },
+        { ...chronological, minimize: "elapsedTime" as const },
+        { ...chronological, elapsedTime: true, minimize: "weight" as const },
+        { ...chronological, elapsedTime: true, direction: "both" as const },
+      ]
+    ) {
+      assertThrows(
+        () =>
+          unqueued.shortestPath(
+            "source",
+            "target",
+            "edgeId",
+            "A",
+            "D",
+            options,
+          ),
+        TypeError,
+      );
+    }
+    assertEquals(unqueued.pendingOps.length, 0);
+    const source = sdb.newTable().loadArray([
+      {
+        edgeId: 1,
+        source: "A",
+        target: "D",
+        departure: new Date(0),
+        arrival: new Date(1),
+        ELAPSEDTIMEMS: 9,
+      },
+    ]);
+    await assertRejects(
+      () =>
+        source.shortestPath("source", "target", "edgeId", "A", "D", {
+          ...chronological,
+          elapsedTime: true,
+          outputTable: true,
+        }).run(),
+      Error,
+      "ELAPSEDTIMEMS",
+    );
+    const rows = await source.shortestPath(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      "D",
+      {
+        ...chronological,
+        elapsedTime: false,
+        outputTable: true,
+      },
+    ).getData();
+    assertEquals(rows[0].ELAPSEDTIMEMS, 9);
+    assertEquals(Object.hasOwn(rows[0], "elapsedTimeMs"), false);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath elapsed minima match exhaustive timed cyclic graphs", async () => {
+  const sdb = new SimpleDB();
+  const nodes = ["A", "B", "C", "D"];
+  try {
+    for (let seed = 0; seed < 8; seed++) {
+      let state = seed + 1;
+      const random = (limit: number) => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return (state >>> 16) % limit;
+      };
+      const events: WeightedChronologicalEvent[] = [
+        {
+          edgeId: 0,
+          source: "A",
+          target: "D",
+          startTime: 0n,
+          endTime: 9n,
+          weight: 4,
+        },
+        ...Array.from({ length: 14 }, (_, index) => {
+          const startTime = BigInt(random(8));
+          return {
+            edgeId: index + 1,
+            source: nodes[random(4)],
+            target: nodes[random(4)],
+            startTime,
+            endTime: startTime + BigInt(random(3)),
+            weight: random(4),
+          };
+        }),
+      ];
+      const weights = new Map(
+        events.map((event) => [event.edgeId, event.weight]),
+      );
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const start = direction === "outgoing" ? "A" : "D";
+        const end = direction === "outgoing" ? "D" : "A";
+        for (const strictOrdering of [false, true]) {
+          const minGap = BigInt(seed % 2);
+          const reference = enumerateChronologicalRoutes(events, start, {
+            direction,
+            end,
+            strictOrdering,
+            minGap,
+            maxSteps: 3,
+          }).map((steps) => ({
+            steps,
+            elapsed: Number(
+              direction === "outgoing"
+                ? steps.at(-1)!.event.endTime! - steps[0].event.startTime!
+                : steps[0].event.endTime! - steps.at(-1)!.event.startTime!,
+            ),
+            weight: steps.reduce(
+              (sum, step) => sum + weights.get(step.event.edgeId)!,
+              0,
+            ),
+          }));
+          for (const minimize of ["weight", "elapsedTime"] as const) {
+            const metric = minimize === "weight" ? "weight" : "elapsed";
+            const minimum = Math.min(
+              ...reference.map((route) => route[metric]),
+            );
+            const expected = reference.filter((route) =>
+              route[metric] === minimum
+            )
+              .map((route) =>
+                route.steps.map((step) => step.event.edgeId).join(",")
+              )
+              .sort();
+            const rows = await sdb.newTable().loadArray(
+              chronologicalRows(events.toReversed()),
+            )
+              .shortestPath("source", "target", "edgeId", start, end, {
+                elapsedTime: true,
+                minimize,
+                weight: "cost",
+                direction,
+                startTimeColumn: "startTime",
+                endTimeColumn: "endTime",
+                strictOrdering,
+                minGapMs: Number(minGap),
+              }).getData();
+            const paths = new Map<unknown, unknown[]>();
+            for (const row of rows) {
+              const path = paths.get(row.pathId) ?? [];
+              path.push(row.edgeId);
+              paths.set(row.pathId, path);
+            }
+            assertEquals(
+              [...paths.values()].map((ids) => ids.join(",")).sort(),
+              expected,
+              `seed=${seed}, direction=${direction}, strict=${strictOrdering}, minimize=${minimize}`,
+            );
+          }
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});

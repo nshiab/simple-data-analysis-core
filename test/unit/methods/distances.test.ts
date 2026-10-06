@@ -1658,3 +1658,438 @@ Deno.test("distances chronological SQL uses finite keyed event costs without rou
     await sdb.close();
   }
 });
+
+const elapsedOptions = {
+  startTimeColumn: "departure",
+  endTimeColumn: "arrival",
+  elapsedTime: true,
+};
+
+function elapsedRows(
+  events: {
+    source: string;
+    target: string;
+    departure: number;
+    arrival: number;
+    cost: number;
+  }[],
+) {
+  return events.map((event) => ({
+    ...event,
+    departure: new Date(chronologicalBase + event.departure),
+    arrival: new Date(chronologicalBase + event.arrival),
+  }));
+}
+
+Deno.test("distances elapsed chooses paired cheapest or fastest journeys including waiting", async () => {
+  const sdb = new SimpleDB();
+  const rows = elapsedRows([
+    { source: "A", target: "B", departure: 0, arrival: 1, cost: 1 },
+    { source: "B", target: "D", departure: 9, arrival: 10, cost: 1 },
+    { source: "A", target: "C", departure: 3, arrival: 4, cost: 4 },
+    { source: "C", target: "D", departure: 5, arrival: 6, cost: 4 },
+  ]);
+  try {
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const start = direction === "outgoing" ? "A" : "D";
+      const destination = direction === "outgoing" ? "D" : "A";
+      for (const minimize of ["weight", "elapsedTime"] as const) {
+        const result = sdb.newTable().loadArray(rows).distances(
+          "source",
+          "target",
+          start,
+          {
+            ...elapsedOptions,
+            direction,
+            weight: "cost",
+            minimize,
+          },
+        );
+        assertEquals(
+          (await result.getData()).find((row) => row.node === destination),
+          {
+            start,
+            node: destination,
+            distance: minimize === "weight" ? 2 : 8,
+            elapsedTimeMs: minimize === "weight" ? 10 : 3,
+          },
+        );
+      }
+    }
+    assertEquals(
+      await sdb.newTable().loadArray(rows).distances(
+        "source",
+        "target",
+        "A",
+        elapsedOptions,
+      ).getData(),
+      [
+        { start: "A", node: "B", distance: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "C", distance: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "D", distance: 2, elapsedTimeMs: 3 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed preserves departure anchors through a shared physical event", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = elapsedRows([
+      { source: "A", target: "B", departure: 0, arrival: 1, cost: 1 },
+      { source: "A", target: "B", departure: 6, arrival: 7, cost: 5 },
+      { source: "B", target: "C", departure: 8, arrival: 9, cost: 1 },
+      { source: "C", target: "D", departure: 10, arrival: 11, cost: 1 },
+    ]);
+    for (const ordered of [rows, rows.toReversed()]) {
+      const result = await sdb.newTable().loadArray(ordered).distances(
+        "source",
+        "target",
+        "A",
+        {
+          ...elapsedOptions,
+          weight: "cost",
+          minimize: "elapsedTime",
+        },
+      ).getData();
+      assertEquals(result, [
+        { start: "A", node: "B", distance: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "C", distance: 6, elapsedTimeMs: 3 },
+        { start: "A", node: "D", distance: 7, elapsedTimeMs: 5 },
+      ]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed uses the secondary metric for ties and orders paired results", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = elapsedRows([
+      { source: "A", target: "B", departure: 0, arrival: 5, cost: 1 },
+      { source: "A", target: "B", departure: 1, arrival: 4, cost: 1 },
+      { source: "A", target: "B", departure: 2, arrival: 3, cost: 9 },
+      { source: "A", target: "C", departure: 0, arrival: 1, cost: 2 },
+      { source: "A", target: "C", departure: 0, arrival: 1, cost: 3 },
+      { source: "A", target: "D", departure: 0, arrival: 1, cost: 1 },
+    ]);
+    assertEquals(
+      await sdb.newTable().loadArray(rows).distances("source", "target", "A", {
+        ...elapsedOptions,
+        weight: "cost",
+        minimize: "weight",
+      }).getData(),
+      [
+        { start: "A", node: "D", distance: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "B", distance: 1, elapsedTimeMs: 3 },
+        { start: "A", node: "C", distance: 2, elapsedTimeMs: 1 },
+      ],
+    );
+    assertEquals(
+      await sdb.newTable().loadArray(rows).distances("source", "target", "A", {
+        ...elapsedOptions,
+        weight: "cost",
+        minimize: "elapsedTime",
+      }).getData(),
+      [
+        { start: "A", node: "D", distance: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "C", distance: 2, elapsedTimeMs: 1 },
+        { start: "A", node: "B", distance: 9, elapsedTimeMs: 1 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed preserves native precision before converting nanoseconds to milliseconds", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("elapsedNanoseconds");
+    await sdb.customQuery(`CREATE TABLE "elapsedNanoseconds" AS
+      SELECT * FROM (VALUES
+        ('A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000000001', TIMESTAMP_NS '2025-01-01 00:00:00.000000004', 1),
+        ('A', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.000000002', TIMESTAMP_NS '2025-01-01 00:00:00.000000004', 2),
+        ('B', 'C', TIMESTAMP_NS '2025-01-01 00:00:00.000000005', TIMESTAMP_NS '2025-01-01 00:00:00.000000007', 1)
+      ) edges(source, target, departure, arrival, cost)`);
+    assertEquals(
+      await table.distances("source", "target", "A", {
+        ...elapsedOptions,
+        weight: "cost",
+        minimize: "elapsedTime",
+      }).getData(),
+      [
+        { start: "A", node: "B", distance: 2, elapsedTimeMs: 0.000002 },
+        { start: "A", node: "C", distance: 3, elapsedTimeMs: 0.000005 },
+      ],
+    );
+    const wide = sdb.newTable("elapsedWideNanoseconds");
+    await sdb.customQuery(`CREATE TABLE "elapsedWideNanoseconds" AS
+      SELECT * FROM (VALUES
+        ('A', 'B', TIMESTAMP_NS '1970-01-01', make_timestamp_ns(9007199254740993), 1),
+        ('A', 'B', TIMESTAMP_NS '1970-01-01', make_timestamp_ns(9007199254740992), 2)
+      ) edges(source, target, departure, arrival, cost)`);
+    assertEquals(
+      (await wide.distances("source", "target", "A", {
+        ...elapsedOptions,
+        weight: "cost",
+        minimize: "elapsedTime",
+      }).getData())[0].distance,
+      2,
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed terminates zero cycles and includes actual returns", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = elapsedRows([
+      { source: "A", target: "B", departure: 1, arrival: 1, cost: 0 },
+      { source: "B", target: "A", departure: 1, arrival: 1, cost: 0 },
+      { source: "A", target: "A", departure: 1, arrival: 1, cost: 3 },
+    ]);
+    for (const minimize of ["weight", "elapsedTime"] as const) {
+      for (const direction of ["incoming", "outgoing"] as const) {
+        assertEquals(
+          await sdb.newTable().loadArray(rows).distances("source", "target", [
+            "A",
+            "missing",
+          ], {
+            ...elapsedOptions,
+            direction,
+            weight: "cost",
+            minimize,
+            strictOrdering: false,
+          }).getData(),
+          [
+            { start: "A", node: "A", distance: 0, elapsedTimeMs: 0 },
+            { start: "A", node: "B", distance: 0, elapsedTimeMs: 0 },
+          ],
+        );
+      }
+    }
+    assertEquals(
+      await sdb.newTable().loadArray(rows).distances("source", "target", "A", {
+        ...elapsedOptions,
+        strictOrdering: false,
+      }).getData(),
+      [
+        { start: "A", node: "A", distance: 1, elapsedTimeMs: 0 },
+        { start: "A", node: "B", distance: 1, elapsedTimeMs: 0 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed result schema supports pending chains and output tables", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable().loadArray(elapsedRows([
+      { source: "A", target: "B", departure: 0, arrival: 2, cost: 3 },
+    ]));
+    const result = source.distances("source", "target", "A", {
+      ...elapsedOptions,
+      outputTable: "elapsedDistanceOutput",
+    });
+    assertEquals(result.name, "elapsedDistanceOutput");
+    assertEquals(await result.getTypes(), {
+      start: "VARCHAR",
+      node: "VARCHAR",
+      distance: "BIGINT",
+      elapsedTimeMs: "DOUBLE",
+    });
+    assertEquals(
+      await result.filter("elapsedTimeMs > 1").selectColumns([
+        "node",
+        "elapsedTimeMs",
+      ]).getData(),
+      [
+        { node: "B", elapsedTimeMs: 2 },
+      ],
+    );
+    assertEquals((await source.getData()).length, 1);
+    assertEquals(
+      await source.distances("source", "target", "missing", {
+        ...elapsedOptions,
+        outputTable: true,
+      }).getData(),
+      [],
+    );
+    assertEquals(
+      await source.distances("source", "target", "A", {
+        ...elapsedOptions,
+        outputTable: true,
+      }).filter("elapsedTimeMs > 1").selectColumns(["elapsedTimeMs"]).getData(),
+      [
+        { elapsedTimeMs: 2 },
+      ],
+    );
+    assertEquals(
+      await source.distances("source", "target", "A", {
+        ...elapsedOptions,
+        elapsedTime: false,
+        outputTable: true,
+      }).getData(),
+      [{ start: "A", node: "B", distance: 1 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances validates elapsed optimization options before queueing", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable();
+    const cases: [Parameters<SimpleTable["distances"]>[3], string][] = [
+      [
+        { elapsedTime: "yes" as unknown as boolean },
+        "options.elapsedTime must be a boolean",
+      ],
+      [{ elapsedTime: true }, "requires both"],
+      [{ elapsedTime: true, startTimeColumn: "departure" }, "requires both"],
+      [{ elapsedTime: true, endTimeColumn: "arrival" }, "requires both"],
+      [{ ...elapsedOptions, weight: "cost" }, "specify options.minimize"],
+      [{ minimize: "weight" }, "requires options.weight"],
+      [{ minimize: "elapsedTime" }, "requires options.elapsedTime"],
+      [
+        { minimize: "elapsedTime", elapsedTime: false },
+        "requires options.elapsedTime",
+      ],
+      [
+        { minimize: "count" as unknown as "weight" },
+        "options.minimize must be",
+      ],
+    ];
+    for (const [options, message] of cases) {
+      assertThrows(
+        () => table.distances("source", "target", "A", options),
+        TypeError,
+        message,
+      );
+      assertEquals(table.pendingOps.length, 0);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed matches independently enumerated journeys on tiny graphs", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (let seed = 0; seed < 8; seed++) {
+      let randomState = seed + 17;
+      const random = (limit: number) => {
+        randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+        return (randomState >>> 16) % limit;
+      };
+      const nodes = ["A", "B", "C"];
+      const events: WeightedChronologicalEvent[] = Array.from(
+        { length: 8 },
+        (_, edgeId) => {
+          const startTime = BigInt(random(6));
+          return {
+            edgeId,
+            source: nodes[random(nodes.length)],
+            target: nodes[random(nodes.length)],
+            startTime,
+            endTime: startTime + BigInt(random(2)),
+            weight: random(4),
+          };
+        },
+      );
+      const weights = new Map(
+        events.map((event) => [event.edgeId, event.weight]),
+      );
+      const minGap = BigInt(seed % 2);
+      const strictOrdering = seed % 3 !== 0;
+      for (const direction of ["outgoing", "incoming"] as const) {
+        for (const minimize of ["weight", "elapsedTime"] as const) {
+          const compare = (
+            left: { distance: number; elapsedTimeMs: number },
+            right: { distance: number; elapsedTimeMs: number },
+          ) =>
+            minimize === "weight"
+              ? left.distance - right.distance ||
+                left.elapsedTimeMs - right.elapsedTimeMs
+              : left.elapsedTimeMs - right.elapsedTimeMs ||
+                left.distance - right.distance;
+          const expected = [];
+          for (const start of nodes) {
+            const best = new Map<
+              string,
+              {
+                start: string;
+                node: string;
+                distance: number;
+                elapsedTimeMs: number;
+              }
+            >();
+            for (
+              const route of enumerateChronologicalRoutes(events, start, {
+                direction,
+                minGap,
+                strictOrdering,
+                simpleNodes: false,
+                maxSteps: events.length,
+              })
+            ) {
+              const first = route[0].event;
+              const last = route.at(-1)!;
+              const candidate = {
+                start,
+                node: last.target,
+                distance: route.reduce(
+                  (sum, step) => sum + weights.get(step.event.edgeId)!,
+                  0,
+                ),
+                elapsedTimeMs: Number(
+                  direction === "outgoing"
+                    ? last.event.endTime! - first.startTime!
+                    : first.endTime! - last.event.startTime!,
+                ),
+              };
+              const prior = best.get(candidate.node);
+              if (prior === undefined || compare(candidate, prior) < 0) {
+                best.set(candidate.node, candidate);
+              }
+            }
+            expected.push(...best.values());
+          }
+          expected.sort((left, right) =>
+            left.start.localeCompare(right.start) || compare(left, right) ||
+            left.node.localeCompare(right.node)
+          );
+          assertEquals(
+            await sdb.newTable().loadArray(chronologicalRows(events)).distances(
+              "source",
+              "target",
+              nodes,
+              {
+                elapsedTime: true,
+                startTimeColumn: "startTime",
+                endTimeColumn: "endTime",
+                weight: "weight",
+                minimize,
+                direction,
+                minGapMs: Number(minGap),
+                strictOrdering,
+              },
+            ).getData(),
+            expected,
+            `seed ${seed}, ${direction}, ${minimize}`,
+          );
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});

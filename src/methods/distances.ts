@@ -1,6 +1,9 @@
 import type SimpleTable from "../class/SimpleTable.ts";
 import buildGraphTemporalCostStateSql from "../helpers/buildGraphTemporalCostStateSql.ts";
 import getGraphWeightColumn from "../helpers/getGraphWeightColumn.ts";
+import prepareGraphMetricOptions, {
+  type PreparedGraphMetricOptions,
+} from "../helpers/prepareGraphMetricOptions.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import prepareGraphTemporalSql, {
   type GraphTemporalOptions,
@@ -23,6 +26,8 @@ type DistancesOptions = GraphTemporalOptions & {
   direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
+  elapsedTime?: boolean;
+  minimize?: "weight" | "elapsedTime";
 };
 
 export default function distances(
@@ -64,6 +69,7 @@ export default function distances(
     );
   }
 
+  const metrics = prepareGraphMetricOptions(options, "distances()", true);
   const preparedStarts = prepareGraphStarts(
     startNodes,
     "distances()",
@@ -119,6 +125,7 @@ export default function distances(
         direction,
         options.weight,
         temporalOptions,
+        metrics,
       ),
     outputSchema: (schema) => {
       const validated = validateDistanceInputs(
@@ -133,6 +140,7 @@ export default function distances(
         start: validated.idType,
         node: validated.idType,
         distance: validated.distanceType,
+        ...(metrics.elapsedTime ? { elapsedTimeMs: "DOUBLE" } : {}),
       };
     },
   });
@@ -172,6 +180,7 @@ function distancesSelect(
   direction: GraphDirection,
   weight: string | undefined,
   temporalOptions: PreparedGraphTemporalOptions | undefined,
+  metrics: PreparedGraphMetricOptions,
 ): string {
   const prepared = prepareGraphTraversal(
     input,
@@ -197,6 +206,16 @@ function distancesSelect(
       temporalOptions,
       "distances()",
     );
+    if (metrics.elapsedTime) {
+      return elapsedDistancesSelect(
+        prepared,
+        direction as Exclude<GraphDirection, "both">,
+        temporal,
+        distanceType,
+        edgeWeight,
+        metrics.minimize,
+      );
+    }
     return temporalDistancesSelect(
       prepared,
       direction as Exclude<GraphDirection, "both">,
@@ -323,4 +342,111 @@ function temporalDistancesSelect(
     GROUP BY ${q("start")}, ${q("node")}, ${q("__start_key")},
       ${q("__node_key")}
     ORDER BY ${q("__start_key")}, ${q("distance")}, ${q("__node_key")}`;
+}
+
+function elapsedDistancesSelect(
+  prepared: ReturnType<typeof prepareGraphTraversal>,
+  direction: Exclude<GraphDirection, "both">,
+  temporal: ReturnType<typeof prepareGraphTemporalSql>,
+  distanceType: string,
+  edgeWeight: string,
+  minimize: PreparedGraphMetricOptions["minimize"],
+): string {
+  const q = quoteIdentifier;
+  const relations = prepared.relationNames([
+    "graph_starts",
+    "graph_temporal_settings",
+    "graph_event_rows",
+    "graph_edges",
+    "graph_elapsed_states",
+    "graph_elapsed_results",
+  ]);
+  const starts = relations.graph_starts;
+  const settings = relations.graph_temporal_settings;
+  const events = relations.graph_event_rows;
+  const edges = relations.graph_edges;
+  const states = relations.graph_elapsed_states;
+  const results = relations.graph_elapsed_results;
+  const ref = (alias: string, column: string) => `${q(alias)}.${q(column)}`;
+  const anchor = temporal.journeyAnchor("edges", direction);
+  const reachedAnchor = ref("reached", "__anchor");
+  const candidateDistance = `CAST(${ref("reached", "distance")} + ${
+    ref("edges", "__weight")
+  } AS ${distanceType})`;
+  const order = minimize === "elapsedTime"
+    ? `${q("__elapsed")}, ${q("distance")}`
+    : `${q("distance")}, ${q("__elapsed")}`;
+
+  // A physical event and the first departure (last arrival for incoming
+  // traversal) fix elapsed time. Keep the cheapest cost for each such state;
+  // merging different anchors would lose later-departing, faster journeys.
+  // The state space is finite, and strict improvements terminate zero cycles.
+  return `WITH RECURSIVE ${settings} AS MATERIALIZED (
+      SELECT CAST(? AS HUGEINT) AS ${q("__gap")}
+    ), ${events} AS MATERIALIZED (
+      ${
+    prepared.edges(direction, [
+      `${edgeWeight} AS ${q("__weight")}`,
+      ...temporal.eventSelections("edges"),
+    ])
+  }
+    ), ${edges} AS MATERIALIZED (
+      SELECT * FROM ${events} AS ${q("events")}
+      WHERE ${temporal.eventValidity("events")}
+    ), ${starts} AS MATERIALIZED (
+      SELECT ${q("start")}, ${prepared.key(q("start"))} AS ${q("__key")}
+      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${
+    q("start")
+  })
+    ), ${states}(
+      ${q("start")}, ${q("node")}, ${q("__start_key")}, ${q("__node_key")},
+      ${q("__event_id")}, ${q("__event_start")}, ${q("__event_end")},
+      ${q("__anchor")}, ${q("distance")}
+    ) USING KEY(${q("__start_key")}, ${q("__event_id")}, ${q("__anchor")}) AS (
+      SELECT ${ref("starts", "start")}, ${ref("edges", "__to")},
+        ${ref("starts", "__key")}, ${ref("edges", "__to_key")},
+        ${ref("edges", "__event_id")}, ${ref("edges", "__event_start")},
+        ${ref("edges", "__event_end")}, ${anchor}, ${ref("edges", "__weight")}
+      FROM ${starts} AS ${q("starts")}
+      INNER JOIN ${edges} AS ${q("edges")}
+        ON ${ref("starts", "__key")} = ${ref("edges", "__from_key")}
+      UNION
+      SELECT ${ref("reached", "start")}, ${ref("edges", "__to")},
+        ${ref("reached", "__start_key")}, ${ref("edges", "__to_key")},
+        ${ref("edges", "__event_id")}, ${ref("edges", "__event_start")},
+        ${ref("edges", "__event_end")}, ${reachedAnchor},
+        MIN(${candidateDistance}) AS ${q("distance")}
+      FROM ${states} AS ${q("reached")}
+      INNER JOIN ${edges} AS ${q("edges")}
+        ON ${ref("reached", "__node_key")} = ${ref("edges", "__from_key")}
+      CROSS JOIN ${settings} AS ${q("settings")}
+      LEFT JOIN recurring.${states} AS ${q("best")}
+        ON ${ref("reached", "__start_key")} = ${ref("best", "__start_key")}
+        AND ${ref("edges", "__event_id")} = ${ref("best", "__event_id")}
+        AND ${reachedAnchor} = ${ref("best", "__anchor")}
+      WHERE ${
+    temporal.transition("reached", "edges", direction, ref("settings", "__gap"))
+  }
+      GROUP BY ${ref("reached", "start")}, ${ref("edges", "__to")},
+        ${ref("reached", "__start_key")}, ${ref("edges", "__to_key")},
+        ${ref("edges", "__event_id")}, ${ref("edges", "__event_start")},
+        ${ref("edges", "__event_end")}, ${reachedAnchor}, ${
+    ref("best", "distance")
+  }
+      HAVING ${ref("best", "distance")} IS NULL OR
+        MIN(${candidateDistance}) < ${ref("best", "distance")}
+    ), ${results} AS (
+      SELECT *, ${
+    temporal.journeyElapsed("states", ref("states", "__anchor"), direction)
+  } AS ${q("__elapsed")}
+      FROM ${states} AS ${q("states")}
+    )
+    SELECT ${q("start")}, ${q("node")}, ${q("distance")},
+      ${temporal.elapsedMilliseconds(q("__elapsed"))} AS ${q("elapsedTimeMs")}
+    FROM ${results}
+    QUALIFY row_number() OVER (
+      PARTITION BY ${q("__start_key")}, ${q("__node_key")}
+      ORDER BY ${order}, ${q("__event_id")}, ${q("__anchor")}
+    ) = 1
+    ORDER BY ${q("__start_key")}, ${order}, ${q("__node_key")}`;
 }

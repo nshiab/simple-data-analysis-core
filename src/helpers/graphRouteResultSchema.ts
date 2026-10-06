@@ -6,13 +6,19 @@ export default function graphRouteResultSchema(
   schema: TableSchema,
   distanceType: string,
   method: string,
+  elapsedTime = false,
 ): TableSchema {
-  validateGraphRouteResultSchema(schema, method);
+  validateGraphRouteResultSchema(
+    schema,
+    method,
+    elapsedTime ? ["elapsedTimeMs"] : [],
+  );
   return {
     pathId: "BIGINT",
     step: "BIGINT",
     weight: distanceType,
     total: distanceType,
+    ...(elapsedTime ? { elapsedTimeMs: "DOUBLE" } : {}),
     ...schema,
   };
 }

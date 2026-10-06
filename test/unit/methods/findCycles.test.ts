@@ -1955,3 +1955,348 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
     await sdb.close();
   }
 });
+
+Deno.test("findCycles reports elapsed journey time independently of weights and connection totals", async () => {
+  const sdb = new SimpleDB();
+  const rows = [
+    {
+      edgeId: 1,
+      source: "A",
+      target: "B",
+      cost: 2,
+      departure: new Date(chronologicalBase),
+      arrival: new Date(chronologicalBase + 1000),
+    },
+    {
+      edgeId: 2,
+      source: "A",
+      target: "B",
+      cost: 4,
+      departure: new Date(chronologicalBase + 5000),
+      arrival: new Date(chronologicalBase + 7000),
+    },
+    {
+      edgeId: 3,
+      source: "B",
+      target: "A",
+      cost: 3,
+      departure: new Date(chronologicalBase + 10000),
+      arrival: new Date(chronologicalBase + 12000),
+    },
+  ];
+  try {
+    const source = sdb.newTable().loadArray(rows);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      for (const weighted of [false, true]) {
+        const result = source.findCycles(
+          "source",
+          "target",
+          "edgeId",
+          "A",
+          {
+            direction,
+            weight: weighted ? "cost" : undefined,
+            elapsedTime: true,
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            minGapMs: 1000,
+            outputTable: true,
+          },
+        );
+        assertEquals(await result.getColumns(), [
+          "start",
+          "pathId",
+          "step",
+          "weight",
+          "total",
+          "elapsedTimeMs",
+          ...Object.keys(rows[0]),
+        ]);
+        assertEquals((await result.getTypes()).elapsedTimeMs, "DOUBLE");
+        const expected = direction === "outgoing"
+          ? [[0, 1, 1, 1000, 2, 2], [0, 2, 3, 12000, 3, 5], [
+            1,
+            1,
+            2,
+            2000,
+            4,
+            4,
+          ], [1, 2, 3, 7000, 3, 7]]
+          : [[0, 1, 3, 2000, 3, 3], [0, 2, 1, 12000, 2, 5], [
+            1,
+            1,
+            3,
+            2000,
+            3,
+            3,
+          ], [1, 2, 2, 7000, 4, 7]];
+        assertEquals(
+          (await result.getData()).map((row) => [
+            row.pathId,
+            row.step,
+            row.edgeId,
+            row.elapsedTimeMs,
+            row.weight,
+            row.total,
+          ]),
+          expected.map(([pathId, step, edgeId, elapsed, weight, total]) => [
+            pathId,
+            step,
+            edgeId,
+            elapsed,
+            weighted ? weight : 1,
+            weighted ? total : step,
+          ]),
+        );
+      }
+    }
+    assertEquals(await source.getData(), rows);
+    const options = {
+      elapsedTime: true,
+      startTimeColumn: "departure",
+      endTimeColumn: "arrival",
+      outputTable: "elapsedCycleSnapshot",
+    };
+    const selected = source.findCycles(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+      options,
+    )
+      .filter("elapsedTimeMs >= 7000")
+      .selectColumns(["edgeId", "elapsedTimeMs"]);
+    options.elapsedTime = false;
+    options.startTimeColumn = "missing";
+    assertEquals(selected.name, "elapsedCycleSnapshot");
+    assertEquals(await selected.getData(), [
+      { edgeId: 3, elapsedTimeMs: 12000 },
+      { edgeId: 3, elapsedTimeMs: 7000 },
+    ]);
+    const empty = source.findCycles("source", "target", "edgeId", "missing", {
+      elapsedTime: true,
+      startTimeColumn: "departure",
+      endTimeColumn: "arrival",
+      outputTable: true,
+    });
+    assertEquals(await empty.getData(), []);
+    assertEquals((await empty.getTypes()).elapsedTimeMs, "DOUBLE");
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles preserves fractional milliseconds at native timestamp precision", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const type of ["TIMESTAMP", "TIMESTAMP_NS"]) {
+      const table = sdb.newTable(`elapsed_${type}`);
+      const fractions = type === "TIMESTAMP_NS"
+        ? ["000000001", "000000002", "000001001", "000001002"]
+        : ["000001", "000002", "001001", "001002"];
+      await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+        SELECT * FROM (VALUES
+          (1, 'A', 'B', ${type} '2025-01-01 00:00:00.${fractions[0]}',
+            ${type} '2025-01-01 00:00:00.${fractions[1]}', 0.1::DECIMAL(10, 2)),
+          (2, 'B', 'A', ${type} '2025-01-01 00:00:00.${fractions[2]}',
+            ${type} '2025-01-01 00:00:00.${fractions[3]}', 0.2::DECIMAL(10, 2))
+        ) edges(edgeId, source, target, departure, arrival, cost)`);
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const result = table.findCycles(
+          "source",
+          "target",
+          "edgeId",
+          "A",
+          {
+            direction,
+            elapsedTime: true,
+            weight: "cost",
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            outputTable: true,
+          },
+        ).convert({ total: "string" });
+        assertEquals(
+          (await result.getData()).map((row) => [row.elapsedTimeMs, row.total]),
+          [
+            [
+              type === "TIMESTAMP_NS" ? 0.000001 : 0.001,
+              direction === "outgoing" ? "0.10" : "0.20",
+            ],
+            [type === "TIMESTAMP_NS" ? 0.001001 : 1.001, "0.30"],
+          ],
+        );
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles validates elapsed reporting and rejects route minimization before queueing", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable();
+    for (
+      const options of [
+        { elapsedTime: true },
+        { elapsedTime: true, startTimeColumn: "departure" },
+        { elapsedTime: true, endTimeColumn: "arrival" },
+      ]
+    ) {
+      assertThrows(
+        () => table.findCycles("source", "target", "edgeId", "A", options),
+        TypeError,
+        "requires both options.startTimeColumn and options.endTimeColumn",
+      );
+    }
+    assertThrows(
+      () =>
+        table.findCycles("source", "target", "edgeId", "A", {
+          // @ts-expect-error Runtime validation rejects non-boolean flags.
+          elapsedTime: "true",
+        }),
+      TypeError,
+      "options.elapsedTime must be a boolean",
+    );
+    for (const minimize of ["weight", "elapsedTime"]) {
+      assertThrows(
+        () =>
+          table.findCycles("source", "target", "edgeId", "A", {
+            // @ts-expect-error findCycles enumerates routes and cannot minimize a metric.
+            minimize,
+          }),
+        TypeError,
+        "options.minimize is not supported",
+      );
+    }
+    assertThrows(
+      () =>
+        table.findCycles("source", "target", "edgeId", "A", {
+          direction: "both",
+          elapsedTime: true,
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+        }),
+      TypeError,
+      'options.direction cannot be "both"',
+    );
+    assertEquals(table.pendingOps.length, 0);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles reserves elapsedTimeMs only when reporting is enabled", async () => {
+  const sdb = new SimpleDB();
+  const rows = [{
+    edgeId: 1,
+    source: "A",
+    target: "A",
+    departure: new Date(chronologicalBase),
+    arrival: new Date(chronologicalBase + 1000),
+    ElapsedTimeMS: 123,
+  }];
+  try {
+    const table = sdb.newTable().loadArray(rows);
+    for (const outputTable of [false, true]) {
+      await assertRejects(
+        () =>
+          table.findCycles("source", "target", "edgeId", "A", {
+            elapsedTime: true,
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            outputTable,
+          }).getData(),
+        Error,
+        "ElapsedTimeMS",
+      );
+      assertEquals(await table.getData(), rows);
+    }
+    for (const elapsedTime of [undefined, false]) {
+      const result = table.findCycles("source", "target", "edgeId", "A", {
+        elapsedTime,
+        startTimeColumn: "departure",
+        endTimeColumn: "arrival",
+        outputTable: true,
+      });
+      assertEquals(await result.getData(), [{
+        start: "A",
+        pathId: 0,
+        step: 1,
+        weight: 1,
+        total: 1,
+        ...rows[0],
+      }]);
+      assertEquals(await result.getColumns(), [
+        "start",
+        "pathId",
+        "step",
+        "weight",
+        "total",
+        ...Object.keys(rows[0]),
+      ]);
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("findCycles elapsed time includes self-cycles and zero-duration events without a wraparound gap", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const source = sdb.newTable().loadArray([
+      {
+        edgeId: 1,
+        source: "A",
+        target: "A",
+        departure: new Date(chronologicalBase),
+        arrival: new Date(chronologicalBase),
+      },
+      {
+        edgeId: 2,
+        source: "A",
+        target: "A",
+        departure: new Date(chronologicalBase + 1000),
+        arrival: new Date(chronologicalBase + 3000),
+      },
+      {
+        edgeId: 3,
+        source: "A",
+        target: "B",
+        departure: new Date(chronologicalBase + 4000),
+        arrival: new Date(chronologicalBase + 4000),
+      },
+      {
+        edgeId: 4,
+        source: "B",
+        target: "A",
+        departure: new Date(chronologicalBase + 5000),
+        arrival: new Date(chronologicalBase + 5000),
+      },
+    ]);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      const result = source.findCycles("source", "target", "edgeId", "A", {
+        direction,
+        elapsedTime: true,
+        startTimeColumn: "departure",
+        endTimeColumn: "arrival",
+        minGapMs: 1000,
+        outputTable: true,
+      });
+      assertEquals(
+        (await result.getData()).map((
+          row,
+        ) => [row.pathId, row.step, row.edgeId, row.elapsedTimeMs, row.total]),
+        [
+          [0, 1, 1, 0, 1],
+          [1, 1, 2, 2000, 1],
+          [2, 1, direction === "outgoing" ? 3 : 4, 0, 1],
+          [2, 2, direction === "outgoing" ? 4 : 3, 1000, 2],
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});

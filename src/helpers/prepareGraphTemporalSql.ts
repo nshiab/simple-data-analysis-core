@@ -23,6 +23,16 @@ export type PreparedGraphTemporalSql = {
   eventValidity: (tableAlias?: string) => string;
   gapParameter: string;
   gapUnit: "microsecond" | "nanosecond";
+  journeyAnchor: (
+    alias: string,
+    direction: Exclude<GraphDirection, "both">,
+  ) => string;
+  journeyElapsed: (
+    alias: string,
+    anchor: string,
+    direction: Exclude<GraphDirection, "both">,
+  ) => string;
+  elapsedMilliseconds: (elapsed: string) => string;
   startTimeColumn?: string;
   transition: (
     currentAlias: string,
@@ -156,6 +166,30 @@ export default function prepareGraphTemporalSql(
     endTimeColumn: end?.column,
     gapParameter: gap.toString(),
     gapUnit,
+    journeyAnchor: (alias, direction) =>
+      direction === "outgoing"
+        ? temporalUnits(
+          eventReference(alias, "__event_start"),
+          startType,
+          gapUnit,
+        )
+        : temporalUnits(eventReference(alias, "__event_end"), endType, gapUnit),
+    journeyElapsed: (alias, anchor, direction) =>
+      direction === "outgoing"
+        ? `(${
+          temporalUnits(eventReference(alias, "__event_end"), endType, gapUnit)
+        } - (${anchor}))`
+        : `((${anchor}) - ${
+          temporalUnits(
+            eventReference(alias, "__event_start"),
+            startType,
+            gapUnit,
+          )
+        })`,
+    elapsedMilliseconds: (elapsed) =>
+      `(CAST(${elapsed} AS DOUBLE) / ${
+        gapUnit === "nanosecond" ? 1000000 : 1000
+      })`,
     eventSelections: (alias) => [
       `row_number() OVER () AS ${q("__event_id")}`,
       `${reference(alias, startColumn)} AS ${q("__event_start")}`,
