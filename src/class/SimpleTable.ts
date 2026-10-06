@@ -3307,13 +3307,12 @@ export default class SimpleTable extends Simple {
    *
    * The `direction` option lets you follow connections from source to target,
    * from target to source, or in either direction. The result has `start`,
-   * `node`, and `distance` columns. Without elapsed-time reporting, results
-   * are sorted by `start`, then increasing `distance`, then `node`.
+   * `node`, and `distance` columns.
    *
-   * Each row gives the selected route's distance from `start` to `node`. Intermediate
-   * steps along the route are not returned. To get the steps between two
-   * different nodes, use `shortestPath()` for the shortest routes or `paths()`
-   * for all routes without repeated nodes.
+   * Each row gives the selected route's distance from `start` to `node`.
+   * Intermediate steps along the route are not returned. To get the steps
+   * between two different nodes, use `shortestPath()` for the shortest routes
+   * or `paths()` for all routes without repeated nodes.
    *
    * A starting node appears in its own results only when a self-connection
    * or a route leads back to it. Its distance is the shortest actual return
@@ -3323,23 +3322,6 @@ export default class SimpleTable extends Simple {
    * Unknown starting IDs and starts with no connections to follow produce
    * no rows. Empty start arrays and duplicate starting IDs throw an error.
    * Weights must be non-null, finite, and non-negative.
-   *
-   * Set `elapsedTime: true` to add `elapsedTimeMs`, the cumulative journey
-   * duration in milliseconds, including actual gaps between connections.
-   * Both time columns are required. Fractional milliseconds are preserved.
-   * Duration runs from the first departure to the final arrival. Incoming
-   * searches measure the same positive span while following events backward.
-   * The `distance` column remains the selected route's weight sum, or its
-   * connection count when no weight column is supplied.
-   *
-   * With only `elapsedTime` enabled, the shortest route minimizes duration.
-   * With only `weight`, it minimizes the weight sum. When both are enabled,
-   * explicitly choose `minimize: "weight"` or `minimize: "elapsedTime"`.
-   * With neither enabled, the method minimizes connection count.
-   * When reporting elapsed time, ties in the selected metric are broken by
-   * the other metric (weight or connection count versus duration), so both
-   * reported values describe the same journey. Results are sorted by `start`,
-   * the selected metric, the other metric, and finally `node`.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -3549,7 +3531,7 @@ export default class SimpleTable extends Simple {
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
    * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
-   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs`, including connection gaps. Defaults to `false`. Requires both time columns.
+   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.minimize - The metric used to select optimal routes. Required when both `weight` and `elapsedTime` are enabled; otherwise inferred. The corresponding metric must be enabled.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3600,23 +3582,6 @@ export default class SimpleTable extends Simple {
    * with `renameColumns()` first.
    *
    * Each row is one connection along a route.
-   *
-   * Set `elapsedTime: true` to add `elapsedTimeMs`, the cumulative journey
-   * duration in milliseconds, including actual gaps between connections.
-   * Both time columns are required. Fractional milliseconds are preserved.
-   * For outgoing searches, each step measures from the first departure to
-   * that step's arrival. Incoming searches measure from that step's departure
-   * to the first selected arrival. The `weight` and `total` columns retain
-   * their usual meaning, including connection counting when weight is omitted.
-   * The new column follows `total`; an input column named `elapsedTimeMs`
-   * (regardless of capitalization) must be renamed before enabling this option.
-   *
-   * With only `elapsedTime` enabled, the shortest route minimizes duration.
-   * With only `weight`, it minimizes the weight sum. When both are enabled,
-   * explicitly choose `minimize: "weight"` or `minimize: "elapsedTime"`.
-   * With neither enabled, the method minimizes connection count.
-   * All routes tied on the selected metric are returned, even when their
-   * other metric differs.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -3837,7 +3802,7 @@ export default class SimpleTable extends Simple {
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
    * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
-   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs`, including connection gaps. Defaults to `false`. Requires both time columns.
+   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.minimize - The metric used to select optimal routes. Required when both `weight` and `elapsedTime` are enabled; otherwise inferred. The corresponding metric must be enabled.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
@@ -3895,18 +3860,6 @@ export default class SimpleTable extends Simple {
    * with `renameColumns()` first.
    *
    * Each row is one connection along a route.
-   *
-   * Set `elapsedTime: true` to add `elapsedTimeMs`, the cumulative journey
-   * duration in milliseconds, including actual gaps between connections.
-   * Both time columns are required. Fractional milliseconds are preserved.
-   * For outgoing searches, each step measures from the first departure to
-   * that step's arrival. Incoming searches measure from that step's departure
-   * to the first selected arrival. The `weight` and `total` columns retain
-   * their usual meaning, including connection counting when weight is omitted.
-   * The new column follows `total`; an input column named `elapsedTimeMs`
-   * (regardless of capitalization) must be renamed before enabling this option.
-   * Weight and elapsed-time reporting may be combined. Every valid route
-   * is still returned; this method does not accept `minimize`.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -4145,7 +4098,7 @@ export default class SimpleTable extends Simple {
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
    * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
-   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs`, including connection gaps. Defaults to `false`. Requires both time columns.
+   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
@@ -4207,18 +4160,6 @@ export default class SimpleTable extends Simple {
    * starting node, choosing the smaller sequence of connection IDs. Within
    * each start, cycles are numbered by connection-ID sequence. Rows are
    * sorted by `start`, then `pathId`, then `step`.
-   *
-   * Set `elapsedTime: true` to add `elapsedTimeMs`, the cumulative journey
-   * duration in milliseconds, including actual gaps between connections.
-   * Both time columns are required. Fractional milliseconds are preserved.
-   * For outgoing searches, each step measures from the first departure to
-   * that step's arrival. Incoming searches measure from that step's departure
-   * to the first selected arrival. The `weight` and `total` columns retain
-   * their usual meaning, including connection counting when weight is omitted.
-   * The new column follows `total`; an input column named `elapsedTimeMs`
-   * (regardless of capitalization) must be renamed before enabling this option.
-   * Weight and elapsed-time reporting may be combined. Every valid route
-   * is still returned; this method does not accept `minimize`.
    *
    * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
    * in chronological order. The `minGapMs` option sets the minimum gap between
@@ -4481,7 +4422,7 @@ export default class SimpleTable extends Simple {
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
    * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
-   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs`, including connection gaps. Defaults to `false`. Requires both time columns.
+   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
