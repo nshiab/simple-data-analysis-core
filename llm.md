@@ -4020,7 +4020,8 @@ arrival stored as timestamps on the same day:
 | F2       | B      | C           | 2025-01-01 12:00 | 2025-01-01 13:00 |    40 |
 | F3       | A      | C           | 2025-01-01 09:00 | 2025-01-01 12:00 |   120 |
 
-Find the fastest journey to each destination, including layovers:
+Find the fastest journey from A to each reachable destination, including
+layovers:
 
 ```ts
 await flights
@@ -4041,7 +4042,7 @@ await flights
 The direct flight to C takes three hours (10,800,000 milliseconds). The route
 through B takes four hours including its layover.
 
-Find the fastest journeys while also adding up their prices:
+Find the fastest journeys from A while also adding up their prices:
 
 ```ts
 await flights
