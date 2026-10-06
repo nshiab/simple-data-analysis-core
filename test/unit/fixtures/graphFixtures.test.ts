@@ -188,7 +188,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
     "degree.csv": ["case", "node", "incoming", "outgoing", "total"],
     "common_neighbors.csv": ["case", "node"],
     "reachable.csv": ["case", "start", "node"],
-    "distances.csv": ["case", "start", "node", "distance"],
+    "distances.csv": ["case", "start", "node", "total"],
     "shortest_path.csv": [
       "case",
       "pathId",
@@ -231,7 +231,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
   for (
     const [file, schema] of Object.entries({
       "neighbors.csv": ["case", "start", "node"],
-      "distances.csv": ["case", "start", "node", "distance"],
+      "distances.csv": ["case", "start", "node", "total"],
       "shortest_path.csv": schemas["shortest_path.csv"],
       "find_cycles.csv": schemas["find_cycles.csv"],
       "topological_sort.csv": ["case", "node", "componentId", "order"],
@@ -444,7 +444,7 @@ Deno.test("membership and component expectations are explicitly sorted", async (
     const [file, columns] of [
       ["neighbors.csv", ["start", "node"]],
       ["reachable.csv", ["start", "node"]],
-      ["distances.csv", ["start", "distance", "node"]],
+      ["distances.csv", ["start", "total", "node"]],
       ["degree.csv", ["node"]],
       ["common_neighbors.csv", ["node"]],
       ["connected_components.csv", ["node"]],
@@ -463,7 +463,7 @@ Deno.test("membership and component expectations are explicitly sorted", async (
             const comparison = compareIds(
               left[column],
               right[column],
-              column === "distance",
+              column === "total",
             );
             if (comparison) return comparison;
           }
@@ -481,7 +481,7 @@ Deno.test("membership and component expectations are explicitly sorted", async (
     const columns = file === "topological_sort.csv"
       ? ["order"]
       : file === "distances.csv"
-      ? ["start", "distance", "node"]
+      ? ["start", "total", "node"]
       : ["start", "node"];
     for (const [caseName, caseRows] of Map.groupBy(rows, (row) => row.case)) {
       assertEquals(
@@ -518,10 +518,10 @@ Deno.test("graph expectations pin the high-value hand-derived cases", async () =
   assertEquals(
     distances.filter((row) => row.case === "baseline-A-outgoing"),
     [
-      { case: "baseline-A-outgoing", start: "A", node: "B", distance: "1" },
-      { case: "baseline-A-outgoing", start: "A", node: "C", distance: "1" },
-      { case: "baseline-A-outgoing", start: "A", node: "D", distance: "2" },
-      { case: "baseline-A-outgoing", start: "A", node: "E", distance: "3" },
+      { case: "baseline-A-outgoing", start: "A", node: "B", total: "1" },
+      { case: "baseline-A-outgoing", start: "A", node: "C", total: "1" },
+      { case: "baseline-A-outgoing", start: "A", node: "D", total: "2" },
+      { case: "baseline-A-outgoing", start: "A", node: "E", total: "3" },
     ],
   );
 

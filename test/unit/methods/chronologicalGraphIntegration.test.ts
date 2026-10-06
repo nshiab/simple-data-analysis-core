@@ -38,7 +38,7 @@ Deno.test("chronological graph integration preserves direct events while constra
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
         }).getData(),
-      [{ start: "Toronto", node: "Ottawa", distance: 1 }],
+      [{ start: "Toronto", node: "Ottawa", total: 1 }],
     );
     const isolatedRoute = [{
       pathId: 0,

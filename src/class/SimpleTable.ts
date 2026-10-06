@@ -3299,24 +3299,23 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Finds the shortest distance from each starting node to every node it can
-   * reach by following one or more connections. By default, distance is the
-   * number of connections along the shortest route. Use the `weight` option
-   * to find the smallest sum of values from a numeric column, such as travel
-   * time.
+   * Finds the shortest routes from each starting node to every reachable
+   * node and reports their total costs. By default, each connection costs
+   * one. Use the `weight` option to sum values from a numeric column, such
+   * as travel time or price.
    *
    * The `direction` option lets you follow connections from source to target,
    * from target to source, or in either direction. The result has `start`,
-   * `node`, and `distance` columns.
+   * `node`, and `total` columns.
    *
-   * Each row gives the selected route's distance from `start` to `node`.
+   * Each row gives the selected route's total cost from `start` to `node`.
    * Intermediate steps along the route are not returned. To get the steps
    * between two different nodes, use `shortestPath()` for the shortest routes
    * or `paths()` for all routes without repeated nodes.
    *
    * A starting node appears in its own results only when a self-connection
-   * or a route leads back to it. Its distance is the shortest actual return
-   * route, using at least one connection. With `direction: "both"`, this
+   * or a route leads back to it. Its total is the cost of the shortest actual
+   * return route, using at least one connection. With `direction: "both"`, this
    * can mean following the same connection out and back.
    *
    * Unknown starting IDs and starts with no connections to follow produce
@@ -3352,12 +3351,12 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | A | B | 1 |
    * | A | C | 2 |
    *
-   * With `weight: "minutes"`, distance is the shortest total travel time:
+   * With `weight: "minutes"`, `total` is the sum of travel times:
    *
    * @example
    * ```ts
@@ -3366,7 +3365,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | A | B | 4 |
    * | A | C | 5 |
@@ -3381,7 +3380,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | C | B | 1 |
    * | C | A | 2 |
@@ -3397,14 +3396,14 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | A | B | 1 |
    * | A | A | 2 |
    * | A | C | 2 |
    * | A | D | 2 |
    *
-   * A appears at distance 2 because A → B → A follows a connection out
+   * A appears with a total of 2 because A → B → A follows a connection out
    * and back.
    *
    * An array of starting nodes gives separate distances for each start:
@@ -3418,7 +3417,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | A | B | 4 |
    * | A | C | 5 |
@@ -3444,7 +3443,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | A | B | 2 |
    * | A | A | 5 |
@@ -3471,7 +3470,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance |
+   * | start | node | total |
    * | --- | --- | ---: |
    * | A | B | 2 |
    * | A | D | 5 |
@@ -3500,7 +3499,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance | elapsedTimeMs |
+   * | start | node | total | elapsedTimeMs |
    * | --- | --- | ---: | ---: |
    * | A | B | 1 | 3600000 |
    * | A | C | 1 | 10800000 |
@@ -3524,7 +3523,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | distance | elapsedTimeMs |
+   * | start | node | total | elapsedTimeMs |
    * | --- | --- | ---: | ---: |
    * | A | B | 40 | 3600000 |
    * | A | C | 120 | 10800000 |

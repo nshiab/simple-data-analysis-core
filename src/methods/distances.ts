@@ -139,7 +139,7 @@ export default function distances(
       return {
         start: validated.idType,
         node: validated.idType,
-        distance: validated.distanceType,
+        total: validated.distanceType,
         ...(metrics.elapsedTime ? { elapsedTimeMs: "DOUBLE" } : {}),
       };
     },
@@ -307,7 +307,7 @@ function distancesSelect(
       HAVING ${bestDistance} IS NULL OR MIN(${candidateDistance}) < ${bestDistance}
     )
     SELECT ${quoteIdentifier("start")}, ${quoteIdentifier("node")},
-      ${quoteIdentifier("distance")}
+      ${quoteIdentifier("distance")} AS ${quoteIdentifier("total")}
     FROM ${distancesRelation}
     ORDER BY ${quoteIdentifier("__start_key")}, ${
     quoteIdentifier("distance")
@@ -337,11 +337,11 @@ function temporalDistancesSelect(
   );
   return `${costStates.withClause}
     SELECT ${q("start")}, ${q("node")},
-      MIN(${q("distance")}) AS ${q("distance")}
+      MIN(${q("distance")}) AS ${q("total")}
     FROM ${costStates.costRelation}
     GROUP BY ${q("start")}, ${q("node")}, ${q("__start_key")},
       ${q("__node_key")}
-    ORDER BY ${q("__start_key")}, ${q("distance")}, ${q("__node_key")}`;
+    ORDER BY ${q("__start_key")}, ${q("total")}, ${q("__node_key")}`;
 }
 
 function elapsedDistancesSelect(
@@ -441,7 +441,7 @@ function elapsedDistancesSelect(
   } AS ${q("__elapsed")}
       FROM ${states} AS ${q("states")}
     )
-    SELECT ${q("start")}, ${q("node")}, ${q("distance")},
+    SELECT ${q("start")}, ${q("node")}, ${q("distance")} AS ${q("total")},
       ${temporal.elapsedMilliseconds(q("__elapsed"))} AS ${q("elapsedTimeMs")}
     FROM ${results}
     QUALIFY row_number() OVER (
