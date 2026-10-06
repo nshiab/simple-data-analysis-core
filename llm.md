@@ -3796,25 +3796,24 @@ await table
 
 #### `distances`
 
-Finds the shortest distance from each starting node to every node it can reach
-by following one or more connections. By default, distance is the number of
-connections along the shortest route. Use the `weight` option to find the
-smallest sum of values from a numeric column, such as travel time.
+Finds the shortest routes from each starting node to every reachable node and
+reports their total costs. By default, each connection costs one. Use the
+`weight` option to sum values from a numeric column, such as travel time or
+price.
 
 The `direction` option lets you follow connections from source to target, from
 target to source, or in either direction. The result has `start`, `node`, and
-`distance` columns, sorted by `start`, then by increasing `distance`, then by
-`node` to break ties. The closest nodes appear first for each start.
+`total` columns.
 
-Each row gives the shortest distance from `start` to `node`. Intermediate steps
-along the route are not returned. To get the steps between two different nodes,
-use `shortestPath()` for the shortest routes or `paths()` for all routes without
-repeated nodes.
+Each row gives the selected route's total cost from `start` to `node`.
+Intermediate steps along the route are not returned. To get the steps between
+two different nodes, use `shortestPath()` for the shortest routes or `paths()`
+for all routes without repeated nodes.
 
 A starting node appears in its own results only when a self-connection or a
-route leads back to it. Its distance is the shortest actual return route, using
-at least one connection. With `direction: "both"`, this can mean following the
-same connection out and back.
+route leads back to it. Its total is the cost of the shortest actual return
+route, using at least one connection. With `direction: "both"`, this can mean
+following the same connection out and back.
 
 Unknown starting IDs and starts with no connections to follow produce no rows.
 Empty start arrays and duplicate starting IDs throw an error. Weights must be
@@ -3845,7 +3844,7 @@ many connections are needed:
 ##### Signature
 
 ```typescript
-distances(sourceColumn: string, targetColumn: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; endTimeColumn?: string; minGapMs?: number; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
+distances(sourceColumn: string, targetColumn: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; elapsedTime?: boolean; endTimeColumn?: string; minGapMs?: number; minimize?: "weight" | "elapsedTime"; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
 ```
 
 ##### Parameters
@@ -3874,6 +3873,12 @@ distances(sourceColumn: string, targetColumn: string, startNodes: string | numbe
   time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
+- **`options.elapsedTime`**: Whether to add cumulative `elapsedTimeMs` in
+  milliseconds, including connection gaps. Defaults to `false`. Requires both
+  time columns.
+- **`options.minimize`**: The metric used to select optimal routes. Required
+  when both `weight` and `elapsedTime` are enabled; otherwise inferred. The
+  corresponding metric must be enabled.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
   omitted, overwrites the current table. Defaults to `false`.
@@ -3890,12 +3895,12 @@ await connections
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| A     | B    |        1 |
-| A     | C    |        2 |
+| start | node | total |
+| ----- | ---- | ----: |
+| A     | B    |     1 |
+| A     | C    |     2 |
 
-With `weight: "minutes"`, distance is the shortest total travel time:
+With `weight: "minutes"`, `total` is the sum of travel times:
 
 ```ts
 await connections
@@ -3903,10 +3908,10 @@ await connections
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| A     | B    |        4 |
-| A     | C    |        5 |
+| start | node | total |
+| ----- | ---- | ----: |
+| A     | B    |     4 |
+| A     | C    |     5 |
 
 With `direction: "incoming"`, connections are followed from target to source.
 Starting at C:
@@ -3917,11 +3922,11 @@ await connections
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| C     | B    |        1 |
-| C     | A    |        2 |
-| C     | D    |        2 |
+| start | node | total |
+| ----- | ---- | ----: |
+| C     | B    |     1 |
+| C     | A    |     2 |
+| C     | D    |     2 |
 
 With `direction: "both"`, connections can be followed in either direction:
 
@@ -3931,14 +3936,14 @@ await connections
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| A     | B    |        1 |
-| A     | A    |        2 |
-| A     | C    |        2 |
-| A     | D    |        2 |
+| start | node | total |
+| ----- | ---- | ----: |
+| A     | B    |     1 |
+| A     | A    |     2 |
+| A     | C    |     2 |
+| A     | D    |     2 |
 
-A appears at distance 2 because A → B → A follows a connection out and back.
+A appears with a total of 2 because A → B → A follows a connection out and back.
 
 An array of starting nodes gives separate distances for each start:
 
@@ -3950,12 +3955,12 @@ await connections
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| A     | B    |        4 |
-| A     | C    |        5 |
-| D     | B    |        2 |
-| D     | C    |        3 |
+| start | node | total |
+| ----- | ---- | ----: |
+| A     | B    |     4 |
+| A     | C    |     5 |
+| D     | B    |     2 |
+| D     | C    |     3 |
 
 A direct self-connection and a longer return route can both lead back to the
 start. This example uses different data:
@@ -3975,10 +3980,10 @@ await connections
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| A     | B    |        2 |
-| A     | A    |        5 |
+| start | node | total |
+| ----- | ---- | ----: |
+| A     | B    |     2 |
+| A     | A    |     5 |
 
 Chronological options can rule out a cheaper sequence that departs too early.
 For this example, F2 leaves before F1 arrives, while F3 meets the one-hour
@@ -4001,10 +4006,64 @@ await scheduledFlights
   .log();
 ```
 
-| start | node | distance |
-| ----- | ---- | -------: |
-| A     | B    |        2 |
-| A     | D    |        5 |
+| start | node | total |
+| ----- | ---- | ----: |
+| A     | B    |     2 |
+| A     | D    |     5 |
+
+For the next two examples, `flights` contains these rows, with departure and
+arrival stored as timestamps on the same day:
+
+| flightId | origin | destination | departure        | arrival          | price |
+| -------- | ------ | ----------- | ---------------- | ---------------- | ----: |
+| F1       | A      | B           | 2025-01-01 09:00 | 2025-01-01 10:00 |    40 |
+| F2       | B      | C           | 2025-01-01 12:00 | 2025-01-01 13:00 |    40 |
+| F3       | A      | C           | 2025-01-01 09:00 | 2025-01-01 12:00 |   120 |
+
+Find the fastest journey from A to each reachable destination, including
+layovers:
+
+```ts
+await flights
+  .distances("origin", "destination", "A", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+  })
+  .log();
+```
+
+| start | node | total | elapsedTimeMs |
+| ----- | ---- | ----: | ------------: |
+| A     | B    |     1 |       3600000 |
+| A     | C    |     1 |      10800000 |
+
+The direct flight to C takes three hours (10,800,000 milliseconds). The route
+through B takes four hours including its layover.
+
+Find the fastest journeys from A while also adding up their prices:
+
+```ts
+await flights
+  .distances("origin", "destination", "A", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+    weight: "price",
+    minimize: "elapsedTime",
+  })
+  .log();
+```
+
+| start | node | total | elapsedTimeMs |
+| ----- | ---- | ----: | ------------: |
+| A     | B    |    40 |       3600000 |
+| A     | C    |   120 |      10800000 |
+
+Use `minimize: "weight"` to find the cheapest journeys instead. Equally fast
+journeys are ranked by price; equally cheap journeys are ranked by elapsed time.
 
 #### `shortestPath`
 
@@ -4071,7 +4130,7 @@ connections. Two routes from A to E tie at three connections each:
 ##### Signature
 
 ```typescript
-shortestPath(sourceColumn: string, targetColumn: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; endTimeColumn?: string; minGapMs?: number; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
+shortestPath(sourceColumn: string, targetColumn: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; elapsedTime?: boolean; endTimeColumn?: string; minGapMs?: number; minimize?: "weight" | "elapsedTime"; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
 ```
 
 ##### Parameters
@@ -4102,6 +4161,12 @@ shortestPath(sourceColumn: string, targetColumn: string, edgeId: string, start: 
   time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
+- **`options.elapsedTime`**: Whether to add cumulative `elapsedTimeMs` in
+  milliseconds, including connection gaps. Defaults to `false`. Requires both
+  time columns.
+- **`options.minimize`**: The metric used to select optimal routes. Required
+  when both `weight` and `elapsedTime` are enabled; otherwise inferred. The
+  corresponding metric must be enabled.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
   omitted, overwrites the current table. Defaults to `false`.
@@ -4232,6 +4297,61 @@ await reverseExample
 | -----: | ---: | -----: | ----: | ------ | ------ | ------ |
 |      0 |    1 |      1 |     1 | F1     | A      | B      |
 
+For the next two examples, `flights` contains these rows, with departure and
+arrival stored as timestamps on the same day:
+
+| flightId | origin | destination | departure        | arrival          | price |
+| -------- | ------ | ----------- | ---------------- | ---------------- | ----: |
+| F1       | A      | B           | 2025-01-01 09:00 | 2025-01-01 10:00 |    40 |
+| F2       | B      | C           | 2025-01-01 12:00 | 2025-01-01 13:00 |    40 |
+| F3       | A      | C           | 2025-01-01 09:00 | 2025-01-01 12:00 |   120 |
+| F4       | A      | D           | 2025-01-01 09:00 | 2025-01-01 09:30 |    60 |
+| F5       | D      | C           | 2025-01-01 10:30 | 2025-01-01 11:00 |    80 |
+
+Find the fastest journey from A to C, including layovers:
+
+```ts
+await flights
+  .shortestPath("origin", "destination", "flightId", "A", "C", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+  })
+  .log();
+```
+
+| pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
+| -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
+|      0 |    1 |      1 |     1 |       1800000 | F4       | A      | D           | 2025-01-01 09:00:00 | 2025-01-01 09:30:00 |    60 |
+|      0 |    2 |      1 |     2 |       7200000 | F5       | D      | C           | 2025-01-01 10:30:00 | 2025-01-01 11:00:00 |    80 |
+
+The route through D takes two hours (7,200,000 milliseconds), including a
+one-hour layover. The direct flight takes three hours.
+
+Find the fastest journey while also adding up its price:
+
+```ts
+await flights
+  .shortestPath("origin", "destination", "flightId", "A", "C", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+    weight: "price",
+    minimize: "elapsedTime",
+  })
+  .log();
+```
+
+| pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
+| -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
+|      0 |    1 |     60 |    60 |       1800000 | F4       | A      | D           | 2025-01-01 09:00:00 | 2025-01-01 09:30:00 |    60 |
+|      0 |    2 |     80 |   140 |       7200000 | F5       | D      | C           | 2025-01-01 10:30:00 | 2025-01-01 11:00:00 |    80 |
+
+Use `minimize: "weight"` to find the cheapest journey instead. All ties on the
+chosen metric are returned.
+
 #### `paths`
 
 Finds all routes between two different nodes. A route cannot visit the same node
@@ -4292,7 +4412,7 @@ to D are returned:
 ##### Signature
 
 ```typescript
-paths(sourceColumn: string, targetColumn: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; endTimeColumn?: string; minGapMs?: number; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
+paths(sourceColumn: string, targetColumn: string, edgeId: string, start: string | number | bigint, end: string | number | bigint, options?: { direction?: "outgoing" | "incoming" | "both"; elapsedTime?: boolean; endTimeColumn?: string; minGapMs?: number; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
 ```
 
 ##### Parameters
@@ -4323,6 +4443,9 @@ paths(sourceColumn: string, targetColumn: string, edgeId: string, start: string 
   time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
+- **`options.elapsedTime`**: Whether to add cumulative `elapsedTimeMs` in
+  milliseconds, including connection gaps. Defaults to `false`. Requires both
+  time columns.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
   omitted, overwrites the current table. Defaults to `false`.
@@ -4473,6 +4596,57 @@ await scheduledFlights
 |      0 |    1 |      3 |     3 | F3       | B      | D           | 2025-01-01 11:00:00 | 2025-01-01 12:00:00 |    3 |
 |      0 |    2 |      2 |     5 | F1       | A      | B           | 2025-01-01 08:00:00 | 2025-01-01 10:00:00 |    2 |
 
+For the next two examples, `flights` contains these rows, with departure and
+arrival stored as timestamps on the same day:
+
+| flightId | origin | destination | departure        | arrival          | price |
+| -------- | ------ | ----------- | ---------------- | ---------------- | ----: |
+| F1       | A      | B           | 2025-01-01 09:00 | 2025-01-01 10:00 |    40 |
+| F2       | B      | C           | 2025-01-01 12:00 | 2025-01-01 13:00 |    40 |
+| F3       | A      | C           | 2025-01-01 09:00 | 2025-01-01 12:00 |   120 |
+
+Report elapsed time for every path, including layovers:
+
+```ts
+await flights
+  .paths("origin", "destination", "flightId", "A", "C", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+  })
+  .log();
+```
+
+| pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
+| -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
+|      0 |    1 |      1 |     1 |       3600000 | F1       | A      | B           | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 |    40 |
+|      0 |    2 |      1 |     2 |      14400000 | F2       | B      | C           | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 |    40 |
+|      1 |    1 |      1 |     1 |      10800000 | F3       | A      | C           | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 |   120 |
+
+The route through B takes four hours (14,400,000 milliseconds), including its
+two-hour layover. The direct flight takes three hours.
+
+Add up prices while continuing to report elapsed time for every path:
+
+```ts
+await flights
+  .paths("origin", "destination", "flightId", "A", "C", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+    weight: "price",
+  })
+  .log();
+```
+
+| pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
+| -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
+|      0 |    1 |     40 |    40 |       3600000 | F1       | A      | B           | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 |    40 |
+|      0 |    2 |     40 |    80 |      14400000 | F2       | B      | C           | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 |    40 |
+|      1 |    1 |    120 |   120 |      10800000 | F3       | A      | C           | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 |   120 |
+
 #### `findCycles`
 
 Finds all cycles starting and ending at each node in `startNodes`. Pass one node
@@ -4546,7 +4720,7 @@ By default, connections are followed from source to target:
 ##### Signature
 
 ```typescript
-findCycles(sourceColumn: string, targetColumn: string, edgeId: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; endTimeColumn?: string; minGapMs?: number; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
+findCycles(sourceColumn: string, targetColumn: string, edgeId: string, startNodes: string | number | bigint | (string | number | bigint)[], options?: { direction?: "outgoing" | "incoming" | "both"; elapsedTime?: boolean; endTimeColumn?: string; minGapMs?: number; outputTable?: string | boolean; startTimeColumn?: string; strictOrdering?: boolean; weight?: string }): SimpleTable;
 ```
 
 ##### Parameters
@@ -4577,6 +4751,9 @@ findCycles(sourceColumn: string, targetColumn: string, edgeId: string, startNode
   time column.
 - **`options.weight`**: The name of the numeric column used as the cost of each
   connection. If omitted, each connection costs one.
+- **`options.elapsedTime`**: Whether to add cumulative `elapsedTimeMs` in
+  milliseconds, including connection gaps. Defaults to `false`. Requires both
+  time columns.
 - **`options.outputTable`**: If `true`, stores the result in a new table with a
   generated name. If a string, uses it as the new table's name. If `false` or
   omitted, overwrites the current table. Defaults to `false`.
@@ -4754,6 +4931,54 @@ await timedFlights
 | B     |      0 |    1 |      1 |     1 | F3       | A      | B           | 2025-01-01 11:00:00 |
 | B     |      0 |    2 |      1 |     2 | F2       | C      | A           | 2025-01-01 10:00:00 |
 | B     |      0 |    3 |      1 |     3 | F1       | B      | C           | 2025-01-01 09:00:00 |
+
+For the next two examples, `flights` contains these rows, with departure and
+arrival stored as timestamps on the same day:
+
+| flightId | origin | destination | departure        | arrival          | price |
+| -------- | ------ | ----------- | ---------------- | ---------------- | ----: |
+| F1       | A      | B           | 2025-01-01 09:00 | 2025-01-01 10:00 |    40 |
+| F2       | B      | A           | 2025-01-01 12:00 | 2025-01-01 13:00 |    60 |
+
+Report elapsed time for every cycle, including layovers:
+
+```ts
+await flights
+  .findCycles("origin", "destination", "flightId", "A", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+  })
+  .log();
+```
+
+| start | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
+| ----- | -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
+| A     |      0 |    1 |      1 |     1 |       3600000 | F1       | A      | B           | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 |    40 |
+| A     |      0 |    2 |      1 |     2 |      14400000 | F2       | B      | A           | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 |    60 |
+
+The return journey takes four hours (14,400,000 milliseconds), including the
+two-hour layover at B.
+
+Add up prices while continuing to report elapsed time for every cycle:
+
+```ts
+await flights
+  .findCycles("origin", "destination", "flightId", "A", {
+    startTimeColumn: "departure",
+    endTimeColumn: "arrival",
+    minGapMs: 60 * 60 * 1000,
+    elapsedTime: true,
+    weight: "price",
+  })
+  .log();
+```
+
+| start | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
+| ----- | -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
+| A     |      0 |    1 |     40 |    40 |       3600000 | F1       | A      | B           | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 |    40 |
+| A     |      0 |    2 |     60 |   100 |      14400000 | F2       | B      | A           | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 |    60 |
 
 #### `extractDatePart`
 

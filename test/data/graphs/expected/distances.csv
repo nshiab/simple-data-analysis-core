@@ -1,4 +1,4 @@
-case,start,node,distance
+case,start,node,total
 baseline-A-outgoing,A,B,1
 baseline-A-outgoing,A,C,1
 baseline-A-outgoing,A,D,2

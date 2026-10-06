@@ -7,6 +7,7 @@ export default function graphRouteResultSelect(
   input: string,
   edgeIdColumn: GraphEdgeIdColumn,
   includeStart = false,
+  elapsedTime = false,
 ): string {
   const q = quoteIdentifier;
   const routeStep = `${q("unnested")}.${q("route_step")}`;
@@ -22,6 +23,11 @@ export default function graphRouteResultSelect(
       CAST(${q("unnested")}.${q("step")} AS BIGINT) AS ${q("step")},
       ${routeStep}.${q("weight")} AS ${q("weight")},
       ${routeStep}.${q("distance")} AS ${q("total")},
+      ${
+    elapsedTime
+      ? `${routeStep}.${q("elapsedTimeMs")} AS ${q("elapsedTimeMs")},`
+      : ""
+  }
       ${q("original")}.*
     FROM ${rankedRelation} AS ${q("ranked")},
       UNNEST(${q("ranked")}.${q("steps")}) WITH ORDINALITY AS ${

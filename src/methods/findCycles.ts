@@ -1,3 +1,4 @@
+import prepareGraphMetricOptions from "../helpers/prepareGraphMetricOptions.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import getGraphEdgeIdColumn from "../helpers/getGraphEdgeIdColumn.ts";
 import getGraphWeightColumn from "../helpers/getGraphWeightColumn.ts";
@@ -23,6 +24,7 @@ import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.
 import validateGraphRouteResultSchema from "../helpers/validateGraphRouteResultSchema.ts";
 
 type FindCyclesOptions = GraphTemporalOptions & {
+  elapsedTime?: boolean;
   direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
@@ -76,6 +78,7 @@ export default function findCycles(
     );
   }
 
+  const metric = prepareGraphMetricOptions(options, "findCycles()", false);
   const direction = options.direction ?? "outgoing";
   const temporalOptions = prepareGraphTemporalOptions(
     options,
@@ -105,13 +108,19 @@ export default function findCycles(
           parameters,
         ),
     values: (schema) => {
-      validateFindCyclesInputs(
+      const validated = validateFindCyclesInputs(
         schema,
         sourceColumn,
         targetColumn,
         edgeId,
         preparedStarts,
         options.weight,
+      );
+      graphRouteResultSchema(
+        schema,
+        validated.distanceType,
+        "findCycles()",
+        metric.elapsedTime,
       );
       const temporal = temporalOptions === undefined
         ? undefined
@@ -131,6 +140,7 @@ export default function findCycles(
         direction,
         options.weight,
         temporalOptions,
+        metric.elapsedTime,
       ),
     outputSchema: (schema) => {
       const validated = validateFindCyclesInputs(
@@ -150,6 +160,7 @@ export default function findCycles(
           schema,
           validated.distanceType,
           "findCycles()",
+          metric.elapsedTime,
         ),
       };
     },
@@ -194,6 +205,7 @@ function findCyclesSelect(
   direction: GraphDirection,
   weight: string | undefined,
   temporalOptions: PreparedGraphTemporalOptions | undefined,
+  elapsedTime: boolean,
 ): string {
   const prepared = prepareGraphTraversal(
     input,
@@ -224,7 +236,7 @@ function findCyclesSelect(
     q("target")
   } ${prepared.endpoints.idType}, ${q("weight")} ${distanceType}, ${
     q("distance")
-  } ${distanceType})`;
+  } ${distanceType}${elapsedTime ? `, ${q("elapsedTimeMs")} DOUBLE` : ""})`;
 
   if (temporalOptions !== undefined) {
     const temporal = prepareGraphTemporalSql(
@@ -243,6 +255,7 @@ function findCyclesSelect(
       stepType,
       input,
       edgeIdColumn,
+      elapsedTime,
     );
   }
 
@@ -373,6 +386,7 @@ function temporalFindCyclesSelect(
   stepType: string,
   input: string,
   edgeIdColumn: ReturnType<typeof getGraphEdgeIdColumn>,
+  elapsedTime: boolean,
 ): string {
   const q = quoteIdentifier;
   const relations = prepared.relationNames([
@@ -404,13 +418,23 @@ function temporalFindCyclesSelect(
   const candidateDistance =
     `CAST(${walkDistance} + ${edgeCost} AS ${distanceType})`;
   const gap = `${q("settings")}.${q("__gap")}`;
-  const step = (distance: string) =>
+  const firstAnchor = temporal.journeyAnchor("edges", direction);
+  const anchor = `${q("walks")}.${q("__journey_anchor")}`;
+  const step = (distance: string, journeyAnchor: string) =>
     `struct_pack(
           ${q("edgeId")} := ${edgeIdentity},
           ${q("source")} := ${edgeFrom},
           ${q("target")} := ${edgeTo},
           ${q("weight")} := ${edgeCost},
-          ${q("distance")} := ${distance}
+          ${q("distance")} := ${distance}${
+      elapsedTime
+        ? `, ${q("elapsedTimeMs")} := ${
+          temporal.elapsedMilliseconds(
+            temporal.journeyElapsed("edges", journeyAnchor, direction),
+          )
+        }`
+        : ""
+    }
         )`;
 
   return `WITH RECURSIVE ${settingsRelation} AS MATERIALIZED (
@@ -439,7 +463,7 @@ function temporalFindCyclesSelect(
       ${q("__node_key")}, ${q("__visited")}, ${q("__event_ids")},
       ${q("__edge_keys")}, ${q("steps")}, ${q("distance")},
       ${q("closed")}, ${q("__event_id")}, ${q("__event_start")},
-      ${q("__event_end")}
+      ${q("__event_end")}${elapsedTime ? `, ${q("__journey_anchor")}` : ""}
     ) AS (
       SELECT ${q("starts")}.${q("start")},
         ${q("starts")}.${q("__start_key")}, ${edgeTo}, ${edgeToKey},
@@ -448,11 +472,13 @@ function temporalFindCyclesSelect(
           ELSE [${edgeFromKey}, ${edgeToKey}]
         END,
         [${q("edges")}.${q("__event_id")}], [${edgeIdentityKey}],
-        [${step(edgeCost)}]::${stepType}[], ${edgeCost},
+        [${step(edgeCost, firstAnchor)}]::${stepType}[], ${edgeCost},
         ${edgeFromKey} = ${edgeToKey},
         ${q("edges")}.${q("__event_id")},
         ${q("edges")}.${q("__event_start")},
-        ${q("edges")}.${q("__event_end")}
+        ${q("edges")}.${q("__event_end")}${
+    elapsedTime ? `, ${firstAnchor}` : ""
+  }
       FROM ${edgesRelation} AS ${q("edges")}
       INNER JOIN ${startsRelation} AS ${q("starts")}
         ON ${q("starts")}.${q("__start_key")} = ${edgeFromKey}
@@ -463,12 +489,14 @@ function temporalFindCyclesSelect(
         list_append(${q("walks")}.${q("__event_ids")},
           ${q("edges")}.${q("__event_id")}),
         list_append(${q("walks")}.${q("__edge_keys")}, ${edgeIdentityKey}),
-        list_append(${q("walks")}.${q("steps")}, ${step(candidateDistance)}),
+        list_append(${q("walks")}.${q("steps")}, ${
+    step(candidateDistance, anchor)
+  }),
         ${candidateDistance},
         ${edgeToKey} = ${q("walks")}.${q("__start_key")},
         ${q("edges")}.${q("__event_id")},
         ${q("edges")}.${q("__event_start")},
-        ${q("edges")}.${q("__event_end")}
+        ${q("edges")}.${q("__event_end")}${elapsedTime ? `, ${anchor}` : ""}
       FROM ${walksRelation} AS ${q("walks")}
       INNER JOIN ${edgesRelation} AS ${q("edges")}
         ON ${q("walks")}.${q("__node_key")} = ${edgeFromKey}
@@ -500,6 +528,7 @@ function temporalFindCyclesSelect(
       input,
       edgeIdColumn,
       true,
+      elapsedTime,
     )
   }`;
 }

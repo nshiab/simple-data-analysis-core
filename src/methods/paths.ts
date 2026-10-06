@@ -1,3 +1,4 @@
+import prepareGraphMetricOptions from "../helpers/prepareGraphMetricOptions.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import {
   type PreparedGraphRouteEndpoints,
@@ -20,6 +21,7 @@ import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.
 import type { TableSchema } from "../helpers/pendingOps.ts";
 
 type PathsOptions = GraphTemporalOptions & {
+  elapsedTime?: boolean;
   direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
@@ -69,6 +71,7 @@ export default function paths(
     );
   }
 
+  const metric = prepareGraphMetricOptions(options, "paths()", false);
   const endpoints = prepareGraphRouteEndpoints(start, end, "paths()");
   const direction = options.direction ?? "outgoing";
   const temporalOptions = prepareGraphTemporalOptions(
@@ -100,7 +103,7 @@ export default function paths(
           parameters,
         ),
     values: (schema) => {
-      validateGraphRouteInputs(
+      const validated = validateGraphRouteInputs(
         schema,
         sourceColumn,
         targetColumn,
@@ -108,6 +111,12 @@ export default function paths(
         endpoints,
         options.weight,
         "paths()",
+      );
+      graphRouteResultSchema(
+        schema,
+        validated.distanceType,
+        "paths()",
+        metric.elapsedTime,
       );
       const temporal = temporalOptions === undefined
         ? undefined
@@ -127,6 +136,7 @@ export default function paths(
         direction,
         options.weight,
         temporalOptions,
+        metric.elapsedTime,
       ),
     outputSchema: (schema) => {
       const validated = validateGraphRouteInputs(
@@ -141,7 +151,12 @@ export default function paths(
       if (temporalOptions !== undefined) {
         prepareGraphTemporalSql(schema, temporalOptions, "paths()");
       }
-      return graphRouteResultSchema(schema, validated.distanceType, "paths()");
+      return graphRouteResultSchema(
+        schema,
+        validated.distanceType,
+        "paths()",
+        metric.elapsedTime,
+      );
     },
   });
 }
@@ -156,6 +171,7 @@ function pathsSelect(
   direction: GraphDirection,
   weight: string | undefined,
   temporalOptions: PreparedGraphTemporalOptions | undefined,
+  elapsedTime: boolean,
 ): string {
   const route = prepareGraphRouteSql(
     input,
@@ -178,6 +194,7 @@ function pathsSelect(
       route,
       direction as Exclude<GraphDirection, "both">,
       temporal,
+      elapsedTime,
     );
   }
   const distanceType = route.distanceType;
@@ -292,6 +309,7 @@ function temporalPathsSelect(
   route: ReturnType<typeof prepareGraphRouteSql>,
   direction: Exclude<GraphDirection, "both">,
   temporal: ReturnType<typeof prepareGraphTemporalSql>,
+  elapsedTime: boolean,
 ): string {
   const prepared = route.traversal;
   const distanceType = route.distanceType;
@@ -325,13 +343,23 @@ function temporalPathsSelect(
     q("distance")
   } + ${edgeCost} AS ${distanceType})`;
   const gap = `${q("settings")}.${q("__gap")}`;
-  const step = (distance: string) =>
+  const firstAnchor = temporal.journeyAnchor("edges", direction);
+  const anchor = `${q("routes")}.${q("__journey_anchor")}`;
+  const step = (distance: string, journeyAnchor: string) =>
     `struct_pack(
           ${q("edgeId")} := ${q("edges")}.${q("__edge_id")},
           ${q("source")} := ${q("edges")}.${q("__from")},
           ${q("target")} := ${edgeTo},
           ${q("weight")} := ${edgeCost},
-          ${q("distance")} := ${distance}
+          ${q("distance")} := ${distance}${
+      elapsedTime
+        ? `, ${q("elapsedTimeMs")} := ${
+          temporal.elapsedMilliseconds(
+            temporal.journeyElapsed("edges", journeyAnchor, direction),
+          )
+        }`
+        : ""
+    }
         )`;
 
   return `WITH RECURSIVE ${settingsRelation} AS MATERIALIZED (
@@ -373,14 +401,18 @@ function temporalPathsSelect(
     ), ${routesRelation}(
       ${q("node")}, ${q("__node_key")}, ${q("__visited")},
       ${q("__edge_keys")}, ${q("steps")}, ${q("distance")},
-      ${q("__event_id")}, ${q("__event_start")}, ${q("__event_end")}
+      ${q("__event_id")}, ${q("__event_start")}, ${q("__event_end")}${
+    elapsedTime ? `, ${q("__journey_anchor")}` : ""
+  }
     ) AS (
       SELECT ${edgeTo}, ${edgeToKey},
         [${q("__start_key")}, ${edgeToKey}], [${edgeKey}],
-        [${step(edgeCost)}], ${edgeCost},
+        [${step(edgeCost, firstAnchor)}], ${edgeCost},
         ${q("edges")}.${q("__event_id")},
         ${q("edges")}.${q("__event_start")},
-        ${q("edges")}.${q("__event_end")}
+        ${q("edges")}.${q("__event_end")}${
+    elapsedTime ? `, ${firstAnchor}` : ""
+  }
       FROM ${endpointRelation}
       INNER JOIN ${edgesRelation} AS ${q("edges")}
         ON ${q("__start_key")} = ${edgeFromKey}
@@ -391,10 +423,12 @@ function temporalPathsSelect(
       SELECT ${edgeTo}, ${edgeToKey},
         list_append(${q("routes")}.${q("__visited")}, ${edgeToKey}),
         list_append(${q("routes")}.${q("__edge_keys")}, ${edgeKey}),
-        list_append(${q("routes")}.${q("steps")}, ${step(candidateDistance)}),
+        list_append(${q("routes")}.${q("steps")}, ${
+    step(candidateDistance, anchor)
+  }),
         ${candidateDistance}, ${q("edges")}.${q("__event_id")},
         ${q("edges")}.${q("__event_start")},
-        ${q("edges")}.${q("__event_end")}
+        ${q("edges")}.${q("__event_end")}${elapsedTime ? `, ${anchor}` : ""}
       FROM ${routesRelation} AS ${q("routes")}
       INNER JOIN ${edgesRelation} AS ${q("edges")}
         ON ${q("routes")}.${q("__node_key")} = ${edgeFromKey}
@@ -422,6 +456,8 @@ function temporalPathsSelect(
       rankedRelation,
       route.input,
       route.edgeIdColumn,
+      false,
+      elapsedTime,
     )
   }`;
 }
