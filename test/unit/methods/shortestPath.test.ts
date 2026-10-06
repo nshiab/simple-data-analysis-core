@@ -1841,6 +1841,22 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
         arrival: new Date("2025-01-01T12:00:00Z"),
         price: 120,
       },
+      {
+        flightId: "F4",
+        origin: "A",
+        destination: "D",
+        departure: new Date("2025-01-01T09:00:00Z"),
+        arrival: new Date("2025-01-01T09:30:00Z"),
+        price: 60,
+      },
+      {
+        flightId: "F5",
+        origin: "D",
+        destination: "C",
+        departure: new Date("2025-01-01T10:30:00Z"),
+        arrival: new Date("2025-01-01T11:00:00Z"),
+        price: 80,
+      },
     ],
     [
       {
@@ -1866,6 +1882,22 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
         departure: new Date("2025-01-01T09:00:00Z"),
         arrival: new Date("2025-01-01T12:00:00Z"),
         price: 120,
+      },
+      {
+        flightId: "F4",
+        origin: "A",
+        destination: "D",
+        departure: new Date("2025-01-01T09:00:00Z"),
+        arrival: new Date("2025-01-01T09:30:00Z"),
+        price: 60,
+      },
+      {
+        flightId: "F5",
+        origin: "D",
+        destination: "C",
+        departure: new Date("2025-01-01T10:30:00Z"),
+        arrival: new Date("2025-01-01T11:00:00Z"),
+        price: 80,
       },
     ],
   ];

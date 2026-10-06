@@ -4305,6 +4305,8 @@ arrival stored as timestamps on the same day:
 | F1       | A      | B           | 2025-01-01 09:00 | 2025-01-01 10:00 |    40 |
 | F2       | B      | C           | 2025-01-01 12:00 | 2025-01-01 13:00 |    40 |
 | F3       | A      | C           | 2025-01-01 09:00 | 2025-01-01 12:00 |   120 |
+| F4       | A      | D           | 2025-01-01 09:00 | 2025-01-01 09:30 |    60 |
+| F5       | D      | C           | 2025-01-01 10:30 | 2025-01-01 11:00 |    80 |
 
 Find the fastest journey from A to C, including layovers:
 
@@ -4321,10 +4323,11 @@ await flights
 
 | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
 | -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
-|      0 |    1 |      1 |     1 |      10800000 | F3       | A      | C           | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 |   120 |
+|      0 |    1 |      1 |     1 |       1800000 | F4       | A      | D           | 2025-01-01 09:00:00 | 2025-01-01 09:30:00 |    60 |
+|      0 |    2 |      1 |     2 |       7200000 | F5       | D      | C           | 2025-01-01 10:30:00 | 2025-01-01 11:00:00 |    80 |
 
-The direct flight takes three hours (10,800,000 milliseconds). The route through
-B takes four hours, including a two-hour layover.
+The route through D takes two hours (7,200,000 milliseconds), including a
+one-hour layover. The direct flight takes three hours.
 
 Find the fastest journey while also adding up its price:
 
@@ -4343,7 +4346,8 @@ await flights
 
 | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure           | arrival             | price |
 | -----: | ---: | -----: | ----: | ------------: | -------- | ------ | ----------- | ------------------- | ------------------- | ----: |
-|      0 |    1 |    120 |   120 |      10800000 | F3       | A      | C           | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 |   120 |
+|      0 |    1 |     60 |    60 |       1800000 | F4       | A      | D           | 2025-01-01 09:00:00 | 2025-01-01 09:30:00 |    60 |
+|      0 |    2 |     80 |   140 |       7200000 | F5       | D      | C           | 2025-01-01 10:30:00 | 2025-01-01 11:00:00 |    80 |
 
 Use `minimize: "weight"` to find the cheapest journey instead. All ties on the
 chosen metric are returned.
