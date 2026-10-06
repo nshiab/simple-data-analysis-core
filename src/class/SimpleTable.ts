@@ -3485,9 +3485,7 @@ export default class SimpleTable extends Simple {
    * | F2 | B | C | 2025-01-01 12:00 | 2025-01-01 13:00 | 40 |
    * | F3 | A | C | 2025-01-01 09:00 | 2025-01-01 12:00 | 120 |
    *
-   * Find the fastest journey to each destination. For C, the direct flight
-   * wins: `distance` is one connection and `elapsedTimeMs` is 10,800,000
-   * (three hours). The route through B takes four hours including its wait:
+   * Find the fastest journey to each destination, including layovers:
    *
    * @example
    * ```ts
@@ -3501,11 +3499,15 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * Find the fastest journeys and report their prices too. For C,
-   * `distance` is 120 and `elapsedTimeMs` is 10,800,000. Changing `minimize`
-   * to `"weight"` selects the journey through B, with a price of 80 and
-   * 14,400,000 milliseconds elapsed. Equally fast journeys are ranked by
-   * price; equally cheap journeys are ranked by elapsed time:
+   * | start | node | distance | elapsedTimeMs |
+   * | --- | --- | ---: | ---: |
+   * | A | B | 1 | 3600000 |
+   * | A | C | 1 | 10800000 |
+   *
+   * The direct flight to C takes three hours (10,800,000 milliseconds).
+   * The route through B takes four hours including its layover.
+   *
+   * Find the fastest journeys while also adding up their prices:
    *
    * @example
    * ```ts
@@ -3520,6 +3522,15 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   *
+   * | start | node | distance | elapsedTimeMs |
+   * | --- | --- | ---: | ---: |
+   * | A | B | 40 | 3600000 |
+   * | A | C | 120 | 10800000 |
+   *
+   * Use `minimize: "weight"` to find the cheapest journeys instead.
+   * Equally fast journeys are ranked by price; equally cheap journeys
+   * are ranked by elapsed time.
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
@@ -3755,9 +3766,7 @@ export default class SimpleTable extends Simple {
    * | F2 | B | C | 2025-01-01 12:00 | 2025-01-01 13:00 | 40 |
    * | F3 | A | C | 2025-01-01 09:00 | 2025-01-01 12:00 | 120 |
    *
-   * Find the fastest journey, including layovers. The direct flight wins
-   * with `elapsedTimeMs` of 10,800,000 (three hours). The route through B
-   * takes four hours, even though it has only two hours of flying time:
+   * Find the fastest journey from A to C, including layovers:
    *
    * @example
    * ```ts
@@ -3771,10 +3780,14 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * Find the fastest journey and report its price too. The direct flight
-   * has `total` 120 and `elapsedTimeMs` 10,800,000. Changing `minimize` to
-   * `"weight"` selects the journey through B, whose final `total` is 80 and
-   * `elapsedTimeMs` is 14,400,000. All ties on the chosen metric are kept:
+   * | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
+   *
+   * The direct flight takes three hours (10,800,000 milliseconds). The
+   * route through B takes four hours, including a two-hour layover.
+   *
+   * Find the fastest journey while also adding up its price:
    *
    * @example
    * ```ts
@@ -3789,6 +3802,13 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   *
+   * | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 120 | 120 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
+   *
+   * Use `minimize: "weight"` to find the cheapest journey instead.
+   * All ties on the chosen metric are returned.
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
@@ -4052,9 +4072,7 @@ export default class SimpleTable extends Simple {
    * | F2 | B | C | 2025-01-01 12:00 | 2025-01-01 13:00 | 40 |
    * | F3 | A | C | 2025-01-01 09:00 | 2025-01-01 12:00 | 120 |
    *
-   * Report elapsed time for every path. The direct flight takes 10,800,000
-   * milliseconds (three hours); the route through B takes 14,400,000
-   * milliseconds (four hours), including its two-hour wait:
+   * Report elapsed time for every path, including layovers:
    *
    * @example
    * ```ts
@@ -4068,10 +4086,16 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * Report prices and elapsed time together for every path. The direct
-   * flight has a final `total` of 120; the route through B has a final
-   * `total` of 80. Their durations remain three and four hours respectively.
-   * No minimization choice is needed because every valid path is returned:
+   * | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1 | 3600000 | F1 | A | B | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 | 40 |
+   * | 0 | 2 | 1 | 2 | 14400000 | F2 | B | C | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 | 40 |
+   * | 1 | 1 | 1 | 1 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
+   *
+   * The route through B takes four hours (14,400,000 milliseconds),
+   * including its two-hour layover. The direct flight takes three hours.
+   *
+   * Add up prices while continuing to report elapsed time for every path:
    *
    * @example
    * ```ts
@@ -4085,6 +4109,12 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   *
+   * | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 40 | 40 | 3600000 | F1 | A | B | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 | 40 |
+   * | 0 | 2 | 40 | 80 | 14400000 | F2 | B | C | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 | 40 |
+   * | 1 | 1 | 120 | 120 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
@@ -4379,8 +4409,7 @@ export default class SimpleTable extends Simple {
    * | F1 | A | B | 2025-01-01 09:00 | 2025-01-01 10:00 | 40 |
    * | F2 | B | A | 2025-01-01 12:00 | 2025-01-01 13:00 | 60 |
    *
-   * Report elapsed time for every cycle. The final `elapsedTimeMs` is
-   * 14,400,000 (four hours), including the two-hour wait at B:
+   * Report elapsed time for every cycle, including layovers:
    *
    * @example
    * ```ts
@@ -4394,9 +4423,15 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * Report prices and elapsed time together for every cycle. The final
-   * `total` is 100 and `elapsedTimeMs` is 14,400,000. No minimization
-   * choice is needed because every valid cycle is returned:
+   * | start | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | A | 0 | 1 | 1 | 1 | 3600000 | F1 | A | B | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 | 40 |
+   * | A | 0 | 2 | 1 | 2 | 14400000 | F2 | B | A | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 | 60 |
+   *
+   * The return journey takes four hours (14,400,000 milliseconds),
+   * including the two-hour layover at B.
+   *
+   * Add up prices while continuing to report elapsed time for every cycle:
    *
    * @example
    * ```ts
@@ -4410,6 +4445,11 @@ export default class SimpleTable extends Simple {
    *   })
    *   .log();
    * ```
+   *
+   * | start | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | A | 0 | 1 | 40 | 40 | 3600000 | F1 | A | B | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 | 40 |
+   * | A | 0 | 2 | 60 | 100 | 14400000 | F2 | B | A | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 | 60 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.

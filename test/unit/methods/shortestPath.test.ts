@@ -1759,7 +1759,7 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
   const examples = [...documentation.matchAll(
     /```ts\n([\s\S]*?)```\n\n((?:\|[^\n]*\n)+)/g,
   )];
-  assertEquals(examples.length, 6);
+  assertEquals(examples.length, 8);
   const inputs = [
     [
       { edgeId: "E1", source: "A", target: "B" },
@@ -1816,6 +1816,58 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
       },
     ],
     [{ edgeId: "F1", source: "A", target: "B" }],
+    [
+      {
+        flightId: "F1",
+        origin: "A",
+        destination: "B",
+        departure: new Date("2025-01-01T09:00:00Z"),
+        arrival: new Date("2025-01-01T10:00:00Z"),
+        price: 40,
+      },
+      {
+        flightId: "F2",
+        origin: "B",
+        destination: "C",
+        departure: new Date("2025-01-01T12:00:00Z"),
+        arrival: new Date("2025-01-01T13:00:00Z"),
+        price: 40,
+      },
+      {
+        flightId: "F3",
+        origin: "A",
+        destination: "C",
+        departure: new Date("2025-01-01T09:00:00Z"),
+        arrival: new Date("2025-01-01T12:00:00Z"),
+        price: 120,
+      },
+    ],
+    [
+      {
+        flightId: "F1",
+        origin: "A",
+        destination: "B",
+        departure: new Date("2025-01-01T09:00:00Z"),
+        arrival: new Date("2025-01-01T10:00:00Z"),
+        price: 40,
+      },
+      {
+        flightId: "F2",
+        origin: "B",
+        destination: "C",
+        departure: new Date("2025-01-01T12:00:00Z"),
+        arrival: new Date("2025-01-01T13:00:00Z"),
+        price: 40,
+      },
+      {
+        flightId: "F3",
+        origin: "A",
+        destination: "C",
+        departure: new Date("2025-01-01T09:00:00Z"),
+        arrival: new Date("2025-01-01T12:00:00Z"),
+        price: 120,
+      },
+    ],
   ];
   for (const [index, example] of examples.entries()) {
     const sdb = new SimpleDB();
