@@ -12,7 +12,7 @@ Deno.test("should compute the centroids", async () => {
   table.selectColumns(["nameEnglish", "centroid"]);
   table.reducePrecision(4);
 
-  const data = await table.getGeoData("centroid");
+  const data = await table.getGeoData({ column: "centroid" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -203,7 +203,7 @@ Deno.test("should compute the centroids from a specific column", async () => {
   table.selectColumns(["nameEnglish", "centroid"]);
   table.reducePrecision(4);
 
-  const data = await table.getGeoData("centroid");
+  const data = await table.getGeoData({ column: "centroid" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -413,7 +413,7 @@ Deno.test("centroid() should overwrite the source geometry column", async () => 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
   assertEquals(data.features.length, 13);
   assertEquals(
     (data.features[0] as { geometry: { type: string } }).geometry.type,

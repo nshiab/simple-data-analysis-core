@@ -76,7 +76,7 @@ Deno.test("should return a column with geometry", async () => {
   geo.addColumn("centroid", "geometry('EPSG:4326')", `ST_Centroid(geom)`);
   geo.selectColumns(["name", "centroid"]);
   geo.reducePrecision(6);
-  const data = await geo.getGeoData("centroid");
+  const data = await geo.getGeoData({ column: "centroid" });
 
   assertEquals(data, {
     type: "FeatureCollection",

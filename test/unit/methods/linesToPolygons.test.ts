@@ -7,7 +7,7 @@ Deno.test("should transform lines to polygons", async () => {
   table.loadGeoData("test/geodata/files/closedLines.geojson");
   table.linesToPolygons();
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     type: "FeatureCollection",
@@ -782,7 +782,7 @@ Deno.test("should transform lines to polygons from a specific column", async () 
   table.loadGeoData("test/geodata/files/closedLines.geojson");
   table.linesToPolygons("geom");
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     type: "FeatureCollection",

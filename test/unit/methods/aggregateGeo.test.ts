@@ -16,7 +16,7 @@ Deno.test("should do an union of all geometries and overwrite the table", async 
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -54,7 +54,7 @@ Deno.test("should do an union of all geometries from a specific column and overw
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   table.aggregateGeo("union", { column: "geom" });
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -94,7 +94,7 @@ Deno.test("should do an union of all geometries and return the results in a new 
     outputTable: true,
   });
 
-  const data = await newTable.getGeoData("geom");
+  const data = await newTable.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -134,7 +134,7 @@ Deno.test("should do an union of all geometries and return the results in a new 
     outputTable: "specificTable",
   });
 
-  const data = await newTable.getGeoData("geom");
+  const data = await newTable.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -173,7 +173,7 @@ Deno.test("should do an union of geometries based on by", async () => {
   table.aggregateGeo("union", {
     by: "groups",
   });
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -228,7 +228,7 @@ Deno.test("should do an union of geometries based on by and return the results i
     outputTable: true,
   });
 
-  const data = await newTable.getGeoData("geom");
+  const data = await newTable.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -282,7 +282,7 @@ Deno.test("should do an intersection of geometries based on by and return the re
     outputTable: true,
   });
 
-  const data = await newTable.getGeoData("geom");
+  const data = await newTable.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -326,7 +326,7 @@ Deno.test("should do an intersection of geometries based on by and return the re
     outputTable: "specificTable",
   });
 
-  const data = await newTable.getGeoData("geom");
+  const data = await newTable.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -387,7 +387,7 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
     by: "category",
     outputTable: "unionResult",
   });
-  const unionData = await unionTable.getGeoData("geom");
+  const unionData = await unionTable.getGeoData({ column: "geom" });
 
   assertEquals(
     (unionData.features[0] as { properties: { category: string } }).properties
@@ -424,7 +424,7 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
     by: "category",
     outputTable: "interResult",
   });
-  const interData = await interTable.getGeoData("geom");
+  const interData = await interTable.getGeoData({ column: "geom" });
 
   assertEquals(
     (interData.features[0] as { properties: { category: string } }).properties

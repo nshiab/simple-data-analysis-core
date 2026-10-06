@@ -357,7 +357,7 @@ Deno.test("difference() should overwrite one of the source geometry columns", as
   const types = await table.getTypes();
   assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
 
-  const data = await table.getGeoData("geom1");
+  const data = await table.getGeoData({ column: "geom1" });
   assertEquals(data.features.length, 1);
   assertEquals(
     (data.features[0] as { geometry: { type: string } }).geometry.type,

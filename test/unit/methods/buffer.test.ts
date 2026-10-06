@@ -8,7 +8,7 @@ Deno.test("should create a buffer from points", async () => {
   table.buffer("buffer", 1);
   table.selectColumns("buffer");
 
-  const data = await table.getGeoData("buffer");
+  const data = await table.getGeoData({ column: "buffer" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -65,7 +65,7 @@ Deno.test("should create a buffer from points in a specific column", async () =>
   table.buffer("buffer", 1, { column: "geom" });
   table.selectColumns("buffer");
 
-  const data = await table.getGeoData("buffer");
+  const data = await table.getGeoData({ column: "buffer" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -123,7 +123,7 @@ Deno.test("should create a buffer from polygons", async () => {
   table.reproject("EPSG:4326");
   table.reducePrecision(2);
 
-  const data = await table.getGeoData("buffer");
+  const data = await table.getGeoData({ column: "buffer" });
 
   assertEquals(data, {
     "type": "FeatureCollection",
@@ -2533,7 +2533,7 @@ Deno.test("buffer() should overwrite the source geometry column", async () => {
   const types = await table.getTypes();
   assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
   assertEquals(data.features.length, 13);
   assertEquals(
     (data.features[0] as { geometry: { type: string } }).geometry.type,

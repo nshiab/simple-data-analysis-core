@@ -1,7 +1,7 @@
 # The Simple Data Analysis (Core) Library
 
 - Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.1.5`
+- Version: `2.1.6`
 
 To install the library with Deno, use:
 
@@ -9562,14 +9562,15 @@ columns, you must specify which one to use.
 ##### Signature
 
 ```typescript
-async getGeoData(column?: string, options?: { rewind?: boolean }): Promise<{ type: string; features: unknown[] }>;
+async getGeoData(options?: { column?: string; rewind?: boolean }): Promise<{ type: string; features: unknown[] }>;
 ```
 
 ##### Parameters
 
-- **`column`**: The name of the column storing the geometries. If omitted, the
-  method will automatically attempt to find a geometry column.
 - **`options`**: An optional object with configuration options:
+- **`options.column`**: The name of the column storing the geometries. If
+  omitted, the table must have exactly one geometry column, which will be
+  selected automatically.
 - **`options.rewind`**: If `true`, rewinds the coordinates of polygons to follow
   the spherical winding order (important for D3.js). Defaults to `false`.
 
@@ -9588,13 +9589,13 @@ console.log(geojson);
 
 ```ts
 // Get GeoJSON data from a specific geometry column named 'myGeometries'
-const myGeomJson = await table.getGeoData("myGeometries");
+const myGeomJson = await table.getGeoData({ column: "myGeometries" });
 console.log(myGeomJson);
 ```
 
 ```ts
 // Get GeoJSON data and rewind polygon coordinates for D3.js compatibility
-const rewoundGeojson = await table.getGeoData(undefined, { rewind: true });
+const rewoundGeojson = await table.getGeoData({ rewind: true });
 console.log(rewoundGeojson);
 ```
 

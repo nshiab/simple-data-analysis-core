@@ -8543,29 +8543,29 @@ export default class SimpleTable extends Simple {
    * @example
    * ```ts
    * // Get GeoJSON data from a specific geometry column named 'myGeometries'
-   * const myGeomJson = await table.getGeoData("myGeometries");
+   * const myGeomJson = await table.getGeoData({ column: "myGeometries" });
    * console.log(myGeomJson);
    * ```
    *
    * @example
    * ```ts
    * // Get GeoJSON data and rewind polygon coordinates for D3.js compatibility
-   * const rewoundGeojson = await table.getGeoData(undefined, { rewind: true });
+   * const rewoundGeojson = await table.getGeoData({ rewind: true });
    * console.log(rewoundGeojson);
    * ```
-   * @param column - The name of the column storing the geometries. If omitted, the method will automatically attempt to find a geometry column.
    * @param options - An optional object with configuration options:
+   * @param options.column - The name of the column storing the geometries. If omitted, the table must have exactly one geometry column, which will be selected automatically.
    * @param options.rewind - If `true`, rewinds the coordinates of polygons to follow the spherical winding order (important for D3.js). Defaults to `false`.
    * @returns A promise that resolves to a GeoJSON object representing the table's geospatial data.
    * @category Getting Data
    */
   async getGeoData(
-    column?: string,
-    options: { rewind?: boolean } = {},
+    options: { column?: string; rewind?: boolean } = {},
   ): Promise<{
     type: string;
     features: unknown[];
   }> {
+    let column = options.column;
     if (column === undefined) {
       column = await findGeoColumn(this, "getGeoData()");
     }

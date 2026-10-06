@@ -129,7 +129,7 @@ Deno.test("intersection() should overwrite one of the source geometry columns", 
   const types = await table.getTypes();
   assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
 
-  const data = await table.getGeoData("geom1");
+  const data = await table.getGeoData({ column: "geom1" });
   assertEquals(data.features.length, 1);
   assertEquals(
     (data.features[0] as { geometry: { type: string } }).geometry.type,
@@ -159,7 +159,7 @@ Deno.test("intersection() should return null if one of the geometries is null", 
 `);
 
   table.intersection("geom1", "geom2", "inter");
-  const data = await table.getGeoData("inter");
+  const data = await table.getGeoData({ column: "inter" });
 
   assertEquals(
     (data.features[0] as { geometry: { type: string } }).geometry?.type,

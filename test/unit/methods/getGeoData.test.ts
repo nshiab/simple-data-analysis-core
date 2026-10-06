@@ -58,7 +58,7 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.renameColumns({ geom: "newGeom" });
-  const geoData = await table.getGeoData("newGeom");
+  const geoData = await table.getGeoData({ column: "newGeom" });
 
   assertEquals(geoData, {
     type: "FeatureCollection",
@@ -110,7 +110,7 @@ Deno.test("should quote unusual geometry column names", async () => {
 
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.renameColumns({ geom: geometryColumn });
-  const geoData = await table.getGeoData(geometryColumn);
+  const geoData = await table.getGeoData({ column: geometryColumn });
 
   assertEquals(geoData.features.length, 2);
 
@@ -135,7 +135,7 @@ Deno.test("should return geospatial data rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
-  const geoData = await table.getGeoData(undefined, { rewind: true });
+  const geoData = await table.getGeoData({ rewind: true });
 
   const rewindedData = rewind(JSON.parse(
     readFileSync("test/geodata/files/economicRegions-simplified.json", "utf-8"),
@@ -175,7 +175,7 @@ Deno.test("should preserve multiple geometry-column selection", async () => {
     Error,
     `getGeoData() found 2 geometry columns in table "multipleGeometries": "geom", "otherGeom". Specify one explicitly.`,
   );
-  const geoData = await table.getGeoData("geom");
+  const geoData = await table.getGeoData({ column: "geom" });
   assertEquals(geoData.features.length, 2);
   assertEquals(
     typeof (geoData.features[0] as { properties: { otherGeom: unknown } })
@@ -183,4 +183,41 @@ Deno.test("should preserve multiple geometry-column selection", async () => {
     "string",
   );
   await sdb.close();
+});
+
+Deno.test("should accept empty options and preserve explicit rewind false", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadGeoData(
+      "test/geodata/files/polygons.geojson",
+    );
+    const expected = await table.getGeoData();
+    assertEquals(await table.getGeoData({}), expected);
+    assertEquals(await table.getGeoData({ rewind: false }), expected);
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("should combine column selection and rewinding without changing options", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadGeoData(
+      "test/geodata/files/polygons.geojson",
+    );
+    const original = await table.getGeoData();
+    table.cloneColumn("geom", "otherGeom");
+    const options = Object.freeze({ column: "otherGeom", rewind: true });
+    const result = await table.getGeoData(options);
+    const expected = rewind(original) as { features: { geometry: unknown }[] };
+    assertEquals(
+      result.features.map((feature) =>
+        (feature as { geometry: unknown }).geometry
+      ),
+      expected.features.map((feature) => feature.geometry),
+    );
+    assertEquals(options, { column: "otherGeom", rewind: true });
+  } finally {
+    await sdb.close();
+  }
 });

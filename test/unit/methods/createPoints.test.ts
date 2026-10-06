@@ -8,7 +8,7 @@ Deno.test("should create points", async () => {
   table.convert({ lat: "double", lon: "double" });
   table.createPoints("lat", "lon", "geom");
 
-  const data = await table.getGeoData("geom");
+  const data = await table.getGeoData({ column: "geom" });
 
   assertEquals(data, {
     type: "FeatureCollection",
