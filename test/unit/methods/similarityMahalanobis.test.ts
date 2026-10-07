@@ -415,7 +415,7 @@ Deno.test("similarityMahalanobis composes with queued operations and snapshots c
     const table = sdb.newTable("source");
     const columns = ["x", "y"];
     const reference = [0, 0];
-    const options = { similarityScoreColumn: "similarity" };
+    const options = { similarityColumn: "similarity" };
     table.filter("keep")
       .similarityMahalanobis(columns, reference, "distance", options)
       .selectColumns(["id", "distance", "similarity"]);
@@ -423,7 +423,7 @@ Deno.test("similarityMahalanobis composes with queued operations and snapshots c
     columns.push("alsoMissing");
     reference[0] = Infinity;
     reference.push(1);
-    options.similarityScoreColumn = "changed";
+    options.similarityColumn = "changed";
 
     const data = await table.getData();
     assertEquals(data.map((row) => row.id), [1, 2, 3, 4]);
@@ -459,7 +459,7 @@ Deno.test("similarityMahalanobis preserves a file-backed table, its row order, t
     const before = await table.getData();
     const typesBefore = await table.getTypes();
     await table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
-      similarityScoreColumn: "similarity",
+      similarityColumn: "similarity",
     }).run();
     const after = await table.getData();
     assertEquals(
@@ -507,7 +507,7 @@ Deno.test("similarityMahalanobis rolls back publication and cleans scratch state
     try {
       const error = await assertRejects(() =>
         table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
-          similarityScoreColumn: "similarity",
+          similarityColumn: "similarity",
         }).run()
       );
       assertStrictEquals(error, failure);
@@ -650,10 +650,10 @@ Deno.test("similarityMahalanobis uses the supplied scalar or vector reference an
       i::DOUBLE AS x, [i::DOUBLE]::DOUBLE[1] AS vector FROM range(3) rows(i)`);
     const table = sdb.newTable("source");
     await table.similarityMahalanobis(["x"], [0], "distance", {
-      similarityScoreColumn: "score",
+      similarityColumn: "score",
     })
       .similarityMahalanobis("vector", [4], "outside", {
-        similarityScoreColumn: "outside_score",
+        similarityColumn: "outside_score",
       })
       .run();
     const data = await table.getData();
@@ -704,7 +704,7 @@ Deno.test("similarityMahalanobis retains finite extreme distances and tiny refer
     );
     const table = sdb.newTable("source");
     await table.similarityMahalanobis(["x"], [1e308], "huge", {
-      similarityScoreColumn: "score",
+      similarityColumn: "score",
     })
       .similarityMahalanobis(["x"], [1e-200], "tiny").run();
     const data = await table.getData();
@@ -749,7 +749,7 @@ Deno.test("similarityMahalanobis validates reference values and dimensions witho
       await assertRejects(
         () =>
           table.similarityMahalanobis(columns, [1, 2, 3], "distance", {
-            similarityScoreColumn: "score",
+            similarityColumn: "score",
           }).run(),
         Error,
         "received 3",
@@ -785,7 +785,7 @@ Deno.test("similarityMahalanobis validates both output names before preparing in
       await assertRejects(
         () =>
           table.similarityMahalanobis("features", [0], distance, {
-            similarityScoreColumn: score,
+            similarityColumn: score,
           }).run(),
         Error,
         message,
@@ -811,7 +811,7 @@ Deno.test("similarityMahalanobis leaves both outputs unpublished when a referenc
     await assertRejects(
       () =>
         table.similarityMahalanobis(["x"], [1e308], "distance", {
-          similarityScoreColumn: "score",
+          similarityColumn: "score",
         }).run(),
       Error,
       "non-finite",
@@ -841,21 +841,21 @@ Deno.test("similarityMahalanobis snapshots object references in selected column 
     ]);
     const reference = { y: 2, extra: null, x: 1 };
     const columns = ["x", "y"];
-    const options = { similarityScoreColumn: true };
+    const options = { similarityColumn: true };
     table.similarityMahalanobis(columns, reference, "objectDistance", options);
     reference.x = 100;
     reference.y = 100;
     columns.reverse();
-    options.similarityScoreColumn = false;
+    options.similarityColumn = false;
     await table.similarityMahalanobis(["x", "y"], [1, 2], "arrayDistance", {
-      similarityScoreColumn: "customScore",
+      similarityColumn: "customScore",
     }).run();
     for (const row of await table.getData()) {
       assertEquals(row.objectDistance, row.arrayDistance);
       assertEquals(row.similarity, row.customScore);
     }
     await table.similarityMahalanobis(["x", "y"], { x: 1, y: 2 }, "noScore", {
-      similarityScoreColumn: false,
+      similarityColumn: false,
     }).run();
     assertEquals(await table.getColumns(), [
       "x",
@@ -915,7 +915,7 @@ Deno.test("similarityMahalanobis checks default score name collisions", async ()
     await assertRejects(
       () =>
         table.similarityMahalanobis(["x"], { x: 1 }, "SIMILARITY", {
-          similarityScoreColumn: true,
+          similarityColumn: true,
         }).run(),
       Error,
       "different names",
@@ -928,7 +928,7 @@ Deno.test("similarityMahalanobis checks default score name collisions", async ()
           { Similarity: 1 },
           "distance",
           {
-            similarityScoreColumn: true,
+            similarityColumn: true,
           },
         ).run(),
       Error,

@@ -213,7 +213,7 @@ try {
   ])
     .rowToVector(["x", "y"], "features", { type: "double" })
     .normalizeVector("features", "scaled")
-    .similarityMahalanobis(["x", "y"], [1, 2], "distance", { similarityScoreColumn: "similarity" })
+    .similarityMahalanobis(["x", "y"], [1, 2], "distance", { similarityColumn: "similarity" })
     .hdbscan("scaled", "cluster", {
       minClusterSize: 2, minSamples: 1,
       membershipScoreColumn: "membership", outlierScoreColumn: "outlier",
