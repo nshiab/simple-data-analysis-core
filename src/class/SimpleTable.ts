@@ -5483,7 +5483,7 @@ export default class SimpleTable extends Simple {
    * // Compare feature vectors and add a dataset-relative similarity score.
    * await table
    *   .similarityMahalanobis("features", [175, 70], "distance", {
-   *     similarityScoreColumn: "similarity",
+   *     similarityColumn: "similarity",
    *   })
    *   .log();
    * ```
@@ -5494,7 +5494,7 @@ export default class SimpleTable extends Simple {
    * const reference = await table.getRow("name === 'Alex'");
    * await table
    *   .similarityMahalanobis(["height", "weight"], reference, "distance", {
-   *     similarityScoreColumn: true,
+   *     similarityColumn: true,
    *   })
    *   .log();
    * ```
@@ -5502,7 +5502,7 @@ export default class SimpleTable extends Simple {
    * @param referencePoint - An array of finite numbers in feature order, or an object with an own finite numeric value for each scalar feature column; may be outside the dataset.
    * @param newColumn - The name of the new DOUBLE distance column.
    * @param options - Optional output settings.
-   * @param options.similarityScoreColumn - A custom name, or true for a new DOUBLE column named "similarity"; false or omitted adds no score. The dataset-relative
+   * @param options.similarityColumn - A custom name, or true for a new DOUBLE column named "similarity"; false or omitted adds no score. The dataset-relative
    * score is `1 - distance / maxDistance`. Exact matches score 1 and the farthest
    * rows score 0; if all distances are zero, every score is 1.
    * @returns The table, so methods can be chained.
@@ -5512,7 +5512,7 @@ export default class SimpleTable extends Simple {
     columns: string | string[],
     referencePoint: number[] | { [key: string]: unknown },
     newColumn: string,
-    options: { similarityScoreColumn?: string | boolean } = {},
+    options: { similarityColumn?: string | boolean } = {},
   ): this {
     similarityMahalanobis(this, columns, referencePoint, newColumn, options);
     return this;

@@ -6061,7 +6061,7 @@ unchanged.
 ##### Signature
 
 ```typescript
-similarityMahalanobis(columns: string | string[], referencePoint: number[] | Record<string, unknown>, newColumn: string, options?: { similarityScoreColumn?: string | boolean }): this;
+similarityMahalanobis(columns: string | string[], referencePoint: number[] | Record<string, unknown>, newColumn: string, options?: { similarityColumn?: string | boolean }): this;
 ```
 
 ##### Parameters
@@ -6073,10 +6073,10 @@ similarityMahalanobis(columns: string | string[], referencePoint: number[] | Rec
   outside the dataset.
 - **`newColumn`**: The name of the new DOUBLE distance column.
 - **`options`**: Optional output settings.
-- **`options.similarityScoreColumn`**: A custom name, or true for a new DOUBLE
-  column named "similarity"; false or omitted adds no score. The
-  dataset-relative score is `1 - distance / maxDistance`. Exact matches score 1
-  and the farthest rows score 0; if all distances are zero, every score is 1.
+- **`options.similarityColumn`**: A custom name, or true for a new DOUBLE column
+  named "similarity"; false or omitted adds no score. The dataset-relative score
+  is `1 - distance / maxDistance`. Exact matches score 1 and the farthest rows
+  score 0; if all distances are zero, every score is 1.
 
 ##### Returns
 
@@ -6095,7 +6095,7 @@ await table
 // Compare feature vectors and add a dataset-relative similarity score.
 await table
   .similarityMahalanobis("features", [175, 70], "distance", {
-    similarityScoreColumn: "similarity",
+    similarityColumn: "similarity",
   })
   .log();
 ```
@@ -6105,7 +6105,7 @@ await table
 const reference = await table.getRow("name === 'Alex'");
 await table
   .similarityMahalanobis(["height", "weight"], reference, "distance", {
-    similarityScoreColumn: true,
+    similarityColumn: true,
   })
   .log();
 ```

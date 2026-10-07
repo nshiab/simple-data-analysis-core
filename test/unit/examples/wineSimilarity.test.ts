@@ -55,7 +55,7 @@ Deno.test("wine similarity example filters red wines and finds five named matche
       ["acidity", "intensity", "sweetness", "tannin"],
       reference,
       "distance",
-      { similarityScoreColumn: true },
+      { similarityColumn: true },
     );
     const measured = await wines.getData();
     assertEquals(

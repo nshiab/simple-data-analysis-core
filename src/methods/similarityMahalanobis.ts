@@ -79,11 +79,11 @@ async function execute(
   options: Options,
 ): Promise<void> {
   const sourceColumns = Object.keys(await table.getTypes());
-  const scoreColumn = options.similarityScoreColumn === true
+  const scoreColumn = options.similarityColumn === true
     ? "similarity"
-    : options.similarityScoreColumn === false
+    : options.similarityColumn === false
     ? undefined
-    : options.similarityScoreColumn;
+    : options.similarityColumn;
   const outputNames = scoreColumn === undefined
     ? [newColumn]
     : [newColumn, scoreColumn];
