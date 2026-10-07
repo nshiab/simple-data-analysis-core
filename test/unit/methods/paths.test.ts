@@ -818,7 +818,7 @@ Deno.test("paths and shortestPath match independent simple-route enumeration", a
                 target: original.target,
                 cost: edge.cost,
                 weight,
-                total,
+                ...(method === "shortestPath" && !weighted ? {} : { total }),
               };
             });
           });

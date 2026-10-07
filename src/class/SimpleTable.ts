@@ -3300,38 +3300,23 @@ export default class SimpleTable extends Simple {
 
   /**
    * Finds the shortest routes from each starting node to every reachable
-   * node and reports their total costs. By default, each connection costs
-   * one. Use the `weight` option to sum values from a numeric column, such
-   * as travel time or price.
+   * node. Without options, shortest means the fewest connections. Use `weight`
+   * to report total cost and `elapsedTime` to report duration including waiting
+   * between connections. Use `minimize` to choose which metric defines shortest.
    *
-   * The `direction` option lets you follow connections from source to target,
-   * from target to source, or in either direction. The result has `start`,
-   * `node`, and `total` columns.
+   * Each row contains `start`, `node`, and `steps`, plus `total` when `weight`
+   * is supplied and `elapsedTimeMs` when enabled. Routes tied on the chosen
+   * metric produce separate rows only when their reported summaries differ;
+   * identical summaries appear once.
    *
-   * Each row gives the selected route's total cost from `start` to `node`.
-   * Intermediate steps along the route are not returned. To get the steps
-   * between two different nodes, use `shortestPath()` for the shortest routes
-   * or `paths()` for all routes without repeated nodes.
+   * Routes cannot repeat nodes except for a final return to the start. A start
+   * appears in its own results only through an actual return or self-connection,
+   * never with zero steps. With `direction: "both"`, a return can follow the
+   * same connection out and back. Use `shortestPath()` to inspect individual
+   * connections between two different nodes.
    *
-   * A starting node appears in its own results only when a self-connection
-   * or a route leads back to it. Its total is the cost of the shortest actual
-   * return route, using at least one connection. With `direction: "both"`, this
-   * can mean following the same connection out and back.
-   *
-   * Unknown starting IDs and starts with no connections to follow produce
-   * no rows. Empty start arrays and duplicate starting IDs throw an error.
-   * Weights must be non-null, finite, and non-negative.
-   *
-   * Use the `startTimeColumn` or `endTimeColumn` options to follow connections
-   * in chronological order. The `minGapMs` option sets the minimum gap between
-   * consecutive connections, in milliseconds. With both time columns, gaps are
-   * measured from one connection's end to the next connection's start; with one
-   * column, between their timestamps. The `strictOrdering` option defaults to
-   * `true`, rejecting zero-duration gaps. These options only work with
-   * `direction: "outgoing"` or `direction: "incoming"`.
-   *
-   * The minimum gap applies only between consecutive connections, not before
-   * the first connection.
+   * Reporting weight or elapsed time can require substantial time and memory
+   * on dense networks because many routes may need to be explored.
    *
    * The next five examples each start with this data:
    *
@@ -3351,7 +3336,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
+   * | start | node | steps |
    * | --- | --- | ---: |
    * | A | B | 1 |
    * | A | C | 2 |
@@ -3365,10 +3350,10 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
-   * | --- | --- | ---: |
-   * | A | B | 4 |
-   * | A | C | 5 |
+   * | start | node | steps | total |
+   * | --- | --- | ---: | ---: |
+   * | A | B | 1 | 4 |
+   * | A | C | 2 | 5 |
    *
    * With `direction: "incoming"`, connections are followed from target to
    * source. Starting at C:
@@ -3380,7 +3365,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
+   * | start | node | steps |
    * | --- | --- | ---: |
    * | C | B | 1 |
    * | C | A | 2 |
@@ -3396,14 +3381,14 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
+   * | start | node | steps |
    * | --- | --- | ---: |
    * | A | B | 1 |
    * | A | A | 2 |
    * | A | C | 2 |
    * | A | D | 2 |
    *
-   * A appears with a total of 2 because A → B → A follows a connection out
+   * A appears with 2 steps because A → B → A follows a connection out
    * and back.
    *
    * An array of starting nodes gives separate distances for each start:
@@ -3417,12 +3402,12 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
-   * | --- | --- | ---: |
-   * | A | B | 4 |
-   * | A | C | 5 |
-   * | D | B | 2 |
-   * | D | C | 3 |
+   * | start | node | steps | total |
+   * | --- | --- | ---: | ---: |
+   * | A | B | 1 | 4 |
+   * | A | C | 2 | 5 |
+   * | D | B | 1 | 2 |
+   * | D | C | 2 | 3 |
    *
    * A direct self-connection and a longer return route can both lead back
    * to the start. This example uses different data:
@@ -3443,13 +3428,13 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
-   * | --- | --- | ---: |
-   * | A | B | 2 |
-   * | A | A | 5 |
+   * | start | node | steps | total |
+   * | --- | --- | ---: | ---: |
+   * | A | B | 1 | 2 |
+   * | A | A | 2 | 5 |
    *
    * Chronological options can rule out a cheaper sequence that departs too
-   * early. For this example, F2 leaves before F1 arrives, while F3 meets the
+   * early. Here, B → C leaves before A → B arrives, while B → D meets the
    * one-hour minimum exactly:
    *
    * | origin | destination | departureTime | arrivalTime | minutes |
@@ -3470,12 +3455,12 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total |
-   * | --- | --- | ---: |
-   * | A | B | 2 |
-   * | A | D | 5 |
+   * | start | node | steps | total |
+   * | --- | --- | ---: | ---: |
+   * | A | B | 1 | 2 |
+   * | A | D | 2 | 5 |
    *
-   * For the next two examples, `flights` contains these rows, with departure
+   * For the next four examples, `flights` contains these rows, with departure
    * and arrival stored as timestamps on the same day:
    *
    * | flightId | origin | destination | departure | arrival | price |
@@ -3499,7 +3484,7 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total | elapsedTimeMs |
+   * | start | node | steps | elapsedTimeMs |
    * | --- | --- | ---: | ---: |
    * | A | B | 1 | 3600000 |
    * | A | C | 1 | 10800000 |
@@ -3523,29 +3508,94 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | start | node | total | elapsedTimeMs |
-   * | --- | --- | ---: | ---: |
-   * | A | B | 40 | 3600000 |
-   * | A | C | 120 | 10800000 |
+   * | start | node | steps | total | elapsedTimeMs |
+   * | --- | --- | ---: | ---: | ---: |
+   * | A | B | 1 | 40 | 3600000 |
+   * | A | C | 1 | 120 | 10800000 |
    *
-   * Use `minimize: "weight"` to find the cheapest journeys instead.
-   * Equally fast journeys are ranked by price; equally cheap journeys
-   * are ranked by elapsed time.
+   * Use `minimize: "weight"` to find the cheapest journeys instead. The
+   * selected route to C now takes two steps through B and costs 80:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .distances("origin", "destination", "A", {
+   *     startTimeColumn: "departure",
+   *     endTimeColumn: "arrival",
+   *     minGapMs: 60 * 60 * 1000,
+   *     elapsedTime: true,
+   *     weight: "price",
+   *     minimize: "weight",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | start | node | steps | total | elapsedTimeMs |
+   * | --- | --- | ---: | ---: | ---: |
+   * | A | B | 1 | 40 | 3600000 |
+   * | A | C | 2 | 80 | 14400000 |
+   *
+   * Choose the fewest connections while still reporting price and elapsed
+   * time. The direct flight to C has one step, even though it costs more:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .distances("origin", "destination", "A", {
+   *     startTimeColumn: "departure",
+   *     endTimeColumn: "arrival",
+   *     minGapMs: 60 * 60 * 1000,
+   *     elapsedTime: true,
+   *     weight: "price",
+   *     minimize: "steps",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | start | node | steps | total | elapsedTimeMs |
+   * | --- | --- | ---: | ---: | ---: |
+   * | A | B | 1 | 40 | 3600000 |
+   * | A | C | 1 | 120 | 10800000 |
+   *
+   * When two routes to C both take two steps but have different prices,
+   * minimizing steps while reporting price returns both summaries:
+   *
+   * @example
+   * ```ts
+   * await connections
+   *   .loadArray([
+   *     { origin: "A", destination: "B", price: 20 },
+   *     { origin: "B", destination: "C", price: 30 },
+   *     { origin: "A", destination: "D", price: 40 },
+   *     { origin: "D", destination: "C", price: 40 },
+   *   ])
+   *   .distances("origin", "destination", "A", {
+   *     weight: "price",
+   *     minimize: "steps",
+   *   })
+   *   .filter("node = 'C'")
+   *   .log();
+   * ```
+   *
+   * | start | node | steps | total |
+   * | --- | --- | ---: | ---: |
+   * | A | C | 2 | 50 |
+   * | A | C | 2 | 80 |
    *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
-   * @param startNodes - One starting node ID or an array of distinct starting node IDs.
+   * @param startNodes - One starting node ID or a non-empty array of distinct IDs. Unknown IDs and starts with no connections to follow produce no rows. Empty arrays and duplicate IDs throw an error.
    * @param options - An optional object with direction, time, and result configuration.
-   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`.
+   * @param options.direction - The direction in which to follow connections. Defaults to `"outgoing"`. Chronological traversal supports only `"outgoing"` and `"incoming"`.
    * @param options.startTimeColumn - The name of the column containing each connection's start time. Use this or `endTimeColumn` to follow connections in chronological order.
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
-   * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
+   * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds; does not apply before the first connection. With both time columns, measured from one connection's end to the next's start; with one column, between timestamps. Must be a non-negative integer. Defaults to `0`. Requires a time column.
    * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
-   * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
-   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
-   * @param options.minimize - The metric used to select optimal routes. Required when both `weight` and `elapsedTime` are enabled; otherwise inferred. The corresponding metric must be enabled.
+   * @param options.weight - The name of the numeric column used as the cost of each connection. Values must be non-null, finite, and non-negative. Adds `total`, the cumulative sum of those costs. If omitted, no `total` column is generated.
+   * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns. Optimization compares native timestamp precision before conversion to milliseconds.
+   * @param options.minimize - The metric used to select optimal routes: `"steps"`, `"weight"`, or `"elapsedTime"`. Defaults to `"weight"` when only `weight` is enabled, `"elapsedTime"` when only elapsed-time reporting is enabled, and `"steps"` when neither is enabled. Required when both are enabled. `"steps"` is always available; the other metrics require their corresponding options.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
-   * @returns The result table, so methods can be chained.
+   * @returns The table of distinct optimal summaries with `start`, `node`, and `steps`, plus `total` when `weight` is supplied and `elapsedTimeMs` when enabled, so methods can be chained. Sorted by start, the chosen metric, node, then remaining metrics in the order steps, total, elapsed time.
    * @category Graph Operations
    */
   distances(
@@ -3557,7 +3607,7 @@ export default class SimpleTable extends Simple {
       elapsedTime?: boolean;
       endTimeColumn?: string;
       minGapMs?: number;
-      minimize?: "weight" | "elapsedTime";
+      minimize?: "steps" | "weight" | "elapsedTime";
       outputTable?: string | boolean;
       startTimeColumn?: string;
       strictOrdering?: boolean;
@@ -3582,15 +3632,17 @@ export default class SimpleTable extends Simple {
    * containing these IDs as the `edgeId` argument. If your table is missing
    * an ID column, you can easily create one with `addId()`.
    *
-   * The result starts with the `pathId`, `step`, `weight`, and `total`
-   * columns, followed by all original columns. Steps start at one and follow
-   * the search direction. The `weight` column is the connection cost, and
-   * `total` is the sum of those costs up to and including the current step.
-   * Without the `weight` option, each connection costs one.
+   * The result starts with `pathId`, `step`, and `weight`, followed by the
+   * optional metric columns and all original columns. Steps start at one and
+   * follow the search direction. The `weight` column is the connection cost,
+   * or one when no `weight` option is supplied. Supplying `weight` also adds
+   * `total`, the sum of those costs up to and including the current step.
+   * Enabling `elapsedTime` adds cumulative `elapsedTimeMs`, including gaps.
    *
-   * If an input column is already named `pathId`, `step`, `weight`, or `total`
-   * (regardless of capitalization), the method throws an error. Rename it
-   * with `renameColumns()` first.
+   * If an input column conflicts with a generated result column (regardless
+   * of capitalization), the method throws an error. Rename it with
+   * `renameColumns()` first. `total` is reserved only when `weight` is supplied,
+   * and `elapsedTimeMs` only when elapsed-time reporting is enabled.
    *
    * Each row is one connection along a route.
    *
@@ -3604,6 +3656,16 @@ export default class SimpleTable extends Simple {
    *
    * The minimum gap applies only between consecutive connections, not before
    * the first connection.
+   *
+   * Use `minimize: "steps"` to choose the fewest connections even when weight
+   * or elapsed-time reporting is enabled. Without an explicit `minimize`, the
+   * method minimizes weight when only `weight` is enabled, elapsed time when
+   * only `elapsedTime` is enabled, and steps when neither is enabled. With
+   * both enabled, specify `"steps"`, `"weight"`, or `"elapsedTime"` explicitly.
+   * Elapsed-time reporting requires both time columns.
+   *
+   * All routes tied on the selected metric are returned, even if their other
+   * metrics differ. Each route reports its own weights and elapsed times.
    *
    * Routes are numbered from zero by comparing their sequences of connection
    * IDs, element by element. Rows are sorted by `pathId`, then `step`.
@@ -3635,14 +3697,14 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | weight | total | edgeId | source | target |
-   * | ---: | ---: | ---: | ---: | --- | --- | --- |
-   * | 0 | 1 | 1 | 1 | E1 | A | B |
-   * | 0 | 2 | 1 | 2 | E3 | B | D |
-   * | 0 | 3 | 1 | 3 | E5 | D | E |
-   * | 1 | 1 | 1 | 1 | E2 | A | C |
-   * | 1 | 2 | 1 | 2 | E4 | C | D |
-   * | 1 | 3 | 1 | 3 | E5 | D | E |
+   * | pathId | step | weight | edgeId | source | target |
+   * | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | E1 | A | B |
+   * | 0 | 2 | 1 | E3 | B | D |
+   * | 0 | 3 | 1 | E5 | D | E |
+   * | 1 | 1 | 1 | E2 | A | C |
+   * | 1 | 2 | 1 | E4 | C | D |
+   * | 1 | 3 | 1 | E5 | D | E |
    *
    * For an input without connection IDs, use `addId()` first:
    *
@@ -3661,10 +3723,10 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | weight | total | source | target | edgeId |
-   * | ---: | ---: | ---: | ---: | --- | --- | --- |
-   * | 0 | 1 | 1 | 1 | A | B | edge-0 |
-   * | 0 | 2 | 1 | 2 | B | E | edge-1 |
+   * | pathId | step | weight | source | target | edgeId |
+   * | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | A | B | edge-0 |
+   * | 0 | 2 | 1 | B | E | edge-1 |
    *
    * The next two examples each start with these flights. The direct flight
    * takes ten minutes; the route through B and D takes three:
@@ -3704,9 +3766,9 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | weight | total | flightId | origin | destination | minutes |
-   * | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
-   * | 0 | 1 | 1 | 1 | F1 | A | E | 10 |
+   * | pathId | step | weight | flightId | origin | destination | minutes |
+   * | ---: | ---: | ---: | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | F1 | A | E | 10 |
    *
    * With time options, the cheaper route through B is ruled out because F2
    * leaves before F1 arrives. The route through C meets the one-hour minimum
@@ -3753,11 +3815,11 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | weight | total | edgeId | source | target |
-   * | ---: | ---: | ---: | ---: | --- | --- | --- |
-   * | 0 | 1 | 1 | 1 | F1 | A | B |
+   * | pathId | step | weight | edgeId | source | target |
+   * | ---: | ---: | ---: | --- | --- | --- |
+   * | 0 | 1 | 1 | F1 | A | B |
    *
-   * For the next two examples, `flights` contains these rows, with departure
+   * For the next three examples, `flights` contains these rows, with departure
    * and arrival stored as timestamps on the same day:
    *
    * | flightId | origin | destination | departure | arrival | price |
@@ -3782,10 +3844,10 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    *
-   * | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
-   * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
-   * | 0 | 1 | 1 | 1 | 1800000 | F4 | A | D | 2025-01-01 09:00:00 | 2025-01-01 09:30:00 | 60 |
-   * | 0 | 2 | 1 | 2 | 7200000 | F5 | D | C | 2025-01-01 10:30:00 | 2025-01-01 11:00:00 | 80 |
+   * | pathId | step | weight | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 1 | 1800000 | F4 | A | D | 2025-01-01 09:00:00 | 2025-01-01 09:30:00 | 60 |
+   * | 0 | 2 | 1 | 7200000 | F5 | D | C | 2025-01-01 10:30:00 | 2025-01-01 11:00:00 | 80 |
    *
    * The route through D takes two hours (7,200,000 milliseconds), including
    * a one-hour layover. The direct flight takes three hours.
@@ -3814,6 +3876,27 @@ export default class SimpleTable extends Simple {
    * Use `minimize: "weight"` to find the cheapest journey instead.
    * All ties on the chosen metric are returned.
    *
+   * Choose the fewest flights while still reporting price and elapsed time.
+   * The direct flight takes one step, although the route through D is faster:
+   *
+   * @example
+   * ```ts
+   * await flights
+   *   .shortestPath("origin", "destination", "flightId", "A", "C", {
+   *     startTimeColumn: "departure",
+   *     endTimeColumn: "arrival",
+   *     minGapMs: 60 * 60 * 1000,
+   *     elapsedTime: true,
+   *     weight: "price",
+   *     minimize: "steps",
+   *   })
+   *   .log();
+   * ```
+   *
+   * | pathId | step | weight | total | elapsedTimeMs | flightId | origin | destination | departure | arrival | price |
+   * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
+   * | 0 | 1 | 120 | 120 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
+   *
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
@@ -3825,11 +3908,11 @@ export default class SimpleTable extends Simple {
    * @param options.endTimeColumn - The name of the column containing each connection's end time. Use this or `startTimeColumn` to follow connections in chronological order.
    * @param options.minGapMs - The minimum gap between consecutive connections, in milliseconds. Must be a non-negative integer. Defaults to `0`. Requires a time column.
    * @param options.strictOrdering - Whether to reject zero-duration gaps between consecutive connections (equal timestamps). Defaults to `true`. Requires a time column.
-   * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
+   * @param options.weight - The name of the numeric column used as the cost of each connection. Adds `total`, the cumulative sum of those costs. If omitted, no `total` column is generated.
    * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
-   * @param options.minimize - The metric used to select optimal routes. Required when both `weight` and `elapsedTime` are enabled; otherwise inferred. The corresponding metric must be enabled.
+   * @param options.minimize - The metric used to select optimal routes: `"steps"`, `"weight"`, or `"elapsedTime"`. Defaults to `"weight"` when only `weight` is enabled, `"elapsedTime"` when only elapsed-time reporting is enabled, and `"steps"` when neither is enabled. Required when both are enabled. `"steps"` is always available; the other metrics require their corresponding options.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
-   * @returns The result table, so methods can be chained.
+   * @returns The table of route connections with optional cumulative `total` and `elapsedTimeMs` metrics, so methods can be chained.
    * @category Graph Operations
    */
   shortestPath(
@@ -3843,7 +3926,7 @@ export default class SimpleTable extends Simple {
       elapsedTime?: boolean;
       endTimeColumn?: string;
       minGapMs?: number;
-      minimize?: "weight" | "elapsedTime";
+      minimize?: "steps" | "weight" | "elapsedTime";
       outputTable?: string | boolean;
       startTimeColumn?: string;
       strictOrdering?: boolean;

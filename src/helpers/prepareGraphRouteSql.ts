@@ -64,6 +64,7 @@ export function validateGraphRouteInputs(
   endpoints: PreparedGraphRouteEndpoints,
   weight: string | undefined,
   method: string,
+  includeTotal = true,
 ) {
   const nodes = validateGraphStarts(
     schema,
@@ -76,7 +77,7 @@ export function validateGraphRouteInputs(
   const weightColumn = weight === undefined
     ? undefined
     : getGraphWeightColumn(schema, weight, method);
-  validateGraphRouteResultSchema(schema, method);
+  validateGraphRouteResultSchema(schema, method, [], includeTotal);
   return {
     distanceType: weightColumn?.distanceType ?? "BIGINT",
     edgeIdType: edges.idType,
@@ -94,8 +95,9 @@ export function prepareGraphRouteSql(
   endpoints: PreparedGraphRouteEndpoints,
   weight: string | undefined,
   method: string,
+  includeTotal = true,
 ) {
-  validateGraphRouteResultSchema(schema, method);
+  validateGraphRouteResultSchema(schema, method, [], includeTotal);
   const traversal = prepareGraphTraversal(
     input,
     schema,

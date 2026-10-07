@@ -1,3 +1,4 @@
-case,start,node,total
-numeric-0-weighted,0,2,0
-numeric-0-weighted,0,10,1
+case,start,node,steps,total
+numeric-0-weighted,0,2,1,0
+numeric-0-weighted,0,10,1,1
+numeric-0-weighted,0,10,2,1

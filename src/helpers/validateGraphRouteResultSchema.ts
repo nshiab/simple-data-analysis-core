@@ -9,8 +9,10 @@ export default function validateGraphRouteResultSchema(
   schema: TableSchema,
   method: string,
   additionalResultColumns: readonly string[] = [],
+  includeTotal = true,
 ): void {
   for (const resultColumn of [...resultColumns, ...additionalResultColumns]) {
+    if (resultColumn === "total" && !includeTotal) continue;
     const folded = foldIdentifier(resultColumn);
     const inputColumn = Object.keys(schema).find((column) =>
       foldIdentifier(column) === folded
