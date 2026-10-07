@@ -1,6 +1,6 @@
 export type GraphMetricOptions = {
   elapsedTime?: boolean;
-  minimize?: "weight" | "elapsedTime";
+  minimize?: "steps" | "weight" | "elapsedTime";
   weight?: string;
   startTimeColumn?: string;
   endTimeColumn?: string;
@@ -8,7 +8,7 @@ export type GraphMetricOptions = {
 
 export type PreparedGraphMetricOptions = {
   elapsedTime: boolean;
-  minimize: "weight" | "elapsedTime" | "connections";
+  minimize: "steps" | "weight" | "elapsedTime";
 };
 
 /** Resolves graph cost selection separately from optional elapsed-time reporting. */
@@ -39,9 +39,12 @@ export default function prepareGraphMetricOptions(
         `${method} options.minimize is not supported because this method returns all routes.`,
       );
     }
-    if (options.minimize !== "weight" && options.minimize !== "elapsedTime") {
+    if (
+      options.minimize !== "steps" && options.minimize !== "weight" &&
+      options.minimize !== "elapsedTime"
+    ) {
       throw new TypeError(
-        `${method} options.minimize must be "weight" or "elapsedTime".`,
+        `${method} options.minimize must be "steps", "weight", or "elapsedTime".`,
       );
     }
     if (options.minimize === "weight" && options.weight === undefined) {
@@ -60,7 +63,7 @@ export default function prepareGraphMetricOptions(
     options.minimize === undefined
   ) {
     throw new TypeError(
-      `${method} when weight and elapsedTime are both enabled, specify options.minimize: "weight" or "elapsedTime".`,
+      `${method} when weight and elapsedTime are both enabled, specify options.minimize: "steps", "weight", or "elapsedTime".`,
     );
   }
   return {
@@ -70,6 +73,6 @@ export default function prepareGraphMetricOptions(
         ? "weight"
         : elapsedTime
         ? "elapsedTime"
-        : "connections"),
+        : "steps"),
   };
 }

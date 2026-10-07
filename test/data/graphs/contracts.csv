@@ -13,8 +13,8 @@ reachable,empty,empty,empty start-node schema
 reachable,unknown-start,baseline,empty start-node schema
 reachable,empty-start-array,baseline,error
 reachable,duplicate-starts,baseline,error
-distances,empty,empty,empty start-node-total schema
-distances,unknown-start,baseline,empty start-node-total schema
+distances,empty,empty,empty start-node-steps schema
+distances,unknown-start,baseline,empty start-node-steps schema
 distances,empty-start-array,baseline,error
 distances,duplicate-starts,baseline,error
 shortestPath,empty,empty,empty route schema
@@ -49,4 +49,4 @@ shortestPath,boolean-edge-id,unsupported-types,error
 neighbors,date-source,unsupported-types,error
 distances,string-weight,unsupported-types,error
 neighbors,string-start-on-numeric-column,numeric,error
-distances,single-B-outgoing,single,empty start-node-total schema
+distances,single-B-outgoing,single,empty start-node-steps schema

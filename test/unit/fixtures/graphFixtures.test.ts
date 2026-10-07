@@ -3,6 +3,7 @@ import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 // Hand-checked fixtures: select one input scenario and one expected case.
 // Numeric IDs stay in separate CSVs to preserve their inferred types.
+// Mixed-case CSVs use an empty total cell when that case omits the column.
 const root = "test/data/graphs";
 
 type CsvRow = Record<string, string>;
@@ -188,7 +189,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
     "degree.csv": ["case", "node", "incoming", "outgoing", "total"],
     "common_neighbors.csv": ["case", "node"],
     "reachable.csv": ["case", "start", "node"],
-    "distances.csv": ["case", "start", "node", "total"],
+    "distances.csv": ["case", "start", "node", "steps", "total"],
     "shortest_path.csv": [
       "case",
       "pathId",
@@ -231,7 +232,7 @@ Deno.test("every planned graph method has an exact expected-result schema", asyn
   for (
     const [file, schema] of Object.entries({
       "neighbors.csv": ["case", "start", "node"],
-      "distances.csv": ["case", "start", "node", "total"],
+      "distances.csv": ["case", "start", "node", "steps", "total"],
       "shortest_path.csv": schemas["shortest_path.csv"],
       "find_cycles.csv": schemas["find_cycles.csv"],
       "topological_sort.csv": ["case", "node", "componentId", "order"],
@@ -375,13 +376,14 @@ Deno.test("route expectations have real ordered steps and cumulative costs", asy
         pathRows.forEach((row, i) => {
           assertEquals(Number(row.step), i + 1, `${path}: ${caseName}`);
           distance += Number(row.weight);
-          assertEquals(
-            Number(
-              row.total,
-            ),
-            distance,
-            `${path}: ${caseName}`,
-          );
+          if (
+            path.endsWith("shortest_path.csv") &&
+            !caseName.endsWith("-weighted")
+          ) {
+            assertEquals(row.total, "", `${path}: ${caseName} omits total`);
+          } else {
+            assertEquals(Number(row.total), distance, `${path}: ${caseName}`);
+          }
           assert(row.edgeId.length > 0);
           assert(row.source.length > 0);
           assert(row.target.length > 0);
@@ -461,8 +463,12 @@ Deno.test("membership and component expectations are explicitly sorted", async (
           }
           for (const column of columns) {
             const comparison = compareIds(
-              left[column],
-              right[column],
+              column === "total" && left.total === ""
+                ? left.steps
+                : left[column],
+              column === "total" && right.total === ""
+                ? right.steps
+                : right[column],
               column === "total",
             );
             if (comparison) return comparison;
@@ -518,10 +524,34 @@ Deno.test("graph expectations pin the high-value hand-derived cases", async () =
   assertEquals(
     distances.filter((row) => row.case === "baseline-A-outgoing"),
     [
-      { case: "baseline-A-outgoing", start: "A", node: "B", total: "1" },
-      { case: "baseline-A-outgoing", start: "A", node: "C", total: "1" },
-      { case: "baseline-A-outgoing", start: "A", node: "D", total: "2" },
-      { case: "baseline-A-outgoing", start: "A", node: "E", total: "3" },
+      {
+        case: "baseline-A-outgoing",
+        start: "A",
+        node: "B",
+        steps: "1",
+        total: "",
+      },
+      {
+        case: "baseline-A-outgoing",
+        start: "A",
+        node: "C",
+        steps: "1",
+        total: "",
+      },
+      {
+        case: "baseline-A-outgoing",
+        start: "A",
+        node: "D",
+        steps: "2",
+        total: "",
+      },
+      {
+        case: "baseline-A-outgoing",
+        start: "A",
+        node: "E",
+        steps: "3",
+        total: "",
+      },
     ],
   );
 

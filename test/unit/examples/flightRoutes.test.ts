@@ -11,17 +11,17 @@ const chronological = {
 
 // Independently enumerated chronological routes; see graphs/flights.md.
 const cheapest = [
-  ["Toronto", 80, 1.5],
-  ["New York", 120, 1.5],
-  ["Vancouver", 180, 5.5],
-  ["Mexico City", 290, 9],
-  ["London", 350, 10],
-  ["Paris", 430, 12.25],
-  ["Frankfurt", 460, 13],
-  ["Dubai", 590, 19],
-  ["Tokyo", 700, 17],
-  ["Singapore", 770, 28.5],
-  ["Sydney", 1020, 38],
+  ["Toronto", 80, 1.5, 1],
+  ["New York", 120, 1.5, 1],
+  ["Vancouver", 180, 5.5, 1],
+  ["Mexico City", 290, 9, 2],
+  ["London", 350, 10, 2],
+  ["Paris", 430, 12.25, 3],
+  ["Frankfurt", 460, 13, 3],
+  ["Dubai", 590, 19, 3],
+  ["Tokyo", 700, 17, 2],
+  ["Singapore", 770, 28.5, 4],
+  ["Sydney", 1020, 38, 5],
 ] as const;
 
 Deno.test("fictional flights compare cheapest destinations and fastest Tokyo itinerary", async () => {
@@ -48,9 +48,10 @@ Deno.test("fictional flights compare cheapest destinations and fastest Tokyo iti
     ).getData();
     assertEquals(
       distances,
-      cheapest.map(([node, total, hours]) => ({
+      cheapest.map(([node, total, hours, steps]) => ({
         start: "Montreal",
         node,
+        steps,
         total,
         elapsedTimeMs: hours * 3_600_000,
       })),

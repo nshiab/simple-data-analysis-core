@@ -7,17 +7,19 @@ export default function graphRouteResultSchema(
   distanceType: string,
   method: string,
   elapsedTime = false,
+  includeTotal = true,
 ): TableSchema {
   validateGraphRouteResultSchema(
     schema,
     method,
     elapsedTime ? ["elapsedTimeMs"] : [],
+    includeTotal,
   );
   return {
     pathId: "BIGINT",
     step: "BIGINT",
     weight: distanceType,
-    total: distanceType,
+    ...(includeTotal ? { total: distanceType } : {}),
     ...(elapsedTime ? { elapsedTimeMs: "DOUBLE" } : {}),
     ...schema,
   };

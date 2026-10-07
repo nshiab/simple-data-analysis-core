@@ -9,7 +9,7 @@ Deno.test("graph metric selection requires an explicit objective only when ambig
   };
   assertEquals(prepareGraphMetricOptions({}, "shortestPath()", true), {
     elapsedTime: false,
-    minimize: "connections",
+    minimize: "steps",
   });
   assertEquals(
     prepareGraphMetricOptions({ weight: "price" }, "shortestPath()", true),
@@ -32,7 +32,7 @@ Deno.test("graph metric selection requires an explicit objective only when ambig
     TypeError,
     "when weight and elapsedTime are both enabled",
   );
-  for (const minimize of ["weight", "elapsedTime"] as const) {
+  for (const minimize of ["steps", "weight", "elapsedTime"] as const) {
     assertEquals(
       prepareGraphMetricOptions(
         { ...timed, weight: "price", minimize },
@@ -110,7 +110,7 @@ Deno.test("graph metric selection rejects disabled or incomplete metrics", () =>
         true,
       ),
     TypeError,
-    'must be "weight" or "elapsedTime"',
+    'must be "steps", "weight", or "elapsedTime"',
   );
   assertEquals(
     prepareGraphMetricOptions(

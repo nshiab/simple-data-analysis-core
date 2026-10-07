@@ -28,7 +28,7 @@ type ShortestPathOptions = GraphTemporalOptions & {
   outputTable?: string | boolean;
   weight?: string;
   elapsedTime?: boolean;
-  minimize?: "weight" | "elapsedTime";
+  minimize?: "steps" | "weight" | "elapsedTime";
 };
 
 export default function shortestPath(
@@ -115,6 +115,7 @@ export default function shortestPath(
         endpoints,
         options.weight,
         "shortestPath()",
+        options.weight !== undefined,
       );
       const temporal = temporalOptions === undefined
         ? undefined
@@ -145,6 +146,7 @@ export default function shortestPath(
         endpoints,
         options.weight,
         "shortestPath()",
+        options.weight !== undefined,
       );
       if (temporalOptions !== undefined) {
         prepareGraphTemporalSql(schema, temporalOptions, "shortestPath()");
@@ -154,6 +156,7 @@ export default function shortestPath(
         validated.distanceType,
         "shortestPath()",
         metrics.elapsedTime,
+        options.weight !== undefined,
       );
     },
   });
@@ -180,6 +183,7 @@ function shortestPathSelect(
     routeEndpoints,
     weight,
     "shortestPath()",
+    weight !== undefined,
   );
   const prepared = route.traversal;
   if (temporalOptions !== undefined) {
@@ -193,14 +197,16 @@ function shortestPathSelect(
       direction as Exclude<GraphDirection, "both">,
       temporal,
       metrics,
+      weight !== undefined,
     );
   }
   const distanceType = route.distanceType;
   // Exact shortest routes have optimal prefixes. Floating addition can erase
   // a prefix-cost difference later, so retain all simple prefixes up to the
   // best complete cost before selecting the full-route ties.
-  const floating = route.weightType === "FLOAT" ||
-    route.weightType === "DOUBLE";
+  const floating = metrics.minimize === "weight" &&
+    (route.weightType === "FLOAT" || route.weightType === "DOUBLE");
+  const metricType = metrics.minimize === "steps" ? "BIGINT" : distanceType;
 
   const relations = prepared.relationNames([
     "graph_route_endpoints",
@@ -228,9 +234,18 @@ function shortestPathSelect(
   const edgeToKey = `${q("edges")}.${q("__to_key")}`;
   const edgeTo = `${q("edges")}.${q("__to")}`;
   const edgeCost = `${q("edges")}.${q("__weight")}`;
+  const edgeMetric = metrics.minimize === "steps"
+    ? "CAST(1 AS BIGINT)"
+    : edgeCost;
   const routeDistance = `${q("routes")}.${q("distance")}`;
   const candidateDistance =
     `CAST(${routeDistance} + ${edgeCost} AS ${distanceType})`;
+  const routeMetric = metrics.minimize === "steps"
+    ? `len(${q("routes")}.${q("steps")})`
+    : routeDistance;
+  const candidateMetric = metrics.minimize === "steps"
+    ? `${routeMetric} + 1`
+    : candidateDistance;
   return `WITH RECURSIVE ${endpointRelation}(
       ${q("start")}, ${q("end")}, ${q("__start_key")}, ${q("__end_key")}
     ) AS (
@@ -264,7 +279,7 @@ function shortestPathSelect(
       ${q("node")}, ${q("__node_key")}, ${q("distance")}
     ) USING KEY(${q("__node_key")}) AS (
       SELECT ${q("start")}, ${q("__start_key")},
-        CAST(0 AS ${distanceType})
+        CAST(0 AS ${metricType})
       FROM ${endpointRelation}
       INNER JOIN ${toEndRelation}
         ON ${q("__start_key")} = ${q("__key")}
@@ -272,7 +287,7 @@ function shortestPathSelect(
       SELECT ${edgeTo}, ${edgeToKey},
         MIN(CAST(${q("reached")}.${
     q("distance")
-  } + ${edgeCost} AS ${distanceType}))
+  } + ${edgeMetric} AS ${metricType}))
       FROM ${distancesRelation} AS ${q("reached")}
       INNER JOIN ${edgesRelation} AS ${q("edges")}
         ON ${q("reached")}.${q("__node_key")} = ${edgeFromKey}
@@ -284,7 +299,7 @@ function shortestPathSelect(
       HAVING ${q("best")}.${q("distance")} IS NULL
         OR MIN(CAST(${q("reached")}.${
     q("distance")
-  } + ${edgeCost} AS ${distanceType})) < ${q("best")}.${q("distance")}
+  } + ${edgeMetric} AS ${metricType})) < ${q("best")}.${q("distance")}
     ), ${bestTotalRelation} AS (
       SELECT ${q("distances")}.${q("distance")}
       FROM ${distancesRelation} AS ${q("distances")}
@@ -328,18 +343,16 @@ function shortestPathSelect(
         AND NOT list_contains(${q("routes")}.${q("__visited")}, ${edgeToKey})
         AND ${
     floating
-      ? `${candidateDistance} <= ${q("best_total")}.${q("distance")}`
-      : `${candidateDistance} = ${q("best_prefix")}.${q("distance")}`
+      ? `${candidateMetric} <= ${q("best_total")}.${q("distance")}`
+      : `${candidateMetric} = ${q("best_prefix")}.${q("distance")}`
   }
     ), ${shortestRelation} AS (
       SELECT ${q("__edge_keys")}, ${q("steps")}
-      FROM ${routesRelation}
+      FROM ${routesRelation} AS ${q("routes")}
       CROSS JOIN ${endpointRelation}
       CROSS JOIN ${bestTotalRelation} AS ${q("best_total")}
       WHERE ${q("__node_key")} = ${q("__end_key")}
-        AND ${routesRelation}.${q("distance")} = ${q("best_total")}.${
-    q("distance")
-  }
+        AND ${routeMetric} = ${q("best_total")}.${q("distance")}
     ), ${rankedRelation} AS (
       SELECT CAST(row_number() OVER (ORDER BY ${
     q("__edge_keys")
@@ -352,6 +365,9 @@ function shortestPathSelect(
       rankedRelation,
       route.input,
       route.edgeIdColumn,
+      false,
+      false,
+      weight !== undefined,
     )
   }`;
 }
@@ -361,6 +377,7 @@ function temporalShortestPathSelect(
   direction: Exclude<GraphDirection, "both">,
   temporal: ReturnType<typeof prepareGraphTemporalSql>,
   metrics: PreparedGraphMetricOptions,
+  includeTotal: boolean,
 ): string {
   const prepared = route.traversal;
   const q = quoteIdentifier;
@@ -382,6 +399,7 @@ function temporalShortestPathSelect(
         `${route.typedEdgeId} AS ${q("__edge_id")}`,
         `${route.edgeKey} AS ${q("__edge_key")}`,
       ],
+      metrics.minimize === "steps" ? "steps" : "weight",
     );
   const relations = prepared.relationNames([
     "graph_route_endpoints",
@@ -417,15 +435,21 @@ function temporalShortestPathSelect(
     routeAnchor,
     direction,
   );
-  const firstMetric = metrics.minimize === "elapsedTime"
+  const firstMetric = metrics.minimize === "steps"
+    ? "1"
+    : metrics.minimize === "elapsedTime"
     ? firstElapsed
     : edgeCost;
-  const candidateMetric = metrics.minimize === "elapsedTime"
-    ? candidateElapsed
-    : candidateDistance;
-  const routeMetric = metrics.minimize === "elapsedTime"
+  const routeMetric = metrics.minimize === "steps"
+    ? `len(${q("routes")}.${q("steps")})`
+    : metrics.minimize === "elapsedTime"
     ? `${q("routes")}.${q("__elapsed")}`
     : routeDistance;
+  const candidateMetric = metrics.minimize === "steps"
+    ? `${routeMetric} + 1`
+    : metrics.minimize === "elapsedTime"
+    ? candidateElapsed
+    : candidateDistance;
   const step = (distance: string, elapsed: string) =>
     `struct_pack(
           ${q("edgeId")} := ${q("edges")}.${q("__edge_id")},
@@ -464,7 +488,9 @@ function temporalShortestPathSelect(
       INNER JOIN ${edgesRelation} AS ${q("edges")}
         ON ${q("reached")}.${q("__key")} = ${edgeToKey}
     ), ${bestTotalRelation} AS (
-      SELECT MIN(${q("costs")}.${q("distance")}) AS ${q("distance")}
+      SELECT MIN(${q("costs")}.${
+    q(metrics.minimize === "steps" ? "steps" : "distance")
+  }) AS ${q("distance")}
       FROM ${costs.costRelation} AS ${q("costs")}
       INNER JOIN ${endpointRelation}
         ON ${q("costs")}.${q("__node_key")} = ${q("__end_key")}
@@ -536,6 +562,7 @@ function temporalShortestPathSelect(
       route.edgeIdColumn,
       false,
       metrics.elapsedTime,
+      includeTotal,
     )
   }`;
 }

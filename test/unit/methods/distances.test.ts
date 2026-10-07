@@ -39,39 +39,61 @@ function referenceChronologicalDistances(
   strictOrdering: boolean,
 ) {
   const weights = new Map(events.map((event) => [event.edgeId, event.weight]));
-  const best = new Map<
-    string,
-    { start: string; node: string; total: number }
-  >();
-  for (const start of starts) {
-    const routes = enumerateChronologicalRoutes(events, start, {
+  const candidates = starts.flatMap((start) =>
+    referenceSimpleJourneys(events, start, {
       direction,
-      maxSteps: events.length,
       minGap,
-      simpleNodes: false,
       strictOrdering,
-    });
-    for (const route of routes) {
-      const last = route.at(-1)!;
-      const total = route.reduce(
-        (sum, step) => sum + weights.get(step.event.edgeId)!,
-        0,
-      );
-      const key = `${start}\u0000${last.target}`;
-      const current = best.get(key);
-      if (current === undefined || total < current.total) {
-        best.set(key, { start, node: last.target, total });
-      }
-    }
-  }
-  return [...best.values()].toSorted((left, right) =>
-    left.start < right.start
-      ? -1
-      : left.start > right.start
-      ? 1
-      : left.total - right.total ||
-        (left.node < right.node ? -1 : left.node > right.node ? 1 : 0)
+    })
+      .map((route) => ({
+        start,
+        node: route.at(-1)!.target,
+        steps: route.length,
+        total: route.reduce(
+          (sum, step) => sum + weights.get(step.event.edgeId)!,
+          0,
+        ),
+      }))
   );
+  return distinctOptimalSummaries(candidates, "total").sort((left, right) =>
+    left.start.localeCompare(right.start) || left.total - right.total ||
+    left.node.localeCompare(right.node) || left.steps - right.steps
+  );
+}
+
+function referenceSimpleJourneys(
+  events: WeightedChronologicalEvent[],
+  start: string,
+  options: {
+    direction: "outgoing" | "incoming";
+    minGap: bigint;
+    strictOrdering: boolean;
+  },
+) {
+  return [false, true].flatMap((returnToStart) =>
+    enumerateChronologicalRoutes(events, start, {
+      ...options,
+      maxSteps: events.length,
+      returnToStart,
+    })
+  );
+}
+
+function distinctOptimalSummaries<
+  T extends { start: string; node: string; steps: number; total: number },
+>(
+  candidates: T[],
+  metric: keyof T,
+): T[] {
+  const optimal = candidates.filter((row) =>
+    !candidates.some((other) =>
+      other.start === row.start && other.node === row.node &&
+      other[metric] < row[metric]
+    )
+  );
+  return [
+    ...new Map(optimal.map((row) => [JSON.stringify(row), row])).values(),
+  ];
 }
 
 function loadScenario(
@@ -93,10 +115,10 @@ Deno.test("distances defaults to outgoing and supports every direction", async (
   const sdb = new SimpleDB();
   try {
     const expectedOutgoing = [
-      { start: "A", node: "B", total: 1 },
-      { start: "A", node: "C", total: 1 },
-      { start: "A", node: "D", total: 2 },
-      { start: "A", node: "E", total: 3 },
+      { start: "A", node: "B", steps: 1 },
+      { start: "A", node: "C", steps: 1 },
+      { start: "A", node: "D", steps: 2 },
+      { start: "A", node: "E", steps: 3 },
     ];
     assertEquals(
       await loadScenario(sdb, "outgoing", "baseline")
@@ -114,10 +136,10 @@ Deno.test("distances defaults to outgoing and supports every direction", async (
         .distances("source", "target", "E", { direction: "incoming" })
         .getData(),
       [
-        { start: "E", node: "D", total: 1 },
-        { start: "E", node: "B", total: 2 },
-        { start: "E", node: "C", total: 2 },
-        { start: "E", node: "A", total: 3 },
+        { start: "E", node: "D", steps: 1 },
+        { start: "E", node: "B", steps: 2 },
+        { start: "E", node: "C", steps: 2 },
+        { start: "E", node: "A", steps: 3 },
       ],
     );
     assertEquals(
@@ -125,11 +147,11 @@ Deno.test("distances defaults to outgoing and supports every direction", async (
         .distances("source", "target", "B", { direction: "both" })
         .getData(),
       [
-        { start: "B", node: "A", total: 1 },
-        { start: "B", node: "D", total: 1 },
-        { start: "B", node: "B", total: 2 },
-        { start: "B", node: "C", total: 2 },
-        { start: "B", node: "E", total: 2 },
+        { start: "B", node: "A", steps: 1 },
+        { start: "B", node: "D", steps: 1 },
+        { start: "B", node: "B", steps: 2 },
+        { start: "B", node: "C", steps: 2 },
+        { start: "B", node: "E", steps: 2 },
       ],
     );
   } finally {
@@ -144,19 +166,20 @@ Deno.test("distances minimizes hops and weighted costs independently", async () 
       await loadScenario(sdb, "unweighted", "weighted", true)
         .distances("source", "target", "A").getData(),
       [
-        { start: "A", node: "B", total: 1 },
-        { start: "A", node: "C", total: 1 },
-        { start: "A", node: "E", total: 1 },
-        { start: "A", node: "D", total: 2 },
+        { start: "A", node: "B", steps: 1 },
+        { start: "A", node: "C", steps: 1 },
+        { start: "A", node: "E", steps: 1 },
+        { start: "A", node: "D", steps: 2 },
       ],
     );
     const weighted = loadScenario(sdb, "weighted", "weighted", true)
       .distances("source", "target", "A", { weight: "weight" });
     assertEquals(await weighted.getData(), [
-      { start: "A", node: "C", total: 0 },
-      { start: "A", node: "B", total: 1 },
-      { start: "A", node: "D", total: 2 },
-      { start: "A", node: "E", total: 3 },
+      { start: "A", node: "C", steps: 1, total: 0 },
+      { start: "A", node: "B", steps: 1, total: 1 },
+      { start: "A", node: "D", steps: 2, total: 2 },
+      { start: "A", node: "E", steps: 2, total: 3 },
+      { start: "A", node: "E", steps: 3, total: 3 },
     ]);
     assertEquals((await weighted.getTypes()).total, "DOUBLE");
   } finally {
@@ -171,11 +194,11 @@ Deno.test("distances handles cycles, zero cycles, and competing parallel edges",
       await loadScenario(sdb, "cycle", "cycle")
         .distances("source", "target", "A").getData(),
       [
-        { start: "A", node: "B", total: 1 },
-        { start: "A", node: "C", total: 1 },
-        { start: "A", node: "D", total: 2 },
-        { start: "A", node: "E", total: 3 },
-        { start: "A", node: "A", total: 4 },
+        { start: "A", node: "B", steps: 1 },
+        { start: "A", node: "C", steps: 1 },
+        { start: "A", node: "D", steps: 2 },
+        { start: "A", node: "E", steps: 3 },
+        { start: "A", node: "A", steps: 4 },
       ],
     );
     assertEquals(
@@ -183,9 +206,9 @@ Deno.test("distances handles cycles, zero cycles, and competing parallel edges",
         .distances("source", "target", "A", { weight: "weight" })
         .getData(),
       [
-        { start: "A", node: "B", total: 0 },
-        { start: "A", node: "A", total: 2 },
-        { start: "A", node: "C", total: 2 },
+        { start: "A", node: "B", steps: 1, total: 0 },
+        { start: "A", node: "A", steps: 3, total: 2 },
+        { start: "A", node: "C", steps: 2, total: 2 },
       ],
     );
     assertEquals(
@@ -193,15 +216,15 @@ Deno.test("distances handles cycles, zero cycles, and competing parallel edges",
         .distances("source", "target", "A", { weight: "weight" })
         .getData(),
       [
-        { start: "A", node: "B", total: 1 },
-        { start: "A", node: "C", total: 6 },
+        { start: "A", node: "B", steps: 1, total: 1 },
+        { start: "A", node: "C", steps: 2, total: 6 },
       ],
     );
     assertEquals(
       await loadScenario(sdb, "singleLoop", "single-loop", true)
         .distances("source", "target", "A", { weight: "weight" })
         .getData(),
-      [{ start: "A", node: "A", total: 0 }],
+      [{ start: "A", node: "A", steps: 1, total: 0 }],
     );
   } finally {
     await sdb.close();
@@ -219,7 +242,12 @@ Deno.test("distances includes actual self-connections at their shortest cost", a
             { source: "A", target: "A", cost: 2 },
           ]).distances("source", "target", "A", { direction, weight })
             .getData(),
-          [{ start: "A", node: "A", total: weight ? 2 : 1 }],
+          [{
+            start: "A",
+            node: "A",
+            steps: 1,
+            ...(weight ? { total: 2 } : {}),
+          }],
         );
       }
       assertEquals(
@@ -227,7 +255,7 @@ Deno.test("distances includes actual self-connections at their shortest cost", a
           { source: "A", target: "A", cost: 0 },
         ]).distances("source", "target", "A", { direction, weight: "cost" })
           .getData(),
-        [{ start: "A", node: "A", total: 0 }],
+        [{ start: "A", node: "A", steps: 1, total: 0 }],
       );
     }
   } finally {
@@ -253,24 +281,30 @@ Deno.test("distances chooses the shortest actual return in every direction", asy
             {
               start: "A",
               node: "B",
+              steps: 1,
               total: direction === "incoming" ? 3 : 2,
             },
-            { start: "A", node: "A", total: direction === "both" ? 4 : 5 },
+            {
+              start: "A",
+              node: "A",
+              steps: 2,
+              total: direction === "both" ? 4 : 5,
+            },
           ],
         );
         assertEquals(
           await sdb.newTable().loadArray(rows)
             .distances("source", "target", "A", { direction }).getData(),
           selfConnection
-            ? [{ start: "A", node: "A", total: 1 }, {
+            ? [{ start: "A", node: "A", steps: 1 }, {
               start: "A",
               node: "B",
-              total: 1,
+              steps: 1,
             }]
-            : [{ start: "A", node: "B", total: 1 }, {
+            : [{ start: "A", node: "B", steps: 1 }, {
               start: "A",
               node: "A",
-              total: 2,
+              steps: 2,
             }],
         );
       }
@@ -290,8 +324,8 @@ Deno.test("distances keeps fractional decimal and close floating costs exact", a
       true,
     ).distances("source", "target", "A", { weight: "weight" });
     assertEquals(await fractional.getData(), [
-      { start: "A", node: "B", total: 0.5 },
-      { start: "A", node: "C", total: 1.75 },
+      { start: "A", node: "B", steps: 1, total: 0.5 },
+      { start: "A", node: "C", steps: 2, total: 1.75 },
     ]);
 
     const decimal = sdb.newTable("decimalWeights");
@@ -305,11 +339,12 @@ Deno.test("distances keeps fractional decimal and close floating costs exact", a
     assertEquals(await decimal.getTypes(), {
       start: "VARCHAR",
       node: "VARCHAR",
+      steps: "BIGINT",
       total: "DECIMAL(38,2)",
     });
     assertEquals(await decimal.getData(), [
-      { start: "A", node: "B", total: "0.10" },
-      { start: "A", node: "C", total: "0.30" },
+      { start: "A", node: "B", steps: 1, total: "0.10" },
+      { start: "A", node: "C", steps: 2, total: "0.30" },
     ]);
 
     const floating = sdb.newTable("floatingWeights");
@@ -321,8 +356,8 @@ Deno.test("distances keeps fractional decimal and close floating costs exact", a
       ) edges(source, target, weight)`);
     floating.distances("source", "target", "A", { weight: "weight" });
     assertEquals(await floating.getData(), [
-      { start: "A", node: "B", total: 0.5 },
-      { start: "A", node: "C", total: 1 },
+      { start: "A", node: "B", steps: 1, total: 0.5 },
+      { start: "A", node: "C", steps: 2, total: 1 },
     ]);
     assertEquals((await floating.getTypes()).total, "DOUBLE");
   } finally {
@@ -342,8 +377,8 @@ Deno.test("distances widens large integer accumulators without losing precision"
     bigint.distances("source", "target", "A", { weight: "weight" })
       .convert({ total: "string" });
     assertEquals(await bigint.getData(), [
-      { start: "A", node: "B", total: "9007199254740993" },
-      { start: "A", node: "C", total: "9007199254740995" },
+      { start: "A", node: "B", steps: 1, total: "9007199254740993" },
+      { start: "A", node: "C", steps: 2, total: "9007199254740995" },
     ]);
 
     const maximum = "170141183460469231731687303715884105727";
@@ -356,10 +391,11 @@ Deno.test("distances widens large integer accumulators without losing precision"
     hugeint.distances("source", "target", "A", { weight: "weight" });
     assertEquals((await hugeint.getTypes()).total, "BIGNUM");
     assertEquals(await hugeint.getData(), [
-      { start: "A", node: "B", total: maximum },
+      { start: "A", node: "B", steps: 1, total: maximum },
       {
         start: "A",
         node: "C",
+        steps: 2,
         total: "340282366920938463463374607431768211454",
       },
     ]);
@@ -375,11 +411,11 @@ Deno.test("distances evaluates multi-starts independently and omits unknowns", a
       await loadScenario(sdb, "multi", "baseline")
         .distances("source", "target", ["F", "unknown", "A"]).getData(),
       [
-        { start: "A", node: "B", total: 1 },
-        { start: "A", node: "C", total: 1 },
-        { start: "A", node: "D", total: 2 },
-        { start: "A", node: "E", total: 3 },
-        { start: "F", node: "G", total: 1 },
+        { start: "A", node: "B", steps: 1 },
+        { start: "A", node: "C", steps: 1 },
+        { start: "A", node: "D", steps: 2 },
+        { start: "A", node: "E", steps: 3 },
+        { start: "F", node: "G", steps: 1 },
       ],
     );
     assertEquals(
@@ -423,8 +459,13 @@ for (const chronological of [false, true]) {
         });
         assertEquals((await table.getTypes()).total, distanceType);
         assertEquals(await table.convert({ total: "string" }).getData(), [
-          { start: "A", node: "B", total: maximum },
-          { start: "A", node: "C", total: String(BigInt(maximum) * 2n) },
+          { start: "A", node: "B", steps: 1, total: maximum },
+          {
+            start: "A",
+            node: "C",
+            steps: 2,
+            total: String(BigInt(maximum) * 2n),
+          },
         ]);
       }
 
@@ -441,8 +482,8 @@ for (const chronological of [false, true]) {
       });
       assertEquals((await floating.getTypes()).total, "FLOAT");
       assertEquals(await floating.getData(), [
-        { start: "A", node: "B", total: 16777216 },
-        { start: "A", node: "C", total: 16777216 },
+        { start: "A", node: "B", steps: 1, total: 16777216 },
+        { start: "A", node: "C", steps: 2, total: 16777216 },
       ]);
     } finally {
       await sdb.close();
@@ -468,27 +509,37 @@ Deno.test("distances weighted relaxation agrees with all-pairs costs in every di
         { length: 6 },
         () => Array.from({ length: 6 }, () => Infinity),
       );
+      const steps = costs.map((row) => row.map(() => Infinity));
       for (const { source, target, weight } of edges) {
         if (direction !== "incoming") {
           costs[source][target] = Math.min(costs[source][target], weight);
+          steps[source][target] = 1;
         }
         if (direction !== "outgoing") {
           costs[target][source] = Math.min(costs[target][source], weight);
+          steps[target][source] = 1;
         }
       }
       for (let via = 0; via < 6; via++) {
         for (let from = 0; from < 6; from++) {
           for (let to = 0; to < 6; to++) {
-            costs[from][to] = Math.min(
-              costs[from][to],
-              costs[from][via] + costs[via][to],
-            );
+            const cost = costs[from][via] + costs[via][to];
+            const count = steps[from][via] + steps[via][to];
+            if (
+              cost < costs[from][to] ||
+              (cost === costs[from][to] && count < steps[from][to])
+            ) {
+              costs[from][to] = cost;
+              steps[from][to] = count;
+            }
           }
         }
       }
       const expected = costs.flatMap((row, start) =>
         row.flatMap((total, node) =>
-          Number.isFinite(total) ? [{ start, node, total }] : []
+          Number.isFinite(total)
+            ? [{ start, node, steps: steps[start][node], total }]
+            : []
         )
       ).toSorted((a, b) =>
         a.start - b.start || a.total - b.total || a.node - b.node
@@ -518,20 +569,20 @@ Deno.test("distances sorts multi-start results in every direction", async () => 
   ];
   const expected = {
     outgoing: [
-      { start: "A", node: "B", total: 1 },
-      { start: "A", node: "C", total: 2 },
+      { start: "A", node: "B", steps: 1 },
+      { start: "A", node: "C", steps: 2 },
     ],
     incoming: [
-      { start: "C", node: "B", total: 1 },
-      { start: "C", node: "A", total: 2 },
+      { start: "C", node: "B", steps: 1 },
+      { start: "C", node: "A", steps: 2 },
     ],
     both: [
-      { start: "A", node: "B", total: 1 },
-      { start: "A", node: "A", total: 2 },
-      { start: "A", node: "C", total: 2 },
-      { start: "C", node: "B", total: 1 },
-      { start: "C", node: "A", total: 2 },
-      { start: "C", node: "C", total: 2 },
+      { start: "A", node: "B", steps: 1 },
+      { start: "A", node: "A", steps: 2 },
+      { start: "A", node: "C", steps: 2 },
+      { start: "C", node: "B", steps: 1 },
+      { start: "C", node: "A", steps: 2 },
+      { start: "C", node: "C", steps: 2 },
     ],
   };
   try {
@@ -572,12 +623,14 @@ Deno.test("distances supports numeric zero, numeric ordering, and custom columns
       .loadData("test/data/graphs/numeric.csv")
       .distances("source", "target", 0, { weight: "weight" });
     assertEquals(await numeric.getData(), [
-      { start: 0, node: 2, total: 0 },
-      { start: 0, node: 10, total: 1 },
+      { start: 0, node: 2, steps: 1, total: 0 },
+      { start: 0, node: 10, steps: 1, total: 1 },
+      { start: 0, node: 10, steps: 2, total: 1 },
     ]);
     assertEquals(await numeric.getTypes(), {
       start: "BIGINT",
       node: "BIGINT",
+      steps: "BIGINT",
       total: "HUGEINT",
     });
 
@@ -585,10 +638,15 @@ Deno.test("distances supports numeric zero, numeric ordering, and custom columns
       .loadData("test/data/graphs/custom-columns.csv")
       .distances("ORIGIN", "Destination", "A", { weight: "COST" });
     assertEquals(await custom.getData(), [
-      { start: "A", node: "B", total: 1 },
-      { start: "A", node: "C", total: 3 },
+      { start: "A", node: "B", steps: 1, total: 1 },
+      { start: "A", node: "C", steps: 2, total: 3 },
     ]);
-    assertEquals(await custom.getColumns(), ["start", "node", "total"]);
+    assertEquals(await custom.getColumns(), [
+      "start",
+      "node",
+      "steps",
+      "total",
+    ]);
   } finally {
     await sdb.close();
   }
@@ -607,13 +665,13 @@ Deno.test("distances preserves exact decimal endpoint IDs through recursion", as
     assertEquals(await table.getTypes(), {
       start: "DECIMAL(20,0)",
       node: "DECIMAL(20,0)",
-      total: "BIGINT",
+      steps: "BIGINT",
     });
     assertEquals(await table.getData(), [
       {
         start: "9007199254740993",
         node: "9007199254740995",
-        total: 1,
+        steps: 1,
       },
     ]);
   } finally {
@@ -634,7 +692,18 @@ Deno.test("distances orders numeric starts and tied nodes by their numeric value
       );
       const expected = [2, 10].flatMap((start) =>
         (direction === "both" ? [-1, 2, 10, 20, 100] : [-1, 20, 100])
-          .map((node) => ({ start, node, total: 0 }))
+          .flatMap((node) => {
+            // In this complete bipartite graph, a simple route can cross
+            // through the other start once, then optionally close its cycle.
+            const steps = direction !== "both"
+              ? [1]
+              : [100, 20, -1].includes(node)
+              ? [1, 3]
+              : node === start
+              ? [2, 4]
+              : [2];
+            return steps.map((steps) => ({ start, node, steps, total: 0 }));
+          })
       );
       for (const edges of [rows, rows.toReversed()]) {
         assertEquals(
@@ -665,14 +734,14 @@ Deno.test("distances distinguishes a zero-cost return from an empty route", asyn
         }).getData(),
         direction === "both"
           ? [
-            { start: "A", node: "A", total: 0 },
-            { start: "A", node: "B", total: 0 },
-            { start: "B", node: "A", total: 0 },
-            { start: "B", node: "B", total: 0 },
+            { start: "A", node: "A", steps: 2, total: 0 },
+            { start: "A", node: "B", steps: 1, total: 0 },
+            { start: "B", node: "A", steps: 1, total: 0 },
+            { start: "B", node: "B", steps: 2, total: 0 },
           ]
           : direction === "outgoing"
-          ? [{ start: "A", node: "B", total: 0 }]
-          : [{ start: "B", node: "A", total: 0 }],
+          ? [{ start: "A", node: "B", steps: 1, total: 0 }]
+          : [{ start: "B", node: "A", steps: 1, total: 0 }],
       );
     }
   } finally {
@@ -694,13 +763,13 @@ Deno.test("distances preserves exact return routes and zero-cost destinations", 
         weight: "cost",
       }).getData(),
       [
-        { start: "A", node: "A", total: 0 },
-        { start: "A", node: "a", total: 0 },
-        { start: "A", node: "B", total: 2 },
-        { start: "X", node: "X", total: 0 },
-        { start: "a", node: "B", total: 2 },
-        { start: "a", node: "A", total: 5 },
-        { start: "a", node: "a", total: 5 },
+        { start: "A", node: "A", steps: 1, total: 0 },
+        { start: "A", node: "a", steps: 1, total: 0 },
+        { start: "A", node: "B", steps: 2, total: 2 },
+        { start: "X", node: "X", steps: 1, total: 0 },
+        { start: "a", node: "B", steps: 1, total: 2 },
+        { start: "a", node: "A", steps: 2, total: 5 },
+        { start: "a", node: "a", steps: 3, total: 5 },
       ],
     );
   } finally {
@@ -720,7 +789,7 @@ Deno.test("distances preserves typed schemas for empty inputs", async () => {
     assertEquals(await unweighted.getTypes(), {
       start: "VARCHAR",
       node: "VARCHAR",
-      total: "BIGINT",
+      steps: "BIGINT",
     });
 
     const weighted = sdb.newTable("emptyWeighted");
@@ -732,6 +801,7 @@ Deno.test("distances preserves typed schemas for empty inputs", async () => {
     assertEquals(await weighted.getTypes(), {
       start: "VARCHAR",
       node: "VARCHAR",
+      steps: "BIGINT",
       total: "DECIMAL(38,3)",
     });
   } finally {
@@ -747,7 +817,7 @@ Deno.test("distances supports overwrite and source-preserving output tables", as
       overwritten.distances("source", "target", "A", { outputTable: false }),
       overwritten,
     );
-    assertEquals(await overwritten.getColumns(), ["start", "node", "total"]);
+    assertEquals(await overwritten.getColumns(), ["start", "node", "steps"]);
 
     const source = loadScenario(sdb, "preserved", "baseline");
     const named = source.distances("source", "target", "A", {
@@ -755,7 +825,7 @@ Deno.test("distances supports overwrite and source-preserving output tables", as
     }).filter("node = 'E'");
     assertEquals(named.name, "namedDistances");
     assertEquals(await named.getData(), [
-      { start: "A", node: "E", total: 3 },
+      { start: "A", node: "E", steps: 3 },
     ]);
     assertEquals(await source.getRowCount(), 6);
     assertEquals(await source.getColumns(), ["source", "target"]);
@@ -766,7 +836,7 @@ Deno.test("distances supports overwrite and source-preserving output tables", as
     assertEquals(generated.name.startsWith("table"), true);
     assertEquals(generated.name === source.name, false);
     assertEquals(await generated.getData(), [
-      { start: "F", node: "G", total: 1 },
+      { start: "F", node: "G", steps: 1 },
     ]);
     assertEquals(await source.getRowCount(), 6);
   } finally {
@@ -796,10 +866,10 @@ Deno.test("distances snapshots starts and options before queued execution", asyn
 
     assertEquals(result.name, "distanceSnapshot");
     assertEquals(await result.getData(), [
-      { start: "E", node: "D", total: 1 },
-      { start: "E", node: "B", total: 2 },
-      { start: "E", node: "C", total: 2 },
-      { start: "E", node: "A", total: 3 },
+      { start: "E", node: "D", steps: 1, total: 1 },
+      { start: "E", node: "B", steps: 2, total: 2 },
+      { start: "E", node: "C", steps: 2, total: 2 },
+      { start: "E", node: "A", steps: 3, total: 3 },
     ]);
   } finally {
     await sdb.close();
@@ -941,7 +1011,7 @@ Deno.test("distances preserves queued source and output operation order", async 
     });
     source.loadArray([{ source: "A", target: "C" }]);
     assertEquals(await result.getData(), [
-      { start: "A", node: "B", total: 1 },
+      { start: "A", node: "B", steps: 1 },
     ]);
     assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
   } finally {
@@ -989,7 +1059,7 @@ for (const chronological of [false, true]) {
       await output.cache(compute(source));
       assertEquals(computationRuns, 2);
       assertEquals(await output.getData(), [
-        { start: "A", node: "C", total: 1 },
+        { start: "A", node: "C", steps: 1 },
       ]);
     } finally {
       await secondSdb.close();
@@ -997,12 +1067,12 @@ for (const chronological of [false, true]) {
   });
 }
 
-Deno.test("distances uses keyed best-total recursion without path enumeration", async () => {
+Deno.test("distances steps-only uses keyed recursion without route enumeration", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
-    const table = loadScenario(sdb, "recursiveShape", "weighted", true)
-      .distances("source", "target", "A", { weight: "weight" });
+    const table = loadScenario(sdb, "recursiveShape", "baseline")
+      .distances("source", "target", "A");
     await table.run();
     const queries = observer.queries.filter((entry) =>
       entry.query.includes("CREATE OR REPLACE TABLE")
@@ -1010,10 +1080,6 @@ Deno.test("distances uses keyed best-total recursion without path enumeration", 
     const query = queries.find((entry) =>
       entry.query.includes("graph_distances")
     )?.query ?? "";
-    assertEquals(
-      queries.filter((entry) => entry.query.includes("weight")).length,
-      1,
-    );
     assertStringIncludes(query, "WITH RECURSIVE");
     assertStringIncludes(query, "USING KEY");
     assertStringIncludes(query, "recurring.");
@@ -1045,7 +1111,7 @@ Deno.test("distances internal relations do not shadow input table names", async 
           weight: "weight",
         }).getData(),
         [
-          { start: "A", node: "B", total: 2 },
+          { start: "A", node: "B", steps: 1, total: 2 },
         ],
       );
     }
@@ -1066,8 +1132,8 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
       await sdb.newTable().loadArray(edges)
         .distances("origin", "destination", "A").getData(),
       [
-        { start: "A", node: "B", total: 1 },
-        { start: "A", node: "C", total: 2 },
+        { start: "A", node: "B", steps: 1 },
+        { start: "A", node: "C", steps: 2 },
       ],
     );
     assertEquals(
@@ -1075,8 +1141,8 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
         .distances("origin", "destination", "A", { weight: "minutes" })
         .getData(),
       [
-        { start: "A", node: "B", total: 4 },
-        { start: "A", node: "C", total: 5 },
+        { start: "A", node: "B", steps: 1, total: 4 },
+        { start: "A", node: "C", steps: 2, total: 5 },
       ],
     );
     assertEquals(
@@ -1085,9 +1151,9 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
           direction: "incoming",
         }).getData(),
       [
-        { start: "C", node: "B", total: 1 },
-        { start: "C", node: "A", total: 2 },
-        { start: "C", node: "D", total: 2 },
+        { start: "C", node: "B", steps: 1 },
+        { start: "C", node: "A", steps: 2 },
+        { start: "C", node: "D", steps: 2 },
       ],
     );
     assertEquals(
@@ -1095,10 +1161,10 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
         .distances("origin", "destination", "A", { direction: "both" })
         .getData(),
       [
-        { start: "A", node: "B", total: 1 },
-        { start: "A", node: "A", total: 2 },
-        { start: "A", node: "C", total: 2 },
-        { start: "A", node: "D", total: 2 },
+        { start: "A", node: "B", steps: 1 },
+        { start: "A", node: "A", steps: 2 },
+        { start: "A", node: "C", steps: 2 },
+        { start: "A", node: "D", steps: 2 },
       ],
     );
     assertEquals(
@@ -1107,10 +1173,10 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
           weight: "minutes",
         }).getData(),
       [
-        { start: "A", node: "B", total: 4 },
-        { start: "A", node: "C", total: 5 },
-        { start: "D", node: "B", total: 2 },
-        { start: "D", node: "C", total: 3 },
+        { start: "A", node: "B", steps: 1, total: 4 },
+        { start: "A", node: "C", steps: 2, total: 5 },
+        { start: "D", node: "B", steps: 1, total: 2 },
+        { start: "D", node: "C", steps: 2, total: 3 },
       ],
     );
     assertEquals(
@@ -1120,9 +1186,10 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
         { origin: "B", destination: "A", minutes: 3 },
       ]).distances("origin", "destination", "A", { weight: "minutes" })
         .getData(),
-      [{ start: "A", node: "B", total: 2 }, {
+      [{ start: "A", node: "B", steps: 1, total: 2 }, {
         start: "A",
         node: "A",
+        steps: 2,
         total: 5,
       }],
     );
@@ -1156,8 +1223,8 @@ Deno.test("distances JSDoc examples return their complete displayed outputs", as
         weight: "minutes",
       }).getData(),
       [
-        { start: "A", node: "B", total: 2 },
-        { start: "A", node: "D", total: 5 },
+        { start: "A", node: "B", steps: 1, total: 2 },
+        { start: "A", node: "D", steps: 2, total: 5 },
       ],
     );
   } finally {
@@ -1203,8 +1270,8 @@ Deno.test("distances chronological state keeps cheap late and costlier early arr
             weight: "weight",
           }).getData(),
         [
-          { start: "A", node: "B", total: 1 },
-          { start: "A", node: "C", total: 6 },
+          { start: "A", node: "B", steps: 1, total: 1 },
+          { start: "A", node: "C", steps: 2, total: 6 },
         ],
       );
       assertEquals(
@@ -1216,8 +1283,8 @@ Deno.test("distances chronological state keeps cheap late and costlier early arr
             weight: "weight",
           }).getData(),
         [
-          { start: "C", node: "B", total: 1 },
-          { start: "C", node: "A", total: 6 },
+          { start: "C", node: "B", steps: 1, total: 1 },
+          { start: "C", node: "A", steps: 2, total: 6 },
         ],
       );
     }
@@ -1254,10 +1321,10 @@ Deno.test("distances chronological improvements propagate through previously rea
             weight: "weight",
           }).getData(),
         [
-          { start: "A", node: "C", total: 1 },
-          { start: "A", node: "B", total: 2 },
-          { start: "A", node: "D", total: 3 },
-          { start: "A", node: "E", total: 4 },
+          { start: "A", node: "C", steps: 1, total: 1 },
+          { start: "A", node: "B", steps: 2, total: 2 },
+          { start: "A", node: "D", steps: 3, total: 3 },
+          { start: "A", node: "E", steps: 4, total: 4 },
         ],
       );
     }
@@ -1320,9 +1387,9 @@ Deno.test("distances chronological traversal handles first events, returns, and 
           weight: "weight",
         }).getData(),
       [
-        { start: "A", node: "A", total: 0 },
-        { start: "A", node: "B", total: 0 },
-        { start: "I", node: "J", total: 4 },
+        { start: "A", node: "A", steps: 2, total: 0 },
+        { start: "A", node: "B", steps: 1, total: 0 },
+        { start: "I", node: "J", steps: 1, total: 4 },
       ],
     );
     assertEquals(
@@ -1333,7 +1400,7 @@ Deno.test("distances chronological traversal handles first events, returns, and 
           minGapMs: Number.MAX_SAFE_INTEGER,
           weight: "weight",
         }).getData(),
-      [{ start: "I", node: "J", total: 4 }],
+      [{ start: "I", node: "J", steps: 1, total: 4 }],
     );
   } finally {
     await sdb.close();
@@ -1369,7 +1436,7 @@ Deno.test("distances chronological traversal supports timestamp fallbacks and ga
             [column]: name,
             weight: "weight",
           }).getData(),
-        [{ start: "A", node: "B", total: 2 }],
+        [{ start: "A", node: "B", steps: 1, total: 2 }],
       );
       assertEquals(
         await sdb.newTable().loadArray(chronologicalRows(equal))
@@ -1379,8 +1446,8 @@ Deno.test("distances chronological traversal supports timestamp fallbacks and ga
             weight: "weight",
           }).getData(),
         [
-          { start: "A", node: "B", total: 2 },
-          { start: "A", node: "C", total: 5 },
+          { start: "A", node: "B", steps: 1, total: 2 },
+          { start: "A", node: "C", steps: 2, total: 5 },
         ],
       );
     }
@@ -1397,8 +1464,8 @@ Deno.test("distances chronological traversal supports timestamp fallbacks and ga
           weight: "weight",
         }).getData(),
       [
-        { start: "A", node: "B", total: 2 },
-        { start: "A", node: "C", total: 5 },
+        { start: "A", node: "B", steps: 1, total: 2 },
+        { start: "A", node: "C", steps: 2, total: 5 },
       ],
     );
   } finally {
@@ -1482,11 +1549,12 @@ Deno.test("distances chronological traversal preserves decimal, wide integer, an
     assertEquals(await decimal.getTypes(), {
       start: "VARCHAR",
       node: "VARCHAR",
+      steps: "BIGINT",
       total: "DECIMAL(38,2)",
     });
     assertEquals(await decimal.getData(), [
-      { start: "A", node: "B", total: "0.10" },
-      { start: "A", node: "C", total: "0.30" },
+      { start: "A", node: "B", steps: 1, total: "0.10" },
+      { start: "A", node: "C", steps: 2, total: "0.30" },
     ]);
 
     const wide = sdb.newTable("graph_cost_states");
@@ -1506,11 +1574,13 @@ Deno.test("distances chronological traversal preserves decimal, wide integer, an
       {
         start: "9007199254740993",
         node: "9007199254740995",
+        steps: 1,
         total: "9007199254740993",
       },
       {
         start: "9007199254740993",
         node: "9007199254740997",
+        steps: 2,
         total: "9007199254740995",
       },
     ]);
@@ -1528,8 +1598,8 @@ Deno.test("distances chronological traversal preserves decimal, wide integer, an
         weight: "weight",
       }).getData(),
       [
-        { start: "A", node: "B", total: 0.5 },
-        { start: "A", node: "C", total: 1 },
+        { start: "A", node: "B", steps: 1, total: 0.5 },
+        { start: "A", node: "C", steps: 2, total: 1 },
       ],
     );
   } finally {
@@ -1584,8 +1654,8 @@ Deno.test("distances validates and snapshots chronological options before queued
     options.strictOrdering = false;
     assertEquals(queued.name, "chronologicalDistanceSnapshot");
     assertEquals(await queued.getData(), [
-      { start: "A'?", node: "B", total: 1 },
-      { start: "A'?", node: "C", total: 2 },
+      { start: "A'?", node: "B", steps: 1 },
+      { start: "A'?", node: "C", steps: 2 },
     ]);
 
     const missing = sdb.newTable().loadArray([
@@ -1615,7 +1685,7 @@ Deno.test("distances validates and snapshots chronological options before queued
   }
 });
 
-Deno.test("distances chronological SQL uses finite keyed event costs without route enumeration", async () => {
+Deno.test("distances chronological steps-only uses finite keyed event costs", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
@@ -1639,7 +1709,6 @@ Deno.test("distances chronological SQL uses finite keyed event costs without rou
       .distances("source", "target", ["start", "L1-0"], {
         startTimeColumn: "time",
         strictOrdering: false,
-        weight: "weight",
         outputTable: true,
       });
     assertEquals((await result.getData()).length, 36);
@@ -1710,6 +1779,7 @@ Deno.test("distances elapsed chooses paired cheapest or fastest journeys includi
           {
             start,
             node: destination,
+            steps: 2,
             total: minimize === "weight" ? 2 : 8,
             elapsedTimeMs: minimize === "weight" ? 10 : 3,
           },
@@ -1724,9 +1794,9 @@ Deno.test("distances elapsed chooses paired cheapest or fastest journeys includi
         elapsedOptions,
       ).getData(),
       [
-        { start: "A", node: "B", total: 1, elapsedTimeMs: 1 },
-        { start: "A", node: "C", total: 1, elapsedTimeMs: 1 },
-        { start: "A", node: "D", total: 2, elapsedTimeMs: 3 },
+        { start: "A", node: "B", steps: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "C", steps: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "D", steps: 2, elapsedTimeMs: 3 },
       ],
     );
   } finally {
@@ -1755,9 +1825,10 @@ Deno.test("distances elapsed preserves departure anchors through a shared physic
         },
       ).getData();
       assertEquals(result, [
-        { start: "A", node: "B", total: 1, elapsedTimeMs: 1 },
-        { start: "A", node: "C", total: 6, elapsedTimeMs: 3 },
-        { start: "A", node: "D", total: 7, elapsedTimeMs: 5 },
+        { start: "A", node: "B", steps: 1, total: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "B", steps: 1, total: 5, elapsedTimeMs: 1 },
+        { start: "A", node: "C", steps: 2, total: 6, elapsedTimeMs: 3 },
+        { start: "A", node: "D", steps: 3, total: 7, elapsedTimeMs: 5 },
       ]);
     }
   } finally {
@@ -1765,7 +1836,7 @@ Deno.test("distances elapsed preserves departure anchors through a shared physic
   }
 });
 
-Deno.test("distances elapsed uses the secondary metric for ties and orders paired results", async () => {
+Deno.test("distances elapsed retains primary ties and orders distinct summaries", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = elapsedRows([
@@ -1783,9 +1854,10 @@ Deno.test("distances elapsed uses the secondary metric for ties and orders paire
         minimize: "weight",
       }).getData(),
       [
-        { start: "A", node: "D", total: 1, elapsedTimeMs: 1 },
-        { start: "A", node: "B", total: 1, elapsedTimeMs: 3 },
-        { start: "A", node: "C", total: 2, elapsedTimeMs: 1 },
+        { start: "A", node: "B", steps: 1, total: 1, elapsedTimeMs: 3 },
+        { start: "A", node: "B", steps: 1, total: 1, elapsedTimeMs: 5 },
+        { start: "A", node: "D", steps: 1, total: 1, elapsedTimeMs: 1 },
+        { start: "A", node: "C", steps: 1, total: 2, elapsedTimeMs: 1 },
       ],
     );
     assertEquals(
@@ -1795,9 +1867,10 @@ Deno.test("distances elapsed uses the secondary metric for ties and orders paire
         minimize: "elapsedTime",
       }).getData(),
       [
-        { start: "A", node: "D", total: 1, elapsedTimeMs: 1 },
-        { start: "A", node: "C", total: 2, elapsedTimeMs: 1 },
-        { start: "A", node: "B", total: 9, elapsedTimeMs: 1 },
+        { start: "A", node: "B", steps: 1, total: 9, elapsedTimeMs: 1 },
+        { start: "A", node: "C", steps: 1, total: 2, elapsedTimeMs: 1 },
+        { start: "A", node: "C", steps: 1, total: 3, elapsedTimeMs: 1 },
+        { start: "A", node: "D", steps: 1, total: 1, elapsedTimeMs: 1 },
       ],
     );
   } finally {
@@ -1822,8 +1895,8 @@ Deno.test("distances elapsed preserves native precision before converting nanose
         minimize: "elapsedTime",
       }).getData(),
       [
-        { start: "A", node: "B", total: 2, elapsedTimeMs: 0.000002 },
-        { start: "A", node: "C", total: 3, elapsedTimeMs: 0.000005 },
+        { start: "A", node: "B", steps: 1, total: 2, elapsedTimeMs: 0.000002 },
+        { start: "A", node: "C", steps: 2, total: 3, elapsedTimeMs: 0.000005 },
       ],
     );
     const wide = sdb.newTable("elapsedWideNanoseconds");
@@ -1867,8 +1940,17 @@ Deno.test("distances elapsed terminates zero cycles and includes actual returns"
             strictOrdering: false,
           }).getData(),
           [
-            { start: "A", node: "A", total: 0, elapsedTimeMs: 0 },
-            { start: "A", node: "B", total: 0, elapsedTimeMs: 0 },
+            ...(minimize === "elapsedTime"
+              ? [{
+                start: "A",
+                node: "A",
+                steps: 1,
+                total: 3,
+                elapsedTimeMs: 0,
+              }]
+              : []),
+            { start: "A", node: "A", steps: 2, total: 0, elapsedTimeMs: 0 },
+            { start: "A", node: "B", steps: 1, total: 0, elapsedTimeMs: 0 },
           ],
         );
       }
@@ -1879,8 +1961,9 @@ Deno.test("distances elapsed terminates zero cycles and includes actual returns"
         strictOrdering: false,
       }).getData(),
       [
-        { start: "A", node: "A", total: 1, elapsedTimeMs: 0 },
-        { start: "A", node: "B", total: 1, elapsedTimeMs: 0 },
+        { start: "A", node: "A", steps: 1, elapsedTimeMs: 0 },
+        { start: "A", node: "A", steps: 2, elapsedTimeMs: 0 },
+        { start: "A", node: "B", steps: 1, elapsedTimeMs: 0 },
       ],
     );
   } finally {
@@ -1902,7 +1985,7 @@ Deno.test("distances elapsed result schema supports pending chains and output ta
     assertEquals(await result.getTypes(), {
       start: "VARCHAR",
       node: "VARCHAR",
-      total: "BIGINT",
+      steps: "BIGINT",
       elapsedTimeMs: "DOUBLE",
     });
     assertEquals(
@@ -1937,7 +2020,7 @@ Deno.test("distances elapsed result schema supports pending chains and output ta
         elapsedTime: false,
         outputTable: true,
       }).getData(),
-      [{ start: "A", node: "B", total: 1 }],
+      [{ start: "A", node: "B", steps: 1 }],
     );
   } finally {
     await sdb.close();
@@ -2011,61 +2094,45 @@ Deno.test("distances elapsed matches independently enumerated journeys on tiny g
       const minGap = BigInt(seed % 2);
       const strictOrdering = seed % 3 !== 0;
       for (const direction of ["outgoing", "incoming"] as const) {
-        for (const minimize of ["weight", "elapsedTime"] as const) {
-          const compare = (
-            left: { total: number; elapsedTimeMs: number },
-            right: { total: number; elapsedTimeMs: number },
-          ) =>
-            minimize === "weight"
-              ? left.total - right.total ||
-                left.elapsedTimeMs - right.elapsedTimeMs
-              : left.elapsedTimeMs - right.elapsedTimeMs ||
-                left.total - right.total;
-          const expected = [];
-          for (const start of nodes) {
-            const best = new Map<
-              string,
-              {
-                start: string;
-                node: string;
-                total: number;
-                elapsedTimeMs: number;
-              }
-            >();
-            for (
-              const route of enumerateChronologicalRoutes(events, start, {
-                direction,
-                minGap,
-                strictOrdering,
-                simpleNodes: false,
-                maxSteps: events.length,
+        for (const minimize of ["steps", "weight", "elapsedTime"] as const) {
+          const metric = minimize === "steps"
+            ? "steps"
+            : minimize === "weight"
+            ? "total"
+            : "elapsedTimeMs";
+          const candidates = nodes.flatMap((start) =>
+            referenceSimpleJourneys(events, start, {
+              direction,
+              minGap,
+              strictOrdering,
+            })
+              .map((route) => {
+                const first = route[0].event;
+                const last = route.at(-1)!;
+                return {
+                  start,
+                  node: last.target,
+                  steps: route.length,
+                  total: route.reduce(
+                    (sum, step) => sum + weights.get(step.event.edgeId)!,
+                    0,
+                  ),
+                  elapsedTimeMs: Number(
+                    direction === "outgoing"
+                      ? last.event.endTime! - first.startTime!
+                      : first.endTime! - last.event.startTime!,
+                  ),
+                };
               })
-            ) {
-              const first = route[0].event;
-              const last = route.at(-1)!;
-              const candidate = {
-                start,
-                node: last.target,
-                total: route.reduce(
-                  (sum, step) => sum + weights.get(step.event.edgeId)!,
-                  0,
-                ),
-                elapsedTimeMs: Number(
-                  direction === "outgoing"
-                    ? last.event.endTime! - first.startTime!
-                    : first.endTime! - last.event.startTime!,
-                ),
-              };
-              const prior = best.get(candidate.node);
-              if (prior === undefined || compare(candidate, prior) < 0) {
-                best.set(candidate.node, candidate);
-              }
-            }
-            expected.push(...best.values());
-          }
-          expected.sort((left, right) =>
-            left.start.localeCompare(right.start) || compare(left, right) ||
-            left.node.localeCompare(right.node)
+          );
+          const expected = distinctOptimalSummaries(candidates, metric).sort((
+            left,
+            right,
+          ) =>
+            left.start.localeCompare(right.start) ||
+            left[metric] - right[metric] ||
+            left.node.localeCompare(right.node) || left.steps - right.steps ||
+            left.total - right.total || left.elapsedTimeMs - right.elapsedTimeMs
           );
           assertEquals(
             await sdb.newTable().loadArray(chronologicalRows(events)).distances(
@@ -2085,6 +2152,517 @@ Deno.test("distances elapsed matches independently enumerated journeys on tiny g
             ).getData(),
             expected,
             `seed ${seed}, ${direction}, ${minimize}`,
+          );
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances reports each tied step count in every traversal mode", async () => {
+  const sdb = new SimpleDB();
+  const edges = [
+    { source: "A", target: "D", cost: 6 },
+    { source: "A", target: "B", cost: 1 },
+    { source: "B", target: "D", cost: 1 },
+    { source: "A", target: "C", cost: 0 },
+    { source: "C", target: "X", cost: 0 },
+    { source: "X", target: "D", cost: 2 },
+    { source: "D", target: "E", cost: 0 },
+  ];
+  try {
+    for (const mode of ["static", "chronological", "elapsed"] as const) {
+      for (const direction of ["outgoing", "incoming", "both"] as const) {
+        if (mode !== "static" && direction === "both") continue;
+        const rows = elapsedRows(edges.map((edge) => ({
+          ...edge,
+          ...(direction === "incoming"
+            ? { source: edge.target, target: edge.source }
+            : {}),
+          departure: 0,
+          arrival: 0,
+        })));
+        for (const ordered of [rows, rows.toReversed()]) {
+          const result = sdb.newTable().loadArray(ordered).distances(
+            "source",
+            "target",
+            ["A", "missing"],
+            {
+              direction,
+              weight: "cost",
+              outputTable: true,
+              ...(mode === "static" ? {} : {
+                startTimeColumn: "departure",
+                endTimeColumn: "arrival",
+                strictOrdering: false,
+              }),
+              ...(mode === "elapsed"
+                ? { elapsedTime: true, minimize: "weight" as const }
+                : {}),
+            },
+          ).filter("node IN ('D', 'E') AND steps >= 2");
+          assertEquals(
+            await result.getData(),
+            ["D", "E"].flatMap((node) =>
+              (node === "D" ? [2, 3] : [3, 4]).map((steps) => ({
+                start: "A",
+                node,
+                steps,
+                total: 2,
+                ...(mode === "elapsed" ? { elapsedTimeMs: 0 } : {}),
+              }))
+            ),
+          );
+          assertEquals((await result.getTypes()).steps, "BIGINT");
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances does not break primary ties using secondary metrics", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const minimize of ["weight", "elapsedTime"] as const) {
+      for (const direction of ["outgoing", "incoming"] as const) {
+        const rows = elapsedRows([
+          { source: "A", target: "B", departure: 0, arrival: 1, cost: 1 },
+          { source: "B", target: "D", departure: 9, arrival: 10, cost: 1 },
+          // One step, but worse on the secondary metric.
+          {
+            source: "A",
+            target: "D",
+            departure: 0,
+            arrival: minimize === "weight" ? 12 : 10,
+            cost: minimize === "weight" ? 2 : 3,
+          },
+        ]);
+        const start = direction === "outgoing" ? "A" : "D";
+        const node = direction === "outgoing" ? "D" : "A";
+        const result = await sdb.newTable().loadArray(rows).distances(
+          "source",
+          "target",
+          start,
+          { ...elapsedOptions, direction, weight: "cost", minimize },
+        ).getData();
+        assertEquals(result.filter((row) => row.node === node), [{
+          start,
+          node,
+          steps: 1,
+          total: minimize === "weight" ? 2 : 3,
+          elapsedTimeMs: minimize === "weight" ? 12 : 10,
+        }, { start, node, steps: 2, total: 2, elapsedTimeMs: 10 }]);
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances elapsed JSDoc examples report matching steps, costs, and times", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const flights = sdb.newTable().loadArray([
+      {
+        flightId: "F1",
+        origin: "A",
+        destination: "B",
+        departure: "2025-01-01T09:00:00Z",
+        arrival: "2025-01-01T10:00:00Z",
+        price: 40,
+      },
+      {
+        flightId: "F2",
+        origin: "B",
+        destination: "C",
+        departure: "2025-01-01T12:00:00Z",
+        arrival: "2025-01-01T13:00:00Z",
+        price: 40,
+      },
+      {
+        flightId: "F3",
+        origin: "A",
+        destination: "C",
+        departure: "2025-01-01T09:00:00Z",
+        arrival: "2025-01-01T12:00:00Z",
+        price: 120,
+      },
+    ].map((row) => ({
+      ...row,
+      departure: new Date(row.departure),
+      arrival: new Date(row.arrival),
+    })));
+    for (
+      const minimize of [undefined, "elapsedTime", "weight", "steps"] as const
+    ) {
+      assertEquals(
+        await flights.distances("origin", "destination", "A", {
+          ...elapsedOptions,
+          minGapMs: 60 * 60 * 1000,
+          ...(minimize === undefined ? {} : { weight: "price", minimize }),
+          outputTable: true,
+        }).getData(),
+        [
+          {
+            start: "A",
+            node: "B",
+            steps: 1,
+            ...(minimize ? { total: 40 } : {}),
+            elapsedTimeMs: 3600000,
+          },
+          {
+            start: "A",
+            node: "C",
+            steps: minimize === "weight" ? 2 : 1,
+            ...(minimize ? { total: minimize === "weight" ? 80 : 120 } : {}),
+            elapsedTimeMs: minimize === "weight" ? 14400000 : 10800000,
+          },
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances minimizes steps independently of optional reported metrics", async () => {
+  const sdb = new SimpleDB();
+  const edges = [
+    { source: "A", target: "D", cost: 9, departure: 0, arrival: 12 },
+    { source: "A", target: "D", cost: 9, departure: 4, arrival: 14 },
+    { source: "A", target: "D", cost: 10, departure: 10, arrival: 11 },
+    { source: "A", target: "B", cost: 1, departure: 0, arrival: 1 },
+    { source: "B", target: "D", cost: 1, departure: 2, arrival: 3 },
+    { source: "D", target: "E", cost: 0, departure: 20, arrival: 21 },
+    { source: "D", target: "D", cost: 0, departure: 20, arrival: 20 },
+  ];
+  try {
+    for (const direction of ["outgoing", "incoming", "both"] as const) {
+      for (const chronological of [false, true]) {
+        if (chronological && direction === "both") continue;
+        for (const weighted of [false, true]) {
+          for (const elapsedTime of chronological ? [false, true] : [false]) {
+            const options = {
+              direction,
+              minimize: "steps" as const,
+              ...(weighted ? { weight: "cost" } : {}),
+              ...(chronological
+                ? { ...elapsedOptions, elapsedTime, strictOrdering: false }
+                : {}),
+              outputTable: true,
+            };
+            const input = sdb.newTable().loadArray(
+              elapsedRows(edges.map((edge) =>
+                direction === "incoming"
+                  ? {
+                    ...edge,
+                    source: edge.target,
+                    target: edge.source,
+                    departure: -edge.arrival,
+                    arrival: -edge.departure,
+                  }
+                  : edge
+              )),
+            );
+            const result = input.distances("source", "target", "A", options)
+              .filter("node IN ('D', 'E')");
+            const columns = [
+              "start",
+              "node",
+              "steps",
+              ...(weighted ? ["total"] : []),
+              ...(elapsedTime ? ["elapsedTimeMs"] : []),
+            ];
+            assertEquals(await result.getColumns(), columns);
+            const expected = ["D", "E"].flatMap((node) => {
+              const candidates = edges.slice(0, 3).map((edge) => ({
+                start: "A",
+                node,
+                steps: node === "D" ? 1 : 2,
+                ...(weighted ? { total: edge.cost } : {}),
+                ...(elapsedTime
+                  ? {
+                    elapsedTimeMs: (node === "D" ? edge.arrival : 21) -
+                      edge.departure,
+                  }
+                  : {}),
+              }));
+              return [
+                ...new Map(candidates.map((row) => [JSON.stringify(row), row]))
+                  .values(),
+              ]
+                .sort((a, b) =>
+                  (a.total ?? 0) - (b.total ?? 0) ||
+                  (a.elapsedTimeMs ?? 0) - (b.elapsedTimeMs ?? 0)
+                );
+            });
+            assertEquals(await result.getData(), expected);
+            const empty = input.distances(
+              "source",
+              "target",
+              "missing",
+              options,
+            );
+            assertEquals(await empty.getColumns(), columns);
+            assertEquals(await empty.getData(), []);
+          }
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances retains distinct tied summaries and collapses equivalent routes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const input = sdb.newTable().loadArray(elapsedRows([
+      { source: "A", target: "B", cost: 2, departure: 0, arrival: 1 },
+      { source: "B", target: "D", cost: 3, departure: 4, arrival: 5 },
+      { source: "A", target: "C", cost: 4, departure: 0, arrival: 1 },
+      { source: "C", target: "D", cost: 3, departure: 6, arrival: 7 },
+      { source: "A", target: "X", cost: 2, departure: 0, arrival: 1 },
+      { source: "X", target: "D", cost: 3, departure: 4, arrival: 5 },
+      { source: "D", target: "E", cost: 1, departure: 8, arrival: 9 },
+    ]));
+    for (const elapsedTime of [false, true]) {
+      const rows = await input.distances("source", "target", "A", {
+        weight: "cost",
+        minimize: "steps",
+        outputTable: true,
+        ...(elapsedTime ? elapsedOptions : {}),
+      }).filter("node IN ('D', 'E')").getData();
+      assertEquals(rows, [
+        {
+          start: "A",
+          node: "D",
+          steps: 2,
+          total: 5,
+          ...(elapsedTime ? { elapsedTimeMs: 5 } : {}),
+        },
+        {
+          start: "A",
+          node: "D",
+          steps: 2,
+          total: 7,
+          ...(elapsedTime ? { elapsedTimeMs: 7 } : {}),
+        },
+        {
+          start: "A",
+          node: "E",
+          steps: 3,
+          total: 6,
+          ...(elapsedTime ? { elapsedTimeMs: 9 } : {}),
+        },
+        {
+          start: "A",
+          node: "E",
+          steps: 3,
+          total: 8,
+          ...(elapsedTime ? { elapsedTimeMs: 9 } : {}),
+        },
+      ]);
+    }
+    assertEquals(
+      await input.distances("source", "target", "A", { outputTable: true })
+        .filter("node = 'D'").getData(),
+      [{ start: "A", node: "D", steps: 2 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances retains visited-node alternatives and stops at a return to start", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = [
+      { source: "A", target: "B", cost: 0 },
+      { source: "A", target: "C", cost: 0 },
+      { source: "B", target: "D", cost: 0 },
+      { source: "C", target: "D", cost: 0 },
+      { source: "D", target: "B", cost: 0 },
+      { source: "B", target: "E", cost: 0 },
+      { source: "D", target: "A", cost: 0 },
+      { source: "B", target: "B", cost: 0 },
+    ];
+    for (const ordered of [rows, rows.toReversed()]) {
+      assertEquals(
+        await sdb.newTable().loadArray(ordered)
+          .distances("source", "target", "A", { weight: "cost" }).getData(),
+        [
+          { start: "A", node: "A", steps: 3, total: 0 },
+          { start: "A", node: "B", steps: 1, total: 0 },
+          { start: "A", node: "B", steps: 3, total: 0 },
+          { start: "A", node: "C", steps: 1, total: 0 },
+          { start: "A", node: "D", steps: 2, total: 0 },
+          { start: "A", node: "E", steps: 2, total: 0 },
+          { start: "A", node: "E", steps: 4, total: 0 },
+        ],
+      );
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances preserves floating cost ties formed after unequal prefixes", async () => {
+  const sdb = new SimpleDB();
+  try {
+    assertEquals(
+      await sdb.newTable().loadArray([
+        { source: "A", target: "B", cost: 2 },
+        { source: "A", target: "X", cost: 0 },
+        { source: "X", target: "B", cost: 1 },
+        { source: "B", target: "C", cost: 1e20 },
+      ]).distances("source", "target", "A", { weight: "cost" })
+        .filter("node = 'C'").getData(),
+      [
+        { start: "A", node: "C", steps: 2, total: 1e20 },
+        { start: "A", node: "C", steps: 3, total: 1e20 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances tied summaries JSDoc example returns both prices", async () => {
+  const sdb = new SimpleDB();
+  try {
+    assertEquals(
+      await sdb.newTable().loadArray([
+        { origin: "A", destination: "B", price: 20 },
+        { origin: "B", destination: "C", price: 30 },
+        { origin: "A", destination: "D", price: 40 },
+        { origin: "D", destination: "C", price: 40 },
+      ]).distances("origin", "destination", "A", {
+        weight: "price",
+        minimize: "steps",
+      }).filter("node = 'C'").getData(),
+      [
+        { start: "A", node: "C", steps: 2, total: 50 },
+        { start: "A", node: "C", steps: 2, total: 80 },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances prunes dominated decimal prefixes before they overflow", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const huge = "90000000000000000000000000000000000000";
+    const table = sdb.newTable("dominatedDecimalDistances");
+    await sdb.customQuery(`CREATE TABLE "dominatedDecimalDistances" AS
+      SELECT source, target, cost::DECIMAL(38,0) AS cost
+      FROM (VALUES ('A', 'B', '1'), ('A', 'C', '${huge}'),
+        ('C', 'B', '0'), ('B', 'D', '${huge}')) edges(source, target, cost)`);
+    assertEquals(
+      await table.distances("source", "target", "A", { weight: "cost" })
+        .getData(),
+      [
+        { start: "A", node: "B", steps: 1, total: "1" },
+        { start: "A", node: "C", steps: 1, total: huge },
+        {
+          start: "A",
+          node: "D",
+          steps: 2,
+          total: "90000000000000000000000000000000000001",
+        },
+      ],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances prunes longer routes in dense acyclic graphs for each objective", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const size = 24;
+    const rows = Array.from(
+      { length: size },
+      (_, source) =>
+        Array.from({ length: size - source - 1 }, (_, offset) => ({
+          source,
+          target: source + offset + 1,
+          cost: 1,
+          departure: new Date(chronologicalBase + source * 2),
+          arrival: new Date(chronologicalBase + source * 2 + 1),
+        })),
+    ).flat();
+    for (const minimize of ["steps", "weight", "elapsedTime"] as const) {
+      for (const chronological of [false, true]) {
+        if (minimize === "elapsedTime" && !chronological) continue;
+        const result = await sdb.newTable().loadArray(rows)
+          .distances("source", "target", 0, {
+            weight: "cost",
+            minimize,
+            ...(chronological ? elapsedOptions : {}),
+          }).getData();
+        const expected = Array.from({ length: size - 1 }, (_, i) => ({
+          start: 0,
+          node: i + 1,
+          steps: 1,
+          total: 1,
+          ...(chronological ? { elapsedTimeMs: 1 } : {}),
+        }));
+        assertEquals(result, expected);
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("distances reports cost overflow only for primary-optimal summaries", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const huge = "90000000000000000000000000000000000000";
+    for (const minimize of ["steps", "elapsedTime"] as const) {
+      for (const direct of [false, true]) {
+        const table = sdb.newTable();
+        await sdb.customQuery(`CREATE TABLE "${table.name}" AS
+          SELECT source, target, cost::DECIMAL(38,0) AS cost,
+            TIMESTAMP '2025-01-01' + t * INTERVAL '1 SECOND' AS departure,
+            TIMESTAMP '2025-01-01' + (t + 1) * INTERVAL '1 SECOND' AS arrival
+          FROM (VALUES ('A', 'B', '${huge}', 0), ('B', 'C', '${huge}', 2)
+            ${direct ? ", ('A', 'C', '1', 4)" : ""}
+          ) edges(source, target, cost, t)`);
+        const result = table.distances("source", "target", "A", {
+          weight: "cost",
+          minimize,
+          ...elapsedOptions,
+        });
+        if (direct) {
+          assertEquals(await result.getData(), [
+            {
+              start: "A",
+              node: "B",
+              steps: 1,
+              total: huge,
+              elapsedTimeMs: 1000,
+            },
+            {
+              start: "A",
+              node: "C",
+              steps: 1,
+              total: "1",
+              elapsedTimeMs: 1000,
+            },
+          ]);
+        } else {
+          await assertRejects(
+            () => result.getData(),
+            Error,
+            "total exceeds the supported DECIMAL(38,0) range for an optimal route",
           );
         }
       }

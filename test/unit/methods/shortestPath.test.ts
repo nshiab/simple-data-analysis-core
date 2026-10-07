@@ -120,7 +120,6 @@ function baselineRoutes() {
       source: "A",
       target: "B",
       weight: 1,
-      total: 1,
     },
     {
       pathId: 0,
@@ -129,7 +128,6 @@ function baselineRoutes() {
       source: "B",
       target: "D",
       weight: 1,
-      total: 2,
     },
     {
       pathId: 0,
@@ -138,7 +136,6 @@ function baselineRoutes() {
       source: "D",
       target: "E",
       weight: 1,
-      total: 3,
     },
     {
       pathId: 1,
@@ -147,7 +144,6 @@ function baselineRoutes() {
       source: "A",
       target: "C",
       weight: 1,
-      total: 1,
     },
     {
       pathId: 1,
@@ -156,7 +152,6 @@ function baselineRoutes() {
       source: "C",
       target: "D",
       weight: 1,
-      total: 2,
     },
     {
       pathId: 1,
@@ -165,7 +160,6 @@ function baselineRoutes() {
       source: "D",
       target: "E",
       weight: 1,
-      total: 3,
     },
   ];
 }
@@ -199,7 +193,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "D",
           target: "E",
           weight: 1,
-          total: 1,
         },
         {
           pathId: 0,
@@ -208,7 +201,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "B",
           target: "D",
           weight: 1,
-          total: 2,
         },
         {
           pathId: 0,
@@ -217,7 +209,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "A",
           target: "B",
           weight: 1,
-          total: 3,
         },
         {
           pathId: 1,
@@ -226,7 +217,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "D",
           target: "E",
           weight: 1,
-          total: 1,
         },
         {
           pathId: 1,
@@ -235,7 +225,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "C",
           target: "D",
           weight: 1,
-          total: 2,
         },
         {
           pathId: 1,
@@ -244,7 +233,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
           source: "A",
           target: "C",
           weight: 1,
-          total: 3,
         },
       ],
     );
@@ -260,7 +248,6 @@ Deno.test("shortestPath returns every tied shortest route in deterministic order
         source: "A",
         target: "B",
         weight: 1,
-        total: 1,
       }],
     );
   } finally {
@@ -281,7 +268,6 @@ Deno.test("shortestPath minimizes hops or weight and preserves parallel routes",
         source: "A",
         target: "E",
         weight: 1,
-        total: 1,
       }],
     );
     assertEquals(
@@ -393,7 +379,6 @@ Deno.test("shortestPath enumerates simple routes through cycles and keeps floati
         source: "A",
         target: "B",
         weight: 1,
-        total: 1,
       }],
     );
     assertEquals(
@@ -804,7 +789,6 @@ Deno.test("shortestPath supports overwrite, separate outputs, chaining, and snap
       "pathId",
       "step",
       "weight",
-      "total",
       "edgeId",
       "source",
       "target",
@@ -889,7 +873,7 @@ Deno.test("shortestPath matches the shared fixture oracle", async () => {
     const expected = sdb.newTable("oracle")
       .loadData("test/data/graphs/expected/shortest_path.csv")
       .filter("\"case\" = 'baseline-A-E-outgoing'")
-      .removeColumns("case");
+      .removeColumns(["case", "total"]);
     const actual = loadScenario(sdb, "oracleActual", "baseline")
       .shortestPath("source", "target", "edgeId", "A", "E");
     assertEquals(await actual.getData(), await expected.getData());
@@ -963,7 +947,6 @@ Deno.test("shortestPath has no implicit hop cap", async () => {
       source: 139,
       target: 140,
       weight: 1,
-      total: 140,
     });
   } finally {
     await sdb.close();
@@ -1183,7 +1166,6 @@ Deno.test("shortestPath custom-column weighted JSDoc examples match their tables
         pathId: 0,
         step: 1,
         weight: 1,
-        total: 1,
         flightId: "F1",
         origin: "A",
         destination: "E",
@@ -1344,7 +1326,7 @@ Deno.test("shortestPath end-only timestamps preserve nanoseconds at an inclusive
             ? [[0, 1], [0, 3], [1, 1], [1, 4]]
             : [[0, 3], [0, 1], [1, 4], [1, 1]],
         );
-        assertEquals(rows.map((row) => row.total), [1, 2, 1, 2]);
+        assertEquals(rows.map((row) => row.step), [1, 2, 1, 2]);
       }
     }
   } finally {
@@ -1759,7 +1741,7 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
   const examples = [...documentation.matchAll(
     /```ts\n([\s\S]*?)```\n\n((?:\|[^\n]*\n)+)/g,
   )];
-  assertEquals(examples.length, 8);
+  assertEquals(examples.length, 9);
   const inputs = [
     [
       { edgeId: "E1", source: "A", target: "B" },
@@ -1901,6 +1883,7 @@ Deno.test("shortestPath executes every actual JSDoc example and prints its compl
       },
     ],
   ];
+  inputs.push(inputs.at(-1)!);
   for (const [index, example] of examples.entries()) {
     const sdb = new SimpleDB();
     const originalLog = console.log;
@@ -2006,7 +1989,6 @@ Deno.test("shortestPath does not truncate many parallel tied routes", async () =
         step: 1,
         ...edge,
         weight: 1,
-        total: 1,
       })),
     );
   } finally {
@@ -2190,7 +2172,10 @@ Deno.test("route methods reject every generated-column conflict and accept renam
         const invalid = calculate(
           sdb.newTable().loadArray(rows),
           method,
-          conflict === "Weight" ? conflict : undefined,
+          conflict === "Weight" ||
+            (method === "shortestPath" && conflict === "TOTAL")
+            ? conflict
+            : undefined,
         );
         const error = await assertRejects(() => invalid.run(), Error);
         assertStringIncludes(error.message, `${method}()`);
@@ -2220,7 +2205,7 @@ Deno.test("route methods reject every generated-column conflict and accept renam
           "pathId",
           "step",
           "weight",
-          "total",
+          ...(method === "shortestPath" ? [] : ["total"]),
           "edgeId",
           "source",
           "target",
@@ -2489,14 +2474,13 @@ Deno.test("shortestPath elapsed time selects fastest or cheapest and retains eve
     const data = await fastest.selectColumns([
       "edgeId",
       "weight",
-      "total",
       "elapsedTimeMs",
     ]).getData();
     assertEquals(data, [
-      { edgeId: 3, weight: 1, total: 1, elapsedTimeMs: 1 },
-      { edgeId: 4, weight: 1, total: 2, elapsedTimeMs: 3 },
-      { edgeId: 5, weight: 1, total: 1, elapsedTimeMs: 1 },
-      { edgeId: 6, weight: 1, total: 2, elapsedTimeMs: 3 },
+      { edgeId: 3, weight: 1, elapsedTimeMs: 1 },
+      { edgeId: 4, weight: 1, elapsedTimeMs: 3 },
+      { edgeId: 5, weight: 1, elapsedTimeMs: 1 },
+      { edgeId: 6, weight: 1, elapsedTimeMs: 3 },
     ]);
     assertEquals((await source.getData()).length, 8);
   } finally {
@@ -2732,6 +2716,7 @@ Deno.test("shortestPath elapsed minima match exhaustive timed cyclic graphs", as
             maxSteps: 3,
           }).map((steps) => ({
             steps,
+            count: steps.length,
             elapsed: Number(
               direction === "outgoing"
                 ? steps.at(-1)!.event.endTime! - steps[0].event.startTime!
@@ -2742,8 +2727,12 @@ Deno.test("shortestPath elapsed minima match exhaustive timed cyclic graphs", as
               0,
             ),
           }));
-          for (const minimize of ["weight", "elapsedTime"] as const) {
-            const metric = minimize === "weight" ? "weight" : "elapsed";
+          for (const minimize of ["steps", "weight", "elapsedTime"] as const) {
+            const metric = minimize === "steps"
+              ? "count"
+              : minimize === "weight"
+              ? "weight"
+              : "elapsed";
             const minimum = Math.min(
               ...reference.map((route) => route[metric]),
             );
@@ -2782,6 +2771,192 @@ Deno.test("shortestPath elapsed minima match exhaustive timed cyclic graphs", as
         }
       }
     }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath minimizes steps while retaining ties with different reported costs and times", async () => {
+  const sdb = new SimpleDB();
+  const edges = [
+    {
+      edgeId: "AD1",
+      source: "A",
+      target: "D",
+      cost: 9,
+      departure: 0,
+      arrival: 12,
+    },
+    {
+      edgeId: "AD2",
+      source: "A",
+      target: "D",
+      cost: 10,
+      departure: 4,
+      arrival: 14,
+    },
+    {
+      edgeId: "AB",
+      source: "A",
+      target: "B",
+      cost: 1,
+      departure: 0,
+      arrival: 1,
+    },
+    {
+      edgeId: "BD",
+      source: "B",
+      target: "D",
+      cost: 1,
+      departure: 2,
+      arrival: 3,
+    },
+    {
+      edgeId: "DE",
+      source: "D",
+      target: "E",
+      cost: 0,
+      departure: 20,
+      arrival: 21,
+    },
+    {
+      edgeId: "DD",
+      source: "D",
+      target: "D",
+      cost: 0,
+      departure: 20,
+      arrival: 20,
+    },
+  ];
+  try {
+    for (const direction of ["outgoing", "incoming", "both"] as const) {
+      for (const chronological of [false, true]) {
+        if (chronological && direction === "both") continue;
+        for (const weighted of [false, true]) {
+          for (const elapsedTime of chronological ? [false, true] : [false]) {
+            const options = {
+              direction,
+              minimize: "steps" as const,
+              ...(weighted ? { weight: "cost" } : {}),
+              ...(chronological
+                ? {
+                  startTimeColumn: "departure",
+                  endTimeColumn: "arrival",
+                  strictOrdering: false,
+                  elapsedTime,
+                }
+                : {}),
+              outputTable: true,
+            };
+            const original = edges.map((edge) => {
+              const incoming = direction === "incoming";
+              return {
+                ...edge,
+                source: incoming ? edge.target : edge.source,
+                target: incoming ? edge.source : edge.target,
+                departure: new Date(incoming ? -edge.arrival : edge.departure),
+                arrival: new Date(incoming ? -edge.departure : edge.arrival),
+              };
+            });
+            for (const ordered of [original, original.toReversed()]) {
+              const input = sdb.newTable().loadArray(ordered);
+              const result = input.shortestPath(
+                "source",
+                "target",
+                "edgeId",
+                "A",
+                "E",
+                options,
+              )
+                .filter("step <= 2");
+              assertEquals(
+                await result.getData(),
+                ["AD1", "AD2"].flatMap((id, pathId) =>
+                  [id, "DE"].map((edgeId, index) => {
+                    const edge = original.find((row) => row.edgeId === edgeId)!;
+                    return {
+                      pathId,
+                      step: index + 1,
+                      weight: weighted ? edge.cost : 1,
+                      ...(weighted ? { total: pathId === 0 ? 9 : 10 } : {}),
+                      ...(elapsedTime
+                        ? {
+                          elapsedTimeMs: index === 0
+                            ? pathId === 0 ? 12 : 10
+                            : pathId === 0
+                            ? 21
+                            : 17,
+                        }
+                        : {}),
+                      ...edge,
+                    };
+                  })
+                ),
+              );
+              const empty = input.shortestPath(
+                "source",
+                "target",
+                "edgeId",
+                "A",
+                "missing",
+                options,
+              );
+              assertEquals(await empty.getColumns(), await result.getColumns());
+              assertEquals(await empty.getData(), []);
+            }
+          }
+        }
+      }
+    }
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath preserves original total columns only when it does not generate a total", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const input = sdb.newTable().loadArray([
+      { edgeId: 1, source: "A", target: "B", TOTAL: "kept", cost: 2 },
+    ]);
+    const output = input.shortestPath("source", "target", "edgeId", "A", "B", {
+      outputTable: true,
+    });
+    assertEquals((await output.getData())[0].TOTAL, "kept");
+    await assertRejects(
+      () =>
+        input.shortestPath("source", "target", "edgeId", "A", "B", {
+          weight: "cost",
+          minimize: "steps",
+          outputTable: true,
+        }).run(),
+      Error,
+      "TOTAL",
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+Deno.test("shortestPath chronological steps bound does not sum irrelevant weights", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("stepBoundOverflow");
+    const huge = "90000000000000000000000000000000000000";
+    await sdb.customQuery(`CREATE TABLE "stepBoundOverflow" AS
+      SELECT id, source, target, cost::DECIMAL(38,0) AS cost,
+        TIMESTAMP '2025-01-01' + t * INTERVAL '1 SECOND' AS time
+      FROM (VALUES (1, 'A', 'B', '${huge}', 1),
+        (2, 'B', 'C', '${huge}', 2), (3, 'A', 'C', '1', 3)
+      ) edges(id, source, target, cost, t)`);
+    assertEquals(
+      await table.shortestPath("source", "target", "id", "A", "C", {
+        weight: "cost",
+        minimize: "steps",
+        startTimeColumn: "time",
+      }).selectColumns(["id", "step", "total"]).getData(),
+      [{ id: 3, step: 1, total: "1" }],
+    );
   } finally {
     await sdb.close();
   }
