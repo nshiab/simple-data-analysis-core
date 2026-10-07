@@ -1087,13 +1087,20 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Reduces numeric vectors, such as embeddings, to a two-dimensional UMAP
+   * Reduces numeric features, such as embeddings, to a two-dimensional UMAP
    * projection. The resulting coordinates are added as `umapX` and `umapY`,
-   * while all existing columns (including the source vector column), their
+   * while all existing columns (including the source feature columns), their
    * values and types, and the input row order are preserved. DuckDB computes
    * neighbors and the fuzzy graph; TypeScript optimizes the coordinates without
    * copying the input vectors into JavaScript. Neighbor search is selected
    * automatically.
+   *
+   * Accepts a numeric LIST or ARRAY column, or an array of numeric scalar column
+   * names combined internally into a vector in the supplied order. Features
+   * must be finite and non-null; vectors must be nonempty and equally sized.
+   * Features are converted to DOUBLE without automatic scaling. Large integers
+   * and exact decimals can lose precision in this conversion. If feature scales
+   * differ, consider `normalize()` or `zScore()` before projection.
    *
    * The defaults are a starting point for exploration. To adjust the projection:
    *
@@ -1136,7 +1143,14 @@ export default class SimpleTable extends Simple {
    *   minDistance: 0.25,
    * }).selectColumns(["label", "umapX", "umapY"]).log();
    * ```
-   * @param column - The column containing numeric vector embeddings.
+   *
+   * @example
+   * ```ts
+   * await table
+   *   .umap(["height", "weight", "age"], { seed: 42 })
+   *   .log();
+   * ```
+   * @param columns - A numeric vector column name, or a nonempty array of numeric scalar column names in feature order. Use a one-element array for a single scalar feature.
    * @param options - Optional projection settings.
    * @param options.neighbors - Neighborhood size, including the point itself. Integer of at least 2, clamped to row count minus one. Defaults to 15.
    * @param options.metric - Input distance metric: "euclidean" or "cosine". Defaults to "euclidean".
@@ -1149,7 +1163,7 @@ export default class SimpleTable extends Simple {
    * @category Vector Search
    */
   umap(
-    column: string,
+    columns: string | string[],
     options: {
       neighbors?: number;
       metric?: "euclidean" | "cosine";
@@ -1160,7 +1174,7 @@ export default class SimpleTable extends Simple {
       negativeSamples?: number;
     } = {},
   ): this {
-    umap(this, column, options);
+    umap(this, columns, options);
     return this;
   }
 

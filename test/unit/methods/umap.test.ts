@@ -15,7 +15,13 @@ async function noScratch(sdb: SimpleDB) {
   const tables =
     (await c.runAndReadAll("SELECT table_name FROM duckdb_tables()"))
       .getRowsJS().flat();
-  assert(!tables.some((name) => String(name).startsWith("__sda_umap_")));
+  assert(
+    !tables.some((name) =>
+      ["__sda_umap_", "__sda_features_"].some((prefix) =>
+        String(name).startsWith(prefix)
+      )
+    ),
+  );
   const indexes =
     (await c.runAndReadAll("SELECT index_name FROM duckdb_indexes()"))
       .getRowsJS().flat();
@@ -166,8 +172,8 @@ for (
 
 for (
   const [expression, options, message] of [
-    ["NULL::DOUBLE[]", {}, "nonempty"],
-    ["[]::DOUBLE[]", {}, "nonempty"],
+    ["NULL::DOUBLE[]", {}, "non-null"],
+    ["[]::DOUBLE[]", {}, "empty vector"],
     ["[1,NULL]", {}, "finite"],
     ["[1,'NaN'::DOUBLE]", {}, "finite"],
     ["CASE WHEN i=0 THEN [1] ELSE [1,2] END", {}, "equal dimensions"],
@@ -392,7 +398,7 @@ Deno.test("umap rejects a missing embedding column", async () => {
     await assertRejects(
       () => table.umap("missing").run(),
       Error,
-      "does not exist",
+      "could not find column",
     );
     assertEquals(await table.getData(), before);
   } finally {
@@ -416,3 +422,120 @@ Deno.test("umap validates FLOAT norms for automatic indexed search on larger tab
     await sdb.close();
   }
 });
+
+for (const metric of ["euclidean", "cosine"] as const) {
+  for (const count of [16, 1001]) {
+    Deno.test(`umap scalar columns match vectors for ${metric} with ${count} rows`, async () => {
+      const sdb = new SimpleDB();
+      try {
+        await sdb.customQuery(`SET threads=1;
+          CREATE TABLE scalars AS SELECT i AS id, i%3 AS "2",
+            (i+1)::DECIMAL(10,2) AS "1", 'same' AS rowid,
+            'payload' AS "quoted""name" FROM range(${count}) t(i);
+          CREATE TABLE vectors AS SELECT ["1"::DOUBLE,"2"::DOUBLE] AS vector
+            FROM scalars ORDER BY id`);
+        const table = sdb.newTable("scalars");
+        const before = await table.getData();
+        const types = await table.getTypes();
+        const columnOrder = await table.getColumns();
+        const columns = ["1", "2"];
+        const options = { metric, epochs: 10, neighbors: 5, seed: 7 };
+        assertEquals(table.umap(columns, options), table);
+        columns[0] = "missing";
+        const actual = await table.getData();
+        const expected = await sdb.newTable("vectors").umap("vector", options)
+          .selectColumns(["umapX", "umapY"]).getData();
+        assertEquals(
+          actual.map(({ umapX, umapY }) => ({ umapX, umapY })),
+          expected,
+        );
+        assertEquals(
+          actual.map(({ umapX: _x, umapY: _y, ...row }) => row),
+          before,
+        );
+        assertEquals(await table.getTypes(), {
+          ...types,
+          umapX: "DOUBLE",
+          umapY: "DOUBLE",
+        });
+        assertEquals(await table.getColumns(), [
+          ...columnOrder,
+          "umapX",
+          "umapY",
+        ]);
+        await noScratch(sdb);
+      } finally {
+        await sdb.close();
+      }
+    });
+  }
+}
+
+Deno.test("umap accepts a single scalar feature and resolves quoted column names case-insensitively", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = [{ 'a"B': 1 }, { 'a"B': 1 }, { 'a"B': 3 }, { 'a"B': 4 }];
+    const options = { epochs: 10 };
+    const actual = await sdb.newTable().loadArray(rows).umap(['A"b'], options)
+      .getData();
+    const expected = await sdb.newTable().loadArray(
+      rows.map((row) => ({ vector: [row['a"B']] })),
+      { columnTypes: { vector: "FLOAT[1]" } },
+    )
+      .umap("vector", options).selectColumns(["umapX", "umapY"]).getData();
+    assertEquals(
+      actual.map(({ umapX, umapY }) => ({ umapX, umapY })),
+      expected,
+    );
+    assertEquals(actual.map(({ umapX: _x, umapY: _y, ...row }) => row), rows);
+    await noScratch(sdb);
+  } finally {
+    await sdb.close();
+  }
+});
+
+for (
+  const [columns, expression, options, message] of [
+    [[], "i", {}, "at least one numeric scalar column"],
+    [["missing"], "i", {}, "could not find column"],
+    [["x", "X"], "i", {}, "duplicate input column"],
+    [["x"], "'text'", {}, "numeric scalar columns"],
+    [["x"], "[i,i+1]", {}, "numeric scalar columns"],
+    [["x"], "NULL::DOUBLE", {}, "finite, non-null"],
+    [["x"], "'NaN'::DOUBLE", {}, "finite, non-null"],
+    [["x"], "'Infinity'::DOUBLE", {}, "finite, non-null"],
+    [["x"], "0", { metric: "cosine" }, "zero vector"],
+    [["x"], "1e200", {}, "overflow"],
+  ] as [string[], string, Options, string][]
+) {
+  Deno.test(`umap validates scalar columns ${JSON.stringify(columns)} with ${expression}`, async () => {
+    const sdb = new SimpleDB();
+    try {
+      await sdb.customQuery(
+        `CREATE TABLE source AS SELECT ${expression} AS x, i AS valid FROM range(4) t(i)`,
+      );
+      const table = sdb.newTable("source");
+      const before =
+        (await sdb.connection!.runAndReadAll("SELECT * FROM source"))
+          .getRowsJS();
+      const types = await table.getTypes();
+      await assertRejects(
+        () => table.umap(columns, { epochs: 10, ...options }).run(),
+        Error,
+        message,
+      );
+      assertEquals(
+        (await sdb.connection!.runAndReadAll("SELECT * FROM source"))
+          .getRowsJS(),
+        before,
+      );
+      assertEquals(await table.getTypes(), types);
+      await noScratch(sdb);
+      await table.umap(["valid"], { epochs: 10 }).run();
+      assertEquals(await table.getRowCount(), 4);
+      await noScratch(sdb);
+    } finally {
+      await sdb.close();
+    }
+  });
+}
