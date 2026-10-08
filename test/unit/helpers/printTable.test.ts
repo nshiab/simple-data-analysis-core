@@ -173,6 +173,41 @@ function captureTable(
   return logs.map((line) => line.replace(/\x1b\[[0-9;]*m/g, ""));
 }
 
+Deno.test("printTable - decomposed accents preserve filename column alignment", () => {
+  const fileName = "006 PLQ_Gue\u0301rette Thomas_QC 2026.png";
+  const rows = [
+    { fileName: "001 PQ_Tremblay Stephane_QC 2026.png", detected: false },
+    { fileName, detected: false },
+    { fileName: "Stephanie-Danylko.jpg", detected: true },
+    { fileName: "Thunder Bay cand photo.png", detected: true },
+  ];
+  const logs = captureTable(rows);
+  const composed = captureTable(rows.map((row) => ({
+    ...row,
+    fileName: row.fileName.normalize("NFC"),
+  })));
+  assertEquals(logs.map((line) => line.normalize("NFC")), composed);
+  assertEquals(logs.some((line) => line.includes(fileName)), true);
+  assertEquals(rows[1].fileName, fileName);
+});
+
+Deno.test("printTable - combining accents align in wrapped headers and multiline cells", () => {
+  const logs = captureTable([
+    { "e\u0301e\u0301e\u0301e\u0301": "a\u0301bc\u0301d\n\ne\u0301", id: 1 },
+  ], { maxColumnWidth: 3 });
+  assertEquals(logs, [
+    "┌─────┬─────┐",
+    "│ e\u0301e\u0301e\u0301 │ id  │",
+    "│ e\u0301   │     │",
+    "├─────┼─────┤",
+    "│ a\u0301bc\u0301 │ 1   │",
+    "│ d   │     │",
+    "│     │     │",
+    "│ e\u0301   │     │",
+    "└─────┴─────┘",
+  ]);
+});
+
 Deno.test("printTable - long headers wrap at the default ceiling with aligned columns", () => {
   const header = "x".repeat(80);
   const logs = captureTable([{ [header]: "value", id: 1 }]);
