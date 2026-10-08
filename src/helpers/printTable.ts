@@ -1,4 +1,5 @@
 import LogValue from "./LogValue.ts";
+import splitGraphemes from "./splitGraphemes.ts";
 import wrapString from "./wrapString.ts";
 
 /**
@@ -6,6 +7,8 @@ import wrapString from "./wrapString.ts";
  * within headers and cells. Unlike `console.table()`, this function properly
  * handles multi-line content, making it ideal for displaying data with long
  * column names and text values.
+ * Widths count graphemes, keeping combining accents with their letters. Wide
+ * characters and emoji are not measured by their terminal display width.
  *
  * @example
  * ```typescript
@@ -85,7 +88,9 @@ export default function printTable(
   // First, seed widths from header names.
   const columnWidths: { [key: string]: number } = {};
   for (const col of columns) {
-    columnWidths[col] = Math.max(...col.split("\n").map((line) => line.length));
+    columnWidths[col] = Math.max(
+      ...col.split("\n").map((line) => splitGraphemes(line).length),
+    );
   }
 
   // Format every cell, track the longest raw line per column, and
@@ -102,7 +107,8 @@ export default function printTable(
       const lines = value.split("\n");
       let longestLine = 0;
       for (const line of lines) {
-        if (line.length > longestLine) longestLine = line.length;
+        const length = splitGraphemes(line).length;
+        if (length > longestLine) longestLine = length;
       }
       if (longestLine > columnWidths[col]) {
         columnWidths[col] = longestLine;
@@ -122,7 +128,9 @@ export default function printTable(
   // Use the same newline and word wrapping rules for headers and cells.
   const wrapCell = (value: string, width: number): string[] => {
     const lines = value.split("\n").flatMap((line) =>
-      line.length <= width ? [line] : wrapString(line, width).split("\n")
+      splitGraphemes(line).length <= width
+        ? [line]
+        : wrapString(line, width).split("\n")
     );
     return lines.length > 0 ? lines : [""];
   };
@@ -181,7 +189,7 @@ export default function printTable(
 
   // Helper function to pad a string to a specific width
   const pad = (str: string, width: number) => {
-    return str + " ".repeat(Math.max(0, width - str.length));
+    return str + " ".repeat(Math.max(0, width - splitGraphemes(str).length));
   };
 
   // Print top border

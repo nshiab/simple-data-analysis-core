@@ -1,6 +1,46 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("log aligns decomposed filename accents without changing data", async () => {
+  const sdb = new SimpleDB();
+  const originalLog = console.log;
+  const lines: string[] = [];
+  const data = [
+    { fileName: "001 PQ_Tremblay Stephane_QC 2026.png", detected: false },
+    { fileName: "006 PLQ_Gue\u0301rette Thomas_QC 2026.png", detected: false },
+    { fileName: "Stephanie-Danylko.jpg", detected: true },
+    { fileName: "Thunder Bay cand photo.png", detected: true },
+  ];
+  try {
+    const table = sdb.newTable("accented_filenames").loadArray(data);
+    console.log = (...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    };
+    for (const types of [false, true]) {
+      lines.length = 0;
+      await table.log({ types });
+      assertEquals(lines.join("\n").includes(data[1].fileName), true);
+      // NFC makes these Latin accents single code units, allowing border
+      // positions to be checked independently of the renderer's segmenter.
+      const rows = lines
+        // deno-lint-ignore no-control-regex
+        .map((line) => line.replace(/\x1b\[[0-9;]*m/g, "").normalize("NFC"))
+        .filter((line) => line.startsWith("│"));
+      assertEquals(rows.length, types ? 6 : 5);
+      const positions = rows.map((line) =>
+        Array.from(line.matchAll(/│/g), (match) => match.index)
+      );
+      for (const borders of positions) {
+        assertEquals(borders, positions[0]);
+      }
+    }
+    assertEquals(await table.getData(), data);
+  } finally {
+    console.log = originalLog;
+    await sdb.close();
+  }
+});
+
 Deno.test("should log a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
