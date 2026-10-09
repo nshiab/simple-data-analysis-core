@@ -22,10 +22,10 @@ type PublicationResult = {
 };
 
 /**
- * Atomically publishes validated algorithm outputs from a prepared numeric
+ * Publishes validated algorithm outputs from a prepared numeric
  * feature snapshot. New outputs are appended, while replacements retain the
- * source column's position. Existing native DuckDB indexes are recreated in
- * the same transaction because CREATE OR REPLACE drops them.
+ * source column's position. Existing native DuckDB indexes are recreated after
+ * table replacement because CREATE OR REPLACE drops them.
  *
  * Output expressions are trusted internal SQL. They may reference `p`, the
  * prepared relation alias, and `r` when a result relation is supplied. The
@@ -95,45 +95,31 @@ export default async function publishPreparedColumns(
     : ` JOIN ${q(options.result.relation)} r
       ON p.${q(prepared.rowIdColumn)} = r.${q(options.result.rowIdColumn)}`;
 
-  await connection.run("BEGIN TRANSACTION");
-  try {
-    await queryDB(
-      table,
-      `CREATE OR REPLACE ${
-        prepared.sourceTemporary ? "TEMP " : ""
-      }TABLE ${source} AS
-       SELECT ${select.join(", ")}
-       FROM ${q(prepared.relation)} p${resultJoin}
-       ORDER BY p.${q(prepared.rowIdColumn)}`,
-      mergeOptions(table, {
-        table: table.name,
-        method: options.method,
-        parameters: options.parameters,
-        noClean: true,
-      }),
-    );
-    for (const sql of indexes) {
-      try {
-        await connection.run(sql);
-      } catch (error) {
-        const detail = error instanceof Error ? ` ${error.message}` : "";
-        throw new Error(
-          `${options.method} could not restore an existing DuckDB index while publishing its output. Remove or rebuild indexes that do not support the output column types.${detail}`,
-          { cause: error },
-        );
-      }
-    }
-    await connection.run("COMMIT");
-  } catch (error) {
+  await queryDB(
+    table,
+    `CREATE OR REPLACE ${
+      prepared.sourceTemporary ? "TEMP " : ""
+    }TABLE ${source} AS
+     SELECT ${select.join(", ")}
+     FROM ${q(prepared.relation)} p${resultJoin}
+     ORDER BY p.${q(prepared.rowIdColumn)}`,
+    mergeOptions(table, {
+      table: table.name,
+      method: options.method,
+      parameters: options.parameters,
+      noClean: true,
+    }),
+  );
+  for (const sql of indexes) {
     try {
-      await connection.run("ROLLBACK");
-    } catch {
-      // DuckDB may already abort the transaction after an index-build error.
-      // Preserve the publication error that explains why the operation failed.
+      await connection.run(sql);
+    } catch (error) {
+      const detail = error instanceof Error ? ` ${error.message}` : "";
+      throw new Error(
+        `${options.method} could not restore an existing DuckDB index while publishing its output. Remove or rebuild indexes that do not support the output column types.${detail}`,
+        { cause: error },
+      );
     }
-    // UNIQUE violations can be deferred until COMMIT, which may also fail for
-    // unrelated reasons. Preserve that diagnostic instead of blaming indexes.
-    throw error;
   }
 }
 

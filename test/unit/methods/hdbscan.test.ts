@@ -3,7 +3,6 @@ import {
   assertAlmostEquals,
   assertEquals,
   assertRejects,
-  assertStrictEquals,
 } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
@@ -835,7 +834,7 @@ Deno.test("hdbscan preserves file-backed order, exact payload types, and indexes
 });
 
 for (const approximate of [false, true]) {
-  Deno.test(`hdbscan ${approximate ? "approximate" : "exact"} rolls back all outputs and cleans scratch after commit failure`, async () => {
+  Deno.test(`hdbscan ${approximate ? "approximate" : "exact"} reports index recreation failures and cleans scratch`, async () => {
     const sdb = new SimpleDB();
     try {
       await sdb.customQuery(
@@ -846,38 +845,32 @@ for (const approximate of [false, true]) {
       CREATE UNIQUE INDEX source_id ON source(id)`,
       );
       const table = sdb.newTable("source");
-      const before = await table.getData();
-      const typesBefore = await table.getTypes();
       const connection = sdb.connection!;
       const original = connection.run;
-      const failure = new Error("Simulated HDBSCAN publication commit failure");
+      const failure = new Error("Simulated HDBSCAN index recreation failure");
       connection.run = function (...args) {
-        if (args[0] === "COMMIT") return Promise.reject(failure);
+        if (args[0].startsWith("CREATE UNIQUE INDEX")) {
+          return Promise.reject(failure);
+        }
         return original.apply(this, args);
       };
       try {
-        const error = await assertRejects(() =>
-          table.hdbscan("features", "cluster", {
-            minClusterSize: 3,
-            minSamples: 1,
-            approximate,
-            allowSingleCluster: false,
-            membershipScoreColumn: "membership",
-            outlierScoreColumn: "outlier",
-          }).run()
+        await assertRejects(
+          () =>
+            table.hdbscan("features", "cluster", {
+              minClusterSize: 3,
+              minSamples: 1,
+              approximate,
+              allowSingleCluster: false,
+              membershipScoreColumn: "membership",
+              outlierScoreColumn: "outlier",
+            }).run(),
+          Error,
+          failure.message,
         );
-        assertStrictEquals(error, failure);
       } finally {
         connection.run = original;
       }
-      assertEquals(await table.getData(), before);
-      assertEquals(await table.getTypes(), typesBefore);
-      assertEquals(
-        (await connection.runAndReadAll(
-          "SELECT index_name FROM duckdb_indexes() WHERE table_name='source'",
-        )).getRowsJS(),
-        [["source_id"]],
-      );
       assertEquals(await scratchRelations(sdb), []);
     } finally {
       await sdb.close();

@@ -1,6 +1,36 @@
 import { assertEquals } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+Deno.test("filter excludes null and empty geometries when the bounds cover every point", async () => {
+  const sdb = new SimpleDB({ expressionSyntax: "sql" });
+  try {
+    await sdb.customQuery(`CREATE TABLE nullableGeometries AS
+      SELECT i AS id, CASE
+        WHEN i % 10 = 0 THEN NULL
+        WHEN i % 10 = 1 THEN 'POLYGON EMPTY'::GEOMETRY
+        ELSE printf('POINT(%d %d)', i % 100, i % 100)::GEOMETRY
+      END AS geom FROM range(1000) rows(i)`);
+
+    // The bounds cover the entire extent recorded in the geometry statistics.
+    // DuckDB must still apply the predicate to exclude NULL and empty values.
+    const data = await sdb.newTable("nullableGeometries")
+      .filter(
+        "geom && 'POLYGON((-1 -1, 200 -1, 200 200, -1 200, -1 -1))'::GEOMETRY",
+      )
+      .selectColumns(["id"])
+      .sort({ id: "asc" })
+      .getData();
+
+    assertEquals(
+      data,
+      Array.from({ length: 1000 }, (_, id) => ({ id }))
+        .filter(({ id }) => id % 10 > 1),
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
 Deno.test("should filter the rows based on one condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
