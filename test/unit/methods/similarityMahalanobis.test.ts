@@ -3,7 +3,6 @@ import {
   assertAlmostEquals,
   assertEquals,
   assertRejects,
-  assertStrictEquals,
   assertThrows,
 } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
@@ -487,7 +486,7 @@ Deno.test("similarityMahalanobis preserves a file-backed table, its row order, t
   }
 });
 
-Deno.test("similarityMahalanobis rolls back publication and cleans scratch state after commit failure", async () => {
+Deno.test("similarityMahalanobis reports index recreation failures and cleans scratch", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -495,33 +494,27 @@ Deno.test("similarityMahalanobis rolls back publication and cleans scratch state
     ) rows(id,x,y);
     CREATE UNIQUE INDEX source_id ON source(id)`);
     const table = sdb.newTable("source");
-    const before = await table.getData();
-    const typesBefore = await table.getTypes();
     const connection = sdb.connection!;
     const original = connection.run;
-    const failure = new Error("Simulated publication commit failure");
+    const failure = new Error("Simulated index recreation failure");
     connection.run = function (...args) {
-      if (args[0] === "COMMIT") return Promise.reject(failure);
+      if (args[0].startsWith("CREATE UNIQUE INDEX")) {
+        return Promise.reject(failure);
+      }
       return original.apply(this, args);
     };
     try {
-      const error = await assertRejects(() =>
-        table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
-          similarityColumn: "similarity",
-        }).run()
+      await assertRejects(
+        () =>
+          table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
+            similarityColumn: "similarity",
+          }).run(),
+        Error,
+        failure.message,
       );
-      assertStrictEquals(error, failure);
     } finally {
       connection.run = original;
     }
-    assertEquals(await table.getData(), before);
-    assertEquals(await table.getTypes(), typesBefore);
-    assertEquals(
-      (await connection.runAndReadAll(
-        "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
-      )).getRowsJS(),
-      [["source_id"]],
-    );
     assertEquals(await scratchRelations(sdb), []);
   } finally {
     await sdb.close();

@@ -29,7 +29,6 @@ export default async function loadDB(sdb: SimpleDB, file: string) {
     `ATTACH '${cleanPath(file)}' AS ${source} (TYPE ${type}, READ_ONLY);`,
   );
 
-  let inTransaction = false;
   try {
     const indexes = type === "duckdb" ? await readDbMetadata(sdb, name) : {};
     await readDbMetadata(sdb, destination);
@@ -69,20 +68,13 @@ export default async function loadDB(sdb: SimpleDB, file: string) {
       );
     }
     const mergedIndexes = { ...getDbIndexes(sdb), ...indexes };
-    await queryDbFile(sdb, "BEGIN TRANSACTION;");
-    inTransaction = true;
     await queryDbFile(
       sdb,
       `DROP TABLE IF EXISTS ${target}.__sda.metadata;
        COPY FROM DATABASE ${source} TO ${target};`,
     );
     await writeDbMetadata(sdb, destination, mergedIndexes);
-    await queryDbFile(sdb, "COMMIT;");
-    inTransaction = false;
     await setDbProps(sdb, indexes);
-  } catch (error) {
-    if (inTransaction) await queryDbFile(sdb, "ROLLBACK;");
-    throw error;
   } finally {
     await queryDbFile(sdb, `DETACH ${source};`);
   }

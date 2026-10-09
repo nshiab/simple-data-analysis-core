@@ -166,35 +166,28 @@ async function execute(
               : coordinates[2 * (start + row) + column - 1],
         ),
     );
-    // Publish in one statement: failed fits never add partial columns. Existing
-    // native indexes must be restored because CREATE OR REPLACE drops them.
+    // Replace the table and recreate existing native indexes, which
+    // CREATE OR REPLACE drops.
     const indexes = (await connection.runAndReadAll(
       "SELECT sql FROM duckdb_indexes() WHERE table_oid=$1",
       [sourceOid],
     )).getRowsJS().map((row) => String(row[0]));
-    await connection.run("BEGIN TRANSACTION");
-    try {
-      await queryDB(
-        table,
-        `CREATE OR REPLACE ${sourceTemporary ? "TEMP " : ""}TABLE ${source} AS
-        SELECT ${
-          prepared.sourceColumns.map((c) => `s.${q(c)}`).join(",")
-        }, l.x AS "umapX", l.y AS "umapY"
-        FROM ${snapshot} s JOIN ${names.rows} r ON s.${ordinal}=r.ordinal
-        JOIN ${layout} l ON r.vertex=l.vertex ORDER BY s.${ordinal}`,
-        mergeOptions(table, {
-          table: table.name,
-          method: "umap()",
-          parameters: { columns, options },
-          noClean: true,
-        }),
-      );
-      for (const sql of indexes) await connection.run(sql);
-      await connection.run("COMMIT");
-    } catch (error) {
-      await connection.run("ROLLBACK");
-      throw error;
-    }
+    await queryDB(
+      table,
+      `CREATE OR REPLACE ${sourceTemporary ? "TEMP " : ""}TABLE ${source} AS
+      SELECT ${
+        prepared.sourceColumns.map((c) => `s.${q(c)}`).join(",")
+      }, l.x AS "umapX", l.y AS "umapY"
+      FROM ${snapshot} s JOIN ${names.rows} r ON s.${ordinal}=r.ordinal
+      JOIN ${layout} l ON r.vertex=l.vertex ORDER BY s.${ordinal}`,
+      mergeOptions(table, {
+        table: table.name,
+        method: "umap()",
+        parameters: { columns, options },
+        noClean: true,
+      }),
+    );
+    for (const sql of indexes) await connection.run(sql);
   } finally {
     for (const relation of scratch) {
       await connection.run(`DROP TABLE IF EXISTS ${relation}`);

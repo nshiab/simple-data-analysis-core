@@ -446,7 +446,8 @@ Imports a copy of a `.db` or `.duckdb` (DuckDB) or `.sqlite` (SQLite) file into
 the current database. The source is opened read-only and detached after
 importing; subsequent transformations do not modify the source file. Imports
 work with in-memory and writable persistent databases. Existing table-name
-conflicts are rejected and a failed copy is rolled back.
+conflicts are rejected. A failed import may leave partial changes in the
+destination database.
 
 DuckDB files restore embedded SDA index definitions when present. SQLite imports
 copy data without SDA index metadata. The `__sda` schema is reserved for SDA
