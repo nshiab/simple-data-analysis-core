@@ -1,5 +1,27 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
+
+Deno.test("wider leaves the connection usable after a failed pivot", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("failedPivot");
+    await table.loadArray([{ category: "a", value: 1 }]).run();
+
+    // Dynamic PIVOT inside CREATE TABLE opens an implicit DuckDB transaction.
+    // A binding failure must not leave that transaction blocking later queries.
+    await assertRejects(
+      () => table.wider("category", "missing_value").run(),
+      Error,
+      "missing_value",
+    );
+    assertEquals(
+      await sdb.customQuery("SELECT 42 AS answer", { returnData: true }),
+      [{ answer: 42 }],
+    );
+  } finally {
+    await sdb.close();
+  }
+});
 
 Deno.test("should untidy data by expanding mutiple columns", async () => {
   const sdb = new SimpleDB();
