@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.12**](../index.md)
+[**Simple Data Analysis Core v2.1.13**](../index.md)
 
 ***
 
