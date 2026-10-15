@@ -88,7 +88,7 @@ test("writeData() - throws when table has geometry columns", async () => {
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
   await assertRejects(
-    async () => await table.writeData("/tmp/test_output.csv"),
+    async () => await table.writeData("test/output/geometry.csv"),
     Error,
     "Table contains geometry columns. Use writeGeoData() instead.",
   );
@@ -104,7 +104,7 @@ test("writeData() - works normally when no geometry columns", async () => {
     { name: "Bob", age: 25 },
   ]);
 
-  const outputPath = "/tmp/test_writeData_no_geo.csv";
+  const outputPath = "test/output/no-geometry.csv";
   await table.writeData(outputPath);
 
   // Verify the file was created

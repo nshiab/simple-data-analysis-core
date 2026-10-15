@@ -69,16 +69,22 @@ These benchmarks compare SDA-core with raw DuckDB and popular Python and R
 libraries, measuring duration and peak memory.
 
 They were run on a MacBook Pro with an Apple M4 Max and 64 GB of memory.
+JavaScript implementations run on Node.js. Run `npm run benchmark` to regenerate
+these workflow tables on macOS with Node.js, Python, and R installed and the input files
+available locally. The AHCCD file may also be placed in `test/data/files/`.
+
+Each implementation runs once to warm up, then three times in fresh processes.
+Duration includes process startup, loading, computation, and file output; memory
+is whole-process peak RSS. Warm-up outputs are checked against raw DuckDB,
+including every cleaned tabular row, and every measured result is checked again.
+Tables show mean duration with population standard deviation and mean peak
+memory. Raw measurements are retained in `benchmarks/.work/observations.csv`.
 
 <!-- benchmark-results:start -->
 
-**Tabular versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6);
-SDA-core 2.0.5 (Deno 2.9.6); pandas 3.0.5 (Python 3.14.7); tidyverse 2.0.0 (R
-4.6.1).
+**Tabular versions:** @duckdb/node-api 1.5.6-r.1; DuckDB v1.5.6 (Node.js 24.21.0); SDA-core 2.1.12 (Node.js 24.21.0); pandas 3.0.5 (Python 3.14.7); tidyverse 2.0.0 (R 4.6.1).
 
-**Spatial versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6);
-SDA-core 2.0.5 (Deno 2.9.6); GeoPandas 1.1.4 (Python 3.14.7); sf 1.1.2 (R
-4.6.1).
+**Spatial versions:** @duckdb/node-api 1.5.6-r.1; DuckDB v1.5.6 (Node.js 24.21.0); SDA-core 2.1.12 (Node.js 24.21.0); GeoPandas 1.1.4 (Python 3.14.7); sf 1.1.2 (R 4.6.1).
 
 ### Tabular workload
 
@@ -89,10 +95,10 @@ and export the sorted results.
 
 | Library   |  Mean duration | Duration difference | Mean peak memory | Memory difference |
 | --------- | -------------: | ------------------: | ---------------: | ----------------: |
-| DuckDB    |  1.30 ± 0.03 s |               -9.7% |         2,457 MB |             -2.7% |
-| SDA-core  |  1.44 ± 0.03 s |            baseline |         2,524 MB |          baseline |
-| pandas    | 30.08 ± 0.07 s |            +1987.9% |         4,700 MB |            +86.2% |
-| tidyverse | 82.62 ± 0.22 s |            +5634.4% |         8,178 MB |           +224.0% |
+| DuckDB    |  1.27 ± 0.03 s |              -11.1% |        2,613 MiB |             -0.9% |
+| SDA-core  |  1.43 ± 0.03 s |            baseline |        2,636 MiB |          baseline |
+| pandas    | 29.47 ± 0.09 s |            +1957.3% |        4,700 MiB |            +78.3% |
+| tidyverse | 81.90 ± 0.25 s |            +5617.5% |        8,178 MiB |           +210.2% |
 
 ### Spatial workload
 
@@ -104,10 +110,10 @@ results.
 
 | Library   | Mean duration | Duration difference | Mean peak memory | Memory difference |
 | --------- | ------------: | ------------------: | ---------------: | ----------------: |
-| DuckDB    | 0.78 ± 0.00 s |               -5.1% |           255 MB |             -5.8% |
-| SDA-core  | 0.82 ± 0.01 s |            baseline |           271 MB |          baseline |
-| GeoPandas | 1.25 ± 0.01 s |              +51.4% |           294 MB |             +8.5% |
-| sf        | 1.80 ± 0.01 s |             +118.9% |           490 MB |            +81.1% |
+| DuckDB    | 0.72 ± 0.01 s |              -12.7% |          285 MiB |            -10.2% |
+| SDA-core  | 0.83 ± 0.02 s |            baseline |          318 MiB |          baseline |
+| GeoPandas | 1.16 ± 0.01 s |              +39.4% |          293 MiB |             -7.9% |
+| sf        | 1.66 ± 0.01 s |              +99.9% |          489 MiB |            +53.9% |
 
 <!-- benchmark-results:end -->
 
@@ -126,8 +132,8 @@ setup, warm-up, the measured operation, and validation.
 
 | Operation        |      Rows | Batch size | Implementation | Mean duration ± SD | Mean peak process memory |
 | ---------------- | --------: | ---------: | -------------- | -----------------: | -----------------------: |
-| Join → aggregate | 1,000,000 |          — | Core           |    12.11 ± 0.25 ms |                123.1 MiB |
-| Join → aggregate | 1,000,000 |          — | DuckDB         |    11.29 ± 0.33 ms |                134.2 MiB |
+| Join → aggregate | 1,000,000 |          — | Core           |    11.70 ± 0.14 ms |                176.3 MiB |
+| Join → aggregate | 1,000,000 |          — | DuckDB         |    10.85 ± 0.17 ms |                166.8 MiB |
 
 #### JavaScript data transfer
 
@@ -137,34 +143,34 @@ increment, including Core's staging and table replacement.
 
 | Operation      |    Rows | Batch size | Implementation | Mean duration ± SD | Mean peak process memory |
 | -------------- | ------: | ---------: | -------------- | -----------------: | -----------------------: |
-| loadArray()    | 100,000 |          — | Core           |     9.40 ± 0.68 ms |                202.3 MiB |
-| loadArray()    | 100,000 |          — | DuckDB         |    19.80 ± 0.94 ms |                230.8 MiB |
-| getData()      | 100,000 |          — | Core           |     9.29 ± 0.26 ms |                191.2 MiB |
-| getData()      | 100,000 |          — | DuckDB         |    12.54 ± 0.27 ms |                209.0 MiB |
-| updateWithJS() | 100,000 |       1000 | Core           |    92.45 ± 3.19 ms |                208.2 MiB |
-| updateWithJS() | 100,000 |       1000 | DuckDB         |    65.89 ± 1.13 ms |                239.6 MiB |
-| updateWithJS() | 100,000 |      10000 | Core           |    42.93 ± 1.05 ms |                218.6 MiB |
-| updateWithJS() | 100,000 |      10000 | DuckDB         |    41.76 ± 0.81 ms |                233.5 MiB |
+| loadArray()    | 100,000 |          — | Core           |     9.07 ± 0.33 ms |                357.1 MiB |
+| loadArray()    | 100,000 |          — | DuckDB         |    16.85 ± 0.10 ms |                284.4 MiB |
+| getData()      | 100,000 |          — | Core           |    10.66 ± 0.19 ms |                303.5 MiB |
+| getData()      | 100,000 |          — | DuckDB         |    12.41 ± 0.31 ms |                290.0 MiB |
+| updateWithJS() | 100,000 |       1000 | Core           |    65.87 ± 2.14 ms |                309.9 MiB |
+| updateWithJS() | 100,000 |       1000 | DuckDB         |    57.85 ± 2.08 ms |                308.9 MiB |
+| updateWithJS() | 100,000 |      10000 | Core           |    36.18 ± 1.45 ms |                324.9 MiB |
+| updateWithJS() | 100,000 |      10000 | DuckDB         |    35.57 ± 1.39 ms |                324.2 MiB |
 
 #### JavaScript geometry updates
 
 Points have one position per geometry; polygons have one ring with 1,001
 positions. Both implementations transfer GeoJSON through JavaScript and stage
-writes. These updates add a label and shift every longitude by 0.01 degrees. A
-batch size of — means all input rows at once. Attribute-only updates are also
-measured and retained in the raw results; their similar timings are omitted here
-to keep the table concise.
+writes. These updates add a label and shift every longitude by 0.01 degrees.
+A batch size of — means all input rows at once. Attribute-only updates are
+also measured and retained in the raw results; their similar timings are
+omitted here to keep the table concise.
 
 | Operation                 |    Rows | Batch size | Implementation | Mean duration ± SD | Mean peak process memory |
 | ------------------------- | ------: | ---------: | -------------- | -----------------: | -----------------------: |
-| Points: geometry update   | 100,000 |          — | Core           |   182.59 ± 1.02 ms |                402.4 MiB |
-| Points: geometry update   | 100,000 |          — | DuckDB         |   180.20 ± 1.98 ms |                402.2 MiB |
-| Points: geometry update   | 100,000 |       1000 | Core           |   252.07 ± 6.59 ms |                267.9 MiB |
-| Points: geometry update   | 100,000 |       1000 | DuckDB         |   217.69 ± 2.43 ms |                245.4 MiB |
-| Polygons: geometry update |   1,000 |          — | Core           |   403.35 ± 1.92 ms |                938.3 MiB |
-| Polygons: geometry update |   1,000 |          — | DuckDB         |   408.62 ± 2.57 ms |               1104.8 MiB |
-| Polygons: geometry update |   1,000 |        100 | Core           |   418.45 ± 2.45 ms |                747.0 MiB |
-| Polygons: geometry update |   1,000 |        100 | DuckDB         |   416.90 ± 2.54 ms |                714.6 MiB |
+| Points: geometry update   | 100,000 |          — | Core           |   182.98 ± 2.85 ms |                489.2 MiB |
+| Points: geometry update   | 100,000 |          — | DuckDB         |   183.96 ± 5.85 ms |                529.8 MiB |
+| Points: geometry update   | 100,000 |       1000 | Core           |   255.49 ± 4.22 ms |                335.0 MiB |
+| Points: geometry update   | 100,000 |       1000 | DuckDB         |   222.69 ± 3.00 ms |                266.8 MiB |
+| Polygons: geometry update |   1,000 |          — | Core           |   568.00 ± 2.26 ms |               1075.9 MiB |
+| Polygons: geometry update |   1,000 |          — | DuckDB         |   565.33 ± 2.60 ms |               1101.4 MiB |
+| Polygons: geometry update |   1,000 |        100 | Core           |   566.28 ± 1.60 ms |                855.6 MiB |
+| Polygons: geometry update |   1,000 |        100 | DuckDB         |   571.56 ± 1.62 ms |                845.0 MiB |
 
 <!-- benchmark-operations:end -->
 

@@ -23,7 +23,7 @@ function versionDetails(row: Aggregate): {
   library: string;
   runtime: string;
 } {
-  const runtimeMatch = row.version.match(/\/(deno|node|python|R)@([^/]+)$/);
+  const runtimeMatch = row.version.match(/\/(node|python|R)@([^/]+)$/);
   const libraryVersion =
     runtimeMatch?.index === undefined ? row.version : row.version.slice(0, runtimeMatch.index);
   let library: string;
@@ -46,7 +46,6 @@ function versionDetails(row: Aggregate): {
   const name = runtimeMatch[1];
   const version = runtimeMatch[2];
   const runtimeName: { [key: string]: string } = {
-    deno: "Deno",
     node: "Node.js",
     python: "Python",
     R: "R",
@@ -85,7 +84,7 @@ function table(rows: Aggregate[]): string {
       names[row.implementation] ?? row.implementation,
       `${row.meanSeconds.toFixed(2)} ± ${row.stdDevSeconds.toFixed(2)} s`,
       percentageDifference(row.meanSeconds / baselineDuration),
-      `${Math.round(row.meanPeakMemoryMB).toLocaleString("en-US")} MB`,
+      `${Math.round(row.meanPeakMemoryMB).toLocaleString("en-US")} MiB`,
       percentageDifference(row.meanPeakMemoryMB / baselineMemory),
     ];
   });

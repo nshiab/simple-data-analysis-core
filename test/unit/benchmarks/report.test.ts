@@ -14,7 +14,7 @@ const aggregates: Aggregate[] = [
   {
     benchmark: "tabular",
     implementation: "duckdb",
-    version: "@duckdb/node-api@1.5.5-r.4/duckdb@v1.5.5/deno@2.9.6",
+    version: "@duckdb/node-api@1.5.5-r.4/duckdb@v1.5.5/node@24.21.0",
     meanSeconds: 1,
     stdDevSeconds: 0.1,
     meanPeakMemoryMB: 100,
@@ -22,7 +22,7 @@ const aggregates: Aggregate[] = [
   {
     benchmark: "tabular",
     implementation: "local",
-    version: "2.0.0-rc.17/deno@2.9.6",
+    version: "2.0.0-rc.17/node@24.21.0",
     meanSeconds: 2,
     stdDevSeconds: 0.2,
     meanPeakMemoryMB: 200,
@@ -33,12 +33,12 @@ test("benchmark report renders tables and percentage differences", () => {
   const markdown = renderBenchmarkResults(aggregates);
   expect(markdown).toContain("### Tabular workload");
   expect(markdown).toContain(
-    "**Tabular versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6)",
+    "**Tabular versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Node.js 24.21.0)",
   );
-  expect(markdown).toContain("SDA-core 2.0.0-rc.17 (Deno 2.9.6)");
+  expect(markdown).toContain("SDA-core 2.0.0-rc.17 (Node.js 24.21.0)");
   const table = markdown.slice(markdown.indexOf("| Library"));
   expect(table.includes("Runtime")).toStrictEqual(false);
-  expect(table.includes("2.9.6")).toStrictEqual(false);
+  expect(table.includes("24.21.0")).toStrictEqual(false);
   expect(table.includes("2.0.0-rc.17")).toStrictEqual(false);
   expect(table).toContain("| DuckDB");
   expect(table).toContain("| SDA-core");
@@ -48,16 +48,16 @@ test("benchmark report renders tables and percentage differences", () => {
     markdown.indexOf("@duckdb/node-api") < markdown.indexOf("SDA-core 2.0.0-rc.17"),
   ).toStrictEqual(true);
   expect(markdown).toContain(
-    "| 2.00 ± 0.20 s |            baseline |           200 MB |          baseline |",
+    "| 2.00 ± 0.20 s |            baseline |          200 MiB |          baseline |",
   );
-  expect(markdown).toContain("|              -50.0% |           100 MB |");
+  expect(markdown).toContain("|              -50.0% |          100 MiB |");
 });
 
 test("partial benchmark runs retain the other workload's version details", () => {
   const spatial: Aggregate = {
     ...aggregates[1],
     benchmark: "spatial",
-    version: "1.9.0/deno@2.8.0",
+    version: "1.9.0/node@24.20.0",
   };
   const readme = `${benchmarkResultsStart}\n${renderBenchmarkResults([
     ...aggregates,
@@ -66,11 +66,11 @@ test("partial benchmark runs retain the other workload's version details", () =>
   const updated = replaceMeasuredBenchmarkResults(readme, [
     {
       ...aggregates[1],
-      version: "2.0.5/deno@2.9.6",
+      version: "2.0.5/node@24.21.0",
     },
   ]);
-  expect(updated).toContain("**Tabular versions:** SDA-core 2.0.5 (Deno 2.9.6).");
-  expect(updated).toContain("**Spatial versions:** SDA-core 1.9.0 (Deno 2.8.0).");
+  expect(updated).toContain("**Tabular versions:** SDA-core 2.0.5 (Node.js 24.21.0).");
+  expect(updated).toContain("**Spatial versions:** SDA-core 1.9.0 (Node.js 24.20.0).");
   expect(updated.includes("2.0.0-rc.17")).toStrictEqual(false);
   expect(updated.match(/\*\*Spatial versions:/g)?.length).toStrictEqual(1);
   expect(

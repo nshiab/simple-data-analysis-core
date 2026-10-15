@@ -1,6 +1,6 @@
 # Running the Core benchmarks
 
-Run `npm run benchmark-core` to update the focused operation tables in the
+Run `npm run benchmark-core` with Node.js 24.21.0 or newer to update the focused operation tables in the
 [root README](../../README.md#focused-operation-benchmarks). The existing
 `npm run benchmark` continues to update only the tabular and spatial results.
 These generated fixtures need no downloads: one million rows for the join and

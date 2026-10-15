@@ -508,7 +508,7 @@ async function runBenchmarks(
   }
 
   await generateBenchmarkReport(observationsPath);
-  await rm(observationsPath);
+  console.log(`Raw observations: ${observationsPath}`);
   console.log(`Updated ${join(rootDir, "README.md")}`);
 }
 
