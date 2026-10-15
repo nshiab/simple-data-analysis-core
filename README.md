@@ -70,7 +70,7 @@ libraries, measuring duration and peak memory.
 
 They were run on a MacBook Pro with an Apple M4 Max and 64 GB of memory.
 JavaScript implementations run on Node.js. Run `npm run benchmark` to regenerate
-these workflow tables on macOS with Node.js, Python, and R installed and the input files
+all benchmark tables sequentially on macOS with Node.js, Python, and R installed and the input files
 available locally. The AHCCD file may also be placed in `test/data/files/`.
 
 Each implementation runs once to warm up, then three times in fresh processes.
@@ -121,7 +121,7 @@ results.
 
 These additional benchmarks compare Core and DuckDB on data transfer, joins,
 aggregations, and JavaScript geometry updates to help track and improve
-performance over time. Run `npm run benchmark-core` to regenerate these
+performance over time. Run `npm run benchmark` to regenerate these
 tables. See the [benchmark methodology](https://github.com/nshiab/simple-data-analysis-core/blob/main/benchmarks/operations/README.md) for
 fixture sizes, validation, and measurement details. Peak process memory includes
 setup, warm-up, the measured operation, and validation.

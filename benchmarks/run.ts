@@ -1,4 +1,5 @@
 import { readFile, writeFile, stat, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import pkg from "../package.json" with { type: "json" };
 import execute from "./execute.ts";
 import { dirname, join, resolve } from "node:path";
@@ -524,4 +525,11 @@ if (profile) {
   await runProfiles(benchmarks, paths);
 } else {
   await runBenchmarks(iterations, benchmarks, paths);
+  if (benchmarks.length === 2) {
+    execFileSync(
+      process.execPath,
+      [join(benchmarkDir, "operations", "run.ts"), `--iterations=${iterations}`],
+      { cwd: rootDir, stdio: "inherit" },
+    );
+  }
 }

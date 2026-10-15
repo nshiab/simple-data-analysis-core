@@ -1,12 +1,13 @@
 # Running the Core benchmarks
 
-Run `npm run benchmark-core` with Node.js 24.21.0 or newer to update the focused operation tables in the
-[root README](../../README.md#focused-operation-benchmarks). The existing
-`npm run benchmark` continues to update only the tabular and spatial results.
+Run `npm run benchmark` with Node.js 24.21.0 or newer to update all benchmark
+tables in the [root README](../../README.md#focused-operation-benchmarks).
+The tabular and spatial workflows run first, followed by these focused operations.
 These generated fixtures need no downloads: one million rows for the join and
 100,000 rows for each ordinary transfer and point update, and 1,000 rows for
-complex polygon updates. Use `npm run benchmark-core -- --iterations=5` for more
-repetitions or add `--rows=100` after the `--` separator to override every fixture
+complex polygon updates. Use `npm run benchmark -- --iterations=5` for more
+repetitions across both suites. To run only focused operations, use
+`node benchmarks/operations/run.ts`; add `--rows=100` to override every fixture
 size for a quick run. Large overrides
 also apply to polygons, so increase them with care.
 

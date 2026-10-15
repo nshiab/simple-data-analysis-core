@@ -65,7 +65,7 @@ Run `npm run docs` after changing public JSDoc. It generates the HTML site in
 and `llms.txt`.
 
 Benchmarks are separate from the release checks. Use `npm run benchmark` for
-workflow comparisons and `npm run benchmark-core` for focused operation timings.
+workflow comparisons and focused operation timings.
 
 Releases use `npm run patch`, `npm run minor`, or `npm run major` from `main`.
 The version hooks run all checks, regenerate documentation, and atomically push
