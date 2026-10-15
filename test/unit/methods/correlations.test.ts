@@ -122,25 +122,6 @@ test("should give all correlations between numeric columns in the table and over
   await sdb.close();
 });
 
-test("should give all correlations between numeric columns in the table", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("data");
-  table.loadData("test/data/files/dataCorrelations.json");
-  table.correlations({
-    decimals: 1,
-  });
-  table.sort({ corr: "desc" });
-  const data = await table.getData();
-
-  expect(data).toStrictEqual([
-    { x: "key2", y: "key3", corr: 0.4 },
-    { x: "key2", y: "key4", corr: -0.2 },
-    { x: "key3", y: "key4", corr: -0.7 },
-  ]);
-
-  await sdb.close();
-});
-
 test("should give all correlations between numeric columns with a specific x column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");

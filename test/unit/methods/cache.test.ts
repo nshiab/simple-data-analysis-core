@@ -1,7 +1,7 @@
 import { runInNewContext } from "node:vm";
 import { ok as assert } from "node:assert/strict";
 import parseJson from "../../helpers/parseJson.ts";
-import { test, expect } from "vite-plus/test";
+import { test, expect, vi } from "vite-plus/test";
 import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
 
 import SimpleDB from "../../../src/class/SimpleDB.ts";
@@ -101,56 +101,74 @@ test("should reuse cache after function and class input formatting changes", asy
   expect(computationRuns).toStrictEqual(1);
 });
 
-test("should log a warning, not an error, when no data or table", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  await table.cache(() => {
-    // Nothing in cache
-  });
-  await sdb.close();
-  expect(true).toStrictEqual(true);
+test("should report empty cache results and flush pending work on a cache hit", async () => {
+  let computationRuns = 0;
+  const compute = () => {
+    computationRuns++;
+  };
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    for (const cacheHit of [false, true]) {
+      const sdb = new SimpleDB({ cacheVerbose: true });
+      try {
+        const table = sdb.newTable("emptyCache");
+        const pending = sdb.newTable("pendingBeforeEmptyCache");
+        pending.loadArray([{ value: 1 }]);
+        log.mockClear();
+        await table.cache(compute);
+        expect(log).toHaveBeenCalledWith(
+          cacheHit
+            ? "No data in cache. Nothing to load."
+            : "No data in table emptyCache. Nothing stored in cache.",
+        );
+        expect(computationRuns).toStrictEqual(1);
+        expect(pending.pendingOps.length).toStrictEqual(0);
+        expect(sdb.pendingCount).toStrictEqual(0);
+        expect(await pending.getData()).toStrictEqual([{ value: 1 }]);
+      } finally {
+        await sdb.close();
+      }
+    }
+  } finally {
+    log.mockRestore();
+  }
 });
-test("should log a warning, not an error, when loading cache when no data or table", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  const pending = sdb.newTable("pendingBeforeEmptyCacheHit");
-  pending.loadArray([{ value: 1 }]);
-  await table.cache(() => {
-    // Nothing in cache
-  });
-  expect(pending.pendingOps.length).toStrictEqual(0);
-  expect(sdb.pendingCount).toStrictEqual(0);
-  await sdb.close();
-  expect(true).toStrictEqual(true);
-});
-test("should cache computed values for tabular data", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  await table.cache(() => {
+
+test("should cache tabular results without repeating computations", async () => {
+  let computationRuns = 0;
+  const compute = (table: SimpleTable) => {
+    computationRuns++;
     table.loadData("test/data/files/dataSummarize.json");
-    table.summarize({
-      columns: "key2",
-      decimals: 4,
-    });
-  });
-  const data = await table.getData();
-  expect(data).toStrictEqual([
-    {
-      count: 6,
-      countDistinct: 4,
-      countNull: 2,
-      min: 1,
-      max: 22,
-      mean: 9,
-      median: 6.5,
-      sum: 36,
-      skew: 0.9669,
-      stdDev: 9.7639,
-      variance: 95.3333,
-    },
-  ]);
-  await sdb.close();
+    table.summarize({ columns: "key2", decimals: 4 });
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("cachedSummary");
+      await table.cache(compute);
+      const data = await table.getData();
+      expect(data).toStrictEqual([
+        {
+          count: 6,
+          countDistinct: 4,
+          countNull: 2,
+          min: 1,
+          max: 22,
+          mean: 9,
+          median: 6.5,
+          sum: 36,
+          skew: 0.9669,
+          stdDev: 9.7639,
+          variance: 95.3333,
+        },
+      ]);
+      expect(computationRuns).toStrictEqual(1);
+    } finally {
+      await sdb.close();
+    }
+  }
 });
+
 test("should pass the table to the compute callback for chaining", async () => {
   const sdb = new SimpleDB();
   let callbackTable: SimpleTable | undefined;
@@ -162,34 +180,6 @@ test("should pass the table to the compute callback for chaining", async () => {
 
   expect(callbackTable).toStrictEqual(items);
   expect(await items.getData()).toStrictEqual([{ value: 2 }]);
-  await sdb.close();
-});
-test("should load data from the cache instead of running computations", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  await table.cache(() => {
-    table.loadData("test/data/files/dataSummarize.json");
-    table.summarize({
-      columns: "key2",
-      decimals: 4,
-    });
-  });
-  const data = await table.getData();
-  expect(data).toStrictEqual([
-    {
-      count: 6,
-      countDistinct: 4,
-      countNull: 2,
-      min: 1,
-      max: 22,
-      mean: 9,
-      median: 6.5,
-      sum: 36,
-      skew: 0.9669,
-      stdDev: 9.7639,
-      variance: 95.3333,
-    },
-  ]);
   await sdb.close();
 });
 test("should execute a cached load before cache resolves", async () => {

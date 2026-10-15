@@ -590,34 +590,6 @@ test("should load data from a parquet file", async () => {
   await sdb.close();
 });
 
-test("should load data from a compressed parquet file", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData(["test/data/files/data.parquet"]);
-
-  const data = await table.getData();
-
-  expect(data).toStrictEqual([
-    {
-      key1: 1,
-      key2: "un",
-    },
-    {
-      key1: 3,
-      key2: "deux",
-    },
-    {
-      key1: 8,
-      key2: "trois",
-    },
-    {
-      key1: 3,
-      key2: "quatre",
-    },
-  ]);
-  await sdb.close();
-});
-
 test("should load data from multiple files", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

@@ -405,33 +405,6 @@ test("should summarize specific columns in a table with a specific number of dec
   ]);
   await sdb.close();
 });
-test("should summarize a single column without adding a `column` output column", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/dataSummarize.json");
-  table.summarize({
-    columns: "key2",
-    decimals: 4,
-  });
-  const data = await table.getData();
-
-  expect(data).toStrictEqual([
-    {
-      count: 6,
-      countDistinct: 4,
-      countNull: 2,
-      min: 1,
-      max: 22,
-      mean: 9,
-      median: 6.5,
-      sum: 36,
-      skew: 0.9669,
-      stdDev: 9.7639,
-      variance: 95.3333,
-    },
-  ]);
-  await sdb.close();
-});
 test("should summarize a grouped single column without adding a `column` output column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

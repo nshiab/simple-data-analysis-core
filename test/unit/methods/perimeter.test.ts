@@ -58,34 +58,6 @@ test("should calculate the perimeter of geometries from a specific column in met
   await sdb.close();
 });
 
-test("should calculate the perimeter of geometries in meters from an EPSG:4326 file", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
-  table.perimeter("perim");
-  table.round("perim");
-  table.selectColumns(["nameEnglish", "perim"]);
-  const data = await table.getData();
-
-  expect(data).toStrictEqual([
-    { nameEnglish: "Newfoundland and Labrador", perim: 6924550 },
-    { nameEnglish: "Prince Edward Island", perim: 492387 },
-    { nameEnglish: "Nova Scotia", perim: 1713715 },
-    { nameEnglish: "New Brunswick", perim: 1299566 },
-    { nameEnglish: "Quebec", perim: 10533664 },
-    { nameEnglish: "Ontario", perim: 6782774 },
-    { nameEnglish: "Manitoba", perim: 3751609 },
-    { nameEnglish: "Saskatchewan", perim: 3529235 },
-    { nameEnglish: "Alberta", perim: 3525562 },
-    { nameEnglish: "British Columbia", perim: 7431794 },
-    { nameEnglish: "Yukon", perim: 3743373 },
-    { nameEnglish: "Northwest Territories", perim: 11134550 },
-    { nameEnglish: "Nunavut", perim: 33718590 },
-  ]);
-
-  await sdb.close();
-});
-
 test("should calculate the perimeter of geometries in kilometers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

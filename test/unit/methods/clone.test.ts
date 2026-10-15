@@ -12,17 +12,6 @@ test("should clone a table", async () => {
   await sdb.run();
   await sdb.close();
 });
-test("should clone and log a table", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("data");
-  table.loadData("test/data/files/employees.csv");
-  const clone = table.clone();
-  // await clone.log();
-
-  expect(await table.getData()).toStrictEqual(await clone.getData());
-  await sdb.run();
-  await sdb.close();
-});
 test("should clone a table and give it a different name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

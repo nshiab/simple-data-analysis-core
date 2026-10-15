@@ -1,5 +1,5 @@
 import { stripVTControlCharacters } from "node:util";
-import { test, expect } from "vite-plus/test";
+import { test, expect, vi } from "vite-plus/test";
 
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
@@ -40,183 +40,87 @@ test("log aligns decomposed filename accents without changing data", async () =>
   }
 });
 
-test("should log a table", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log();
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log a table with 100 rows", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log(100);
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log a table with 100 rows in options", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-
-  const originalLog = console.log;
-  const output: string[] = [];
+test("log applies row counts, filters, and both all-row shorthands", async () => {
+  const sdb = new SimpleDB({ rowsToLog: 1 });
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
   try {
-    console.log = (...args: unknown[]) => {
-      output.push(args.map(String).join(" "));
-    };
-    await table.log({ count: 100 });
-    expect(output.at(-1)).toStrictEqual(`${await table.getRowCount()} rows in total`);
+    const table = sdb
+      .newTable("names")
+      .loadArray([{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }]);
+    for (const [options, count] of [
+      [undefined, 1],
+      [2, 2],
+      [{ count: 2 }, 2],
+      ["all", 3],
+      [{ count: "all" }, 3],
+    ] as const) {
+      log.mockClear();
+      await table.log(options);
+      const output = log.mock.calls.flat().join("\n");
+      expect(output).toContain("Alice");
+      expect(output.includes("Bob")).toStrictEqual(count >= 2);
+      expect(output.includes("Charlie")).toStrictEqual(count === 3);
+      expect(log.mock.calls.at(-1)).toStrictEqual([
+        `3 rows in total${count < 3 ? ` / showing ${count} rows` : ""}`,
+      ]);
+    }
+    log.mockClear();
+    await table.log({ conditions: "name === 'Bob'" });
+    const filtered = log.mock.calls.flat().join("\n");
+    expect(filtered).toContain("Bob");
+    expect(filtered).not.toContain("Alice");
+    expect(filtered).not.toContain("Charlie");
+    expect(log.mock.calls.at(-1)).toStrictEqual(["1 rows in total"]);
   } finally {
-    console.log = originalLog;
+    log.mockRestore();
+    await sdb.close();
   }
-  await sdb.close();
 });
-test("should log a table with types", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log({ types: true });
 
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should allow local types option to override the default", async () => {
+test("log renders types for a single column and allows a local override", async () => {
   const sdb = new SimpleDB({ typesToLog: true });
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-
-  let getTypesCalled = false;
-  const getTypes = table.getTypes.bind(table);
-  table.getTypes = () => {
-    getTypesCalled = true;
-    return getTypes();
-  };
-
-  await table.log({ types: false });
-
-  expect(getTypesCalled).toStrictEqual(false);
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    const table = sdb.newTable("names").loadArray([{ name: "Alice" }]);
+    for (const types of [true, false]) {
+      log.mockClear();
+      await table.log({ types });
+      const output = log.mock.calls.flat().join("\n");
+      expect(output).toContain("Alice");
+      expect(output.includes("VARCHAR/string")).toStrictEqual(types);
+    }
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
-test("should log a table with 100 rows and types", async () => {
+
+test("log reports a table with no data", async () => {
   const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log({ types: true, count: 100 });
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb.newTable("empty").log();
+    expect(log.mock.calls).toStrictEqual([["\nTable empty: no data"]]);
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
-test("should not throw an error when there is no table", async () => {
+
+test("log renders geometry placeholders", async () => {
   const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  await table.log();
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    const table = sdb.newTable("point").loadGeoData("test/geodata/files/point.json");
+    await table.log();
+    expect(log.mock.calls.flat().join("\n")).toContain("GEOM(EPSG:4326)");
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
 
-test("should log '<Geometry>' for geospatial data", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
-  await table.log();
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-
-test("should log types even if there is just one column in the table", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  table.selectColumns("Name");
-  await table.log();
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log a table with a condition", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log({ conditions: `Name === 'OConnell, Donald'` });
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log a table with 'all'", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log("all");
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log a table with { count: 'all'}", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.log({ count: "all" });
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log a table with long strings and word wrap the columns", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/recipes.parquet");
-  await table.log();
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-test("should log different colors for different data types", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  const dataArray = [
-    {
-      name: "Alice",
-      age: 30,
-      isStudent: false,
-      birthday: new Date("1993-01-01"),
-      salary: null,
-    },
-    {
-      name: "Bob",
-      age: 25,
-      isStudent: true,
-      birthday: new Date("1998-05-15"),
-      salary: 50000,
-    },
-  ];
-  console.table(dataArray);
-  table.loadArray(dataArray);
-  await table.log();
-  await table.log({ types: true });
-
-  // How to test?
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-
-test("log preserves SQL display precision, nested structure, and numeric colors", async () => {
+test("log preserves SQL display precision, nested structure, and value colors", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -230,7 +134,8 @@ test("log preserves SQL display precision, nested structure, and numeric colors"
       [1, NULL, 3]::INTEGER[] AS items,
       {'id': 9007199254740993::BIGINT, 'count': 2} AS nested,
       'NaN'::DOUBLE AS nan, 'Infinity'::DOUBLE AS inf,
-      '-Infinity'::DOUBLE AS neg, '123.450' AS text`);
+      '-Infinity'::DOUBLE AS neg, '123.450' AS text,
+      true AS active, false AS inactive, NULL::VARCHAR AS missing`);
     const table = sdb.newTable("display_values");
     const before = await table.getData();
     console.log = (...args: unknown[]) => {
@@ -241,7 +146,10 @@ test("log preserves SQL display precision, nested structure, and numeric colors"
       await table.log({ types });
       const output = lines.join("\n");
       for (const text of [
-        "2025-01-01",
+        "\x1b[36m2025-01-01",
+        "\x1b[95mtrue",
+        "\x1b[95mfalse",
+        "\x1b[90mnull",
         "2025-01-01 00:00:00.123456",
         "2025-01-01 00:00:00.123456789",
         "2025-01-01 00:00:00.123456+00",

@@ -168,36 +168,6 @@ test("should calculate the distance between points with the haversine method in 
 
   await sdb.close();
 });
-test("should calculate the distance between points with the haversine method in meters", async () => {
-  const sdb = new SimpleDB();
-  const points = sdb.newTable("points");
-  points.loadGeoData("test/geodata/files/coordinates.geojson");
-  const pointsCloned = points.clone();
-  pointsCloned.renameColumns({ geom: "geom_1", name: "name_1" });
-
-  points.crossJoin(pointsCloned);
-  points.distance("geom", "geom_1", "dist", {
-    method: "haversine",
-  });
-  points.selectColumns(["name", "name_1", "dist"]);
-  points.round("dist");
-
-  const data = await points.getData();
-
-  expect(data).toStrictEqual([
-    { name: "toronto", name_1: "toronto", dist: 0 },
-    { name: "montreal", name_1: "toronto", dist: 464577 },
-    { name: "vancouver", name_1: "toronto", dist: 3350989 },
-    { name: "toronto", name_1: "montreal", dist: 464577 },
-    { name: "montreal", name_1: "montreal", dist: 0 },
-    { name: "vancouver", name_1: "montreal", dist: 3666382 },
-    { name: "toronto", name_1: "vancouver", dist: 3350989 },
-    { name: "montreal", name_1: "vancouver", dist: 3666382 },
-    { name: "vancouver", name_1: "vancouver", dist: 0 },
-  ]);
-
-  await sdb.close();
-});
 
 test("should calculate the distance between points with the haversine method in km", async () => {
   const sdb = new SimpleDB();

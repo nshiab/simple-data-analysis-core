@@ -25,7 +25,7 @@ test("should write a csv file", async () => {
   // We test the content of the file
   const tableCheck = sdb.newTable();
   tableCheck.loadData([`${output}test.csv`]);
-  const data = await table.getData();
+  const data = await tableCheck.getData();
 
   expect(data).toStrictEqual(expectedData);
   await sdb.close();
@@ -40,7 +40,7 @@ test("should write a csv file and create the path if it doesn't exist", async ()
   // We test the content of the file
   const tableCheck = sdb.newTable();
   tableCheck.loadData([`${output}subfolderData/test.csv`]);
-  const data = await table.getData();
+  const data = await tableCheck.getData();
 
   expect(data).toStrictEqual(expectedData);
   await sdb.close();
@@ -197,27 +197,26 @@ test("should write data as arrays", async () => {
   });
   await sdb.close();
 });
-test("should write data as a db", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/data.csv");
-  await table.writeData(`${output}data.db`);
-
-  // Just making sure it doesn't throw
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
-
-test("should write data as a SQLite db", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/data.csv");
-  await table.writeData(`${output}data.sqlite`);
-
-  // Just making sure it doesn't throw
-  expect(true).toStrictEqual(true);
-  await sdb.close();
-});
+for (const extension of ["db", "sqlite"]) {
+  test(`should round-trip exported ${extension} data`, async () => {
+    const source = new SimpleDB();
+    const destination = new SimpleDB();
+    try {
+      const rows = [
+        { id: 1, name: "Alice" },
+        { id: 2, name: null },
+      ];
+      await source.newTable("exported").loadArray(rows).writeData(`${output}data.${extension}`);
+      await source.close();
+      await destination.loadDB(`${output}data.${extension}`);
+      const table = await destination.getTable("exported");
+      expect(await table.sort({ id: "asc" }).getData()).toStrictEqual(rows);
+    } finally {
+      await source.close();
+      await destination.close();
+    }
+  });
+}
 
 test("writeData should throw an error when there is a geometry column and suggest using writeGeoData", async () => {
   const sdb = new SimpleDB();

@@ -1,4 +1,5 @@
-import { test, expect } from "vite-plus/test";
+import { stripVTControlCharacters } from "node:util";
+import { test, expect, vi } from "vite-plus/test";
 import { ok as assert } from "node:assert/strict";
 import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
 import { statSync as nodeStatSync, readFileSync as nodeReadFileSync } from "node:fs";
@@ -355,35 +356,59 @@ test("should log SQL when logSQL is true", async () => {
   await sdb.close();
 });
 
-test("should log the types", async () => {
+test("should apply the default types option when logging", async () => {
   const sdb = new SimpleDB({ typesToLog: true });
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  // await test.log();
-  // How to test?
-  await test.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb
+      .newTable("typed")
+      .loadArray([{ name: "Alice" }])
+      .log();
+    const output = log.mock.calls.flat().join("\n");
+    expect(output).toContain("VARCHAR/string");
+    expect(output).toContain("Alice");
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
 
-test("should log a specific number of rows", async () => {
+test("should apply the default row limit when logging", async () => {
   const sdb = new SimpleDB({ rowsToLog: 2 });
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  // await test.log();
-  // How to test?
-  await test.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb
+      .newTable("limited")
+      .loadArray([{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }])
+      .log();
+    const output = log.mock.calls.flat().join("\n");
+    expect(output).toContain("Alice");
+    expect(output).toContain("Bob");
+    expect(output).not.toContain("Charlie");
+    expect(log.mock.calls.at(-1)).toStrictEqual(["3 rows in total / showing 2 rows"]);
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
 
-test("should log a specific number of characters", async () => {
+test("should apply the default character limit when logging", async () => {
   const sdb = new SimpleDB({ charsToLog: 5 });
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  // await test.log();
-  // How to test?
-  await test.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb
+      .newTable("truncated")
+      .loadArray([{ name: "Charlie" }])
+      .log();
+    const output = stripVTControlCharacters(log.mock.calls.flat().join("\n"));
+    expect(output).toContain("Ch...");
+    expect(output).not.toContain("Charlie");
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
+
 test("should log the total duration", async () => {
   const sdb = new SimpleDB({ logDuration: true });
   const test = sdb.newTable("test");
@@ -494,19 +519,22 @@ test("should load the db with geometries", async () => {
   await test.run();
   await sdb.close();
 });
-test("should log the table names in the db", async () => {
+test("should log table names and the empty database message", async () => {
   const sdb = new SimpleDB();
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  const test1 = sdb.newTable("test1");
-  test1.loadData("test/data/files/cities.csv");
-
-  // await sdb.logTableNames();
-
-  // How to test?
-  await sdb.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb.logTableNames();
+    expect(log.mock.calls.at(-1)).toStrictEqual(["\nSimpleDB - No tables found."]);
+    sdb.newTable("first").loadArray([{ value: 1 }]);
+    sdb.newTable("second").loadArray([{ value: 2 }]);
+    await sdb.logTableNames();
+    expect(log.mock.calls.at(-1)).toStrictEqual(['\nSimpleDB - Tables:  ["first","second"]']);
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
+
 test("should instantiate by creating a new file", async () => {
   const sdb = new SimpleDB({
     file: `${output}database_new.db`,
@@ -552,21 +580,47 @@ test("should load a db created with geospatial data", async () => {
   await data.run();
   await sdb.close();
 });
-test("should not change the enable_external_file_cache option", async () => {
+test("should preserve DuckDB's default external file cache setting for null", async () => {
+  const nativeDb = await DuckDBInstance.create(":memory:");
+  const connection = await nativeDb.connect();
   const sdb = new SimpleDB({ duckDbCache: null });
-  await sdb.start();
-  await sdb.close();
+  try {
+    const query = "SELECT current_setting('enable_external_file_cache') AS enabled";
+    const defaults = (await connection.runAndReadAll(query)).getRowObjects();
+    expect(await sdb.customQuery(query, { returnData: true })).toStrictEqual(defaults);
+  } finally {
+    connection.closeSync();
+    nativeDb.closeSync();
+    await sdb.close();
+  }
 });
+
 test("should set the enable_external_file_cache option to true", async () => {
   const sdb = new SimpleDB({ duckDbCache: true });
-  await sdb.start();
-  await sdb.close();
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('enable_external_file_cache') AS enabled", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ enabled: true }]);
+  } finally {
+    await sdb.close();
+  }
 });
+
 test("should set the enable_external_file_cache option to false", async () => {
   const sdb = new SimpleDB({ duckDbCache: false });
-  await sdb.start();
-  await sdb.close();
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('enable_external_file_cache') AS enabled", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ enabled: false }]);
+  } finally {
+    await sdb.close();
+  }
 });
+
 test("should respect the data types when returning data with custom query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
@@ -663,17 +717,31 @@ test("should preserve complete index definitions when writing and loading a DB",
   expect(loadedTable.indexes).toStrictEqual(expectedIndexes);
   await loadedSdb.close();
 });
-test("should start with memoryLimit option", async () => {
-  const sdb = new SimpleDB({ memoryLimit: "1GB" });
-  await sdb.start();
-  expect(true).toStrictEqual(true);
-  await sdb.close();
+test("should configure DuckDB's memory limit", async () => {
+  const sdb = new SimpleDB({ memoryLimit: "1GiB" });
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('memory_limit') AS memory", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ memory: "1.0 GiB" }]);
+  } finally {
+    await sdb.close();
+  }
 });
-test("should start with tempDir option", async () => {
-  const sdb = new SimpleDB({ tempDir: `${output}tmp` });
-  await sdb.start();
-  expect(true).toStrictEqual(true);
-  await sdb.close();
+
+test("should configure DuckDB's temporary directory", async () => {
+  const tempDir = `${output}tmp`;
+  const sdb = new SimpleDB({ tempDir });
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('temp_directory') AS directory", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ directory: tempDir }]);
+  } finally {
+    await sdb.close();
+  }
 });
 
 test("persistent databases reopen existing tables and close without replacing the file", async () => {

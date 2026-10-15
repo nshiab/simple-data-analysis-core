@@ -28,19 +28,6 @@ test("should calculate the length of geometries from a specific column in meters
   await sdb.close();
 });
 
-test("should calculate the length of geometries in meters from an EPSG:4326 file", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadGeoData("test/geodata/files/line.json");
-  table.length("length");
-  table.round("length");
-  table.selectColumns("length");
-  const data = await table.getData();
-
-  expect(data).toStrictEqual([{ length: 70175 }]);
-  await sdb.close();
-});
-
 test("should calculate the length of geometries in kilometers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
