@@ -19,9 +19,6 @@ const COLUMN_TYPES = {
   volume: "DOUBLE",
 } as const;
 
-const USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-
 type YahooInterval = keyof typeof INTERVAL_SECONDS;
 type YahooQuoteVariable = "open" | "high" | "low" | "close" | "volume";
 type YahooValues = Array<number | null>;
@@ -118,9 +115,7 @@ async function getYahooFinanceData(request: {
     period2: String(Math.ceil(exclusiveEndTime / 1000)),
   }).toString();
 
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const response = await fetch(url);
   if (!response.ok) {
     const text = (await response.text()).slice(0, 500).trim();
     throw new Error(

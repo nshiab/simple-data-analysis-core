@@ -109,7 +109,7 @@ test("loadYahooFinanceData loads a complete table and preserves missing values",
       String(Date.parse("2025-03-15T00:00:00Z") / 1000),
     );
     expect(requestedUrl?.searchParams.has("events")).toStrictEqual(false);
-    expect(requestedHeaders?.get("User-Agent") ?? "").toContain("Chrome");
+    expect(requestedHeaders?.get("User-Agent")).toBeNull();
   } finally {
     globalThis.fetch = originalFetch;
     await sdb.close();
