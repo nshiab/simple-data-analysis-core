@@ -1,18 +1,18 @@
-# Simple Data Analysis Core v2.1.13
+# Simple Data Analysis Core v2.1.14
 
 > Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Node.js.
 
-- [README](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/README.md): Installation, examples and usage.
+- [README](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/README.md): Installation, examples and usage.
 
 ## API
-- [SDAError](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/classes/SDAError.md): SDAError class
-- [SimpleDB](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/classes/SimpleDB.md): SimpleDB class
-- [SimpleTable](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/classes/SimpleTable.md): SimpleTable class
-- [createDirectory](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/createDirectory.md): createDirectory function
-- [mergeOptions](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/mergeOptions.md): mergeOptions function
-- [parseValue](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/parseValue.md): parseValue function
-- [queryDB](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/queryDB.md): queryDB function
-- [queueAsyncBarrier](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/queueAsyncBarrier.md): queueAsyncBarrier function
-- [quoteIdentifier](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/quoteIdentifier.md): quoteIdentifier function
-- [stringToArray](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/stringToArray.md): stringToArray function
-- [updateColumnsWithJS](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.13/docs/functions/updateColumnsWithJS.md): updateColumnsWithJS function
+- [SDAError](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/classes/SDAError.md): SDAError class
+- [SimpleDB](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/classes/SimpleDB.md): SimpleDB class
+- [SimpleTable](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/classes/SimpleTable.md): SimpleTable class
+- [createDirectory](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/createDirectory.md): createDirectory function
+- [mergeOptions](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/mergeOptions.md): mergeOptions function
+- [parseValue](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/parseValue.md): parseValue function
+- [queryDB](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/queryDB.md): queryDB function
+- [queueAsyncBarrier](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/queueAsyncBarrier.md): queueAsyncBarrier function
+- [quoteIdentifier](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/quoteIdentifier.md): quoteIdentifier function
+- [stringToArray](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/stringToArray.md): stringToArray function
+- [updateColumnsWithJS](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.14/docs/functions/updateColumnsWithJS.md): updateColumnsWithJS function
