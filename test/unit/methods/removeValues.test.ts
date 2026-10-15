@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should remove specific rows", async () => {
+test("should remove specific rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -13,7 +14,7 @@ Deno.test("should remove specific rows", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: null,
       hireDate: "17-SEP-03",
@@ -202,7 +203,7 @@ Deno.test("should remove specific rows", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove specific rows and accept arrays and single values", async () => {
+test("should remove specific rows and accept arrays and single values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -214,7 +215,7 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: null,
       hireDate: "17-SEP-03",
@@ -403,7 +404,7 @@ Deno.test("should remove specific rows and accept arrays and single values", asy
   await sdb.close();
 });
 
-Deno.test("should remove specific rows even column names have spaces", async () => {
+test("should remove specific rows even column names have spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -414,7 +415,7 @@ Deno.test("should remove specific rows even column names have spaces", async () 
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: null,
       "Hire date": "17-SEP-03",
@@ -603,7 +604,7 @@ Deno.test("should remove specific rows even column names have spaces", async () 
   await sdb.close();
 });
 
-Deno.test("should remove values typed as unknown", async () => {
+test("should remove values typed as unknown", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1n }, { id: 2n }, { id: 3n }]);
@@ -611,50 +612,50 @@ Deno.test("should remove values typed as unknown", async () => {
 
   table.removeValues({ id: values });
 
-  assertEquals(await table.getData(), [{ id: 2 }]);
+  expect(await table.getData()).toStrictEqual([{ id: 2 }]);
   await sdb.close();
 });
 
-Deno.test("should retain nulls when removing a non-null value", async () => {
+test("should retain nulls when removing a non-null value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
   table.removeValues({ id: 1 });
 
-  assertEquals(await table.getData(), [{ id: null }, { id: 2 }]);
+  expect(await table.getData()).toStrictEqual([{ id: null }, { id: 2 }]);
   await sdb.close();
 });
 
-Deno.test("should remove null values", async () => {
+test("should remove null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
   table.removeValues({ id: null });
 
-  assertEquals(await table.getData(), [{ id: 1 }, { id: 2 }]);
+  expect(await table.getData()).toStrictEqual([{ id: 1 }, { id: 2 }]);
   await sdb.close();
 });
 
-Deno.test("should remove null and non-null values together", async () => {
+test("should remove null and non-null values together", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
   table.removeValues({ id: [1, null] });
 
-  assertEquals(await table.getData(), [{ id: 2 }]);
+  expect(await table.getData()).toStrictEqual([{ id: 2 }]);
   await sdb.close();
 });
 
-Deno.test("should remove no rows for an empty values array", async () => {
+test("should remove no rows for an empty values array", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1 }, { id: null }, { id: 2 }]);
 
   table.removeValues({ id: [] });
 
-  assertEquals(await table.getData(), [{ id: 1 }, { id: null }, { id: 2 }]);
+  expect(await table.getData()).toStrictEqual([{ id: 1 }, { id: null }, { id: 2 }]);
   await sdb.close();
 });

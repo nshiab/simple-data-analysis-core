@@ -5,34 +5,35 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function clone(
   simpleTable: SimpleTable,
-  nameOrOptions: string | {
-    name?: string;
-    conditions?: string;
-    columns?: string | string[];
-    limit?: number;
-    offset?: number;
-  } = {},
+  nameOrOptions:
+    | string
+    | {
+        name?: string;
+        conditions?: string;
+        columns?: string | string[];
+        limit?: number;
+        offset?: number;
+      } = {},
 ): SimpleTable {
-  const columns = typeof nameOrOptions === "object" && nameOrOptions.columns
-    ? stringToArray(nameOrOptions.columns)
-    : [];
+  const columns =
+    typeof nameOrOptions === "object" && nameOrOptions.columns
+      ? stringToArray(nameOrOptions.columns)
+      : [];
 
   // The cloned table instance is created at call time so it can be returned
   // synchronously and chained on right away. Delegating to sdb.newTable()
   // makes subclasses using tableClass work correctly.
   let clonedTable: SimpleTable;
-  const options = typeof nameOrOptions === "string"
-    ? { name: nameOrOptions }
-    : { ...nameOrOptions };
+  const options =
+    typeof nameOrOptions === "string" ? { name: nameOrOptions } : { ...nameOrOptions };
   if (typeof options.name === "string") {
     clonedTable = simpleTable.sdb.newTable(options.name);
   } else {
     clonedTable = simpleTable.sdb.newTable(undefined);
   }
 
-  const selectClause = columns.length > 0
-    ? columns.map((col) => `${quoteIdentifier(col)}`).join(", ")
-    : "*";
+  const selectClause =
+    columns.length > 0 ? columns.map((col) => `${quoteIdentifier(col)}`).join(", ") : "*";
 
   queueOp(clonedTable, {
     kind: "source",

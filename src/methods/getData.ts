@@ -13,26 +13,19 @@ export default async function getData(
   } = {},
   method: "getData()" | "log()" = "getData()",
 ) {
-  if (
-    options.limit !== undefined &&
-    (!Number.isInteger(options.limit) || options.limit < 0)
-  ) {
-    throw new Error(
-      "getData() limit must be an integer greater than or equal to 0.",
-    );
+  if (options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 0)) {
+    throw new Error("getData() limit must be an integer greater than or equal to 0.");
   }
   const columns = options.columns
-    ? (typeof options.columns === "string"
+    ? typeof options.columns === "string"
       ? [options.columns]
-      : options.columns)
+      : options.columns
     : undefined;
   return (await queryDB(
     simpleTable,
     `SELECT ${
       columns
-        ? columns.map((column) =>
-          quoteQualifiedIdentifier(simpleTable.name, column)
-        ).join(", ")
+        ? columns.map((column) => quoteQualifiedIdentifier(simpleTable.name, column)).join(", ")
         : "*"
     } from ${quoteIdentifier(simpleTable.name)}${
       options.conditions ? ` WHERE ${options.conditions}` : ""

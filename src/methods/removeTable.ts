@@ -5,9 +5,7 @@ import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import { retainRegisteredTables } from "../helpers/tableRegistry.ts";
 
-export default async function removeTable(
-  simpleTable: SimpleTable,
-) {
+export default async function removeTable(simpleTable: SimpleTable) {
   assertCacheTableMutation(simpleTable);
   await queryDB(
     simpleTable,
@@ -19,8 +17,5 @@ export default async function removeTable(
     }),
   );
 
-  retainRegisteredTables(
-    simpleTable.sdb,
-    (table) => table.name !== simpleTable.name,
-  );
+  retainRegisteredTables(simpleTable.sdb, (table) => table.name !== simpleTable.name);
 }

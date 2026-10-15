@@ -5,9 +5,7 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import assertSameDatabase from "../helpers/assertSameDatabase.ts";
-import buildFuzzyMatchSql, {
-  type FuzzyMethod,
-} from "../helpers/buildFuzzyMatchSql.ts";
+import buildFuzzyMatchSql, { type FuzzyMethod } from "../helpers/buildFuzzyMatchSql.ts";
 
 export default function fuzzyJoin(
   leftTable: SimpleTable,
@@ -16,11 +14,7 @@ export default function fuzzyJoin(
   rightColumn: string,
   threshold: number,
   options: {
-    method?:
-      | "ratio"
-      | "partial_ratio"
-      | "token_sort_ratio"
-      | "token_set_ratio";
+    method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio";
     similarityColumn?: string;
     outputTable?: string | boolean;
     prefilterPrefixLength?: number;
@@ -31,17 +25,18 @@ export default function fuzzyJoin(
   // This validation doesn't need the database, so it stays at call time.
   if (leftColumn === rightColumn) {
     throw new Error(
-      `The leftColumn and rightColumn have the same name ${
-        quoteIdentifier(leftColumn)
-      }. Rename one of them before doing the fuzzy join.`,
+      `The leftColumn and rightColumn have the same name ${quoteIdentifier(
+        leftColumn,
+      )}. Rename one of them before doing the fuzzy join.`,
     );
   }
 
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
-  const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable)
-    : leftTable;
+  const outputTable =
+    typeof options.outputTable === "string"
+      ? leftTable.sdb.newTable(options.outputTable)
+      : leftTable;
 
   queueOp(outputTable, {
     kind: "barrier",
@@ -76,11 +71,7 @@ async function executeFuzzyJoin(
   rightColumn: string,
   threshold: number,
   options: {
-    method?:
-      | "ratio"
-      | "partial_ratio"
-      | "token_sort_ratio"
-      | "token_set_ratio";
+    method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio";
     similarityColumn?: string;
     prefilterPrefixLength?: number;
   },
@@ -91,9 +82,7 @@ async function executeFuzzyJoin(
 
   // Any column shared between both tables — other than rightColumn (whose
   // potential _1 duplicate we clean up) — would produce ambiguous output.
-  const identicalColumnsForError = identicalColumns.filter(
-    (d) => d !== rightColumn,
-  );
+  const identicalColumnsForError = identicalColumns.filter((d) => d !== rightColumn);
   if (identicalColumnsForError.length > 0) {
     if (identicalColumnsForError.length === 1) {
       throw new Error(
@@ -103,11 +92,9 @@ async function executeFuzzyJoin(
       );
     } else {
       throw new Error(
-        `The tables have columns with identical names. Rename or remove ${
-          identicalColumnsForError.map((d) => `${quoteIdentifier(d)}`).join(
-            ", ",
-          )
-        } in one of the two tables before doing the fuzzy join.`,
+        `The tables have columns with identical names. Rename or remove ${identicalColumnsForError
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(", ")} in one of the two tables before doing the fuzzy join.`,
       );
     }
   }
@@ -142,7 +129,8 @@ async function executeFuzzyJoin(
     .map((d) => `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}`)
     .join(", ");
 
-  const sql = `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;\n` +
+  const sql =
+    `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;\n` +
     fuzzyJoinQuery(
       leftTable.name,
       leftColumn,
@@ -157,11 +145,7 @@ async function executeFuzzyJoin(
       deduplicate,
     );
 
-  await queryDB(
-    leftTable,
-    sql,
-    queryOptions,
-  );
+  await queryDB(leftTable, sql, queryOptions);
 }
 
 async function shouldDeduplicateFuzzyJoin(
@@ -190,16 +174,13 @@ async function shouldDeduplicateFuzzyJoin(
   const distinct = (await queryDB(
     leftTable,
     `SELECT
-      (SELECT COUNT(DISTINCT ENCODE(${
-      quoteIdentifier(leftColumn)
-    })) FROM ${left}) AS left_count,
-      (SELECT COUNT(DISTINCT ENCODE(${
-      quoteIdentifier(rightColumn)
-    })) FROM ${right}) AS right_count`,
+      (SELECT COUNT(DISTINCT ENCODE(${quoteIdentifier(leftColumn)})) FROM ${left}) AS left_count,
+      (SELECT COUNT(DISTINCT ENCODE(${quoteIdentifier(
+        rightColumn,
+      )})) FROM ${right}) AS right_count`,
     { ...queryOptions, returnData: true },
   ))![0];
-  return Number(distinct.left_count) * Number(distinct.right_count) <=
-    comparisons / 2;
+  return Number(distinct.left_count) * Number(distinct.right_count) <= comparisons / 2;
 }
 
 function fuzzyJoinQuery(
@@ -215,12 +196,8 @@ function fuzzyJoinQuery(
   prefilterPrefixLength?: number,
   deduplicate = false,
 ) {
-  const leftExpression = `${quoteIdentifier(leftTable)}.${
-    quoteIdentifier(leftColumn)
-  }`;
-  const rightExpression = `${quoteIdentifier(rightTable)}.${
-    quoteIdentifier(rightColumn)
-  }`;
+  const leftExpression = `${quoteIdentifier(leftTable)}.${quoteIdentifier(leftColumn)}`;
+  const rightExpression = `${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)}`;
   const { scoreExpression, condition } = buildFuzzyMatchSql(
     leftExpression,
     rightExpression,
@@ -230,21 +207,18 @@ function fuzzyJoinQuery(
   );
 
   let cte = "";
-  let from = `FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
-    quoteIdentifier(rightTable)
-  } ON ${condition}`;
+  let from = `FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${quoteIdentifier(
+    rightTable,
+  )} ON ${condition}`;
   let score = scoreExpression;
   if (deduplicate) {
     const matches = quoteIdentifier(
       `__sda_fuzzy_matches_${crypto.randomUUID().replaceAll("-", "")}`,
     );
-    const match = buildFuzzyMatchSql(
-      "l.value",
-      "r.value",
-      method,
-      threshold,
-      { decimals: 2, prefilterPrefixLength },
-    );
+    const match = buildFuzzyMatchSql("l.value", "r.value", method, threshold, {
+      decimals: 2,
+      prefilterPrefixLength,
+    });
     // Keep the original value's collation for prefix matching, but use byte
     // keys for deduplication and expansion: fuzzy scores distinguish case even
     // when an input column has a case-insensitive collation.
@@ -274,13 +248,9 @@ function fuzzyJoinQuery(
   if (similarityColumn) {
     return `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable)} AS
 ${cte}
-SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS ${
-      quoteIdentifier(similarityColumn)
-    }
+SELECT * EXCLUDE ("_sda_score"), "_sda_score" AS ${quoteIdentifier(similarityColumn)}
 FROM (
-  SELECT ${
-      quoteIdentifier(leftTable)
-    }.*, ${rightSelect}, ${score} AS "_sda_score"
+  SELECT ${quoteIdentifier(leftTable)}.*, ${rightSelect}, ${score} AS "_sda_score"
   ${from}
 ) _sda
 ORDER BY ${quoteIdentifier(leftColumn)}, "_sda_score" DESC;\n`;

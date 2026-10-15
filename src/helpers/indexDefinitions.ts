@@ -30,16 +30,11 @@ export type IndexDefinition = VssIndexDefinition | FtsIndexDefinition;
 
 export type IndexCacheStrategy = "persist" | "rebuild";
 
-const INDEX_CACHE_STRATEGIES: Record<
-  IndexDefinition["kind"],
-  IndexCacheStrategy
-> = {
+const INDEX_CACHE_STRATEGIES: Record<IndexDefinition["kind"], IndexCacheStrategy> = {
   fts: "persist",
   vss: "rebuild",
 };
 
-export function getIndexCacheStrategy(
-  index: IndexDefinition,
-): IndexCacheStrategy {
+export function getIndexCacheStrategy(index: IndexDefinition): IndexCacheStrategy {
   return INDEX_CACHE_STRATEGIES[index.kind];
 }

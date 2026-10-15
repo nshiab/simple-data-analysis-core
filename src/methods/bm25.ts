@@ -61,24 +61,17 @@ export default function bm25(
 
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
-  const outputTable = typeof options.outputTable === "string"
-    ? simpleTable.sdb.newTable(options.outputTable)
-    : simpleTable;
+  const outputTable =
+    typeof options.outputTable === "string"
+      ? simpleTable.sdb.newTable(options.outputTable)
+      : simpleTable;
 
   queueOp(outputTable, {
     kind: "barrier",
     method: "bm25()",
     parameters: { text, idColumn, textColumn, count, options },
     execute: () =>
-      executeBm25(
-        simpleTable,
-        outputTable,
-        text,
-        idColumn,
-        textColumn,
-        count,
-        options,
-      ),
+      executeBm25(simpleTable, outputTable, text, idColumn, textColumn, count, options),
   });
 
   return outputTable;
@@ -119,27 +112,27 @@ async function executeBm25(
     verbose: options.verbose,
   });
 
-  const minScoreCondition = typeof options.minScore === "number"
-    ? ` AND score >= ${options.minScore}`
-    : "";
+  const minScoreCondition =
+    typeof options.minScore === "number" ? ` AND score >= ${options.minScore}` : "";
 
-  const selectClause = typeof options.scoreColumn === "string"
-    ? `* EXCLUDE(score), score AS ${quoteIdentifier(options.scoreColumn)}`
-    : `* EXCLUDE(score)`;
+  const selectClause =
+    typeof options.scoreColumn === "string"
+      ? `* EXCLUDE(score), score AS ${quoteIdentifier(options.scoreColumn)}`
+      : `* EXCLUDE(score)`;
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE ${
-      quoteIdentifier(outputTable.name)
-    } AS SELECT ${selectClause} FROM (SELECT *, ${
-      quoteIdentifier(`fts_main_${simpleTable.name}`)
-    }.match_bm25(${quoteIdentifier(idColumn)}, ?${
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(
+      outputTable.name,
+    )} AS SELECT ${selectClause} FROM (SELECT *, ${quoteIdentifier(
+      `fts_main_${simpleTable.name}`,
+    )}.match_bm25(${quoteIdentifier(idColumn)}, ?${
       typeof options.k === "number" ? `, k := ${options.k}` : ""
     }${typeof options.b === "number" ? `, b := ${options.b}` : ""}${
       options.conjunctive === true ? `, conjunctive := 1` : ""
-    }) AS score FROM ${
-      quoteIdentifier(simpleTable.name)
-    }) sq WHERE score NOT NULL${minScoreCondition} ORDER BY score DESC LIMIT ${count};`,
+    }) AS score FROM ${quoteIdentifier(
+      simpleTable.name,
+    )}) sq WHERE score NOT NULL${minScoreCondition} ORDER BY score DESC LIMIT ${count};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "bm25",

@@ -1,3 +1,4 @@
+import stringifyUnknown from "../helpers/stringifyUnknown.ts";
 import {
   arrayValue,
   type DuckDBConnection,
@@ -55,9 +56,7 @@ export function prepareArray(
   const overrides = new Map<string, string>();
   for (const [key, type] of Object.entries(columnTypes)) {
     if (!keys.includes(key)) {
-      throw new Error(
-        `Unknown column ${JSON.stringify(key)} in loadArray columnTypes.`,
-      );
+      throw new Error(`Unknown column ${JSON.stringify(key)} in loadArray columnTypes.`);
     }
     if (type.toUpperCase() === "JSON") {
       overrides.set(key, "JSON");
@@ -66,9 +65,9 @@ export function prepareArray(
     if (/^geometry/i.test(type)) {
       if (!/^geometry\('EPSG:4326'\)$/i.test(type)) {
         throw new Error(
-          `Unsupported type ${JSON.stringify(type)} for column ${
-            JSON.stringify(key)
-          }. GeoJSON ingestion requires GEOMETRY('EPSG:4326'); reproject input to WGS84 first.`,
+          `Unsupported type ${JSON.stringify(type)} for column ${JSON.stringify(
+            key,
+          )}. GeoJSON ingestion requires GEOMETRY('EPSG:4326'); reproject input to WGS84 first.`,
         );
       }
       overrides.set(key, "GEOMETRY('EPSG:4326')");
@@ -80,20 +79,19 @@ export function prepareArray(
       overrides.set(key, normalized);
     } catch {
       throw new Error(
-        `Unsupported type ${JSON.stringify(type)} for column ${
-          JSON.stringify(key)
-        }.`,
+        `Unsupported type ${JSON.stringify(type)} for column ${JSON.stringify(key)}.`,
       );
     }
   }
-  const firstNonNullValue = keys.map((key) =>
-    rows.find((obj) => obj[key] !== null && obj[key] !== undefined)
-      ?.[key]
+  const firstNonNullValue = keys.map(
+    (key) => rows.find((obj) => obj[key] !== null && obj[key] !== undefined)?.[key],
   );
   const types: string[] = [];
-  const columnsData: DuckDBValue[][] = keys.map(
-    () => new Array(rows.length),
-  );
+  const columnsData: DuckDBValue[][] = keys.map(() => {
+    const values: DuckDBValue[] = [];
+    values.length = rows.length;
+    return values;
+  });
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
@@ -109,9 +107,7 @@ export function prepareArray(
     if (requireExplicitNestedTypes) {
       for (let j = 0; j < rows.length; j++) {
         const cell = rows[j][key];
-        if (
-          cell !== null && typeof cell === "object" && !(cell instanceof Date)
-        ) {
+        if (cell !== null && typeof cell === "object" && !(cell instanceof Date)) {
           throw new Error(
             `Column ${JSON.stringify(key)}, row ${
               j + 1
@@ -123,7 +119,9 @@ export function prepareArray(
     const value = firstNonNullValue[i];
     const type = typeof value;
     if (type === "symbol" || type === "function") {
-      throw new Error(`Type ${type} not supported for ${key}. Value: ${value}`);
+      throw new Error(
+        `Type ${type} not supported for ${key}. Value: ${stringifyUnknown(value, "template")}`,
+      );
     } else if (type === "undefined") {
       types[i] = "VARCHAR";
       for (let j = 0; j < rows.length; j++) {
@@ -138,31 +136,26 @@ export function prepareArray(
             columnData[j] = null;
           } else {
             const date = d as Date;
-            columnData[j] = new DuckDBTimestampValue(
-              BigInt(date.getTime() * 1000),
-            );
+            columnData[j] = new DuckDBTimestampValue(BigInt(date.getTime() * 1000));
           }
         }
       } else if (Array.isArray(value)) {
         types[i] = `FLOAT[${value.length}]`;
         for (let j = 0; j < rows.length; j++) {
           const d = rows[j][key];
-          columnData[j] = d === null || d === undefined
-            ? null
-            : arrayValue([...(d as number[])]);
+          columnData[j] = d === null || d === undefined ? null : arrayValue([...(d as number[])]);
         }
       } else {
         throw new Error(
-          `Type object not supported for ${key}. Value: ${value}`,
+          `Type object not supported for ${key}. Value: ${stringifyUnknown(value, "template")}`,
         );
       }
     } else {
       types[i] = parseType(type);
       for (let j = 0; j < rows.length; j++) {
         const d = rows[j][key];
-        columnData[j] = d === null || d === undefined || Number.isNaN(d)
-          ? null
-          : d as DuckDBValue;
+        columnData[j] =
+          d === null || d === undefined || Number.isNaN(d) ? null : (d as DuckDBValue);
       }
     }
   }
@@ -170,10 +163,7 @@ export function prepareArray(
   return { keys, types, columnsData, rowCount: rows.length };
 }
 
-export async function executePreparedArray(
-  simpleTable: SimpleTable,
-  prepared: PreparedArray,
-) {
+export async function executePreparedArray(simpleTable: SimpleTable, prepared: PreparedArray) {
   if (simpleTable.connection === undefined) {
     await simpleTable.sdb.start();
     simpleTable.connection = simpleTable.sdb.connection;
@@ -187,7 +177,7 @@ export async function executePreparedArray(
     ? `__sda_array_${crypto.randomUUID().replaceAll("-", "")}`
     : simpleTable.name;
   const storageTypes = types.map((type) =>
-    type.startsWith("GEOMETRY") || type === "JSON" ? "VARCHAR" : type
+    type.startsWith("GEOMETRY") || type === "JSON" ? "VARCHAR" : type,
   );
   if (hasGeometry && !simpleTable.sdb.spatialLoaded) {
     await simpleTable.sdb.customQuery(
@@ -197,13 +187,9 @@ export async function executePreparedArray(
   }
   try {
     await simpleTable.sdb.customQuery(
-      `CREATE ${needsConversion ? "TEMP" : "OR REPLACE"} TABLE ${
-        quoteIdentifier(staged)
-      }(${
-        keys.map((key, i) => `${quoteIdentifier(key)} ${storageTypes[i]}`).join(
-          ", ",
-        )
-      })`,
+      `CREATE ${needsConversion ? "TEMP" : "OR REPLACE"} TABLE ${quoteIdentifier(staged)}(${keys
+        .map((key, i) => `${quoteIdentifier(key)} ${storageTypes[i]}`)
+        .join(", ")})`,
     );
 
     await appendColumnBatches(
@@ -216,34 +202,25 @@ export async function executePreparedArray(
     if (!needsConversion) return;
     // CTAS is atomic: conversion must finish before the destination is replaced.
     await simpleTable.sdb.customQuery(
-      `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} AS SELECT ${
-        keys.map((key, i) =>
+      `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} AS SELECT ${keys
+        .map((key, i) =>
           types[i].startsWith("GEOMETRY")
-            ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
-              quoteIdentifier(key)
-            }`
+            ? `${geometryFromJSON(quoteIdentifier(key))} AS ${quoteIdentifier(key)}`
             : types[i] === "JSON"
-            ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
-            : quoteIdentifier(key)
-        ).join(", ")
-      } FROM ${quoteIdentifier(staged)}`,
+              ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
+              : quoteIdentifier(key),
+        )
+        .join(", ")} FROM ${quoteIdentifier(staged)}`,
     );
   } finally {
     if (needsConversion) {
-      await simpleTable.sdb.customQuery(
-        `DROP TABLE IF EXISTS ${quoteIdentifier(staged)}`,
-      );
+      await simpleTable.sdb.customQuery(`DROP TABLE IF EXISTS ${quoteIdentifier(staged)}`);
     }
   }
 }
 
 /** Validates and snapshots a value for an explicitly declared destination type. */
-function prepareTypedValue(
-  value: unknown,
-  type: string,
-  column: string,
-  row: number,
-): DuckDBValue {
+function prepareTypedValue(value: unknown, type: string, column: string, row: number): DuckDBValue {
   if (type === "JSON") return prepareJSON(value, column, row);
   if (type === "GEOMETRY('EPSG:4326')") {
     return prepareGeometry(value, column, row);
@@ -262,14 +239,10 @@ function prepareTypedValue(
   } else if (type === "INTEGER") {
     compatible = typeof value === "number" || typeof value === "bigint";
     if (typeof value === "number") {
-      if (
-        Number.isInteger(value) && value >= -2147483648 && value <= 2147483647
-      ) {
+      if (Number.isInteger(value) && value >= -2147483648 && value <= 2147483647) {
         return value;
       }
-    } else if (
-      typeof value === "bigint" && value >= -2147483648n && value <= 2147483647n
-    ) {
+    } else if (typeof value === "bigint" && value >= -2147483648n && value <= 2147483647n) {
       return Number(value);
     }
   } else if (type === "BIGINT") {
@@ -279,15 +252,15 @@ function prepareTypedValue(
         return value;
       }
     } else if (
-      typeof value === "number" && Number.isInteger(value) &&
-      value >= -(2 ** 63) && value < 2 ** 63
+      typeof value === "number" &&
+      Number.isInteger(value) &&
+      value >= -(2 ** 63) &&
+      value < 2 ** 63
     ) {
       // The upper bound is exclusive: 2 ** 63 - 1 rounds up as a JS number.
       return BigInt(value);
     }
-  } else if (
-    ["DATE", "TIME", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE"].includes(type)
-  ) {
+  } else if (["DATE", "TIME", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE"].includes(type)) {
     if (type === "TIME" && value instanceof DuckDBTimeValue) {
       if (value.micros >= 0n && value.micros <= 86400000000n) {
         return new DuckDBTimeValue(value.micros);
@@ -312,24 +285,21 @@ function prepareTypedValue(
     const size = Number(type.slice(6, -1));
     if (
       value.length === size &&
-      value.every((item) =>
-        item === null || item === undefined ||
-        (typeof item === "number" &&
-          (Number.isNaN(item) || Math.fround(item) === item))
+      value.every(
+        (item) =>
+          item === null ||
+          item === undefined ||
+          (typeof item === "number" && (Number.isNaN(item) || Math.fround(item) === item)),
       )
     ) {
       return arrayValue(
         value.map((item: unknown) =>
-          item === undefined || Number.isNaN(item)
-            ? null
-            : item as number | null
+          item === undefined || Number.isNaN(item) ? null : (item as number | null),
         ),
       );
     }
   }
-  const displayed = typeof value === "string"
-    ? JSON.stringify(value)
-    : String(value);
+  const displayed = typeof value === "string" ? JSON.stringify(value) : stringifyUnknown(value);
   throw new Error(
     `Column ${JSON.stringify(column)}, row ${row}: value ${displayed} ${
       compatible

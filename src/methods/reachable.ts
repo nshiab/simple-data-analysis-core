@@ -36,40 +36,26 @@ export default function reachable(
   if (typeof targetColumn !== "string") {
     throw new TypeError("reachable() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("reachable() options must be an object.");
   }
   if (
     options.direction !== undefined &&
     !["outgoing", "incoming", "both"].includes(options.direction)
   ) {
-    throw new TypeError(
-      'reachable() options.direction must be "outgoing", "incoming", or "both".',
-    );
+    throw new TypeError('reachable() options.direction must be "outgoing", "incoming", or "both".');
   }
   if (
     options.outputTable !== undefined &&
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "reachable() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("reachable() options.outputTable must be a string or boolean.");
   }
 
-  const preparedStarts = prepareGraphStarts(
-    startNodes,
-    "reachable()",
-    "startNodes",
-  );
+  const preparedStarts = prepareGraphStarts(startNodes, "reachable()", "startNodes");
   const direction = options.direction ?? "outgoing";
-  const temporalOptions = prepareGraphTemporalOptions(
-    options,
-    direction,
-    "reachable()",
-  );
+  const temporalOptions = prepareGraphTemporalOptions(options, direction, "reachable()");
   options = structuredClone(options);
   const parameters = {
     sourceColumn,
@@ -82,15 +68,10 @@ export default function reachable(
     method: "reachable()",
     parameters,
     outputTable: options.outputTable,
-    preflight: temporalOptions === undefined
-      ? undefined
-      : (input) =>
-        validateGraphTemporalEvents(
-          input,
-          temporalOptions,
-          "reachable()",
-          parameters,
-        ),
+    preflight:
+      temporalOptions === undefined
+        ? undefined
+        : (input) => validateGraphTemporalEvents(input, temporalOptions, "reachable()", parameters),
     values: (schema) => {
       const { temporal } = validateInputs(
         schema,
@@ -144,9 +125,10 @@ function validateInputs(
     "reachable()",
     "startNodes",
   );
-  const temporal = temporalOptions === undefined
-    ? undefined
-    : prepareGraphTemporalSql(schema, temporalOptions, "reachable()");
+  const temporal =
+    temporalOptions === undefined
+      ? undefined
+      : prepareGraphTemporalSql(schema, temporalOptions, "reachable()");
   return { endpoints, temporal };
 }
 
@@ -169,11 +151,7 @@ function reachableSelect(
     "startNodes",
   );
   if (temporalOptions !== undefined) {
-    const temporal = prepareGraphTemporalSql(
-      schema,
-      temporalOptions,
-      "reachable()",
-    );
+    const temporal = prepareGraphTemporalSql(schema, temporalOptions, "reachable()");
     return temporalReachableSelect(
       prepared,
       direction as Exclude<GraphDirection, "both">,
@@ -192,26 +170,14 @@ function reachableSelect(
   const reachableRelation = relations.graph_reachable;
   const start = `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`;
   const startKey = `${quoteIdentifier("starts")}.${quoteIdentifier("__key")}`;
-  const reachedStart = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("start")
-  }`;
-  const reachedStartKey = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("__start_key")
-  }`;
+  const reachedStart = `${quoteIdentifier("reached")}.${quoteIdentifier("start")}`;
+  const reachedStartKey = `${quoteIdentifier("reached")}.${quoteIdentifier("__start_key")}`;
   const edgeTo = `${quoteIdentifier("edges")}.${quoteIdentifier("__to")}`;
-  const edgeToKey = `${quoteIdentifier("edges")}.${
-    quoteIdentifier("__to_key")
-  }`;
-  const edgeFromKey = `${quoteIdentifier("edges")}.${
-    quoteIdentifier("__from_key")
-  }`;
-  const reachedNodeKey = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("__node_key")
-  }`;
+  const edgeToKey = `${quoteIdentifier("edges")}.${quoteIdentifier("__to_key")}`;
+  const edgeFromKey = `${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")}`;
+  const reachedNodeKey = `${quoteIdentifier("reached")}.${quoteIdentifier("__node_key")}`;
 
-  return `WITH RECURSIVE ${startValuesRelation}(${
-    quoteIdentifier("start")
-  }) AS (
+  return `WITH RECURSIVE ${startValuesRelation}(${quoteIdentifier("start")}) AS (
       VALUES ${prepared.startValues}
     ), ${startsRelation} AS (
       SELECT ${quoteIdentifier("start")},
@@ -235,9 +201,7 @@ function reachableSelect(
     )
     SELECT ${quoteIdentifier("start")}, ${quoteIdentifier("node")}
     FROM ${reachableRelation}
-    ORDER BY ${quoteIdentifier("__start_key")}, ${
-    quoteIdentifier("__node_key")
-  }`;
+    ORDER BY ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")}`;
 }
 
 function temporalReachableSelect(
@@ -248,9 +212,7 @@ function temporalReachableSelect(
   const q = quoteIdentifier;
   const startsSelect = `SELECT ${q("start")},
         ${prepared.key(q("start"))} AS ${q("__key")}
-      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${
-    q("start")
-  })`;
+      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${q("start")})`;
   const reachability = buildGraphTemporalReachabilitySql(
     prepared,
     startsSelect,

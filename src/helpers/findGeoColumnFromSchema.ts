@@ -26,22 +26,20 @@ export default function findGeoColumnFromSchema(
   method: string,
   tableName: string,
 ): string {
-  const geometryColumns = Object.keys(types).filter((column) =>
-    types[column].toLowerCase().includes("geometry")
-  ).sort();
+  const geometryColumns = Object.keys(types)
+    .filter((column) => types[column].toLowerCase().includes("geometry"))
+    .sort();
   if (geometryColumns.length === 0) {
     throw new Error(
-      `${method} could not find a geometry column in table ${
-        quoteIdentifier(tableName)
-      }. Specify a geometry column explicitly, or add one to the table first.`,
+      `${method} could not find a geometry column in table ${quoteIdentifier(
+        tableName,
+      )}. Specify a geometry column explicitly, or add one to the table first.`,
     );
   } else if (geometryColumns.length > 1) {
     throw new Error(
-      `${method} found ${geometryColumns.length} geometry columns in table ${
-        quoteIdentifier(tableName)
-      }: ${
-        geometryColumns.map(quoteIdentifier).join(", ")
-      }. Specify one explicitly.`,
+      `${method} found ${geometryColumns.length} geometry columns in table ${quoteIdentifier(
+        tableName,
+      )}: ${geometryColumns.map(quoteIdentifier).join(", ")}. Specify one explicitly.`,
     );
   }
   return geometryColumns[0];

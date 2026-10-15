@@ -14,18 +14,16 @@ export default function validateGraphRouteResultSchema(
   for (const resultColumn of [...resultColumns, ...additionalResultColumns]) {
     if (resultColumn === "total" && !includeTotal) continue;
     const folded = foldIdentifier(resultColumn);
-    const inputColumn = Object.keys(schema).find((column) =>
-      foldIdentifier(column) === folded
-    );
+    const inputColumn = Object.keys(schema).find((column) => foldIdentifier(column) === folded);
     if (inputColumn !== undefined) {
       throw new Error(
-        `${method} cannot add ${
-          quoteIdentifier(resultColumn)
-        } because input column ${
-          quoteIdentifier(inputColumn)
-        } conflicts with that result column. Rename ${
-          quoteIdentifier(inputColumn)
-        } with renameColumns() before calculating the graph.`,
+        `${method} cannot add ${quoteIdentifier(
+          resultColumn,
+        )} because input column ${quoteIdentifier(
+          inputColumn,
+        )} conflicts with that result column. Rename ${quoteIdentifier(
+          inputColumn,
+        )} with renameColumns() before calculating the graph.`,
       );
     }
   }

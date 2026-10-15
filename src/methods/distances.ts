@@ -43,18 +43,14 @@ export default function distances(
   if (typeof targetColumn !== "string") {
     throw new TypeError("distances() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("distances() options must be an object.");
   }
   if (
     options.direction !== undefined &&
     !["outgoing", "incoming", "both"].includes(options.direction)
   ) {
-    throw new TypeError(
-      'distances() options.direction must be "outgoing", "incoming", or "both".',
-    );
+    throw new TypeError('distances() options.direction must be "outgoing", "incoming", or "both".');
   }
   if (options.weight !== undefined && typeof options.weight !== "string") {
     throw new TypeError("distances() options.weight must be a string.");
@@ -64,23 +60,13 @@ export default function distances(
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "distances() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("distances() options.outputTable must be a string or boolean.");
   }
 
   const metrics = prepareGraphMetricOptions(options, "distances()", true);
-  const preparedStarts = prepareGraphStarts(
-    startNodes,
-    "distances()",
-    "startNodes",
-  );
+  const preparedStarts = prepareGraphStarts(startNodes, "distances()", "startNodes");
   const direction = options.direction ?? "outgoing";
-  const temporalOptions = prepareGraphTemporalOptions(
-    options,
-    direction,
-    "distances()",
-  );
+  const temporalOptions = prepareGraphTemporalOptions(options, direction, "distances()");
   options = structuredClone(options);
   const parameters = {
     sourceColumn,
@@ -93,15 +79,10 @@ export default function distances(
     method: "distances()",
     parameters,
     outputTable: options.outputTable,
-    preflight: temporalOptions === undefined
-      ? undefined
-      : (input) =>
-        validateGraphTemporalEvents(
-          input,
-          temporalOptions,
-          "distances()",
-          parameters,
-        ),
+    preflight:
+      temporalOptions === undefined
+        ? undefined
+        : (input) => validateGraphTemporalEvents(input, temporalOptions, "distances()", parameters),
     values: (schema) => {
       const { temporal } = validateDistanceInputs(
         schema,
@@ -140,9 +121,7 @@ export default function distances(
         start: validated.idType,
         node: validated.idType,
         steps: "BIGINT",
-        ...(options.weight === undefined
-          ? {}
-          : { total: validated.distanceType }),
+        ...(options.weight === undefined ? {} : { total: validated.distanceType }),
         ...(metrics.elapsedTime ? { elapsedTimeMs: "DOUBLE" } : {}),
       };
     },
@@ -165,12 +144,14 @@ function validateDistanceInputs(
     "distances()",
     "startNodes",
   );
-  const distanceType = weight === undefined
-    ? "BIGINT"
-    : getGraphWeightColumn(schema, weight, "distances()").distanceType;
-  const temporal = temporalOptions === undefined
-    ? undefined
-    : prepareGraphTemporalSql(schema, temporalOptions, "distances()");
+  const distanceType =
+    weight === undefined
+      ? "BIGINT"
+      : getGraphWeightColumn(schema, weight, "distances()").distanceType;
+  const temporal =
+    temporalOptions === undefined
+      ? undefined
+      : prepareGraphTemporalSql(schema, temporalOptions, "distances()");
   return { idType: endpoints.idType, distanceType, temporal };
 }
 
@@ -194,18 +175,19 @@ function distancesSelect(
     "distances()",
     "startNodes",
   );
-  const weightColumn = weight === undefined
-    ? undefined
-    : getGraphWeightColumn(schema, weight, "distances()");
+  const weightColumn =
+    weight === undefined ? undefined : getGraphWeightColumn(schema, weight, "distances()");
   const distanceType = weightColumn?.distanceType ?? "BIGINT";
-  const edgeWeight = weightColumn === undefined
-    ? `CAST(1 AS ${distanceType})`
-    : `CAST(${quoteIdentifier("edges")}.${
-      quoteIdentifier(weightColumn.column)
-    } AS ${distanceType})`;
-  const temporal = temporalOptions === undefined
-    ? undefined
-    : prepareGraphTemporalSql(schema, temporalOptions, "distances()");
+  const edgeWeight =
+    weightColumn === undefined
+      ? `CAST(1 AS ${distanceType})`
+      : `CAST(${quoteIdentifier("edges")}.${quoteIdentifier(
+          weightColumn.column,
+        )} AS ${distanceType})`;
+  const temporal =
+    temporalOptions === undefined
+      ? undefined
+      : prepareGraphTemporalSql(schema, temporalOptions, "distances()");
   if (weight !== undefined || metrics.elapsedTime) {
     return summaryDistancesSelect(
       prepared,
@@ -241,58 +223,33 @@ function distancesSelect(
   const distancesRelation = relations.graph_distances;
   const start = `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`;
   const startKey = `${quoteIdentifier("starts")}.${quoteIdentifier("__key")}`;
-  const reachedStart = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("start")
-  }`;
-  const reachedStartKey = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("__start_key")
-  }`;
-  const reachedNodeKey = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("__node_key")
-  }`;
-  const reachedDistance = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("distance")
-  }`;
+  const reachedStart = `${quoteIdentifier("reached")}.${quoteIdentifier("start")}`;
+  const reachedStartKey = `${quoteIdentifier("reached")}.${quoteIdentifier("__start_key")}`;
+  const reachedNodeKey = `${quoteIdentifier("reached")}.${quoteIdentifier("__node_key")}`;
+  const reachedDistance = `${quoteIdentifier("reached")}.${quoteIdentifier("distance")}`;
   const edgeTo = `${quoteIdentifier("edges")}.${quoteIdentifier("__to")}`;
-  const edgeToKey = `${quoteIdentifier("edges")}.${
-    quoteIdentifier("__to_key")
-  }`;
-  const edgeFromKey = `${quoteIdentifier("edges")}.${
-    quoteIdentifier("__from_key")
-  }`;
+  const edgeToKey = `${quoteIdentifier("edges")}.${quoteIdentifier("__to_key")}`;
+  const edgeFromKey = `${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")}`;
   const edgeCost = `${quoteIdentifier("edges")}.${quoteIdentifier("__weight")}`;
-  const bestDistance = `${quoteIdentifier("best")}.${
-    quoteIdentifier("distance")
-  }`;
-  const candidateDistance =
-    `CAST(${reachedDistance} + ${edgeCost} AS ${distanceType})`;
+  const bestDistance = `${quoteIdentifier("best")}.${quoteIdentifier("distance")}`;
+  const candidateDistance = `CAST(${reachedDistance} + ${edgeCost} AS ${distanceType})`;
 
-  const candidateSteps = `${quoteIdentifier("reached")}.${
-    quoteIdentifier("steps")
-  } + 1`;
+  const candidateSteps = `${quoteIdentifier("reached")}.${quoteIdentifier("steps")} + 1`;
   const bestSteps = `${quoteIdentifier("best")}.${quoteIdentifier("steps")}`;
   const order = (distance: string, steps: string) =>
-    metrics.minimize === "steps"
-      ? `ROW(${steps}, ${distance})`
-      : `ROW(${distance}, ${steps})`;
+    metrics.minimize === "steps" ? `ROW(${steps}, ${distance})` : `ROW(${distance}, ${steps})`;
   const candidateOrder = order(candidateDistance, candidateSteps);
   const selectedDistance = `arg_min(${candidateDistance}, ${candidateOrder})`;
   const selectedSteps = `arg_min(${candidateSteps}, ${candidateOrder})`;
 
-  return `WITH RECURSIVE ${startValuesRelation}(${
-    quoteIdentifier("start")
-  }) AS (
+  return `WITH RECURSIVE ${startValuesRelation}(${quoteIdentifier("start")}) AS (
       VALUES ${prepared.startValues}
     ), ${startsRelation} AS (
       SELECT ${quoteIdentifier("start")},
         ${prepared.key(quoteIdentifier("start"))} AS ${quoteIdentifier("__key")}
       FROM ${startValuesRelation}
     ), ${edgesRelation} AS (
-      ${
-    prepared.edges(direction, [
-      `${edgeWeight} AS ${quoteIdentifier("__weight")}`,
-    ])
-  }
+      ${prepared.edges(direction, [`${edgeWeight} AS ${quoteIdentifier("__weight")}`])}
     ), ${distancesRelation}(
       ${quoteIdentifier("start")}, ${quoteIdentifier("node")},
       ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")},
@@ -314,29 +271,23 @@ function distancesSelect(
       INNER JOIN ${edgesRelation} AS ${quoteIdentifier("edges")}
         ON ${reachedNodeKey} = ${edgeFromKey}
       LEFT JOIN recurring.${distancesRelation} AS ${quoteIdentifier("best")}
-        ON ${reachedStartKey} = ${quoteIdentifier("best")}.${
-    quoteIdentifier("__start_key")
-  }
-        AND ${edgeToKey} = ${quoteIdentifier("best")}.${
-    quoteIdentifier("__node_key")
-  }
+        ON ${reachedStartKey} = ${quoteIdentifier("best")}.${quoteIdentifier("__start_key")}
+        AND ${edgeToKey} = ${quoteIdentifier("best")}.${quoteIdentifier("__node_key")}
       GROUP BY ${reachedStart}, ${edgeTo}, ${reachedStartKey}, ${edgeToKey},
         ${bestDistance}, ${bestSteps}
       HAVING ${bestDistance} IS NULL OR
-        ${order(selectedDistance, selectedSteps)} < ${
-    order(bestDistance, bestSteps)
-  }
+        ${order(selectedDistance, selectedSteps)} < ${order(bestDistance, bestSteps)}
     )
     SELECT ${quoteIdentifier("start")}, ${quoteIdentifier("node")},
       ${quoteIdentifier("steps")}${
-    weight === undefined
-      ? ""
-      : `, ${quoteIdentifier("distance")} AS ${quoteIdentifier("total")}`
-  }
+        weight === undefined
+          ? ""
+          : `, ${quoteIdentifier("distance")} AS ${quoteIdentifier("total")}`
+      }
     FROM ${distancesRelation}
-    ORDER BY ${quoteIdentifier("__start_key")}, ${
-    quoteIdentifier(metrics.minimize === "steps" ? "steps" : "distance")
-  }, ${quoteIdentifier("__node_key")}`;
+    ORDER BY ${quoteIdentifier("__start_key")}, ${quoteIdentifier(
+      metrics.minimize === "steps" ? "steps" : "distance",
+    )}, ${quoteIdentifier("__node_key")}`;
 }
 
 function temporalDistancesSelect(
@@ -351,9 +302,7 @@ function temporalDistancesSelect(
   const q = quoteIdentifier;
   const startsSelect = `SELECT ${q("start")},
         ${prepared.key(q("start"))} AS ${q("__key")}
-      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${
-    q("start")
-  })`;
+      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${q("start")})`;
   const costStates = buildGraphTemporalCostStateSql(
     prepared,
     startsSelect,
@@ -364,21 +313,20 @@ function temporalDistancesSelect(
     [],
     minimize,
   );
-  const order = minimize === "steps"
-    ? `${q("steps")}, ${q("distance")}`
-    : `${q("distance")}, ${q("steps")}`;
+  const order =
+    minimize === "steps" ? `${q("steps")}, ${q("distance")}` : `${q("distance")}, ${q("steps")}`;
   return `${costStates.withClause}
     SELECT ${q("start")}, ${q("node")}, ${q("steps")}${
-    includeTotal ? `, ${q("distance")} AS ${q("total")}` : ""
-  }
+      includeTotal ? `, ${q("distance")} AS ${q("total")}` : ""
+    }
     FROM ${costStates.costRelation}
     QUALIFY row_number() OVER (
       PARTITION BY ${q("__start_key")}, ${q("__node_key")}
       ORDER BY ${order}
     ) = 1
-    ORDER BY ${q("__start_key")}, ${
-    q(minimize === "steps" ? "steps" : "distance")
-  }, ${q("__node_key")}`;
+    ORDER BY ${q("__start_key")}, ${q(
+      minimize === "steps" ? "steps" : "distance",
+    )}, ${q("__node_key")}`;
 }
 
 // Distinct visited sets, metrics, and temporal boundaries are enough to extend
@@ -416,51 +364,47 @@ function summaryDistancesSelect(
   const ref = (alias: string, column: string) => `${q(alias)}.${q(column)}`;
   const searchDirection = direction as Exclude<GraphDirection, "both">;
   const firstAnchor = temporal?.journeyAnchor("edges", searchDirection);
-  const sum = `CAST(${ref("reached", "distance")} + ${
-    ref("edges", "__weight")
-  } AS ${distanceType})`;
+  const sum = `CAST(${ref("reached", "distance")} + ${ref(
+    "edges",
+    "__weight",
+  )} AS ${distanceType})`;
   // Reported costs must not reject routes before the primary objective has
   // selected its results. NULL marks overflow and propagates through sums;
   // non-negative weights cannot bring an overflowing total back into range.
   const nextDistance = metrics.minimize === "weight" ? sum : `TRY(${sum})`;
-  const temporalColumns = temporal === undefined
-    ? ""
-    : `, ${q("__event_start")}, ${q("__event_end")}`;
-  const eventValues = temporal === undefined
-    ? ""
-    : `, ${ref("edges", "__event_start")}, ${ref("edges", "__event_end")}`;
-  const metric = metrics.minimize === "steps"
-    ? q("steps")
-    : metrics.minimize === "weight"
-    ? q("distance")
-    : q("__elapsed");
+  const temporalColumns =
+    temporal === undefined ? "" : `, ${q("__event_start")}, ${q("__event_end")}`;
+  const eventValues =
+    temporal === undefined
+      ? ""
+      : `, ${ref("edges", "__event_start")}, ${ref("edges", "__event_end")}`;
+  const metric =
+    metrics.minimize === "steps"
+      ? q("steps")
+      : metrics.minimize === "weight"
+        ? q("distance")
+        : q("__elapsed");
   // Use native time precision for selection. Collapse equal reported values
   // after conversion to milliseconds, since these are summary rows.
   const reportedElapsed = metrics.elapsedTime
-    ? `, ${temporal!.elapsedMilliseconds(q("__elapsed"))} AS ${
-      q("elapsedTimeMs")
-    }`
+    ? `, ${temporal!.elapsedMilliseconds(q("__elapsed"))} AS ${q("elapsedTimeMs")}`
     : "";
-  const order = metrics.minimize === "steps"
-    ? [
-      q("steps"),
-      q("__node_key"),
-      ...(includeTotal ? [q("total")] : []),
-      ...(metrics.elapsedTime ? [q("elapsedTimeMs")] : []),
-    ]
-    : metrics.minimize === "weight"
-    ? [
-      q("total"),
-      q("__node_key"),
-      q("steps"),
-      ...(metrics.elapsedTime ? [q("elapsedTimeMs")] : []),
-    ]
-    : [
-      q("elapsedTimeMs"),
-      q("__node_key"),
-      q("steps"),
-      ...(includeTotal ? [q("total")] : []),
-    ];
+  const order =
+    metrics.minimize === "steps"
+      ? [
+          q("steps"),
+          q("__node_key"),
+          ...(includeTotal ? [q("total")] : []),
+          ...(metrics.elapsedTime ? [q("elapsedTimeMs")] : []),
+        ]
+      : metrics.minimize === "weight"
+        ? [
+            q("total"),
+            q("__node_key"),
+            q("steps"),
+            ...(metrics.elapsedTime ? [q("elapsedTimeMs")] : []),
+          ]
+        : [q("elapsedTimeMs"), q("__node_key"), q("steps"), ...(includeTotal ? [q("total")] : [])];
 
   const bounds = summaryBoundsSql(
     relations.graph_best_metrics,
@@ -477,118 +421,99 @@ function summaryDistancesSelect(
 
   return `WITH RECURSIVE ${settings} AS (
       ${
-    temporal === undefined
-      ? `SELECT 0 AS ${q("__gap")}`
-      : `SELECT CAST(? AS HUGEINT) AS ${q("__gap")}`
-  }
+        temporal === undefined
+          ? `SELECT 0 AS ${q("__gap")}`
+          : `SELECT CAST(? AS HUGEINT) AS ${q("__gap")}`
+      }
     ), ${events} AS MATERIALIZED (
-      ${
-    prepared.edges(direction, [
-      `${edgeWeight} AS ${q("__weight")}`,
-      ...(temporal?.eventSelections("edges") ?? []),
-    ])
-  }
+      ${prepared.edges(direction, [
+        `${edgeWeight} AS ${q("__weight")}`,
+        ...(temporal?.eventSelections("edges") ?? []),
+      ])}
     ), ${edges} AS MATERIALIZED (
       SELECT DISTINCT ${q("__from")}, ${q("__to")}, ${q("__from_key")},
         ${q("__to_key")}, ${q("__weight")}${temporalColumns}
       FROM ${events} AS ${q("events")}
-      ${
-    temporal === undefined ? "" : `WHERE ${temporal.eventValidity("events")}`
-  }
+      ${temporal === undefined ? "" : `WHERE ${temporal.eventValidity("events")}`}
     ), ${starts} AS (
       SELECT ${q("start")}, ${prepared.key(q("start"))} AS ${q("__key")}
-      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${
-    q("start")
-  })
+      FROM (VALUES ${prepared.startValues}) AS ${q("start_values")}(${q("start")})
     ), ${bounds.ctes}, ${summaries}(
       ${q("start")}, ${q("node")}, ${q("__start_key")}, ${q("__node_key")},
       ${q("__visited")}, ${q("steps")}, ${q("distance")}${temporalColumns}${
-    metrics.elapsedTime ? `, ${q("__anchor")}` : ""
-  }
+        metrics.elapsedTime ? `, ${q("__anchor")}` : ""
+      }
     ) AS (
       SELECT ${ref("starts", "start")}, ${ref("edges", "__to")},
         ${ref("starts", "__key")}, ${ref("edges", "__to_key")},
-        list_sort(list_distinct([${ref("starts", "__key")}, ${
-    ref("edges", "__to_key")
-  }])),
+        list_sort(list_distinct([${ref("starts", "__key")}, ${ref("edges", "__to_key")}])),
         CAST(1 AS BIGINT), ${ref("edges", "__weight")}${eventValues}${
-    metrics.elapsedTime ? `, ${firstAnchor}` : ""
-  }
+          metrics.elapsedTime ? `, ${firstAnchor}` : ""
+        }
       FROM ${starts} AS ${q("starts")}
       INNER JOIN ${edges} AS ${q("edges")}
         ON ${ref("starts", "__key")} = ${ref("edges", "__from_key")}
       ${bounds.join(ref("starts", "__key"))}
-      WHERE ${
-    bounds.test("CAST(1 AS BIGINT)", ref("edges", "__weight"), firstAnchor)
-  }
+      WHERE ${bounds.test("CAST(1 AS BIGINT)", ref("edges", "__weight"), firstAnchor)}
       UNION
       SELECT ${ref("reached", "start")}, ${ref("edges", "__to")},
         ${ref("reached", "__start_key")}, ${ref("edges", "__to_key")},
-        list_sort(list_distinct(list_append(${ref("reached", "__visited")}, ${
-    ref("edges", "__to_key")
-  }))),
+        list_sort(list_distinct(list_append(${ref("reached", "__visited")}, ${ref(
+          "edges",
+          "__to_key",
+        )}))),
         ${ref("reached", "steps")} + 1, ${nextDistance}${eventValues}${
-    metrics.elapsedTime ? `, ${ref("reached", "__anchor")}` : ""
-  }
+          metrics.elapsedTime ? `, ${ref("reached", "__anchor")}` : ""
+        }
       FROM ${summaries} AS ${q("reached")}
       INNER JOIN ${edges} AS ${q("edges")}
         ON ${ref("reached", "__node_key")} = ${ref("edges", "__from_key")}
       CROSS JOIN ${settings} AS ${q("settings")}
       ${bounds.join(ref("reached", "__start_key"))}
-      WHERE ${
-    bounds.test(
-      `${ref("reached", "steps")} + 1`,
-      nextDistance,
-      ref("reached", "__anchor"),
-    )
-  }
+      WHERE ${bounds.test(
+        `${ref("reached", "steps")} + 1`,
+        nextDistance,
+        ref("reached", "__anchor"),
+      )}
         AND ${ref("reached", "__node_key")} <> ${ref("reached", "__start_key")}
-        AND (NOT list_contains(${ref("reached", "__visited")}, ${
-    ref("edges", "__to_key")
-  })
+        AND (NOT list_contains(${ref("reached", "__visited")}, ${ref("edges", "__to_key")})
           OR ${ref("edges", "__to_key")} = ${ref("reached", "__start_key")})
         ${
-    temporal === undefined ? "" : `AND ${
-      temporal.transition(
-        "reached",
-        "edges",
-        searchDirection,
-        ref("settings", "__gap"),
-      )
-    }`
-  }
+          temporal === undefined
+            ? ""
+            : `AND ${temporal.transition(
+                "reached",
+                "edges",
+                searchDirection,
+                ref("settings", "__gap"),
+              )}`
+        }
     ), ${results} AS (
       SELECT *${
-    metrics.elapsedTime
-      ? `, ${
-        temporal!.journeyElapsed(
-          "summaries",
-          ref("summaries", "__anchor"),
-          searchDirection,
-        )
-      } AS ${q("__elapsed")}`
-      : ""
-  }
+        metrics.elapsedTime
+          ? `, ${temporal!.journeyElapsed(
+              "summaries",
+              ref("summaries", "__anchor"),
+              searchDirection,
+            )} AS ${q("__elapsed")}`
+          : ""
+      }
       FROM ${summaries} AS ${q("summaries")}
     ), ${tied} AS MATERIALIZED (
-      SELECT DISTINCT ${q("start")}, ${q("node")}, ${q("__start_key")}, ${
-    q("__node_key")
-  },
-        ${q("steps")}${
-    includeTotal ? `, ${q("distance")} AS ${q("total")}` : ""
-  }${reportedElapsed}
+      SELECT DISTINCT ${q("start")}, ${q("node")}, ${q("__start_key")}, ${q("__node_key")},
+        ${q("steps")}${includeTotal ? `, ${q("distance")} AS ${q("total")}` : ""}${reportedElapsed}
       FROM ${results}
       QUALIFY ${metric} = MIN(${metric}) OVER (
         PARTITION BY ${q("__start_key")}, ${q("__node_key")}
       )
     )
     SELECT ${q("start")}, ${q("node")}, ${q("steps")}${
-    includeTotal
-      ? `, CASE WHEN ${q("total")} IS NULL
+      includeTotal
+        ? `, CASE WHEN ${q("total")} IS NULL
           THEN error('distances() total exceeds the supported ${distanceType} range for an optimal route.')
           ELSE ${q("total")} END AS ${q("total")}`
-      : ""
-  }${metrics.elapsedTime ? `, ${q("elapsedTimeMs")}` : ""}
+        : ""
+    }${metrics.elapsedTime ? `, ${q("elapsedTimeMs")}` : ""}
     FROM ${tied}
     ORDER BY ${q("__start_key")}, ${order.join(", ")}`;
 }
@@ -613,18 +538,9 @@ function summaryBoundsSql(
   const ref = (alias: string, column: string) => `${q(alias)}.${q(column)}`;
   const elapsed = minimize === "elapsedTime";
   const globalBound = elapsed || (minimize === "weight" && floatingWeight);
-  const boundaries = temporal === undefined
-    ? []
-    : ["__event_start", "__event_end"];
-  const keys = [
-    "__start_key",
-    "__node_key",
-    ...boundaries,
-    ...(elapsed ? ["__anchor"] : []),
-  ];
-  const firstAnchor = elapsed
-    ? temporal!.journeyAnchor("edges", direction)
-    : undefined;
+  const boundaries = temporal === undefined ? [] : ["__event_start", "__event_end"];
+  const keys = ["__start_key", "__node_key", ...boundaries, ...(elapsed ? ["__anchor"] : [])];
+  const firstAnchor = elapsed ? temporal!.journeyAnchor("edges", direction) : undefined;
   const firstKeys = [
     ref("starts", "__key"),
     ref("edges", "__to_key"),
@@ -637,18 +553,18 @@ function summaryBoundsSql(
     ...boundaries.map((key) => ref("edges", key)),
     ...(elapsed ? [ref("reached", "__anchor")] : []),
   ];
-  const firstMetric = minimize === "steps"
-    ? "CAST(1 AS BIGINT)"
-    : elapsed
-    ? temporal!.journeyElapsed("edges", firstAnchor!, direction)
-    : ref("edges", "__weight");
-  const nextMetric = minimize === "steps"
-    ? `${ref("reached", "__metric")} + 1`
-    : elapsed
-    ? temporal!.journeyElapsed("edges", ref("reached", "__anchor"), direction)
-    : `CAST(${ref("reached", "__metric")} + ${
-      ref("edges", "__weight")
-    } AS ${distanceType})`;
+  const firstMetric =
+    minimize === "steps"
+      ? "CAST(1 AS BIGINT)"
+      : elapsed
+        ? temporal!.journeyElapsed("edges", firstAnchor!, direction)
+        : ref("edges", "__weight");
+  const nextMetric =
+    minimize === "steps"
+      ? `${ref("reached", "__metric")} + 1`
+      : elapsed
+        ? temporal!.journeyElapsed("edges", ref("reached", "__anchor"), direction)
+        : `CAST(${ref("reached", "__metric")} + ${ref("edges", "__weight")} AS ${distanceType})`;
   const minimum = `MIN(${nextMetric})`;
   const bestMetric = ref("best", "__metric");
   const ctes = `${best}(${keys.map(q).join(", ")}, ${q("__metric")})
@@ -665,37 +581,28 @@ function summaryBoundsSql(
         ON ${ref("reached", "__node_key")} = ${ref("edges", "__from_key")}
       CROSS JOIN ${settings} AS ${q("settings")}
       LEFT JOIN recurring.${best} AS ${q("best")}
-        ON ${
-    keys.map((key, i) => `${ref("best", key)} = ${nextKeys[i]}`).join(" AND ")
-  }
+        ON ${keys.map((key, i) => `${ref("best", key)} = ${nextKeys[i]}`).join(" AND ")}
       WHERE ${ref("reached", "__node_key")} <> ${ref("reached", "__start_key")}
         ${
-    temporal === undefined ? "" : `AND ${
-      temporal.transition(
-        "reached",
-        "edges",
-        direction,
-        ref("settings", "__gap"),
-      )
-    }`
-  }
+          temporal === undefined
+            ? ""
+            : `AND ${temporal.transition("reached", "edges", direction, ref("settings", "__gap"))}`
+        }
       GROUP BY ${nextKeys.join(", ")}, ${bestMetric}
       HAVING ${bestMetric} IS NULL OR ${minimum} < ${bestMetric}
     )${
-    globalBound
-      ? `, ${limits} AS (
+      globalBound
+        ? `, ${limits} AS (
       SELECT ${q("__start_key")}, MAX(${q("__minimum")}) AS ${q("__metric")}
       FROM (
-        SELECT ${q("__start_key")}, ${q("__node_key")}, MIN(${
-        q("__metric")
-      }) AS ${q("__minimum")}
+        SELECT ${q("__start_key")}, ${q("__node_key")}, MIN(${q("__metric")}) AS ${q("__minimum")}
         FROM ${best}
         GROUP BY ${q("__start_key")}, ${q("__node_key")}
       ) AS ${q("minima")}
       GROUP BY ${q("__start_key")}
     )`
-      : ""
-  }`;
+        : ""
+    }`;
   return {
     ctes,
     join: (startKey: string) =>
@@ -705,21 +612,16 @@ function summaryBoundsSql(
         globalBound
           ? ""
           : `AND ${ref("bounds", "__node_key")} = ${ref("edges", "__to_key")}
-        ${
-            boundaries.map((key) =>
-              `AND ${ref("bounds", key)} = ${ref("edges", key)}`
-            ).join(" ")
-          }`
+        ${boundaries.map((key) => `AND ${ref("bounds", key)} = ${ref("edges", key)}`).join(" ")}`
       }`,
     test: (steps: string, distance: string, anchor: string | undefined) => {
-      const metric = minimize === "steps"
-        ? steps
-        : elapsed
-        ? temporal!.journeyElapsed("edges", anchor!, direction)
-        : distance;
-      return `${metric} ${globalBound ? "<=" : "="} ${
-        ref("bounds", "__metric")
-      }`;
+      const metric =
+        minimize === "steps"
+          ? steps
+          : elapsed
+            ? temporal!.journeyElapsed("edges", anchor!, direction)
+            : distance;
+      return `${metric} ${globalBound ? "<=" : "="} ${ref("bounds", "__metric")}`;
     },
   };
 }

@@ -1,7 +1,9 @@
-import { assertEquals } from "@std/assert";
+import { stripVTControlCharacters } from "node:util";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("log aligns decomposed filename accents without changing data", async () => {
+test("log aligns decomposed filename accents without changing data", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -19,49 +21,46 @@ Deno.test("log aligns decomposed filename accents without changing data", async 
     for (const types of [false, true]) {
       lines.length = 0;
       await table.log({ types });
-      assertEquals(lines.join("\n").includes(data[1].fileName), true);
+      expect(lines.join("\n").includes(data[1].fileName)).toStrictEqual(true);
       // NFC makes these Latin accents single code units, allowing border
       // positions to be checked independently of the renderer's segmenter.
       const rows = lines
-        // deno-lint-ignore no-control-regex
-        .map((line) => line.replace(/\x1b\[[0-9;]*m/g, "").normalize("NFC"))
+        .map((line) => stripVTControlCharacters(line).normalize("NFC"))
         .filter((line) => line.startsWith("│"));
-      assertEquals(rows.length, types ? 6 : 5);
-      const positions = rows.map((line) =>
-        Array.from(line.matchAll(/│/g), (match) => match.index)
-      );
+      expect(rows.length).toStrictEqual(types ? 6 : 5);
+      const positions = rows.map((line) => Array.from(line.matchAll(/│/g), (match) => match.index));
       for (const borders of positions) {
-        assertEquals(borders, positions[0]);
+        expect(borders).toStrictEqual(positions[0]);
       }
     }
-    assertEquals(await table.getData(), data);
+    expect(await table.getData()).toStrictEqual(data);
   } finally {
     console.log = originalLog;
     await sdb.close();
   }
 });
 
-Deno.test("should log a table", async () => {
+test("should log a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log a table with 100 rows", async () => {
+test("should log a table with 100 rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log(100);
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log a table with 100 rows in options", async () => {
+test("should log a table with 100 rows in options", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -73,26 +72,23 @@ Deno.test("should log a table with 100 rows in options", async () => {
       output.push(args.map(String).join(" "));
     };
     await table.log({ count: 100 });
-    assertEquals(
-      output.at(-1),
-      `${await table.getRowCount()} rows in total`,
-    );
+    expect(output.at(-1)).toStrictEqual(`${await table.getRowCount()} rows in total`);
   } finally {
     console.log = originalLog;
   }
   await sdb.close();
 });
-Deno.test("should log a table with types", async () => {
+test("should log a table with types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ types: true });
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should allow local types option to override the default", async () => {
+test("should allow local types option to override the default", async () => {
   const sdb = new SimpleDB({ typesToLog: true });
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -106,43 +102,41 @@ Deno.test("should allow local types option to override the default", async () =>
 
   await table.log({ types: false });
 
-  assertEquals(getTypesCalled, false);
+  expect(getTypesCalled).toStrictEqual(false);
   await sdb.close();
 });
-Deno.test("should log a table with 100 rows and types", async () => {
+test("should log a table with 100 rows and types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ types: true, count: 100 });
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should not throw an error when there is no table", async () => {
+test("should not throw an error when there is no table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.log();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should log '<Geometry>' for geospatial data", async () => {
+test("should log '<Geometry>' for geospatial data", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   await table.log();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should log types even if there is just one column in the table", async () => {
+test("should log types even if there is just one column in the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -150,50 +144,50 @@ Deno.test("should log types even if there is just one column in the table", asyn
   await table.log();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log a table with a condition", async () => {
+test("should log a table with a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ conditions: `Name === 'OConnell, Donald'` });
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log a table with 'all'", async () => {
+test("should log a table with 'all'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log("all");
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log a table with { count: 'all'}", async () => {
+test("should log a table with { count: 'all'}", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.log({ count: "all" });
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log a table with long strings and word wrap the columns", async () => {
+test("should log a table with long strings and word wrap the columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   await table.log();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should log different colors for different data types", async () => {
+test("should log different colors for different data types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   const dataArray = [
@@ -218,11 +212,11 @@ Deno.test("should log different colors for different data types", async () => {
   await table.log({ types: true });
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("log preserves SQL display precision, nested structure, and numeric colors", async () => {
+test("log preserves SQL display precision, nested structure, and numeric colors", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -246,34 +240,32 @@ Deno.test("log preserves SQL display precision, nested structure, and numeric co
       lines.length = 0;
       await table.log({ types });
       const output = lines.join("\n");
-      for (
-        const text of [
-          "2025-01-01",
-          "2025-01-01 00:00:00.123456",
-          "2025-01-01 00:00:00.123456789",
-          "2025-01-01 00:00:00.123456+00",
-          "[1,null,3]",
-          '{"id":"9007199254740993","count":2}',
-          "\x1b[33m1234567890123456.789",
-          "\x1b[33mNaN",
-          "\x1b[33mInfinity",
-          "\x1b[33m-Infinity",
-          "\x1b[32m123.450",
-        ]
-      ) {
-        assertEquals(output.includes(text), true, text);
+      for (const text of [
+        "2025-01-01",
+        "2025-01-01 00:00:00.123456",
+        "2025-01-01 00:00:00.123456789",
+        "2025-01-01 00:00:00.123456+00",
+        "[1,null,3]",
+        '{"id":"9007199254740993","count":2}',
+        "\x1b[33m1234567890123456.789",
+        "\x1b[33mNaN",
+        "\x1b[33mInfinity",
+        "\x1b[33m-Infinity",
+        "\x1b[32m123.450",
+      ]) {
+        expect(output.includes(text), text).toStrictEqual(true);
       }
-      assertEquals(output.includes("2025-01-01T"), false);
-      if (types) assertEquals(output.includes("UBIGINT/number"), true);
+      expect(output.includes("2025-01-01T")).toStrictEqual(false);
+      if (types) expect(output.includes("UBIGINT/number")).toStrictEqual(true);
     }
-    assertEquals(await table.getData(), before);
+    expect(await table.getData()).toStrictEqual(before);
   } finally {
     console.log = originalLog;
     await sdb.close();
   }
 });
 
-Deno.test("log handles temporal infinities and null-first or all-null type annotations", async () => {
+test("log handles temporal infinities and null-first or all-null type annotations", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -286,16 +278,8 @@ Deno.test("log handles temporal infinities and null-first or all-null type annot
     };
     await sdb.newTable("boundaries").log({ types: true });
     const output = lines.join("\n");
-    for (
-      const text of [
-        "INTEGER/number",
-        "BIGINT/number",
-        "infinity",
-        "-infinity",
-        "null",
-      ]
-    ) {
-      assertEquals(output.includes(text), true, text);
+    for (const text of ["INTEGER/number", "BIGINT/number", "infinity", "-infinity", "null"]) {
+      expect(output.includes(text), text).toStrictEqual(true);
     }
   } finally {
     console.log = originalLog;
@@ -303,7 +287,7 @@ Deno.test("log handles temporal infinities and null-first or all-null type annot
   }
 });
 
-Deno.test("log truncates serialized nested values using the default character budget", async () => {
+test("log truncates serialized nested values using the default character budget", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -315,42 +299,37 @@ Deno.test("log truncates serialized nested values using the default character bu
       lines.push(args.map(String).join(" "));
     };
     const table = sdb.newTable("long_nested");
-    assertEquals(table.charsToLog, 75);
+    expect(table.charsToLog).toStrictEqual(75);
     await table.log();
-    assertEquals(
-      lines.join("\n").includes('{"text":"' + "x".repeat(63) + "..."),
-      true,
-    );
-    assertEquals((await table.getData())[0].nested, { text: "x".repeat(200) });
+    expect(lines.join("\n").includes('{"text":"' + "x".repeat(63) + "...")).toStrictEqual(true);
+    expect((await table.getData())[0].nested).toStrictEqual({ text: "x".repeat(200) });
   } finally {
     console.log = originalLog;
     await sdb.close();
   }
 });
 
-Deno.test("log stringifies nested temporal values instead of treating their containers as dates", async () => {
+test("log stringifies nested temporal values instead of treating their containers as dates", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
   try {
-    await sdb.customQuery(
-      `CREATE TABLE nested_dates AS SELECT [DATE '2025-01-01', NULL] AS dates`,
-    );
+    await sdb.customQuery(`CREATE TABLE nested_dates AS SELECT [DATE '2025-01-01', NULL] AS dates`);
     const table = sdb.newTable("nested_dates");
-    assertEquals(await table.getData(), [{ dates: ["2025-01-01", null] }]);
+    expect(await table.getData()).toStrictEqual([{ dates: ["2025-01-01", null] }]);
     console.log = (...args: unknown[]) => {
       lines.push(args.map(String).join(" "));
     };
     await table.log({ types: true });
-    assertEquals(lines.join("\n").includes('["2025-01-01",null]'), true);
-    assertEquals(lines.join("\n").includes("DATE[]/object"), true);
+    expect(lines.join("\n").includes('["2025-01-01",null]')).toStrictEqual(true);
+    expect(lines.join("\n").includes("DATE[]/object")).toStrictEqual(true);
   } finally {
     console.log = originalLog;
     await sdb.close();
   }
 });
 
-Deno.test("log and logBottom retain compact vector labels while getData returns arrays", async () => {
+test("log and logBottom retain compact vector labels while getData returns arrays", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -366,30 +345,32 @@ Deno.test("log and logBottom retain compact vector labels while getData returns 
       lines.length = 0;
       await log();
       const text = lines.join("\n");
-      assertEquals(text.includes("<FLOAT[2]>"), true);
-      assertEquals(text.includes("<FLOAT[]>"), true);
-      assertEquals(text.includes("12.5"), false);
-      assertEquals(text.includes("null"), true);
+      expect(text.includes("<FLOAT[2]>")).toStrictEqual(true);
+      expect(text.includes("<FLOAT[]>")).toStrictEqual(true);
+      expect(text.includes("12.5")).toStrictEqual(false);
+      expect(text.includes("null")).toStrictEqual(true);
     }
-    assertEquals(await table.getData(), [{
-      vector: [12.5, null],
-      list: [12.5, null],
-      missing: null,
-    }]);
+    expect(await table.getData()).toStrictEqual([
+      {
+        vector: [12.5, null],
+        list: [12.5, null],
+        missing: null,
+      },
+    ]);
   } finally {
     console.log = originalLog;
     await sdb.close();
   }
 });
 
-Deno.test("log footer describes actual displayed rows and matching totals", async () => {
+test("log footer describes actual displayed rows and matching totals", async () => {
   const sdb = new SimpleDB({ rowsToLog: 5, charsToLog: 20 });
   const originalLog = console.log;
   const lines: string[] = [];
   try {
-    const table = sdb.newTable("footer").loadArray(
-      Array.from({ length: 11 }, (_, value) => ({ value })),
-    );
+    const table = sdb
+      .newTable("footer")
+      .loadArray(Array.from({ length: 11 }, (_, value) => ({ value })));
     console.log = (...args: unknown[]) => {
       lines.push(args.map(String).join(" "));
     };
@@ -404,17 +385,14 @@ Deno.test("log footer describes actual displayed rows and matching totals", asyn
       ["all", "11 rows in total"],
       [{ count: "all" }, "11 rows in total"],
       [{ count: 15, conditions: "value < 3" }, "3 rows in total"],
-      [
-        { count: 2, conditions: "value < 3" },
-        "3 rows in total / showing 2 rows",
-      ],
+      [{ count: 2, conditions: "value < 3" }, "3 rows in total / showing 2 rows"],
       [{ count: "all", conditions: "value < 3" }, "3 rows in total"],
       [{ count: 15, conditions: "value < 0" }, "0 rows in total"],
     ];
     for (const [options, footer] of cases) {
       lines.length = 0;
       await table.log(options);
-      assertEquals(lines.at(-1), footer);
+      expect(lines.at(-1)).toStrictEqual(footer);
     }
   } finally {
     console.log = originalLog;

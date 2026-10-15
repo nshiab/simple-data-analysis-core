@@ -18,18 +18,19 @@ export default function area(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "area()");
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "area()", simpleTable.name);
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "area()", simpleTable.name);
       let expression = `ST_Area_Spheroid(${quoteIdentifier(column)}) ${
         options.unit === "km2" ? "/ 1000000" : ""
       }`;
       if (typeof options.decimals === "number") {
         expression = `ROUND(${expression}, ${options.decimals})`;
       }
-      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${quoteIdentifier(
+        newColumn,
+      )} FROM ${input}`;
     },
   });
 }

@@ -38,13 +38,11 @@ export default function correlations(
         );
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
-            correlationsSelect(
-              `${quoteIdentifier(simpleTable.name)}`,
-              combinations,
-              options,
-            )
-          }`,
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${correlationsSelect(
+            `${quoteIdentifier(simpleTable.name)}`,
+            combinations,
+            options,
+          )}`,
           mergeOptions(simpleTable, {
             table: outputTable.name,
             method: "correlations()",
@@ -66,9 +64,7 @@ export default function correlations(
     parameters: { options },
     needsSchema: true,
     values: (types) =>
-      correlationsValues(
-        getCorrelationsCombinations(types, options, simpleTable.name),
-      ),
+      correlationsValues(getCorrelationsCombinations(types, options, simpleTable.name)),
     buildSelect: (input, types) =>
       correlationsSelect(
         input,
@@ -79,9 +75,7 @@ export default function correlations(
   return simpleTable;
 }
 
-function correlationsValues(
-  combinations: [string, string][],
-): string[] {
+function correlationsValues(combinations: [string, string][]): string[] {
   return combinations.flatMap(([x, y]) => [x, y]);
 }
 
@@ -90,12 +84,7 @@ function getCorrelationsCombinations(
   options: { x?: string; y?: string },
   tableName: string,
 ): [string, string][] {
-  const columns = validateNumericalAnalysis(
-    types,
-    options,
-    "correlations()",
-    tableName,
-  );
+  const columns = validateNumericalAnalysis(types, options, "correlations()", tableName);
   let combinations: [string, string][] = [];
   if (options.x === undefined) {
     combinations = getCombinations(columns, 2);
@@ -122,27 +111,25 @@ function correlationsSelect(
 ) {
   const by = options.by ? stringToArray(options.by) : [];
 
-  const groupBy = by.length === 0
-    ? ""
-    : ` GROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
+  const groupBy =
+    by.length === 0 ? "" : ` GROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
 
-  const catSelect = by.length > 0
-    ? `${by.map((d) => `${quoteIdentifier(d)}`).join(",")}, `
-    : "";
+  const catSelect = by.length > 0 ? `${by.map((d) => `${quoteIdentifier(d)}`).join(",")}, ` : "";
 
   // One UNION ALL branch per pair (each with a distinct pair of literals, so
   // deduplication would never remove anything). DuckDB runs the branches as
   // concurrent pipelines, which parallelizes the aggregates better than
   // computing them all in one scan.
   const branches = combinations.map((comb) => {
-    const expression = typeof options.decimals === "number"
-      ? `ROUND(corr(${quoteIdentifier(comb[0])}, ${
-        quoteIdentifier(comb[1])
-      }), ${options.decimals})`
-      : `corr(${quoteIdentifier(comb[0])}, ${quoteIdentifier(comb[1])})`;
-    return `SELECT ${catSelect}? AS ${quoteIdentifier("x")}, ? AS ${
-      quoteIdentifier("y")
-    }, ${expression} AS ${quoteIdentifier("corr")} FROM ${input}${groupBy}`;
+    const expression =
+      typeof options.decimals === "number"
+        ? `ROUND(corr(${quoteIdentifier(comb[0])}, ${quoteIdentifier(
+            comb[1],
+          )}), ${options.decimals})`
+        : `corr(${quoteIdentifier(comb[0])}, ${quoteIdentifier(comb[1])})`;
+    return `SELECT ${catSelect}? AS ${quoteIdentifier("x")}, ? AS ${quoteIdentifier(
+      "y",
+    )}, ${expression} AS ${quoteIdentifier("corr")} FROM ${input}${groupBy}`;
   });
 
   return branches.join("\nUNION ALL\n");

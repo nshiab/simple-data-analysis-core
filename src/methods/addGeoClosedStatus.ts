@@ -18,16 +18,13 @@ export default function addGeoClosedStatus(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addGeoClosedStatus()");
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(
-          types,
-          "addGeoClosedStatus()",
-          simpleTable.name,
-        );
-      return `SELECT *, CAST(ST_IsClosed(${
-        quoteIdentifier(column)
-      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "addGeoClosedStatus()", simpleTable.name);
+      return `SELECT *, CAST(ST_IsClosed(${quoteIdentifier(
+        column,
+      )}) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

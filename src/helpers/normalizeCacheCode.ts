@@ -168,9 +168,7 @@ export default function normalizeCacheCode(source: string): string {
         continue;
       }
       if (rest.startsWith("//")) {
-        while (
-          position < source.length && !lineTerminator.test(source[position])
-        ) {
+        while (position < source.length && !lineTerminator.test(source[position])) {
           position++;
         }
         continue;
@@ -187,10 +185,8 @@ export default function normalizeCacheCode(source: string): string {
         return tokens;
       }
       // Legacy HTML comments and native function text are not ordinary tokens.
-      if (
-        rest.startsWith("<!--") || rest.startsWith("-->") ||
-        rest.startsWith("[native code]")
-      ) break;
+      if (rest.startsWith("<!--") || rest.startsWith("-->") || rest.startsWith("[native code]"))
+        break;
 
       const previous = tokens.at(-1);
       let kind: Token["kind"] = "punctuation";
@@ -205,16 +201,12 @@ export default function normalizeCacheCode(source: string): string {
         const property = [".", "?."].includes(tokens.at(-2)?.text ?? "");
         if (
           !previous ||
-          (previous.kind === "punctuation" &&
-            expressionPrefixes.has(previous.text)) ||
-          (previous.kind === "word" && !property &&
-            expressionKeywords.has(previous.text))
+          (previous.kind === "punctuation" && expressionPrefixes.has(previous.text)) ||
+          (previous.kind === "word" && !property && expressionKeywords.has(previous.text))
         ) {
           kind = "literal";
           text = regex();
-        } else if (
-          previous.kind === "literal" || previous.kind === "template"
-        ) {
+        } else if (previous.kind === "literal" || previous.kind === "template") {
           text = rest.startsWith("/=") ? "/=" : "/";
           position += text.length;
         } else {
@@ -256,25 +248,28 @@ export default function normalizeCacheCode(source: string): string {
 
 function serialize(tokens: Token[]): string {
   tokens = normalizePunctuation(tokens);
-  return JSON.stringify(tokens.map((token, index) => {
-    const previous = tokens[index - 1];
-    // Only discard newlines where continuation is certain. Keeping other
-    // newlines permits conservative misses rather than unsafe cache hits.
-    const significant = token.lineBreak && previous !== undefined && (
-      restrictedLineBreaks.has(previous.text) ||
-      ["++", "--"].includes(token.text) ||
-      !(
-        (previous.kind === "punctuation" &&
-          (expressionPrefixes.has(previous.text) ||
-            [".", "?.", "}"].includes(previous.text))) ||
-        (token.kind === "punctuation" &&
-          ([")", "]", "}", ",", ";", ".", "?."].includes(token.text) ||
-            (expressionPrefixes.has(token.text) &&
-              !["(", "[", "{", "!", "~"].includes(token.text))))
-      )
-    );
-    return [token.kind, token.text, significant];
-  }));
+  return JSON.stringify(
+    tokens.map((token, index) => {
+      const previous = tokens[index - 1];
+      // Only discard newlines where continuation is certain. Keeping other
+      // newlines permits conservative misses rather than unsafe cache hits.
+      const significant =
+        token.lineBreak &&
+        previous !== undefined &&
+        (restrictedLineBreaks.has(previous.text) ||
+          ["++", "--"].includes(token.text) ||
+          !(
+            (previous.kind === "punctuation" &&
+              (expressionPrefixes.has(previous.text) ||
+                [".", "?.", "}"].includes(previous.text))) ||
+            (token.kind === "punctuation" &&
+              ([")", "]", "}", ",", ";", ".", "?."].includes(token.text) ||
+                (expressionPrefixes.has(token.text) &&
+                  !["(", "[", "{", "!", "~"].includes(token.text))))
+          ));
+      return [token.kind, token.text, significant];
+    }),
+  );
 }
 
 function normalizePunctuation(input: Token[]): Token[] {
@@ -287,16 +282,15 @@ function normalizePunctuation(input: Token[]): Token[] {
     const token = tokens[i];
     const next = tokens[i + 1];
     const previous = result.at(-1);
-    if (
-      token.kind === "literal" && /^["']/.test(token.text) &&
-      !token.text.includes("\\")
-    ) {
+    if (token.kind === "literal" && /^["']/.test(token.text) && !token.text.includes("\\")) {
       token.text = JSON.stringify(token.text.slice(1, -1));
     }
     // A single arrow parameter has the same binding with or without parentheses.
     if (
-      token.text === "(" && tokens[i + 1]?.kind === "word" &&
-      tokens[i + 2]?.text === ")" && tokens[i + 3]?.text === "=>"
+      token.text === "(" &&
+      tokens[i + 1]?.kind === "word" &&
+      tokens[i + 2]?.text === ")" &&
+      tokens[i + 3]?.text === "=>"
     ) {
       result.push({ ...tokens[i + 1], lineBreak: token.lineBreak });
       i += 2;
@@ -305,16 +299,22 @@ function normalizePunctuation(input: Token[]): Token[] {
     }
     // Retain commas representing array holes, including the final hole.
     if (
-      token.text === "," && [")", "]", "}"].includes(next?.text ?? "") &&
-      previous && ![",", "[", "("].includes(previous.text)
-    ) continue;
+      token.text === "," &&
+      [")", "]", "}"].includes(next?.text ?? "") &&
+      previous &&
+      ![",", "[", "("].includes(previous.text)
+    )
+      continue;
 
-    const expressionEnd = previous && (
-      previous.kind !== "punctuation" || previous.text === "]" ||
-      (previous.text === ")" && !previousControl)
-    );
+    const expressionEnd =
+      previous &&
+      (previous.kind !== "punctuation" ||
+        previous.text === "]" ||
+        (previous.text === ")" && !previousControl));
     if (
-      token.text === ";" && brackets.at(-1)?.text === "{" && expressionEnd &&
+      token.text === ";" &&
+      brackets.at(-1)?.text === "{" &&
+      expressionEnd &&
       !restrictedLineBreaks.has(previous.text)
     ) {
       if (next?.text === "}") continue;
@@ -322,7 +322,8 @@ function normalizePunctuation(input: Token[]): Token[] {
       // boundary as a newline so explicit and automatically inserted semicolons
       // agree. Never do this in a for header or after a control header.
       if (
-        previous.text === ")" && next?.kind === "word" &&
+        previous.text === ")" &&
+        next?.kind === "word" &&
         !["in", "instanceof", "of"].includes(next.text)
       ) {
         next.lineBreak = true;
@@ -333,8 +334,10 @@ function normalizePunctuation(input: Token[]): Token[] {
     if (["(", "[", "{"].includes(token.text)) {
       brackets.push({
         text: token.text,
-        control: token.text === "(" && (controls.has(previous?.text ?? "") ||
-          (previous?.text === "await" && result.at(-2)?.text === "for")),
+        control:
+          token.text === "(" &&
+          (controls.has(previous?.text ?? "") ||
+            (previous?.text === "await" && result.at(-2)?.text === "for")),
       });
     } else if ([")", "]", "}"].includes(token.text)) {
       previousControl = brackets.pop()?.control ?? false;

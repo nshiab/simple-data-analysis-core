@@ -12,10 +12,9 @@ export default function prepareGeometry(
   let hasSignedZero = false;
   function position(value: unknown): number[] {
     if (
-      !Array.isArray(value) || value.length !== 2 ||
-      !Array.from(value).every((n) =>
-        typeof n === "number" && Number.isFinite(n)
-      )
+      !Array.isArray(value) ||
+      value.length !== 2 ||
+      !Array.from(value).every((n) => typeof n === "number" && Number.isFinite(n))
     ) {
       fail(
         "Expected a finite two-dimensional [longitude, latitude] position; Z/M coordinates are unsupported.",
@@ -44,12 +43,11 @@ export default function prepareGeometry(
   function ring(value: unknown): unknown[] {
     const points = list(value, position) as number[][];
     if (
-      points.length < 4 || points[0][0] !== points.at(-1)![0] ||
+      points.length < 4 ||
+      points[0][0] !== points.at(-1)![0] ||
       points[0][1] !== points.at(-1)![1]
     ) {
-      fail(
-        "A polygon ring must contain at least four positions and be closed.",
-      );
+      fail("A polygon ring must contain at least four positions and be closed.");
     }
     return points;
   }
@@ -110,8 +108,7 @@ export default function prepareGeometry(
   // JSON.stringify normalizes -0. Only supported geometry type names survive
   // validation as strings, so the "-0" marker cannot collide with input text.
   // Emit a decimal literal so DuckDB also preserves its sign when parsing JSON.
-  return JSON.stringify(
-    prepared,
-    (_key, cell: unknown) => Object.is(cell, -0) ? "-0" : cell,
+  return JSON.stringify(prepared, (_key, cell: unknown) =>
+    Object.is(cell, -0) ? "-0" : cell,
   ).replaceAll('"-0"', "-0.0");
 }

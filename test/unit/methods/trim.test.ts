@@ -1,7 +1,9 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should trim all string columns and preserve other types and nulls", async () => {
+test("should trim all string columns and preserve other types and nulls", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -12,73 +14,80 @@ Deno.test("should trim all string columns and preserve other types and nulls", a
 
   table.trim("all");
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { name: "Alice", 'a"b': "Toronto", count: 3, active: true },
     { name: null, 'a"b': "Montreal", count: 4, active: false },
   ]);
-  assertEquals(await table.getTypes(), types);
+  expect(await table.getTypes()).toStrictEqual(types);
   await sdb.close();
 });
 
-Deno.test("should trim all string columns with custom characters and sides", async () => {
+test("should trim all string columns with custom characters and sides", async () => {
   const sdb = new SimpleDB();
   for (const side of ["left", "right", "both"] as const) {
     const table = sdb.newTable();
     table.loadArray([{ first: "''a''", second: "''b''", count: 1 }]);
     table.trim("all", { character: "'", side });
 
-    assertEquals(await table.getData(), [{
-      first: side === "left" ? "a''" : side === "right" ? "''a" : "a",
-      second: side === "left" ? "b''" : side === "right" ? "''b" : "b",
-      count: 1,
-    }]);
+    expect(await table.getData()).toStrictEqual([
+      {
+        first: side === "left" ? "a''" : side === "right" ? "''a" : "a",
+        second: side === "left" ? "b''" : side === "right" ? "''b" : "b",
+        count: 1,
+      },
+    ]);
   }
   await sdb.close();
 });
 
-Deno.test("should resolve all trim columns after preceding queued changes", async () => {
+test("should resolve all trim columns after preceding queued changes", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{ value: " 12 ", label: " old " }])
+  table
+    .loadArray([{ value: " 12 ", label: " old " }])
     .convert({ value: "integer" })
     .renameColumns({ label: "renamed" })
     .addColumn("newText", "string", "' new '")
     .trim("all")
     .replace("newText", { new: "updated" });
 
-  assertEquals(await table.getData(), [{
-    value: 12,
-    renamed: "old",
-    newText: "updated",
-  }]);
+  expect(await table.getData()).toStrictEqual([
+    {
+      value: 12,
+      renamed: "old",
+      newText: "updated",
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should leave tables without string columns unchanged when trimming all", async () => {
+test("should leave tables without string columns unchanged when trimming all", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{ count: 1, active: true }])
+  table
+    .loadArray([{ count: 1, active: true }])
     .trim("all")
     .trim("all", { character: "'", side: "right" });
 
-  assertEquals(await table.getData(), [{ count: 1, active: true }]);
+  expect(await table.getData()).toStrictEqual([{ count: 1, active: true }]);
   await sdb.close();
 });
 
-Deno.test("should trim a literal all column using an array", async () => {
+test("should trim a literal all column using an array", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{ all: " selected ", other: " unchanged " }])
-    .trim(["all"]);
+  table.loadArray([{ all: " selected ", other: " unchanged " }]).trim(["all"]);
 
-  assertEquals(await table.getData(), [{
-    all: "selected",
-    other: " unchanged ",
-  }]);
+  expect(await table.getData()).toStrictEqual([
+    {
+      all: "selected",
+      other: " unchanged ",
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should report valid trim sides", async () => {
+test("should report valid trim sides", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -94,7 +103,7 @@ Deno.test("should report valid trim sides", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove whitespace", async () => {
+test("should remove whitespace", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
@@ -102,7 +111,7 @@ Deno.test("should remove whitespace", async () => {
   table.trim("key1");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "a", key2: " !@a!@" },
     { key1: "b", key2: " !@b!@" },
     { key1: "c", key2: " !@c!@" },
@@ -112,7 +121,7 @@ Deno.test("should remove whitespace", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove whitespace with column name containing spaces", async () => {
+test("should remove whitespace with column name containing spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
@@ -121,7 +130,7 @@ Deno.test("should remove whitespace with column name containing spaces", async (
   table.trim("key 1");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { "key 1": "a", key2: " !@a!@" },
     { "key 1": "b", key2: " !@b!@" },
     { "key 1": "c", key2: " !@c!@" },
@@ -131,7 +140,7 @@ Deno.test("should remove whitespace with column name containing spaces", async (
   await sdb.close();
 });
 
-Deno.test("should remove whitespace from multiple columns", async () => {
+test("should remove whitespace from multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
@@ -140,7 +149,7 @@ Deno.test("should remove whitespace from multiple columns", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "a", key2: "!@a!@" },
     { key1: "b", key2: "!@b!@" },
     { key1: "c", key2: "!@c!@" },
@@ -150,7 +159,7 @@ Deno.test("should remove whitespace from multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove whitespace just on the left", async () => {
+test("should remove whitespace just on the left", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
@@ -160,7 +169,7 @@ Deno.test("should remove whitespace just on the left", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "a  ", key2: " !@a!@" },
     { key1: "b  ", key2: " !@b!@" },
     { key1: "c  ", key2: " !@c!@" },
@@ -170,7 +179,7 @@ Deno.test("should remove whitespace just on the left", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove whitespace just on the right", async () => {
+test("should remove whitespace just on the right", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
@@ -180,7 +189,7 @@ Deno.test("should remove whitespace just on the right", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "  a", key2: " !@a!@" },
     { key1: "  b", key2: " !@b!@" },
     { key1: "  c", key2: " !@c!@" },
@@ -190,7 +199,7 @@ Deno.test("should remove whitespace just on the right", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove specific characters", async () => {
+test("should remove specific characters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataTrim.json"]);
@@ -201,7 +210,7 @@ Deno.test("should remove specific characters", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "  a  ", key2: " !@a" },
     { key1: "  b  ", key2: " !@b" },
     { key1: "  c  ", key2: " !@c" },
@@ -211,13 +220,13 @@ Deno.test("should remove specific characters", async () => {
   await sdb.close();
 });
 
-Deno.test("should bind trim characters containing an apostrophe", async () => {
+test("should bind trim characters containing an apostrophe", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundTrim");
 
   table.loadArray([{ value: "''quoted''" }]);
   table.trim("value", { character: "'" });
 
-  assertEquals(await table.getData(), [{ value: "quoted" }]);
+  expect(await table.getData()).toStrictEqual([{ value: "quoted" }]);
   await sdb.close();
 });

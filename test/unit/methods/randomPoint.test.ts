@@ -1,22 +1,15 @@
-import {
-  assertEquals,
-  assertNotEquals,
-  assertRejects,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should generate a random point in geometries and they should be random", async () => {
+test("should generate a random point in geometries and they should be random", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   // We repeat each row 10 times to check if the random points are different for each copy.
-  await sdb.customQuery(
-    `ALTER TABLE ${table.name} ADD COLUMN iterationCount INTEGER DEFAULT 10`,
-  );
+  await sdb.customQuery(`ALTER TABLE ${table.name} ADD COLUMN iterationCount INTEGER DEFAULT 10`);
   await sdb.customQuery(`UPDATE ${table.name} SET iterationCount = 10`);
   table.repeatRows("iterationCount");
 
@@ -30,12 +23,12 @@ Deno.test("should generate a random point in geometries and they should be rando
   // We extract lat and lon.
   table.extractLatLon("randomPoint", "lat", "lon");
 
-  const lats = await table.getValues("lat") as number[];
-  const lons = await table.getValues("lon") as number[];
-  const names = await table.getValues("nameEnglish") as string[];
+  const lats = (await table.getValues("lat")) as number[];
+  const lons = (await table.getValues("lon")) as number[];
+  const names = (await table.getValues("nameEnglish")) as string[];
 
   // If there are 13 provinces and we repeated 10 times, we should have 130 rows.
-  assertEquals(lats.length, 130);
+  expect(lats.length).toStrictEqual(130);
 
   // For each province, we check if the 10 points are different.
   const provincePoints: { [key: string]: string[] } = {};
@@ -53,27 +46,22 @@ Deno.test("should generate a random point in geometries and they should be rando
     const uniquePoints = new Set(points);
     // If they are random, we should have multiple unique points.
     // Given 10 iterations, it's highly unlikely to get the same point twice if it's truly random.
-    assertNotEquals(
+    expect(
       uniquePoints.size,
-      1,
-      `Points for ${name} are not random! All ${points.length} points are ${
-        points[0]
-      }`,
-    );
+      `Points for ${name} are not random! All ${points.length} points are ${points[0]}`,
+    ).not.toStrictEqual(1);
   }
 
   const types = await table.getTypes();
-  assertEquals(types.randomPoint, "GEOMETRY('EPSG:4326')");
+  expect(types.randomPoint).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   await sdb.close();
 });
 
-Deno.test("randomPoint should throw an error if no point is found", async () => {
+test("randomPoint should throw an error if no point is found", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   // With 0 tries, no point should be found.
   await assertRejects(
@@ -84,18 +72,16 @@ Deno.test("randomPoint should throw an error if no point is found", async () => 
     Error,
     "13 points could not be generated. Consider increasing tries or set options.strict to false.",
   );
-  assertEquals((await table.getColumns()).includes("randomPoint"), false);
+  expect((await table.getColumns()).includes("randomPoint")).toStrictEqual(false);
 
   await table.run();
   await sdb.close();
 });
 
-Deno.test("randomPoint should not throw an error if no point is found and options.try is true", async () => {
+test("randomPoint should not throw an error if no point is found and options.try is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   // With 0 tries, no point should be found.
   table.randomPoint("randomPoint", 0, { strict: false });
@@ -103,17 +89,15 @@ Deno.test("randomPoint should not throw an error if no point is found and option
   const nullCount = await table.getRowCount({
     conditions: '"randomPoint" IS NULL',
   });
-  assertEquals(nullCount, 13);
+  expect(nullCount).toStrictEqual(13);
 
   await sdb.close();
 });
 
-Deno.test("randomPoint should throw an error if tries is less than 0", async () => {
+test("randomPoint should throw an error if tries is less than 0", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   // This validation doesn't need the database, so it throws at call time.
   assertThrows(
@@ -129,7 +113,7 @@ Deno.test("randomPoint should throw an error if tries is less than 0", async () 
   await sdb.close();
 });
 
-Deno.test("randomPoint should reject non-integer tries", async () => {
+test("randomPoint should reject non-integer tries", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
 
@@ -142,12 +126,10 @@ Deno.test("randomPoint should reject non-integer tries", async () => {
   await sdb.close();
 });
 
-Deno.test("randomPoint should have similar performance with many more tries if it exits early", async () => {
+test("randomPoint should have similar performance with many more tries if it exits early", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const start10 = Date.now();
   table.randomPoint("point10", 10, { column: "geom", strict: false });
@@ -166,11 +148,10 @@ Deno.test("randomPoint should have similar performance with many more tries if i
   // For 13 provinces, finding one point is fast.
   // DuckDB doesn't always short-circuit range() in LATERAL joins with a WHERE clause,
   // so the duration might scale more linearly than expected with tries.
-  assertEquals(
+  expect(
     duration100k < 10000,
-    true,
     `Performance issue: 100k tries took ${duration100k}ms.`,
-  );
+  ).toStrictEqual(true);
 
   await table.run();
   await sdb.close();

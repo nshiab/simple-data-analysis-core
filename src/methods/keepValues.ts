@@ -1,9 +1,7 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import prepareValueFilters, {
-  type ValueFilter,
-} from "../helpers/prepareValueFilters.ts";
+import prepareValueFilters, { type ValueFilter } from "../helpers/prepareValueFilters.ts";
 
 export default function keepValues(
   simpleTable: SimpleTable,
@@ -12,7 +10,7 @@ export default function keepValues(
   const captured = Object.fromEntries(
     Object.entries(columnsAndValues).map(([column, values]) => [
       column,
-      Array.isArray(values) ? [...values] : values,
+      Array.isArray(values) ? values.map((value: unknown) => value) : values,
     ]),
   ) as typeof columnsAndValues;
   const filters = prepareValueFilters(captured);
@@ -26,24 +24,22 @@ export default function keepValues(
   });
 }
 
-function keepValuesSelect(
-  input: string,
-  filters: ValueFilter[],
-) {
+function keepValuesSelect(input: string, filters: ValueFilter[]) {
   let query = `SELECT * FROM ${input} WHERE\n`;
 
   const conditions = [];
   for (const filter of filters) {
     const column = quoteIdentifier(filter.column);
-    const inValues = filter.values.length > 0
-      ? `${column} IN (${filter.values.map(() => "?").join(", ")})`
-      : null;
+    const inValues =
+      filter.values.length > 0 ? `${column} IN (${filter.values.map(() => "?").join(", ")})` : null;
     conditions.push(
       inValues === null
-        ? filter.includesNull ? `${column} IS NULL` : "FALSE"
+        ? filter.includesNull
+          ? `${column} IS NULL`
+          : "FALSE"
         : filter.includesNull
-        ? `(${inValues} OR ${column} IS NULL)`
-        : inValues,
+          ? `(${inValues} OR ${column} IS NULL)`
+          : inValues,
     );
   }
 

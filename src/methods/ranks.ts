@@ -25,9 +25,8 @@ export default function ranks(
 
       const by = options.by ? stringToArray(options.by) : [];
 
-      const partition = by.length === 0
-        ? ""
-        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
+      const partition =
+        by.length === 0 ? "" : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
 
       return `SELECT *, ${
         options.dense ? "dense_rank()" : "rank()"

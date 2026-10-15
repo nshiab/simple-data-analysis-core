@@ -34,16 +34,12 @@ export default async function getHash(simpleTable: SimpleTable) {
     throw new Error("getHash() could not compute the table hash.");
   }
   const { row_count, checksum } = result[0];
-  if (
-    typeof row_count !== "string" || typeof checksum !== "string"
-  ) {
+  if (typeof row_count !== "string" || typeof checksum !== "string") {
     throw new Error("getHash() received an unexpected result from DuckDB.");
   }
 
-  return crypto.createHash("sha256").update(JSON.stringify([
-    "sda-table-hash-v1",
-    Object.entries(types),
-    row_count,
-    checksum,
-  ])).digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(["sda-table-hash-v1", Object.entries(types), row_count, checksum]))
+    .digest("hex");
 }

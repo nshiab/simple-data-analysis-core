@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should reject an invalid length at call time", async () => {
+test("should reject an invalid length at call time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
 
@@ -14,138 +16,91 @@ Deno.test("should reject an invalid length at call time", async () => {
   await sdb.close();
 });
 
-Deno.test("should left-pad strings to target length with default zero", async () => {
+test("should left-pad strings to target length with default zero", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "1" },
-    { id: "23" },
-    { id: "456" },
-  ]);
+  table.loadArray([{ id: "1" }, { id: "23" }, { id: "456" }]);
 
   table.pad("id", 3);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { id: "001" },
-    { id: "023" },
-    { id: "456" },
-  ]);
+  expect(data).toStrictEqual([{ id: "001" }, { id: "023" }, { id: "456" }]);
   await sdb.close();
 });
 
-Deno.test("should right-pad strings to target length", async () => {
+test("should right-pad strings to target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { code: "123" },
-    { code: "45" },
-    { code: "6" },
-  ]);
+  table.loadArray([{ code: "123" }, { code: "45" }, { code: "6" }]);
 
   table.pad("code", 5, { side: "right" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { code: "12300" },
-    { code: "45000" },
-    { code: "60000" },
-  ]);
+  expect(data).toStrictEqual([{ code: "12300" }, { code: "45000" }, { code: "60000" }]);
   await sdb.close();
 });
 
-Deno.test("should left-pad with custom character", async () => {
+test("should left-pad with custom character", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "1" },
-    { id: "2" },
-  ]);
+  table.loadArray([{ id: "1" }, { id: "2" }]);
 
   table.pad("id", 4, { side: "left", character: "-" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { id: "---1" },
-    { id: "---2" },
-  ]);
+  expect(data).toStrictEqual([{ id: "---1" }, { id: "---2" }]);
   await sdb.close();
 });
 
-Deno.test("should right-pad with custom character", async () => {
+test("should right-pad with custom character", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { code: "AB" },
-    { code: "CD" },
-  ]);
+  table.loadArray([{ code: "AB" }, { code: "CD" }]);
 
   table.pad("code", 5, { side: "right", character: "*" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { code: "AB***" },
-    { code: "CD***" },
-  ]);
+  expect(data).toStrictEqual([{ code: "AB***" }, { code: "CD***" }]);
   await sdb.close();
 });
 
-Deno.test("should handle null values by leaving them as null", async () => {
+test("should handle null values by leaving them as null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "1" },
-    { id: null },
-    { id: "3" },
-  ]);
+  table.loadArray([{ id: "1" }, { id: null }, { id: "3" }]);
 
   table.pad("id", 3);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { id: "001" },
-    { id: null },
-    { id: "003" },
-  ]);
+  expect(data).toStrictEqual([{ id: "001" }, { id: null }, { id: "003" }]);
   await sdb.close();
 });
 
-Deno.test("should throw error when column is not string type", async () => {
+test("should throw error when column is not string type", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: 1 },
-    { id: 2 },
-  ]);
+  table.loadArray([{ id: 1 }, { id: 2 }]);
 
-  await assertRejects(
-    () => table.pad("id", 5).run(),
-    Error,
-    'The column "id" is of type DOUBLE',
-  );
+  await assertRejects(() => table.pad("id", 5).run(), Error, 'The column "id" is of type DOUBLE');
   await sdb.close();
 });
 
-Deno.test("should throw error when strings exceed target length", async () => {
+test("should throw error when strings exceed target length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { name: "Hi" },
-    { name: "World!!" },
-    { name: "OK" },
-  ]);
+  table.loadArray([{ name: "Hi" }, { name: "World!!" }, { name: "OK" }]);
 
   await assertRejects(
     () => table.pad("name", 3).run(),
     Error,
     'The column "name" has 1 string(s) exceeding the target length of 3',
   );
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { name: "Hi" },
     { name: "World!!" },
     { name: "OK" },
@@ -153,130 +108,94 @@ Deno.test("should throw error when strings exceed target length", async () => {
   await sdb.close();
 });
 
-Deno.test("should handle column names with spaces", async () => {
+test("should handle column names with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { "user id": "1" },
-    { "user id": "23" },
-  ]);
+  table.loadArray([{ "user id": "1" }, { "user id": "23" }]);
 
   table.pad("user id", 4);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { "user id": "0001" },
-    { "user id": "0023" },
-  ]);
+  expect(data).toStrictEqual([{ "user id": "0001" }, { "user id": "0023" }]);
   await sdb.close();
 });
 
-Deno.test("should handle empty strings", async () => {
+test("should handle empty strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "" },
-    { id: "a" },
-  ]);
+  table.loadArray([{ id: "" }, { id: "a" }]);
 
   table.pad("id", 3);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { id: "000" },
-    { id: "00a" },
-  ]);
+  expect(data).toStrictEqual([{ id: "000" }, { id: "00a" }]);
   await sdb.close();
 });
 
-Deno.test("should pad to length 0 when all strings are empty", async () => {
+test("should pad to length 0 when all strings are empty", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { text: "" },
-    { text: "" },
-  ]);
+  table.loadArray([{ text: "" }, { text: "" }]);
 
   table.pad("text", 0);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { text: "" },
-    { text: "" },
-  ]);
+  expect(data).toStrictEqual([{ text: "" }, { text: "" }]);
   await sdb.close();
 });
 
-Deno.test("should handle padding with multi-character fill string", async () => {
+test("should handle padding with multi-character fill string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "1" },
-  ]);
+  table.loadArray([{ id: "1" }]);
 
   table.pad("id", 5, { side: "left", character: "ab" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { id: "abab1" },
-  ]);
+  expect(data).toStrictEqual([{ id: "abab1" }]);
   await sdb.close();
 });
 
-Deno.test("should pad with default method being left", async () => {
+test("should pad with default method being left", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { code: "ABC" },
-  ]);
+  table.loadArray([{ code: "ABC" }]);
 
   table.pad("code", 6);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { code: "000ABC" },
-  ]);
+  expect(data).toStrictEqual([{ code: "000ABC" }]);
   await sdb.close();
 });
 
-Deno.test("should pad with default char being zero", async () => {
+test("should pad with default char being zero", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { value: "123" },
-  ]);
+  table.loadArray([{ value: "123" }]);
 
   table.pad("value", 5, { side: "right" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { value: "12300" },
-  ]);
+  expect(data).toStrictEqual([{ value: "12300" }]);
   await sdb.close();
 });
 
-Deno.test("should handle multiple rows with null values", async () => {
+test("should handle multiple rows with null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "1" },
-    { id: null },
-    { id: "23" },
-    { id: null },
-    { id: "45" },
-  ]);
+  table.loadArray([{ id: "1" }, { id: null }, { id: "23" }, { id: null }, { id: "45" }]);
 
   table.pad("id", 4, { side: "left", character: "0" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { id: "0001" },
     { id: null },
     { id: "0023" },
@@ -288,7 +207,7 @@ Deno.test("should handle multiple rows with null values", async () => {
 
 // Multi-column tests
 
-Deno.test("should pad multiple columns at once", async () => {
+test("should pad multiple columns at once", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -300,14 +219,14 @@ Deno.test("should pad multiple columns at once", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { id: "---1", code: "--AB" },
     { id: "--23", code: "---C" },
   ]);
   await sdb.close();
 });
 
-Deno.test("should pad multiple columns with right padding", async () => {
+test("should pad multiple columns with right padding", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -319,14 +238,14 @@ Deno.test("should pad multiple columns with right padding", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "A***", label: "X***" },
     { name: "BC**", label: "YZ**" },
   ]);
   await sdb.close();
 });
 
-Deno.test("should throw error when one of multiple columns is not string type", async () => {
+test("should throw error when one of multiple columns is not string type", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -342,7 +261,7 @@ Deno.test("should throw error when one of multiple columns is not string type", 
   await sdb.close();
 });
 
-Deno.test("should throw error when one column has overflow in multi-column pad", async () => {
+test("should throw error when one column has overflow in multi-column pad", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -351,51 +270,38 @@ Deno.test("should throw error when one column has overflow in multi-column pad",
   ]);
 
   await assertRejects(
-    () =>
-      table.pad(["short", "long"], 5, { side: "left", character: "-" }).run(),
+    () => table.pad(["short", "long"], 5, { side: "left", character: "-" }).run(),
     Error,
     'The column "long" has 1 string(s) exceeding the target length of 5',
   );
   await sdb.close();
 });
 
-Deno.test("should pad all null column without error", async () => {
+test("should pad all null column without error", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: null },
-    { id: null },
-  ]);
+  table.loadArray([{ id: null }, { id: null }]);
 
   table.pad("id", 3);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { id: null },
-    { id: null },
-  ]);
+  expect(data).toStrictEqual([{ id: null }, { id: null }]);
   await sdb.close();
 });
 
 // SQL injection guard
 
-Deno.test("should safely handle single quote in padding character", async () => {
+test("should safely handle single quote in padding character", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { id: "1" },
-    { id: "23" },
-  ]);
+  table.loadArray([{ id: "1" }, { id: "23" }]);
 
   table.pad("id", 5, { side: "left", character: "'" });
 
   const data = await table.getData();
 
   // Single quote is properly escaped in SQL, LPAD pads to length 5
-  assertEquals(data, [
-    { id: "''''1" },
-    { id: "'''23" },
-  ]);
+  expect(data).toStrictEqual([{ id: "''''1" }, { id: "'''23" }]);
   await sdb.close();
 });

@@ -71,23 +71,23 @@ export default async function extractZipEntryToFile(
     assertSignature(view, 0, LOCAL_FILE_HEADER, "local file header");
     const fileNameLength = view.getUint16(26, true);
     const extraLength = view.getUint16(28, true);
-    const dataOffset = entry.localHeaderOffset + 30 + fileNameLength +
-      extraLength;
+    const dataOffset = entry.localHeaderOffset + 30 + fileNameLength + extraLength;
     const checksum = new ChecksumTransform();
     const source = createReadStream(archive, {
       start: dataOffset,
       end: dataOffset + entry.compressedSize - 1,
     });
-    const streams = entry.compressionMethod === 8
-      ? [
-        source,
-        createInflateRaw(),
-        checksum,
-        createWriteStream(output, {
-          flags: "wx",
-        }),
-      ] as const
-      : [source, checksum, createWriteStream(output, { flags: "wx" })] as const;
+    const streams =
+      entry.compressionMethod === 8
+        ? ([
+            source,
+            createInflateRaw(),
+            checksum,
+            createWriteStream(output, {
+              flags: "wx",
+            }),
+          ] as const)
+        : ([source, checksum, createWriteStream(output, { flags: "wx" })] as const);
     await pipeline(streams);
 
     if (checksum.size !== entry.uncompressedSize) {
@@ -103,13 +103,14 @@ export default async function extractZipEntryToFile(
   try {
     await file.close();
   } catch (closeError) {
-    operationError = operationError === undefined
-      ? closeError
-      : new AggregateError(
-        [operationError, closeError],
-        "Extracting and closing the ZIP archive both failed.",
-        { cause: operationError },
-      );
+    operationError =
+      operationError === undefined
+        ? closeError
+        : new AggregateError(
+            [operationError, closeError],
+            "Extracting and closing the ZIP archive both failed.",
+            { cause: operationError },
+          );
   }
 
   if (operationError !== undefined) {
@@ -126,10 +127,7 @@ export default async function extractZipEntryToFile(
   }
 }
 
-async function findZipEntry(
-  archive: string,
-  wantedName: string,
-): Promise<ZipEntry | undefined> {
+async function findZipEntry(archive: string, wantedName: string): Promise<ZipEntry | undefined> {
   const file = await open(archive, "r");
   try {
     const size = (await stat(archive)).size;
@@ -145,14 +143,12 @@ async function findZipEntry(
     const centralDirectorySize = tailView.getUint32(endOffset + 12, true);
     const centralDirectoryOffset = tailView.getUint32(endOffset + 16, true);
 
-    if (
-      diskNumber !== 0 || centralDirectoryDisk !== 0 ||
-      entriesOnDisk !== entryCount
-    ) {
+    if (diskNumber !== 0 || centralDirectoryDisk !== 0 || entriesOnDisk !== entryCount) {
       throw new Error("Multi-disk ZIP archives are not supported.");
     }
     if (
-      entryCount === 0xffff || centralDirectorySize === 0xffff_ffff ||
+      entryCount === 0xffff ||
+      centralDirectorySize === 0xffff_ffff ||
       centralDirectoryOffset === 0xffff_ffff
     ) {
       throw new Error("ZIP64 archives are not supported.");
@@ -166,12 +162,7 @@ async function findZipEntry(
     const view = new DataView(centralDirectory.buffer);
     let offset = 0;
     for (let index = 0; index < entryCount; index++) {
-      assertSignature(
-        view,
-        offset,
-        CENTRAL_DIRECTORY_ENTRY,
-        "central directory",
-      );
+      assertSignature(view, offset, CENTRAL_DIRECTORY_ENTRY, "central directory");
       assertRange(centralDirectory, offset, 46, "central directory entry");
       const flags = view.getUint16(offset + 8, true);
       const compressionMethod = view.getUint16(offset + 10, true);
@@ -183,12 +174,7 @@ async function findZipEntry(
       const commentLength = view.getUint16(offset + 32, true);
       const localHeaderOffset = view.getUint32(offset + 42, true);
       const entryLength = 46 + fileNameLength + extraLength + commentLength;
-      assertRange(
-        centralDirectory,
-        offset,
-        entryLength,
-        "central directory entry",
-      );
+      assertRange(centralDirectory, offset, entryLength, "central directory entry");
       const name = new TextDecoder().decode(
         centralDirectory.subarray(offset + 46, offset + 46 + fileNameLength),
       );
@@ -265,12 +251,7 @@ function assertSignature(
   }
 }
 
-function assertRange(
-  data: Uint8Array,
-  offset: number,
-  length: number,
-  description: string,
-): void {
+function assertRange(data: Uint8Array, offset: number, length: number, description: string): void {
   if (offset < 0 || length < 0 || offset + length > data.byteLength) {
     throw new Error(`Invalid ZIP archive: truncated ${description}.`);
   }

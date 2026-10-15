@@ -23,21 +23,20 @@ export default function zScore(
       assertNewColumns(schema, [newColumn], "zScore()");
 
       const by = options.by ? stringToArray(options.by) : [];
-      const partition = by.length > 0
-        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
-        : "";
+      const partition =
+        by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}` : "";
 
-      const tempQuery = `(${quoteIdentifier(column)}-AVG(${
-        quoteIdentifier(column)
-      }) OVER(${partition}))
+      const tempQuery = `(${quoteIdentifier(column)}-AVG(${quoteIdentifier(
+        column,
+      )}) OVER(${partition}))
             /
             STDDEV_POP(${quoteIdentifier(column)}) OVER(${partition})`;
       return `SELECT *, (
         ${
-        typeof options.decimals === "number"
-          ? `ROUND(${tempQuery}, ${options.decimals})`
-          : tempQuery
-      }
+          typeof options.decimals === "number"
+            ? `ROUND(${tempQuery}, ${options.decimals})`
+            : tempQuery
+        }
         ) AS ${quoteIdentifier(newColumn)},
     FROM ${input}`;
     },

@@ -38,13 +38,11 @@ export default function linearRegressions(
         );
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
-            linearRegressionsSelect(
-              `${quoteIdentifier(simpleTable.name)}`,
-              permutations,
-              options,
-            )
-          }`,
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${linearRegressionsSelect(
+            `${quoteIdentifier(simpleTable.name)}`,
+            permutations,
+            options,
+          )}`,
           mergeOptions(simpleTable, {
             table: outputTable.name,
             method: "linearRegressions()",
@@ -66,9 +64,7 @@ export default function linearRegressions(
     parameters: { options },
     needsSchema: true,
     values: (types) =>
-      linearRegressionsValues(
-        getLinearRegressionsPermutations(types, options, simpleTable.name),
-      ),
+      linearRegressionsValues(getLinearRegressionsPermutations(types, options, simpleTable.name)),
     buildSelect: (input, types) =>
       linearRegressionsSelect(
         input,
@@ -79,9 +75,7 @@ export default function linearRegressions(
   return simpleTable;
 }
 
-function linearRegressionsValues(
-  permutations: [string, string][],
-): string[] {
+function linearRegressionsValues(permutations: [string, string][]): string[] {
   return permutations.flatMap(([x, y]) => [x, y]);
 }
 
@@ -90,12 +84,7 @@ function getLinearRegressionsPermutations(
   options: { x?: string; y?: string },
   tableName: string,
 ): [string, string][] {
-  const columns = validateNumericalAnalysis(
-    types,
-    options,
-    "linearRegressions()",
-    tableName,
-  );
+  const columns = validateNumericalAnalysis(types, options, "linearRegressions()", tableName);
   const permutations: [string, string][] = [];
   if (options.x === undefined) {
     const combinations = getCombinations(columns, 2);
@@ -125,13 +114,10 @@ function linearRegressionsSelect(
 ) {
   const by = options.by ? stringToArray(options.by) : [];
 
-  const groupBy = by.length === 0
-    ? ""
-    : ` GROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
+  const groupBy =
+    by.length === 0 ? "" : ` GROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")}`;
 
-  const catSelect = by.length > 0
-    ? `${by.map((d) => `${quoteIdentifier(d)}`).join(",")}, `
-    : "";
+  const catSelect = by.length > 0 ? `${by.map((d) => `${quoteIdentifier(d)}`).join(",")}, ` : "";
 
   // One UNION ALL branch per permutation (each with a distinct pair of
   // literals, so deduplication would never remove anything). DuckDB runs the
@@ -143,16 +129,17 @@ function linearRegressionsSelect(
       ["yIntercept", "REGR_INTERCEPT"],
       ["r2", "REGR_R2"],
     ].map(([alias, fn]) => {
-      const expression = typeof options.decimals === "number"
-        ? `ROUND(${fn}(${quoteIdentifier(perm[1])}, ${
-          quoteIdentifier(perm[0])
-        }), ${options.decimals})`
-        : `${fn}(${quoteIdentifier(perm[1])}, ${quoteIdentifier(perm[0])})`;
+      const expression =
+        typeof options.decimals === "number"
+          ? `ROUND(${fn}(${quoteIdentifier(perm[1])}, ${quoteIdentifier(
+              perm[0],
+            )}), ${options.decimals})`
+          : `${fn}(${quoteIdentifier(perm[1])}, ${quoteIdentifier(perm[0])})`;
       return `${expression} AS ${quoteIdentifier(alias)}`;
     });
-    return `SELECT ${catSelect}? AS ${quoteIdentifier("x")}, ? AS ${
-      quoteIdentifier("y")
-    }, ${expressions.join(", ")}
+    return `SELECT ${catSelect}? AS ${quoteIdentifier("x")}, ? AS ${quoteIdentifier(
+      "y",
+    )}, ${expressions.join(", ")}
         FROM ${input}${groupBy}`;
   });
 

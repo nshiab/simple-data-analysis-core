@@ -1,13 +1,14 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the schema of a table", async () => {
+test("should return the schema of a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.json"]);
 
   const schema = await table.getSchema();
-  assertEquals(schema, [
+  expect(schema).toStrictEqual([
     {
       column_name: "key1",
       column_type: "BIGINT",
@@ -29,14 +30,12 @@ Deno.test("should return the schema of a table", async () => {
   await sdb.close();
 });
 
-Deno.test("should preserve primary-key schema metadata", async () => {
+test("should preserve primary-key schema metadata", async () => {
   const sdb = new SimpleDB();
-  await sdb.customQuery(
-    `CREATE TABLE "primaryKeySchema" (id INTEGER PRIMARY KEY)`,
-  );
+  await sdb.customQuery(`CREATE TABLE "primaryKeySchema" (id INTEGER PRIMARY KEY)`);
   const table = sdb.newTable("primaryKeySchema");
 
-  assertEquals(await table.getSchema(), [
+  expect(await table.getSchema()).toStrictEqual([
     {
       column_name: "id",
       column_type: "INTEGER",

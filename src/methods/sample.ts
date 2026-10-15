@@ -22,8 +22,6 @@ export default function sample(
     buildSelect: (input) =>
       `SELECT * FROM ${input} USING SAMPLE RESERVOIR(${
         typeof count === "number" ? `${count} ROWS` : count
-      })${
-        typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""
-      }`,
+      })${typeof options.seed === "number" ? ` REPEATABLE(${options.seed})` : ""}`,
   });
 }

@@ -1,17 +1,14 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should skip rows", async () => {
+test("should skip rows", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb
+  const table = sdb
     .newTable()
-    .loadArray([
-      { first: "Nael" },
-      { first: "Graeme" },
-      { first: "Andrew" },
-    ]);
+    .loadArray([{ first: "Nael" }, { first: "Graeme" }, { first: "Andrew" }]);
   table.skip(1);
   const data = await table.getData();
-  assertEquals(data, [{ first: "Graeme" }, { first: "Andrew" }]);
+  expect(data).toStrictEqual([{ first: "Graeme" }, { first: "Andrew" }]);
   await sdb.close();
 });

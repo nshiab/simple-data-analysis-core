@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the first two strings", async () => {
+test("should return the first two strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -13,7 +14,7 @@ Deno.test("should return the first two strings", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { firstName: "Na", lastName: "Shiab" },
     { firstName: "Gr", lastName: "Bruce" },
   ]);

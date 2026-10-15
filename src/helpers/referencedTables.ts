@@ -9,25 +9,16 @@ import { getRegisteredTables } from "./tableRegistry.ts";
  * Matching is conservative: column names and aliases also count as references.
  * DuckDB folds ASCII letters in both quoted and unquoted identifiers.
  */
-export default function referencedTables(
-  sql: readonly string[],
-  sdb: SimpleDB,
-): SimpleTable[] {
+export default function referencedTables(sql: readonly string[], sdb: SimpleDB): SimpleTable[] {
   const identifiers = new Set<string>();
   for (const fragment of sql) {
     for (const token of scanSQL(fragment)) {
       if (token.kind === "quoted" && token.text.startsWith('"')) {
-        identifiers.add(
-          foldIdentifier(token.text.slice(1, -1).replaceAll('""', '"')),
-        );
-      } else if (
-        token.kind === "sql" && /^[\p{L}_][\p{L}\p{N}_$]*$/u.test(token.text)
-      ) {
+        identifiers.add(foldIdentifier(token.text.slice(1, -1).replaceAll('""', '"')));
+      } else if (token.kind === "sql" && /^[\p{L}_][\p{L}\p{N}_$]*$/u.test(token.text)) {
         identifiers.add(foldIdentifier(token.text));
       }
     }
   }
-  return getRegisteredTables(sdb).filter((table) =>
-    identifiers.has(foldIdentifier(table.name))
-  );
+  return getRegisteredTables(sdb).filter((table) => identifiers.has(foldIdentifier(table.name)));
 }

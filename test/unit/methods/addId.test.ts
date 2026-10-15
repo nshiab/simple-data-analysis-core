@@ -1,12 +1,9 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStrictEquals,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("addId runs both JSDoc examples with complete ordered results", async () => {
+test("addId runs both JSDoc examples with complete ordered results", async () => {
   const sdb = new SimpleDB();
   try {
     // The examples reference existing tables without displaying their input.
@@ -18,19 +15,15 @@ Deno.test("addId runs both JSDoc examples with complete ordered results", async 
     const table = sdb.newTable().loadArray(input);
     const flights = sdb.newTable().loadArray(input);
 
-    await table
-      .addId("edgeId")
-      .log();
-    await flights
-      .addId("edgeId", { prefix: "flight-" })
-      .log();
+    await table.addId("edgeId").log();
+    await flights.addId("edgeId", { prefix: "flight-" }).log();
 
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { source: "A", target: "B", edgeId: 0 },
       { source: "A", target: "B", edgeId: 1 },
       { source: "B", target: "C", edgeId: 2 },
     ]);
-    assertEquals(await flights.getData(), [
+    expect(await flights.getData()).toStrictEqual([
       { source: "A", target: "B", edgeId: "flight-0" },
       { source: "A", target: "B", edgeId: "flight-1" },
       { source: "B", target: "C", edgeId: "flight-2" },
@@ -40,18 +33,17 @@ Deno.test("addId runs both JSDoc examples with complete ordered results", async 
   }
 });
 
-Deno.test("addId restarts at zero in separate tables, including duplicate null rows", async () => {
+test("addId restarts at zero in separate tables, including duplicate null rows", async () => {
   const sdb = new SimpleDB();
   try {
     for (const prefix of [undefined, "same-"]) {
       for (let tableIndex = 0; tableIndex < 2; tableIndex++) {
-        const table = sdb.newTable().loadArray([
-          { value: null },
-          { value: "present" },
-          { value: null },
-        ]).addId("id", { prefix });
+        const table = sdb
+          .newTable()
+          .loadArray([{ value: null }, { value: "present" }, { value: null }])
+          .addId("id", { prefix });
 
-        assertEquals(await table.getData(), [
+        expect(await table.getData()).toStrictEqual([
           { value: null, id: prefix === undefined ? 0 : "same-0" },
           { value: "present", id: prefix === undefined ? 1 : "same-1" },
           { value: null, id: prefix === undefined ? 2 : "same-2" },
@@ -63,7 +55,7 @@ Deno.test("addId restarts at zero in separate tables, including duplicate null r
   }
 });
 
-Deno.test("addId adds numeric IDs to every row, including duplicate rows", async () => {
+test("addId adds numeric IDs to every row, including duplicate rows", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("numericIds").loadArray([
@@ -72,13 +64,13 @@ Deno.test("addId adds numeric IDs to every row, including duplicate rows", async
       { source: "B", target: "C" },
     ]);
 
-    assertStrictEquals(table.addId("edgeId"), table);
-    assertEquals(await table.getData(), [
+    expect(table.addId("edgeId")).toBe(table);
+    expect(await table.getData()).toStrictEqual([
       { source: "A", target: "B", edgeId: 0 },
       { source: "A", target: "B", edgeId: 1 },
       { source: "B", target: "C", edgeId: 2 },
     ]);
-    assertEquals(await table.getTypes(), {
+    expect(await table.getTypes()).toStrictEqual({
       source: "VARCHAR",
       target: "VARCHAR",
       edgeId: "BIGINT",
@@ -88,21 +80,21 @@ Deno.test("addId adds numeric IDs to every row, including duplicate rows", async
   }
 });
 
-Deno.test("addId accepts an empty options object", async () => {
+test("addId accepts an empty options object", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([{ value: 1 }, { value: 2 }]);
 
     table.addId("id", {});
 
-    assertEquals(await table.getValues("id"), [0, 1]);
-    assertEquals((await table.getTypes()).id, "BIGINT");
+    expect(await table.getValues("id")).toStrictEqual([0, 1]);
+    expect((await table.getTypes()).id).toStrictEqual("BIGINT");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("addId adds exact prefixed string IDs and preserves other columns", async () => {
+test("addId adds exact prefixed string IDs and preserves other columns", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([
@@ -114,7 +106,7 @@ Deno.test("addId adds exact prefixed string IDs and preserves other columns", as
       prefix: `vol d'été'; DROP TABLE flights; -- 🚀 `,
     });
 
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       {
         source: "A",
         target: "B",
@@ -128,30 +120,30 @@ Deno.test("addId adds exact prefixed string IDs and preserves other columns", as
         "edge id": `vol d'été'; DROP TABLE flights; -- 🚀 1`,
       },
     ]);
-    assertEquals((await table.getTypes())["edge id"], "VARCHAR");
+    expect((await table.getTypes())["edge id"]).toStrictEqual("VARCHAR");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("addId treats an empty prefix as supplied", async () => {
+test("addId treats an empty prefix as supplied", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([{ value: "a" }, { value: "b" }]);
 
     table.addId("id", { prefix: "" });
 
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { value: "a", id: "0" },
       { value: "b", id: "1" },
     ]);
-    assertEquals((await table.getTypes()).id, "VARCHAR");
+    expect((await table.getTypes()).id).toStrictEqual("VARCHAR");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("addId adds its typed column to an empty table", async () => {
+test("addId adds its typed column to an empty table", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("emptyIds");
@@ -159,8 +151,8 @@ Deno.test("addId adds its typed column to an empty table", async () => {
 
     table.addId("id").addId("prefixedId", { prefix: "empty-" });
 
-    assertEquals(await table.getData(), []);
-    assertEquals(await table.getTypes(), {
+    expect(await table.getData()).toStrictEqual([]);
+    expect(await table.getTypes()).toStrictEqual({
       value: "VARCHAR",
       id: "BIGINT",
       prefixedId: "VARCHAR",
@@ -170,14 +162,10 @@ Deno.test("addId adds its typed column to an empty table", async () => {
   }
 });
 
-Deno.test("addId chains across queued operations and subsequent reads", async () => {
+test("addId chains across queued operations and subsequent reads", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadArray([
-      { value: 3 },
-      { value: 1 },
-      { value: 2 },
-    ]);
+    const table = sdb.newTable().loadArray([{ value: 3 }, { value: 1 }, { value: 2 }]);
 
     const result = table
       .filter("value >= 2")
@@ -185,8 +173,8 @@ Deno.test("addId chains across queued operations and subsequent reads", async ()
       .addColumn("label", "string", "concat('value-', value)")
       .selectColumns(["id", "value", "label"]);
 
-    assertStrictEquals(result, table);
-    assertEquals(await result.getData(), [
+    expect(result).toBe(table);
+    expect(await result.getData()).toStrictEqual([
       { id: "kept-0", value: 3, label: "value-3.0" },
       { id: "kept-1", value: 2, label: "value-2.0" },
     ]);
@@ -195,7 +183,7 @@ Deno.test("addId chains across queued operations and subsequent reads", async ()
   }
 });
 
-Deno.test("addId preserves sorted rows when an input column shadows rowid", async () => {
+test("addId preserves sorted rows when an input column shadows rowid", async () => {
   const sdb = new SimpleDB();
   try {
     for (const column of ["rowid", "RoWiD"]) {
@@ -208,8 +196,7 @@ Deno.test("addId preserves sorted rows when an input column shadows rowid", asyn
 
         table.sort({ value: "asc" }).addId("id", { prefix });
 
-        assertEquals(
-          await table.getData(),
+        expect(await table.getData()).toStrictEqual(
           rows.map((row, index) => ({
             ...row,
             id: prefix === undefined ? index : `${prefix}${index}`,
@@ -222,7 +209,7 @@ Deno.test("addId preserves sorted rows when an input column shadows rowid", asyn
   }
 });
 
-Deno.test("addId rejects an existing column", async () => {
+test("addId rejects an existing column", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([{ edgeId: "existing" }]);
@@ -237,7 +224,7 @@ Deno.test("addId rejects an existing column", async () => {
   }
 });
 
-Deno.test("addId rejects invalid runtime argument types", async () => {
+test("addId rejects invalid runtime argument types", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -257,7 +244,7 @@ Deno.test("addId rejects invalid runtime argument types", async () => {
   }
 });
 
-Deno.test("addId rejects differently cased existing columns", async () => {
+test("addId rejects differently cased existing columns", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([{ edgeId: "existing" }]);
@@ -272,7 +259,7 @@ Deno.test("addId rejects differently cased existing columns", async () => {
   }
 });
 
-Deno.test("addId escapes quoted identifiers and snapshots queued options", async () => {
+test("addId escapes quoted identifiers and snapshots queued options", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([{ value: "a" }]);
@@ -280,15 +267,13 @@ Deno.test("addId escapes quoted identifiers and snapshots queued options", async
     table.addId('edge "id"', options);
     options.prefix = "changed-";
 
-    assertEquals(await table.getData(), [
-      { value: "a", 'edge "id"': "original-0" },
-    ]);
+    expect(await table.getData()).toStrictEqual([{ value: "a", 'edge "id"': "original-0" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("addId preserves large integer input identities without rounding", async () => {
+test("addId preserves large integer input identities without rounding", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("largeIds");
@@ -301,7 +286,7 @@ Deno.test("addId preserves large integer input identities without rounding", asy
     // through JavaScript numbers while rebuilding the table.
     await assertRejects(() => table.getData(), Error, "safe integer range");
     table.convert({ value: "string" });
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { value: "9007199254740992", id: 0, prefixedId: "edge-0" },
       { value: "9007199254740993", id: 1, prefixedId: "edge-1" },
     ]);

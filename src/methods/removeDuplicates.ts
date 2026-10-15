@@ -11,9 +11,7 @@ export default function removeDuplicates(
 ) {
   const columnsOn = options.on ? stringToArray(options.on) : null;
   const distinct = columnsOn
-    ? `DISTINCT ON(${
-      columnsOn.map((d) => `${quoteIdentifier(d)}`).join(",")
-    }) *`
+    ? `DISTINCT ON(${columnsOn.map((d) => `${quoteIdentifier(d)}`).join(",")}) *`
     : "DISTINCT *";
 
   queueOp(simpleTable, {

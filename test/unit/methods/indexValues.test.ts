@@ -1,14 +1,16 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should index values against a calculated statistic", async () => {
+test("should index values against a calculated statistic", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ cpi: 10 }, { cpi: 20 }, { cpi: 30 }]);
 
   table.indexValues("cpi", "cpiIndexed", { stat: "mean" });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { cpi: 10, cpiIndexed: 50 },
     { cpi: 20, cpiIndexed: 100 },
     { cpi: 30, cpiIndexed: 150 },
@@ -16,7 +18,7 @@ Deno.test("should index values against a calculated statistic", async () => {
   await sdb.close();
 });
 
-Deno.test("should index grouped values against an exact date reference", async () => {
+test("should index grouped values against an exact date reference", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -38,7 +40,7 @@ Deno.test("should index grouped values against an exact date reference", async (
     { by: "country", base: 100, decimals: 1 },
   );
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     {
       country: "B",
       date: new Date("2002-01-01T00:00:00Z"),
@@ -79,7 +81,7 @@ Deno.test("should index grouped values against an exact date reference", async (
   await sdb.close();
 });
 
-Deno.test("should require exactly one matching reference row in every group", async () => {
+test("should require exactly one matching reference row in every group", async () => {
   const missingDb = new SimpleDB();
   const missingTable = missingDb.newTable();
   missingTable.loadArray([
@@ -87,12 +89,7 @@ Deno.test("should require exactly one matching reference row in every group", as
     { group: "A", period: 2, value: 20 },
     { group: "B", period: 1, value: 30 },
   ]);
-  missingTable.indexValues(
-    "value",
-    "indexed",
-    { column: "period", equals: 2 },
-    { by: "group" },
-  );
+  missingTable.indexValues("value", "indexed", { column: "period", equals: 2 }, { by: "group" });
 
   await assertRejects(
     () => missingTable.run(),
@@ -107,11 +104,7 @@ Deno.test("should require exactly one matching reference row in every group", as
     { period: 1, value: 10 },
     { period: 1, value: 20 },
   ]);
-  duplicateTable.indexValues(
-    "value",
-    "indexed",
-    { column: "period", equals: 1 },
-  );
+  duplicateTable.indexValues("value", "indexed", { column: "period", equals: 1 });
 
   await assertRejects(
     () => duplicateTable.run(),
@@ -121,7 +114,7 @@ Deno.test("should require exactly one matching reference row in every group", as
   await duplicateDb.close();
 });
 
-Deno.test("should support calculated reference statistics", async () => {
+test("should support calculated reference statistics", async () => {
   const cases = [
     { stat: "min", expected: [100, 200, 400, null] },
     { stat: "max", expected: [25, 50, 100, null] },
@@ -132,23 +125,32 @@ Deno.test("should support calculated reference statistics", async () => {
   for (const testCase of cases) {
     const sdb = new SimpleDB();
     const table = sdb.newTable();
-    table.loadArray([{ value: 1 }, { value: 2 }, { value: 4 }, {
-      value: null,
-    }]);
-    table.indexValues("value", "indexed", { stat: testCase.stat }, {
-      decimals: 2,
-    });
-
-    assertEquals(
-      (await table.getData()).map((row) => row.indexed),
-      [...testCase.expected],
-      `Unexpected result for ${testCase.stat}`,
+    table.loadArray([
+      { value: 1 },
+      { value: 2 },
+      { value: 4 },
+      {
+        value: null,
+      },
+    ]);
+    table.indexValues(
+      "value",
+      "indexed",
+      { stat: testCase.stat },
+      {
+        decimals: 2,
+      },
     );
+
+    expect(
+      (await table.getData()).map((row) => row.indexed),
+      `Unexpected result for ${testCase.stat}`,
+    ).toStrictEqual([...testCase.expected]);
     await sdb.close();
   }
 });
 
-Deno.test("should bind supported scalar reference values", async () => {
+test("should bind supported scalar reference values", async () => {
   const cases = [
     { column: "text", equals: "reference" },
     { column: "number", equals: 2 },
@@ -181,22 +183,17 @@ Deno.test("should bind supported scalar reference values", async () => {
         value: 20,
       },
     ]);
-    table.indexValues(
-      "value",
-      "indexed",
-      { column: testCase.column, equals: testCase.equals },
-    );
+    table.indexValues("value", "indexed", { column: testCase.column, equals: testCase.equals });
 
-    assertEquals(
+    expect(
       (await table.getData()).map((row) => row.indexed),
-      [50, 100],
       `Unexpected result for ${testCase.column}`,
-    );
+    ).toStrictEqual([50, 100]);
     await sdb.close();
   }
 });
 
-Deno.test("should reject cross-type exact reference values", async () => {
+test("should reject cross-type exact reference values", async () => {
   const cases = [
     {
       rows: [{ period: "01", value: 20 }],
@@ -223,7 +220,7 @@ Deno.test("should reject cross-type exact reference values", async () => {
   }
 });
 
-Deno.test("should match DATE, TIMESTAMP, and TIMESTAMPTZ references", async () => {
+test("should match DATE, TIMESTAMP, and TIMESTAMPTZ references", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("temporalReferences");
   await sdb.customQuery(`CREATE TABLE "temporalReferences" AS
@@ -253,21 +250,20 @@ Deno.test("should match DATE, TIMESTAMP, and TIMESTAMPTZ references", async () =
     equals: new Date("2001-01-01T00:00:00Z"),
   });
 
-  assertEquals(
+  expect(
     (await table.getData()).map((row) => ({
       indexedDate: row.indexedDate,
       indexedTimestamp: row.indexedTimestamp,
       indexedTimestampTz: row.indexedTimestampTz,
     })),
-    [
-      { indexedDate: 100, indexedTimestamp: 100, indexedTimestampTz: 100 },
-      { indexedDate: 200, indexedTimestamp: 200, indexedTimestampTz: 200 },
-    ],
-  );
+  ).toStrictEqual([
+    { indexedDate: 100, indexedTimestamp: 100, indexedTimestampTz: 100 },
+    { indexedDate: 200, indexedTimestamp: 200, indexedTimestampTz: 200 },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should require an exact temporal reference", async () => {
+test("should require an exact temporal reference", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("microsecondReference");
   await sdb.customQuery(`CREATE TABLE "microsecondReference" AS
@@ -278,15 +274,11 @@ Deno.test("should require an exact temporal reference", async () => {
     equals: new Date("2001-01-01T00:00:00.000Z"),
   });
 
-  await assertRejects(
-    () => table.run(),
-    Error,
-    "indexValues() found no reference row",
-  );
+  await assertRejects(() => table.run(), Error, "indexValues() found no reference row");
   await sdb.close();
 });
 
-Deno.test("should reject invalid references and options at call time", async () => {
+test("should reject invalid references and options at call time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ period: 1, value: 10 }]);
@@ -315,17 +307,27 @@ Deno.test("should reject invalid references and options at call time", async () 
   );
   assertThrows(
     () =>
-      table.indexValues("value", "indexed", { stat: "mean" }, {
-        base: 0,
-      }),
+      table.indexValues(
+        "value",
+        "indexed",
+        { stat: "mean" },
+        {
+          base: 0,
+        },
+      ),
     Error,
     "indexValues() options.base must be a finite number greater than 0",
   );
   assertThrows(
     () =>
-      table.indexValues("value", "indexed", { stat: "mean" }, {
-        decimals: 1.5,
-      }),
+      table.indexValues(
+        "value",
+        "indexed",
+        { stat: "mean" },
+        {
+          decimals: 1.5,
+        },
+      ),
     Error,
     "indexValues() options.decimals must be a finite integer greater than or equal to 0",
   );
@@ -333,7 +335,7 @@ Deno.test("should reject invalid references and options at call time", async () 
   await sdb.close();
 });
 
-Deno.test("should validate columns when the operation runs", async () => {
+test("should validate columns when the operation runs", async () => {
   const cases = [
     {
       column: "missing",
@@ -347,8 +349,7 @@ Deno.test("should validate columns when the operation runs", async () => {
       newColumn: "indexed",
       reference: { stat: "mean" } as const,
       options: {},
-      message:
-        'indexValues() requires a numeric column, but "label" has type VARCHAR',
+      message: 'indexValues() requires a numeric column, but "label" has type VARCHAR',
     },
     {
       column: "value",
@@ -377,18 +378,13 @@ Deno.test("should validate columns when the operation runs", async () => {
     const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadArray([{ label: "a", value: 10 }]);
-    table.indexValues(
-      testCase.column,
-      testCase.newColumn,
-      testCase.reference,
-      testCase.options,
-    );
+    table.indexValues(testCase.column, testCase.newColumn, testCase.reference, testCase.options);
     await assertRejects(() => table.run(), Error, testCase.message);
     await sdb.close();
   }
 });
 
-Deno.test("should index supported numeric column types and preserve nulls", async () => {
+test("should index supported numeric column types and preserve nulls", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("numericTypes");
   await sdb.customQuery(`CREATE TABLE "numericTypes" AS
@@ -400,14 +396,7 @@ Deno.test("should index supported numeric column types and preserve nulls", asyn
     UNION ALL
     SELECT 3, NULL, NULL, NULL, NULL`);
 
-  for (
-    const column of [
-      "integer_value",
-      "bigint_value",
-      "double_value",
-      "decimal_value",
-    ]
-  ) {
+  for (const column of ["integer_value", "bigint_value", "double_value", "decimal_value"]) {
     table.indexValues(column, `${column}_indexed`, {
       column: "period",
       equals: 2,
@@ -415,24 +404,16 @@ Deno.test("should index supported numeric column types and preserve nulls", asyn
   }
 
   const data = await table.getData();
-  for (
-    const column of [
-      "integer_value",
-      "bigint_value",
-      "double_value",
-      "decimal_value",
-    ]
-  ) {
-    assertEquals(
+  for (const column of ["integer_value", "bigint_value", "double_value", "decimal_value"]) {
+    expect(
       data.map((row) => row[`${column}_indexed`]),
-      [50, 100, null],
       `Unexpected result for ${column}`,
-    );
+    ).toStrictEqual([50, 100, null]);
   }
   await sdb.close();
 });
 
-Deno.test("should calculate statistical references within multiple grouping columns", async () => {
+test("should calculate statistical references within multiple grouping columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -443,28 +424,38 @@ Deno.test("should calculate statistical references within multiple grouping colu
     { region: "B", year: 2020, value: 5 },
     { region: "B", year: 2020, value: 10 },
   ]);
-  table.indexValues("value", "indexed", { stat: "mean" }, {
-    by: ["region", "year"],
-    base: 100,
-    decimals: 2,
-  });
-
-  assertEquals(
-    (await table.getData()).map((row) => row.indexed),
-    [66.67, 133.33, 66.67, 133.33, 66.67, 133.33],
+  table.indexValues(
+    "value",
+    "indexed",
+    { stat: "mean" },
+    {
+      by: ["region", "year"],
+      base: 100,
+      decimals: 2,
+    },
   );
+
+  expect((await table.getData()).map((row) => row.indexed)).toStrictEqual([
+    66.67, 133.33, 66.67, 133.33, 66.67, 133.33,
+  ]);
   await sdb.close();
 });
 
-Deno.test("should reject null and zero calculated or selected reference values", async () => {
+test("should reject null and zero calculated or selected reference values", async () => {
   const cases = [
     {
-      rows: [{ period: 1, value: null }, { period: 2, value: 10 }],
+      rows: [
+        { period: 1, value: null },
+        { period: 2, value: 10 },
+      ],
       reference: { column: "period", equals: 1 } as const,
       message: "indexValues() found a null reference value",
     },
     {
-      rows: [{ period: 1, value: 0 }, { period: 2, value: 10 }],
+      rows: [
+        { period: 1, value: 0 },
+        { period: 2, value: 10 },
+      ],
       reference: { column: "period", equals: 1 } as const,
       message: "indexValues() found a zero reference value",
     },
@@ -500,7 +491,7 @@ Deno.test("should reject null and zero calculated or selected reference values",
   }
 });
 
-Deno.test("should snapshot mutable reference and option inputs", async () => {
+test("should snapshot mutable reference and option inputs", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -509,44 +500,28 @@ Deno.test("should snapshot mutable reference and option inputs", async () => {
   ]);
   const date = new Date("2001-01-01T00:00:00Z");
   const by = ["group"];
-  table.indexValues(
-    "value",
-    "indexed",
-    { column: "date", equals: date },
-    { by },
-  );
+  table.indexValues("value", "indexed", { column: "date", equals: date }, { by });
   date.setUTCFullYear(2002);
   by[0] = "missing";
 
-  assertEquals(
-    (await table.getData()).map((row) => row.indexed),
-    [100, 200],
-  );
+  expect((await table.getData()).map((row) => row.indexed)).toStrictEqual([100, 200]);
   await sdb.close();
 });
 
-Deno.test("should apply a custom base", async () => {
+test("should apply a custom base", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { period: 1, value: 10 },
     { period: 2, value: 20 },
   ]);
-  table.indexValues(
-    "value",
-    "indexed",
-    { column: "period", equals: 2 },
-    { base: 1_000 },
-  );
+  table.indexValues("value", "indexed", { column: "period", equals: 2 }, { base: 1_000 });
 
-  assertEquals(
-    (await table.getData()).map((row) => row.indexed),
-    [500, 1_000],
-  );
+  expect((await table.getData()).map((row) => row.indexed)).toStrictEqual([500, 1_000]);
   await sdb.close();
 });
 
-Deno.test("should index against rows selected by column extrema", async () => {
+test("should index against rows selected by column extrema", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -569,22 +544,21 @@ Deno.test("should index against rows selected by column extrema", async () => {
     { by: "country", decimals: 2 },
   );
 
-  assertEquals(
+  expect(
     (await table.getData()).map((row) => ({
       indexedToFirst: row.indexedToFirst,
       indexedToLast: row.indexedToLast,
     })),
-    [
-      { indexedToFirst: 100, indexedToLast: 66.67 },
-      { indexedToFirst: 150, indexedToLast: 100 },
-      { indexedToFirst: 100, indexedToLast: 66.67 },
-      { indexedToFirst: 150, indexedToLast: 100 },
-    ],
-  );
+  ).toStrictEqual([
+    { indexedToFirst: 100, indexedToLast: 66.67 },
+    { indexedToFirst: 150, indexedToLast: 100 },
+    { indexedToFirst: 100, indexedToLast: 66.67 },
+    { indexedToFirst: 150, indexedToLast: 100 },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should reject tied and invalid column-at references", async () => {
+test("should reject tied and invalid column-at references", async () => {
   const invalidDb = new SimpleDB();
   const invalidTable = invalidDb.newTable();
   invalidTable.loadArray([{ date: new Date("2001-01-01T00:00:00Z"), cpi: 10 }]);
@@ -610,10 +584,6 @@ Deno.test("should reject tied and invalid column-at references", async () => {
   ]);
   tiedTable.indexValues("cpi", "indexed", { column: "date", at: "min" });
 
-  await assertRejects(
-    () => tiedTable.run(),
-    Error,
-    "indexValues() found multiple reference rows",
-  );
+  await assertRejects(() => tiedTable.run(), Error, "indexValues() found multiple reference rows");
   await tiedDb.close();
 });

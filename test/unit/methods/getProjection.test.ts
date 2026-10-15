@@ -1,15 +1,14 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the projection of a column", async () => {
+test("should return the projection of a column", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb
+  const table = sdb
     .newTable()
-    .loadGeoData(
-      "test/geodata/files/CanadianProvincesAndTerritories.json",
-    );
+    .loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const projection = await table.getProjection("geom");
-  assertEquals(projection, "GEOMETRY('EPSG:4326')");
+  expect(projection).toStrictEqual("GEOMETRY('EPSG:4326')");
   await sdb.close();
 });

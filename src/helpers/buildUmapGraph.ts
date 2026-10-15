@@ -1,8 +1,6 @@
 import type { DuckDBConnection } from "@duckdb/node-api";
 import readScalarNumber from "./readScalarNumber.ts";
-import buildVectorNeighbors, {
-  type VectorNeighborTables,
-} from "./buildVectorNeighbors.ts";
+import buildVectorNeighbors, { type VectorNeighborTables } from "./buildVectorNeighbors.ts";
 
 // All relation names are private, already-quoted SQL identifiers supplied by
 // the owning UMAP operation. No input vectors cross the JS boundary.
@@ -30,10 +28,7 @@ export default async function buildUmapGraph(
     { ...names, neighbors: names.knn },
   );
   await buildFuzzyGraph(connection, input.neighbors, names);
-  const edges = await readScalarNumber(
-    connection,
-    `SELECT count(*) FROM ${names.graph}`,
-  );
+  const edges = await readScalarNumber(connection, `SELECT count(*) FROM ${names.graph}`);
   const source = new Uint32Array(edges),
     target = new Uint32Array(edges),
     weight = new Float64Array(edges);
@@ -44,29 +39,16 @@ export default async function buildUmapGraph(
   while (true) {
     const chunk = await rows.fetchChunk();
     if (!chunk || chunk.rowCount === 0) break;
-    chunk.visitColumnValues(
-      0,
-      (value, row) => source[edge + row] = Number(value),
-    );
-    chunk.visitColumnValues(
-      1,
-      (value, row) => target[edge + row] = Number(value),
-    );
-    chunk.visitColumnValues(
-      2,
-      (value, row) => weight[edge + row] = Number(value),
-    );
+    chunk.visitColumnValues(0, (value, row) => (source[edge + row] = Number(value)));
+    chunk.visitColumnValues(1, (value, row) => (target[edge + row] = Number(value)));
+    chunk.visitColumnValues(2, (value, row) => (weight[edge + row] = Number(value)));
     edge += chunk.rowCount;
   }
   if (edge !== edges) throw new Error("Graph changed during transfer.");
   return { source, target, weight };
 }
 
-async function buildFuzzyGraph(
-  connection: DuckDBConnection,
-  neighbors: number,
-  names: UmapTables,
-) {
+async function buildFuzzyGraph(connection: DuckDBConnection, neighbors: number, names: UmapTables) {
   // Smooth-kNN with local_connectivity=1, bandwidth=1, 64 bisection steps,
   // tolerance 1e-5 and the reference's 1e-3 minimum-distance scale.
   await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.scales} AS

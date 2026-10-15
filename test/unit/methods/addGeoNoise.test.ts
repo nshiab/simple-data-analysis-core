@@ -1,7 +1,10 @@
-import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("addGeoNoise should move EPSG:4326 points within the requested distance", async () => {
+test("addGeoNoise should move EPSG:4326 points within the requested distance", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("points");
   table.loadArray([
@@ -15,14 +18,14 @@ Deno.test("addGeoNoise should move EPSG:4326 points within the requested distanc
   table.addGeoNoise(10, { column: "geom", unit: "km" });
   await table.run();
 
-  const data = await sdb.customQuery(
+  const data = (await sdb.customQuery(
     `SELECT id,
       ST_Distance_Sphere(originalGeom, geom) AS distance,
       ST_X(geom) AS longitude,
       ST_Y(geom) AS latitude
     FROM points`,
     { returnData: true },
-  ) as {
+  )) as {
     id: string;
     distance: number;
     longitude: number;
@@ -34,12 +37,12 @@ Deno.test("addGeoNoise should move EPSG:4326 points within the requested distanc
     assert(row.longitude >= -180 && row.longitude <= 180);
     assert(row.latitude >= -90 && row.latitude <= 90);
   }
-  assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+  expect((await table.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   await sdb.close();
 });
 
-Deno.test("addGeoNoise should move only duplicated points", async () => {
+test("addGeoNoise should move only duplicated points", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("points");
   table.loadArray([
@@ -53,14 +56,14 @@ Deno.test("addGeoNoise should move only duplicated points", async () => {
   table.addGeoNoise(100, { column: "geom", onlyDuplicates: true });
   await table.run();
 
-  const data = await sdb.customQuery(
+  const data = (await sdb.customQuery(
     `SELECT id, ST_Distance_Sphere(originalGeom, geom) AS distance
     FROM points`,
     { returnData: true },
-  ) as { id: string; distance: number }[];
+  )) as { id: string; distance: number }[];
   for (const row of data) {
     if (row.id === "unique") {
-      assertEquals(row.distance, 0);
+      expect(row.distance).toStrictEqual(0);
     } else {
       assert(row.distance > 0);
       assert(row.distance <= 100.001);
@@ -70,7 +73,7 @@ Deno.test("addGeoNoise should move only duplicated points", async () => {
   await sdb.close();
 });
 
-Deno.test("addGeoNoise should reject non-point geometries", async () => {
+test("addGeoNoise should reject non-point geometries", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/polygon.json");
@@ -84,7 +87,7 @@ Deno.test("addGeoNoise should reject non-point geometries", async () => {
   await sdb.close();
 });
 
-Deno.test("addGeoNoise should reject geometry columns outside EPSG:4326", async () => {
+test("addGeoNoise should reject geometry columns outside EPSG:4326", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ latitude: 1, longitude: 2 }]);
@@ -101,7 +104,7 @@ Deno.test("addGeoNoise should reject geometry columns outside EPSG:4326", async 
   await sdb.close();
 });
 
-Deno.test("addGeoNoise should validate maxDistance", async () => {
+test("addGeoNoise should validate maxDistance", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 

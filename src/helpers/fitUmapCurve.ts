@@ -6,7 +6,7 @@ export default function fitUmapCurve(minDistance: number): [number, number] {
     throw new Error("minDistance must be between zero and one.");
   }
   const samples = Array.from({ length: 299 }, (_, i) => {
-    const x = (i + 1) * 3 / 299;
+    const x = ((i + 1) * 3) / 299;
     return {
       logX: Math.log(x),
       target: Math.exp(-Math.max(0, x - minDistance)),
@@ -15,16 +15,21 @@ export default function fitUmapCurve(minDistance: number): [number, number] {
   const loss = (logA: number, logB: number) => {
     let sum = 0;
     for (const { logX, target } of samples) {
-      const residual = 1 / (1 + Math.exp(logA + 2 * Math.exp(logB) * logX)) -
-        target;
+      const residual = 1 / (1 + Math.exp(logA + 2 * Math.exp(logB) * logX)) - target;
       sum += residual * residual;
     }
     return sum;
   };
-  let logA = 0, logB = 0, damping = 1e-3;
+  let logA = 0,
+    logB = 0,
+    damping = 1e-3;
   let error = loss(logA, logB);
   for (let iteration = 0; iteration < 100; iteration++) {
-    let aa = 0, ab = 0, bb = 0, ga = 0, gb = 0;
+    let aa = 0,
+      ab = 0,
+      bb = 0,
+      ga = 0,
+      gb = 0;
     for (const { logX, target } of samples) {
       const power = Math.exp(logA + 2 * Math.exp(logB) * logX);
       const predicted = 1 / (1 + power);

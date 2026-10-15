@@ -18,9 +18,9 @@ export default function assertSameDatabase(
     throw new Error(
       `${method} all tables must belong to the same SimpleDB instance. The following table${
         foreignTables.length === 1 ? " belongs" : "s belong"
-      } to another database: ${
-        foreignTables.map((table) => JSON.stringify(table.name)).join(", ")
-      }.`,
+      } to another database: ${foreignTables
+        .map((table) => JSON.stringify(table.name))
+        .join(", ")}.`,
     );
   }
 }

@@ -20,9 +20,7 @@ export default async function computeMahalanobisDistances(
   cleanup: () => Promise<void>;
 }> {
   const { dimensions, means, origins, meanOffsets } = model;
-  if (
-    [means, origins, meanOffsets].some((values) => values.length !== dimensions)
-  ) {
+  if ([means, origins, meanOffsets].some((values) => values.length !== dimensions)) {
     throw new Error("The covariance centroid has the wrong dimensions.");
   }
   const vectorLiteral = (values: Float64Array) => {
@@ -38,17 +36,14 @@ export default async function computeMahalanobisDistances(
     (referencePoint.length !== dimensions ||
       referencePoint.some((value) => !Number.isFinite(value)))
   ) {
-    throw new Error(
-      "Mahalanobis reference point must contain one finite number per dimension.",
-    );
+    throw new Error("Mahalanobis reference point must contain one finite number per dimension.");
   }
   // Direct subtraction retains exact matches and tiny reference offsets that
   // would be lost by subtracting the centroid from both points separately.
-  const centeredValue = referencePoint === undefined
-    ? `(value - array_extract(${originSql}, dimension)) - array_extract(${offsetSql}, dimension)`
-    : `value - array_extract(${
-      vectorLiteral(Float64Array.from(referencePoint))
-    }, dimension)`;
+  const centeredValue =
+    referencePoint === undefined
+      ? `(value - array_extract(${originSql}, dimension)) - array_extract(${offsetSql}, dimension)`
+      : `value - array_extract(${vectorLiteral(Float64Array.from(referencePoint))}, dimension)`;
   const whitening = covarianceWhitening(model);
   const suffix = crypto.randomUUID().replaceAll("-", "");
   const relation = `__sda_mahalanobis_distances_${suffix}`;
@@ -68,9 +63,7 @@ export default async function computeMahalanobisDistances(
       // repeatedly evaluating it inside a per-observation lambda.
       for (let row = 0; row < dimensions; row++) {
         appender.appendArray(
-          Array.from(
-            whitening.subarray(row * dimensions, (row + 1) * dimensions),
-          ),
+          Array.from(whitening.subarray(row * dimensions, (row + 1) * dimensions)),
           ARRAY(DOUBLE, dimensions),
         );
         appender.endRow();
@@ -99,10 +92,12 @@ export default async function computeMahalanobisDistances(
       FROM components JOIN magnitudes USING (row_id)
       GROUP BY row_id, magnitude`);
     const invalid = Number(
-      (await connection.runAndReadAll(
-        `SELECT count(*) FROM ${quoteIdentifier(relation)}
+      (
+        await connection.runAndReadAll(
+          `SELECT count(*) FROM ${quoteIdentifier(relation)}
         WHERE distance IS NULL OR NOT isfinite(distance)`,
-      )).getRowsJS()[0][0],
+        )
+      ).getRowsJS()[0][0],
     );
     if (invalid > 0) {
       throw new Error(

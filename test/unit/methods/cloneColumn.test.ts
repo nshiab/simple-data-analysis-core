@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should clone a column", async () => {
+test("should clone a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ firstName: "nael", lastName: "shiab" }]);
@@ -10,13 +11,11 @@ Deno.test("should clone a column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { firstName: "nael", lastName: "shiab", firstNameCloned: "nael" },
-  ]);
+  expect(data).toStrictEqual([{ firstName: "nael", lastName: "shiab", firstNameCloned: "nael" }]);
 
   await sdb.close();
 });
-Deno.test("should clone a column with spaces in its name", async () => {
+test("should clone a column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ "first name": "nael", "last name": "shiab" }]);
@@ -25,23 +24,21 @@ Deno.test("should clone a column with spaces in its name", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { "first name": "nael", "last name": "shiab", "first name cloned": "nael" },
   ]);
 
   await sdb.close();
 });
-Deno.test("should clone a column with geo data", async () => {
+test("should clone a column with geo data", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb
+  const table = sdb
     .newTable()
-    .loadGeoData(
-      "test/geodata/files/CanadianProvincesAndTerritories.json",
-    );
+    .loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   table.cloneColumn("geom", "geom_cloned");
 
-  assertEquals(await table.getTypes(), {
+  expect(await table.getTypes()).toStrictEqual({
     geom: "GEOMETRY('EPSG:4326')",
     geom_cloned: "GEOMETRY('EPSG:4326')",
     nameEnglish: "VARCHAR",

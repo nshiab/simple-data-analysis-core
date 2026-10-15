@@ -4,15 +4,12 @@ import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
-export default async function getValues(
-  simpleTable: SimpleTable,
-  column: string,
-) {
+export default async function getValues(simpleTable: SimpleTable, column: string) {
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT ${quoteQualifiedIdentifier(simpleTable.name, column)} FROM ${
-      quoteIdentifier(simpleTable.name)
-    }`,
+    `SELECT ${quoteQualifiedIdentifier(simpleTable.name, column)} FROM ${quoteIdentifier(
+      simpleTable.name,
+    )}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,

@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should unnest rows based on a specific column values", async () => {
+test("should unnest rows based on a specific column values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/nestedData.csv");
@@ -9,7 +10,7 @@ Deno.test("should unnest rows based on a specific column values", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { city: "Montreal", neighbourhoods: "Old Montreal" },
     { city: "Montreal", neighbourhoods: "Chinatown" },
     { city: "Montreal", neighbourhoods: "Griffintown" },
@@ -24,14 +25,14 @@ Deno.test("should unnest rows based on a specific column values", async () => {
   await sdb.close();
 });
 
-Deno.test("should bind an unnesting separator containing an apostrophe", async () => {
+test("should bind an unnesting separator containing an apostrophe", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundUnnest");
 
   table.loadArray([{ group: "a", value: "rock'n'roll" }]);
   table.unnest("value", "'n'");
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { group: "a", value: "rock" },
     { group: "a", value: "roll" },
   ]);

@@ -15,12 +15,12 @@ export default async function getSkew(
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(SKEWNESS(${qualifiedColumn}), ${options.decimals}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`
-      : `SELECT SKEWNESS(${qualifiedColumn}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`,
+      ? `SELECT ROUND(SKEWNESS(${qualifiedColumn}), ${options.decimals}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT SKEWNESS(${qualifiedColumn}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

@@ -12,11 +12,7 @@ export default async function appendColumnBatches(
   table: string,
   types: readonly DuckDBType[],
   rowCount: number,
-  columnValues: (
-    column: number,
-    start: number,
-    end: number,
-  ) => readonly DuckDBValue[],
+  columnValues: (column: number, start: number, end: number) => readonly DuckDBValue[],
 ) {
   const appender = await connection.createAppender(table);
   try {

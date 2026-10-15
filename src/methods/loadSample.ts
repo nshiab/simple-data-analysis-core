@@ -8,43 +8,31 @@ import type SimpleTable from "../class/SimpleTable.ts";
  */
 export default function loadSample(
   table: SimpleTable,
-  sample:
-    | "fires"
-    | "recipes"
-    | "temperatures"
-    | "temperaturesCities"
-    | "canada"
-    | "firesGeo",
+  sample: "fires" | "recipes" | "temperatures" | "temperaturesCities" | "canada" | "firesGeo",
 ): SimpleTable {
   const samples = {
     fires: {
-      url:
-        "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.csv",
+      url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.csv",
       geo: false,
     },
     recipes: {
-      url:
-        "https://github.com/nshiab/simple-data-analysis-core/raw/refs/heads/main/test/data/files/recipes.parquet",
+      url: "https://github.com/nshiab/simple-data-analysis-core/raw/refs/heads/main/test/data/files/recipes.parquet",
       geo: false,
     },
     temperatures: {
-      url:
-        "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/dailyTemperatures.csv",
+      url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/dailyTemperatures.csv",
       geo: false,
     },
     temperaturesCities: {
-      url:
-        "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/cities.csv",
+      url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/cities.csv",
       geo: false,
     },
     canada: {
-      url:
-        "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+      url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/CanadianProvincesAndTerritories.json",
       geo: true,
     },
     firesGeo: {
-      url:
-        "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.geojson",
+      url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.geojson",
       geo: true,
     },
   };
@@ -54,11 +42,11 @@ export default function loadSample(
   // This validation doesn't need the database, so it stays at call time.
   if (!sampleToLoad) {
     throw new Error(
-      `loadSample() does not recognize sample ${
-        JSON.stringify(sample)
-      }. Available samples: ${
-        Object.keys(samples).map((name) => JSON.stringify(name)).join(", ")
-      }.`,
+      `loadSample() does not recognize sample ${JSON.stringify(
+        sample,
+      )}. Available samples: ${Object.keys(samples)
+        .map((name) => JSON.stringify(name))
+        .join(", ")}.`,
     );
   }
 

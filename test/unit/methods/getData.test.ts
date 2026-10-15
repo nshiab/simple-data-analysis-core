@@ -1,66 +1,60 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("getData returns prototype-named columns as own data properties", async () => {
+test("getData returns prototype-named columns as own data properties", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("prototype_values");
-    for (
-      const [expression, expected] of [
-        ["42", 42],
-        ["NULL::DOUBLE", null],
-        ["{'retained': true}", { retained: true }],
-      ] as const
-    ) {
+    for (const [expression, expected] of [
+      ["42", 42],
+      ["NULL::DOUBLE", null],
+      ["{'retained': true}", { retained: true }],
+    ] as const) {
       await sdb.customQuery(
         `CREATE OR REPLACE TABLE prototype_values AS
         SELECT ${expression} AS "__proto__", 'retained' AS constructor`,
       );
       const [row] = await table.getData();
-      assertEquals(Object.keys(row), ["__proto__", "constructor"]);
-      assertEquals(row["__proto__"], expected);
-      assertEquals<unknown>(row.constructor, "retained");
-      assertEquals(Object.getPrototypeOf(row), Object.prototype);
-      assertEquals(
-        Object.getOwnPropertyDescriptor(row, "__proto__"),
-        {
-          value: expected,
-          enumerable: true,
-          configurable: true,
-          writable: true,
-        },
-      );
+      expect(Object.keys(row)).toStrictEqual(["__proto__", "constructor"]);
+      expect(row["__proto__"]).toStrictEqual(expected);
+      expect(row.constructor).toStrictEqual("retained");
+      expect(Object.getPrototypeOf(row)).toStrictEqual(Object.prototype);
+      expect(Object.getOwnPropertyDescriptor(row, "__proto__")).toStrictEqual({
+        value: expected,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("getData returns vector elements and nulls instead of display labels", async () => {
+test("getData returns vector elements and nulls instead of display labels", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable("vectors").loadArray([
-      { vector: [1.5, null, -0] },
-      { vector: null },
-    ], { columnTypes: { vector: "FLOAT[3]" } });
+    const table = sdb
+      .newTable("vectors")
+      .loadArray([{ vector: [1.5, null, -0] }, { vector: null }], {
+        columnTypes: { vector: "FLOAT[3]" },
+      });
     const expected = [{ vector: [1.5, null, -0] }, { vector: null }];
     const data = await table.getData();
-    assertEquals(data, expected);
+    expect(data).toStrictEqual(expected);
     (data[0].vector as (number | null)[])[0] = 99;
-    assertEquals(await table.getData(), expected);
-    assertEquals(
-      await table.getValues("vector"),
-      expected.map((row) => row.vector),
-    );
+    expect(await table.getData()).toStrictEqual(expected);
+    expect(await table.getValues("vector")).toStrictEqual(expected.map((row) => row.vector));
     const streamed: { [key: string]: unknown }[] = [];
     for await (const row of table.stream()) streamed.push(row);
-    assertEquals(streamed, expected);
+    expect(streamed).toStrictEqual(expected);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("getData returns float lists and nested vectors as JavaScript arrays", async () => {
+test("getData returns float lists and nested vectors as JavaScript arrays", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("nested_vectors");
@@ -68,25 +62,29 @@ Deno.test("getData returns float lists and nested vectors as JavaScript arrays",
       [1.5, NULL, 2.5]::FLOAT[] AS list, []::FLOAT[] AS empty,
       [[1, 2], [3, 4]]::FLOAT[2][2] AS matrix,
       {'vector': [1, NULL]::FLOAT[2], 'label': 'a'} AS nested`);
-    const expected = [{
-      list: [1.5, null, 2.5],
-      empty: [],
-      matrix: [[1, 2], [3, 4]],
-      nested: { vector: [1, null], label: "a" },
-    }];
-    assertEquals(await table.getData(), expected);
-    assertEquals(
+    const expected = [
+      {
+        list: [1.5, null, 2.5],
+        empty: [],
+        matrix: [
+          [1, 2],
+          [3, 4],
+        ],
+        nested: { vector: [1, null], label: "a" },
+      },
+    ];
+    expect(await table.getData()).toStrictEqual(expected);
+    expect(
       await sdb.customQuery("SELECT * FROM nested_vectors", {
         returnData: true,
       }),
-      expected,
-    );
+    ).toStrictEqual(expected);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("getData does not run a schema preflight query", async () => {
+test("getData does not run a schema preflight query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("queryCount");
   table.loadArray([{ value: 1 }]);
@@ -99,33 +97,27 @@ Deno.test("getData does not run a schema preflight query", async () => {
 
   await table.getData();
 
-  assertEquals(
-    queries.filter((query) => query.startsWith("DESCRIBE")).length,
-    0,
-  );
+  expect(queries.filter((query) => query.startsWith("DESCRIBE")).length).toStrictEqual(0);
   await sdb.close();
 });
 
-Deno.test("should limit returned rows", async () => {
+test("should limit returned rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("limited");
   table.loadArray([{ value: 1 }, { value: 2 }, { value: 3 }]);
 
-  assertEquals(await table.getData({ limit: 2 }), [
-    { value: 1 },
-    { value: 2 },
-  ]);
+  expect(await table.getData({ limit: 2 })).toStrictEqual([{ value: 1 }, { value: 2 }]);
 
   await sdb.close();
 });
 
-Deno.test("should return the whole data from a table", async () => {
+test("should return the whole data from a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -538,7 +530,7 @@ Deno.test("should return the whole data from a table", async () => {
   await sdb.close();
 });
 
-Deno.test("should return data from a table based on a condition", async () => {
+test("should return data from a table based on a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -546,7 +538,7 @@ Deno.test("should return data from a table based on a condition", async () => {
     conditions: "Job = 'Programmer'",
   });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Hunold, Alexander",
       "Hire date": "03-JAN-06",
@@ -590,7 +582,7 @@ Deno.test("should return data from a table based on a condition", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should return data from a table based on a condition and column selection", async () => {
+test("should return data from a table based on a condition and column selection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -599,7 +591,7 @@ Deno.test("should return data from a table based on a condition and column selec
     columns: ["Name", "Hire date", "Job"],
   });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Hunold, Alexander",
       "Hire date": "03-JAN-06",
@@ -617,14 +609,16 @@ Deno.test("should return data from a table based on a condition and column selec
   await sdb.close();
 });
 
-Deno.test("should keep duplicate selected columns", async () => {
+test("should keep duplicate selected columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("duplicates");
   table.loadArray([{ value: 7 }]);
 
-  assertEquals(await table.getData({ columns: ["value", "value"] }), [{
-    value: 7,
-    "value:1": 7,
-  }]);
+  expect(await table.getData({ columns: ["value", "value"] })).toStrictEqual([
+    {
+      value: 7,
+      "value:1": 7,
+    },
+  ]);
   await sdb.close();
 });

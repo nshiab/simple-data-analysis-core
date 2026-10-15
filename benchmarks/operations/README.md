@@ -1,12 +1,13 @@
 # Running the Core benchmarks
 
-Run `deno task benchmark-core` to update the focused operation tables in the
+Run `npm run benchmark-core` to update the focused operation tables in the
 [root README](../../README.md#focused-operation-benchmarks). The existing
-`deno task benchmark` continues to update only the tabular and spatial results.
+`npm run benchmark` continues to update only the tabular and spatial results.
 These generated fixtures need no downloads: one million rows for the join and
 100,000 rows for each ordinary transfer and point update, and 1,000 rows for
-complex polygon updates. Use `--iterations=5` for more repetitions or
-`--rows=100` to override every fixture size for a quick run. Large overrides
+complex polygon updates. Use `npm run benchmark-core -- --iterations=5` for more
+repetitions or add `--rows=100` after the `--` separator to override every fixture
+size for a quick run. Large overrides
 also apply to polygons, so increase them with care.
 
 Geometry updates cover points and polygons, attribute enrichment and coordinate

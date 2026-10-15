@@ -1,24 +1,21 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the bounding box in [minX, minY, maxX, maxY]", async () => {
+test("should return the bounding box in [minX, minY, maxX, maxY]", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const bbox = await table.getBoundingBox();
-  assertEquals(bbox, [-141.014, 41.981, -52.636, 83.111]);
+  expect(bbox).toStrictEqual([-141.014, 41.981, -52.636, 83.111]);
   await sdb.close();
 });
 
-Deno.test("should return the bounding box in [minX, minY, maxX, maxY] from a specific column", async () => {
+test("should return the bounding box in [minX, minY, maxX, maxY] from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const bbox = await table.getBoundingBox("geom");
-  assertEquals(bbox, [-141.014, 41.981, -52.636, 83.111]);
+  expect(bbox).toStrictEqual([-141.014, 41.981, -52.636, 83.111]);
   await sdb.close();
 });

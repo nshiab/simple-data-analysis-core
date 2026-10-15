@@ -1,8 +1,8 @@
 # Simple data analysis core (SDA-core)
 
 SDA-core is a lightweight DuckDB-powered TypeScript library for tabular, SQL,
-CSV, Parquet, and geospatial data analysis on Deno, Node.js, and Bun. It has one
-runtime dependency: DuckDB.
+CSV, Parquet, and geospatial data analysis on Node.js. It has one runtime dependency: DuckDB.
+It requires Node.js 24.21.0 or newer and uses ECMAScript modules (ESM).
 
 Choose this package for core data loading, cleaning, joining, statistics, and
 geospatial operations. For AI, vector search, Google Sheets, and data
@@ -10,8 +10,8 @@ visualization features, use the full
 [simple-data-analysis library](https://github.com/nshiab/simple-data-analysis).
 
 The library is available on
-[JSR](https://jsr.io/@nshiab/simple-data-analysis-core) with its
-[documentation](https://jsr.io/@nshiab/simple-data-analysis-core/doc).
+[npm](https://www.npmjs.com/package/@nshiab/simple-data-analysis-core), with its
+[API documentation](https://nshiab.github.io/simple-data-analysis-core/).
 
 AI coding assistants and agents can start with the concise
 [llms.txt](https://github.com/nshiab/simple-data-analysis-core/blob/main/llms.txt)
@@ -28,20 +28,13 @@ journalist and senior data producer for [CBC News](https://www.cbc.ca/news).
 
 ## Installation
 
-The library is available on
-[JSR](https://jsr.io/@nshiab/simple-data-analysis-core) and
-[NPM](https://www.npmjs.com/package/@nshiab/simple-data-analysis-core).
-
 ```bash
-# Deno
-deno add jsr:@nshiab/simple-data-analysis-core
-
-# Node.js
 npm i @nshiab/simple-data-analysis-core
-
-# Bun
-bun add @nshiab/simple-data-analysis-core
 ```
+
+Use `"type": "module"` in your project’s `package.json` and import the public
+classes from `@nshiab/simple-data-analysis-core`. Extension utilities are
+available from `@nshiab/simple-data-analysis-core/helpers`.
 
 ## Quick setup
 
@@ -50,14 +43,7 @@ documentation for AI agents, you can use
 [@nshiab/setup-data-project](https://github.com/nshiab/setup-data-project).
 
 ```bash
-# Deno
-deno run -A jsr:@nshiab/setup-data-project
-
-# Node
 npx @nshiab/setup-data-project
-
-# Bun
-bunx @nshiab/setup-data-project
 ```
 
 ## Running a data pipeline
@@ -68,10 +54,7 @@ such as `getData()`, `log()`, and `writeData()` execute pending work before
 returning results, so only the final method in a chain needs to be awaited.
 
 ```ts
-await table
-  .filter("salary > 50000")
-  .selectColumns(["name", "salary"])
-  .log();
+await table.filter("salary > 50000").selectColumns(["name", "salary"]).log();
 ```
 
 Use `await table.run()` or `await sdb.run()` to execute pending work without
@@ -132,8 +115,8 @@ results.
 
 These additional benchmarks compare Core and DuckDB on data transfer, joins,
 aggregations, and JavaScript geometry updates to help track and improve
-performance over time. Run `deno task benchmark-core` to regenerate these
-tables. See the [benchmark methodology](benchmarks/operations/README.md) for
+performance over time. Run `npm run benchmark-core` to regenerate these
+tables. See the [benchmark methodology](https://github.com/nshiab/simple-data-analysis-core/blob/main/benchmarks/operations/README.md) for
 fixture sizes, validation, and measurement details. Peak process memory includes
 setup, warm-up, the measured operation, and validation.
 
@@ -205,10 +188,7 @@ such as `getData()`, `log()`, or `run()` is called. Observers execute pending
 work across the database in program order.
 
 ```ts
-import {
-  SimpleDB as CoreDB,
-  SimpleTable as CoreTable,
-} from "@nshiab/simple-data-analysis-core";
+import { SimpleDB as CoreDB, SimpleTable as CoreTable } from "@nshiab/simple-data-analysis-core";
 
 class MyTable extends CoreTable {
   selectForPublication(columns: string[]): this {
@@ -246,7 +226,7 @@ class RemoteTable extends CoreTable {
       method: "loadRemote()",
       parameters: { url },
       execute: async () => {
-        const rows = await fetch(url).then((response) => response.json()) as {
+        const rows = (await fetch(url).then((response) => response.json())) as {
           [key: string]: unknown;
         }[];
         this.loadArray(rows);
@@ -276,5 +256,5 @@ Other useful helpers, imported from `@nshiab/simple-data-analysis-core/helpers`:
 - `quoteIdentifier()`: quote table and column names safely when constructing
   SQL.
 
-See the [exported helpers](src/helpers/index.ts) for the complete list and links
+See the [exported helpers](https://nshiab.github.io/simple-data-analysis-core/) for the complete list and links
 to their documentation and examples. Helpers outside that list are internal.

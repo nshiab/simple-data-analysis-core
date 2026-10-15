@@ -1,4 +1,6 @@
-import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows } from "../../helpers/assertions.ts";
+
 import type { Aggregate } from "../../../benchmarks/helpers.ts";
 import {
   benchmarkResultsEnd,
@@ -27,116 +29,97 @@ const aggregates: Aggregate[] = [
   },
 ];
 
-Deno.test("benchmark report renders tables and percentage differences", () => {
+test("benchmark report renders tables and percentage differences", () => {
   const markdown = renderBenchmarkResults(aggregates);
-  assertStringIncludes(markdown, "### Tabular workload");
-  assertStringIncludes(
-    markdown,
+  expect(markdown).toContain("### Tabular workload");
+  expect(markdown).toContain(
     "**Tabular versions:** @duckdb/node-api 1.5.5-r.4; DuckDB v1.5.5 (Deno 2.9.6)",
   );
-  assertStringIncludes(
-    markdown,
-    "SDA-core 2.0.0-rc.17 (Deno 2.9.6)",
-  );
+  expect(markdown).toContain("SDA-core 2.0.0-rc.17 (Deno 2.9.6)");
   const table = markdown.slice(markdown.indexOf("| Library"));
-  assertEquals(table.includes("Runtime"), false);
-  assertEquals(table.includes("2.9.6"), false);
-  assertEquals(table.includes("2.0.0-rc.17"), false);
-  assertStringIncludes(table, "| DuckDB");
-  assertStringIncludes(table, "| SDA-core");
-  assertStringIncludes(markdown, "Duration difference");
-  assertStringIncludes(markdown, "Memory difference");
-  assertEquals(
-    markdown.indexOf("@duckdb/node-api") <
-      markdown.indexOf("SDA-core 2.0.0-rc.17"),
-    true,
-  );
-  assertStringIncludes(
-    markdown,
+  expect(table.includes("Runtime")).toStrictEqual(false);
+  expect(table.includes("2.9.6")).toStrictEqual(false);
+  expect(table.includes("2.0.0-rc.17")).toStrictEqual(false);
+  expect(table).toContain("| DuckDB");
+  expect(table).toContain("| SDA-core");
+  expect(markdown).toContain("Duration difference");
+  expect(markdown).toContain("Memory difference");
+  expect(
+    markdown.indexOf("@duckdb/node-api") < markdown.indexOf("SDA-core 2.0.0-rc.17"),
+  ).toStrictEqual(true);
+  expect(markdown).toContain(
     "| 2.00 ± 0.20 s |            baseline |           200 MB |          baseline |",
   );
-  assertStringIncludes(markdown, "|              -50.0% |           100 MB |");
+  expect(markdown).toContain("|              -50.0% |           100 MB |");
 });
 
-Deno.test("partial benchmark runs retain the other workload's version details", () => {
+test("partial benchmark runs retain the other workload's version details", () => {
   const spatial: Aggregate = {
     ...aggregates[1],
     benchmark: "spatial",
     version: "1.9.0/deno@2.8.0",
   };
-  const readme = `${benchmarkResultsStart}\n${
-    renderBenchmarkResults([...aggregates, spatial])
-  }\n${benchmarkResultsEnd}`;
-  const updated = replaceMeasuredBenchmarkResults(readme, [{
-    ...aggregates[1],
-    version: "2.0.5/deno@2.9.6",
-  }]);
-  assertStringIncludes(
-    updated,
-    "**Tabular versions:** SDA-core 2.0.5 (Deno 2.9.6).",
-  );
-  assertStringIncludes(
-    updated,
-    "**Spatial versions:** SDA-core 1.9.0 (Deno 2.8.0).",
-  );
-  assertEquals(updated.includes("2.0.0-rc.17"), false);
-  assertEquals(updated.match(/\*\*Spatial versions:/g)?.length, 1);
-  assertEquals(
-    updated.slice(
-      updated.indexOf("### Spatial workload"),
-      updated.indexOf(benchmarkResultsEnd),
-    ).trim(),
-    readme.slice(
-      readme.indexOf("### Spatial workload"),
-      readme.indexOf(benchmarkResultsEnd),
-    ).trim(),
+  const readme = `${benchmarkResultsStart}\n${renderBenchmarkResults([
+    ...aggregates,
+    spatial,
+  ])}\n${benchmarkResultsEnd}`;
+  const updated = replaceMeasuredBenchmarkResults(readme, [
+    {
+      ...aggregates[1],
+      version: "2.0.5/deno@2.9.6",
+    },
+  ]);
+  expect(updated).toContain("**Tabular versions:** SDA-core 2.0.5 (Deno 2.9.6).");
+  expect(updated).toContain("**Spatial versions:** SDA-core 1.9.0 (Deno 2.8.0).");
+  expect(updated.includes("2.0.0-rc.17")).toStrictEqual(false);
+  expect(updated.match(/\*\*Spatial versions:/g)?.length).toStrictEqual(1);
+  expect(
+    updated
+      .slice(updated.indexOf("### Spatial workload"), updated.indexOf(benchmarkResultsEnd))
+      .trim(),
+  ).toStrictEqual(
+    readme
+      .slice(readme.indexOf("### Spatial workload"), readme.indexOf(benchmarkResultsEnd))
+      .trim(),
   );
 });
 
-Deno.test("benchmark report replaces only the generated README section", () => {
-  const readme =
-    `before\n${benchmarkResultsStart}\nold\n${benchmarkResultsEnd}\nafter\n`;
-  assertEquals(
-    replaceBenchmarkResults(readme, "new"),
+test("benchmark report replaces only the generated README section", () => {
+  const readme = `before\n${benchmarkResultsStart}\nold\n${benchmarkResultsEnd}\nafter\n`;
+  expect(replaceBenchmarkResults(readme, "new")).toStrictEqual(
     `before\n${benchmarkResultsStart}\n\nnew\n\n${benchmarkResultsEnd}\nafter\n`,
   );
-  assertThrows(
-    () => replaceBenchmarkResults("no markers", "new"),
-    Error,
-    "markers are missing",
-  );
+  assertThrows(() => replaceBenchmarkResults("no markers", "new"), Error, "markers are missing");
 });
 
-Deno.test("benchmark report keeps workload descriptions before their tables", () => {
+test("benchmark report keeps workload descriptions before their tables", () => {
   const markdown = renderBenchmarkResults(aggregates);
   const spatialStart = markdown.indexOf("### Spatial workload");
   const tabular = markdown.slice(0, spatialStart);
   const spatial = markdown.slice(spatialStart);
-  for (
-    const [section, files] of [
-      [tabular, ["ahccd.csv"]],
-      [spatial, ["arbres-publics.csv", "quartierreferencehabitation.geojson"]],
-    ] as const
-  ) {
+  for (const [section, files] of [
+    [tabular, ["ahccd.csv"]],
+    [spatial, ["arbres-publics.csv", "quartierreferencehabitation.geojson"]],
+  ] as const) {
     for (const file of files) {
-      assertStringIncludes(section, file);
-      assertEquals(section.indexOf(file) < section.indexOf("| Library"), true);
+      expect(section).toContain(file);
+      expect(section.indexOf(file) < section.indexOf("| Library")).toStrictEqual(true);
     }
-    assertStringIncludes(section, "benchmarks/data/");
+    expect(section).toContain("benchmarks/data/");
   }
-  assertEquals(tabular.includes("SDA-core is the baseline"), false);
-  assertEquals(spatial.includes("SDA-core is the baseline"), false);
-  assertStringIncludes(tabular, "22,051,025 temperature records");
-  assertStringIncludes(tabular, "1.77 GB");
-  assertStringIncludes(spatial, "335,024 Montreal public trees");
-  assertStringIncludes(spatial, "135.5 MB");
-  assertStringIncludes(spatial, "91\nneighbourhood boundaries");
-  assertStringIncludes(spatial, "1.14 MB");
-  assertStringIncludes(tabular, "average temperatures by station and decade");
-  assertStringIncludes(spatial, "trees per neighbourhood");
+  expect(tabular.includes("SDA-core is the baseline")).toStrictEqual(false);
+  expect(spatial.includes("SDA-core is the baseline")).toStrictEqual(false);
+  expect(tabular).toContain("22,051,025 temperature records");
+  expect(tabular).toContain("1.77 GB");
+  expect(spatial).toContain("335,024 Montreal public trees");
+  expect(spatial).toContain("135.5 MB");
+  expect(spatial).toContain("91\nneighbourhood boundaries");
+  expect(spatial).toContain("1.14 MB");
+  expect(tabular).toContain("average temperatures by station and decade");
+  expect(spatial).toContain("trees per neighbourhood");
 });
 
-Deno.test("partial benchmark reports preserve the unmeasured workload", () => {
+test("partial benchmark reports preserve the unmeasured workload", () => {
   const readme = `before
 ${benchmarkResultsStart}
 
@@ -153,17 +136,19 @@ after
 `;
 
   const tabular = replaceMeasuredBenchmarkResults(readme, aggregates);
-  assertStringIncludes(tabular, "SDA-core 2.0.0-rc.17");
-  assertStringIncludes(tabular, "ahccd.csv");
-  assertStringIncludes(tabular, "old spatial");
-  assertEquals(tabular.includes("old tabular"), false);
+  expect(tabular).toContain("SDA-core 2.0.0-rc.17");
+  expect(tabular).toContain("ahccd.csv");
+  expect(tabular).toContain("old spatial");
+  expect(tabular.includes("old tabular")).toStrictEqual(false);
 
-  const spatial = replaceMeasuredBenchmarkResults(readme, [{
-    ...aggregates[1],
-    benchmark: "spatial",
-  }]);
-  assertStringIncludes(spatial, "old tabular");
-  assertStringIncludes(spatial, "SDA-core 2.0.0-rc.17");
-  assertStringIncludes(spatial, "arbres-publics.csv");
-  assertEquals(spatial.includes("old spatial"), false);
+  const spatial = replaceMeasuredBenchmarkResults(readme, [
+    {
+      ...aggregates[1],
+      benchmark: "spatial",
+    },
+  ]);
+  expect(spatial).toContain("old tabular");
+  expect(spatial).toContain("SDA-core 2.0.0-rc.17");
+  expect(spatial).toContain("arbres-publics.csv");
+  expect(spatial.includes("old spatial")).toStrictEqual(false);
 });

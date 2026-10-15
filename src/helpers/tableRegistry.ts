@@ -6,9 +6,7 @@ import foldIdentifier from "./foldIdentifier.ts";
 
 const registries = new WeakMap<object, SimpleTable[]>();
 
-function getMutableTables<Table extends SimpleTable>(
-  simpleDB: SimpleDB<Table>,
-): Table[] {
+function getMutableTables<Table extends SimpleTable>(simpleDB: SimpleDB<Table>): Table[] {
   const tables = registries.get(simpleDB);
   if (tables === undefined) {
     throw new Error("The table registry has not been initialized.");
@@ -40,9 +38,7 @@ export function registerTable<Table extends SimpleTable>(
 ): void {
   const TableClass = simpleDB.tableClass;
   if (!(table instanceof TableClass)) {
-    throw new Error(
-      `The table must be an instance of ${TableClass.name}.`,
-    );
+    throw new Error(`The table must be an instance of ${TableClass.name}.`);
   }
 
   const tables = getMutableTables(simpleDB);
@@ -69,8 +65,8 @@ export function assertTableNameAvailable(
 ): void {
   const normalizedName = foldIdentifier(name);
   if (
-    getRegisteredTables(simpleDB).some((table) =>
-      table !== renamedTable && foldIdentifier(table.name) === normalizedName
+    getRegisteredTables(simpleDB).some(
+      (table) => table !== renamedTable && foldIdentifier(table.name) === normalizedName,
     )
   ) {
     throw new Error(`Table ${name} already exists.`);

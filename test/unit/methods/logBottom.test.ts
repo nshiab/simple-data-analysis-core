@@ -1,29 +1,30 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should log the last rows", async () => {
+test("should log the last rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.logBottom(5);
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should log the default number of bottom rows", async () => {
+test("should log the default number of bottom rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.logBottom();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("logBottom preserves nested digits and timestamps with original ordering", async () => {
+test("logBottom preserves nested digits and timestamps with original ordering", async () => {
   const sdb = new SimpleDB();
   const originalLog = console.log;
   const lines: string[] = [];
@@ -41,10 +42,9 @@ Deno.test("logBottom preserves nested digits and timestamps with original orderi
       lines.length = 0;
       await table.logBottom(2, { originalOrder });
       const output = lines.join("\n");
-      assertEquals(output.includes('["9007199254740993",null]'), true);
-      assertEquals(output.includes("2025-01-01 00:00:00.123456"), true);
-      assertEquals(
-        output.indexOf("\x1b[33m1") < output.indexOf("\x1b[33m2"),
+      expect(output.includes('["9007199254740993",null]')).toStrictEqual(true);
+      expect(output.includes("2025-01-01 00:00:00.123456")).toStrictEqual(true);
+      expect(output.indexOf("\x1b[33m1") < output.indexOf("\x1b[33m2")).toStrictEqual(
         originalOrder,
       );
     }

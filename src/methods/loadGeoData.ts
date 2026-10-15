@@ -43,10 +43,10 @@ async function executeLoadGeoData(
   options: LoadGeoDataOptions,
 ): Promise<void> {
   const fileExtension = getExtension(file);
-  const selectColumns = options.columns !== undefined &&
-      options.columns.length > 0
-    ? options.columns.map(quoteIdentifier).join(", ")
-    : "*";
+  const selectColumns =
+    options.columns !== undefined && options.columns.length > 0
+      ? options.columns.map(quoteIdentifier).join(", ")
+      : "*";
   const spatialSetup = simpleTable.sdb.spatialLoaded
     ? ""
     : "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;";
@@ -55,14 +55,10 @@ async function executeLoadGeoData(
   if (fileExtension === "geoparquet" || fileExtension === "parquet") {
     await queryDB(
       simpleTable,
-      `${spatialSetup}${
-        file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""
-      }
-      CREATE OR REPLACE TABLE ${
-        quoteIdentifier(simpleTable.name)
-      } AS SELECT ${selectColumns} FROM read_parquet(${
-        parseValue(file)
-      })${conditions};`,
+      `${spatialSetup}${file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""}
+      CREATE OR REPLACE TABLE ${quoteIdentifier(
+        simpleTable.name,
+      )} AS SELECT ${selectColumns} FROM read_parquet(${parseValue(file)})${conditions};`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",
@@ -72,14 +68,10 @@ async function executeLoadGeoData(
   } else {
     await queryDB(
       simpleTable,
-      `${spatialSetup}${
-        file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""
-      }
-      CREATE OR REPLACE TABLE ${
-        quoteIdentifier(simpleTable.name)
-      } AS SELECT ${selectColumns} FROM ST_Read(${
-        parseValue(file)
-      })${conditions};`,
+      `${spatialSetup}${file.toLowerCase().includes("http") ? " INSTALL https; LOAD https;" : ""}
+      CREATE OR REPLACE TABLE ${quoteIdentifier(
+        simpleTable.name,
+      )} AS SELECT ${selectColumns} FROM ST_Read(${parseValue(file)})${conditions};`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "loadGeoData()",
@@ -89,9 +81,11 @@ async function executeLoadGeoData(
   }
   simpleTable.sdb.spatialLoaded = true;
 
-  const mayIncludeOgcFid = options.columns === undefined ||
-    options.columns.length === 0 || options.columns.includes("OGC_FID");
-  if (mayIncludeOgcFid && await simpleTable.hasColumn("OGC_FID")) {
+  const mayIncludeOgcFid =
+    options.columns === undefined ||
+    options.columns.length === 0 ||
+    options.columns.includes("OGC_FID");
+  if (mayIncludeOgcFid && (await simpleTable.hasColumn("OGC_FID"))) {
     await removeColumnsNow(simpleTable, ["OGC_FID"], "loadGeoData()");
   }
 
@@ -102,11 +96,11 @@ async function executeLoadGeoData(
       // which would queue for the next flush).
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE ${
-          quoteIdentifier(simpleTable.name)
-        } AS SELECT * REPLACE (ST_Transform("geom", 'EPSG:4326')::GEOMETRY('EPSG:4326') AS "geom") FROM ${
-          quoteIdentifier(simpleTable.name)
-        }`,
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(
+          simpleTable.name,
+        )} AS SELECT * REPLACE (ST_Transform("geom", 'EPSG:4326')::GEOMETRY('EPSG:4326') AS "geom") FROM ${quoteIdentifier(
+          simpleTable.name,
+        )}`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "loadGeoData()",

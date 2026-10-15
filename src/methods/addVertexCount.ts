@@ -18,12 +18,13 @@ export default function addVertexCount(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addVertexCount()");
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "addVertexCount()", simpleTable.name);
-      return `SELECT *, CAST(ST_NPoints(${
-        quoteIdentifier(column)
-      }) AS BIGINT) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "addVertexCount()", simpleTable.name);
+      return `SELECT *, CAST(ST_NPoints(${quoteIdentifier(
+        column,
+      )}) AS BIGINT) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

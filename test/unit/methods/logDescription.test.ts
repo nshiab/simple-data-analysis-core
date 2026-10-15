@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should log a description of the table with logData", async () => {
+test("should log a description of the table with logData", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -22,31 +23,29 @@ Deno.test("should log a description of the table with logData", async () => {
   }
 
   const output = logs.join("\n");
-  assertEquals(consoleTableCalls, 0);
-  assertEquals(output.includes("┌"), true);
-  assertEquals(output.includes("column"), true);
-  assertEquals(output.includes("unique"), true);
+  expect(consoleTableCalls).toStrictEqual(0);
+  expect(output.includes("┌")).toStrictEqual(true);
+  expect(output.includes("column")).toStrictEqual(true);
+  expect(output.includes("unique")).toStrictEqual(true);
 });
 
-Deno.test("should not throw an error when there is no table", async () => {
+test("should not throw an error when there is no table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   await table.logDescription();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should log a description of the table containing dates", async () => {
+test("should log a description of the table containing dates", async () => {
   const sdb = new SimpleDB();
   const temperatures = sdb.newTable("temperatures");
-  temperatures.loadData(
-    "test/data/files/dailyTemperatures.csv",
-  );
+  temperatures.loadData("test/data/files/dailyTemperatures.csv");
   await temperatures.logDescription();
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });

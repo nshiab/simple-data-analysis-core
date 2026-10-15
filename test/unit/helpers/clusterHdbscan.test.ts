@@ -1,26 +1,22 @@
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertRejects, assertAlmostEquals } from "../../helpers/assertions.ts";
+import { readFile as nodeReadFile } from "node:fs/promises";
 import { DuckDBInstance } from "@duckdb/node-api";
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-  assertRejects,
-} from "@std/assert";
+
 import { repairApproximateConnectivity } from "../../../src/helpers/buildApproximateMutualReachabilityMst.ts";
-import clusterHdbscan, {
-  accumulateFloat32,
-} from "../../../src/helpers/clusterHdbscan.ts";
+import clusterHdbscan, { accumulateFloat32 } from "../../../src/helpers/clusterHdbscan.ts";
 import inspectGraphConnectivity from "../../../src/helpers/inspectGraphConnectivity.ts";
 
-Deno.test("HDBSCAN EOM rounds every subtree stability addition to float32", () => {
+test("HDBSCAN EOM rounds every subtree stability addition to float32", () => {
   const values = [1, 4e-8, 4e-8];
-  assertEquals(accumulateFloat32(values), 1);
-  assertEquals(
-    Math.fround(values.reduce((sum, value) => sum + value, 0)),
+  expect(accumulateFloat32(values)).toStrictEqual(1);
+  expect(Math.fround(values.reduce((sum, value) => sum + value, 0))).toStrictEqual(
     1.0000001192092896,
   );
 });
 
-Deno.test("clusterHdbscan handles a 100,000-row hierarchy without argument spreading", async () => {
+test("clusterHdbscan handles a 100,000-row hierarchy without argument spreading", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -33,18 +29,18 @@ Deno.test("clusterHdbscan handles a 100,000-row hierarchy without argument sprea
       minClusterSize: 2,
       allowSingleCluster: true,
     });
-    assertEquals(result.labels.length, count);
-    assertEquals(result.labels[0], 0);
-    assertEquals(result.labels[count - 1], 0);
-    assertEquals(result.probabilities[50_000], 1);
-    assertEquals(result.outlierScores[50_000], 0);
+    expect(result.labels.length).toStrictEqual(count);
+    expect(result.labels[0]).toStrictEqual(0);
+    expect(result.labels[count - 1]).toStrictEqual(0);
+    expect(result.probabilities[50_000]).toStrictEqual(1);
+    expect(result.outlierScores[50_000]).toStrictEqual(0);
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("clusterHdbscan resolves a 20,000-row comb hierarchy in linear passes", async () => {
+test("clusterHdbscan resolves a 20,000-row comb hierarchy in linear passes", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -60,7 +56,7 @@ Deno.test("clusterHdbscan resolves a 20,000-row comb hierarchy in linear passes"
       minClusterSize: 2,
       allowSingleCluster: false,
     });
-    assertEquals(result.labels.length, count);
+    expect(result.labels.length).toStrictEqual(count);
     assert(result.probabilities.every(Number.isFinite));
     assert(result.outlierScores.every(Number.isFinite));
   } finally {
@@ -69,7 +65,7 @@ Deno.test("clusterHdbscan resolves a 20,000-row comb hierarchy in linear passes"
   }
 });
 
-Deno.test("clusterHdbscan rejects null MST cells before numeric coercion", async () => {
+test("clusterHdbscan rejects null MST cells before numeric coercion", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -92,7 +88,7 @@ Deno.test("clusterHdbscan rejects null MST cells before numeric coercion", async
   }
 });
 
-Deno.test("projection repair includes the true component edge missed by representative sampling", async () => {
+test("projection repair includes the true component edge missed by representative sampling", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -119,38 +115,42 @@ Deno.test("projection repair includes the true component edge missed by represen
       componentPairs: "component_pairs",
       bridgeCandidates: "bridge_candidates",
     };
-    assertEquals(
+    expect(
       await repairApproximateConnectivity(
         connection,
         { count: 20 },
         { metric: "euclidean" },
         names,
       ),
-      2,
-    );
-    const representativeIds = (await connection.runAndReadAll(
-      "SELECT vertex FROM representatives ORDER BY vertex",
-    )).getRowsJS().flat().map(Number);
+    ).toStrictEqual(2);
+    const representativeIds = (
+      await connection.runAndReadAll("SELECT vertex FROM representatives ORDER BY vertex")
+    )
+      .getRowsJS()
+      .flat()
+      .map(Number);
     assert(representativeIds.includes(4));
     assert(representativeIds.includes(14));
-    assertEquals(representativeIds.length, 20);
+    expect(representativeIds.length).toStrictEqual(20);
     const bridge = Number(
-      (await connection.runAndReadAll(
-        "SELECT min(distance) FROM edges WHERE source<10 AND target>=10",
-      )).getRowsJS()[0][0],
+      (
+        await connection.runAndReadAll(
+          "SELECT min(distance) FROM edges WHERE source<10 AND target>=10",
+        )
+      ).getRowsJS()[0][0],
     );
     assertAlmostEquals(bridge, 0.1, 1e-12);
-    assertEquals(
-      await inspectGraphConnectivity(connection, '"edges"', 20),
-      { componentCount: 1, sizes: [20] },
-    );
+    expect(await inspectGraphConnectivity(connection, '"edges"', 20)).toStrictEqual({
+      componentCount: 1,
+      sizes: [20],
+    });
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("projection repair stays connected beyond 256 components", async () => {
+test("projection repair stays connected beyond 256 components", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -176,21 +176,18 @@ Deno.test("projection repair stays connected beyond 256 components", async () =>
         bridgeCandidates: "bridge_candidates",
       },
     );
-    assertEquals(componentCount, count);
-    assertEquals(
-      Number(
-        (await connection.runAndReadAll("SELECT count(*) FROM edges"))
-          .getRowsJS()[0][0],
-      ),
-      count - 1,
-    );
-    assertEquals(
-      await inspectGraphConnectivity(connection, '"edges"', count),
-      { componentCount: 1, sizes: [count] },
-    );
-    const distances = (await connection.runAndReadAll(
-      "SELECT distance FROM edges",
-    )).getRowsJS().flat().map(Number);
+    expect(componentCount).toStrictEqual(count);
+    expect(
+      Number((await connection.runAndReadAll("SELECT count(*) FROM edges")).getRowsJS()[0][0]),
+    ).toStrictEqual(count - 1);
+    expect(await inspectGraphConnectivity(connection, '"edges"', count)).toStrictEqual({
+      componentCount: 1,
+      sizes: [count],
+    });
+    const distances = (await connection.runAndReadAll("SELECT distance FROM edges"))
+      .getRowsJS()
+      .flat()
+      .map(Number);
     assert(distances.every((distance) => distance === 1));
   } finally {
     connection.closeSync();
@@ -198,7 +195,7 @@ Deno.test("projection repair stays connected beyond 256 components", async () =>
   }
 });
 
-Deno.test("HDBSCAN validates the full hierarchy identifier range before allocation", async () => {
+test("HDBSCAN validates the full hierarchy identifier range before allocation", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -220,8 +217,9 @@ Deno.test("HDBSCAN validates the full hierarchy identifier range before allocati
 
 // Precomputed results for identical MSTs isolate deterministic tie ordering.
 const tieReferences = JSON.parse(
-  await Deno.readTextFile(
+  await nodeReadFile(
     new URL("../../data/hdbscan/quality-tie-reference.json", import.meta.url),
+    "utf8",
   ),
 ) as {
   packages: { hdbscan: string };
@@ -239,8 +237,8 @@ const tieReferences = JSON.parse(
   }[];
 };
 for (const reference of tieReferences.cases) {
-  Deno.test(`HDBSCAN matches Python on the same ordered tied MST: ${reference.name}`, async () => {
-    assertEquals(tieReferences.packages.hdbscan, "0.8.44");
+  test(`HDBSCAN matches Python on the same ordered tied MST: ${reference.name}`, async () => {
+    expect(tieReferences.packages.hdbscan).toStrictEqual("0.8.44");
     const db = await DuckDBInstance.create(":memory:");
     const connection = await db.connect();
     try {
@@ -248,24 +246,16 @@ for (const reference of tieReferences.cases) {
       for (const edges of [reference.mst, reference.mst.toReversed()]) {
         await connection.run(`CREATE OR REPLACE TEMP TABLE mst AS
           SELECT source::INTEGER AS source,target::INTEGER AS target,distance::DOUBLE AS distance
-          FROM (VALUES ${
-          edges.map((edge) => `(${edge.join(",")})`).join(",")
-        }) t(source,target,distance)`);
+          FROM (VALUES ${edges
+            .map((edge) => `(${edge.join(",")})`)
+            .join(",")}) t(source,target,distance)`);
         const actual = await clusterHdbscan(connection, '"mst"', reference);
-        assertEquals(Array.from(actual.labels), reference.expected.labels);
+        expect(Array.from(actual.labels)).toStrictEqual(reference.expected.labels);
         actual.probabilities.forEach((value, index) =>
-          assertAlmostEquals(
-            value,
-            reference.expected.probabilities[index],
-            1e-12,
-          )
+          assertAlmostEquals(value, reference.expected.probabilities[index], 1e-12),
         );
         actual.outlierScores.forEach((value, index) =>
-          assertAlmostEquals(
-            value,
-            reference.expected.outlierScores[index],
-            1e-12,
-          )
+          assertAlmostEquals(value, reference.expected.outlierScores[index], 1e-12),
         );
       }
     } finally {

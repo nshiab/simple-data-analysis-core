@@ -27,17 +27,13 @@ export default function rowRanks(
     throw new Error("rowRanks() requires at least one column.");
   }
 
-  const duplicateColumns = columns.filter((column, index) =>
-    columns.indexOf(column) !== index
-  );
+  const duplicateColumns = columns.filter((column, index) => columns.indexOf(column) !== index);
   if (duplicateColumns.length > 0) {
     const duplicates = [...new Set(duplicateColumns)];
     throw new Error(
-      `rowRanks() received duplicate column${
-        duplicates.length === 1 ? "" : "s"
-      } ${
-        duplicates.map(quoteIdentifier).join(", ")
-      }. Include each column only once.`,
+      `rowRanks() received duplicate column${duplicates.length === 1 ? "" : "s"} ${duplicates
+        .map(quoteIdentifier)
+        .join(", ")}. Include each column only once.`,
     );
   }
 
@@ -45,14 +41,9 @@ export default function rowRanks(
     throw new Error("rowRanks() requires nameColumn, valueColumn, or both.");
   }
 
-  if (
-    options.nameColumn !== undefined &&
-    options.nameColumn === options.valueColumn
-  ) {
+  if (options.nameColumn !== undefined && options.nameColumn === options.valueColumn) {
     throw new Error(
-      `rowRanks() cannot use ${
-        quoteIdentifier(options.nameColumn)
-      } for both output columns.`,
+      `rowRanks() cannot use ${quoteIdentifier(options.nameColumn)} for both output columns.`,
     );
   }
 
@@ -73,9 +64,7 @@ export default function rowRanks(
   }
 
   if (ties !== "strict" && ties !== "first" && ties !== "all") {
-    throw new Error(
-      'rowRanks() options.ties must be "strict", "first", or "all".',
-    );
+    throw new Error('rowRanks() options.ties must be "strict", "first", or "all".');
   }
 
   queueOp(simpleTable, {
@@ -109,34 +98,26 @@ function rowRanksSelect(
   assertNewColumns(schema, outputColumns, "rowRanks()");
 
   const numericalColumns = new Set(keepNumericalColumns(schema));
-  const nonNumericalColumns = columns.filter((column) =>
-    !numericalColumns.has(column)
-  );
+  const nonNumericalColumns = columns.filter((column) => !numericalColumns.has(column));
   if (nonNumericalColumns.length > 0) {
     throw new Error(
-      `rowRanks() requires numeric columns, but ${
-        nonNumericalColumns.map((column) =>
-          `${quoteIdentifier(column)} has type ${schema[column]}`
-        ).join(", ")
-      }. Convert ${
+      `rowRanks() requires numeric columns, but ${nonNumericalColumns
+        .map((column) => `${quoteIdentifier(column)} has type ${schema[column]}`)
+        .join(", ")}. Convert ${
         nonNumericalColumns.length === 1 ? "it" : "them"
       } to a numeric type first.`,
     );
   }
 
-  const candidates = columns.map((column, index) =>
-    `(?, ${quoteIdentifier(column)}, ${index})`
-  ).join(",\n      ");
+  const candidates = columns
+    .map((column, index) => `(?, ${quoteIdentifier(column)}, ${index})`)
+    .join(",\n      ");
   const selections: string[] = [];
   if (options.nameColumn !== undefined) {
-    selections.push(
-      `selected.selected_name AS ${quoteIdentifier(options.nameColumn)}`,
-    );
+    selections.push(`selected.selected_name AS ${quoteIdentifier(options.nameColumn)}`);
   }
   if (options.valueColumn !== undefined) {
-    selections.push(
-      `selected.selected_value AS ${quoteIdentifier(options.valueColumn)}`,
-    );
+    selections.push(`selected.selected_value AS ${quoteIdentifier(options.valueColumn)}`);
   }
 
   const tied = `WITH candidates(name, value, position) AS (

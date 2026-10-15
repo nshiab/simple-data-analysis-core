@@ -18,9 +18,7 @@ export async function writeCacheDatabase(
   const temporaryFile = `${file}.${crypto.randomUUID()}.tmp.db`;
   const cacheDatabase = quoteIdentifier(CACHE_DATABASE);
   const currentDatabase = quoteIdentifier(await getCurrentDatabase(table));
-  const persistedIndexes = indexes.filter((index) =>
-    getIndexCacheStrategy(index) === "persist"
-  );
+  const persistedIndexes = indexes.filter((index) => getIndexCacheStrategy(index) === "persist");
   await loadIndexExtensions(table, persistedIndexes);
   try {
     await table.sdb.customQuery(
@@ -31,9 +29,7 @@ export async function writeCacheDatabase(
     );
     if (persistedIndexes.length > 0) {
       await table.sdb.customQuery(`USE ${cacheDatabase};`);
-      await table.sdb.customQuery(
-        buildIndexQueries(table.name, persistedIndexes),
-      );
+      await table.sdb.customQuery(buildIndexQueries(table.name, persistedIndexes));
       await table.sdb.customQuery(`USE ${currentDatabase};`);
     }
     await table.sdb.customQuery(
@@ -79,9 +75,7 @@ export async function loadCacheDatabase(
   await loadIndexExtensions(table, indexes);
   table.indexes = [];
 
-  const dropFts = `DROP SCHEMA IF EXISTS ${
-    quoteIdentifier(`fts_main_${table.name}`)
-  } CASCADE;`;
+  const dropFts = `DROP SCHEMA IF EXISTS ${quoteIdentifier(`fts_main_${table.name}`)} CASCADE;`;
   try {
     await table.sdb.customQuery(
       `${dropFts}
@@ -90,9 +84,7 @@ export async function loadCacheDatabase(
       COPY FROM DATABASE ${cacheDatabase} TO ${currentDatabase};
       DETACH ${cacheDatabase};`,
     );
-    const indexesToRebuild = indexes.filter((index) =>
-      getIndexCacheStrategy(index) === "rebuild"
-    );
+    const indexesToRebuild = indexes.filter((index) => getIndexCacheStrategy(index) === "rebuild");
     const indexQueries = buildIndexQueries(table.name, indexesToRebuild);
     if (indexQueries.length > 0) {
       await table.sdb.customQuery(indexQueries);
@@ -106,17 +98,13 @@ export async function loadCacheDatabase(
 }
 
 async function getCurrentDatabase(table: SimpleTable): Promise<string> {
-  const rows = await table.sdb.customQuery(
-    "SELECT current_database() AS database_name;",
-    { returnData: true },
-  ) as DatabaseRow[];
+  const rows = (await table.sdb.customQuery("SELECT current_database() AS database_name;", {
+    returnData: true,
+  })) as DatabaseRow[];
   return rows[0].database_name;
 }
 
-async function loadIndexExtensions(
-  table: SimpleTable,
-  indexes: IndexDefinition[],
-): Promise<void> {
+async function loadIndexExtensions(table: SimpleTable, indexes: IndexDefinition[]): Promise<void> {
   const queries: string[] = [];
   if (indexes.some((index) => index.kind === "vss")) {
     queries.push("INSTALL vss; LOAD vss;");
@@ -129,17 +117,15 @@ async function loadIndexExtensions(
   }
 }
 
-function buildIndexQueries(
-  table: string,
-  indexes: IndexDefinition[],
-): string {
-  return indexes.map((index) =>
-    `${
-      index.kind === "vss"
-        ? "SET hnsw_enable_experimental_persistence = true;\n"
-        : ""
-    }${buildCreateIndexQuery(table, index)}`
-  ).join("\n");
+function buildIndexQueries(table: string, indexes: IndexDefinition[]): string {
+  return indexes
+    .map(
+      (index) =>
+        `${
+          index.kind === "vss" ? "SET hnsw_enable_experimental_persistence = true;\n" : ""
+        }${buildCreateIndexQuery(table, index)}`,
+    )
+    .join("\n");
 }
 
 async function restoreDatabaseAfterFailure(

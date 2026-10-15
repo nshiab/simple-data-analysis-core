@@ -18,9 +18,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
  *
  * @returns `true` if at least one geometry column exists, `false` otherwise.
  */
-export default async function hasGeometryColumn(
-  table: SimpleTable,
-): Promise<boolean> {
+export default async function hasGeometryColumn(table: SimpleTable): Promise<boolean> {
   const types = await table.getTypes();
   return Object.values(types).some((t) => t.toLowerCase().includes("geometry"));
 }

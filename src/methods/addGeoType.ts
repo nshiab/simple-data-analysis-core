@@ -18,12 +18,13 @@ export default function addGeoType(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addGeoType()");
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "addGeoType()", simpleTable.name);
-      return `SELECT *, CAST(ST_GeometryType(${
-        quoteIdentifier(column)
-      }) AS VARCHAR) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "addGeoType()", simpleTable.name);
+      return `SELECT *, CAST(ST_GeometryType(${quoteIdentifier(
+        column,
+      )}) AS VARCHAR) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

@@ -1,4 +1,7 @@
-import { assertAlmostEquals, assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertAlmostEquals, assertRejects } from "../../helpers/assertions.ts";
+import { readFile as nodeReadFile } from "node:fs/promises";
+
 import { type DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import computeMahalanobisDistances from "../../../src/helpers/computeMahalanobisDistances.ts";
@@ -19,8 +22,9 @@ type Fixture = {
 };
 
 const fixture = JSON.parse(
-  await Deno.readTextFile(
+  await nodeReadFile(
     new URL("../../fixtures/covariance/numpy-2.3.4.json", import.meta.url),
+    "utf8",
   ),
 ) as Fixture;
 
@@ -29,45 +33,44 @@ function assertCloseArray(
   expected: ArrayLike<number>,
   tolerance = 1e-12,
 ) {
-  assertEquals(actual.length, expected.length);
+  expect(actual.length).toStrictEqual(expected.length);
   for (let i = 0; i < actual.length; i++) {
     assertAlmostEquals(actual[i], expected[i], tolerance);
   }
 }
 
-async function distances(
-  connection: DuckDBConnection,
-  relation: string,
-  model: CovarianceModel,
-) {
-  const result = await computeMahalanobisDistances(connection, {
-    relation,
-    rowIdColumn: "row_id",
-    vectorColumn: "vec",
-  }, model);
+async function distances(connection: DuckDBConnection, relation: string, model: CovarianceModel) {
+  const result = await computeMahalanobisDistances(
+    connection,
+    {
+      relation,
+      rowIdColumn: "row_id",
+      vectorColumn: "vec",
+    },
+    model,
+  );
   try {
-    return (await connection.runAndReadAll(
-      `SELECT distance FROM "${result.relation}" ORDER BY row_id`,
-    )).getRowsJS().flat().map(Number);
+    return (
+      await connection.runAndReadAll(`SELECT distance FROM "${result.relation}" ORDER BY row_id`)
+    )
+      .getRowsJS()
+      .flat()
+      .map(Number);
   } finally {
     await result.cleanup();
   }
 }
 
-Deno.test("DuckDB means, sample covariance, solves, and distances match NumPy 2.3.4", async () => {
-  assertEquals(fixture.numpyVersion, "2.3.4");
+test("DuckDB means, sample covariance, solves, and distances match NumPy 2.3.4", async () => {
+  expect(fixture.numpyVersion).toStrictEqual("2.3.4");
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
+    await connection.run("CREATE TEMP TABLE prepared(row_id INTEGER, vec DOUBLE[3])");
     await connection.run(
-      "CREATE TEMP TABLE prepared(row_id INTEGER, vec DOUBLE[3])",
-    );
-    await connection.run(
-      `INSERT INTO prepared VALUES ${
-        fixture.data.map((values, row) =>
-          `(${row}, [${values.join(",")}]::DOUBLE[3])`
-        ).join(",")
-      }`,
+      `INSERT INTO prepared VALUES ${fixture.data
+        .map((values, row) => `(${row}, [${values.join(",")}]::DOUBLE[3])`)
+        .join(",")}`,
     );
     const model = await computeCovariance(connection, {
       relation: "prepared",
@@ -78,18 +81,11 @@ Deno.test("DuckDB means, sample covariance, solves, and distances match NumPy 2.
     });
     assertCloseArray(model.means, fixture.means);
     assertCloseArray(model.covariance, fixture.sampleCovariance.flat());
-    assertCloseArray(
-      solveCovariance(model, fixture.rightHandSide),
-      fixture.solve,
-      1e-11,
-    );
+    assertCloseArray(solveCovariance(model, fixture.rightHandSide), fixture.solve, 1e-11);
 
     const evaluated = await distances(connection, "prepared", model);
     assertCloseArray(evaluated, fixture.distances, 1e-11);
-    const squaredSum = evaluated.reduce(
-      (sum, distance) => sum + distance * distance,
-      0,
-    );
+    const squaredSum = evaluated.reduce((sum, distance) => sum + distance * distance, 0);
     // Same-sample identity: sum(distance²) = (n - 1) * d.
     assertAlmostEquals(squaredSum, (fixture.data.length - 1) * 3, 1e-10);
     assertAlmostEquals(squaredSum, fixture.squaredDistanceSum, 1e-10);
@@ -99,7 +95,7 @@ Deno.test("DuckDB means, sample covariance, solves, and distances match NumPy 2.
   }
 });
 
-Deno.test("covariance consumes shared mixed-scalar feature preparation", async () => {
+test("covariance consumes shared mixed-scalar feature preparation", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TEMP TABLE source AS SELECT * FROM (VALUES
@@ -131,7 +127,7 @@ Deno.test("covariance consumes shared mixed-scalar feature preparation", async (
   }
 });
 
-Deno.test("sample covariance remains stable after a large translation", async () => {
+test("sample covariance remains stable after a large translation", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -154,11 +150,7 @@ Deno.test("sample covariance remains stable after a large translation", async ()
     assertCloseArray(translated.covariance, original.covariance, 1e-12);
 
     const baseDistances = await distances(connection, "base", original);
-    const translatedDistances = await distances(
-      connection,
-      "translated",
-      translated,
-    );
+    const translatedDistances = await distances(connection, "translated", translated);
     assertCloseArray(translatedDistances, baseDistances, 1e-10);
   } finally {
     connection.closeSync();
@@ -166,7 +158,7 @@ Deno.test("sample covariance remains stable after a large translation", async ()
   }
 });
 
-Deno.test("one-dimensional distance is the absolute sample z-score", async () => {
+test("one-dimensional distance is the absolute sample z-score", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -194,7 +186,7 @@ Deno.test("one-dimensional distance is the absolute sample z-score", async () =>
   }
 });
 
-Deno.test("covariance rejects n <= d and singular feature data", async () => {
+test("covariance rejects n <= d and singular feature data", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -211,7 +203,7 @@ Deno.test("covariance rejects n <= d and singular feature data", async () => {
         }),
       Error,
     );
-    assertEquals(insufficient.message.includes("n > d"), true);
+    expect(insufficient.message.includes("n > d")).toStrictEqual(true);
     const singular = await assertRejects(
       () =>
         computeCovariance(connection, {
@@ -223,14 +215,14 @@ Deno.test("covariance rejects n <= d and singular feature data", async () => {
         }),
       Error,
     );
-    assertEquals(singular.message.includes("linearly dependent"), true);
+    expect(singular.message.includes("linearly dependent")).toStrictEqual(true);
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("bulk Mahalanobis is invariant under extreme finite changes of units", async () => {
+test("bulk Mahalanobis is invariant under extreme finite changes of units", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -250,21 +242,9 @@ Deno.test("bulk Mahalanobis is invariant under extreme finite changes of units",
       });
     const ordinary = await calculate("base");
     const extreme = await calculate("scaled");
-    assertAlmostEquals(
-      extreme.covariance[0] / 1e-300,
-      ordinary.covariance[0],
-      1e-12,
-    );
-    assertAlmostEquals(
-      extreme.covariance[3] / 1e300,
-      ordinary.covariance[3],
-      1e-12,
-    );
-    assertAlmostEquals(
-      extreme.reciprocalCondition,
-      ordinary.reciprocalCondition,
-      1e-14,
-    );
+    assertAlmostEquals(extreme.covariance[0] / 1e-300, ordinary.covariance[0], 1e-12);
+    assertAlmostEquals(extreme.covariance[3] / 1e300, ordinary.covariance[3], 1e-12);
+    assertAlmostEquals(extreme.reciprocalCondition, ordinary.reciprocalCondition, 1e-14);
     assertCloseArray(
       await distances(connection, "scaled", extreme),
       await distances(connection, "base", ordinary),
@@ -276,7 +256,7 @@ Deno.test("bulk Mahalanobis is invariant under extreme finite changes of units",
   }
 });
 
-Deno.test("native distance evaluation preserves identity in 32 dimensions", async () => {
+test("native distance evaluation preserves identity in 32 dimensions", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -298,12 +278,8 @@ Deno.test("native distance evaluation preserves identity in 32 dimensions", asyn
     assertCloseArray(model.means, new Float64Array(dimensions));
     const expected = Math.sqrt((observations - 1) / 2);
     const evaluated = await distances(connection, "prepared", model);
-    assertEquals(evaluated.length, observations);
-    assertCloseArray(
-      evaluated,
-      new Float64Array(observations).fill(expected),
-      1e-12,
-    );
+    expect(evaluated.length).toStrictEqual(observations);
+    assertCloseArray(evaluated, new Float64Array(observations).fill(expected), 1e-12);
     assertAlmostEquals(
       evaluated.reduce((sum, value) => sum + value * value, 0),
       (observations - 1) * dimensions,
@@ -315,7 +291,7 @@ Deno.test("native distance evaluation preserves identity in 32 dimensions", asyn
   }
 });
 
-Deno.test("sample covariance avoids overflowing a finite result during accumulation", async () => {
+test("sample covariance avoids overflowing a finite result during accumulation", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -329,18 +305,14 @@ Deno.test("sample covariance avoids overflowing a finite result during accumulat
       dimensions: 1,
     });
     assertAlmostEquals(model.covariance[0] / 1e308, 1, 1e-14);
-    assertCloseArray(
-      await distances(connection, "prepared", model),
-      [1, 0, 1],
-      1e-14,
-    );
+    assertCloseArray(await distances(connection, "prepared", model), [1, 0, 1], 1e-14);
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("covariance rejects insufficient embedding sample counts before aggregation", async () => {
+test("covariance rejects insufficient embedding sample counts before aggregation", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {

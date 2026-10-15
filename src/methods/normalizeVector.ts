@@ -41,15 +41,11 @@ async function execute(
   const overwrite = foldIdentifier(column) === foldIdentifier(newColumn);
   if (!overwrite) {
     const sourceColumns = Object.keys(await table.getTypes());
-    if (
-      sourceColumns.some((name) =>
-        foldIdentifier(name) === foldIdentifier(newColumn)
-      )
-    ) {
+    if (sourceColumns.some((name) => foldIdentifier(name) === foldIdentifier(newColumn))) {
       throw new Error(
-        `normalizeVector() cannot create ${
-          quoteIdentifier(newColumn)
-        } because that column already exists. Remove it first or choose a different name.`,
+        `normalizeVector() cannot create ${quoteIdentifier(
+          newColumn,
+        )} because that column already exists. Remove it first or choose a different name.`,
       );
     }
   }
@@ -70,12 +66,10 @@ async function execute(
 
   try {
     if (prepared.rowCount === 0) {
-      throw new Error(
-        "normalizeVector() requires at least one row; the dataset is empty.",
-      );
+      throw new Error("normalizeVector() requires at least one row; the dataset is empty.");
     }
-    const sourceColumn = prepared.sourceColumns.find((name) =>
-      foldIdentifier(name) === foldIdentifier(column)
+    const sourceColumn = prepared.sourceColumns.find(
+      (name) => foldIdentifier(name) === foldIdentifier(column),
     )!;
     if (normalization === "rowL2") {
       // Scale before squaring so extreme finite magnitudes do not overflow
@@ -83,12 +77,8 @@ async function execute(
       await connection.run(
         `CREATE TEMP TABLE ${q(resultName)} AS
          WITH magnitudes AS (
-           SELECT ${q(prepared.rowIdColumn)}, ${
-          q(prepared.vectorColumn)
-        } AS vec,
-             list_max(list_transform(${
-          q(prepared.vectorColumn)
-        }, value -> abs(value))) AS magnitude
+           SELECT ${q(prepared.rowIdColumn)}, ${q(prepared.vectorColumn)} AS vec,
+             list_max(list_transform(${q(prepared.vectorColumn)}, value -> abs(value))) AS magnitude
            FROM ${q(prepared.relation)}
          ), scaled AS (
            SELECT *, list_transform(vec, value -> value / nullif(magnitude, 0)) AS unit_scale
@@ -109,16 +99,16 @@ async function execute(
          SELECT ordinal::BIGINT AS ${dimension}, min(value)::DOUBLE AS ${minimum},
            max(value)::DOUBLE AS ${maximum}
          FROM ${q(prepared.relation)} p,
-           UNNEST(p.${
-          q(prepared.vectorColumn)
-        }::DOUBLE[]) WITH ORDINALITY AS values(value, ordinal)
+           UNNEST(p.${q(prepared.vectorColumn)}::DOUBLE[]) WITH ORDINALITY AS values(value, ordinal)
          GROUP BY ordinal`,
       );
       const invalidStats = Number(
-        (await connection.runAndReadAll(
-          `SELECT count(*) FROM ${q(statsName)}
+        (
+          await connection.runAndReadAll(
+            `SELECT count(*) FROM ${q(statsName)}
            WHERE NOT isfinite(${minimum}) OR NOT isfinite(${maximum})`,
-        )).getRowsJS()[0][0],
+          )
+        ).getRowsJS()[0][0],
       );
       if (invalidStats > 0) {
         throw new Error(
@@ -127,20 +117,22 @@ async function execute(
           } with non-finite aggregate values after conversion to DOUBLE.`,
         );
       }
-      const constantDimensions = (await connection.runAndReadAll(
-        `SELECT ${dimension} FROM ${q(statsName)}
+      const constantDimensions = (
+        await connection.runAndReadAll(
+          `SELECT ${dimension} FROM ${q(statsName)}
          WHERE ${minimum} = ${maximum} ORDER BY ${dimension}`,
-      )).getRowsJS().map((row) => Number(row[0]));
+        )
+      )
+        .getRowsJS()
+        .map((row) => Number(row[0]));
       if (constantDimensions.length > 0) {
         throw new Error(
           `normalizeVector() cannot scale constant dimension${
             constantDimensions.length === 1 ? "" : "s"
-          } ${constantDimensions.join(", ")} in column ${
-            q(sourceColumn)
-          } because the range is zero. Remove ${
-            constantDimensions.length === 1
-              ? "that dimension"
-              : "those dimensions"
+          } ${constantDimensions.join(", ")} in column ${q(
+            sourceColumn,
+          )} because the range is zero. Remove ${
+            constantDimensions.length === 1 ? "that dimension" : "those dimensions"
           } before normalizing. Conversion to DOUBLE can also collapse distinct large integers or decimals at its precision limit.`,
         );
       }
@@ -168,16 +160,16 @@ async function execute(
       );
     }
     const invalidResults = Number(
-      (await connection.runAndReadAll(
-        `SELECT count(*) FROM ${q(resultName)}
+      (
+        await connection.runAndReadAll(
+          `SELECT count(*) FROM ${q(resultName)}
          WHERE ${q(normalized)} IS NULL
            OR list_count(${q(normalized)}) != ${prepared.dimensions}
-           OR NOT list_bool_and(list_transform(${
-          q(normalized)
-        }, value -> isfinite(value)))
+           OR NOT list_bool_and(list_transform(${q(normalized)}, value -> isfinite(value)))
            OR list_min(${q(normalized)}) < ${normalization === "rowL2" ? -1 : 0}
            OR list_max(${q(normalized)}) > 1`,
-      )).getRowsJS()[0][0],
+        )
+      ).getRowsJS()[0][0],
     );
     if (invalidResults > 0) {
       throw new Error(
@@ -194,11 +186,13 @@ async function execute(
         relation: resultName,
         rowIdColumn: prepared.rowIdColumn,
       },
-      outputs: [{
-        name: overwrite ? sourceColumn : newColumn,
-        expression: `r.${q(normalized)}`,
-        replace: overwrite ? sourceColumn : undefined,
-      }],
+      outputs: [
+        {
+          name: overwrite ? sourceColumn : newColumn,
+          expression: `r.${q(normalized)}`,
+          replace: overwrite ? sourceColumn : undefined,
+        },
+      ],
     });
   } finally {
     await connection.run(`DROP TABLE IF EXISTS ${q(resultName)}`);

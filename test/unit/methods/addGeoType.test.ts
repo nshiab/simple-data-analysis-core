@@ -1,17 +1,16 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the geometry types in a new column", async () => {
+test("should return the geometry types in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   table.addGeoType("type");
   table.selectColumns(["nameEnglish", "type"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Newfoundland and Labrador", type: "MULTIPOLYGON" },
     { nameEnglish: "Prince Edward Island", type: "POLYGON" },
     { nameEnglish: "Nova Scotia", type: "POLYGON" },
@@ -30,17 +29,15 @@ Deno.test("should return the geometry types in a new column", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the geometry types from a specific column in a new column", async () => {
+test("should return the geometry types from a specific column in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   table.addGeoType("type");
   table.selectColumns(["nameEnglish", "type"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Newfoundland and Labrador", type: "MULTIPOLYGON" },
     { nameEnglish: "Prince Edward Island", type: "POLYGON" },
     { nameEnglish: "Nova Scotia", type: "POLYGON" },

@@ -17,9 +17,10 @@ export default function join(
   options = structuredClone(options);
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
-  const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable)
-    : leftTable;
+  const outputTable =
+    typeof options.outputTable === "string"
+      ? leftTable.sdb.newTable(options.outputTable)
+      : leftTable;
 
   queueOp(outputTable, {
     kind: "source",
@@ -42,10 +43,7 @@ async function buildJoinSelect(
 ): Promise<string> {
   const leftTableColumns = await leftTable.getColumns();
   const rightTableColumns = await rightTable.getColumns();
-  const identicalColumns = getIdenticalColumns(
-    leftTableColumns,
-    rightTableColumns,
-  );
+  const identicalColumns = getIdenticalColumns(leftTableColumns, rightTableColumns);
 
   let on: string[] | undefined;
   if (typeof options.on === "string") {
@@ -55,48 +53,46 @@ async function buildJoinSelect(
   } else {
     if (identicalColumns.length === 0) {
       throw new Error(
-        `join() cannot infer a join column because tables ${
-          quoteIdentifier(leftTable.name)
-        } and ${
-          quoteIdentifier(rightTable.name)
-        } have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
+        `join() cannot infer a join column because tables ${quoteIdentifier(
+          leftTable.name,
+        )} and ${quoteIdentifier(
+          rightTable.name,
+        )} have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
       );
     } else if (identicalColumns.length === 1) {
       on = identicalColumns;
     } else {
       throw new Error(
-        `join() found ${identicalColumns.length} possible join columns shared by tables ${
-          quoteIdentifier(leftTable.name)
-        } and ${quoteIdentifier(rightTable.name)}: ${
-          identicalColumns.map(quoteIdentifier).join(", ")
-        }. Pass { on: "column" } or { on: ["column1", "column2"] } to choose.`,
+        `join() found ${identicalColumns.length} possible join columns shared by tables ${quoteIdentifier(
+          leftTable.name,
+        )} and ${quoteIdentifier(rightTable.name)}: ${identicalColumns
+          .map(quoteIdentifier)
+          .join(", ")}. Pass { on: "column" } or { on: ["column1", "column2"] } to choose.`,
       );
     }
   }
 
-  const identicalColumnsForError = identicalColumns.filter(
-    (d) => !on.includes(d),
-  );
+  const identicalColumnsForError = identicalColumns.filter((d) => !on.includes(d));
   if (identicalColumnsForError.length > 0) {
     if (identicalColumnsForError.length === 1) {
       throw new Error(
-        `The tables have columns with identical names (excluding ${
-          on.map((d) => `${quoteIdentifier(d)}`).join(", ")
-        } used for the join). Rename or remove ${
-          identicalColumnsForError.map((d) => `${quoteIdentifier(d)}`).join(
+        `The tables have columns with identical names (excluding ${on
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(", ")} used for the join). Rename or remove ${identicalColumnsForError
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(
             ", ",
-          )
-        } in one of the two tables before doing the join. If relevant, you can also add it to the on option.`,
+          )} in one of the two tables before doing the join. If relevant, you can also add it to the on option.`,
       );
     } else {
       throw new Error(
-        `The tables have columns with identical names (excluding ${
-          on.map((d) => `${quoteIdentifier(d)}`).join(", ")
-        } used for the join). Rename or remove ${
-          identicalColumnsForError.map((d) => `${quoteIdentifier(d)}`).join(
+        `The tables have columns with identical names (excluding ${on
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(", ")} used for the join). Rename or remove ${identicalColumnsForError
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(
             ", ",
-          )
-        } in one of the two tables before doing the join. If relevant, you can also add them to the on option.`,
+          )} in one of the two tables before doing the join. If relevant, you can also add them to the on option.`,
       );
     }
   }
@@ -109,37 +105,25 @@ async function buildJoinSelect(
   const type = options.type ?? "left";
   const joinColumn = (d: string) => {
     if (type === "right") {
-      return `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)} AS ${
-        quoteIdentifier(d)
-      }`;
+      return `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)} AS ${quoteIdentifier(d)}`;
     }
     if (type === "full") {
-      return `COALESCE(${quoteIdentifier(leftTable.name)}.${
-        quoteIdentifier(d)
-      }, ${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}) AS ${
-        quoteIdentifier(d)
-      }`;
+      return `COALESCE(${quoteIdentifier(leftTable.name)}.${quoteIdentifier(
+        d,
+      )}, ${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}) AS ${quoteIdentifier(d)}`;
     }
     return `${quoteIdentifier(leftTable.name)}.${quoteIdentifier(d)}`;
   };
   const selectList = [
     ...leftTableColumns.map((d) =>
-      on.includes(d)
-        ? joinColumn(d)
-        : `${quoteIdentifier(leftTable.name)}.${quoteIdentifier(d)}`
+      on.includes(d) ? joinColumn(d) : `${quoteIdentifier(leftTable.name)}.${quoteIdentifier(d)}`,
     ),
     ...rightTableColumns
       .filter((d) => !on.includes(d))
       .map((d) => `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(d)}`),
   ].join(", ");
 
-  return joinQuery(
-    leftTable.name,
-    rightTable.name,
-    on,
-    type,
-    selectList,
-  );
+  return joinQuery(leftTable.name, rightTable.name, on, type, selectList);
 }
 
 function joinQuery(
@@ -152,35 +136,25 @@ function joinQuery(
   let query = `SELECT ${selectList}`;
 
   if (join === "inner") {
-    query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${quoteIdentifier(rightTable)}`;
   } else if (join === "left") {
-    query += ` FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${quoteIdentifier(rightTable)}`;
   } else if (join === "right") {
-    query += ` FROM ${quoteIdentifier(leftTable)} RIGHT JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} RIGHT JOIN ${quoteIdentifier(rightTable)}`;
   } else if (join === "full") {
-    query += ` FROM ${quoteIdentifier(leftTable)} FULL JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} FULL JOIN ${quoteIdentifier(rightTable)}`;
   } else {
-    throw new Error(`Unknown ${join} join.`);
+    throw new Error(`Unknown ${String(join)} join.`);
   }
 
-  query += ` ON (${
-    on.map((d) =>
-      `${quoteIdentifier(leftTable)}.${quoteIdentifier(d)} = ${
-        quoteIdentifier(rightTable)
-      }.${quoteIdentifier(d)}`
+  query += ` ON (${on
+    .map(
+      (d) =>
+        `${quoteIdentifier(leftTable)}.${quoteIdentifier(d)} = ${quoteIdentifier(
+          rightTable,
+        )}.${quoteIdentifier(d)}`,
     )
-      .join(
-        " AND ",
-      )
-  })`;
+    .join(" AND ")})`;
 
   return query;
 }

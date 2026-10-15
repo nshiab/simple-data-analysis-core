@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should extract a single date part into a column with the part name", async () => {
+test("should extract a single date part into a column with the part name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ publishedAt: "2024-04-07 13:14:15.678" }]);
@@ -9,22 +11,21 @@ Deno.test("should extract a single date part into a column with the part name", 
 
   const result = table.extractDatePart("publishedAt", "year");
 
-  assertEquals(result, table);
-  assertEquals(table.pendingOps.at(-1)?.kind, "fusable");
-  assertEquals(await table.getData(), [{
-    publishedAt: new Date("2024-04-07T13:14:15.678Z"),
-    year: 2024,
-  }]);
+  expect(result).toStrictEqual(table);
+  expect(table.pendingOps.at(-1)?.kind).toStrictEqual("fusable");
+  expect(await table.getData()).toStrictEqual([
+    {
+      publishedAt: new Date("2024-04-07T13:14:15.678Z"),
+      year: 2024,
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should extract all supported parts with custom column names", async () => {
+test("should extract all supported parts with custom column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { publishedAt: "2024-04-07 13:14:15.678" },
-    { publishedAt: null },
-  ]);
+  table.loadArray([{ publishedAt: "2024-04-07 13:14:15.678" }, { publishedAt: null }]);
   table.convert({ publishedAt: "datetime" });
   table.extractDatePart("publishedAt", {
     publicationYear: "year",
@@ -39,7 +40,7 @@ Deno.test("should extract all supported parts with custom column names", async (
     publicationSecond: "second",
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     {
       publishedAt: new Date("2024-04-07T13:14:15.678Z"),
       publicationYear: 2024,
@@ -70,7 +71,7 @@ Deno.test("should extract all supported parts with custom column names", async (
   await sdb.close();
 });
 
-Deno.test("should use documented weekday, ISO week, and day-of-year numbering", async () => {
+test("should use documented weekday, ISO week, and day-of-year numbering", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -86,7 +87,7 @@ Deno.test("should use documented weekday, ISO week, and day-of-year numbering", 
     dayOfYear: "dayOfYear",
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     {
       date: new Date("2021-01-01T00:00:00.000Z"),
       week: 53,
@@ -115,7 +116,7 @@ Deno.test("should use documented weekday, ISO week, and day-of-year numbering", 
   await sdb.close();
 });
 
-Deno.test("should support applicable parts and nulls for every documented temporal type", async () => {
+test("should support applicable parts and nulls for every documented temporal type", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -143,7 +144,7 @@ Deno.test("should support applicable parts and nulls for every documented tempor
   table.extractDatePart("timestamp", { timestampMinute: "minute" });
   table.extractDatePart("zonedTimestamp", { zonedSecond: "second" });
 
-  assertEquals(await table.getTypes(), {
+  expect(await table.getTypes()).toStrictEqual({
     calendarDate: "DATE",
     clockTime: "TIME",
     timestamp: "TIMESTAMP",
@@ -153,7 +154,7 @@ Deno.test("should support applicable parts and nulls for every documented tempor
     timestampMinute: "BIGINT",
     zonedSecond: "BIGINT",
   });
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     {
       calendarDate: new Date("2024-04-07T00:00:00.000Z"),
       clockTime: "13:14:15",
@@ -178,7 +179,7 @@ Deno.test("should support applicable parts and nulls for every documented tempor
   await sdb.close();
 });
 
-Deno.test("should reject a date part that does not apply to a time column", async () => {
+test("should reject a date part that does not apply to a time column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ clockTime: "13:14:15" }]);
@@ -193,13 +194,15 @@ Deno.test("should reject a date part that does not apply to a time column", asyn
   await sdb.close();
 });
 
-Deno.test("should extract components from date and time columns", async () => {
+test("should extract components from date and time columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{
-    publicationDate: "2024-04-07",
-    publicationTime: "13:14:15",
-  }]);
+  table.loadArray([
+    {
+      publicationDate: "2024-04-07",
+      publicationTime: "13:14:15",
+    },
+  ]);
   table.convert({
     publicationDate: "date",
     publicationTime: "time",
@@ -207,16 +210,18 @@ Deno.test("should extract components from date and time columns", async () => {
   table.extractDatePart("publicationDate", { dateMonth: "month" });
   table.extractDatePart("publicationTime", { timeHour: "hour" });
 
-  assertEquals(await table.getData(), [{
-    publicationDate: new Date("2024-04-07T00:00:00.000Z"),
-    publicationTime: "13:14:15",
-    dateMonth: 4,
-    timeHour: 13,
-  }]);
+  expect(await table.getData()).toStrictEqual([
+    {
+      publicationDate: new Date("2024-04-07T00:00:00.000Z"),
+      publicationTime: "13:14:15",
+      dateMonth: 4,
+      timeHour: 13,
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should snapshot a mapped parts argument when queued", async () => {
+test("should snapshot a mapped parts argument when queued", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ publishedAt: "2024-04-07" }]);
@@ -228,14 +233,16 @@ Deno.test("should snapshot a mapped parts argument when queued", async () => {
   table.extractDatePart("publishedAt", parts);
   parts.publicationMonth = "month";
 
-  assertEquals(await table.getData(), [{
-    publishedAt: new Date("2024-04-07T00:00:00.000Z"),
-    publicationYear: 2024,
-  }]);
+  expect(await table.getData()).toStrictEqual([
+    {
+      publishedAt: new Date("2024-04-07T00:00:00.000Z"),
+      publicationYear: 2024,
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should reject an empty parts mapping", async () => {
+test("should reject an empty parts mapping", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -247,20 +254,18 @@ Deno.test("should reject an empty parts mapping", async () => {
   await sdb.close();
 });
 
-Deno.test("should reject an existing output column", async () => {
+test("should reject an existing output column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{
-    publishedAt: "2024-04-07",
-    publicationYear: 1999,
-  }]);
+  table.loadArray([
+    {
+      publishedAt: "2024-04-07",
+      publicationYear: 1999,
+    },
+  ]);
   table.convert({ publishedAt: "date" });
   table.extractDatePart("publishedAt", { publicationYear: "year" });
 
-  await assertRejects(
-    () => table.run(),
-    Error,
-    'the column "publicationYear" already exists',
-  );
+  await assertRejects(() => table.run(), Error, 'the column "publicationYear" already exists');
   await sdb.close();
 });

@@ -38,11 +38,7 @@ import splitGraphemes from "./splitGraphemes.ts";
  * @returns The wrapped string with newline characters inserted at appropriate
  *   positions.
  */
-export default function wrapString(
-  str: string,
-  maxWidth: number,
-  wordWrap = true,
-): string {
+export default function wrapString(str: string, maxWidth: number, wordWrap = true): string {
   const graphemes = splitGraphemes(str);
   if (graphemes.length <= maxWidth) {
     return str;

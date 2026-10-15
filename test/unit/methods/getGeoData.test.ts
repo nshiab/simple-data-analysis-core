@@ -1,16 +1,18 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import { readFileSync } from "node:fs";
 import rewind from "../../../src/helpers/rewind.ts";
 
-Deno.test("should find the column with geometries and return geospatial data as a geojson", async () => {
+test("should find the column with geometries and return geospatial data as a geojson", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.renameColumns({ geom: "newGeom" });
   const geoData = await table.getGeoData();
 
-  assertEquals(geoData, {
+  expect(geoData).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -53,14 +55,14 @@ Deno.test("should find the column with geometries and return geospatial data as 
   await sdb.close();
 });
 
-Deno.test("should return geospatial data as a geojson with a specific geometry column", async () => {
+test("should return geospatial data as a geojson with a specific geometry column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.renameColumns({ geom: "newGeom" });
   const geoData = await table.getGeoData({ column: "newGeom" });
 
-  assertEquals(geoData, {
+  expect(geoData).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -103,7 +105,7 @@ Deno.test("should return geospatial data as a geojson with a specific geometry c
   await sdb.close();
 });
 
-Deno.test("should quote unusual geometry column names", async () => {
+test("should quote unusual geometry column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   const geometryColumn = 'geo "column';
@@ -112,59 +114,57 @@ Deno.test("should quote unusual geometry column names", async () => {
   table.renameColumns({ geom: geometryColumn });
   const geoData = await table.getGeoData({ column: geometryColumn });
 
-  assertEquals(geoData.features.length, 2);
+  expect(geoData.features.length).toStrictEqual(2);
 
   await sdb.close();
 });
 
-Deno.test("should return geospatial data not rewinded", async () => {
+test("should return geospatial data not rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData();
 
-  const originalData = JSON.parse(
+  const originalData: unknown = JSON.parse(
     readFileSync("test/geodata/files/economicRegions-simplified.json", "utf-8"),
   );
 
-  assertEquals(geoData, originalData);
+  expect(geoData).toStrictEqual(originalData);
 
   await sdb.close();
 });
-Deno.test("should return geospatial data rewinded", async () => {
+test("should return geospatial data rewinded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoData");
   table.loadGeoData("test/geodata/files/economicRegions-simplified.json");
   const geoData = await table.getGeoData({ rewind: true });
 
-  const rewindedData = rewind(JSON.parse(
-    readFileSync("test/geodata/files/economicRegions-simplified.json", "utf-8"),
-  )) as {
+  const rewindedData = rewind(
+    JSON.parse(readFileSync("test/geodata/files/economicRegions-simplified.json", "utf-8")),
+  ) as {
     type: string;
     features: unknown[];
   };
 
-  assertEquals(geoData, rewindedData);
+  expect(geoData).toStrictEqual(rewindedData);
 
   await sdb.close();
 });
 
-Deno.test("should convert date-valued GeoJSON properties", async () => {
+test("should convert date-valued GeoJSON properties", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("datedGeoData");
   table.loadGeoData("test/geodata/files/polygons.geojson");
   table.addColumn("observed", "date", "'2020-01-15'");
 
   const geoData = await table.getGeoData();
-  assertEquals(
-    (geoData.features[0] as { properties: { observed: unknown } }).properties
-      .observed,
-    new Date("2020-01-15T00:00:00.000Z"),
-  );
+  expect(
+    (geoData.features[0] as { properties: { observed: unknown } }).properties.observed,
+  ).toStrictEqual(new Date("2020-01-15T00:00:00.000Z"));
   await sdb.close();
 });
 
-Deno.test("should preserve multiple geometry-column selection", async () => {
+test("should preserve multiple geometry-column selection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("multipleGeometries");
   table.loadGeoData("test/geodata/files/polygons.geojson");
@@ -176,47 +176,38 @@ Deno.test("should preserve multiple geometry-column selection", async () => {
     `getGeoData() found 2 geometry columns in table "multipleGeometries": "geom", "otherGeom". Specify one explicitly.`,
   );
   const geoData = await table.getGeoData({ column: "geom" });
-  assertEquals(geoData.features.length, 2);
-  assertEquals(
-    typeof (geoData.features[0] as { properties: { otherGeom: unknown } })
-      .properties.otherGeom,
-    "string",
-  );
+  expect(geoData.features.length).toStrictEqual(2);
+  expect(
+    typeof (geoData.features[0] as { properties: { otherGeom: unknown } }).properties.otherGeom,
+  ).toStrictEqual("string");
   await sdb.close();
 });
 
-Deno.test("should accept empty options and preserve explicit rewind false", async () => {
+test("should accept empty options and preserve explicit rewind false", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadGeoData(
-      "test/geodata/files/polygons.geojson",
-    );
+    const table = sdb.newTable().loadGeoData("test/geodata/files/polygons.geojson");
     const expected = await table.getGeoData();
-    assertEquals(await table.getGeoData({}), expected);
-    assertEquals(await table.getGeoData({ rewind: false }), expected);
+    expect(await table.getGeoData({})).toStrictEqual(expected);
+    expect(await table.getGeoData({ rewind: false })).toStrictEqual(expected);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("should combine column selection and rewinding without changing options", async () => {
+test("should combine column selection and rewinding without changing options", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadGeoData(
-      "test/geodata/files/polygons.geojson",
-    );
+    const table = sdb.newTable().loadGeoData("test/geodata/files/polygons.geojson");
     const original = await table.getGeoData();
     table.cloneColumn("geom", "otherGeom");
     const options = Object.freeze({ column: "otherGeom", rewind: true });
     const result = await table.getGeoData(options);
     const expected = rewind(original) as { features: { geometry: unknown }[] };
-    assertEquals(
-      result.features.map((feature) =>
-        (feature as { geometry: unknown }).geometry
-      ),
-      expected.features.map((feature) => feature.geometry),
-    );
-    assertEquals(options, { column: "otherGeom", rewind: true });
+    expect(
+      result.features.map((feature) => (feature as { geometry: unknown }).geometry),
+    ).toStrictEqual(expected.features.map((feature) => feature.geometry));
+    expect(options).toStrictEqual({ column: "otherGeom", rewind: true });
   } finally {
     await sdb.close();
   }

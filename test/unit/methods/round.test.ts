@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should round to the nearest integer", async () => {
+test("should round to the nearest integer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -11,17 +12,12 @@ Deno.test("should round to the nearest integer", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: 1 },
-    { key1: 3 },
-    { key1: 8 },
-    { key1: 10 },
-  ]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 3 }, { key1: 8 }, { key1: 10 }]);
 
   await sdb.close();
 });
 
-Deno.test("should round to a specific number of decimals", async () => {
+test("should round to a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -31,17 +27,12 @@ Deno.test("should round to a specific number of decimals", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: 1.044 },
-    { key1: 3.244 },
-    { key1: 8.1 },
-    { key1: 10 },
-  ]);
+  expect(data).toStrictEqual([{ key1: 1.044 }, { key1: 3.244 }, { key1: 8.1 }, { key1: 10 }]);
 
   await sdb.close();
 });
 
-Deno.test("should floor", async () => {
+test("should floor", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -52,17 +43,12 @@ Deno.test("should floor", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: 1 },
-    { key1: 3 },
-    { key1: 8 },
-    { key1: 10 },
-  ]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 3 }, { key1: 8 }, { key1: 10 }]);
 
   await sdb.close();
 });
 
-Deno.test("should ceil", async () => {
+test("should ceil", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -72,17 +58,12 @@ Deno.test("should ceil", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: 2 },
-    { key1: 4 },
-    { key1: 9 },
-    { key1: 10 },
-  ]);
+  expect(data).toStrictEqual([{ key1: 2 }, { key1: 4 }, { key1: 9 }, { key1: 10 }]);
 
   await sdb.close();
 });
 
-Deno.test("should round multiple columns", async () => {
+test("should round multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -91,7 +72,7 @@ Deno.test("should round multiple columns", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1.04, key2: 2.95 },
     { key1: 3.24, key2: 4.99 },
     { key1: 8.1, key2: 34.5 },
@@ -101,7 +82,7 @@ Deno.test("should round multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should round using the numeric shorthand", async () => {
+test("should round using the numeric shorthand", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -111,17 +92,12 @@ Deno.test("should round using the numeric shorthand", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: 1.04 },
-    { key1: 3.24 },
-    { key1: 8.1 },
-    { key1: 10 },
-  ]);
+  expect(data).toStrictEqual([{ key1: 1.04 }, { key1: 3.24 }, { key1: 8.1 }, { key1: 10 }]);
 
   await sdb.close();
 });
 
-Deno.test("should round to 0 decimals using the numeric shorthand", async () => {
+test("should round to 0 decimals using the numeric shorthand", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataManyDecimals.csv"]);
@@ -131,12 +107,7 @@ Deno.test("should round to 0 decimals using the numeric shorthand", async () => 
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: 1 },
-    { key1: 3 },
-    { key1: 8 },
-    { key1: 10 },
-  ]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 3 }, { key1: 8 }, { key1: 10 }]);
 
   await sdb.close();
 });

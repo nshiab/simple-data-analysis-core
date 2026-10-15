@@ -11,9 +11,7 @@ export type TableGenerationId = string & {
 const generations = new WeakMap<SimpleTable, TableGenerationId>();
 
 /** Returns an established generation without creating one for a new table. */
-export function peekTableGeneration(
-  table: SimpleTable,
-): TableGenerationId | undefined {
+export function peekTableGeneration(table: SimpleTable): TableGenerationId | undefined {
   return generations.get(table);
 }
 
@@ -40,9 +38,6 @@ export function markTableChanged(table: SimpleTable): TableGenerationId {
 }
 
 /** Restores the generation persisted with a cached table artifact. */
-export function restoreTableGeneration(
-  table: SimpleTable,
-  generation: TableGenerationId,
-): void {
+export function restoreTableGeneration(table: SimpleTable, generation: TableGenerationId): void {
   generations.set(table, generation);
 }

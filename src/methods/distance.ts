@@ -26,9 +26,9 @@ export default function distance(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "distance()");
-      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${quoteIdentifier(
+        newColumn,
+      )} FROM ${input}`;
     },
   });
 }
@@ -52,28 +52,24 @@ function distanceExpression(
   } else if (["spheroid", "haversine"].includes(options.method)) {
     options.unit = options.unit ?? "m";
     if (!["m", "km"].includes(options.unit)) {
-      throw new Error(
-        `Unknown unit ${options.unit}. Choose between 'm' and 'km'.`,
-      );
+      throw new Error(`Unknown unit ${options.unit}. Choose between 'm' and 'km'.`);
     }
   }
 
   let expression = "";
   if (options.method === "srs") {
-    expression = `ST_Distance(${quoteIdentifier(column1)}, ${
-      quoteIdentifier(column2)
-    })`;
+    expression = `ST_Distance(${quoteIdentifier(column1)}, ${quoteIdentifier(column2)})`;
   } else if (options.method === "haversine") {
-    expression = `ST_Distance_Sphere(${quoteIdentifier(column1)}, ${
-      quoteIdentifier(column2)
-    }) ${options.unit === "km" ? "/ 1000" : ""}`;
+    expression = `ST_Distance_Sphere(${quoteIdentifier(column1)}, ${quoteIdentifier(
+      column2,
+    )}) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else if (options.method === "spheroid") {
-    expression = `ST_Distance_Spheroid(${quoteIdentifier(column1)}::GEOMETRY, ${
-      quoteIdentifier(column2)
-    }::GEOMETRY) ${options.unit === "km" ? "/ 1000" : ""}`;
+    expression = `ST_Distance_Spheroid(${quoteIdentifier(column1)}::GEOMETRY, ${quoteIdentifier(
+      column2,
+    )}::GEOMETRY) ${options.unit === "km" ? "/ 1000" : ""}`;
   } else {
     throw new Error(
-      `distance() received an unknown method: ${options.method}. Choose "srs", "haversine", or "spheroid".`,
+      `distance() received an unknown method: ${String(options.method)}. Choose "srs", "haversine", or "spheroid".`,
     );
   }
 

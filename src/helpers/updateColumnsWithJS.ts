@@ -53,9 +53,7 @@ export default async function updateColumnsWithJS(
   table: SimpleTable,
   inputColumns: string[],
   outputColumns: string[],
-  generate: (
-    rows: { [key: string]: unknown }[],
-  ) => Promise<{ [key: string]: unknown }[]>,
+  generate: (rows: { [key: string]: unknown }[]) => Promise<{ [key: string]: unknown }[]>,
   options: {
     /** Maximum rows per callback and transfer batch. Defaults to 1,000.
      * @example
@@ -73,24 +71,21 @@ export default async function updateColumnsWithJS(
   if (inputColumns.length === 0 || outputColumns.length === 0) {
     throw new Error("Input and output columns must not be empty.");
   }
-  if (
-    new Set(outputColumns.map((name) => name.toLowerCase())).size !==
-      outputColumns.length
-  ) {
+  if (new Set(outputColumns.map((name) => name.toLowerCase())).size !== outputColumns.length) {
     throw new Error("Output columns must be unique.");
   }
   const types = await table.getTypes();
   for (const [name, type] of Object.entries(types)) {
     if (
       type.toUpperCase().startsWith("GEOMETRY") &&
-      [...inputColumns, ...outputColumns].some((column) =>
-        column.toLowerCase() === name.toLowerCase()
+      [...inputColumns, ...outputColumns].some(
+        (column) => column.toLowerCase() === name.toLowerCase(),
       )
     ) {
       throw new Error(
-        `Geometry column ${
-          JSON.stringify(name)
-        } cannot be an input or output of updateColumnsWithJS(); use updateWithJS() for editable GeoJSON.`,
+        `Geometry column ${JSON.stringify(
+          name,
+        )} cannot be an input or output of updateColumnsWithJS(); use updateWithJS() for editable GeoJSON.`,
       );
     }
   }
@@ -103,9 +98,9 @@ export default async function updateColumnsWithJS(
     // A SQL snapshot gives every row a stable identity, including duplicate rows
     // and user columns named rowid. No untouched values cross the JS boundary.
     await table.sdb.customQuery(
-      `CREATE TEMP TABLE ${q(snapshot)} AS SELECT *, row_number() OVER () AS ${
-        q(id)
-      } FROM ${q(table.name)}`,
+      `CREATE TEMP TABLE ${q(snapshot)} AS SELECT *, row_number() OVER () AS ${q(
+        id,
+      )} FROM ${q(table.name)}`,
     );
     const knownTypes = new Map<string, string>();
     let lastId = "0";
@@ -114,9 +109,9 @@ export default async function updateColumnsWithJS(
       const upperId = BigInt(lastId) + BigInt(batchSize);
       const { rows } = await readMutationRows(
         table.connection!,
-        `SELECT ${q(id)}, ${inputColumns.map(q).join(", ")} FROM ${
-          q(snapshot)
-        } WHERE ${q(id)} > ${lastId} AND ${q(id)} <= ${upperId}
+        `SELECT ${q(id)}, ${inputColumns.map(q).join(", ")} FROM ${q(
+          snapshot,
+        )} WHERE ${q(id)} > ${lastId} AND ${q(id)} <= ${upperId}
         ORDER BY ${q(id)} LIMIT ${batchSize}`,
       );
       if (rows.length === 0) break;
@@ -128,44 +123,37 @@ export default async function updateColumnsWithJS(
         throw new Error("Column generation must return one row per input row.");
       }
       // Generated vectors retain this helper's existing inference contract.
-      const prepared = prepareArray(generated.map((row, i) => ({
-        ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
-        [id]: ids[i],
-      })));
-      const batchTypes = new Map(
-        prepared.keys.map((name, i) => [name, prepared.types[i]]),
+      const prepared = prepareArray(
+        generated.map((row, i) => ({
+          ...Object.fromEntries(outputColumns.map((name) => [name, row[name]])),
+          [id]: ids[i],
+        })),
       );
+      const batchTypes = new Map(prepared.keys.map((name, i) => [name, prepared.types[i]]));
       for (const name of outputColumns) {
-        const nonNull = generated.some((row) =>
-          row[name] !== null && row[name] !== undefined
-        );
+        const nonNull = generated.some((row) => row[name] !== null && row[name] !== undefined);
         if (!nonNull) continue;
         const previous = knownTypes.get(name);
         const current = batchTypes.get(name)!;
         if (previous !== undefined && previous !== current) {
           throw new Error(
-            `Generated column ${
-              JSON.stringify(name)
-            } changed type from ${previous} to ${current}.`,
+            `Generated column ${JSON.stringify(name)} changed type from ${previous} to ${current}.`,
           );
         }
         if (previous === undefined) {
           knownTypes.set(name, current);
           if (hasRows) {
             await table.sdb.customQuery(
-              `ALTER TABLE ${q(staged.name)} ALTER COLUMN ${
-                q(name)
-              } TYPE ${current} USING NULL`,
+              `ALTER TABLE ${q(staged.name)} ALTER COLUMN ${q(name)} TYPE ${current} USING NULL`,
             );
           }
         }
       }
       if (!hasRows) {
         await table.sdb.customQuery(
-          `CREATE TEMP TABLE ${q(staged.name)} (${
-            prepared.keys.map((name, i) => `${q(name)} ${prepared.types[i]}`)
-              .join(", ")
-          })`,
+          `CREATE TEMP TABLE ${q(staged.name)} (${prepared.keys
+            .map((name, i) => `${q(name)} ${prepared.types[i]}`)
+            .join(", ")})`,
         );
         hasRows = true;
       }
@@ -174,49 +162,38 @@ export default async function updateColumnsWithJS(
       await appendColumnBatches(
         table.connection!,
         staged.name,
-        prepared.keys.map((name, i) =>
-          parseDuckDBType(knownTypes.get(name) ?? prepared.types[i])
-        ),
+        prepared.keys.map((name, i) => parseDuckDBType(knownTypes.get(name) ?? prepared.types[i])),
         prepared.rowCount,
         (column, start, end) => prepared.columnsData[column].slice(start, end),
       );
     }
     if (!hasRows) return;
-    const outputs = new Map(
-      outputColumns.map((name) => [name.toLowerCase(), name]),
-    );
+    const outputs = new Map(outputColumns.map((name) => [name.toLowerCase(), name]));
     const columns = Object.keys(types).map((name) => {
       const replacement = outputs.get(name.toLowerCase());
       return replacement === undefined
         ? `original.${q(name)}`
         : `generated.${q(replacement)} AS ${q(name)}`;
     });
-    const existing = new Set(
-      Object.keys(types).map((name) => name.toLowerCase()),
-    );
+    const existing = new Set(Object.keys(types).map((name) => name.toLowerCase()));
     for (const name of outputColumns) {
       if (!existing.has(name.toLowerCase())) {
         columns.push(`generated.${q(name)}`);
       }
     }
     await table.sdb.customQuery(
-      `CREATE OR REPLACE TABLE ${q(table.name)} AS SELECT ${
-        columns.join(", ")
-      } FROM ${q(snapshot)} original JOIN ${
-        q(staged.name)
-      } generated ON original.${q(id)} = CAST(generated.${
-        q(id)
-      } AS BIGINT) ORDER BY original.${q(id)}`,
+      `CREATE OR REPLACE TABLE ${q(table.name)} AS SELECT ${columns.join(
+        ", ",
+      )} FROM ${q(snapshot)} original JOIN ${q(
+        staged.name,
+      )} generated ON original.${q(id)} = CAST(generated.${q(
+        id,
+      )} AS BIGINT) ORDER BY original.${q(id)}`,
     );
   } finally {
     await table.sdb.customQuery(
-      `DROP TABLE IF EXISTS ${q(snapshot)}; DROP TABLE IF EXISTS ${
-        q(staged.name)
-      };`,
+      `DROP TABLE IF EXISTS ${q(snapshot)}; DROP TABLE IF EXISTS ${q(staged.name)};`,
     );
-    retainRegisteredTables(
-      table.sdb,
-      (item) => item !== staged,
-    );
+    retainRegisteredTables(table.sdb, (item) => item !== staged);
   }
 }

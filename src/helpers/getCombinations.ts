@@ -1,10 +1,11 @@
 // from https://github.com/simple-statistics/simple-statistics/blob/main/src/combinations.js
 
-// @ts-ignore: Needs to be reworked.
-function getCombinations(x, k) {
+function getCombinations<T>(x: T[], k: 2): [T, T][];
+function getCombinations<T>(x: T[], k: number): T[][];
+function getCombinations<T>(x: T[], k: number): T[][] {
   let i;
   let subI;
-  const combinationList = [];
+  const combinationList: T[][] = [];
   let subsetCombinations;
   let next;
 
@@ -12,10 +13,7 @@ function getCombinations(x, k) {
     if (k === 1) {
       combinationList.push([x[i]]);
     } else {
-      subsetCombinations = getCombinations(
-        x.slice(i + 1, x.length),
-        k - 1,
-      );
+      subsetCombinations = getCombinations(x.slice(i + 1, x.length), k - 1);
       for (subI = 0; subI < subsetCombinations.length; subI++) {
         next = subsetCombinations[subI];
         next.unshift(x[i]);

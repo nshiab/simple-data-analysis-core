@@ -10,9 +10,7 @@ export default async function getRow(
     throw new Error(`No row found with condition \`${conditions}\`.`);
   }
   if (options.strict !== false && data.length > 1) {
-    throw new Error(
-      `More than one row found with condition \`${conditions}\`.`,
-    );
+    throw new Error(`More than one row found with condition \`${conditions}\`.`);
   }
   return data[0];
 }

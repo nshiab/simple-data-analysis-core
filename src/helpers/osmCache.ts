@@ -46,9 +46,11 @@ export async function useProcessedOsmCache(
   },
 ): Promise<void> {
   if (!options.enabled) {
-    options.verbose && console.log(
-      "Processed cache disabled. Fresh data will be used without reading or writing cache entries.",
-    );
+    if (options.verbose) {
+      console.log(
+        "Processed cache disabled. Fresh data will be used without reading or writing cache entries.",
+      );
+    }
     await options.compute();
     return;
   }
@@ -65,30 +67,22 @@ export async function useProcessedOsmCache(
       );
     } else {
       const now = Date.now();
-      if (
-        options.ttl !== undefined &&
-        cacheEntryExpired(cached.creation, options.ttl, now)
-      ) {
+      if (options.ttl !== undefined && cacheEntryExpired(cached.creation, options.ttl, now)) {
         const age = now - cached.creation;
         removeEntry(options.id, cached, sources, sourcesFile);
         console.log(
-          `Processed cache entry expired after ${
-            prettyDuration(0, { end: age })
-          }; ` +
-            `the configured TTL is ${
-              prettyDuration(0, { end: options.ttl * 1000 })
-            }.\n` +
+          `Processed cache entry expired after ${prettyDuration(0, { end: age })}; ` +
+            `the configured TTL is ${prettyDuration(0, { end: options.ttl * 1000 })}.\n` +
             "The matching cache file was removed. Fresh data is being requested.",
         );
-      } else if (
-        await loadEntry(table, cached, sources, sourcesFile, options)
-      ) {
+      } else if (await loadEntry(table, cached, sources, sourcesFile, options)) {
         return;
       }
     }
   } else {
-    options.verbose &&
+    if (options.verbose) {
       console.log("No processed cache entry matched this source.");
+    }
   }
 
   const started = Date.now();
@@ -121,11 +115,13 @@ async function loadEntry(
   }
 
   const size = statSync(cached.file).size;
-  options.verbose && console.log(
-    `Processed cache hit.\nLoading ${
-      formatBytes(size)
-    } from the GeoParquet cache; Osmium will not run.`,
-  );
+  if (options.verbose) {
+    console.log(
+      `Processed cache hit.\nLoading ${formatBytes(
+        size,
+      )} from the GeoParquet cache; Osmium will not run.`,
+    );
+  }
   const started = Date.now();
   try {
     await queryDB(
@@ -144,11 +140,7 @@ async function loadEntry(
     table.sdb.spatialLoaded = true;
     if (options.verbose) {
       const rows = await getRowCount(table, options.parameters);
-      console.log(
-        `Loaded ${rows.toLocaleString("en-US")} rows in ${
-          prettyDuration(started)
-        }.`,
-      );
+      console.log(`Loaded ${rows.toLocaleString("en-US")} rows in ${prettyDuration(started)}.`);
       if (cached.duration !== undefined) {
         table.sdb.cacheTimeSaved += cached.duration - (Date.now() - started);
       }
@@ -177,7 +169,9 @@ async function writeEntry(
   mkdirSync(CACHE_DIRECTORY, { recursive: true });
   const file = `${CACHE_DIRECTORY}/${options.id}.geoparquet`;
   const temporaryFile = `${file}.${crypto.randomUUID()}.tmp.geoparquet`;
-  options.verbose && console.log("Writing processed GeoParquet cache...");
+  if (options.verbose) {
+    console.log("Writing processed GeoParquet cache...");
+  }
   const started = Date.now();
   try {
     await queryDB(
@@ -250,9 +244,7 @@ function readSources(sourcesFile: string): OsmCacheSources {
   if (!existsSync(sourcesFile)) return {};
   try {
     const value = JSON.parse(readFileSync(sourcesFile, "utf-8")) as unknown;
-    return typeof value === "object" && value !== null
-      ? value as OsmCacheSources
-      : {};
+    return typeof value === "object" && value !== null ? (value as OsmCacheSources) : {};
   } catch {
     rmSync(sourcesFile, { force: true });
     console.log(
@@ -265,13 +257,14 @@ function readSources(sourcesFile: string): OsmCacheSources {
 function isOsmCacheSource(value: unknown): value is OsmCacheSource {
   if (typeof value !== "object" || value === null) return false;
   const source = value as { [key: string]: unknown };
-  return typeof source.file === "string" &&
+  return (
+    typeof source.file === "string" &&
     typeof source.creation === "number" &&
     Number.isFinite(source.creation) &&
     typeof source.formatVersion === "string" &&
     (source.duration === undefined ||
-      (typeof source.duration === "number" &&
-        Number.isFinite(source.duration)));
+      (typeof source.duration === "number" && Number.isFinite(source.duration)))
+  );
 }
 
 function writeSources(sourcesFile: string, sources: OsmCacheSources): void {

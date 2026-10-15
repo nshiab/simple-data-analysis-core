@@ -53,8 +53,7 @@ export default function createFtsIndex(
     kind: "barrier",
     method: "createFtsIndex()",
     parameters: { idColumn, textColumn, options },
-    execute: () =>
-      executeCreateFtsIndex(simpleTable, idColumn, textColumn, options),
+    execute: () => executeCreateFtsIndex(simpleTable, idColumn, textColumn, options),
   });
 }
 
@@ -77,31 +76,27 @@ export async function executeCreateFtsIndex(
   },
 ): Promise<void> {
   const indexName = `fts_index_${camelCase(simpleTable.name)}`;
-  const indexPosition = simpleTable.indexes.findIndex(({ name }) =>
-    name === indexName
-  );
+  const indexPosition = simpleTable.indexes.findIndex(({ name }) => name === indexName);
   const indexExists = indexPosition >= 0;
 
   if (indexExists && options.overwrite) {
-    options.verbose &&
-      console.log(
-        `\nDropping existing FTS index on ${
-          quoteIdentifier(textColumn)
-        } column...`,
-      );
+    if (options.verbose) {
+      console.log(`\nDropping existing FTS index on ${quoteIdentifier(textColumn)} column...`);
+    }
 
     await simpleTable.sdb.customQuery(
       `PRAGMA drop_fts_index(${quoteIdentifier(simpleTable.name)});`,
     );
 
-    options.verbose && console.log("FTS index dropped.");
+    if (options.verbose) {
+      console.log("FTS index dropped.");
+    }
   }
 
   if (!indexExists || options.overwrite) {
-    options.verbose &&
-      console.log(
-        `\nCreating FTS index on ${quoteIdentifier(textColumn)} column...`,
-      );
+    if (options.verbose) {
+      console.log(`\nCreating FTS index on ${quoteIdentifier(textColumn)} column...`);
+    }
 
     const indexOptions: FtsIndexDefinition["options"] = {};
     if (options.stemmer !== undefined) {
@@ -126,17 +121,19 @@ export async function executeCreateFtsIndex(
       textColumn,
       options: indexOptions,
     };
-    await simpleTable.sdb.customQuery(
-      buildCreateIndexQuery(simpleTable.name, definition),
-    );
+    await simpleTable.sdb.customQuery(buildCreateIndexQuery(simpleTable.name, definition));
     if (indexExists) {
       simpleTable.indexes[indexPosition] = definition;
     } else {
       simpleTable.indexes.push(definition);
     }
 
-    options.verbose && console.log("FTS index created successfully.");
+    if (options.verbose) {
+      console.log("FTS index created successfully.");
+    }
   } else {
-    options.verbose && console.log("FTS index already exists.");
+    if (options.verbose) {
+      console.log("FTS index already exists.");
+    }
   }
 }

@@ -1,7 +1,10 @@
-import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should reject tables from different databases", async () => {
+test("should reject tables from different databases", async () => {
   const leftDB = new SimpleDB();
   const rightDB = new SimpleDB();
   const left = leftDB.newTable("left");
@@ -17,7 +20,7 @@ Deno.test("should reject tables from different databases", async () => {
   await rightDB.close();
 });
 
-Deno.test("should put the result of an inner join into a new table", async () => {
+test("should put the result of an inner join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
@@ -32,7 +35,7 @@ Deno.test("should put the result of an inner join into a new table", async () =>
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       dishId: 1,
       name: "Crème brûlée",
@@ -51,7 +54,7 @@ Deno.test("should put the result of an inner join into a new table", async () =>
   await sdb.close();
 });
 
-Deno.test("should put the result of a left join into a new table", async () => {
+test("should put the result of a left join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
@@ -66,7 +69,7 @@ Deno.test("should put the result of a left join into a new table", async () => {
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       dishId: 1,
       name: "Crème brûlée",
@@ -92,7 +95,7 @@ Deno.test("should put the result of a left join into a new table", async () => {
   await sdb.close();
 });
 
-Deno.test("should put the result of a right join into a new table", async () => {
+test("should put the result of a right join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
@@ -107,7 +110,7 @@ Deno.test("should put the result of a right join into a new table", async () => 
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       dishId: 1,
       name: "Crème brûlée",
@@ -129,7 +132,7 @@ Deno.test("should put the result of a right join into a new table", async () => 
   await sdb.close();
 });
 
-Deno.test("should put the result of a full join into a new table", async () => {
+test("should put the result of a full join into a new table", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
@@ -144,7 +147,7 @@ Deno.test("should put the result of a full join into a new table", async () => {
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       dishId: 1,
       name: "Crème brûlée",
@@ -168,7 +171,7 @@ Deno.test("should put the result of a full join into a new table", async () => {
   await sdb.close();
 });
 
-Deno.test("should put the result of a full join into a new table with a specific name in the DB", async () => {
+test("should put the result of a full join into a new table with a specific name in the DB", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
@@ -185,7 +188,7 @@ Deno.test("should put the result of a full join into a new table with a specific
     returnData: true,
   });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       dishId: 1,
       name: "Crème brûlée",
@@ -209,7 +212,7 @@ Deno.test("should put the result of a full join into a new table with a specific
   await sdb.close();
 });
 
-Deno.test("should automatically find a common column, make left join and put the result into leftTable", async () => {
+test("should automatically find a common column, make left join and put the result into leftTable", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("dishes");
   dishes.loadData("test/data/joins/dishes.csv");
@@ -220,7 +223,7 @@ Deno.test("should automatically find a common column, make left join and put the
 
   const data = await dishes.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       dishId: 1,
       name: "Crème brûlée",
@@ -246,7 +249,7 @@ Deno.test("should automatically find a common column, make left join and put the
   await sdb.close();
 });
 
-Deno.test("should explain when tables have no common join column", async () => {
+test("should explain when tables have no common join column", async () => {
   const sdb = new SimpleDB();
   const votes = sdb.newTable("votes");
   votes.loadArray([{ voteId: 1 }]);
@@ -255,15 +258,14 @@ Deno.test("should explain when tables have no common join column", async () => {
 
   const error = await assertRejects(() => votes.join(districts).run());
   assert(error instanceof Error);
-  assertEquals(
-    error.message,
+  expect(error.message).toStrictEqual(
     `join() cannot infer a join column because tables "votes" and "districts" have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
   );
 
   await sdb.close();
 });
 
-Deno.test("should list possible columns when a join is ambiguous", async () => {
+test("should list possible columns when a join is ambiguous", async () => {
   const sdb = new SimpleDB();
   const votes = sdb.newTable("votes");
   votes.loadArray([{ districtId: 1, year: 2026, votes: 10 }]);
@@ -272,15 +274,14 @@ Deno.test("should list possible columns when a join is ambiguous", async () => {
 
   const error = await assertRejects(() => votes.join(districts).run());
   assert(error instanceof Error);
-  assertEquals(
-    error.message,
+  expect(error.message).toStrictEqual(
     `join() found 2 possible join columns shared by tables "votes" and "districts": "districtId", "year". Pass { on: "column" } or { on: ["column1", "column2"] } to choose.`,
   );
 
   await sdb.close();
 });
 
-Deno.test("should join on multiple columns", async () => {
+test("should join on multiple columns", async () => {
   const sdb = new SimpleDB();
   const dishes = sdb.newTable("normals");
   dishes.loadData("test/data/joins/normals.csv");
@@ -292,7 +293,7 @@ Deno.test("should join on multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("join captures options without mutating caller-owned objects", async () => {
+test("join captures options without mutating caller-owned objects", async () => {
   const sdb = new SimpleDB();
   const left = sdb.newTable("capturedJoinLeft");
   const right = sdb.newTable("capturedJoinRight");
@@ -309,16 +310,16 @@ Deno.test("join captures options without mutating caller-owned objects", async (
   on[0] = "changed";
   options.type = "left";
 
-  assertEquals(options, {
+  expect(options).toStrictEqual({
     on: ["changed"],
     type: "left",
     outputTable: true,
   });
-  assertEquals(await joined.getData(), [{ id: 1, left: "a", right: "b" }]);
+  expect(await joined.getData()).toStrictEqual([{ id: 1, left: "a", right: "b" }]);
   await sdb.close();
 });
 
-Deno.test("should keep the join keys of unmatched right rows in a right join", async () => {
+test("should keep the join keys of unmatched right rows in a right join", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([
@@ -335,7 +336,7 @@ Deno.test("should keep the join keys of unmatched right rows in a right join", a
   joined.sort({ key: "asc" });
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key: "b", valueA: 2, valueB: 20 },
     { key: "c", valueA: null, valueB: 30 },
   ]);
@@ -343,7 +344,7 @@ Deno.test("should keep the join keys of unmatched right rows in a right join", a
   await sdb.close();
 });
 
-Deno.test("should keep the join keys of unmatched rows on both sides in a full join with multiple keys", async () => {
+test("should keep the join keys of unmatched rows on both sides in a full join with multiple keys", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("tableA");
   tableA.loadArray([
@@ -364,7 +365,7 @@ Deno.test("should keep the join keys of unmatched rows on both sides in a full j
   joined.sort({ year: "asc" });
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { year: 2024, city: "Montreal", sales: 10, visits: 100 },
     { year: 2025, city: "Toronto", sales: 20, visits: null },
     { year: 2026, city: "Vancouver", sales: null, visits: 300 },
@@ -375,35 +376,40 @@ Deno.test("should keep the join keys of unmatched rows on both sides in a full j
 
 for (const shape of ["narrow", "wide", "high-fanout"]) {
   for (const outputTable of [undefined, true, "joined"]) {
-    Deno.test(`should fuse ${shape} joins with downstream operations (output ${outputTable})`, async () => {
+    test(`should fuse ${shape} joins with downstream operations (output ${outputTable})`, async () => {
       const sdb = new SimpleDB();
       try {
         const left = sdb.newTable("left");
         const right = sdb.newTable("right");
-        await left.loadArray(Array.from({ length: 100 }, (_, i) => ({
-          key: i % 10,
-          value: i,
-          ...(shape === "wide" ? { unused: "x".repeat(1000) } : {}),
-        }))).run();
-        await right.loadArray(
-          Array.from(
-            { length: shape === "high-fanout" ? 100 : 10 },
-            (_, i) => ({
+        await left
+          .loadArray(
+            Array.from({ length: 100 }, (_, i) => ({
+              key: i % 10,
+              value: i,
+              ...(shape === "wide" ? { unused: "x".repeat(1000) } : {}),
+            })),
+          )
+          .run();
+        await right
+          .loadArray(
+            Array.from({ length: shape === "high-fanout" ? 100 : 10 }, (_, i) => ({
               key: i % 10,
               category: i % 2,
-            }),
-          ),
-        ).run();
+            })),
+          )
+          .run();
         const baseline = left.join(right, {
           on: "key",
           type: "inner",
           outputTable: "baseline",
         });
         await baseline.run();
-        const expected = await baseline.selectColumns(["value", "category"])
+        const expected = await baseline
+          .selectColumns(["value", "category"])
           .filter("value >= 50")
           .summarize({ columns: "value", by: "category", stats: "sum" })
-          .sort({ category: "asc" }).getData();
+          .sort({ category: "asc" })
+          .getData();
         const joined = left.join(right, {
           on: "key",
           type: "inner",
@@ -415,15 +421,15 @@ for (const shape of ["narrow", "wide", "high-fanout"]) {
           queries.push(query);
           return original(query, connection, returnData, options);
         };
-        const actual = await joined.selectColumns(["value", "category"])
+        const actual = await joined
+          .selectColumns(["value", "category"])
           .filter("value >= 50")
           .summarize({ columns: "value", by: "category", stats: "sum" })
-          .sort({ category: "asc" }).getData();
-        assertEquals(actual, expected);
-        const writes = queries.filter((query) =>
-          query.startsWith("CREATE OR REPLACE TABLE")
-        );
-        assertEquals(writes.length, 1);
+          .sort({ category: "asc" })
+          .getData();
+        expect(actual).toStrictEqual(expected);
+        const writes = queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE"));
+        expect(writes.length).toStrictEqual(1);
         assert(writes[0].includes(" JOIN "));
         assert(writes[0].includes("SUM("));
       } finally {
@@ -433,44 +439,52 @@ for (const shape of ["narrow", "wide", "high-fanout"]) {
   }
 }
 
-Deno.test("fused joins preserve preceding input changes and later right-table changes", async () => {
+test("fused joins preserve preceding input changes and later right-table changes", async () => {
   const sdb = new SimpleDB();
   try {
     const left = sdb.newTable("left").loadArray([{ key: 1 }, { key: 2 }]);
-    const right = sdb.newTable("right").loadArray([{ key: 1, value: 10 }, {
-      key: 2,
-      value: 20,
-    }]);
+    const right = sdb.newTable("right").loadArray([
+      { key: 1, value: 10 },
+      {
+        key: 2,
+        value: 20,
+      },
+    ]);
     left.filter("key = 2");
     left.join(right, { on: "key" }).selectColumns("value");
     right.filter("key = 1");
-    assertEquals(await left.getData(), [{ value: 20 }]);
-    assertEquals(await right.getData(), [{ key: 1, value: 10 }]);
+    expect(await left.getData()).toStrictEqual([{ value: 20 }]);
+    expect(await right.getData()).toStrictEqual([{ key: 1, value: 10 }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("a self-referencing filter after a fused join reads the joined result", async () => {
+test("a self-referencing filter after a fused join reads the joined result", async () => {
   const sdb = new SimpleDB();
   try {
     const left = sdb.newTable('left"table').loadArray([{ key: 1 }, { key: 2 }]);
-    const right = sdb.newTable("right").loadArray([{ key: 1, value: 10 }, {
-      key: 2,
-      value: 20,
-    }]);
-    assertEquals(
-      await left.join(right, { on: "key" }).selectColumns("value")
-        .filter('value > (SELECT AVG(value) FROM "left""table")').getData(),
-      [{ value: 20 }],
-    );
+    const right = sdb.newTable("right").loadArray([
+      { key: 1, value: 10 },
+      {
+        key: 2,
+        value: 20,
+      },
+    ]);
+    expect(
+      await left
+        .join(right, { on: "key" })
+        .selectColumns("value")
+        .filter('value > (SELECT AVG(value) FROM "left""table")')
+        .getData(),
+    ).toStrictEqual([{ value: 20 }]);
   } finally {
     await sdb.close();
   }
 });
 
 for (const failure of ["validation", "execution"]) {
-  Deno.test(`a downstream ${failure} failure preserves the successful join and other queued work`, async () => {
+  test(`a downstream ${failure} failure preserves the successful join and other queued work`, async () => {
     const sdb = new SimpleDB();
     try {
       const left = sdb.newTable("left").loadArray([{ key: 1 }]);
@@ -480,15 +494,15 @@ for (const failure of ["validation", "execution"]) {
       else joined.filter("missing > 0");
       right.filter("value > 20");
       await assertRejects(() => joined.run());
-      assertEquals(await joined.getData(), [{ key: 1, value: 10 }]);
-      assertEquals(await right.getData(), []);
+      expect(await joined.getData()).toStrictEqual([{ key: 1, value: 10 }]);
+      expect(await right.getData()).toStrictEqual([]);
     } finally {
       await sdb.close();
     }
   });
 }
 
-Deno.test("join sources do not collide with generated CTE names", async () => {
+test("join sources do not collide with generated CTE names", async () => {
   const sdb = new SimpleDB();
   try {
     const left = sdb.newTable("s1");
@@ -501,15 +515,12 @@ Deno.test("join sources do not collide with generated CTE names", async () => {
       queries.push(query);
       return original(query, connection, returnData, options);
     };
-    assertEquals(
-      await left.join(right, { on: "key" }).selectColumns("value").getData(),
-      [{ value: 10 }],
-    );
-    assertEquals(
-      queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE"))
-        .length,
-      1,
-    );
+    expect(await left.join(right, { on: "key" }).selectColumns("value").getData()).toStrictEqual([
+      { value: 10 },
+    ]);
+    expect(
+      queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE")).length,
+    ).toStrictEqual(1);
   } finally {
     await sdb.close();
   }

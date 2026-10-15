@@ -1,4 +1,7 @@
-import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import SDAError from "../../../src/class/SDAError.ts";
@@ -20,7 +23,7 @@ const data = [
   { name: "a", value: 1 },
 ];
 
-Deno.test("should fuse consecutive builder methods into a single statement", async () => {
+test("should fuse consecutive builder methods into a single statement", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("fused");
   const queries = spyOnQueries(table);
@@ -32,22 +35,20 @@ Deno.test("should fuse consecutive builder methods into a single statement", asy
     .selectColumns(["name", "double"])
     .getData();
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "b", double: 4 },
     { name: "c", double: 6 },
   ]);
 
-  const createStatements = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "fused"`)
-  );
-  assertEquals(createStatements.length, 1);
+  const createStatements = queries.filter((q) => q.includes(`CREATE OR REPLACE TABLE "fused"`));
+  expect(createStatements.length).toStrictEqual(1);
   assert(createStatements[0].includes('WITH "s1" AS'));
   assert(createStatements[0].includes('"s3"'));
 
   await sdb.close();
 });
 
-Deno.test("should fuse loadData with schema-dependent transforms", async () => {
+test("should fuse loadData with schema-dependent transforms", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sourceFused");
   const queries = spyOnQueries(table);
@@ -59,7 +60,7 @@ Deno.test("should fuse loadData with schema-dependent transforms", async () => {
     .addColumn("doubleKey2", "double", "key2 * 2")
     .getData();
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, doubleKey2: 2 },
     { key1: "Fraise", key2: 11, key3: 2.345, doubleKey2: 22 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, doubleKey2: 4 },
@@ -67,28 +68,23 @@ Deno.test("should fuse loadData with schema-dependent transforms", async () => {
   ]);
 
   const createStatements = queries.filter((query) =>
-    query.includes('CREATE OR REPLACE TABLE "sourceFused"')
+    query.includes('CREATE OR REPLACE TABLE "sourceFused"'),
   );
-  assertEquals(createStatements.length, 1);
+  expect(createStatements.length).toStrictEqual(1);
   assert(createStatements[0].includes("read_json_auto"));
   assert(createStatements[0].includes('"s4"'));
 
   await sdb.close();
 });
 
-Deno.test("should compose supported loadData table functions as sources", async () => {
+test("should compose supported loadData table functions as sources", async () => {
   const sdb = new SimpleDB();
   const cases = [
     {
       name: "sourceCsv",
       file: "test/data/files/data.csv",
       column: "key1",
-      expected: [
-        { key1: "1" },
-        { key1: "3" },
-        { key1: "8" },
-        { key1: "brioche" },
-      ],
+      expected: [{ key1: "1" }, { key1: "3" }, { key1: "8" }, { key1: "brioche" }],
     },
     {
       name: "sourceJson",
@@ -106,35 +102,26 @@ Deno.test("should compose supported loadData table functions as sources", async 
       name: "sourceExcel",
       file: "test/data/files/populations-one-sheet.xlsx",
       column: "Country",
-      expected: [
-        { Country: "Canada" },
-        { Country: "US" },
-        { Country: "France" },
-      ],
+      expected: [{ Country: "Canada" }, { Country: "US" }, { Country: "France" }],
     },
   ];
 
   for (const testCase of cases) {
     const table = sdb.newTable(testCase.name);
     const queries = spyOnQueries(table);
-    const result = await table
-      .loadData(testCase.file)
-      .selectColumns(testCase.column)
-      .getData();
+    const result = await table.loadData(testCase.file).selectColumns(testCase.column).getData();
 
-    assertEquals(result, testCase.expected);
-    assertEquals(
-      queries.filter((query) =>
-        query.includes(`CREATE OR REPLACE TABLE "${testCase.name}"`)
-      ).length,
-      1,
-    );
+    expect(result).toStrictEqual(testCase.expected);
+    expect(
+      queries.filter((query) => query.includes(`CREATE OR REPLACE TABLE "${testCase.name}"`))
+        .length,
+    ).toStrictEqual(1);
   }
 
   await sdb.close();
 });
 
-Deno.test("should close a source segment before a repeated load", async () => {
+test("should close a source segment before a repeated load", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("repeatedSource");
 
@@ -146,8 +133,8 @@ Deno.test("should close a source segment before a repeated load", async () => {
 
   const error = await assertRejects(() => table.getData());
   assert(error instanceof SDAError);
-  assertEquals(error.method, "loadData()");
-  assertEquals(await table.getData(), [
+  expect(error.method).toStrictEqual("loadData()");
+  expect(await table.getData()).toStrictEqual([
     { key1: "Fraise", key2: 11, key3: 2.345 },
     { key1: "Fraise", key2: 22, key3: 12.3434 },
   ]);
@@ -155,7 +142,7 @@ Deno.test("should close a source segment before a repeated load", async () => {
   await sdb.close();
 });
 
-Deno.test("should attribute a downstream source-fusion failure", async () => {
+test("should attribute a downstream source-fusion failure", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sourceAttribution");
 
@@ -164,80 +151,69 @@ Deno.test("should attribute a downstream source-fusion failure", async () => {
       .loadData("test/data/files/data.json")
       .filter("missing_column > 1")
       .addColumn("double", "number", "key1 * 2")
-      .getData()
+      .getData(),
   );
 
   assert(error instanceof SDAError);
-  assertEquals(error.method, "filter()");
-  assertEquals(await table.getRowCount(), 4);
+  expect(error.method).toStrictEqual("filter()");
+  expect(await table.getRowCount()).toStrictEqual(4);
 
   await sdb.close();
 });
 
-Deno.test("should materialize source sampling only when seeded", async () => {
+test("should materialize source sampling only when seeded", async () => {
   const sdb = new SimpleDB();
 
   const unseeded = sdb.newTable("unseededSourceSample");
   const unseededQueries = spyOnQueries(unseeded);
-  assertEquals(
-    (await unseeded
-      .loadData("test/data/files/employees.csv")
-      .sample(5)
-      .getData()).length,
-    5,
-  );
-  assertEquals(
+  expect(
+    (await unseeded.loadData("test/data/files/employees.csv").sample(5).getData()).length,
+  ).toStrictEqual(5);
+  expect(
     unseededQueries.filter((query) =>
-      query.includes('CREATE OR REPLACE TABLE "unseededSourceSample"')
+      query.includes('CREATE OR REPLACE TABLE "unseededSourceSample"'),
     ).length,
-    1,
-  );
+  ).toStrictEqual(1);
 
   const seeded = sdb.newTable("seededSourceSample");
   const seededQueries = spyOnQueries(seeded);
-  assertEquals(
-    (await seeded
-      .loadData("test/data/files/employees.csv")
-      .sample(5, { seed: 10 })
-      .getData()).length,
-    5,
-  );
-  assertEquals(
-    seededQueries.filter((query) =>
-      query.includes('CREATE OR REPLACE TABLE "seededSourceSample"')
-    ).length,
-    2,
-  );
+  expect(
+    (await seeded.loadData("test/data/files/employees.csv").sample(5, { seed: 10 }).getData())
+      .length,
+  ).toStrictEqual(5);
+  expect(
+    seededQueries.filter((query) => query.includes('CREATE OR REPLACE TABLE "seededSourceSample"'))
+      .length,
+  ).toStrictEqual(2);
 
   await sdb.close();
 });
 
-Deno.test("should materialize an untyped source before spatial transforms", async () => {
+test("should materialize an untyped source before spatial transforms", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sourceSpatial");
   const queries = spyOnQueries(table);
 
-  assertEquals(
+  expect(
     await table
       .loadData("test/geodata/files/coordinates.csv")
       .convert({ lat: "double", lon: "double" })
       .createPoints("lat", "lon", "geom")
       .selectColumns("geom")
       .getRowCount(),
-    3,
-  );
+  ).toStrictEqual(3);
 
   const createStatements = queries.filter((query) =>
-    query.includes('CREATE OR REPLACE TABLE "sourceSpatial"')
+    query.includes('CREATE OR REPLACE TABLE "sourceSpatial"'),
   );
-  assertEquals(createStatements.length, 2);
+  expect(createStatements.length).toStrictEqual(2);
   assert(createStatements[0].includes("read_csv_auto"));
   assert(createStatements[1].includes("ST_Point"));
 
   await sdb.close();
 });
 
-Deno.test("should fuse REPLACE-style column updates into the chain", async () => {
+test("should fuse REPLACE-style column updates into the chain", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("replaceFused");
   const queries = spyOnQueries(table);
@@ -249,21 +225,18 @@ Deno.test("should fuse REPLACE-style column updates into the chain", async () =>
     .capitalize("name")
     .getData();
 
-  assertEquals(result, [
-    { name: "Bob" },
-    { name: "Alice" },
-  ]);
+  expect(result).toStrictEqual([{ name: "Bob" }, { name: "Alice" }]);
 
   const createStatements = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "replaceFused"`)
+    q.includes(`CREATE OR REPLACE TABLE "replaceFused"`),
   );
-  assertEquals(createStatements.length, 1);
+  expect(createStatements.length).toStrictEqual(1);
   assert(createStatements[0].includes('WITH "s1" AS'));
 
   await sdb.close();
 });
 
-Deno.test("should produce the same results in statement style", async () => {
+test("should produce the same results in statement style", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("statements");
 
@@ -273,7 +246,7 @@ Deno.test("should produce the same results in statement style", async () => {
   table.selectColumns(["name", "double"]);
   const result = await table.getData();
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "b", double: 4 },
     { name: "c", double: 6 },
   ]);
@@ -281,7 +254,7 @@ Deno.test("should produce the same results in statement style", async () => {
   await sdb.close();
 });
 
-Deno.test("should resolve mid-chain schemas for schema-dependent methods", async () => {
+test("should resolve mid-chain schemas for schema-dependent methods", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("midChainSchema");
 
@@ -293,12 +266,12 @@ Deno.test("should resolve mid-chain schemas for schema-dependent methods", async
     .convert({ asString: "number" })
     .getData();
 
-  assertEquals(result, [{ value: 1, asString: 2000 }]);
+  expect(result).toStrictEqual([{ value: 1, asString: 2000 }]);
 
   await sdb.close();
 });
 
-Deno.test("should normalize logical operators without affecting concat functions", async () => {
+test("should normalize logical operators without affecting concat functions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("fragments");
 
@@ -309,12 +282,12 @@ Deno.test("should normalize logical operators without affecting concat functions
     .addColumn("c", "string", `concat(a, b)`)
     .getData();
 
-  assertEquals(result, [{ a: "x", b: "y", n: 1, c: "xy" }]);
+  expect(result).toStrictEqual([{ a: "x", b: "y", n: 1, c: "xy" }]);
 
   await sdb.close();
 });
 
-Deno.test("should attribute a fused failure to the culprit method", async () => {
+test("should attribute a fused failure to the culprit method", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("attribution");
 
@@ -323,16 +296,16 @@ Deno.test("should attribute a fused failure to the culprit method", async () => 
       .loadArray(data)
       .filter(`nonExistentColumn > 1`)
       .addColumn("double", "number", `value * 2`)
-      .getData()
+      .getData(),
   );
 
   assert(error instanceof SDAError);
-  assertEquals(error.method, "filter()");
+  expect(error.method).toStrictEqual("filter()");
 
   await sdb.close();
 });
 
-Deno.test("should throw at the observation point when convert() references a missing column", async () => {
+test("should throw at the observation point when convert() references a missing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("convertValidation");
 
@@ -342,31 +315,26 @@ Deno.test("should throw at the observation point when convert() references a mis
   const error = await assertRejects(() => table.getData());
   assert(
     error instanceof Error &&
-      error.message.includes(
-        "The column nonExistentColumn does not exist in the table.",
-      ),
+      error.message.includes("The column nonExistentColumn does not exist in the table."),
   );
 
   await sdb.close();
 });
 
-Deno.test("should execute queued methods with run()", async () => {
+test("should execute queued methods with run()", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("run");
 
-  await table
-    .loadArray(data)
-    .filter(`value > 1`)
-    .run();
+  await table.loadArray(data).filter(`value > 1`).run();
 
-  assertEquals(table.pendingOps.length, 0);
+  expect(table.pendingOps.length).toStrictEqual(0);
   const rowCount = await table.getRowCount();
-  assertEquals(rowCount, 2);
+  expect(rowCount).toStrictEqual(2);
 
   await sdb.close();
 });
 
-Deno.test("should flush queued methods before an unconverted async method runs", async () => {
+test("should flush queued methods before an unconverted async method runs", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("ordering");
 
@@ -377,7 +345,7 @@ Deno.test("should flush queued methods before an unconverted async method runs",
   table.sort({ name: "desc" });
   const result = await table.getData();
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "c", value: 3 },
     { name: "b", value: 2 },
   ]);
@@ -385,7 +353,7 @@ Deno.test("should flush queued methods before an unconverted async method runs",
   await sdb.close();
 });
 
-Deno.test("should flush a table's queued methods when another table observes", async () => {
+test("should flush a table's queued methods when another table observes", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("flushAllA");
   const tableB = sdb.newTable("flushAllB");
@@ -395,13 +363,13 @@ Deno.test("should flush a table's queued methods when another table observes", a
 
   // Observing B flushes A too, preserving program order across tables.
   await tableB.getData();
-  assertEquals(tableA.pendingOps.length, 0);
-  assertEquals(await sdb.hasTable("flushAllA"), true);
+  expect(tableA.pendingOps.length).toStrictEqual(0);
+  expect(await sdb.hasTable("flushAllA")).toStrictEqual(true);
 
   await sdb.close();
 });
 
-Deno.test("should replay interleaved operations across tables in program order", async () => {
+test("should replay interleaved operations across tables in program order", async () => {
   const sdb = new SimpleDB();
   const tableA = sdb.newTable("orderA");
   const tableB = sdb.newTable("orderB");
@@ -424,28 +392,22 @@ Deno.test("should replay interleaved operations across tables in program order",
   const resultA = await tableA.getData();
   const resultB = await tableB.getData();
 
-  assertEquals(resultA, [{ name: "b" }, { name: "c" }]);
-  assertEquals(resultB, [{ n: 1, m: 10 }]);
+  expect(resultA).toStrictEqual([{ name: "b" }, { name: "c" }]);
+  expect(resultB).toStrictEqual([{ n: 1, m: 10 }]);
 
   // Table switches split fused segments so the statements execute in the
   // same database-wide order in which the methods were called.
   const creates = queries.filter((q) => q.includes("CREATE OR REPLACE TABLE"));
-  const iFilter = creates.findIndex((q) =>
-    q.includes(`"orderA"`) && q.includes("WHERE")
-  );
-  const iAddColumn = creates.findIndex((q) =>
-    q.includes(`"orderB"`) && q.includes(`"m"`)
-  );
-  const iSelect = creates.findIndex((q) =>
-    q.includes(`"orderA"`) && q.includes(`SELECT "name"`)
-  );
+  const iFilter = creates.findIndex((q) => q.includes(`"orderA"`) && q.includes("WHERE"));
+  const iAddColumn = creates.findIndex((q) => q.includes(`"orderB"`) && q.includes(`"m"`));
+  const iSelect = creates.findIndex((q) => q.includes(`"orderA"`) && q.includes(`SELECT "name"`));
   assert(iFilter !== -1 && iAddColumn !== -1 && iSelect !== -1);
   assert(iFilter < iAddColumn && iAddColumn < iSelect);
 
   await sdb.close();
 });
 
-Deno.test("should join with the other table's state at the join's position in program order", async () => {
+test("should join with the other table's state at the join's position in program order", async () => {
   const sdb = new SimpleDB();
   const left = sdb.newTable("joinLeft");
   const right = sdb.newTable("joinRight");
@@ -467,13 +429,13 @@ Deno.test("should join with the other table's state at the join's position in pr
   right.filter(`pop > 1000`);
 
   const result = await output.getData();
-  assertEquals(result, [{ id: 2, city: "Toronto", pop: 200 }]);
-  assertEquals(await right.getData(), []);
+  expect(result).toStrictEqual([{ id: 2, city: "Toronto", pop: 200 }]);
+  expect(await right.getData()).toStrictEqual([]);
 
   await sdb.close();
 });
 
-Deno.test("should chain sync builders off a sync join", async () => {
+test("should chain sync builders off a sync join", async () => {
   const sdb = new SimpleDB();
   const left = sdb.newTable("chainJoinLeft");
   const right = sdb.newTable("chainJoinRight");
@@ -494,12 +456,12 @@ Deno.test("should chain sync builders off a sync join", async () => {
     .selectColumns(["city", "pop"])
     .getData();
 
-  assertEquals(result, [{ city: "Toronto", pop: 200 }]);
+  expect(result).toStrictEqual([{ city: "Toronto", pop: 200 }]);
 
   await sdb.close();
 });
 
-Deno.test("should surface join validation errors at the observation point", async () => {
+test("should surface join validation errors at the observation point", async () => {
   const sdb = new SimpleDB();
   const left = sdb.newTable("joinErrLeft");
   const right = sdb.newTable("joinErrRight");
@@ -510,15 +472,14 @@ Deno.test("should surface join validation errors at the observation point", asyn
 
   const error = await assertRejects(() => left.getData());
   assert(error instanceof Error);
-  assertEquals(
-    error.message,
+  expect(error.message).toStrictEqual(
     `join() cannot infer a join column because tables "joinErrLeft" and "joinErrRight" have no columns in common. Pass { on: "column" } after ensuring that column exists in both tables.`,
   );
 
   await sdb.close();
 });
 
-Deno.test("should fuse row filters, string updates and sort into one statement", async () => {
+test("should fuse row filters, string updates and sort into one statement", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("bigChain");
   const queries = spyOnQueries(table);
@@ -541,29 +502,25 @@ Deno.test("should fuse row filters, string updates and sort into one statement",
     .sort({ name: "desc" })
     .getData();
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "ch3rry", value: 0, label: "ch3rry-0.0" },
     { name: "banana", value: 2, label: "banana-2.0" },
     { name: "appl3", value: 1, label: "appl3-1.0" },
   ]);
 
-  const createStatements = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "bigChain"`)
-  );
-  assertEquals(createStatements.length, 1);
+  const createStatements = queries.filter((q) => q.includes(`CREATE OR REPLACE TABLE "bigChain"`));
+  expect(createStatements.length).toStrictEqual(1);
   assert(createStatements[0].includes("s8"));
 
   await sdb.close();
 });
 
-Deno.test("should fuse geospatial operations with regular ones, loading spatial once", async () => {
+test("should fuse geospatial operations with regular ones, loading spatial once", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoFused");
   const queries = spyOnQueries(table);
 
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const result = await table
     .centroid("centroid")
@@ -573,19 +530,19 @@ Deno.test("should fuse geospatial operations with regular ones, loading spatial 
     .round("area")
     .getData();
 
-  assertEquals(result, [{ nameEnglish: "Quebec", area: 1508203 }]);
+  expect(result).toStrictEqual([{ nameEnglish: "Quebec", area: 1508203 }]);
 
   // One fused statement for the whole chain after the load.
   const createStatements = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "geoFused" AS WITH`)
+    q.includes(`CREATE OR REPLACE TABLE "geoFused" AS WITH`),
   );
-  assertEquals(createStatements.length, 1);
+  expect(createStatements.length).toStrictEqual(1);
   assert(createStatements[0].includes("s5"));
 
   await sdb.close();
 });
 
-Deno.test("logSQL observes one fused statement without changing execution", async () => {
+test("logSQL observes one fused statement without changing execution", async () => {
   const sdb = new SimpleDB({ logSQL: true });
   await sdb.start();
   const table = sdb.newTable("loggedFusion");
@@ -605,22 +562,22 @@ Deno.test("logSQL observes one fused statement without changing execution", asyn
     console.log = originalLog;
   }
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "b", value: 2, double: 4 },
     { name: "c", value: 3, double: 6 },
   ]);
 
   const createStatements = queries.filter((q) =>
-    q.includes(`CREATE OR REPLACE TABLE "loggedFusion"`)
+    q.includes(`CREATE OR REPLACE TABLE "loggedFusion"`),
   );
-  assertEquals(createStatements.length, 1);
+  expect(createStatements.length).toStrictEqual(1);
   assert(createStatements[0].includes('WITH "s1" AS'));
   assert(logs.includes(createStatements[0]));
 
   await sdb.close();
 });
 
-Deno.test("explainSQL logs a plan for a fused statement without changing its result", async () => {
+test("explainSQL logs a plan for a fused statement without changing its result", async () => {
   const sdb = new SimpleDB({ explainSQL: true });
   await sdb.start();
   const table = sdb.newTable("explainedFusion");
@@ -638,20 +595,18 @@ Deno.test("explainSQL logs a plan for a fused statement without changing its res
     console.log = originalLog;
   }
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "b", value: 2 },
     { name: "c", value: 3 },
   ]);
   assert(
-    logs.some((message) =>
-      message.includes("EXPLAIN") && message.includes("explainedFusion")
-    ),
+    logs.some((message) => message.includes("EXPLAIN") && message.includes("explainedFusion")),
   );
 
   await sdb.close();
 });
 
-Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", async () => {
+test("explainSQL skips unsupported statements and never blocks valid SQL", async () => {
   const sdb = new SimpleDB({ explainSQL: true });
   const warnings: string[] = [];
   const originalWarn = console.warn;
@@ -659,7 +614,7 @@ Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", 
   try {
     // ATTACH and SET during setup are intentionally not explained.
     await sdb.start();
-    assertEquals(warnings, []);
+    expect(warnings).toStrictEqual([]);
 
     // DuckDB executes CREATE TEMPORARY SECRET but does not support prefixing
     // it with EXPLAIN. The explanation warning must not block execution.
@@ -670,17 +625,17 @@ Deno.test("explainSQL skips unsupported statements and never blocks valid SQL", 
     console.warn = originalWarn;
   }
 
-  assertEquals(warnings.length, 1);
+  expect(warnings.length).toStrictEqual(1);
   assert(warnings[0].includes("executing it normally"));
   const secrets = await sdb.customQuery(
     `SELECT name FROM duckdb_secrets() WHERE name = 'issue86_secret'`,
     { returnData: true },
   );
-  assertEquals(secrets, [{ name: "issue86_secret" }]);
+  expect(secrets).toStrictEqual([{ name: "issue86_secret" }]);
   await sdb.close();
 });
 
-Deno.test("close() executes queued methods before cleaning up", async () => {
+test("close() executes queued methods before cleaning up", async () => {
   const tempDir = "./test/output/pending_memory.tmp";
   const sdb = new SimpleDB({ tempDir });
   await sdb.start();
@@ -693,17 +648,13 @@ Deno.test("close() executes queued methods before cleaning up", async () => {
   const queries = spyOnQueries(table);
   await sdb.close();
 
-  assert(
-    queries.some((query) =>
-      query.includes('CREATE OR REPLACE TABLE "neverExecuted"')
-    ),
-  );
-  assertEquals(table.pendingOps.length, 0);
-  assertEquals(existsSync(tempDir), false);
+  assert(queries.some((query) => query.includes('CREATE OR REPLACE TABLE "neverExecuted"')));
+  expect(table.pendingOps.length).toStrictEqual(0);
+  expect(existsSync(tempDir)).toStrictEqual(false);
   await assertRejects(() => sdb.connection.run("SELECT 1"));
 });
 
-Deno.test("methods reject clearly after close()", async () => {
+test("methods reject clearly after close()", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("closed");
   await sdb.close();
@@ -720,21 +671,23 @@ Deno.test("methods reject clearly after close()", async () => {
   );
 });
 
-Deno.test("table names in SQL literals and comments preserve fusion", async () => {
+test("table names in SQL literals and comments preserve fusion", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("literalFusion");
     await table.loadArray([{ x: 1 }, { x: 2 }, { x: 3 }]).run();
     const queries = spyOnQueries(table);
-    const result = await table.filter("x > 1")
+    const result = await table
+      .filter("x > 1")
       .filter(`x > 2 AND 'literalFusion' = $tag$literalFusion$tag$
         /* literalFusion /* nested */ */ -- literalFusion
-      `).getData();
-    assertEquals(result, [{ x: 3 }]);
+      `)
+      .getData();
+    expect(result).toStrictEqual([{ x: 3 }]);
     const creates = queries.filter((query) =>
-      query.includes('CREATE OR REPLACE TABLE "literalFusion"')
+      query.includes('CREATE OR REPLACE TABLE "literalFusion"'),
     );
-    assertEquals(creates.length, 1);
+    expect(creates.length).toStrictEqual(1);
     assert(creates[0].includes('WITH "s1" AS'));
   } finally {
     await sdb.close();

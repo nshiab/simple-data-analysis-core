@@ -24,9 +24,9 @@ export default function assertNewColumns(
   for (const column of newColumns) {
     if (schema[column] !== undefined && !allowInPlace.includes(column)) {
       throw new Error(
-        `${method} the column ${
-          quoteIdentifier(column)
-        } already exists. Remove it first or choose a different name for the new column.`,
+        `${method} the column ${quoteIdentifier(
+          column,
+        )} already exists. Remove it first or choose a different name for the new column.`,
       );
     }
   }

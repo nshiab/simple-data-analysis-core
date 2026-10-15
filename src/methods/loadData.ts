@@ -82,7 +82,8 @@ function knownSourceSchema(
     return undefined;
   }
   const extension = getExtension(files[0]);
-  const textSource = options.fileType === "csv" ||
+  const textSource =
+    options.fileType === "csv" ||
     options.fileType === "dsv" ||
     options.fileType === "excel" ||
     extension === "csv" ||
@@ -90,45 +91,25 @@ function knownSourceSchema(
     typeof options.delim === "string";
   if (!textSource) return undefined;
   if (options.allText === true) {
-    return Object.fromEntries(
-      options.columns.map((column) => [column, "VARCHAR"]),
-    );
+    return Object.fromEntries(options.columns.map((column) => [column, "VARCHAR"]));
   }
   if (
     options.columnTypes !== undefined &&
-    options.columns.every((column) =>
-      options.columnTypes?.[column] !== undefined
-    )
+    options.columns.every((column) => options.columnTypes?.[column] !== undefined)
   ) {
     return Object.fromEntries(
-      options.columns.map((column) => [
-        column,
-        options.columnTypes![column].toUpperCase(),
-      ]),
+      options.columns.map((column) => [column, options.columnTypes![column].toUpperCase()]),
     );
   }
   return undefined;
 }
 
-export function loadDataQuery(
-  table: string,
-  files: string[],
-  options: LoadDataOptions = {},
-) {
-  return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS ${
-    loadDataSelect(files, options)
-  };`;
+export function loadDataQuery(table: string, files: string[], options: LoadDataOptions = {}) {
+  return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS ${loadDataSelect(files, options)};`;
 }
 
-function loadDataSelect(
-  files: string[],
-  options: LoadDataOptions = {},
-) {
-  if (
-    Object.values(options.columnTypes ?? {}).some((type) =>
-      /^\s*geometry\b/i.test(type)
-    )
-  ) {
+function loadDataSelect(files: string[], options: LoadDataOptions = {}) {
+  if (Object.values(options.columnTypes ?? {}).some((type) => /^\s*geometry\b/i.test(type))) {
     throw new Error(
       "Geometry column types are not supported by loadData(). Use loadGeoData() instead.",
     );
@@ -138,50 +119,42 @@ function loadDataSelect(
     options.fileType !== undefined &&
     !["csv", "dsv", "json", "parquet", "excel"].includes(options.fileType)
   ) {
-    throw unsupportedFileTypeError(
-      files[0],
-      options.fileType,
-      fileExtension,
-    );
+    throw unsupportedFileTypeError(files[0], options.fileType, fileExtension);
   }
-  const filesAsString = "[" +
-    files.map((file) => parseValue(file)).join(", ") +
-    "]";
+  const filesAsString = "[" + files.map((file) => parseValue(file)).join(", ") + "]";
 
   // Column selection: throw for Excel, build SELECT list for others
   const isExcel = options.fileType === "excel" || fileExtension === "xlsx";
   if (options.columns && options.columns.length > 0 && isExcel) {
-    throw new Error(
-      "The 'columns' option is not supported for Excel files.",
-    );
+    throw new Error("The 'columns' option is not supported for Excel files.");
   }
-  const selectColumns = options.columns && options.columns.length > 0
-    ? options.columns.map((c) => `${quoteIdentifier(c)}`).join(", ")
-    : "*";
+  const selectColumns =
+    options.columns && options.columns.length > 0
+      ? options.columns.map((c) => `${quoteIdentifier(c)}`).join(", ")
+      : "*";
 
   // General options, except for parquet
-  const autoDetect = typeof options.autoDetect === "boolean"
-    ? `, auto_detect=${String(options.autoDetect).toUpperCase()}`
-    : ", auto_detect=TRUE";
+  const autoDetect =
+    typeof options.autoDetect === "boolean"
+      ? `, auto_detect=${String(options.autoDetect).toUpperCase()}`
+      : ", auto_detect=TRUE";
   const columnTypes = options.columnTypes
-    ? `${
-      Object.entries(options.columnTypes).map(([column, type]) =>
-        `${parseValue(column)}: ${parseValue(type)}`
-      ).join(", ")
-    }`
+    ? `${Object.entries(options.columnTypes)
+        .map(([column, type]) => `${parseValue(column)}: ${parseValue(type)}`)
+        .join(", ")}`
     : null;
-  const includeFilename = typeof options.includeFilename === "boolean"
-    ? `, filename=${String(options.includeFilename).toUpperCase()}`
-    : "";
-  const unifyColumns = typeof options.unifyColumns === "boolean"
-    ? `, union_by_name=${String(options.unifyColumns).toUpperCase()}`
-    : "";
+  const includeFilename =
+    typeof options.includeFilename === "boolean"
+      ? `, filename=${String(options.includeFilename).toUpperCase()}`
+      : "";
+  const unifyColumns =
+    typeof options.unifyColumns === "boolean"
+      ? `, union_by_name=${String(options.unifyColumns).toUpperCase()}`
+      : "";
   const generalOptions = `${autoDetect}${includeFilename}${unifyColumns}`;
 
   const conditions = options.conditions ? ` WHERE ${options.conditions}` : "";
-  const limit = typeof options.limit === "number"
-    ? ` LIMIT ${options.limit}`
-    : "";
+  const limit = typeof options.limit === "number" ? ` LIMIT ${options.limit}` : "";
 
   if (
     options.fileType === "csv" ||
@@ -189,26 +162,22 @@ function loadDataSelect(
     options.fileType === "dsv" ||
     typeof options.delim === "string"
   ) {
-    const header = typeof options.header === "boolean"
-      ? `, header=${String(options.header).toUpperCase()}`
-      : ", header=TRUE";
-    const allText = typeof options.allText === "boolean"
-      ? `, all_varchar=${String(options.allText).toUpperCase()}`
-      : "";
+    const header =
+      typeof options.header === "boolean"
+        ? `, header=${String(options.header).toUpperCase()}`
+        : ", header=TRUE";
+    const allText =
+      typeof options.allText === "boolean"
+        ? `, all_varchar=${String(options.allText).toUpperCase()}`
+        : "";
     const delim = options.delim ? `, delim=${parseValue(options.delim)}` : "";
     const skip = options.skip ? `, skip=${options.skip}` : "";
-    const ignoreErrors = options.ignoreErrors
-      ? `, ignore_errors	=${options.ignoreErrors}`
-      : "";
-    const nullPadding = options.nullPadding
-      ? `, null_padding=${options.nullPadding}`
-      : "";
+    const ignoreErrors = options.ignoreErrors ? `, ignore_errors	=${options.ignoreErrors}` : "";
+    const nullPadding = options.nullPadding ? `, null_padding=${options.nullPadding}` : "";
     const compression = options.compression
       ? `, compression=${parseValue(options.compression)}`
       : "";
-    const encoding = options.encoding
-      ? `, encoding=${parseValue(options.encoding)}`
-      : "";
+    const encoding = options.encoding ? `, encoding=${parseValue(options.encoding)}` : "";
     const strict = options.strict === false ? `, strict_mode=FALSE` : "";
     const types = columnTypes === null ? "" : `, types={${columnTypes}}`;
 
@@ -217,17 +186,14 @@ function loadDataSelect(
     // DuckDB expects "newline_delimited" (snake_case), unlike the other two
     // format values, which already match the public camelCase option.
     const jsonFormat = options.jsonFormat
-      ? `, format=${
-        parseValue(
-          options.jsonFormat === "newlineDelimited"
-            ? "newline_delimited"
-            : options.jsonFormat,
-        )
-      }`
+      ? `, format=${parseValue(
+          options.jsonFormat === "newlineDelimited" ? "newline_delimited" : options.jsonFormat,
+        )}`
       : "";
-    const records = typeof options.records === "boolean"
-      ? `, records=${String(options.records).toUpperCase()}`
-      : "";
+    const records =
+      typeof options.records === "boolean"
+        ? `, records=${String(options.records).toUpperCase()}`
+        : "";
     const columns = columnTypes === null ? "" : `, columns={${columnTypes}}`;
     return `SELECT ${selectColumns} FROM read_json_auto(${filesAsString}${generalOptions}${columns}${jsonFormat}${records})${conditions}${limit}`;
   } else if (options.fileType === "parquet" || fileExtension === "parquet") {
@@ -239,22 +205,20 @@ function loadDataSelect(
       );
     }
 
-    const header = typeof options.header === "boolean"
-      ? `, header=${String(options.header).toUpperCase()}`
-      : ", header=TRUE";
-    const allText = typeof options.allText === "boolean"
-      ? `, all_varchar=${String(options.allText).toUpperCase()}`
-      : "";
+    const header =
+      typeof options.header === "boolean"
+        ? `, header=${String(options.header).toUpperCase()}`
+        : ", header=TRUE";
+    const allText =
+      typeof options.allText === "boolean"
+        ? `, all_varchar=${String(options.allText).toUpperCase()}`
+        : "";
 
     return `SELECT ${selectColumns} FROM read_xlsx(${parseValue(files[0])}${
       options.sheet ? `, sheet=${parseValue(options.sheet)}` : ""
     }${header}${allText})${conditions}${limit}`;
   } else {
-    throw unsupportedFileTypeError(
-      files[0],
-      options.fileType,
-      fileExtension,
-    );
+    throw unsupportedFileTypeError(files[0], options.fileType, fileExtension);
   }
 }
 
@@ -265,10 +229,10 @@ function unsupportedFileTypeError(
 ): Error {
   const receivedFileType = JSON.stringify(fileType) ?? String(fileType);
   return new Error(
-    `loadData() could not determine a supported file type for ${
-      JSON.stringify(file)
-    }. options.fileType: ${receivedFileType}. Detected extension: ${
-      JSON.stringify(`.${fileExtension}`)
-    }. Supported file types: "csv", "dsv", "json", "parquet", and "excel" (for .xlsx files).`,
+    `loadData() could not determine a supported file type for ${JSON.stringify(
+      file,
+    )}. options.fileType: ${receivedFileType}. Detected extension: ${JSON.stringify(
+      `.${fileExtension}`,
+    )}. Supported file types: "csv", "dsv", "json", "parquet", and "excel" (for .xlsx files).`,
   );
 }

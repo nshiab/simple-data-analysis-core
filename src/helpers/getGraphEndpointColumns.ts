@@ -45,9 +45,7 @@ export default function getGraphEndpointColumns(
   if (missing.length > 0) {
     const plural = missing.length > 1;
     throw new Error(
-      `${method} the column${plural ? "s" : ""} ${
-        missing.map(quoteIdentifier).join(", ")
-      } ${
+      `${method} the column${plural ? "s" : ""} ${missing.map(quoteIdentifier).join(", ")} ${
         plural ? "do" : "does"
       } not exist. Check for typos, or load the data first.`,
     );
@@ -58,22 +56,21 @@ export default function getGraphEndpointColumns(
   const sourceKind = typeKind(sourceType);
   const targetKind = typeKind(targetType);
   if (sourceKind === undefined || targetKind === undefined) {
-    const unsupported = sourceKind === undefined
-      ? { column: source!, type: sourceType }
-      : { column: target!, type: targetType };
+    const unsupported =
+      sourceKind === undefined
+        ? { column: source!, type: sourceType }
+        : { column: target!, type: targetType };
     throw new TypeError(
-      `${method} requires string or numeric endpoint IDs, but column ${
-        quoteIdentifier(unsupported.column)
-      } has type ${unsupported.type}.`,
+      `${method} requires string or numeric endpoint IDs, but column ${quoteIdentifier(
+        unsupported.column,
+      )} has type ${unsupported.type}.`,
     );
   }
   if (sourceKind.family !== targetKind.family) {
     throw new TypeError(
-      `${method} requires compatible source and target ID types, but ${
-        quoteIdentifier(source!)
-      } has type ${sourceType} and ${
-        quoteIdentifier(target!)
-      } has type ${targetType}.`,
+      `${method} requires compatible source and target ID types, but ${quoteIdentifier(
+        source!,
+      )} has type ${sourceType} and ${quoteIdentifier(target!)} has type ${targetType}.`,
     );
   }
 
@@ -102,27 +99,21 @@ export default function getGraphEndpointColumns(
   };
 }
 
-function findColumn(
-  schema: TableSchema,
-  requested: string,
-): string | undefined {
+function findColumn(schema: TableSchema, requested: string): string | undefined {
   const folded = foldIdentifier(requested);
-  return Object.keys(schema).find((column) =>
-    foldIdentifier(column) === folded
-  );
+  return Object.keys(schema).find((column) => foldIdentifier(column) === folded);
 }
 
 function normalizeType(type: string): string {
   return type.toUpperCase().replace(/^REAL$/, "FLOAT");
 }
 
-function typeKind(type: string):
-  | { family: "string" }
-  | { family: "numeric" }
-  | undefined {
+function typeKind(type: string): { family: "string" } | { family: "numeric" } | undefined {
   if (type === "VARCHAR") return { family: "string" };
   if (
-    integerTypes[type] !== undefined || isDecimal(type) || isFloating(type) ||
+    integerTypes[type] !== undefined ||
+    isDecimal(type) ||
+    isFloating(type) ||
     type === "BIGNUM"
   ) {
     return { family: "numeric" };
@@ -130,19 +121,14 @@ function typeKind(type: string):
   return undefined;
 }
 
-function compatibleNumericType(
-  left: string,
-  right: string,
-): string | undefined {
+function compatibleNumericType(left: string, right: string): string | undefined {
   if (left === right) return left;
   if (isFloating(left) || isFloating(right)) {
     return isFloating(left) && isFloating(right) ? "DOUBLE" : undefined;
   }
   if (left === "BIGNUM" || right === "BIGNUM") {
     const other = left === "BIGNUM" ? right : left;
-    return integerTypes[other] !== undefined || decimalScale(other) === 0
-      ? "BIGNUM"
-      : undefined;
+    return integerTypes[other] !== undefined || decimalScale(other) === 0 ? "BIGNUM" : undefined;
   }
 
   const leftInteger = integerTypes[left];
@@ -156,21 +142,14 @@ function compatibleNumericType(
   if (leftDecimal === undefined && rightDecimal === undefined) return undefined;
   const scale = Math.max(leftDecimal?.scale ?? 0, rightDecimal?.scale ?? 0);
   const integerDigits = Math.max(
-    leftDecimal === undefined
-      ? leftInteger!.digits
-      : leftDecimal.precision - leftDecimal.scale,
-    rightDecimal === undefined
-      ? rightInteger!.digits
-      : rightDecimal.precision - rightDecimal.scale,
+    leftDecimal === undefined ? leftInteger!.digits : leftDecimal.precision - leftDecimal.scale,
+    rightDecimal === undefined ? rightInteger!.digits : rightDecimal.precision - rightDecimal.scale,
   );
   const precision = integerDigits + scale;
   return precision <= 38 ? `DECIMAL(${precision},${scale})` : undefined;
 }
 
-function commonIntegerType(
-  left: IntegerType,
-  right: IntegerType,
-): string | undefined {
+function commonIntegerType(left: IntegerType, right: IntegerType): string | undefined {
   if (left.signed === right.signed) {
     const bits = Math.max(left.bits, right.bits);
     return integerTypeName(left.signed, bits);
@@ -192,19 +171,19 @@ function nextBits(bits: number): number {
 function integerTypeName(signed: boolean, bits: number): string | undefined {
   const names = signed
     ? {
-      8: "TINYINT",
-      16: "SMALLINT",
-      32: "INTEGER",
-      64: "BIGINT",
-      128: "HUGEINT",
-    }
+        8: "TINYINT",
+        16: "SMALLINT",
+        32: "INTEGER",
+        64: "BIGINT",
+        128: "HUGEINT",
+      }
     : {
-      8: "UTINYINT",
-      16: "USMALLINT",
-      32: "UINTEGER",
-      64: "UBIGINT",
-      128: "UHUGEINT",
-    };
+        8: "UTINYINT",
+        16: "USMALLINT",
+        32: "UINTEGER",
+        64: "UBIGINT",
+        128: "UHUGEINT",
+      };
   return names[bits as keyof typeof names];
 }
 
@@ -216,13 +195,9 @@ function isDecimal(type: string): boolean {
   return /^DECIMAL\(\d+,\d+\)$/.test(type);
 }
 
-function parseDecimal(
-  type: string,
-): { precision: number; scale: number } | undefined {
+function parseDecimal(type: string): { precision: number; scale: number } | undefined {
   const match = /^DECIMAL\((\d+),(\d+)\)$/.exec(type);
-  return match === null
-    ? undefined
-    : { precision: Number(match[1]), scale: Number(match[2]) };
+  return match === null ? undefined : { precision: Number(match[1]), scale: Number(match[2]) };
 }
 
 function decimalScale(type: string): number | undefined {

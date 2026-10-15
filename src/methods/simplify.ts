@@ -29,9 +29,10 @@ async function executeSimplify(
 ): Promise<void> {
   await ensureSpatial(simpleTable);
 
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable, "simplify()");
+  const column =
+    typeof options.column === "string"
+      ? options.column
+      : await findGeoColumn(simpleTable, "simplify()");
 
   const geoType = await simpleTable.getProjection(column);
 
@@ -47,15 +48,13 @@ async function executeSimplify(
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE ${
-      quoteIdentifier(simpleTable.name)
-    } AS SELECT * REPLACE(ST_CoverageSimplify(ARRAY_AGG(${
-      quoteIdentifier(column)
-    }), ${tolerance}${
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(
+      simpleTable.name,
+    )} AS SELECT * REPLACE(ST_CoverageSimplify(ARRAY_AGG(${quoteIdentifier(column)}), ${tolerance}${
       options.simplifyBoundary === false ? ", FAlSE" : ""
-    })::${geoType} AS ${quoteIdentifier(column)}) FROM ${
-      quoteIdentifier(simpleTable.name)
-    } GROUP BY ${groupBy};`,
+    })::${geoType} AS ${quoteIdentifier(column)}) FROM ${quoteIdentifier(
+      simpleTable.name,
+    )} GROUP BY ${groupBy};`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "simplify()",

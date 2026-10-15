@@ -17,9 +17,9 @@ export default function intersects(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "intersects()");
-      return `SELECT *, CAST(ST_Intersects(${quoteIdentifier(column1)}, ${
-        quoteIdentifier(column2)
-      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      return `SELECT *, CAST(ST_Intersects(${quoteIdentifier(column1)}, ${quoteIdentifier(
+        column2,
+      )}) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

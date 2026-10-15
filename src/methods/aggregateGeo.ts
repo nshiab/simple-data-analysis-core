@@ -29,19 +29,18 @@ export default function aggregateGeo(
       method: "aggregateGeo()",
       parameters: { method, options },
       execute: async () => {
-        const column = typeof options.column === "string"
-          ? options.column
-          : await findGeoColumn(simpleTable, "aggregateGeo()");
+        const column =
+          typeof options.column === "string"
+            ? options.column
+            : await findGeoColumn(simpleTable, "aggregateGeo()");
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
-            aggregateGeoSelect(
-              `${quoteIdentifier(simpleTable.name)}`,
-              column,
-              method,
-              options,
-            )
-          }`,
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${aggregateGeoSelect(
+            `${quoteIdentifier(simpleTable.name)}`,
+            column,
+            method,
+            options,
+          )}`,
           mergeOptions(simpleTable, {
             table: outputTable.name,
             method: "aggregateGeo()",
@@ -60,9 +59,10 @@ export default function aggregateGeo(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "aggregateGeo()", simpleTable.name);
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "aggregateGeo()", simpleTable.name);
       return aggregateGeoSelect(input, column, method, options);
     },
   });
@@ -81,32 +81,24 @@ function aggregateGeoSelect(
   const by = stringToArray(categoriesOptions);
 
   let query = `SELECT${
-    by.length > 0
-      ? ` ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")},`
-      : ""
+    by.length > 0 ? ` ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")},` : ""
   }`;
 
   if (method === "union") {
-    query += ` CASE WHEN ST_IsEmpty(ST_Union_Agg(${
-      quoteIdentifier(column)
-    })) THEN NULL ELSE ST_Union_Agg(${quoteIdentifier(column)}) END AS ${
-      quoteIdentifier(column)
-    }`;
+    query += ` CASE WHEN ST_IsEmpty(ST_Union_Agg(${quoteIdentifier(
+      column,
+    )})) THEN NULL ELSE ST_Union_Agg(${quoteIdentifier(column)}) END AS ${quoteIdentifier(column)}`;
   } else if (method === "intersection") {
-    query += ` ST_Intersection_Agg(${quoteIdentifier(column)}) AS ${
-      quoteIdentifier(column)
-    }`;
+    query += ` ST_Intersection_Agg(${quoteIdentifier(column)}) AS ${quoteIdentifier(column)}`;
   } else {
-    throw new Error(`aggregateGeo() received an unknown method: ${method}.`);
+    throw new Error(`aggregateGeo() received an unknown method: ${String(method)}.`);
   }
 
   query += `\nFROM ${input}`;
 
   if (by.length > 0) {
     query += `\nGROUP BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`;
-    query += `\nORDER BY ${
-      by.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
-    }`;
+    query += `\nORDER BY ${by.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")}`;
   }
 
   return query;

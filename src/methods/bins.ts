@@ -17,21 +17,15 @@ export default function bins(
 ) {
   // This validation does not need the database, so it stays at call time.
   if (!Number.isFinite(interval) || interval <= 0) {
-    throw new Error(
-      "bins() interval must be a finite number greater than 0.",
-    );
+    throw new Error("bins() interval must be a finite number greater than 0.");
   }
   if (typeof startColumn !== "string" || typeof endColumn !== "string") {
     throw new Error("bins() requires start and end output column names.");
   }
   if (startColumn.toLowerCase() === endColumn.toLowerCase()) {
-    throw new Error(
-      "bins() start and end output column names must be distinct.",
-    );
+    throw new Error("bins() start and end output column names must be distinct.");
   }
-  if (
-    options.startValue !== undefined && !Number.isFinite(options.startValue)
-  ) {
+  if (options.startValue !== undefined && !Number.isFinite(options.startValue)) {
     throw new Error("bins() startValue must be a finite number.");
   }
   // The intervals depend on the minimum and maximum values of the data, so
@@ -45,14 +39,7 @@ export default function bins(
     execute: async () => {
       await queryDB(
         simpleTable,
-        await binsQuery(
-          simpleTable,
-          column,
-          interval,
-          startColumn,
-          endColumn,
-          options,
-        ),
+        await binsQuery(simpleTable, column, interval, startColumn, endColumn, options),
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "bins()",
@@ -86,10 +73,10 @@ async function binsQuery(
   const existingColumns = Object.keys(types);
   assertNewColumns(
     types,
-    [startColumn, endColumn].map((column) =>
-      existingColumns.find((existing) =>
-        existing.toLowerCase() === column.toLowerCase()
-      ) ?? column
+    [startColumn, endColumn].map(
+      (column) =>
+        existingColumns.find((existing) => existing.toLowerCase() === column.toLowerCase()) ??
+        column,
     ),
     "bins()",
   );
@@ -98,9 +85,9 @@ async function binsQuery(
   // getMin/getMax query each.
   const minMax = await queryDB(
     SimpleTable,
-    `SELECT MIN(${quoteIdentifier(column)}) AS "min", MAX(${
-      quoteIdentifier(column)
-    }) AS "max" FROM ${quoteIdentifier(SimpleTable.name)}`,
+    `SELECT MIN(${quoteIdentifier(column)}) AS "min", MAX(${quoteIdentifier(
+      column,
+    )}) AS "max" FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       method: "bins()",
@@ -144,9 +131,9 @@ async function binsQuery(
     // DuckDB's inferred INT32 type when an end exceeds that range.
     const start = `(${startValue} + ${i}.0 * ${interval})`;
     const end = `(${startValue} + ${i + 1}.0 * ${interval})`;
-    const condition = `WHEN ${quoteIdentifier(column)} >= ${start} AND ${
-      quoteIdentifier(column)
-    } < ${end}`;
+    const condition = `WHEN ${quoteIdentifier(column)} >= ${start} AND ${quoteIdentifier(
+      column,
+    )} < ${end}`;
     starts.push(`${condition} THEN ${start}`);
     ends.push(`${condition} THEN ${end}`);
   }
@@ -155,12 +142,8 @@ async function binsQuery(
   // values match no interval and yield null in both output columns.
   const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(SimpleTable.name)} AS
     SELECT *,
-      CAST(CASE ${starts.join("\n")} END AS DOUBLE) AS ${
-    quoteIdentifier(startColumn)
-  },
-      CAST(CASE ${ends.join("\n")} END AS DOUBLE) AS ${
-    quoteIdentifier(endColumn)
-  }
+      CAST(CASE ${starts.join("\n")} END AS DOUBLE) AS ${quoteIdentifier(startColumn)},
+      CAST(CASE ${ends.join("\n")} END AS DOUBLE) AS ${quoteIdentifier(endColumn)}
     FROM ${quoteIdentifier(SimpleTable.name)}`;
 
   return query;

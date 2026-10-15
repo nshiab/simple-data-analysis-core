@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should calculate the distance between points with the SRS unit", async () => {
+test("should calculate the distance between points with the SRS unit", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -15,7 +16,7 @@ Deno.test("should calculate the distance between points with the SRS unit", asyn
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 5.655 },
     { name: "vancouver", name_1: "toronto", dist: 43.99 },
@@ -30,7 +31,7 @@ Deno.test("should calculate the distance between points with the SRS unit", asyn
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the SRS unit and round values", async () => {
+test("should calculate the distance between points with the SRS unit and round values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -43,7 +44,7 @@ Deno.test("should calculate the distance between points with the SRS unit and ro
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 5.655 },
     { name: "vancouver", name_1: "toronto", dist: 43.99 },
@@ -58,7 +59,7 @@ Deno.test("should calculate the distance between points with the SRS unit and ro
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points and lines in the SRS unit", async () => {
+test("should calculate the distance between points and lines in the SRS unit", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -73,7 +74,7 @@ Deno.test("should calculate the distance between points and lines in the SRS uni
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", dist: 3.968 },
     { name: "montreal", dist: 1.826 },
     { name: "vancouver", dist: 47.237 },
@@ -82,7 +83,7 @@ Deno.test("should calculate the distance between points and lines in the SRS uni
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points and polygons in the SRS unit", async () => {
+test("should calculate the distance between points and polygons in the SRS unit", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -97,7 +98,7 @@ Deno.test("should calculate the distance between points and polygons in the SRS 
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", dist: 3.615 },
     { name: "montreal", dist: 1.509 },
     { name: "vancouver", dist: 47.071 },
@@ -106,7 +107,7 @@ Deno.test("should calculate the distance between points and polygons in the SRS 
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the haversine method in meters", async () => {
+test("should calculate the distance between points with the haversine method in meters", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -122,7 +123,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 464577 },
     { name: "vancouver", name_1: "toronto", dist: 3350989 },
@@ -137,7 +138,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the haversine method in meters and round values", async () => {
+test("should calculate the distance between points with the haversine method in meters and round values", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -153,7 +154,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 464577 },
     { name: "vancouver", name_1: "toronto", dist: 3350989 },
@@ -167,7 +168,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 
   await sdb.close();
 });
-Deno.test("should calculate the distance between points with the haversine method in meters", async () => {
+test("should calculate the distance between points with the haversine method in meters", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -183,7 +184,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 464577 },
     { name: "vancouver", name_1: "toronto", dist: 3350989 },
@@ -198,7 +199,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the haversine method in km", async () => {
+test("should calculate the distance between points with the haversine method in km", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -215,7 +216,7 @@ Deno.test("should calculate the distance between points with the haversine metho
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 465 },
     { name: "vancouver", name_1: "toronto", dist: 3351 },
@@ -230,7 +231,7 @@ Deno.test("should calculate the distance between points with the haversine metho
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the spheroid method in m", async () => {
+test("should calculate the distance between points with the spheroid method in m", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -246,7 +247,7 @@ Deno.test("should calculate the distance between points with the spheroid method
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 465639 },
     { name: "vancouver", name_1: "toronto", dist: 3360308 },
@@ -261,7 +262,7 @@ Deno.test("should calculate the distance between points with the spheroid method
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the spheroid method in m and round values", async () => {
+test("should calculate the distance between points with the spheroid method in m and round values", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -277,7 +278,7 @@ Deno.test("should calculate the distance between points with the spheroid method
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 465639 },
     { name: "vancouver", name_1: "toronto", dist: 3360308 },
@@ -292,7 +293,7 @@ Deno.test("should calculate the distance between points with the spheroid method
   await sdb.close();
 });
 
-Deno.test("should calculate the distance between points with the spheroid method in km", async () => {
+test("should calculate the distance between points with the spheroid method in km", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable("points");
   points.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -309,7 +310,7 @@ Deno.test("should calculate the distance between points with the spheroid method
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 466 },
     { name: "vancouver", name_1: "toronto", dist: 3360 },

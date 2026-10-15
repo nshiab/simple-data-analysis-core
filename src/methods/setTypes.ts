@@ -49,13 +49,9 @@ export default function setTypes(
       }
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} (${
-          Object.keys(
-            types,
-          )
-            .map((d) => `${quoteIdentifier(d)} ${parseType(types[d])}`)
-            .join(", ")
-        });`,
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} (${Object.keys(types)
+          .map((d) => `${quoteIdentifier(d)} ${parseType(types[d])}`)
+          .join(", ")});`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "setTypes()",

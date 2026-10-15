@@ -18,12 +18,13 @@ export default function addGeoValidity(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addGeoValidity()");
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "addGeoValidity()", simpleTable.name);
-      return `SELECT *, CAST(ST_IsValid(${
-        quoteIdentifier(column)
-      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "addGeoValidity()", simpleTable.name);
+      return `SELECT *, CAST(ST_IsValid(${quoteIdentifier(
+        column,
+      )}) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

@@ -19,17 +19,16 @@ export default function addRowNumber(
     parameters: { newColumn, options },
     execute: async () => {
       const by = options.by ? stringToArray(options.by) : [];
-      const partition = by.length > 0
-        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
-        : "";
+      const partition =
+        by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}` : "";
 
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE ${
-          quoteIdentifier(simpleTable.name)
-        } AS SELECT *, (ROW_NUMBER() OVER(${partition} ORDER BY rowid) - 1) AS ${
-          quoteIdentifier(newColumn)
-        } FROM ${quoteIdentifier(simpleTable.name)} ORDER BY rowid`,
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(
+          simpleTable.name,
+        )} AS SELECT *, (ROW_NUMBER() OVER(${partition} ORDER BY rowid) - 1) AS ${quoteIdentifier(
+          newColumn,
+        )} FROM ${quoteIdentifier(simpleTable.name)} ORDER BY rowid`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "addRowNumber()",

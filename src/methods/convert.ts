@@ -41,16 +41,11 @@ export default function convert(
     method: "convert()",
     parameters: { types, options },
     needsSchema: true,
-    needsSpatial: Object.values(types).some((type) =>
-      type.toLowerCase().startsWith("geometry")
-    ),
+    needsSpatial: Object.values(types).some((type) => type.toLowerCase().startsWith("geometry")),
     outputSchema: (allTypes) => ({
       ...allTypes,
       ...Object.fromEntries(
-        Object.entries(types).map(([column, type]) => [
-          column,
-          parseType(type),
-        ]),
+        Object.entries(types).map(([column, type]) => [column, parseType(type)]),
       ),
     }),
     values: (allTypes) =>
@@ -66,9 +61,7 @@ export default function convert(
 
       for (const col in types) {
         if (!allColumns.includes(col)) {
-          throw new Error(
-            `The column ${col} does not exist in the table.`,
-          );
+          throw new Error(`The column ${col} does not exist in the table.`);
         }
       }
 
@@ -126,70 +119,57 @@ export function convertSelect(
       const currentType = allTypes[column];
       const datetimeFormatExist = typeof options.datetimeFormat === "string";
 
-      const stringToNumber = currentType === "VARCHAR" &&
-        ["DOUBLE", "BIGINT"].includes(expectedType);
-      const stringToDate = currentType === "VARCHAR" &&
+      const stringToNumber =
+        currentType === "VARCHAR" && ["DOUBLE", "BIGINT"].includes(expectedType);
+      const stringToDate =
+        currentType === "VARCHAR" &&
         (expectedType.includes("TIME") || expectedType.includes("DATE"));
-      const dateToString = (currentType.includes("DATE") ||
-        currentType.includes("TIME")) &&
+      const dateToString =
+        (currentType.includes("DATE") || currentType.includes("TIME")) &&
         expectedType === "VARCHAR";
-      const timeToMs = currentType.includes("TIME") &&
-        ["DOUBLE", "BIGINT"].includes(expectedType);
-      const dateToMs = currentType.includes("DATE") &&
-        ["DOUBLE", "BIGINT"].includes(expectedType);
-      const msToTime = ["DOUBLE", "BIGINT"].includes(currentType) &&
-        expectedType === "TIME";
-      const msToDate = ["DOUBLE", "BIGINT"].includes(currentType) &&
-        expectedType.includes("DATE");
-      const msToTimestamp = ["DOUBLE", "BIGINT"].includes(currentType) &&
-        expectedType.includes("TIMESTAMP");
+      const timeToMs = currentType.includes("TIME") && ["DOUBLE", "BIGINT"].includes(expectedType);
+      const dateToMs = currentType.includes("DATE") && ["DOUBLE", "BIGINT"].includes(expectedType);
+      const msToTime = ["DOUBLE", "BIGINT"].includes(currentType) && expectedType === "TIME";
+      const msToDate = ["DOUBLE", "BIGINT"].includes(currentType) && expectedType.includes("DATE");
+      const msToTimestamp =
+        ["DOUBLE", "BIGINT"].includes(currentType) && expectedType.includes("TIMESTAMP");
 
       if (datetimeFormatExist && stringToDate) {
-        query += ` strptime(${quoteIdentifier(column)}, ?) AS ${
-          quoteIdentifier(column)
-        },`;
+        query += ` strptime(${quoteIdentifier(column)}, ?) AS ${quoteIdentifier(column)},`;
       } else if (datetimeFormatExist && dateToString) {
-        query += ` strftime(${quoteIdentifier(column)}, ?) AS ${
-          quoteIdentifier(column)
-        },`;
+        query += ` strftime(${quoteIdentifier(column)}, ?) AS ${quoteIdentifier(column)},`;
       } else if (timeToMs) {
-        query += ` date_part('epoch', ${quoteIdentifier(column)}) * 1000 AS ${
-          quoteIdentifier(column)
-        },`;
+        query += ` date_part('epoch', ${quoteIdentifier(column)}) * 1000 AS ${quoteIdentifier(
+          column,
+        )},`;
       } else if (dateToMs) {
-        query += ` epoch(${quoteIdentifier(column)}) * 1000 AS ${
-          quoteIdentifier(column)
-        },`;
+        query += ` epoch(${quoteIdentifier(column)}) * 1000 AS ${quoteIdentifier(column)},`;
       } else if (msToTime) {
-        query += ` TIME '00:00:00' + to_milliseconds(${
-          quoteIdentifier(column)
-        }) AS ${quoteIdentifier(column)},`;
+        query += ` TIME '00:00:00' + to_milliseconds(${quoteIdentifier(
+          column,
+        )}) AS ${quoteIdentifier(column)},`;
       } else if (msToDate) {
-        query += ` DATE '1970-01-01' + to_milliseconds(${
-          quoteIdentifier(column)
-        }) AS ${quoteIdentifier(column)},`;
+        query += ` DATE '1970-01-01' + to_milliseconds(${quoteIdentifier(
+          column,
+        )}) AS ${quoteIdentifier(column)},`;
       } else if (msToTimestamp) {
-        query += ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds(${
-          quoteIdentifier(column)
-        }) AS ${quoteIdentifier(column)},`;
-      } else if (
-        options.strict === false && expectedType.startsWith("GEOMETRY")
-      ) {
+        query += ` TIMESTAMP '1970-01-01 00:00:00' + to_milliseconds(${quoteIdentifier(
+          column,
+        )}) AS ${quoteIdentifier(column)},`;
+      } else if (options.strict === false && expectedType.startsWith("GEOMETRY")) {
         // DuckDB's geometry parser can throw even inside TRY_CAST.
-        query += ` TRY(CAST(${
-          quoteIdentifier(column)
-        } AS ${expectedType})) AS ${quoteIdentifier(column)},`;
+        query += ` TRY(CAST(${quoteIdentifier(
+          column,
+        )} AS ${expectedType})) AS ${quoteIdentifier(column)},`;
       } else if (stringToNumber) {
         // Thousand separators would make the cast fail.
-        query += ` ${cast}(REPLACE(${quoteIdentifier(column)}, ',', '') AS ${
-          parseType(columnsTypes[indexOf])
-        }) AS ${quoteIdentifier(column)},`;
+        query += ` ${cast}(REPLACE(${quoteIdentifier(column)}, ',', '') AS ${parseType(
+          columnsTypes[indexOf],
+        )}) AS ${quoteIdentifier(column)},`;
       } else {
-        query += ` ${cast}(${quoteIdentifier(columns[indexOf])} AS ${
-          parseType(
-            columnsTypes[indexOf],
-          )
-        }) AS ${quoteIdentifier(columns[indexOf])},`;
+        query += ` ${cast}(${quoteIdentifier(columns[indexOf])} AS ${parseType(
+          columnsTypes[indexOf],
+        )}) AS ${quoteIdentifier(columns[indexOf])},`;
       }
     }
   }
@@ -239,10 +219,10 @@ function getDatetimeFormatValues(
     }
     const currentType = allTypes[column];
     const expectedType = parseType(columnsTypes[index]);
-    const stringToDate = currentType === "VARCHAR" &&
-      (expectedType.includes("TIME") || expectedType.includes("DATE"));
-    const dateToString = (currentType.includes("DATE") ||
-      currentType.includes("TIME")) && expectedType === "VARCHAR";
+    const stringToDate =
+      currentType === "VARCHAR" && (expectedType.includes("TIME") || expectedType.includes("DATE"));
+    const dateToString =
+      (currentType.includes("DATE") || currentType.includes("TIME")) && expectedType === "VARCHAR";
     return stringToDate || dateToString ? [datetimeFormat] : [];
   });
 }

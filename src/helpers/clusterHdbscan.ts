@@ -28,10 +28,7 @@ export default async function clusterHdbscan(
   outlierScores: Float64Array;
 }> {
   // Leaves and internal nodes share the signed Int32 hierarchy namespace.
-  if (
-    !Number.isSafeInteger(options.count) || options.count < 2 ||
-    options.count > 0x40000000
-  ) {
+  if (!Number.isSafeInteger(options.count) || options.count < 2 || options.count > 0x40000000) {
     throw new Error(
       "HDBSCAN hierarchy requires between 2 and 1073741824 rows so all 2*n-1 node identifiers fit signed INTEGER state.",
     );
@@ -42,15 +39,9 @@ export default async function clusterHdbscan(
   return selectClusters(tree, options.count, options.allowSingleCluster);
 }
 
-async function readMst(
-  connection: DuckDBConnection,
-  mst: string,
-  count: number,
-): Promise<Edge[]> {
+async function readMst(connection: DuckDBConnection, mst: string, count: number): Promise<Edge[]> {
   const edges: Edge[] = [];
-  const result = await connection.stream(
-    `SELECT source,target,distance FROM ${mst}`,
-  );
+  const result = await connection.stream(`SELECT source,target,distance FROM ${mst}`);
   while (true) {
     const chunk = await result.fetchChunk();
     if (!chunk || chunk.rowCount === 0) break;
@@ -62,44 +53,48 @@ async function readMst(
       const rawTarget = targets.getItem(row);
       const rawDistance = distances.getItem(row);
       if (
-        rawSource === null || rawSource === undefined ||
-        rawTarget === null || rawTarget === undefined ||
-        rawDistance === null || rawDistance === undefined
+        rawSource === null ||
+        rawSource === undefined ||
+        rawTarget === null ||
+        rawTarget === undefined ||
+        rawDistance === null ||
+        rawDistance === undefined
       ) {
-        throw new Error(
-          "HDBSCAN mutual-reachability MST contains an invalid edge.",
-        );
+        throw new Error("HDBSCAN mutual-reachability MST contains an invalid edge.");
       }
       const source = Number(rawSource);
       const target = Number(rawTarget);
       const distance = Number(rawDistance);
       if (
-        !Number.isSafeInteger(source) || source < 0 || source >= count ||
-        !Number.isSafeInteger(target) || target < 0 || target >= count ||
-        source === target || !Number.isFinite(distance) || distance < 0
+        !Number.isSafeInteger(source) ||
+        source < 0 ||
+        source >= count ||
+        !Number.isSafeInteger(target) ||
+        target < 0 ||
+        target >= count ||
+        source === target ||
+        !Number.isFinite(distance) ||
+        distance < 0
       ) {
-        throw new Error(
-          "HDBSCAN mutual-reachability MST contains an invalid edge.",
-        );
+        throw new Error("HDBSCAN mutual-reachability MST contains an invalid edge.");
       }
       edges.push({ source, target, distance });
     }
   }
   if (edges.length !== count - 1) {
     throw new Error(
-      `HDBSCAN mutual-reachability MST returned ${edges.length} edges; ${
-        count - 1
-      } were required.`,
+      `HDBSCAN mutual-reachability MST returned ${edges.length} edges; ${count - 1} were required.`,
     );
   }
   return edges;
 }
 
 function buildSingleLinkage(edges: Edge[], count: number): Linkage[] {
-  edges.sort((a, b) =>
-    a.distance - b.distance ||
-    Math.min(a.source, a.target) - Math.min(b.source, b.target) ||
-    Math.max(a.source, a.target) - Math.max(b.source, b.target)
+  edges.sort(
+    (a, b) =>
+      a.distance - b.distance ||
+      Math.min(a.source, a.target) - Math.min(b.source, b.target) ||
+      Math.max(a.source, a.target) - Math.max(b.source, b.target),
   );
   const parent = new Int32Array(count);
   const size = new Int32Array(count).fill(1);
@@ -124,9 +119,7 @@ function buildSingleLinkage(edges: Edge[], count: number): Linkage[] {
     let leftRoot = find(edge.source);
     let rightRoot = find(edge.target);
     if (leftRoot === rightRoot) {
-      throw new Error(
-        "HDBSCAN mutual-reachability edges do not form a tree.",
-      );
+      throw new Error("HDBSCAN mutual-reachability edges do not form a tree.");
     }
     const combinedNode = count + linkage.length;
     const combinedSize = size[leftRoot] + size[rightRoot];
@@ -144,9 +137,7 @@ function buildSingleLinkage(edges: Edge[], count: number): Linkage[] {
     node[leftRoot] = combinedNode;
   }
   if (linkage.length !== count - 1 || linkage.at(-1)?.size !== count) {
-    throw new Error(
-      "HDBSCAN mutual-reachability edges do not form one connected tree.",
-    );
+    throw new Error("HDBSCAN mutual-reachability edges do not form one connected tree.");
   }
   return linkage;
 }
@@ -167,12 +158,8 @@ function condenseTree(
     if (ignored[current] || current < count) continue;
     const split = hierarchy[current - count];
     const lambda = split.distance > 0 ? 1 / split.distance : Infinity;
-    const leftSize = split.left >= count
-      ? hierarchy[split.left - count].size
-      : 1;
-    const rightSize = split.right >= count
-      ? hierarchy[split.right - count].size
-      : 1;
+    const leftSize = split.left >= count ? hierarchy[split.left - count].size : 1;
+    const rightSize = split.right >= count ? hierarchy[split.right - count].size : 1;
     if (leftSize >= minClusterSize && rightSize >= minClusterSize) {
       relabel[split.left] = nextLabel++;
       result.push({
@@ -188,49 +175,15 @@ function condenseTree(
         lambda,
         childSize: rightSize,
       });
-    } else if (
-      leftSize < minClusterSize && rightSize < minClusterSize
-    ) {
-      appendRunt(
-        hierarchy,
-        count,
-        split.left,
-        relabel[current],
-        lambda,
-        ignored,
-        result,
-      );
-      appendRunt(
-        hierarchy,
-        count,
-        split.right,
-        relabel[current],
-        lambda,
-        ignored,
-        result,
-      );
+    } else if (leftSize < minClusterSize && rightSize < minClusterSize) {
+      appendRunt(hierarchy, count, split.left, relabel[current], lambda, ignored, result);
+      appendRunt(hierarchy, count, split.right, relabel[current], lambda, ignored, result);
     } else if (leftSize < minClusterSize) {
       relabel[split.right] = relabel[current];
-      appendRunt(
-        hierarchy,
-        count,
-        split.left,
-        relabel[current],
-        lambda,
-        ignored,
-        result,
-      );
+      appendRunt(hierarchy, count, split.left, relabel[current], lambda, ignored, result);
     } else {
       relabel[split.left] = relabel[current];
-      appendRunt(
-        hierarchy,
-        count,
-        split.right,
-        relabel[current],
-        lambda,
-        ignored,
-        result,
-      );
+      appendRunt(hierarchy, count, split.right, relabel[current], lambda, ignored, result);
     }
   }
   if (result.length === 0) {
@@ -256,11 +209,7 @@ function appendRunt(
   }
 }
 
-function breadthFirstHierarchy(
-  hierarchy: Linkage[],
-  count: number,
-  root: number,
-): number[] {
+function breadthFirstHierarchy(hierarchy: Linkage[], count: number, root: number): number[] {
   const result: number[] = [];
   let level = [root];
   while (level.length > 0) {
@@ -307,8 +256,7 @@ function selectClusters(
   for (const edge of tree) {
     stability.set(
       edge.parent,
-      stability.get(edge.parent)! +
-        (edge.lambda - births[edge.parent]) * edge.childSize,
+      stability.get(edge.parent)! + (edge.lambda - births[edge.parent]) * edge.childSize,
     );
   }
 
@@ -325,9 +273,7 @@ function selectClusters(
   for (const cluster of nodeList) {
     const childClusters = children.get(cluster) ?? [];
     // hdbscan 0.8.44 stores this otherwise-double reduction in a C float.
-    const subtreeStability = accumulateFloat32(
-      childClusters.map((child) => stability.get(child)!),
-    );
+    const subtreeStability = accumulateFloat32(childClusters.map((child) => stability.get(child)!));
     if (subtreeStability > stability.get(cluster)!) {
       stability.set(cluster, subtreeStability);
       preferred.set(cluster, false);
@@ -349,10 +295,9 @@ function selectClusters(
     }
   }
   clusters.sort((a, b) => a - b);
-  const labelsByCluster = new Map(
-    clusters.map((cluster, label) => [cluster, label]),
-  );
-  const pointEdges = new Array<CondensedEdge>(count);
+  const labelsByCluster = new Map(clusters.map((cluster, label) => [cluster, label]));
+  const pointEdges: CondensedEdge[] = [];
+  pointEdges.length = count;
   const parentByCluster = new Map<number, number>();
   for (const edge of tree) {
     if (edge.child < count) pointEdges[edge.child] = edge;
@@ -386,9 +331,9 @@ function selectClusters(
     if (cluster < 0) continue;
     if (
       cluster === root &&
-      !(clusters.length === 1 && allowSingleCluster &&
-        pointEdge.lambda >= rootExit)
-    ) continue;
+      !(clusters.length === 1 && allowSingleCluster && pointEdge.lambda >= rootExit)
+    )
+      continue;
     labels[point] = labelsByCluster.get(cluster)!;
   }
 
@@ -400,9 +345,8 @@ function selectClusters(
     const cluster = clusters[label];
     const maximum = deaths[cluster];
     const lambda = pointEdges[point].lambda;
-    probabilities[point] = maximum === 0 || !Number.isFinite(lambda)
-      ? 1
-      : Math.min(lambda, maximum) / maximum;
+    probabilities[point] =
+      maximum === 0 || !Number.isFinite(lambda) ? 1 : Math.min(lambda, maximum) / maximum;
   }
 
   // hdbscan 0.8.44 propagates maximum density through the condensed tree in
@@ -443,10 +387,7 @@ export function accumulateFloat32(values: number[]): number {
   return total;
 }
 
-function directMaximumLambdas(
-  tree: CondensedEdge[],
-  maximumParent: number,
-): Float64Array {
+function directMaximumLambdas(tree: CondensedEdge[], maximumParent: number): Float64Array {
   const deaths = new Float64Array(maximumParent + 1);
   for (const edge of tree) {
     deaths[edge.parent] = Math.max(deaths[edge.parent], edge.lambda);

@@ -3,11 +3,7 @@ import assertNewColumns from "../helpers/assertNewColumns.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function cloneColumn(
-  simpleTable: SimpleTable,
-  column: string,
-  newColumn: string,
-) {
+export default function cloneColumn(simpleTable: SimpleTable, column: string, newColumn: string) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "cloneColumn()",
@@ -18,9 +14,7 @@ export default function cloneColumn(
         throw new Error(`Can't find type of ${column}`);
       }
       assertNewColumns(types, [newColumn], "cloneColumn()");
-      return `SELECT *, ${quoteIdentifier(column)} AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      return `SELECT *, ${quoteIdentifier(column)} AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should transform lines to polygons", async () => {
+test("should transform lines to polygons", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/closedLines.geojson");
@@ -9,7 +10,7 @@ Deno.test("should transform lines to polygons", async () => {
 
   const data = await table.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -772,11 +773,11 @@ Deno.test("should transform lines to polygons", async () => {
   });
 
   const types = await table.getTypes();
-  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+  expect(types.geom).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   await sdb.close();
 });
-Deno.test("should transform lines to polygons from a specific column", async () => {
+test("should transform lines to polygons from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/closedLines.geojson");
@@ -784,7 +785,7 @@ Deno.test("should transform lines to polygons from a specific column", async () 
 
   const data = await table.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -1547,7 +1548,7 @@ Deno.test("should transform lines to polygons from a specific column", async () 
   });
 
   const types2 = await table.getTypes();
-  assertEquals(types2.geom, "GEOMETRY('EPSG:4326')");
+  expect(types2.geom).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   await sdb.close();
 });

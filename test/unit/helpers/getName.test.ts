@@ -1,27 +1,28 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import getName from "../../../src/helpers/getName.ts";
 
-Deno.test("should return the file name without extension for a simple file path", function () {
+test("should return the file name without extension for a simple file path", function () {
   const result = getName("example.txt");
-  assertEquals(result, "example");
+  expect(result).toStrictEqual("example");
 });
 
-Deno.test("should return the file name without extension for a nested file path", function () {
+test("should return the file name without extension for a nested file path", function () {
   const result = getName("path/to/example.txt");
-  assertEquals(result, "example");
+  expect(result).toStrictEqual("example");
 });
 
-Deno.test("should return the file name without extension for a file with multiple dots", function () {
+test("should return the file name without extension for a file with multiple dots", function () {
   const result = getName("path/to/example.test.js");
-  assertEquals(result, "example.test");
+  expect(result).toStrictEqual("example.test");
 });
 
-Deno.test("should return an empty string for a file with no name but only extension", function () {
+test("should return an empty string for a file with no name but only extension", function () {
   const result = getName("path/to/.hiddenfile");
-  assertEquals(result, "");
+  expect(result).toStrictEqual("");
 });
 
-Deno.test("should handle paths with no extension", function () {
+test("should handle paths with no extension", function () {
   const result = getName("path/to/example");
-  assertEquals(result, "example");
+  expect(result).toStrictEqual("example");
 });

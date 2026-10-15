@@ -1,9 +1,6 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 const originalFetch = globalThis.fetch;
@@ -22,44 +19,50 @@ function yahooResponse(
   return Response.json({
     chart: {
       error: null,
-      result: [{
-        timestamp: timestamps,
-        indicators: {
-          adjclose: [{ adjclose: values.adjustedClose }],
-          quote: [{
-            open: values.open,
-            high: values.high,
-            low: values.low,
-            close: values.close,
-            volume: values.volume,
-          }],
+      result: [
+        {
+          timestamp: timestamps,
+          indicators: {
+            adjclose: [{ adjclose: values.adjustedClose }],
+            quote: [
+              {
+                open: values.open,
+                high: values.high,
+                low: values.low,
+                close: values.close,
+                volume: values.volume,
+              },
+            ],
+          },
         },
-      }],
+      ],
     },
   });
 }
 
-Deno.test("loadYahooFinanceData loads a complete table and preserves missing values", async () => {
+test("loadYahooFinanceData loads a complete table and preserves missing values", async () => {
   let requestedUrl: URL | undefined;
   let requestedHeaders: Headers | undefined;
   globalThis.fetch = (input, init) => {
     requestedUrl = new URL(input instanceof Request ? input.url : input);
     requestedHeaders = new Headers(init?.headers);
-    return Promise.resolve(yahooResponse(
-      [
-        Date.parse("2025-03-13T13:30:00Z") / 1000,
-        Date.parse("2025-03-14T13:30:00Z") / 1000,
-        Date.parse("2025-03-15T13:30:00Z") / 1000,
-      ],
-      {
-        open: [99, 100, 101],
-        high: [101, 102, 103],
-        low: [98, 99, 100],
-        close: [100, null, 102],
-        adjustedClose: [99.5, null, 101.5],
-        volume: [1_000, null, 1_200],
-      },
-    ));
+    return Promise.resolve(
+      yahooResponse(
+        [
+          Date.parse("2025-03-13T13:30:00Z") / 1000,
+          Date.parse("2025-03-14T13:30:00Z") / 1000,
+          Date.parse("2025-03-15T13:30:00Z") / 1000,
+        ],
+        {
+          open: [99, 100, 101],
+          high: [101, 102, 103],
+          low: [98, 99, 100],
+          close: [100, null, 102],
+          adjustedClose: [99.5, null, 101.5],
+          volume: [1_000, null, 1_200],
+        },
+      ),
+    );
   };
 
   const sdb = new SimpleDB();
@@ -72,8 +75,8 @@ Deno.test("loadYahooFinanceData loads a complete table and preserves missing val
       "1d",
     );
 
-    assertEquals(returned, table);
-    assertEquals(await table.getData(), [
+    expect(returned).toStrictEqual(table);
+    expect(await table.getData()).toStrictEqual([
       {
         datetime: new Date("2025-03-13T13:30:00Z"),
         open: 99,
@@ -93,7 +96,7 @@ Deno.test("loadYahooFinanceData loads a complete table and preserves missing val
         volume: null,
       },
     ]);
-    assertEquals(await table.getTypes(), {
+    expect(await table.getTypes()).toStrictEqual({
       datetime: "TIMESTAMP",
       open: "DOUBLE",
       high: "DOUBLE",
@@ -102,36 +105,34 @@ Deno.test("loadYahooFinanceData loads a complete table and preserves missing val
       adjustedClose: "DOUBLE",
       volume: "DOUBLE",
     });
-    assertEquals(
-      requestedUrl?.searchParams.get("period2"),
+    expect(requestedUrl?.searchParams.get("period2")).toStrictEqual(
       String(Date.parse("2025-03-15T00:00:00Z") / 1000),
     );
-    assertEquals(requestedUrl?.searchParams.has("events"), false);
-    assertStringIncludes(requestedHeaders?.get("User-Agent") ?? "", "Chrome");
+    expect(requestedUrl?.searchParams.has("events")).toStrictEqual(false);
+    expect(requestedHeaders?.get("User-Agent") ?? "").toContain("Chrome");
   } finally {
     globalThis.fetch = originalFetch;
     await sdb.close();
   }
 });
 
-Deno.test("loadYahooFinanceData keeps numeric types when every value is missing", async () => {
+test("loadYahooFinanceData keeps numeric types when every value is missing", async () => {
   globalThis.fetch = () =>
-    Promise.resolve(yahooResponse(
-      [Date.parse("2025-03-14T13:30:00Z") / 1000],
-      {},
-    ));
+    Promise.resolve(yahooResponse([Date.parse("2025-03-14T13:30:00Z") / 1000], {}));
 
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable("yahooMissing").loadYahooFinanceData(
-      "AAPL",
-      new Date("2025-03-14T00:00:00Z"),
-      new Date("2025-03-14T00:00:00Z"),
-      "1d",
-    );
+    const table = sdb
+      .newTable("yahooMissing")
+      .loadYahooFinanceData(
+        "AAPL",
+        new Date("2025-03-14T00:00:00Z"),
+        new Date("2025-03-14T00:00:00Z"),
+        "1d",
+      );
 
-    assertEquals(await table.getRowCount(), 1);
-    assertEquals(await table.getTypes(), {
+    expect(await table.getRowCount()).toStrictEqual(1);
+    expect(await table.getTypes()).toStrictEqual({
       datetime: "TIMESTAMP",
       open: "DOUBLE",
       high: "DOUBLE",
@@ -146,29 +147,18 @@ Deno.test("loadYahooFinanceData keeps numeric types when every value is missing"
   }
 });
 
-Deno.test("loadYahooFinanceData validates arguments at call time", async () => {
+test("loadYahooFinanceData validates arguments at call time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("yahooValidation");
   try {
     assertThrows(
       () =>
-        table.loadYahooFinanceData(
-          "AAPL",
-          new Date("2025-03-15"),
-          new Date("2025-03-14"),
-          "1d",
-        ),
+        table.loadYahooFinanceData("AAPL", new Date("2025-03-15"), new Date("2025-03-14"), "1d"),
       RangeError,
       "endDate must be equal to or later than startDate",
     );
     assertThrows(
-      () =>
-        table.loadYahooFinanceData(
-          "",
-          new Date("2025-03-14"),
-          new Date("2025-03-15"),
-          "1d",
-        ),
+      () => table.loadYahooFinanceData("", new Date("2025-03-14"), new Date("2025-03-15"), "1d"),
       TypeError,
       "symbol must be a non-empty string",
     );
@@ -177,7 +167,7 @@ Deno.test("loadYahooFinanceData validates arguments at call time", async () => {
   }
 });
 
-Deno.test("loadYahooFinanceData reports upstream failures as SDA errors", async () => {
+test("loadYahooFinanceData reports upstream failures as SDA errors", async () => {
   globalThis.fetch = () =>
     Promise.resolve(
       new Response("Too Many Requests", {
@@ -189,38 +179,34 @@ Deno.test("loadYahooFinanceData reports upstream failures as SDA errors", async 
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("yahooFailure");
-    table.loadYahooFinanceData(
-      "AAPL",
-      new Date("2025-03-13"),
-      new Date("2025-03-14"),
-      "1d",
-    );
+    table.loadYahooFinanceData("AAPL", new Date("2025-03-13"), new Date("2025-03-14"), "1d");
     const error = await assertRejects(
       () => table.run(),
       Error,
       "Yahoo may have changed, rate-limited, or disabled this undocumented endpoint",
     );
-    assertStringIncludes(error.message, "SDA method: loadYahooFinanceData()");
+    expect(error.message).toContain("SDA method: loadYahooFinanceData()");
   } finally {
     globalThis.fetch = originalFetch;
     await sdb.close();
   }
 });
 
-Deno.test({
-  name: "loadYahooFinanceData loads live Yahoo Finance data locally",
-  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
-  async fn() {
+test.skipIf(process.env.CI === "true")(
+  "loadYahooFinanceData loads live Yahoo Finance data locally",
+  async function () {
     const sdb = new SimpleDB();
     try {
-      const table = sdb.newTable("yahooLive").loadYahooFinanceData(
-        "^GSPTSE",
-        new Date("2025-03-13T00:00:00Z"),
-        new Date("2025-03-14T00:00:00Z"),
-        "1d",
-      );
+      const table = sdb
+        .newTable("yahooLive")
+        .loadYahooFinanceData(
+          "^GSPTSE",
+          new Date("2025-03-13T00:00:00Z"),
+          new Date("2025-03-14T00:00:00Z"),
+          "1d",
+        );
 
-      assertEquals(await table.getTypes(), {
+      expect(await table.getTypes()).toStrictEqual({
         datetime: "TIMESTAMP",
         open: "DOUBLE",
         high: "DOUBLE",
@@ -229,7 +215,7 @@ Deno.test({
         adjustedClose: "DOUBLE",
         volume: "DOUBLE",
       });
-      assertEquals(await table.getData(), [
+      expect(await table.getData()).toStrictEqual([
         {
           datetime: new Date("2025-03-13T13:30:00Z"),
           open: 24_375.099609375,
@@ -253,4 +239,4 @@ Deno.test({
       await sdb.close();
     }
   },
-});
+);

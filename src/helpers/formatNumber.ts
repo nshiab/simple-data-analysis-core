@@ -34,13 +34,8 @@ function round(
     significantDigits?: number;
   } = {},
 ): number {
-  if (
-    typeof options.decimals === "number" &&
-    typeof options.significantDigits === "number"
-  ) {
-    throw new Error(
-      "You can't use options decimals and significantDigits together. Pick one.",
-    );
+  if (typeof options.decimals === "number" && typeof options.significantDigits === "number") {
+    throw new Error("You can't use options decimals and significantDigits together. Pick one.");
   }
 
   if (typeof options.decimals === "number") {
@@ -129,9 +124,7 @@ export default function formatNumber(
   let abbreviation = "";
   if (mergedOptions.abbreviation && number !== 0) {
     const abbreviations = ["", "K", "M", "B", "T"];
-    const index = Math.floor(
-      Math.log10(Math.abs(number)) / 3,
-    );
+    const index = Math.floor(Math.log10(Math.abs(number)) / 3);
     abbreviation = abbreviations[index] ?? "";
     number = number / Math.pow(10, index * 3);
   }
@@ -152,20 +145,18 @@ export default function formatNumber(
   const [integers, decimals] = number.toString().split(".");
 
   const formattedIntegers = integers.replace(regex, ",");
-  const formattedNumber = decimals
-    ? `${formattedIntegers}.${decimals}`
-    : formattedIntegers;
+  const formattedNumber = decimals ? `${formattedIntegers}.${decimals}` : formattedIntegers;
 
   // Handle dollar sign prefix placement (after minus sign for negative numbers)
   if (mergedOptions.prefix === "$") {
     if (formattedNumber.startsWith("-")) {
-      return `-${mergedOptions.prefix}${
-        formattedNumber.slice(1)
-      }${abbreviation}${mergedOptions.suffix}`;
+      return `-${mergedOptions.prefix}${formattedNumber.slice(
+        1,
+      )}${abbreviation}${mergedOptions.suffix}`;
     } else if (formattedNumber.startsWith("+")) {
-      return `+${mergedOptions.prefix}${
-        formattedNumber.slice(1)
-      }${abbreviation}${mergedOptions.suffix}`;
+      return `+${mergedOptions.prefix}${formattedNumber.slice(
+        1,
+      )}${abbreviation}${mergedOptions.suffix}`;
     } else {
       return `${mergedOptions.prefix}${formattedNumber}${abbreviation}${mergedOptions.suffix}`;
     }

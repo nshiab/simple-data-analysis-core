@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should uppercase strings in one column", async () => {
+test("should uppercase strings in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ firstName: "nael", lastName: "shiab" }]);
@@ -10,11 +11,11 @@ Deno.test("should uppercase strings in one column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [{ firstName: "NAEL", lastName: "shiab" }]);
+  expect(data).toStrictEqual([{ firstName: "NAEL", lastName: "shiab" }]);
   await sdb.close();
 });
 
-Deno.test("should uppercase strings in two columns", async () => {
+test("should uppercase strings in two columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ firstName: "nael", lastName: "shiab" }]);
@@ -23,11 +24,11 @@ Deno.test("should uppercase strings in two columns", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [{ firstName: "NAEL", lastName: "SHIAB" }]);
+  expect(data).toStrictEqual([{ firstName: "NAEL", lastName: "SHIAB" }]);
   await sdb.close();
 });
 
-Deno.test("should uppercase strings in two columns with column names containing spaces", async () => {
+test("should uppercase strings in two columns with column names containing spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "first Name": "nael", "last Name": "shiab" }]);
@@ -36,8 +37,6 @@ Deno.test("should uppercase strings in two columns with column names containing 
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { "first Name": "NAEL", "last Name": "SHIAB" },
-  ]);
+  expect(data).toStrictEqual([{ "first Name": "NAEL", "last Name": "SHIAB" }]);
   await sdb.close();
 });

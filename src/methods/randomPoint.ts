@@ -15,9 +15,7 @@ export default function randomPoint(
   options = structuredClone(options);
   // This validation doesn't need the database, so it stays at call time.
   if (!Number.isFinite(tries) || !Number.isInteger(tries) || tries < 0) {
-    throw new Error(
-      "randomPoint() tries must be a finite integer greater than or equal to 0.",
-    );
+    throw new Error("randomPoint() tries must be a finite integer greater than or equal to 0.");
   }
 
   // The generated points are checked against the data afterwards, so
@@ -38,22 +36,16 @@ async function executeRandomPoint(
   options: { column?: string; strict?: boolean },
 ): Promise<void> {
   await ensureSpatial(simpleTable);
-  const column = typeof options.column === "string"
-    ? options.column
-    : await findGeoColumn(simpleTable, "randomPoint()");
+  const column =
+    typeof options.column === "string"
+      ? options.column
+      : await findGeoColumn(simpleTable, "randomPoint()");
 
   const geoType = await simpleTable.getProjection(column);
 
   await queryDB(
     simpleTable,
-    randomPointQuery(
-      simpleTable.name,
-      column,
-      newColumn,
-      tries,
-      geoType,
-      options.strict !== false,
-    ),
+    randomPointQuery(simpleTable.name, column, newColumn, tries, geoType, options.strict !== false),
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "randomPoint()",
@@ -86,9 +78,10 @@ function randomPointQuery(
   const failedExpression = strict
     ? `CASE WHEN v.failed_count > 0 THEN error(CONCAT(CAST(v.failed_count AS VARCHAR), ' points could not be generated. Consider increasing tries or set options.strict to false.')) ELSE v.pt::${geoType} END`
     : `v.pt::${geoType}`;
-  const select = newColumn === column
-    ? `t.* REPLACE (${failedExpression} AS ${quoteIdentifier(newColumn)})`
-    : `t.*, ${failedExpression} AS ${quoteIdentifier(newColumn)}`;
+  const select =
+    newColumn === column
+      ? `t.* REPLACE (${failedExpression} AS ${quoteIdentifier(newColumn)})`
+      : `t.*, ${failedExpression} AS ${quoteIdentifier(newColumn)}`;
 
   return `CREATE OR REPLACE TABLE ${quoteIdentifier(table)} AS
 WITH RECURSIVE
@@ -97,13 +90,9 @@ base AS (
         rowid AS rid,
         ${quoteIdentifier(column)} AS geom,
         ST_XMin(${quoteIdentifier(column)}) AS xmin,
-        ST_XMax(${quoteIdentifier(column)}) - ST_XMin(${
-    quoteIdentifier(column)
-  }) AS xdiff,
+        ST_XMax(${quoteIdentifier(column)}) - ST_XMin(${quoteIdentifier(column)}) AS xdiff,
         ST_YMin(${quoteIdentifier(column)}) AS ymin,
-        ST_YMax(${quoteIdentifier(column)}) - ST_YMin(${
-    quoteIdentifier(column)
-  }) AS ydiff
+        ST_YMax(${quoteIdentifier(column)}) - ST_YMin(${quoteIdentifier(column)}) AS ydiff
     FROM ${quoteIdentifier(table)}
 ),
 attempts(rid, geom, xmin, xdiff, ymin, ydiff, pt, n) AS (

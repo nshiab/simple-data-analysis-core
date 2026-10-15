@@ -9,9 +9,9 @@ export default async function getRowCount(
 ) {
   const queryResult = await queryDB(
     SimpleTable,
-    `SELECT CAST(COUNT(*) AS INTEGER) AS count FROM ${
-      quoteIdentifier(SimpleTable.name)
-    }${options.conditions ? ` WHERE ${options.conditions}` : ""}`,
+    `SELECT CAST(COUNT(*) AS INTEGER) AS count FROM ${quoteIdentifier(
+      SimpleTable.name,
+    )}${options.conditions ? ` WHERE ${options.conditions}` : ""}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

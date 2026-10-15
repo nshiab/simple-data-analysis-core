@@ -14,17 +14,11 @@ function singularCovariance(reason: string): Error {
   );
 }
 
-function scaleCovarianceEntry(
-  value: number,
-  leftScale: number,
-  rightScale: number,
-): number {
+function scaleCovarianceEntry(value: number, leftScale: number, rightScale: number): number {
   // Divide by the larger scale first. For a valid covariance, Cauchy-Schwarz
   // bounds |value| by their product, so this avoids intermediate overflow when
   // two otherwise equivalent features use radically different units.
-  return leftScale >= rightScale
-    ? value / leftScale / rightScale
-    : value / rightScale / leftScale;
+  return leftScale >= rightScale ? value / leftScale / rightScale : value / rightScale / leftScale;
 }
 
 function solveCorrelation(
@@ -53,10 +47,7 @@ function solveCorrelation(
 // Hager's estimator avoids forming the inverse merely to decide whether the
 // correlation-scaled covariance is safe to solve. Scaling first makes this
 // rank decision invariant to a change of units in any feature.
-function estimateInverseOneNorm(
-  cholesky: Float64Array,
-  dimensions: number,
-): number {
+function estimateInverseOneNorm(cholesky: Float64Array, dimensions: number): number {
   let vector = new Float64Array(dimensions).fill(1 / dimensions);
   let estimate = 0;
   let previousIndex = -1;
@@ -66,16 +57,13 @@ function estimateInverseOneNorm(
       estimate,
       solved.reduce((sum, value) => sum + Math.abs(value), 0),
     );
-    const signs = solved.map((value) => value < 0 ? -1 : 1);
+    const signs = solved.map((value) => (value < 0 ? -1 : 1));
     const dual = solveCorrelation(cholesky, dimensions, signs);
     let index = 0;
     for (let i = 1; i < dimensions; i++) {
       if (Math.abs(dual[i]) > Math.abs(dual[index])) index = i;
     }
-    const directional = dual.reduce(
-      (sum, value, i) => sum + value * vector[i],
-      0,
-    );
+    const directional = dual.reduce((sum, value, i) => sum + value * vector[i], 0);
     if (Math.abs(dual[index]) <= directional || index === previousIndex) break;
     vector = new Float64Array(dimensions);
     vector[index] = 1;
@@ -90,10 +78,7 @@ function estimateInverseOneNorm(
     { length: dimensions },
     (_, i) => (i % 2 === 0 ? 1 : -1) * (1 + i / Math.max(1, dimensions - 1)),
   );
-  const alternatingNorm = alternating.reduce(
-    (sum, value) => sum + Math.abs(value),
-    0,
-  );
+  const alternatingNorm = alternating.reduce((sum, value) => sum + Math.abs(value), 0);
   const solved = solveCorrelation(cholesky, dimensions, alternating);
   estimate = Math.max(
     estimate,
@@ -112,9 +97,7 @@ export function factorCovariance(
   }
   if (covarianceInput.length !== dimensions * dimensions) {
     throw new Error(
-      `Expected ${
-        dimensions * dimensions
-      } covariance values, received ${covarianceInput.length}.`,
+      `Expected ${dimensions * dimensions} covariance values, received ${covarianceInput.length}.`,
     );
   }
 
@@ -124,9 +107,7 @@ export function factorCovariance(
     const variance = covariance[dimension * dimensions + dimension];
     if (!Number.isFinite(variance) || variance <= 0) {
       throw singularCovariance(
-        `feature ${
-          dimension + 1
-        } has non-positive or non-finite sample variance`,
+        `feature ${dimension + 1} has non-positive or non-finite sample variance`,
       );
     }
     scales[dimension] = Math.sqrt(variance);
@@ -140,23 +121,15 @@ export function factorCovariance(
       const left = covariance[row * dimensions + column];
       const right = covariance[column * dimensions + row];
       if (!Number.isFinite(left) || !Number.isFinite(right)) {
-        throw singularCovariance(
-          "the sample covariance contains non-finite values",
-        );
+        throw singularCovariance("the sample covariance contains non-finite values");
       }
-      const value = row === column ? 1 : scaleCovarianceEntry(
-            left,
-            scales[row],
-            scales[column],
-          ) / 2 + scaleCovarianceEntry(
-            right,
-            scales[row],
-            scales[column],
-          ) / 2;
+      const value =
+        row === column
+          ? 1
+          : scaleCovarianceEntry(left, scales[row], scales[column]) / 2 +
+            scaleCovarianceEntry(right, scales[row], scales[column]) / 2;
       if (!Number.isFinite(value)) {
-        throw singularCovariance(
-          "correlation scaling produced a non-finite value",
-        );
+        throw singularCovariance("correlation scaling produced a non-finite value");
       }
       correlation[row * dimensions + column] = value;
       columnSum += Math.abs(value);
@@ -169,19 +142,15 @@ export function factorCovariance(
     for (let column = 0; column <= row; column++) {
       let value = correlation[row * dimensions + column];
       for (let k = 0; k < column; k++) {
-        value -= cholesky[row * dimensions + k] *
-          cholesky[column * dimensions + k];
+        value -= cholesky[row * dimensions + k] * cholesky[column * dimensions + k];
       }
       if (row === column) {
         if (!Number.isFinite(value) || value <= 0) {
-          throw singularCovariance(
-            `correlation-scaled Cholesky pivot ${row + 1} is not positive`,
-          );
+          throw singularCovariance(`correlation-scaled Cholesky pivot ${row + 1} is not positive`);
         }
         cholesky[row * dimensions + column] = Math.sqrt(value);
       } else {
-        cholesky[row * dimensions + column] = value /
-          cholesky[column * dimensions + column];
+        cholesky[row * dimensions + column] = value / cholesky[column * dimensions + column];
       }
     }
   }
@@ -191,9 +160,7 @@ export function factorCovariance(
   // This is the usual dimension-scaled floating-point rank tolerance, with a
   // modest safety factor for covariance aggregation and subsequent row solves.
   const tolerance = instabilityMultiplier * dimensions * Number.EPSILON;
-  if (
-    !Number.isFinite(reciprocalCondition) || reciprocalCondition <= tolerance
-  ) {
+  if (!Number.isFinite(reciprocalCondition) || reciprocalCondition <= tolerance) {
     throw singularCovariance(
       `estimated reciprocal condition ${reciprocalCondition} is at or below ${tolerance}`,
     );
@@ -240,9 +207,7 @@ export function solveCovariance(
  * Returns the lower-triangular transform whose squared norm is Mahalanobis
  * squared distance. This inverts only the Cholesky factor, never covariance.
  */
-export function covarianceWhitening(
-  factor: CovarianceFactor,
-): Float64Array {
+export function covarianceWhitening(factor: CovarianceFactor): Float64Array {
   const { dimensions, scales, cholesky } = factor;
   const whitening = new Float64Array(dimensions * dimensions);
   // Invert the triangular correlation factor first, then apply feature units.
@@ -252,19 +217,15 @@ export function covarianceWhitening(
     for (let row = column; row < dimensions; row++) {
       let value = row === column ? 1 : 0;
       for (let k = column; k < row; k++) {
-        value -= cholesky[row * dimensions + k] *
-          whitening[k * dimensions + column];
+        value -= cholesky[row * dimensions + k] * whitening[k * dimensions + column];
       }
-      whitening[row * dimensions + column] = value /
-        cholesky[row * dimensions + row];
+      whitening[row * dimensions + column] = value / cholesky[row * dimensions + row];
     }
     for (let row = column; row < dimensions; row++) {
       const index = row * dimensions + column;
       whitening[index] /= scales[column];
       if (!Number.isFinite(whitening[index])) {
-        throw singularCovariance(
-          "the whitening transform produced a non-finite value",
-        );
+        throw singularCovariance("the whitening transform produced a non-finite value");
       }
     }
   }

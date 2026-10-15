@@ -1,9 +1,11 @@
-import { assertAlmostEquals, assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects, assertAlmostEquals } from "../../helpers/assertions.ts";
+
 import { DuckDBInstance } from "@duckdb/node-api";
 import computeMahalanobisDistances from "../../../src/helpers/computeMahalanobisDistances.ts";
 import { factorCovariance } from "../../../src/helpers/factorCovariance.ts";
 
-Deno.test("distance scratch tables are cleaned on success and numerical failure", async () => {
+test("distance scratch tables are cleaned on success and numerical failure", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   const model = {
@@ -22,15 +24,16 @@ Deno.test("distance scratch tables are cleaned on success and numerical failure"
     await connection.run(`CREATE TEMP TABLE "source "" rows" AS
       SELECT i AS "row "" id", [i::DOUBLE]::DOUBLE[1] AS "vector "" values" FROM range(3) source(i)`);
     const result = await computeMahalanobisDistances(connection, input, model);
-    const rows = (await connection.runAndReadAll(
-      `SELECT distance FROM "${result.relation}" ORDER BY row_id`,
-    )).getRowsJS().flat().map(Number);
-    assertEquals(rows, [0, 1, 2]);
+    const rows = (
+      await connection.runAndReadAll(`SELECT distance FROM "${result.relation}" ORDER BY row_id`)
+    )
+      .getRowsJS()
+      .flat()
+      .map(Number);
+    expect(rows).toStrictEqual([0, 1, 2]);
     await result.cleanup();
     await result.cleanup();
-    await connection.run(
-      `UPDATE "source "" rows" SET "vector "" values" = [1e308]::DOUBLE[1]`,
-    );
+    await connection.run(`UPDATE "source "" rows" SET "vector "" values" = [1e308]::DOUBLE[1]`);
     await assertRejects(
       () =>
         computeMahalanobisDistances(connection, input, {
@@ -40,10 +43,12 @@ Deno.test("distance scratch tables are cleaned on success and numerical failure"
       Error,
       "non-finite",
     );
-    const scratch = (await connection.runAndReadAll(
-      `SELECT table_name FROM duckdb_tables() WHERE table_name LIKE '__sda_mahalanobis_%'`,
-    )).getRowsJS();
-    assertEquals(scratch, []);
+    const scratch = (
+      await connection.runAndReadAll(
+        `SELECT table_name FROM duckdb_tables() WHERE table_name LIKE '__sda_mahalanobis_%'`,
+      )
+    ).getRowsJS();
+    expect(scratch).toStrictEqual([]);
     await assertRejects(
       () =>
         computeMahalanobisDistances(connection, input, {
@@ -68,7 +73,7 @@ Deno.test("distance scratch tables are cleaned on success and numerical failure"
   }
 });
 
-Deno.test("distance supports the smallest positive variance without an explicit covariance inverse", async () => {
+test("distance supports the smallest positive variance without an explicit covariance inverse", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -81,19 +86,23 @@ Deno.test("distance supports the smallest positive variance without an explicit 
       meanOffsets: new Float64Array([0]),
     };
     await connection.run(
-      `CREATE TEMP TABLE prepared AS SELECT 1 AS row_id, [${
-        Math.sqrt(variance)
-      }]::DOUBLE[1] AS vec`,
+      `CREATE TEMP TABLE prepared AS SELECT 1 AS row_id, [${Math.sqrt(
+        variance,
+      )}]::DOUBLE[1] AS vec`,
     );
-    const result = await computeMahalanobisDistances(connection, {
-      relation: "prepared",
-      rowIdColumn: "row_id",
-      vectorColumn: "vec",
-    }, model);
+    const result = await computeMahalanobisDistances(
+      connection,
+      {
+        relation: "prepared",
+        rowIdColumn: "row_id",
+        vectorColumn: "vec",
+      },
+      model,
+    );
     const distance = Number(
-      (await connection.runAndReadAll(
-        `SELECT distance FROM "${result.relation}"`,
-      )).getRowsJS()[0][0],
+      (
+        await connection.runAndReadAll(`SELECT distance FROM "${result.relation}"`)
+      ).getRowsJS()[0][0],
     );
     assertAlmostEquals(distance, 1, 1e-14);
     await result.cleanup();

@@ -17,11 +17,11 @@ export default function extractLatLon(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [latColumn, lonColumn], "extractLatLon()");
-      return `SELECT *, CAST(ST_Y(${quoteIdentifier(column)}) AS DOUBLE) AS ${
-        quoteIdentifier(latColumn)
-      }, CAST(ST_X(${quoteIdentifier(column)}) AS DOUBLE) AS ${
-        quoteIdentifier(lonColumn)
-      } FROM ${input}`;
+      return `SELECT *, CAST(ST_Y(${quoteIdentifier(column)}) AS DOUBLE) AS ${quoteIdentifier(
+        latColumn,
+      )}, CAST(ST_X(${quoteIdentifier(column)}) AS DOUBLE) AS ${quoteIdentifier(
+        lonColumn,
+      )} FROM ${input}`;
     },
   });
 }

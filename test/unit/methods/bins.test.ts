@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should reject a non-positive interval at call time", async () => {
+test("should reject a non-positive interval at call time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
 
@@ -14,7 +16,7 @@ Deno.test("should reject a non-positive interval at call time", async () => {
   await sdb.close();
 });
 
-Deno.test("should add numeric bin boundaries and an interval of 10", async () => {
+test("should add numeric bin boundaries and an interval of 10", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
@@ -22,7 +24,7 @@ Deno.test("should add numeric bin boundaries and an interval of 10", async () =>
   table.bins("Mark", 10, "binStart", "binEnd");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "Lily", Subject: "Maths", Mark: 65, binStart: 60, binEnd: 70 },
     { Name: "Lily", Subject: "Science", Mark: 80, binStart: 80, binEnd: 90 },
     { Name: "Lily", Subject: "English", Mark: 70, binStart: 70, binEnd: 80 },
@@ -49,7 +51,7 @@ Deno.test("should add numeric bin boundaries and an interval of 10", async () =>
   await sdb.close();
 });
 
-Deno.test("should add numeric bin boundaries and an interval of 10 and 45 as start value", async () => {
+test("should add numeric bin boundaries and an interval of 10 and 45 as start value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
@@ -59,7 +61,7 @@ Deno.test("should add numeric bin boundaries and an interval of 10 and 45 as sta
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "Lily", Subject: "Maths", Mark: 65, binStart: 65, binEnd: 75 },
     { Name: "Lily", Subject: "Science", Mark: 80, binStart: 75, binEnd: 85 },
     { Name: "Lily", Subject: "English", Mark: 70, binStart: 65, binEnd: 75 },
@@ -86,7 +88,7 @@ Deno.test("should add numeric bin boundaries and an interval of 10 and 45 as sta
   await sdb.close();
 });
 
-Deno.test("should throw when startValue is greater than the minimum value", async () => {
+test("should throw when startValue is greater than the minimum value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
@@ -101,7 +103,7 @@ Deno.test("should throw when startValue is greater than the minimum value", asyn
   await sdb.close();
 });
 
-Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+test("should throw when the new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
@@ -116,7 +118,7 @@ Deno.test("should throw when the new column name already exists, instead of sile
   await sdb.close();
 });
 
-Deno.test("should add numeric bin boundaries and an interval of 0.5", async () => {
+test("should add numeric bin boundaries and an interval of 0.5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataRank.csv");
@@ -124,7 +126,7 @@ Deno.test("should add numeric bin boundaries and an interval of 0.5", async () =
   table.bins("Mark", 0.5, "binStart", "binEnd");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "Lily", Subject: "Maths", Mark: 65, binStart: 65, binEnd: 65.5 },
     { Name: "Lily", Subject: "Science", Mark: 80, binStart: 80, binEnd: 80.5 },
     { Name: "Lily", Subject: "English", Mark: 70, binStart: 70, binEnd: 70.5 },
@@ -169,23 +171,25 @@ Deno.test("should add numeric bin boundaries and an interval of 0.5", async () =
   await sdb.close();
 });
 
-Deno.test("bins covers continuous values, exact boundaries, negatives, and nulls", async () => {
+test("bins covers continuous values, exact boundaries, negatives, and nulls", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadArray([
-      { value: -1 },
-      { value: -0.51 },
-      { value: -0.5 },
-      { value: -0.01 },
-      { value: 0 },
-      { value: 0.49 },
-      { value: 0.5 },
-      { value: null },
-    ]);
+    const table = sdb
+      .newTable()
+      .loadArray([
+        { value: -1 },
+        { value: -0.51 },
+        { value: -0.5 },
+        { value: -0.01 },
+        { value: 0 },
+        { value: 0.49 },
+        { value: 0.5 },
+        { value: null },
+      ]);
     const options = { startValue: -1 };
-    assertEquals(table.bins("value", 0.5, "start", "end", options), table);
+    expect(table.bins("value", 0.5, "start", "end", options)).toStrictEqual(table);
     options.startValue = 100;
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { value: -1, start: -1, end: -0.5 },
       { value: -0.51, start: -1, end: -0.5 },
       { value: -0.5, start: -0.5, end: 0 },
@@ -196,34 +200,31 @@ Deno.test("bins covers continuous values, exact boundaries, negatives, and nulls
       { value: null, start: null, end: null },
     ]);
     const types = await table.getTypes();
-    assertEquals(types.start, "DOUBLE");
-    assertEquals(types.end, "DOUBLE");
+    expect(types.start).toStrictEqual("DOUBLE");
+    expect(types.end).toStrictEqual("DOUBLE");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("bins assigns decimal boundaries without gaps from repeated addition", async () => {
+test("bins assigns decimal boundaries without gaps from repeated addition", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadArray([
-      { value: 0.1 },
-      { value: 0.299 },
-      { value: 0.3 },
-      { value: 0.6 },
-    ]).bins("value", 0.1, "start", "end", { startValue: 0 });
-    assertEquals(await table.getData(), [
+    const table = sdb
+      .newTable()
+      .loadArray([{ value: 0.1 }, { value: 0.299 }, { value: 0.3 }, { value: 0.6 }])
+      .bins("value", 0.1, "start", "end", { startValue: 0 });
+    expect(await table.getData()).toStrictEqual([
       { value: 0.1, start: 0.1, end: 0.2 },
       { value: 0.299, start: 0.2, end: 0.3 },
       { value: 0.3, start: 0.3, end: 0.4 },
       { value: 0.6, start: 0.6, end: 0.7 },
     ]);
-    const hundredths = sdb.newTable().loadArray([
-      { value: 0.03 },
-      { value: 0.059 },
-      { value: 0.06 },
-    ]).bins("value", 0.01, "start", "end");
-    assertEquals(await hundredths.getData(), [
+    const hundredths = sdb
+      .newTable()
+      .loadArray([{ value: 0.03 }, { value: 0.059 }, { value: 0.06 }])
+      .bins("value", 0.01, "start", "end");
+    expect(await hundredths.getData()).toStrictEqual([
       { value: 0.03, start: 0.03, end: 0.04 },
       { value: 0.059, start: 0.05, end: 0.06 },
       { value: 0.06, start: 0.06, end: 0.07 },
@@ -233,19 +234,17 @@ Deno.test("bins assigns decimal boundaries without gaps from repeated addition",
   }
 });
 
-Deno.test("bins supports numeric operations on quoted output columns in a chain", async () => {
+test("bins supports numeric operations on quoted output columns in a chain", async () => {
   const sdb = new SimpleDB();
   try {
-    const data = await sdb.newTable().loadArray([
-      { value: 5 },
-      { value: 15 },
-      { value: 24.9 },
-    ])
+    const data = await sdb
+      .newTable()
+      .loadArray([{ value: 5 }, { value: 15 }, { value: 24.9 }])
       .filter("value >= 15")
       .bins("value", 10, 'bin "start"', "bin end")
       .addColumn("width", "number", '"bin end" - "bin ""start"""')
       .getData();
-    assertEquals(data, [
+    expect(data).toStrictEqual([
       { value: 15, 'bin "start"': 15, "bin end": 25, width: 10 },
       { value: 24.9, 'bin "start"': 15, "bin end": 25, width: 10 },
     ]);
@@ -254,7 +253,7 @@ Deno.test("bins supports numeric operations on quoted output columns in a chain"
   }
 });
 
-Deno.test("bins rejects missing or duplicate output names and non-finite configuration", async () => {
+test("bins rejects missing or duplicate output names and non-finite configuration", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -264,19 +263,14 @@ Deno.test("bins rejects missing or duplicate output names and non-finite configu
       Error,
       "requires start and end",
     );
-    for (const names of [["bin", "bin"], ["Bin", "bin"]]) {
-      assertThrows(
-        () => table.bins("value", 10, names[0], names[1]),
-        Error,
-        "must be distinct",
-      );
+    for (const names of [
+      ["bin", "bin"],
+      ["Bin", "bin"],
+    ]) {
+      assertThrows(() => table.bins("value", 10, names[0], names[1]), Error, "must be distinct");
     }
     for (const interval of [0, -1, NaN, Infinity, -Infinity]) {
-      assertThrows(
-        () => table.bins("value", interval, "start", "end"),
-        Error,
-        "interval must be",
-      );
+      assertThrows(() => table.bins("value", interval, "start", "end"), Error, "interval must be");
     }
     for (const startValue of [NaN, Infinity, -Infinity]) {
       assertThrows(
@@ -290,37 +284,37 @@ Deno.test("bins rejects missing or duplicate output names and non-finite configu
   }
 });
 
-Deno.test("bins rejects collisions for either output column", async () => {
+test("bins rejects collisions for either output column", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const [start, end] of [["value", "end"], ["start", "value"], [
-        "VALUE",
-        "end",
-      ]]
-    ) {
+    for (const [start, end] of [
+      ["value", "end"],
+      ["start", "value"],
+      ["VALUE", "end"],
+    ]) {
       const table = sdb.newTable().loadArray([{ value: 1 }]);
-      await assertRejects(
-        () => table.bins("value", 10, start, end).run(),
-        Error,
-        "already exists",
-      );
+      await assertRejects(() => table.bins("value", 10, start, end).run(), Error, "already exists");
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("bins computes ends beyond the 32-bit integer range", async () => {
+test("bins computes ends beyond the 32-bit integer range", async () => {
   const sdb = new SimpleDB();
   try {
-    const data = await sdb.newTable().loadArray([{ value: 2147483645 }])
-      .bins("value", 10, "start", "end").getData();
-    assertEquals(data, [{
-      value: 2147483645,
-      start: 2147483645,
-      end: 2147483655,
-    }]);
+    const data = await sdb
+      .newTable()
+      .loadArray([{ value: 2147483645 }])
+      .bins("value", 10, "start", "end")
+      .getData();
+    expect(data).toStrictEqual([
+      {
+        value: 2147483645,
+        start: 2147483645,
+        end: 2147483655,
+      },
+    ]);
   } finally {
     await sdb.close();
   }

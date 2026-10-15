@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should throw when a column to remove does not exist", async () => {
+test("should throw when a column to remove does not exist", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -13,7 +15,7 @@ Deno.test("should throw when a column to remove does not exist", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove one column with spaces", async () => {
+test("should remove one column with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -21,7 +23,7 @@ Deno.test("should remove one column with spaces", async () => {
   table.removeColumns("Hire date");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       Job: "Clerk",
@@ -382,7 +384,7 @@ Deno.test("should remove one column with spaces", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should remove one column", async () => {
+test("should remove one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -391,7 +393,7 @@ Deno.test("should remove one column", async () => {
   table.removeColumns("hireDate");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Donald",
       job: "Clerk",
@@ -753,7 +755,7 @@ Deno.test("should remove one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove multiple columns", async () => {
+test("should remove multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
@@ -761,7 +763,7 @@ Deno.test("should remove multiple columns", async () => {
   table.removeColumns(["job", "salary"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Donald",
       hireDate: "21-JUN-07",

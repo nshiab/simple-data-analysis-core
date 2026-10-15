@@ -3,10 +3,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import getExtension from "./getExtension.ts";
 import { writeFileSync } from "node:fs";
 
-export default async function writeDataAsArrays(
-  simpleTable: SimpleTable,
-  file: string,
-) {
+export default async function writeDataAsArrays(simpleTable: SimpleTable, file: string) {
   const fileExtension = getExtension(file);
   if (fileExtension === "json") {
     const data = await simpleTable.getData();

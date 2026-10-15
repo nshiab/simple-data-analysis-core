@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return 5 random rows", async () => {
+test("should return 5 random rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -10,11 +11,11 @@ Deno.test("should return 5 random rows", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data.length, 5);
+  expect(data.length).toStrictEqual(5);
   await sdb.close();
 });
 
-Deno.test("should return 20% random rows", async () => {
+test("should return 20% random rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -22,11 +23,11 @@ Deno.test("should return 20% random rows", async () => {
   table.sample("20%");
   const data = await table.getData();
 
-  assertEquals(data.length, 10);
+  expect(data.length).toStrictEqual(10);
   await sdb.close();
 });
 
-Deno.test("should return the 5 same random rows based on seed", async () => {
+test("should return the 5 same random rows based on seed", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -36,7 +37,7 @@ Deno.test("should return the 5 same random rows based on seed", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Mavris, Susan",
       "Hire date": "07-JUN-02",
@@ -81,7 +82,7 @@ Deno.test("should return the 5 same random rows based on seed", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the same 20% random rows based on a seed", async () => {
+test("should return the same 20% random rows based on a seed", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -92,7 +93,7 @@ Deno.test("should return the same 20% random rows based on a seed", async () => 
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Grant, Douglas",
       "Hire date": "13-JAN-08",

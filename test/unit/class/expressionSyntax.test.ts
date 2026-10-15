@@ -1,4 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { mkdtemp as nodeMkdtemp, writeFile as nodeWriteFile, rm as nodeRm } from "node:fs/promises";
+import { join as nodeJoin } from "node:path";
+import { tmpdir as nodeTmpdir } from "node:os";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 
@@ -91,10 +95,9 @@ const entryPoints: {
     name: "customQuery",
     run: async (t, c) => {
       // Flush a pending load through the public custom-query path.
-      return await t.sdb.customQuery(
-        `SELECT * FROM "${t.name}" WHERE ${c} ORDER BY id`,
-        { returnData: true },
-      );
+      return await t.sdb.customQuery(`SELECT * FROM "${t.name}" WHERE ${c} ORDER BY id`, {
+        returnData: true,
+      });
     },
     expected: selected,
   },
@@ -112,10 +115,10 @@ const entryPoints: {
         logged.length = 0;
         const expectedTable = t.sdb.newTable().loadArray(selected);
         await expectedTable.log();
-        assertEquals(actual[0], [`\nTable ${t.name}:`]);
-        assertEquals(actual[1], [`Conditions: ${conditions}`]);
+        expect(actual[0]).toStrictEqual([`\nTable ${t.name}:`]);
+        expect(actual[1]).toStrictEqual([`Conditions: ${conditions}`]);
         // Compare rendered rows and counts, excluding the differing table headers.
-        assertEquals(actual.slice(2), logged.slice(1));
+        expect(actual.slice(2)).toStrictEqual(logged.slice(1));
       } finally {
         console.log = originalLog;
       }
@@ -126,39 +129,39 @@ const entryPoints: {
 ];
 
 for (const expressionSyntax of ["js", "sql"] as const) {
-  const conditions = expressionSyntax === "js"
-    ? "(active || admin) && id !== null && text === 'a || b'"
-    : "(active OR admin) AND id IS NOT NULL AND text || '!' = 'a || b!' AND (NULL = NULL) IS NULL";
+  const conditions =
+    expressionSyntax === "js"
+      ? "(active || admin) && id !== null && text === 'a || b'"
+      : "(active OR admin) AND id IS NOT NULL AND text || '!' = 'a || b!' AND (NULL = NULL) IS NULL";
   for (const { name, run, expected } of entryPoints) {
-    Deno.test(`${name} honors ${expressionSyntax} expressionSyntax`, async () => {
+    test(`${name} honors ${expressionSyntax} expressionSyntax`, async () => {
       const sdb = new SimpleDB({ expressionSyntax });
       try {
-        assertEquals(
-          await run(sdb.newTable().loadArray(rows), conditions),
-          expected,
-        );
+        expect(await run(sdb.newTable().loadArray(rows), conditions)).toStrictEqual(expected);
       } finally {
         await sdb.close();
       }
     });
   }
   for (const format of ["json", "geojson"] as const) {
-    Deno.test(`${format === "json" ? "loadData" : "loadGeoData"} honors ${expressionSyntax} expressionSyntax`, async () => {
+    test(`${format === "json" ? "loadData" : "loadGeoData"} honors ${expressionSyntax} expressionSyntax`, async () => {
       const sdb = new SimpleDB({ expressionSyntax });
-      const directory = await Deno.makeTempDir();
+      const directory = await nodeMkdtemp(nodeJoin(nodeTmpdir(), "sda-test-"));
       try {
         const file = `${directory}/rows.${format}`;
-        await Deno.writeTextFile(
+        await nodeWriteFile(
           file,
           JSON.stringify(
-            format === "json" ? rows : {
-              type: "FeatureCollection",
-              features: rows.map((properties) => ({
-                type: "Feature",
-                properties,
-                geometry: { type: "Point", coordinates: [0, 0] },
-              })),
-            },
+            format === "json"
+              ? rows
+              : {
+                  type: "FeatureCollection",
+                  features: rows.map((properties) => ({
+                    type: "Feature",
+                    properties,
+                    geometry: { type: "Point", coordinates: [0, 0] },
+                  })),
+                },
           ),
         );
         const table = sdb.newTable();
@@ -166,12 +169,15 @@ for (const expressionSyntax of ["js", "sql"] as const) {
         if (format === "json") {
           table.loadData(file, { conditions, columns: ["id"] });
         } else table.loadGeoData(file, { conditions, columns: ["id"] });
-        assertEquals(await table.sort({ id: "asc" }).getData(), [{ id: 1 }, {
-          id: 2,
-        }]);
+        expect(await table.sort({ id: "asc" }).getData()).toStrictEqual([
+          { id: 1 },
+          {
+            id: 2,
+          },
+        ]);
       } finally {
         await sdb.close();
-        await Deno.remove(directory, { recursive: true });
+        await nodeRm(directory, { recursive: true });
       }
     });
   }

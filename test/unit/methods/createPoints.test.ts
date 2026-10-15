@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should create points", async () => {
+test("should create points", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/geodata/files/coordinates.csv");
@@ -10,7 +11,7 @@ Deno.test("should create points", async () => {
 
   const data = await table.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -32,7 +33,7 @@ Deno.test("should create points", async () => {
   });
 
   const types = await table.getTypes();
-  assertEquals(types, {
+  expect(types).toStrictEqual({
     name: "VARCHAR",
     lat: "DOUBLE",
     lon: "DOUBLE",
@@ -42,7 +43,7 @@ Deno.test("should create points", async () => {
   await sdb.close();
 });
 
-Deno.test("createPoints() should overwrite existing column", async () => {
+test("createPoints() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -53,7 +54,7 @@ Deno.test("createPoints() should overwrite existing column", async () => {
   table.createPoints("lat", "lon", "geom");
 
   const types = await table.getTypes();
-  assertEquals(types, {
+  expect(types).toStrictEqual({
     lat: "DOUBLE",
     lon: "DOUBLE",
     geom: "GEOMETRY('EPSG:4326')",
@@ -62,7 +63,7 @@ Deno.test("createPoints() should overwrite existing column", async () => {
   await sdb.close();
 });
 
-Deno.test("createPoints() should use the specified projection", async () => {
+test("createPoints() should use the specified projection", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ x: 1_234_567, y: 2_345_678 }]);
@@ -70,7 +71,7 @@ Deno.test("createPoints() should use the specified projection", async () => {
   table.createPoints("y", "x", "geom", { projection: "EPSG:3347" });
 
   const types = await table.getTypes();
-  assertEquals(types, {
+  expect(types).toStrictEqual({
     x: "DOUBLE",
     y: "DOUBLE",
     geom: "GEOMETRY('EPSG:3347')",

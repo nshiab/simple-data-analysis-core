@@ -6,9 +6,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
  * Loads the spatial extension once per connection, so geospatial operations
  * can fuse as plain SELECT fragments instead of each being multi-statement.
  */
-export default async function ensureSpatial(
-  simpleTable: SimpleTable,
-): Promise<void> {
+export default async function ensureSpatial(simpleTable: SimpleTable): Promise<void> {
   if (simpleTable.sdb.spatialLoaded) {
     return;
   }

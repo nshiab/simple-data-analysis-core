@@ -1,35 +1,36 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the mean value", async () => {
+test("should return the mean value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
-  assertEquals(await table.getMean("key1"), 2.5);
+  expect(await table.getMean("key1")).toStrictEqual(2.5);
   await sdb.close();
 });
 
-Deno.test("should return the mean value rounded", async () => {
+test("should return the mean value rounded", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
-  assertEquals(await table.getMean("key1", { decimals: 0 }), 3);
+  expect(await table.getMean("key1", { decimals: 0 })).toStrictEqual(3);
   await sdb.close();
 });
-Deno.test("should return the mean value even when there are spaces in the column name", async () => {
+test("should return the mean value even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
-  assertEquals(await table.getMean("key 1"), 2.5);
+  expect(await table.getMean("key 1")).toStrictEqual(2.5);
   await sdb.close();
 });
 
-Deno.test("should return the mean value rounded even when there are spaces in the column name", async () => {
+test("should return the mean value rounded even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
-  assertEquals(await table.getMean("key 1", { decimals: 0 }), 3);
+  expect(await table.getMean("key 1", { decimals: 0 })).toStrictEqual(3);
   await sdb.close();
 });

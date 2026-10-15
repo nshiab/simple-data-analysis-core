@@ -56,16 +56,14 @@ export default async function prepareNumericFeatures(
   // source columns when algorithms publish from this snapshot.
   const sourceColumns = await table.getColumns();
   const resolveColumn = (requested: string): string => {
-    const resolved = sourceColumns.find((column) =>
-      foldIdentifier(column) === foldIdentifier(requested)
+    const resolved = sourceColumns.find(
+      (column) => foldIdentifier(column) === foldIdentifier(requested),
     );
     if (resolved === undefined) {
       throw new Error(
-        `${options.method} could not find column ${
-          quoteIdentifier(requested)
-        }. Available columns: ${
-          sourceColumns.map(quoteIdentifier).join(", ")
-        }.`,
+        `${options.method} could not find column ${quoteIdentifier(
+          requested,
+        )}. Available columns: ${sourceColumns.map(quoteIdentifier).join(", ")}.`,
       );
     }
     return resolved;
@@ -75,29 +73,23 @@ export default async function prepareNumericFeatures(
   let vectorType: { elementType: string; fixedDimensions?: number } | undefined;
   if (input.kind === "scalars") {
     if (input.columns.length === 0) {
-      throw new Error(
-        `${options.method} requires at least one numeric scalar column.`,
-      );
+      throw new Error(`${options.method} requires at least one numeric scalar column.`);
     }
     const duplicate = findDuplicate(input.columns);
     if (duplicate !== undefined) {
       throw new Error(
-        `${options.method} received duplicate input column ${
-          quoteIdentifier(duplicate)
-        }. Each numeric feature column must be listed once.`,
+        `${options.method} received duplicate input column ${quoteIdentifier(
+          duplicate,
+        )}. Each numeric feature column must be listed once.`,
       );
     }
     selectedColumns = input.columns.map(resolveColumn);
-    const nonNumeric = selectedColumns.filter((column) =>
-      !isNumericScalarType(types[column])
-    );
+    const nonNumeric = selectedColumns.filter((column) => !isNumericScalarType(types[column]));
     if (nonNumeric.length > 0) {
       throw new Error(
-        `${options.method} requires numeric scalar columns. The following input columns are not numeric scalars: ${
-          nonNumeric.map((column) =>
-            `${quoteIdentifier(column)} (${types[column]})`
-          ).join(", ")
-        }. Convert them to numeric scalar types first.`,
+        `${options.method} requires numeric scalar columns. The following input columns are not numeric scalars: ${nonNumeric
+          .map((column) => `${quoteIdentifier(column)} (${types[column]})`)
+          .join(", ")}. Convert them to numeric scalar types first.`,
       );
     }
   } else {
@@ -106,9 +98,9 @@ export default async function prepareNumericFeatures(
     vectorType = parseNumericVectorType(types[column]);
     if (vectorType === undefined) {
       throw new Error(
-        `${options.method} requires a one-dimensional numeric LIST or ARRAY column, but ${
-          quoteIdentifier(column)
-        } has type ${types[column]}.`,
+        `${options.method} requires a one-dimensional numeric LIST or ARRAY column, but ${quoteIdentifier(
+          column,
+        )} has type ${types[column]}.`,
       );
     }
   }
@@ -128,59 +120,53 @@ export default async function prepareNumericFeatures(
   };
 
   try {
-    const tableDetails = (await connection.runAndReadAll(
-      `SELECT table_oid, temporary FROM duckdb_tables()
+    const tableDetails = (
+      await connection.runAndReadAll(
+        `SELECT table_oid, temporary FROM duckdb_tables()
        WHERE translate(table_name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = $1
          AND schema_name = current_schema()
          AND database_name IN (current_database(), 'temp')
        ORDER BY temporary DESC LIMIT 1`,
-      [foldIdentifier(table.name)],
-    )).getRowsJS()[0];
+        [foldIdentifier(table.name)],
+      )
+    ).getRowsJS()[0];
     if (tableDetails === undefined) {
-      throw new Error(
-        `${options.method} requires a materialized source table.`,
-      );
+      throw new Error(`${options.method} requires a materialized source table.`);
     }
     const sourceTemporary = Boolean(tableDetails[1]);
     const rowCount = Number(
-      (await connection.runAndReadAll(`SELECT count(*) FROM ${source}`))
-        .getRowsJS()[0][0],
+      (await connection.runAndReadAll(`SELECT count(*) FROM ${source}`)).getRowsJS()[0][0],
     );
 
     let dimensions: number;
     let vectorExpression: string;
     if (input.kind === "scalars") {
       dimensions = selectedColumns.length;
-      await rejectInvalidScalarRows(
-        connection,
-        source,
-        selectedColumns,
-        types,
-        options.method,
-        { rejectNulls, rejectNonFinite },
-      );
-      vectorExpression = `[${
-        selectedColumns.map((column) =>
-          castToDouble(quoteIdentifier(column), types[column])
-        )
-          .join(", ")
-      }]::DOUBLE[${dimensions}]`;
+      await rejectInvalidScalarRows(connection, source, selectedColumns, types, options.method, {
+        rejectNulls,
+        rejectNonFinite,
+      });
+      vectorExpression = `[${selectedColumns
+        .map((column) => castToDouble(quoteIdentifier(column), types[column]))
+        .join(", ")}]::DOUBLE[${dimensions}]`;
     } else {
       const column = selectedColumns[0];
       const quotedColumn = quoteIdentifier(column);
       const emptyRows = Number(
-        (await connection.runAndReadAll(
-          `SELECT count(*) FROM ${source}
+        (
+          await connection.runAndReadAll(
+            `SELECT count(*) FROM ${source}
            WHERE ${quotedColumn} IS NOT NULL AND len(${quotedColumn}) = 0`,
-        )).getRowsJS()[0][0],
+          )
+        ).getRowsJS()[0][0],
       );
       if (emptyRows > 0) {
         throw new Error(
           `${options.method} found ${emptyRows} row${
             emptyRows === 1 ? "" : "s"
-          } with an empty vector in column ${
-            quoteIdentifier(column)
-          }. Vectors must have a nonzero dimension.`,
+          } with an empty vector in column ${quoteIdentifier(
+            column,
+          )}. Vectors must have a nonzero dimension.`,
         );
       }
       await rejectInvalidVectorRows(
@@ -195,45 +181,51 @@ export default async function prepareNumericFeatures(
       if (vectorType?.fixedDimensions !== undefined) {
         dimensions = vectorType.fixedDimensions;
       } else {
-        const dimensionRows = (await connection.runAndReadAll(
-          `SELECT len(${quotedColumn}) AS dimensions
+        const dimensionRows = (
+          await connection.runAndReadAll(
+            `SELECT len(${quotedColumn}) AS dimensions
            FROM ${source} WHERE ${quotedColumn} IS NOT NULL LIMIT 1`,
-        )).getRowsJS();
+          )
+        ).getRowsJS();
         if (dimensionRows.length === 0) {
           throw new Error(
-            `${options.method} could not determine a vector dimension for ${
-              quoteIdentifier(column)
-            }. Provide at least one non-null, nonempty vector.`,
+            `${options.method} could not determine a vector dimension for ${quoteIdentifier(
+              column,
+            )}. Provide at least one non-null, nonempty vector.`,
           );
         }
         dimensions = Number(dimensionRows[0][0]);
       }
 
       const distinctDimensions = Number(
-        (await connection.runAndReadAll(
-          `SELECT count(DISTINCT len(${quotedColumn})) FROM ${source}
+        (
+          await connection.runAndReadAll(
+            `SELECT count(DISTINCT len(${quotedColumn})) FROM ${source}
            WHERE ${quotedColumn} IS NOT NULL`,
-        )).getRowsJS()[0][0],
+          )
+        ).getRowsJS()[0][0],
       );
       if (distinctDimensions > 1) {
         throw new Error(
-          `${options.method} requires vectors with equal dimensions, but column ${
-            quoteIdentifier(column)
-          } contains ${distinctDimensions} different lengths.`,
+          `${options.method} requires vectors with equal dimensions, but column ${quoteIdentifier(
+            column,
+          )} contains ${distinctDimensions} different lengths.`,
         );
       }
-      vectorExpression = vectorType!.elementType === "BIGNUM"
-        ? `list_transform(${quotedColumn}, value -> ${
-          castToDouble("value", "BIGNUM")
-        })::DOUBLE[${dimensions}]`
-        : `${quotedColumn}::DOUBLE[${dimensions}]`;
+      vectorExpression =
+        vectorType!.elementType === "BIGNUM"
+          ? `list_transform(${quotedColumn}, value -> ${castToDouble(
+              "value",
+              "BIGNUM",
+            )})::DOUBLE[${dimensions}]`
+          : `${quotedColumn}::DOUBLE[${dimensions}]`;
     }
 
     await connection.run(
       `CREATE TEMP TABLE ${preparedRelation} AS
-       SELECT *, row_number() OVER () - 1 AS ${
-        quoteIdentifier(rowIdColumn)
-      }, ${vectorExpression} AS ${quoteIdentifier(vectorColumn)}
+       SELECT *, row_number() OVER () - 1 AS ${quoteIdentifier(
+         rowIdColumn,
+       )}, ${vectorExpression} AS ${quoteIdentifier(vectorColumn)}
        FROM ${source}`,
     );
 
@@ -298,11 +290,9 @@ async function rejectInvalidScalarRows(
   const aliases = columns.map((_, index) => `invalid_${index}`);
   const query = `SELECT
     count(*) FILTER (WHERE ${predicates.join(" OR ")}) AS invalid_rows,
-    ${
-    predicates.map((predicate, index) =>
-      `count(*) FILTER (WHERE ${predicate}) AS ${aliases[index]}`
-    ).join(", ")
-  }
+    ${predicates
+      .map((predicate, index) => `count(*) FILTER (WHERE ${predicate}) AS ${aliases[index]}`)
+      .join(", ")}
     FROM ${source}`;
   const row = (await connection.runAndReadAll(query)).getRowsJS()[0];
   const invalidRows = Number(row[0]);
@@ -332,28 +322,28 @@ async function rejectInvalidVectorRows(
   const checks: string[] = [];
   if (validation.rejectNulls) {
     checks.push(`${vector} IS NULL`);
-    checks.push(
-      `(${vector} IS NOT NULL AND list_count(${vector}) != len(${vector}))`,
-    );
+    checks.push(`(${vector} IS NOT NULL AND list_count(${vector}) != len(${vector}))`);
   }
   if (validation.rejectNonFinite) {
     checks.push(
-      `(${vector} IS NOT NULL AND COALESCE(NOT list_bool_and(list_transform(${vector}, value -> value IS NULL OR COALESCE(isfinite(${
-        castToDouble("value", elementType, true)
-      }), FALSE))), FALSE))`,
+      `(${vector} IS NOT NULL AND COALESCE(NOT list_bool_and(list_transform(${vector}, value -> value IS NULL OR COALESCE(isfinite(${castToDouble(
+        "value",
+        elementType,
+        true,
+      )}), FALSE))), FALSE))`,
     );
   }
   if (checks.length === 0) return;
   const invalidRows = Number(
-    (await connection.runAndReadAll(
-      `SELECT count(*) FROM ${source} WHERE ${checks.join(" OR ")}`,
-    )).getRowsJS()[0][0],
+    (
+      await connection.runAndReadAll(`SELECT count(*) FROM ${source} WHERE ${checks.join(" OR ")}`)
+    ).getRowsJS()[0][0],
   );
   if (invalidRows === 0) return;
   throw new Error(
-    `${method} requires finite, non-null vector values. Column ${
-      quoteIdentifier(column)
-    } has ${invalidRows} invalid row${invalidRows === 1 ? "" : "s"}.`,
+    `${method} requires finite, non-null vector values. Column ${quoteIdentifier(
+      column,
+    )} has ${invalidRows} invalid row${invalidRows === 1 ? "" : "s"}.`,
   );
 }
 

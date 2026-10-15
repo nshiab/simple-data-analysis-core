@@ -16,9 +16,7 @@ export default function splitSpread(
 ) {
   newColumns = [...newColumns];
   if (newColumns.length === 0) {
-    throw new Error(
-      "splitSpread() newColumns must contain at least one column.",
-    );
+    throw new Error("splitSpread() newColumns must contain at least one column.");
   }
   options = structuredClone(options);
   // The pre-validation queries the data, so splitSpread can't be expressed
@@ -27,8 +25,7 @@ export default function splitSpread(
     kind: "barrier",
     method: "splitSpread()",
     parameters: { column, separator, newColumns, options },
-    execute: () =>
-      executeSplitSpread(simpleTable, column, separator, newColumns, options),
+    execute: () => executeSplitSpread(simpleTable, column, separator, newColumns, options),
   });
 }
 
@@ -54,12 +51,8 @@ async function executeSplitSpread(
     const partsResult = await queryDB(
       simpleTable,
       `SELECT
-        MAX(ARRAY_LENGTH(STRING_SPLIT(${
-        quoteIdentifier(column)
-      }, ?))) AS max_parts,
-        MIN(ARRAY_LENGTH(STRING_SPLIT(${
-        quoteIdentifier(column)
-      }, ?))) AS min_parts
+        MAX(ARRAY_LENGTH(STRING_SPLIT(${quoteIdentifier(column)}, ?))) AS max_parts,
+        MIN(ARRAY_LENGTH(STRING_SPLIT(${quoteIdentifier(column)}, ?))) AS min_parts
       FROM ${quoteIdentifier(simpleTable.name)}`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
@@ -80,9 +73,7 @@ async function executeSplitSpread(
           simpleTable,
           `SELECT ${quoteIdentifier(column)}
          FROM ${quoteIdentifier(simpleTable.name)}
-         WHERE ARRAY_LENGTH(STRING_SPLIT(${
-            quoteIdentifier(column)
-          }, ?)) > ${partCount}
+         WHERE ARRAY_LENGTH(STRING_SPLIT(${quoteIdentifier(column)}, ?)) > ${partCount}
          LIMIT 5`,
           mergeOptions(simpleTable, {
             table: simpleTable.name,
@@ -99,9 +90,9 @@ async function executeSplitSpread(
 
         throw new Error(
           `Some rows contain more values after splitting (${maxParts}) than the number of new columns specified (${partCount}).
-When splitting by '${separator}', each row must produce at most ${partCount} value(s) to fit in the columns: ${
-            newColumns.join(", ")
-          }.
+When splitting by '${separator}', each row must produce at most ${partCount} value(s) to fit in the columns: ${newColumns.join(
+            ", ",
+          )}.
 
 First 5 rows with too many values:\n  - ${exampleRows}`,
         );
@@ -115,12 +106,7 @@ First 5 rows with too many values:\n  - ${exampleRows}`,
     }
   }
 
-  const split = splitSpreadQuery(
-    simpleTable.name,
-    column,
-    separator,
-    newColumns,
-  );
+  const split = splitSpreadQuery(simpleTable.name, column, separator, newColumns);
   await queryDB(
     simpleTable,
     split.query,
@@ -143,15 +129,12 @@ function splitSpreadQuery(
   // instead of once per ALTER + once per UPDATE.
   const splitColumns = newColumns
     .map(
-      (col, i) =>
-        `SPLIT_PART(${quoteIdentifier(column)}, ?, ${i + 1}) AS ${
-          quoteIdentifier(col)
-        }`,
+      (col, i) => `SPLIT_PART(${quoteIdentifier(column)}, ?, ${i + 1}) AS ${quoteIdentifier(col)}`,
     )
     .join(", ");
 
-  const query = `CREATE OR REPLACE TABLE ${
-    quoteIdentifier(table)
-  } AS SELECT *, ${splitColumns} FROM ${quoteIdentifier(table)}`;
+  const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(
+    table,
+  )} AS SELECT *, ${splitColumns} FROM ${quoteIdentifier(table)}`;
   return { query, values: newColumns.map(() => separator) };
 }

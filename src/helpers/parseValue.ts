@@ -1,3 +1,4 @@
+import stringifyUnknown from "./stringifyUnknown.ts";
 /**
  * Converts a JavaScript value to a SQL literal. Strings are quoted with embedded
  * quotes escaped, dates become quoted ISO strings, and null, undefined, or NaN
@@ -28,6 +29,6 @@ export default function parseValue(value: unknown): string | boolean | number {
   } else if (typeof value === "number") {
     return value;
   } else {
-    throw new Error(`Unknown type ${typeof value} of ${value}.`);
+    throw new Error(`Unknown type ${typeof value} of ${stringifyUnknown(value, "template")}.`);
   }
 }

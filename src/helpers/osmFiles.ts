@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { createWriteStream, mkdirSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { rm, stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import prettyDuration from "./prettyDuration.ts";
@@ -36,14 +36,10 @@ export function normalizeRemoteOsmUrl(file: string): string {
   try {
     url = new URL(file);
   } catch {
-    throw new Error(
-      "loadOpenStreetMap() remote sources must be valid HTTP or HTTPS URLs.",
-    );
+    throw new Error("loadOpenStreetMap() remote sources must be valid HTTP or HTTPS URLs.");
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error(
-      "loadOpenStreetMap() remote sources must use an HTTP or HTTPS URL.",
-    );
+    throw new Error("loadOpenStreetMap() remote sources must use an HTTP or HTTPS URL.");
   }
   return url.href;
 }
@@ -57,12 +53,10 @@ export function sanitizeOsmUrl(source: string): string {
   }
   url.username = "";
   url.password = "";
-  for (const key of [...url.searchParams.keys()]) {
-    if (
-      /(?:api[-_]?key|auth|credential|password|secret|signature|token)/i.test(
-        key,
-      )
-    ) {
+  // Snapshot keys because set() removes duplicate query parameters.
+  const keys = [...url.searchParams.keys()];
+  for (const key of keys) {
+    if (/(?:api[-_]?key|auth|credential|password|secret|signature|token)/i.test(key)) {
       url.searchParams.set(key, "[REDACTED]");
     }
   }
@@ -95,26 +89,20 @@ export async function downloadOsmToTemporaryFile(
   let lastFailure: RetryFailure | undefined;
 
   for (let attempt = 1; attempt <= totalAttempts; attempt++) {
-    const temporaryFile =
-      `${temporaryDirectory}/${prefix}.${crypto.randomUUID()}${options.suffix}`;
+    const temporaryFile = `${temporaryDirectory}/${prefix}.${crypto.randomUUID()}${options.suffix}`;
     const start = Date.now();
-    options.verbose && console.log(
-      `${
-        options.overpass ? "Querying Overpass" : "Downloading OSM data"
-      } (attempt ${attempt} of ${totalAttempts})...`,
-    );
+    if (options.verbose) {
+      console.log(
+        `${
+          options.overpass ? "Querying Overpass" : "Downloading OSM data"
+        } (attempt ${attempt} of ${totalAttempts})...`,
+      );
+    }
 
     try {
-      const response = await fetchWithTimeout(
-        url,
-        options.request,
-        options.timeout,
-      );
+      const response = await fetchWithTimeout(url, options.request, options.timeout);
       if (!response.ok) {
-        const failure = classifyHttpFailure(
-          response,
-          options.overpass ?? false,
-        );
+        const failure = classifyHttpFailure(response, options.overpass ?? false);
         if (!failure.retryable) {
           const responseText = (await response.text()).slice(0, 500).trim();
           if (responseText.length > 0) {
@@ -129,51 +117,36 @@ export async function downloadOsmToTemporaryFile(
         throw {
           reason: "The response body was empty.",
           retryable: true,
-          explanation:
-            "an empty response can be caused by an interrupted transfer",
+          explanation: "an empty response can be caused by an interrupted transfer",
         } satisfies RetryFailure;
       }
 
       await pipeline(
-        Readable.fromWeb(
-          response.body as Parameters<typeof Readable.fromWeb>[0],
-        ),
+        Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
         createWriteStream(temporaryFile, { flags: "wx" }),
       );
       if (options.verbose) {
-        const size = (await Deno.stat(temporaryFile)).size;
+        const size = (await stat(temporaryFile)).size;
         console.log(
-          `${options.overpass ? "Received" : "Downloaded"} ${
-            formatBytes(size)
-          } in ${prettyDuration(start)}.`,
+          `${options.overpass ? "Received" : "Downloaded"} ${formatBytes(
+            size,
+          )} in ${prettyDuration(start)}.`,
         );
       }
       return temporaryFile;
     } catch (error) {
       await rm(temporaryFile, { force: true }).catch(() => undefined);
-      lastFailure = isRetryFailure(error)
-        ? error
-        : classifyFetchFailure(error, options.timeout);
+      lastFailure = isRetryFailure(error) ? error : classifyFetchFailure(error, options.timeout);
       const canRetry = lastFailure.retryable && attempt < totalAttempts;
-      logAttemptFailure(
-        sanitizedSource,
-        attempt,
-        totalAttempts,
-        lastFailure,
-        canRetry,
-      );
+      logAttemptFailure(sanitizedSource, attempt, totalAttempts, lastFailure, canRetry);
       if (!canRetry) {
-        throw new Error(
-          finalRequestError(attempt, retries, totalDelay, lastFailure),
-          { cause: error },
-        );
+        throw new Error(finalRequestError(attempt, retries, totalDelay, lastFailure), {
+          cause: error,
+        });
       }
 
       const calculatedDelay = retryDelay * 2 ** (attempt - 1);
-      const delay = Math.max(
-        calculatedDelay,
-        lastFailure.retryAfterSeconds ?? 0,
-      );
+      const delay = Math.max(calculatedDelay, lastFailure.retryAfterSeconds ?? 0);
       logRetryDelay(
         delay,
         calculatedDelay,
@@ -206,28 +179,22 @@ async function fetchWithTimeout(
   request: RequestInit | undefined,
   timeout: number | undefined,
 ): Promise<Response> {
-  const timeoutSignal = timeout === undefined
-    ? undefined
-    : AbortSignal.timeout(timeout * 1000);
+  const timeoutSignal = timeout === undefined ? undefined : AbortSignal.timeout(timeout * 1000);
   const requestSignal = request?.signal ?? undefined;
-  const signal = timeoutSignal === undefined
-    ? requestSignal
-    : requestSignal === undefined
-    ? timeoutSignal
-    : AbortSignal.any([timeoutSignal, requestSignal]);
+  const signal =
+    timeoutSignal === undefined
+      ? requestSignal
+      : requestSignal === undefined
+        ? timeoutSignal
+        : AbortSignal.any([timeoutSignal, requestSignal]);
   return await fetch(url, { ...request, signal });
 }
 
-function classifyHttpFailure(
-  response: Response,
-  overpass: boolean,
-): RetryFailure {
+function classifyHttpFailure(response: Response, overpass: boolean): RetryFailure {
   const status = `HTTP ${response.status}${
     response.statusText.length > 0 ? ` ${response.statusText}` : ""
   }`;
-  const retryAfterSeconds = parseRetryAfter(
-    response.headers.get("retry-after"),
-  );
+  const retryAfterSeconds = parseRetryAfter(response.headers.get("retry-after"));
   if (response.status === 408) {
     return {
       reason: status,
@@ -256,31 +223,25 @@ function classifyHttpFailure(
     return {
       reason: status,
       retryable: true,
-      explanation:
-        "Overpass public instances use HTTP 406 for temporary resource limits",
+      explanation: "Overpass public instances use HTTP 406 for temporary resource limits",
       retryAfterSeconds,
     };
   }
   return {
     reason: status,
     retryable: false,
-    explanation:
-      `HTTP ${response.status} is not considered a transient failure`,
+    explanation: `HTTP ${response.status} is not considered a transient failure`,
   };
 }
 
-function classifyFetchFailure(
-  error: unknown,
-  timeout: number | undefined,
-): RetryFailure {
+function classifyFetchFailure(error: unknown, timeout: number | undefined): RetryFailure {
   const message = error instanceof Error ? error.message : String(error);
-  const timedOut = error instanceof DOMException &&
+  const timedOut =
+    error instanceof DOMException &&
     (error.name === "TimeoutError" || error.name === "AbortError") &&
     timeout !== undefined;
   return {
-    reason: timedOut
-      ? `The request timed out after ${timeout} seconds.`
-      : message,
+    reason: timedOut ? `The request timed out after ${timeout} seconds.` : message,
     retryable: true,
     explanation: timedOut
       ? "a configured request timeout is retryable"
@@ -291,9 +252,11 @@ function classifyFetchFailure(
 function isRetryFailure(error: unknown): error is RetryFailure {
   if (typeof error !== "object" || error === null) return false;
   const candidate = error as { [key: string]: unknown };
-  return typeof candidate.reason === "string" &&
+  return (
+    typeof candidate.reason === "string" &&
     typeof candidate.retryable === "boolean" &&
-    typeof candidate.explanation === "string";
+    typeof candidate.explanation === "string"
+  );
 }
 
 function parseRetryAfter(value: string | null): number | undefined {
@@ -320,12 +283,12 @@ function logAttemptFailure(
         canRetry
           ? `This failure is retryable because ${failure.explanation}.`
           : `Not retrying because ${
-            failure.retryable
-              ? totalAttempts === 1
-                ? "no retries were configured"
-                : "the configured retries have been exhausted"
-              : failure.explanation
-          }.`
+              failure.retryable
+                ? totalAttempts === 1
+                  ? "no retries were configured"
+                  : "the configured retries have been exhausted"
+                : failure.explanation
+            }.`
       }`,
   );
 }
@@ -340,21 +303,19 @@ function logRetryDelay(
 ): void {
   if (retryAfter !== undefined && retryAfter > calculatedDelay) {
     console.log(
-      `Retrying in ${
-        formatSeconds(delay)
-      } because the server returned Retry-After: ${retryAfter}.\n` +
-        `The calculated retry delay was ${
-          formatSeconds(calculatedDelay)
-        }; the longer server-requested delay is being used.`,
+      `Retrying in ${formatSeconds(
+        delay,
+      )} because the server returned Retry-After: ${retryAfter}.\n` +
+        `The calculated retry delay was ${formatSeconds(
+          calculatedDelay,
+        )}; the longer server-requested delay is being used.`,
     );
     return;
   }
   console.log(
-    `Retrying in ${
-      formatSeconds(delay)
-    } (retry ${attempt} of ${retries}; configured base delay: ${
-      formatSeconds(retryDelay)
-    }).`,
+    `Retrying in ${formatSeconds(
+      delay,
+    )} (retry ${attempt} of ${retries}; configured base delay: ${formatSeconds(retryDelay)}).`,
   );
 }
 
@@ -365,17 +326,16 @@ function finalRequestError(
   failure: RetryFailure,
 ): string {
   const exhausted = failure.retryable && attempts === retries + 1;
-  return `loadOpenStreetMap(): request failed after ${attempts} ${
-    attempts === 1 ? "attempt" : "attempts"
-  }.\n${
-    exhausted
-      ? retries === 0
-        ? "No retries were configured."
-        : `All ${retries} configured ${
-          retries === 1 ? "retry was" : "retries were"
-        } exhausted.`
-      : "No further retry was attempted because the failure is nonretryable."
-  }\nTotal retry delay: ${formatSeconds(totalDelay)}.\n` +
+  return (
+    `loadOpenStreetMap(): request failed after ${attempts} ${
+      attempts === 1 ? "attempt" : "attempts"
+    }.\n${
+      exhausted
+        ? retries === 0
+          ? "No retries were configured."
+          : `All ${retries} configured ${retries === 1 ? "retry was" : "retries were"} exhausted.`
+        : "No further retry was attempted because the failure is nonretryable."
+    }\nTotal retry delay: ${formatSeconds(totalDelay)}.\n` +
     `Last failure: ${failure.reason}\n` +
     `No further retry occurred because ${
       exhausted
@@ -384,7 +344,8 @@ function finalRequestError(
           : "the configured retries were exhausted"
         : failure.explanation
     }.\n` +
-    "No invalid cached data was returned.";
+    "No invalid cached data was returned."
+  );
 }
 
 function formatSeconds(seconds: number): string {

@@ -1,8 +1,5 @@
 import type { PreparedGraphTemporalSql } from "./prepareGraphTemporalSql.ts";
-import type {
-  GraphDirection,
-  PreparedGraphSql,
-} from "./prepareGraphTraversal.ts";
+import type { GraphDirection, PreparedGraphSql } from "./prepareGraphTraversal.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 
 export type GraphTemporalReachabilitySql = {
@@ -46,9 +43,8 @@ export default function buildGraphTemporalReachabilitySql(
   const eventStart = `${q("edges")}.${q("__event_start")}`;
   const eventEnd = `${q("edges")}.${q("__event_end")}`;
   const gap = `${q("settings")}.${q("__gap")}`;
-  const resolvedStartsSelect = typeof startsSelect === "string"
-    ? startsSelect
-    : startsSelect(edgesRelation);
+  const resolvedStartsSelect =
+    typeof startsSelect === "string" ? startsSelect : startsSelect(edgesRelation);
 
   // Materialized event IDs stay fixed; UNION bounds states to starts × events,
   // including equal-time cycles, because the last event determines all next steps.

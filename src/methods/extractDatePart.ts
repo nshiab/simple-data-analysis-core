@@ -33,12 +33,11 @@ export default function extractDatePart(
   column: string,
   parts: DatePart | { [newColumn: string]: DatePart },
 ) {
-  const capturedParts = typeof parts === "string"
-    ? parts
-    : structuredClone(parts);
-  const entries: [string, DatePart][] = typeof capturedParts === "string"
-    ? [[capturedParts, capturedParts]]
-    : Object.entries(capturedParts);
+  const capturedParts = typeof parts === "string" ? parts : structuredClone(parts);
+  const entries: [string, DatePart][] =
+    typeof capturedParts === "string"
+      ? [[capturedParts, capturedParts]]
+      : Object.entries(capturedParts);
 
   if (entries.length === 0) {
     throw new Error("extractDatePart() requires at least one date part.");
@@ -56,10 +55,9 @@ export default function extractDatePart(
         "extractDatePart()",
       );
       const source = quoteIdentifier(column);
-      const extractions = entries.map(([newColumn, part]) =>
-        `date_part('${sqlParts[part]}', ${source}) AS ${
-          quoteIdentifier(newColumn)
-        }`
+      const extractions = entries.map(
+        ([newColumn, part]) =>
+          `date_part('${sqlParts[part]}', ${source}) AS ${quoteIdentifier(newColumn)}`,
       );
       return `SELECT *, ${extractions.join(", ")} FROM ${input}`;
     },

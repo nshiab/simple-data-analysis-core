@@ -1,10 +1,6 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStrictEquals,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
@@ -24,12 +20,9 @@ import {
   type ReferenceChronologicalEvent,
 } from "../../helpers/enumerateChronologicalRoutes.ts";
 
-function loadScenario(
-  sdb: SimpleDB,
-  name: string,
-  scenario: string,
-): SimpleTable {
-  return sdb.newTable(name)
+function loadScenario(sdb: SimpleDB, name: string, scenario: string): SimpleTable {
+  return sdb
+    .newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(["source", "target"]);
@@ -37,19 +30,14 @@ function loadScenario(
 
 const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
 
-function chronologicalRows(
-  events: ReferenceChronologicalEvent<string, string>[],
-) {
+function chronologicalRows(events: ReferenceChronologicalEvent<string, string>[]) {
   return events.map((event) => ({
     edgeId: event.edgeId,
     source: event.source,
     target: event.target,
-    startTime: event.startTime === null
-      ? null
-      : new Date(chronologicalBase + Number(event.startTime)),
-    endTime: event.endTime === null
-      ? null
-      : new Date(chronologicalBase + Number(event.endTime)),
+    startTime:
+      event.startTime === null ? null : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null ? null : new Date(chronologicalBase + Number(event.endTime)),
   }));
 }
 
@@ -62,15 +50,13 @@ function referenceReachable(
 ) {
   return starts.toSorted().flatMap((start) => {
     const nodes = new Set<string>();
-    for (
-      const route of enumerateChronologicalRoutes(events, start, {
-        direction,
-        maxSteps: Math.max(events.length, 1),
-        minGap,
-        simpleNodes: false,
-        strictOrdering,
-      })
-    ) {
+    for (const route of enumerateChronologicalRoutes(events, start, {
+      direction,
+      maxSteps: Math.max(events.length, 1),
+      minGap,
+      simpleNodes: false,
+      strictOrdering,
+    })) {
       const last = route.at(-1);
       if (last !== undefined) nodes.add(last.target);
     }
@@ -78,17 +64,22 @@ function referenceReachable(
   });
 }
 
-Deno.test("reachable defaults to outgoing and supports every direction", async () => {
+test("reachable defaults to outgoing and supports every direction", async () => {
   const sdb = new SimpleDB();
   try {
-    const outgoing = loadScenario(sdb, "outgoing", "baseline")
-      .reachable("source", "target", "A");
-    const explicitOutgoing = loadScenario(sdb, "explicitOutgoing", "baseline")
-      .reachable("source", "target", "A", { direction: "outgoing" });
-    const incoming = loadScenario(sdb, "incoming", "baseline")
-      .reachable("source", "target", "E", { direction: "incoming" });
-    const both = loadScenario(sdb, "both", "baseline")
-      .reachable("source", "target", "B", { direction: "both" });
+    const outgoing = loadScenario(sdb, "outgoing", "baseline").reachable("source", "target", "A");
+    const explicitOutgoing = loadScenario(sdb, "explicitOutgoing", "baseline").reachable(
+      "source",
+      "target",
+      "A",
+      { direction: "outgoing" },
+    );
+    const incoming = loadScenario(sdb, "incoming", "baseline").reachable("source", "target", "E", {
+      direction: "incoming",
+    });
+    const both = loadScenario(sdb, "both", "baseline").reachable("source", "target", "B", {
+      direction: "both",
+    });
 
     const expectedOutgoing = [
       { start: "A", node: "B" },
@@ -96,15 +87,15 @@ Deno.test("reachable defaults to outgoing and supports every direction", async (
       { start: "A", node: "D" },
       { start: "A", node: "E" },
     ];
-    assertEquals(await outgoing.getData(), expectedOutgoing);
-    assertEquals(await explicitOutgoing.getData(), expectedOutgoing);
-    assertEquals(await incoming.getData(), [
+    expect(await outgoing.getData()).toStrictEqual(expectedOutgoing);
+    expect(await explicitOutgoing.getData()).toStrictEqual(expectedOutgoing);
+    expect(await incoming.getData()).toStrictEqual([
       { start: "E", node: "A" },
       { start: "E", node: "B" },
       { start: "E", node: "C" },
       { start: "E", node: "D" },
     ]);
-    assertEquals(await both.getData(), [
+    expect(await both.getData()).toStrictEqual([
       { start: "B", node: "A" },
       { start: "B", node: "B" },
       { start: "B", node: "C" },
@@ -116,21 +107,24 @@ Deno.test("reachable defaults to outgoing and supports every direction", async (
   }
 });
 
-Deno.test("reachable returns no rows when the start has no connections in the chosen direction", async () => {
+test("reachable returns no rows when the start has no connections in the chosen direction", async () => {
   const sdb = new SimpleDB();
   try {
-    const sink = loadScenario(sdb, "sink", "baseline")
-      .reachable("source", "target", "E");
-    const sourceOnly = loadScenario(sdb, "sourceOnly", "baseline")
-      .reachable("source", "target", "F", { direction: "incoming" });
-    assertEquals(await sink.getData(), []);
-    assertEquals(await sourceOnly.getData(), []);
+    const sink = loadScenario(sdb, "sink", "baseline").reachable("source", "target", "E");
+    const sourceOnly = loadScenario(sdb, "sourceOnly", "baseline").reachable(
+      "source",
+      "target",
+      "F",
+      { direction: "incoming" },
+    );
+    expect(await sink.getData()).toStrictEqual([]);
+    expect(await sourceOnly.getData()).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable sorts shuffled multi-start results in every direction", async () => {
+test("reachable sorts shuffled multi-start results in every direction", async () => {
   const sdb = new SimpleDB();
   const edges = [
     { source: "A", target: "B" },
@@ -145,16 +139,18 @@ Deno.test("reachable sorts shuffled multi-start results in every direction", asy
   try {
     for (const direction of ["outgoing", "incoming", "both"] as const) {
       const expected = ["A", "C"].flatMap((start) =>
-        nodes[direction][start as "A" | "C"].map((node) => ({ start, node }))
+        nodes[direction][start as "A" | "C"].map((node) => ({ start, node })),
       );
       for (const rows of [edges, edges.toReversed()]) {
-        assertEquals(
-          await sdb.newTable().loadArray(rows)
+        expect(
+          await sdb
+            .newTable()
+            .loadArray(rows)
             .reachable("source", "target", ["C", "unknown", "A"], {
               direction,
-            }).getData(),
-          expected,
-        );
+            })
+            .getData(),
+        ).toStrictEqual(expected);
       }
     }
   } finally {
@@ -162,7 +158,7 @@ Deno.test("reachable sorts shuffled multi-start results in every direction", asy
   }
 });
 
-Deno.test("reachable follows a chain beyond common recursive hop limits", async () => {
+test("reachable follows a chain beyond common recursive hop limits", async () => {
   const sdb = new SimpleDB();
   try {
     const length = 1100;
@@ -170,17 +166,15 @@ Deno.test("reachable follows a chain beyond common recursive hop limits", async 
       source,
       target: source + 1,
     }));
-    assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .reachable("source", "target", 0).getData(),
-      Array.from({ length }, (_, index) => ({ start: 0, node: index + 1 })),
-    );
+    expect(
+      await sdb.newTable().loadArray(rows).reachable("source", "target", 0).getData(),
+    ).toStrictEqual(Array.from({ length }, (_, index) => ({ start: 0, node: index + 1 })));
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable scalar and singleton-array calls are equivalent", async () => {
+test("reachable scalar and singleton-array calls are equivalent", async () => {
   const sdb = new SimpleDB();
   try {
     const source = loadScenario(sdb, "singleton", "baseline");
@@ -190,15 +184,15 @@ Deno.test("reachable scalar and singleton-array calls are equivalent", async () 
     const singleton = source.reachable("source", "target", ["A"], {
       outputTable: true,
     });
-    assertEquals(await scalar.getData(), await singleton.getData());
-    assertEquals(await scalar.getColumns(), ["start", "node"]);
-    assertEquals(await singleton.getColumns(), ["start", "node"]);
+    expect(await scalar.getData()).toStrictEqual(await singleton.getData());
+    expect(await scalar.getColumns()).toStrictEqual(["start", "node"]);
+    expect(await singleton.getColumns()).toStrictEqual(["start", "node"]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable preserves empty and quoted string IDs with quoted endpoint columns", async () => {
+test("reachable preserves empty and quoted string IDs with quoted endpoint columns", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([
@@ -206,9 +200,7 @@ Deno.test("reachable preserves empty and quoted string IDs with quoted endpoint 
       { 'from"node': "O'Reilly", "to node": 'quote"node' },
       { 'from"node': 'quote"node', "to node": "" },
     ]);
-    assertEquals(
-      await table.reachable('from"node', "to node", ["O'Reilly", ""])
-        .getData(),
+    expect(await table.reachable('from"node', "to node", ["O'Reilly", ""]).getData()).toStrictEqual(
       [
         { start: "", node: "" },
         { start: "", node: "O'Reilly" },
@@ -223,7 +215,7 @@ Deno.test("reachable preserves empty and quoted string IDs with quoted endpoint 
   }
 });
 
-Deno.test("reachable evaluates shuffled starts independently and omits unknown starts", async () => {
+test("reachable evaluates shuffled starts independently and omits unknown starts", async () => {
   const sdb = new SimpleDB();
   try {
     const starts = ["F", "unknown", "A"];
@@ -231,7 +223,7 @@ Deno.test("reachable evaluates shuffled starts independently and omits unknown s
     table.reachable("source", "target", starts);
     starts[0] = "changed-after-call";
 
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { start: "A", node: "B" },
       { start: "A", node: "C" },
       { start: "A", node: "D" },
@@ -243,12 +235,15 @@ Deno.test("reachable evaluates shuffled starts independently and omits unknown s
   }
 });
 
-Deno.test("reachable includes each start reached again through a cycle", async () => {
+test("reachable includes each start reached again through a cycle", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = loadScenario(sdb, "perStart", "cycle")
-      .reachable("source", "target", ["B", "unknown", "A"]);
-    assertEquals(await table.getData(), [
+    const table = loadScenario(sdb, "perStart", "cycle").reachable("source", "target", [
+      "B",
+      "unknown",
+      "A",
+    ]);
+    expect(await table.getData()).toStrictEqual([
       { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
@@ -265,40 +260,40 @@ Deno.test("reachable includes each start reached again through a cycle", async (
   }
 });
 
-Deno.test("reachable terminates on cycles and deduplicates convergence and parallel edges", async () => {
+test("reachable terminates on cycles and deduplicates convergence and parallel edges", async () => {
   const sdb = new SimpleDB();
   try {
-    const cycle = loadScenario(sdb, "cycle", "cycle")
-      .reachable("source", "target", "A");
-    const parallel = loadScenario(sdb, "parallel", "parallel")
-      .reachable("source", "target", "A");
-    const selfLoop = loadScenario(sdb, "selfLoop", "self-loop")
-      .reachable("source", "target", "A");
-    const singleLoop = loadScenario(sdb, "singleLoop", "single-loop")
-      .reachable("source", "target", "A");
+    const cycle = loadScenario(sdb, "cycle", "cycle").reachable("source", "target", "A");
+    const parallel = loadScenario(sdb, "parallel", "parallel").reachable("source", "target", "A");
+    const selfLoop = loadScenario(sdb, "selfLoop", "self-loop").reachable("source", "target", "A");
+    const singleLoop = loadScenario(sdb, "singleLoop", "single-loop").reachable(
+      "source",
+      "target",
+      "A",
+    );
 
-    assertEquals(await cycle.getData(), [
+    expect(await cycle.getData()).toStrictEqual([
       { start: "A", node: "A" },
       { start: "A", node: "B" },
       { start: "A", node: "C" },
       { start: "A", node: "D" },
       { start: "A", node: "E" },
     ]);
-    assertEquals(await parallel.getData(), [
+    expect(await parallel.getData()).toStrictEqual([
       { start: "A", node: "B" },
       { start: "A", node: "C" },
     ]);
-    assertEquals(await selfLoop.getData(), [
+    expect(await selfLoop.getData()).toStrictEqual([
       { start: "A", node: "A" },
       { start: "A", node: "B" },
     ]);
-    assertEquals(await singleLoop.getData(), [{ start: "A", node: "A" }]);
+    expect(await singleLoop.getData()).toStrictEqual([{ start: "A", node: "A" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable includes only starts that connections actually lead back to", async () => {
+test("reachable includes only starts that connections actually lead back to", async () => {
   const sdb = new SimpleDB();
   try {
     const edges = [
@@ -308,72 +303,78 @@ Deno.test("reachable includes only starts that connections actually lead back to
       { source: "C", target: "D" },
     ];
     for (const direction of ["outgoing", "incoming"] as const) {
-      const rows = direction === "outgoing"
-        ? edges
-        : edges.map(({ source, target }) => ({
-          source: target,
-          target: source,
-        }));
-      assertEquals(
-        await sdb.newTable().loadArray(rows)
+      const rows =
+        direction === "outgoing"
+          ? edges
+          : edges.map(({ source, target }) => ({
+              source: target,
+              target: source,
+            }));
+      expect(
+        await sdb
+          .newTable()
+          .loadArray(rows)
           .reachable("source", "target", ["D", "B", "A"], { direction })
           .getData(),
-        [
-          { start: "A", node: "B" },
-          { start: "A", node: "C" },
-          { start: "A", node: "D" },
-          { start: "B", node: "B" },
-          { start: "B", node: "C" },
-          { start: "B", node: "D" },
-        ],
-      );
+      ).toStrictEqual([
+        { start: "A", node: "B" },
+        { start: "A", node: "C" },
+        { start: "A", node: "D" },
+        { start: "B", node: "B" },
+        { start: "B", node: "C" },
+        { start: "B", node: "D" },
+      ]);
     }
-    assertEquals(
-      await sdb.newTable().loadArray([{ source: "A", target: "B" }])
-        .reachable("source", "target", "A", { direction: "both" }).getData(),
-      [{ start: "A", node: "A" }, { start: "A", node: "B" }],
-    );
+    expect(
+      await sdb
+        .newTable()
+        .loadArray([{ source: "A", target: "B" }])
+        .reachable("source", "target", "A", { direction: "both" })
+        .getData(),
+    ).toStrictEqual([
+      { start: "A", node: "A" },
+      { start: "A", node: "B" },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable supports overwrite and source-preserving output tables", async () => {
+test("reachable supports overwrite and source-preserving output tables", async () => {
   const sdb = new SimpleDB();
   try {
     const overwritten = loadScenario(sdb, "overwritten", "baseline");
-    assertStrictEquals(
+    expect(
       overwritten.reachable("source", "target", "A", {
         outputTable: false,
       }),
-      overwritten,
-    );
-    assertEquals(await overwritten.getColumns(), ["start", "node"]);
+    ).toBe(overwritten);
+    expect(await overwritten.getColumns()).toStrictEqual(["start", "node"]);
 
     const source = loadScenario(sdb, "preserved", "baseline");
-    const named = source.reachable("source", "target", "A", {
-      outputTable: "namedReachable",
-    }).filter("node = 'E'");
-    assertEquals(named.name, "namedReachable");
-    assertEquals(await named.getData(), [{ start: "A", node: "E" }]);
-    assertEquals(await source.getRowCount(), 6);
-    assertEquals(await source.getColumns(), ["source", "target"]);
+    const named = source
+      .reachable("source", "target", "A", {
+        outputTable: "namedReachable",
+      })
+      .filter("node = 'E'");
+    expect(named.name).toStrictEqual("namedReachable");
+    expect(await named.getData()).toStrictEqual([{ start: "A", node: "E" }]);
+    expect(await source.getRowCount()).toStrictEqual(6);
+    expect(await source.getColumns()).toStrictEqual(["source", "target"]);
 
     const generated = source.reachable("source", "target", "F", {
       outputTable: true,
     });
-    assertEquals(generated.name.startsWith("table"), true);
-    assertEquals(generated.name === source.name, false);
-    assertEquals(await generated.getData(), [
-      { start: "F", node: "G" },
-    ]);
-    assertEquals(await source.getRowCount(), 6);
+    expect(generated.name.startsWith("table")).toStrictEqual(true);
+    expect(generated.name === source.name).toStrictEqual(false);
+    expect(await generated.getData()).toStrictEqual([{ start: "F", node: "G" }]);
+    expect(await source.getRowCount()).toStrictEqual(6);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable snapshots starts and options before queued execution", async () => {
+test("reachable snapshots starts and options before queued execution", async () => {
   const sdb = new SimpleDB();
   try {
     const starts = ["E"];
@@ -384,14 +385,18 @@ Deno.test("reachable snapshots starts and options before queued execution", asyn
       direction: "incoming",
       outputTable: "incomingSnapshot",
     };
-    const result = loadScenario(sdb, "snapshots", "baseline")
-      .reachable("source", "target", starts, options);
+    const result = loadScenario(sdb, "snapshots", "baseline").reachable(
+      "source",
+      "target",
+      starts,
+      options,
+    );
     starts[0] = "A";
     options.direction = "outgoing";
     options.outputTable = "changed";
 
-    assertEquals(result.name, "incomingSnapshot");
-    assertEquals(await result.getData(), [
+    expect(result.name).toStrictEqual("incomingSnapshot");
+    expect(await result.getData()).toStrictEqual([
       { start: "E", node: "A" },
       { start: "E", node: "B" },
       { start: "E", node: "C" },
@@ -402,30 +407,32 @@ Deno.test("reachable snapshots starts and options before queued execution", asyn
   }
 });
 
-Deno.test("reachable uses fixed output names and preserves empty schemas", async () => {
+test("reachable uses fixed output names and preserves empty schemas", async () => {
   const sdb = new SimpleDB();
   try {
-    const custom = sdb.newTable("custom")
+    const custom = sdb
+      .newTable("custom")
       .loadData("test/data/graphs/custom-columns.csv")
       .reachable("ORIGIN", "Destination", "A");
-    assertEquals(await custom.getData(), [
+    expect(await custom.getData()).toStrictEqual([
       { start: "A", node: "B" },
       { start: "A", node: "C" },
     ]);
-    assertEquals(await custom.getColumns(), ["start", "node"]);
+    expect(await custom.getColumns()).toStrictEqual(["start", "node"]);
 
     const empty = sdb.newTable("emptyGraph");
-    await sdb.customQuery(
-      'CREATE TABLE "emptyGraph" (source VARCHAR, target VARCHAR)',
-    );
+    await sdb.customQuery('CREATE TABLE "emptyGraph" (source VARCHAR, target VARCHAR)');
     empty.reachable("source", "target", "A");
-    assertEquals(await empty.getData(), []);
-    assertEquals(await empty.getTypes(), { start: "VARCHAR", node: "VARCHAR" });
+    expect(await empty.getData()).toStrictEqual([]);
+    expect(await empty.getTypes()).toStrictEqual({ start: "VARCHAR", node: "VARCHAR" });
 
-    const unknown = loadScenario(sdb, "unknown", "baseline")
-      .reachable("source", "target", "unknown");
-    assertEquals(await unknown.getData(), []);
-    assertEquals(await unknown.getTypes(), {
+    const unknown = loadScenario(sdb, "unknown", "baseline").reachable(
+      "source",
+      "target",
+      "unknown",
+    );
+    expect(await unknown.getData()).toStrictEqual([]);
+    expect(await unknown.getTypes()).toStrictEqual({
       start: "VARCHAR",
       node: "VARCHAR",
     });
@@ -434,18 +441,19 @@ Deno.test("reachable uses fixed output names and preserves empty schemas", async
   }
 });
 
-Deno.test("reachable supports numeric zero, numeric ordering, and wide exact integers", async () => {
+test("reachable supports numeric zero, numeric ordering, and wide exact integers", async () => {
   const sdb = new SimpleDB();
   try {
-    const numeric = sdb.newTable("numeric")
+    const numeric = sdb
+      .newTable("numeric")
       .loadData("test/data/graphs/numeric.csv")
       .reachable("source", "target", [2, 0]);
-    assertEquals(await numeric.getData(), [
+    expect(await numeric.getData()).toStrictEqual([
       { start: 0, node: 2 },
       { start: 0, node: 10 },
       { start: 2, node: 10 },
     ]);
-    assertEquals(await numeric.getTypes(), { start: "BIGINT", node: "BIGINT" });
+    expect(await numeric.getTypes()).toStrictEqual({ start: "BIGINT", node: "BIGINT" });
 
     const wide = sdb.newTable("wideIntegerGraph");
     await sdb.customQuery(`CREATE TABLE "wideIntegerGraph" AS
@@ -453,27 +461,25 @@ Deno.test("reachable supports numeric zero, numeric ordering, and wide exact int
         (1::BIGINT, 9007199254740993::BIGINT),
         (9007199254740993::BIGINT, 9007199254740995::BIGINT)
       ) edges(source, target)`);
-    wide.reachable("source", "target", 9007199254740993n)
+    wide
+      .reachable("source", "target", 9007199254740993n)
       .convert({ start: "string", node: "string" });
-    assertEquals(await wide.getData(), [
+    expect(await wide.getData()).toStrictEqual([
       { start: "9007199254740993", node: "9007199254740995" },
     ]);
 
     const bounded = sdb.newTable("boundedIds");
     await sdb.customQuery(`CREATE TABLE "boundedIds" AS SELECT
       0::TINYINT AS source, 1::TINYINT AS target`);
-    assertEquals(
-      await bounded.reachable("source", "target", [128, 0]).getData(),
-      [
-        { start: 0, node: 1 },
-      ],
-    );
+    expect(await bounded.reachable("source", "target", [128, 0]).getData()).toStrictEqual([
+      { start: 0, node: 1 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable preserves exact decimal endpoint types through recursion", async () => {
+test("reachable preserves exact decimal endpoint types through recursion", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("decimalGraph");
@@ -483,11 +489,11 @@ Deno.test("reachable preserves exact decimal endpoint types through recursion", 
         (9007199254740993::DECIMAL(20,0), 9007199254740995::DECIMAL(20,0))
       ) edges(source, target)`);
     table.reachable("source", "target", 9007199254740993n);
-    assertEquals(await table.getTypes(), {
+    expect(await table.getTypes()).toStrictEqual({
       start: "DECIMAL(20,0)",
       node: "DECIMAL(20,0)",
     });
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { start: "9007199254740993", node: "9007199254740995" },
     ]);
   } finally {
@@ -495,7 +501,7 @@ Deno.test("reachable preserves exact decimal endpoint types through recursion", 
   }
 });
 
-Deno.test("reachable preserves binary recursion and ordering under endpoint collations", async () => {
+test("reachable preserves binary recursion and ordering under endpoint collations", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("collatedReachability");
@@ -503,21 +509,18 @@ Deno.test("reachable preserves binary recursion and ordering under endpoint coll
       source VARCHAR COLLATE NOCASE, target VARCHAR COLLATE NOCASE
     ); INSERT INTO "collatedReachability" VALUES
       ('A', 'b'), ('a', 'B'), ('b', 'C'), ('B', 'D')`);
-    assertEquals(
-      await table.reachable("source", "target", ["a", "A"]).getData(),
-      [
-        { start: "A", node: "C" },
-        { start: "A", node: "b" },
-        { start: "a", node: "B" },
-        { start: "a", node: "D" },
-      ],
-    );
+    expect(await table.reachable("source", "target", ["a", "A"]).getData()).toStrictEqual([
+      { start: "A", node: "C" },
+      { start: "A", node: "b" },
+      { start: "a", node: "B" },
+      { start: "a", node: "D" },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable validates starts and options before queuing", async () => {
+test("reachable validates starts and options before queuing", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -563,13 +566,7 @@ Deno.test("reachable validates starts and options before queuing", async () => {
       "reachable() options.outputTable must be a string or boolean.",
     );
     assertThrows(
-      () =>
-        table.reachable(
-          "source",
-          "target",
-          "A",
-          null as unknown as Record<string, never>,
-        ),
+      () => table.reachable("source", "target", "A", null as unknown as Record<string, never>),
       TypeError,
       "reachable() options must be an object.",
     );
@@ -583,13 +580,13 @@ Deno.test("reachable validates starts and options before queuing", async () => {
       TypeError,
       "reachable() targetColumn must be a string.",
     );
-    assertEquals(table.pendingOps.length, 0);
+    expect(table.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable rejects missing, unsupported, and incompatible endpoint types", async () => {
+test("reachable rejects missing, unsupported, and incompatible endpoint types", async () => {
   const sdb = new SimpleDB();
   try {
     const missing = sdb.newTable("missing").loadArray([{ source: "A" }]);
@@ -599,7 +596,8 @@ Deno.test("reachable rejects missing, unsupported, and incompatible endpoint typ
       'reachable() the column "target" does not exist',
     );
 
-    const unsupported = sdb.newTable("unsupported")
+    const unsupported = sdb
+      .newTable("unsupported")
       .loadData("test/data/graphs/unsupported-types.csv");
     await assertRejects(
       () => unsupported.reachable("dateSource", "stringTarget", "A").run(),
@@ -607,16 +605,14 @@ Deno.test("reachable rejects missing, unsupported, and incompatible endpoint typ
       'column "dateSource" has type DATE',
     );
 
-    const incompatible = sdb.newTable("incompatible")
-      .loadArray([{ source: 1, target: "1" }]);
+    const incompatible = sdb.newTable("incompatible").loadArray([{ source: 1, target: "1" }]);
     await assertRejects(
       () => incompatible.reachable("source", "target", 1).run(),
       Error,
       "requires compatible source and target ID types",
     );
 
-    const numeric = sdb.newTable("numericMismatch")
-      .loadData("test/data/graphs/numeric.csv");
+    const numeric = sdb.newTable("numericMismatch").loadData("test/data/graphs/numeric.csv");
     await assertRejects(
       () => numeric.reachable("source", "target", "0").run(),
       Error,
@@ -624,9 +620,7 @@ Deno.test("reachable rejects missing, unsupported, and incompatible endpoint typ
     );
 
     const lossy = sdb.newTable("lossy");
-    await sdb.customQuery(
-      'CREATE TABLE "lossy" (source BIGINT, target DOUBLE)',
-    );
+    await sdb.customQuery('CREATE TABLE "lossy" (source BIGINT, target DOUBLE)');
     await assertRejects(
       () => lossy.reachable("source", "target", 1).run(),
       Error,
@@ -646,11 +640,10 @@ Deno.test("reachable rejects missing, unsupported, and incompatible endpoint typ
   }
 });
 
-Deno.test("reachable rejects output table name collisions before queuing graph work", async () => {
+test("reachable rejects output table name collisions before queuing graph work", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("source")
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = sdb.newTable("source").loadArray([{ source: "A", target: "B" }]);
     await source.run();
     sdb.newTable("namedReachable");
     assertThrows(
@@ -661,13 +654,13 @@ Deno.test("reachable rejects output table name collisions before queuing graph w
       Error,
       "Table NAMEDREACHABLE already exists.",
     );
-    assertEquals(source.pendingOps.length, 0);
+    expect(source.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable output records its source as a cache dependency", async () => {
+test("reachable output records its source as a cache dependency", async () => {
   let computationRuns = 0;
   const unique = crypto.randomUUID().replaceAll("-", "");
   const outputName = `reachableCacheOutput${unique}`;
@@ -683,99 +676,83 @@ Deno.test("reachable output records its source as a cache dependency", async () 
 
   const firstSdb = new SimpleDB();
   try {
-    const source = firstSdb.newTable(sourceName)
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = firstSdb.newTable(sourceName).loadArray([{ source: "A", target: "B" }]);
     const output = firstSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(await output.getData(), [
-      { start: "A", node: "B" },
-    ]);
+    expect(await output.getData()).toStrictEqual([{ start: "A", node: "B" }]);
   } finally {
     await firstSdb.close();
   }
 
   const secondSdb = new SimpleDB();
   try {
-    const source = secondSdb.newTable(sourceName)
-      .loadArray([{ source: "A", target: "C" }]);
+    const source = secondSdb.newTable(sourceName).loadArray([{ source: "A", target: "C" }]);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals(await output.getData(), [
-      { start: "A", node: "C" },
-    ]);
+    expect(computationRuns).toStrictEqual(2);
+    expect(await output.getData()).toStrictEqual([{ start: "A", node: "C" }]);
   } finally {
     await secondSdb.close();
   }
 });
 
-Deno.test("reachable internal relations do not shadow input table names", async () => {
+test("reachable internal relations do not shadow input table names", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const name of [
-        "graph_start_values",
-        "GRAPH_STARTS",
-        "graph_edges",
-        "GRAPH_NODES",
-        "graph_reachable",
-      ]
-    ) {
-      const table = sdb.newTable(name)
-        .loadArray([{ source: "A", target: "B" }]);
+    for (const name of [
+      "graph_start_values",
+      "GRAPH_STARTS",
+      "graph_edges",
+      "GRAPH_NODES",
+      "graph_reachable",
+    ]) {
+      const table = sdb.newTable(name).loadArray([{ source: "A", target: "B" }]);
       await table.run();
-      assertEquals(
-        await table.reachable("source", "target", "A").getData(),
-        [
-          { start: "A", node: "B" },
-        ],
-      );
+      expect(await table.reachable("source", "target", "A").getData()).toStrictEqual([
+        { start: "A", node: "B" },
+      ]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable preserves queued source and output operation order", async () => {
+test("reachable preserves queued source and output operation order", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("changingSource")
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = sdb.newTable("changingSource").loadArray([{ source: "A", target: "B" }]);
     const result = source.reachable("source", "target", "A", {
       outputTable: true,
     });
     source.loadArray([{ source: "A", target: "C" }]);
-    assertEquals(await result.getData(), [
-      { start: "A", node: "B" },
-    ]);
-    assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
+    expect(await result.getData()).toStrictEqual([{ start: "A", node: "B" }]);
+    expect(await source.getData()).toStrictEqual([{ source: "A", target: "C" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable uses native node-only recursive SQL", async () => {
+test("reachable uses native node-only recursive SQL", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
-    const table = loadScenario(sdb, "recursiveShape", "cycle")
-      .reachable("source", "target", "A");
+    const table = loadScenario(sdb, "recursiveShape", "cycle").reachable("source", "target", "A");
     await table.run();
-    const query = observer.queries.find((entry) =>
-      entry.query.includes("graph_reachable") &&
-      entry.query.includes("CREATE OR REPLACE TABLE")
+    const query = observer.queries.find(
+      (entry) =>
+        entry.query.includes("graph_reachable") && entry.query.includes("CREATE OR REPLACE TABLE"),
     )?.query;
-    assertStringIncludes(query ?? "", "WITH RECURSIVE");
-    assertStringIncludes(query ?? "", '"__start_key", "__node_key"');
-    assertEquals(query?.includes("path"), false);
-    assertEquals(query?.includes("depth"), false);
+    expect(query ?? "").toContain("WITH RECURSIVE");
+    expect(query ?? "").toContain('"__start_key", "__node_key"');
+    expect(query?.includes("path")).toStrictEqual(false);
+    expect(query?.includes("depth")).toStrictEqual(false);
   } finally {
     observer.restore();
     await sdb.close();
   }
 });
 
-Deno.test("reachable JSDoc examples return their complete displayed outputs", async () => {
+test("reachable JSDoc examples return their complete displayed outputs", async () => {
   const sdb = new SimpleDB();
   const edges = [
     { origin: "A", destination: "B" },
@@ -797,71 +774,79 @@ Deno.test("reachable JSDoc examples return their complete displayed outputs", as
     { start: "B", node: "D" },
   ];
   try {
-    assertEquals(
-      await sdb.newTable().loadArray(edges)
-        .reachable("origin", "destination", "A").getData(),
-      allFromA,
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(edges)
+    expect(
+      await sdb.newTable().loadArray(edges).reachable("origin", "destination", "A").getData(),
+    ).toStrictEqual(allFromA);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(edges)
         .reachable("origin", "destination", "B", { direction: "incoming" })
         .getData(),
-      allFromB,
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(edges)
+    ).toStrictEqual(allFromB);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(edges)
         .reachable("origin", "destination", "B", { direction: "both" })
         .getData(),
-      allFromB,
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(edges)
-        .reachable("origin", "destination", ["B", "A"]).getData(),
-      [...allFromA, ...allFromB],
-    );
+    ).toStrictEqual(allFromB);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(edges)
+        .reachable("origin", "destination", ["B", "A"])
+        .getData(),
+    ).toStrictEqual([...allFromA, ...allFromB]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable chronological traversal keeps valid first events and enforces connection gaps", async () => {
+test("reachable chronological traversal keeps valid first events and enforces connection gaps", async () => {
   const sdb = new SimpleDB();
   try {
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows(standaloneEvent))
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(chronologicalRows(standaloneEvent))
         .reachable("source", "target", "Toronto", {
           startTimeColumn: "startTime",
           endTimeColumn: "endTime",
           minGapMs: 60,
-        }).getData(),
-      [{ start: "Toronto", node: "Ottawa" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows(standaloneEvent))
+        })
+        .getData(),
+    ).toStrictEqual([{ start: "Toronto", node: "Ottawa" }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(chronologicalRows(standaloneEvent))
         .reachable("source", "target", "Toronto", {
           endTimeColumn: "endTime",
-        }).getData(),
-      [{ start: "Toronto", node: "Ottawa" }],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([{ start: "Toronto", node: "Ottawa" }]);
 
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows(connectionEvents))
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(chronologicalRows(connectionEvents))
         .reachable("source", "target", "A", {
           startTimeColumn: "startTime",
           endTimeColumn: "endTime",
           minGapMs: 60,
-        }).getData(),
-      [
-        { start: "A", node: "B" },
-        { start: "A", node: "D" },
-      ],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([
+      { start: "A", node: "B" },
+      { start: "A", node: "D" },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable chronological traversal retains competing last-event states", async () => {
+test("reachable chronological traversal retains competing last-event states", async () => {
   const sdb = new SimpleDB();
   const events: ReferenceChronologicalEvent<string, string>[] = [
     { edgeId: "AB", source: "A", target: "B", startTime: 1n, endTime: 1n },
@@ -883,20 +868,22 @@ Deno.test("reachable chronological traversal retains competing last-event states
     { edgeId: "DE", source: "D", target: "E", startTime: 5n, endTime: 5n },
   ];
   try {
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows(events))
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(chronologicalRows(events))
         .reachable("source", "target", "A", {
           startTimeColumn: "startTime",
           endTimeColumn: "endTime",
-        }).getData(),
-      ["B", "C", "D", "E"].map((node) => ({ start: "A", node })),
-    );
+        })
+        .getData(),
+    ).toStrictEqual(["B", "C", "D", "E"].map((node) => ({ start: "A", node })));
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable chronological incoming traversal follows actual predecessors", async () => {
+test("reachable chronological incoming traversal follows actual predecessors", async () => {
   const sdb = new SimpleDB();
   const events: ReferenceChronologicalEvent<string, string>[] = [
     { edgeId: "F1", source: "A", target: "B", startTime: 1n, endTime: 2n },
@@ -904,25 +891,27 @@ Deno.test("reachable chronological incoming traversal follows actual predecessor
     { edgeId: "late", source: "X", target: "B", startTime: 4n, endTime: 5n },
   ];
   try {
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows(events))
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(chronologicalRows(events))
         .reachable("source", "target", "C", {
           direction: "incoming",
           startTimeColumn: "startTime",
           endTimeColumn: "endTime",
           minGapMs: 1,
-        }).getData(),
-      [
-        { start: "C", node: "A" },
-        { start: "C", node: "B" },
-      ],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([
+      { start: "C", node: "A" },
+      { start: "C", node: "B" },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable chronological traversal handles starts, parallel events, returns, equal times, and input order", async () => {
+test("reachable chronological traversal handles starts, parallel events, returns, equal times, and input order", async () => {
   const sdb = new SimpleDB();
   const events: ReferenceChronologicalEvent<string, string>[] = [
     ...equalTimeEvents,
@@ -939,45 +928,54 @@ Deno.test("reachable chronological traversal handles starts, parallel events, re
   ];
   try {
     for (const ordered of [events, events.toReversed()]) {
-      assertEquals(
-        await sdb.newTable().loadArray(chronologicalRows(ordered))
+      expect(
+        await sdb
+          .newTable()
+          .loadArray(chronologicalRows(ordered))
           .reachable("source", "target", ["unknown", "B", "A"], {
             startTimeColumn: "startTime",
             strictOrdering: false,
-          }).getData(),
-        expected,
-      );
+          })
+          .getData(),
+      ).toStrictEqual(expected);
     }
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows(events))
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(chronologicalRows(events))
         .reachable("source", "target", "A", {
           startTimeColumn: "startTime",
-        }).getData(),
-      [
-        { start: "A", node: "B" },
-        { start: "A", node: "C" },
-      ],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(chronologicalRows([
-        {
-          edgeId: "self",
-          source: "C",
-          target: "C",
-          startTime: 1n,
-          endTime: 1n,
-        },
-      ])).reachable("source", "target", "C", {
-        startTimeColumn: "startTime",
-      }).getData(),
-      [{ start: "C", node: "C" }],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([
+      { start: "A", node: "B" },
+      { start: "A", node: "C" },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(
+          chronologicalRows([
+            {
+              edgeId: "self",
+              source: "C",
+              target: "C",
+              startTime: 1n,
+              endTime: 1n,
+            },
+          ]),
+        )
+        .reachable("source", "target", "C", {
+          startTimeColumn: "startTime",
+        })
+        .getData(),
+    ).toStrictEqual([{ start: "C", node: "C" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable chronological results match the independent evaluator on generated tiny graphs", async () => {
+test("reachable chronological results match the independent evaluator on generated tiny graphs", async () => {
   const sdb = new SimpleDB();
   const nodes = ["A", "B", "C", "D"];
   try {
@@ -1005,26 +1003,22 @@ Deno.test("reachable chronological results match the independent evaluator on ge
       const minGap = BigInt(seed % 2);
       const starts = ["A", "C", "unknown"];
       for (const direction of ["outgoing", "incoming"] as const) {
-        const expected = referenceReachable(
-          events,
-          starts,
-          direction,
-          minGap,
-          strictOrdering,
-        );
+        const expected = referenceReachable(events, starts, direction, minGap, strictOrdering);
         for (const ordered of [events, events.toReversed()]) {
-          assertEquals(
-            await sdb.newTable().loadArray(chronologicalRows(ordered))
+          expect(
+            await sdb
+              .newTable()
+              .loadArray(chronologicalRows(ordered))
               .reachable("source", "target", starts, {
                 direction,
                 startTimeColumn: "startTime",
                 endTimeColumn: "endTime",
                 minGapMs: Number(minGap),
                 strictOrdering,
-              }).getData(),
-            expected,
+              })
+              .getData(),
             `seed ${seed}, ${direction}, ${strictOrdering}`,
-          );
+          ).toStrictEqual(expected);
         }
       }
     }
@@ -1033,7 +1027,7 @@ Deno.test("reachable chronological results match the independent evaluator on ge
   }
 });
 
-Deno.test("reachable chronological traversal preserves exact IDs and queued temporal schemas", async () => {
+test("reachable chronological traversal preserves exact IDs and queued temporal schemas", async () => {
   const sdb = new SimpleDB();
   try {
     const wide = sdb.newTable("wideChronologicalReachability");
@@ -1044,10 +1038,12 @@ Deno.test("reachable chronological traversal preserves exact IDs and queued temp
         (9007199254740995::BIGINT, 9007199254740997::BIGINT,
           TIMESTAMP '2025-01-01 00:00:01')
       ) edges(source, target, time)`);
-    wide.reachable("source", "target", 9007199254740993n, {
-      startTimeColumn: "time",
-    }).convert({ start: "string", node: "string" });
-    assertEquals(await wide.getData(), [
+    wide
+      .reachable("source", "target", 9007199254740993n, {
+        startTimeColumn: "time",
+      })
+      .convert({ start: "string", node: "string" });
+    expect(await wide.getData()).toStrictEqual([
       { start: "9007199254740993", node: "9007199254740995" },
       { start: "9007199254740993", node: "9007199254740997" },
     ]);
@@ -1056,14 +1052,17 @@ Deno.test("reachable chronological traversal preserves exact IDs and queued temp
       startTimeColumn: string;
       strictOrdering: boolean;
     } = { startTimeColumn: "time", strictOrdering: true };
-    const queued = sdb.newTable().loadArray([
-      { source: "A", target: "B", time: "2025-01-01 00:00:00" },
-      { source: "B", target: "C", time: "2025-01-01 00:00:01" },
-    ]).convert({ time: "datetime" })
+    const queued = sdb
+      .newTable()
+      .loadArray([
+        { source: "A", target: "B", time: "2025-01-01 00:00:00" },
+        { source: "B", target: "C", time: "2025-01-01 00:00:01" },
+      ])
+      .convert({ time: "datetime" })
       .reachable("source", "target", "A", queuedOptions);
     queuedOptions.startTimeColumn = "missing";
     queuedOptions.strictOrdering = false;
-    assertEquals(await queued.getData(), [
+    expect(await queued.getData()).toStrictEqual([
       { start: "A", node: "B" },
       { start: "A", node: "C" },
     ]);
@@ -1072,7 +1071,7 @@ Deno.test("reachable chronological traversal preserves exact IDs and queued temp
   }
 });
 
-Deno.test("reachable validates chronological options before queuing and columns at execution", async () => {
+test("reachable validates chronological options before queuing and columns at execution", async () => {
   const sdb = new SimpleDB();
   try {
     const unqueued = sdb.newTable();
@@ -1098,27 +1097,29 @@ Deno.test("reachable validates chronological options before queuing and columns 
       TypeError,
       "options.startTimeColumn must be a string",
     );
-    assertEquals(unqueued.pendingOps.length, 0);
+    expect(unqueued.pendingOps.length).toStrictEqual(0);
 
-    const missing = sdb.newTable().loadArray([
-      { source: "A", target: "B", time: new Date(chronologicalBase) },
-    ]);
+    const missing = sdb
+      .newTable()
+      .loadArray([{ source: "A", target: "B", time: new Date(chronologicalBase) }]);
     await assertRejects(
       () =>
-        missing.reachable("source", "target", "A", {
-          startTimeColumn: "missing",
-        }).run(),
+        missing
+          .reachable("source", "target", "A", {
+            startTimeColumn: "missing",
+          })
+          .run(),
       Error,
       'column "missing" does not exist',
     );
-    const unsupported = sdb.newTable().loadArray([
-      { source: "A", target: "B", time: 1 },
-    ]);
+    const unsupported = sdb.newTable().loadArray([{ source: "A", target: "B", time: 1 }]);
     await assertRejects(
       () =>
-        unsupported.reachable("source", "target", "A", {
-          startTimeColumn: "time",
-        }).run(),
+        unsupported
+          .reachable("source", "target", "A", {
+            startTimeColumn: "time",
+          })
+          .run(),
       TypeError,
       "requires DATE or TIMESTAMP chronological columns",
     );
@@ -1127,41 +1128,38 @@ Deno.test("reachable validates chronological options before queuing and columns 
   }
 });
 
-Deno.test("reachable chronological SQL materializes finite last-event state", async () => {
+test("reachable chronological SQL materializes finite last-event state", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   const width = 5;
   const layers = 5;
-  const events = Array.from(
-    { length: layers },
-    (_, layer) =>
-      Array.from(
-        { length: width },
-        (_, from) =>
-          Array.from({ length: width }, (_, to) => ({
-            source: layer === 0 ? "start" : `L${layer}-${from}`,
-            target: `L${layer + 1}-${to}`,
-            time: new Date(chronologicalBase + layer * 1000),
-          })),
-      ).flat(),
+  const events = Array.from({ length: layers }, (_, layer) =>
+    Array.from({ length: width }, (_, from) =>
+      Array.from({ length: width }, (_, to) => ({
+        source: layer === 0 ? "start" : `L${layer}-${from}`,
+        target: `L${layer + 1}-${to}`,
+        time: new Date(chronologicalBase + layer * 1000),
+      })),
+    ).flat(),
   ).flat();
   try {
     const source = sdb.newTable("temporalStateGrowth").loadArray(events);
     await source.run();
-    const result = source
-      .reachable("source", "target", ["start", "L1-0"], {
-        startTimeColumn: "time",
-        outputTable: true,
-      });
-    assertEquals((await result.getData()).length, 45);
-    const query = observer.queries.find((entry) =>
-      entry.query.includes("graph_reachable_states") &&
-      entry.query.includes("CREATE OR REPLACE TABLE")
-    )?.query ?? "";
-    assertStringIncludes(query, "AS MATERIALIZED");
-    assertStringIncludes(query, '"__event_id", "__event_start", "__event_end"');
-    assertEquals(query.includes("list_append"), false);
-    assertEquals(query.includes("path"), false);
+    const result = source.reachable("source", "target", ["start", "L1-0"], {
+      startTimeColumn: "time",
+      outputTable: true,
+    });
+    expect((await result.getData()).length).toStrictEqual(45);
+    const query =
+      observer.queries.find(
+        (entry) =>
+          entry.query.includes("graph_reachable_states") &&
+          entry.query.includes("CREATE OR REPLACE TABLE"),
+      )?.query ?? "";
+    expect(query).toContain("AS MATERIALIZED");
+    expect(query).toContain('"__event_id", "__event_start", "__event_end"');
+    expect(query.includes("list_append")).toStrictEqual(false);
+    expect(query.includes("path")).toStrictEqual(false);
 
     const schema = {
       source: "VARCHAR",
@@ -1177,25 +1175,21 @@ Deno.test("reachable chronological SQL materializes finite last-event state", as
     );
     const temporal = prepareGraphTemporalSql(
       schema,
-      prepareGraphTemporalOptions(
-        { startTimeColumn: "time" },
-        "outgoing",
-        "reachable()",
-      )!,
+      prepareGraphTemporalOptions({ startTimeColumn: "time" }, "outgoing", "reachable()")!,
       "reachable()",
     );
     const startsSelect = `SELECT ${quoteIdentifier("start")},
       ${prepared.key(quoteIdentifier("start"))} AS ${quoteIdentifier("__key")}
-      FROM (VALUES ('start'), ('L1-0')) AS ${quoteIdentifier("start_values")}(${
-      quoteIdentifier("start")
-    })`;
+      FROM (VALUES ('start'), ('L1-0')) AS ${quoteIdentifier("start_values")}(${quoteIdentifier(
+        "start",
+      )})`;
     const measured = buildGraphTemporalReachabilitySql(
       prepared,
       startsSelect,
       "outgoing",
       temporal,
     );
-    assertEquals(
+    expect(
       await sdb.runQuery(
         `${measured.withClause}
         SELECT count(*) AS ${quoteIdentifier("stateCount")}
@@ -1210,18 +1204,17 @@ Deno.test("reachable chronological SQL materializes finite last-event state", as
           values: [temporal.gapParameter],
         },
       ),
-      [{ stateCount: 205 }],
-    );
+    ).toStrictEqual([{ stateCount: 205 }]);
     // 125 physical events and two starts bound retained state to 250 rows.
     // The measured 205 states replace 5^6 possible full routes from one start.
-    assertEquals(events.length * 2, 250);
+    expect(events.length * 2).toStrictEqual(250);
   } finally {
     observer.restore();
     await sdb.close();
   }
 });
 
-Deno.test("reachable chronological recursion preserves nanoseconds and binary node identity", async () => {
+test("reachable chronological recursion preserves nanoseconds and binary node identity", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("graph_reachable_states");
@@ -1233,37 +1226,39 @@ Deno.test("reachable chronological recursion preserves nanoseconds and binary no
       ('b', 'C', '2025-01-01 00:00:00.000000002'),
       ('a', 'B', '2025-01-01 00:00:00.000000001'),
       ('B', 'D', '2025-01-01 00:00:00.000000002')`);
-    assertEquals(
-      await source.reachable("source", "target", ["a", "A"], {
-        startTimeColumn: "TIME",
-        outputTable: true,
-      }).getData(),
-      [
-        { start: "A", node: "C" },
-        { start: "A", node: "b" },
-        { start: "a", node: "B" },
-        { start: "a", node: "D" },
-      ],
-    );
-    assertEquals(
-      await source.reachable("source", "target", ["C", "D"], {
-        direction: "incoming",
-        endTimeColumn: "time",
-        outputTable: true,
-      }).getData(),
-      [
-        { start: "C", node: "A" },
-        { start: "C", node: "b" },
-        { start: "D", node: "B" },
-        { start: "D", node: "a" },
-      ],
-    );
+    expect(
+      await source
+        .reachable("source", "target", ["a", "A"], {
+          startTimeColumn: "TIME",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([
+      { start: "A", node: "C" },
+      { start: "A", node: "b" },
+      { start: "a", node: "B" },
+      { start: "a", node: "D" },
+    ]);
+    expect(
+      await source
+        .reachable("source", "target", ["C", "D"], {
+          direction: "incoming",
+          endTimeColumn: "time",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([
+      { start: "C", node: "A" },
+      { start: "C", node: "b" },
+      { start: "D", node: "B" },
+      { start: "D", node: "a" },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("reachable internal all-node starts use valid events and retain isolated endpoints", async () => {
+test("reachable internal all-node starts use valid events and retain isolated endpoints", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("graph_starts");
@@ -1285,11 +1280,7 @@ Deno.test("reachable internal all-node starts use valid events and retain isolat
     );
     const temporal = prepareGraphTemporalSql(
       schema,
-      prepareGraphTemporalOptions(
-        { startTimeColumn: "time" },
-        "outgoing",
-        "reachable()",
-      )!,
+      prepareGraphTemporalOptions({ startTimeColumn: "time" }, "outgoing", "reachable()")!,
       "reachable()",
     );
     const reachability = buildGraphTemporalReachabilitySql(
@@ -1300,7 +1291,7 @@ Deno.test("reachable internal all-node starts use valid events and retain isolat
       "outgoing",
       temporal,
     );
-    assertEquals(
+    expect(
       await sdb.runQuery(
         `${reachability.withClause}
         SELECT DISTINCT start, node FROM ${reachability.reachableRelation}
@@ -1315,16 +1306,15 @@ Deno.test("reachable internal all-node starts use valid events and retain isolat
           values: [temporal.gapParameter],
         },
       ),
-      [
-        { start: "A", node: "B" },
-        { start: "A", node: "X" },
-        { start: "B", node: "A" },
-        { start: "B", node: "B" },
-        { start: "B", node: "X" },
-        { start: "I", node: "J" },
-        { start: "X", node: "B" },
-      ],
-    );
+    ).toStrictEqual([
+      { start: "A", node: "B" },
+      { start: "A", node: "X" },
+      { start: "B", node: "A" },
+      { start: "B", node: "B" },
+      { start: "B", node: "X" },
+      { start: "I", node: "J" },
+      { start: "X", node: "B" },
+    ]);
   } finally {
     await sdb.close();
   }

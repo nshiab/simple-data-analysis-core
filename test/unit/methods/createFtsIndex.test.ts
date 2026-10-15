@@ -1,7 +1,9 @@
-import { assertEquals, assertExists } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should successfully create an FTS index", async () => {
+test("should successfully create an FTS index", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -11,20 +13,22 @@ Deno.test("should successfully create an FTS index", async () => {
   const result = await table.createFtsIndex("Dish", "Recipe").run();
 
   // Should return the table for chaining
-  assertEquals(result, table);
+  expect(result).toStrictEqual(table);
 
-  assertEquals(table.indexes, [{
-    kind: "fts",
-    name: "fts_index_table1",
-    idColumn: "Dish",
-    textColumn: "Recipe",
-    options: {},
-  }]);
+  expect(table.indexes).toStrictEqual([
+    {
+      kind: "fts",
+      name: "fts_index_table1",
+      idColumn: "Dish",
+      textColumn: "Recipe",
+      options: {},
+    },
+  ]);
 
   // Should be able to use bm25 after creating index
   table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.sort(), [
+  expect(dishes.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -33,114 +37,122 @@ Deno.test("should successfully create an FTS index", async () => {
   ]);
 });
 
-Deno.test("should successfully create an FTS index with a specific stemmer", async () => {
+test("should successfully create an FTS index with a specific stemmer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index with French stemmer
-  await table.createFtsIndex("Dish", "Recipe", {
-    stemmer: "french",
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      stemmer: "french",
+    })
+    .run();
 
-  assertEquals(table.indexes, [{
-    kind: "fts",
-    name: "fts_index_table1",
-    idColumn: "Dish",
-    textColumn: "Recipe",
-    options: { stemmer: "french" },
-  }]);
+  expect(table.indexes).toStrictEqual([
+    {
+      kind: "fts",
+      name: "fts_index_table1",
+      idColumn: "Dish",
+      textColumn: "Recipe",
+      options: { stemmer: "french" },
+    },
+  ]);
 
   // Should work with bm25
   table.bm25("french food", "Dish", "Recipe", 5, {
     stemmer: "french",
   });
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.length, 5);
+  expect(dishes.length).toStrictEqual(5);
 });
 
-Deno.test("should not recreate index if already exists", async () => {
+test("should not recreate index if already exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index
-  await table.createFtsIndex("Dish", "Recipe", {
-    verbose: true,
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      verbose: true,
+    })
+    .run();
 
-  const indexCountBefore =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  const indexCountBefore = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Try to create the same index again
-  await table.createFtsIndex("Dish", "Recipe", {
-    verbose: true,
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      verbose: true,
+    })
+    .run();
 
-  const indexCountAfter =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  const indexCountAfter = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Should have the same number of indexes (no duplicate)
-  assertEquals(indexCountBefore, indexCountAfter);
-  assertEquals(indexCountBefore, 1);
+  expect(indexCountBefore).toStrictEqual(indexCountAfter);
+  expect(indexCountBefore).toStrictEqual(1);
 });
 
-Deno.test("should recreate index when overwrite is true", async () => {
+test("should recreate index when overwrite is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
 
   // Create initial FTS index
-  await table.createFtsIndex("Dish", "Recipe", {
-    stemmer: "porter",
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      stemmer: "porter",
+    })
+    .run();
 
   // Index should exist
-  const indexCountBefore =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
-  assertEquals(indexCountBefore, 1);
+  const indexCountBefore = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  expect(indexCountBefore).toStrictEqual(1);
 
   // Recreate index with overwrite=true
-  await table.createFtsIndex("Dish", "Recipe", {
-    stemmer: "english",
-    overwrite: true,
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      stemmer: "english",
+      overwrite: true,
+    })
+    .run();
 
   // Index should still exist (only one)
-  const indexCountAfter =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
-  assertEquals(indexCountAfter, 1);
-  assertEquals(table.indexes[0].options, { stemmer: "english" });
+  const indexCountAfter = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  expect(indexCountAfter).toStrictEqual(1);
+  expect(table.indexes[0].options).toStrictEqual({ stemmer: "english" });
 
   // Should work with bm25
   table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.length, 5);
+  expect(dishes.length).toStrictEqual(5);
 });
 
-Deno.test("should create index when overwrite is true and no index exists", async () => {
+test("should create index when overwrite is true and no index exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
 
   // Create index with overwrite=true even though no index exists
-  await table.createFtsIndex("Dish", "Recipe", {
-    overwrite: true,
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      overwrite: true,
+    })
+    .run();
 
   // Index should be created
-  assertExists(
-    table.indexes.find((idx) => idx.name.includes("fts_index")),
-  );
+  assert(table.indexes.find((idx) => idx.name.includes("fts_index")) != null);
 
   // Should work with bm25
   table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.sort(), [
+  expect(dishes.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -149,64 +161,70 @@ Deno.test("should create index when overwrite is true and no index exists", asyn
   ]);
 });
 
-Deno.test("should recreate index with verbose logging when overwrite is true", async () => {
+test("should recreate index with verbose logging when overwrite is true", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
 
   // Create initial index
-  await table.createFtsIndex("Dish", "Recipe", {
-    verbose: true,
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      verbose: true,
+    })
+    .run();
 
-  const indexCountBefore =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  const indexCountBefore = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Recreate with overwrite
-  await table.createFtsIndex("Dish", "Recipe", {
-    overwrite: true,
-    verbose: true,
-  }).run();
+  await table
+    .createFtsIndex("Dish", "Recipe", {
+      overwrite: true,
+      verbose: true,
+    })
+    .run();
 
-  const indexCountAfter =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  const indexCountAfter = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Should still have exactly one index
-  assertEquals(indexCountBefore, 1);
-  assertEquals(indexCountAfter, 1);
+  expect(indexCountBefore).toStrictEqual(1);
+  expect(indexCountAfter).toStrictEqual(1);
 
   // Should work with bm25
   table.bm25("italian food", "Dish", "Recipe", 5);
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.length, 5);
+  expect(dishes.length).toStrictEqual(5);
 });
 
-Deno.test("should successfully create an FTS index with custom parameters", async () => {
+test("should successfully create an FTS index with custom parameters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
   table.removeDuplicates({ on: "Dish" });
 
   // Create FTS index with multiple new parameters
-  await table.createFtsIndex("Dish", "Recipe", {
-    stemmer: "none",
-    lower: false,
-    stripAccents: false,
-    verbose: true,
-  }).run();
-
-  assertEquals(table.indexes, [{
-    kind: "fts",
-    name: "fts_index_table1",
-    idColumn: "Dish",
-    textColumn: "Recipe",
-    options: {
+  await table
+    .createFtsIndex("Dish", "Recipe", {
       stemmer: "none",
       lower: false,
       stripAccents: false,
+      verbose: true,
+    })
+    .run();
+
+  expect(table.indexes).toStrictEqual([
+    {
+      kind: "fts",
+      name: "fts_index_table1",
+      idColumn: "Dish",
+      textColumn: "Recipe",
+      options: {
+        stemmer: "none",
+        lower: false,
+        stripAccents: false,
+      },
     },
-  }]);
+  ]);
 
   // Verifying the search still works with these parameters
   table.bm25("italian food", "Dish", "Recipe", 5, {
@@ -215,5 +233,5 @@ Deno.test("should successfully create an FTS index with custom parameters", asyn
     stripAccents: false,
   });
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.length, 5);
+  expect(dishes.length).toStrictEqual(5);
 });

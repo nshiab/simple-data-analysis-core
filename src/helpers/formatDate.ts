@@ -54,26 +54,19 @@ export default function formatDate(
   format: "Month DD, YYYY, at HH:MM period" | "Month DD",
   options: { utc?: boolean } = {},
 ): string {
-  const getFullYear = options.utc ? date.getUTCFullYear : date.getFullYear;
-  const getMonth = options.utc ? date.getUTCMonth : date.getMonth;
-  const getDate = options.utc ? date.getUTCDate : date.getDate;
-  const getHours = options.utc ? date.getUTCHours : date.getHours;
-  const getMinutes = options.utc ? date.getUTCMinutes : date.getMinutes;
-
-  const year = getFullYear.call(date);
-  const month = MONTHS[getMonth.call(date)];
-  const day = getDate.call(date);
-  const hours = getHours.call(date);
-  const minutes = getMinutes.call(date);
+  const year = options.utc ? date.getUTCFullYear() : date.getFullYear();
+  const month = MONTHS[options.utc ? date.getUTCMonth() : date.getMonth()];
+  const day = options.utc ? date.getUTCDate() : date.getDate();
+  const hours = options.utc ? date.getUTCHours() : date.getHours();
+  const minutes = options.utc ? date.getUTCMinutes() : date.getMinutes();
 
   const period = hours >= 12 ? "p.m." : "a.m.";
   const displayHours = hours % 12 || 12;
   const displayMinutes = minutes.toString().padStart(2, "0");
 
   if (format === "Month DD, YYYY, at HH:MM period") {
-    const time = minutes === 0
-      ? `${displayHours} ${period}`
-      : `${displayHours}:${displayMinutes} ${period}`;
+    const time =
+      minutes === 0 ? `${displayHours} ${period}` : `${displayHours}:${displayMinutes} ${period}`;
     return `${month} ${day}, ${year}, at ${time}`;
   } else if (format === "Month DD") {
     return `${month} ${day}`;

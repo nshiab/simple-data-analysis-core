@@ -1,17 +1,35 @@
-import {
-  DOUBLE,
-  type DuckDBConnection,
-  DuckDBDataChunk,
-  VARCHAR,
-} from "@duckdb/node-api";
+import { DOUBLE, type DuckDBConnection, DuckDBDataChunk, VARCHAR } from "@duckdb/node-api";
 import type SimpleDB from "../../src/class/SimpleDB.ts";
 import prepareGeometry from "../../src/helpers/prepareGeometry.ts";
 
-type Geometry = { type: "Point"; coordinates: number[] } | {
-  type: "Polygon";
-  coordinates: number[][][];
-};
+type Geometry =
+  | { type: "Point"; coordinates: number[] }
+  | {
+      type: "Polygon";
+      coordinates: number[][][];
+    };
 type Row = Record<string, unknown>;
+
+function isPosition(value: unknown): value is number[] {
+  return (
+    Array.isArray(value) && value.every((coordinate: unknown) => typeof coordinate === "number")
+  );
+}
+
+function isGeometry(value: unknown): value is Geometry {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("type" in value) ||
+    !("coordinates" in value)
+  )
+    return false;
+  return value.type === "Point"
+    ? isPosition(value.coordinates)
+    : value.type === "Polygon" &&
+        Array.isArray(value.coordinates) &&
+        value.coordinates.every((ring: unknown) => Array.isArray(ring) && ring.every(isPosition));
+}
 
 // Shared cell validation gives the handwritten baseline the same ingestion
 // contract without importing the Core class or its update implementation.
@@ -23,18 +41,17 @@ export default async function prepareGeometryWorkload(
   connection: DuckDBConnection,
   sdb?: SimpleDB,
 ): Promise<{ execute: () => Promise<void>; validate: () => Promise<void> }> {
-  await connection.run(
-    "INSTALL spatial; LOAD spatial; SET geometry_always_xy=true",
-  );
+  await connection.run("INSTALL spatial; LOAD spatial; SET geometry_always_xy=true");
   if (sdb) sdb.spatialLoaded = true;
   const ring = Array.from({ length: 1000 }, (_, i) => {
-    const angle = i * 2 * Math.PI / 1000;
+    const angle = (i * 2 * Math.PI) / 1000;
     return [-73 + Math.cos(angle), 45 + Math.sin(angle)];
   });
   ring.push([...ring[0]]);
-  const geometry: Geometry = shape === "point"
-    ? { type: "Point", coordinates: [-73, 45] }
-    : { type: "Polygon", coordinates: [ring] };
+  const geometry: Geometry =
+    shape === "point"
+      ? { type: "Point", coordinates: [-73, 45] }
+      : { type: "Polygon", coordinates: [ring] };
   const json = JSON.stringify(geometry);
   await connection.run(`CREATE OR REPLACE TABLE input AS SELECT i::DOUBLE AS id,
     ST_GeomFromGeoJSON('${json}')::GEOMETRY('EPSG:4326') AS geom FROM range(${rows}) t(i)`);
@@ -43,17 +60,18 @@ export default async function prepareGeometryWorkload(
   function modify(batch: Row[]): Row[] {
     return batch.map((row) => {
       if (edit) {
-        const geom = row.geom as Geometry;
+        const geom = row.geom;
+        if (!isGeometry(geom)) throw new Error("Expected benchmark point or polygon");
         if (geom.type === "Point") geom.coordinates[0] += 0.01;
         else for (const point of geom.coordinates[0]) point[0] += 0.01;
       }
+      if (typeof row.id !== "number") throw new Error("Expected numeric benchmark row ID");
       return { ...row, label: `station-${row.id}` };
     });
   }
   async function execute() {
     if (table) {
-      await table.updateWithJS(modify, { batchSize: batchSize || undefined })
-        .run();
+      await table.updateWithJS(modify, { batchSize: batchSize || undefined }).run();
       return;
     }
     const fidelity = await connection.runAndReadAll(`SELECT count(*) FROM input
@@ -67,21 +85,21 @@ export default async function prepareGeometryWorkload(
       );
       const size = batchSize || rows;
       for (let offset = 0; offset < rows; offset += size) {
-        const batch = (await connection.runAndReadAll(`SELECT id,
+        const batch: Row[] = (
+          await connection.runAndReadAll(`SELECT id,
           ST_AsGeoJSON(geom)::VARCHAR AS geom FROM input${
-          batchSize
-            ? ` WHERE rowid >= ${offset} AND rowid < ${
-              offset + size
-            } ORDER BY rowid`
-            : ""
-        }`)).getRowObjectsJS();
+            batchSize ? ` WHERE rowid >= ${offset} AND rowid < ${offset + size} ORDER BY rowid` : ""
+          }`)
+        ).getRowObjectsJS();
         for (const [i, row] of batch.entries()) {
-          row.geom = JSON.parse(row.geom as string);
+          if (typeof row.geom !== "string") throw new Error("Expected serialized geometry");
+          const geometry: unknown = JSON.parse(row.geom);
+          row.geom = geometry;
           prepareGeometry(row.geom, "geom", offset + i + 1);
         }
         const modified = modify(batch);
         const geometryData = modified.map((row, i) =>
-          prepareGeometry(row.geom, "geom", offset + i + 1)
+          prepareGeometry(row.geom, "geom", offset + i + 1),
         );
         await connection.run(
           "CREATE OR REPLACE TEMP TABLE transfer(id DOUBLE, geom VARCHAR, label VARCHAR)",
@@ -90,18 +108,21 @@ export default async function prepareGeometryWorkload(
         try {
           for (let start = 0; start < modified.length; start += 2000) {
             const end = Math.min(start + 2000, modified.length);
-            const chunk = DuckDBDataChunk.create(
-              [DOUBLE, VARCHAR, VARCHAR],
-              end - start,
-            );
+            const chunk = DuckDBDataChunk.create([DOUBLE, VARCHAR, VARCHAR], end - start);
             chunk.setColumnValues(
               0,
-              modified.slice(start, end).map((row) => row.id as number),
+              modified.slice(start, end).map((row) => {
+                if (typeof row.id !== "number") throw new Error("Expected numeric row ID");
+                return row.id;
+              }),
             );
             chunk.setColumnValues(1, geometryData.slice(start, end));
             chunk.setColumnValues(
               2,
-              modified.slice(start, end).map((row) => row.label as string),
+              modified.slice(start, end).map((row) => {
+                if (typeof row.label !== "string") throw new Error("Expected row label");
+                return row.label;
+              }),
             );
             appender.appendDataChunk(chunk);
           }
@@ -112,13 +133,9 @@ export default async function prepareGeometryWorkload(
         await connection.run(`INSERT INTO staged SELECT id,
           ST_GeomFromGeoJSON(geom)::GEOMETRY('EPSG:4326'), label FROM transfer`);
       }
-      await connection.run(
-        "CREATE OR REPLACE TABLE input AS SELECT * FROM staged",
-      );
+      await connection.run("CREATE OR REPLACE TABLE input AS SELECT * FROM staged");
     } finally {
-      await connection.run(
-        "DROP TABLE IF EXISTS staged; DROP TABLE IF EXISTS transfer",
-      );
+      await connection.run("DROP TABLE IF EXISTS staged; DROP TABLE IF EXISTS transfer");
     }
   }
 
@@ -131,9 +148,7 @@ export default async function prepareGeometryWorkload(
       else for (const point of expected.coordinates[0]) point[0] += 0.01;
     }
     const result = await connection.runAndReadAll(`WITH expected AS (
-      SELECT i::DOUBLE AS id, ST_AsWKB(ST_GeomFromGeoJSON('${
-      JSON.stringify(expected)
-    }')) AS geom,
+      SELECT i::DOUBLE AS id, ST_AsWKB(ST_GeomFromGeoJSON('${JSON.stringify(expected)}')) AS geom,
       'station-' || i AS label FROM range(${rows}) t(i)),
       actual AS (SELECT id, ST_AsWKB(geom) AS geom, label FROM input)
       SELECT count(*) FROM (
@@ -142,12 +157,8 @@ export default async function prepareGeometryWorkload(
     if (result.getRows()[0][0] !== 0n) {
       throw new Error("Geometry benchmark produced different output rows");
     }
-    const types = (await connection.runAndReadAll("DESCRIBE input"))
-      .getRowObjectsJS();
-    if (
-      types.find((row) => row.column_name === "geom")?.column_type !==
-        "GEOMETRY('EPSG:4326')"
-    ) {
+    const types = (await connection.runAndReadAll("DESCRIBE input")).getRowObjectsJS();
+    if (types.find((row) => row.column_name === "geom")?.column_type !== "GEOMETRY('EPSG:4326')") {
       throw new Error("Geometry benchmark lost the geometry SQL type or CRS");
     }
   }

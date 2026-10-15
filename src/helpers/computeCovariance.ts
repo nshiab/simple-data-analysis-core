@@ -41,11 +41,13 @@ export default async function computeCovariance(
         ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS origin
     FROM (${expanded})`;
 
-  const meanRows = (await connection.runAndReadAll(
-    `SELECT feature - 1 AS feature, first(origin) AS origin,
+  const meanRows = (
+    await connection.runAndReadAll(
+      `SELECT feature - 1 AS feature, first(origin) AS origin,
       avg(value - origin) AS mean_offset, max(abs(value - origin)) AS magnitude FROM (${offsets})
       GROUP BY feature ORDER BY feature`,
-  )).getRowsJS();
+    )
+  ).getRowsJS();
   if (meanRows.length !== dimensions) {
     throw new Error("Covariance aggregation returned an incomplete centroid.");
   }
@@ -58,7 +60,8 @@ export default async function computeCovariance(
     const origin = Number(row[1]);
     const meanOffset = Number(row[2]);
     if (
-      !Number.isSafeInteger(feature) || !Number.isFinite(origin) ||
+      !Number.isSafeInteger(feature) ||
+      !Number.isFinite(origin) ||
       !Number.isFinite(meanOffset)
     ) {
       throw new Error(
@@ -89,9 +92,7 @@ export default async function computeCovariance(
   const result = await connection.stream(
     `WITH features AS MATERIALIZED (
         SELECT observation, feature, (value - origin) /
-          array_extract([${
-      magnitudes.join(",")
-    }]::DOUBLE[${dimensions}], feature) AS value
+          array_extract([${magnitudes.join(",")}]::DOUBLE[${dimensions}], feature) AS value
         FROM (${offsets})
       )
       SELECT a.feature - 1 AS row, b.feature - 1 AS column,
@@ -107,22 +108,24 @@ export default async function computeCovariance(
     const rows = new Int32Array(chunk.rowCount);
     const columns = new Int32Array(chunk.rowCount);
     const entries = new Float64Array(chunk.rowCount);
-    chunk.visitColumnValues(0, (value, row) => rows[row] = Number(value));
-    chunk.visitColumnValues(1, (value, row) => columns[row] = Number(value));
-    chunk.visitColumnValues(2, (value, row) => entries[row] = Number(value));
+    chunk.visitColumnValues(0, (value, row) => (rows[row] = Number(value)));
+    chunk.visitColumnValues(1, (value, row) => (columns[row] = Number(value)));
+    chunk.visitColumnValues(2, (value, row) => (entries[row] = Number(value)));
     for (let i = 0; i < chunk.rowCount; i++) {
       const row = rows[i];
       const column = columns[i];
       // Restore units using the larger magnitude first to avoid prematurely
       // underflowing a finite cross-covariance between very different units.
-      const value = entries[i] * Math.max(magnitudes[row], magnitudes[column]) *
+      const value =
+        entries[i] *
+        Math.max(magnitudes[row], magnitudes[column]) *
         Math.min(magnitudes[row], magnitudes[column]);
       covariance[row * dimensions + column] = value;
       covariance[column * dimensions + row] = value;
       values++;
     }
   }
-  if (values !== dimensions * (dimensions + 1) / 2) {
+  if (values !== (dimensions * (dimensions + 1)) / 2) {
     throw new Error("Covariance aggregation returned an incomplete matrix.");
   }
 

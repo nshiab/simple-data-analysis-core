@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should repeat rows based on a specific column values", async () => {
+test("should repeat rows based on a specific column values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -15,7 +17,7 @@ Deno.test("should repeat rows based on a specific column values", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { id: 1, count: 2, category: "A" },
     { id: 1, count: 2, category: "A" },
     { id: 2, count: 3, category: "B" },
@@ -26,7 +28,7 @@ Deno.test("should repeat rows based on a specific column values", async () => {
   await sdb.close();
 });
 
-Deno.test("should repeat rows based on a specific column values and add an index column", async () => {
+test("should repeat rows based on a specific column values and add an index column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -37,7 +39,7 @@ Deno.test("should repeat rows based on a specific column values and add an index
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { id: 1, count: 2, category: "A", copyId: 0 },
     { id: 1, count: 2, category: "A", copyId: 1 },
     { id: 2, count: 3, category: "B", copyId: 0 },
@@ -48,7 +50,7 @@ Deno.test("should repeat rows based on a specific column values and add an index
   await sdb.close();
 });
 
-Deno.test("should throw when the index column name already exists, instead of silently renaming it", async () => {
+test("should throw when the index column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1, count: 2, copyId: "already here" }]);

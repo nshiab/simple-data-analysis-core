@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should stream the same rows as getData", async () => {
+test("should stream the same rows as getData", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dailyTemperatures.csv");
@@ -11,11 +13,11 @@ Deno.test("should stream the same rows as getData", async () => {
     streamed.push(row);
   }
 
-  assertEquals(streamed, await table.getData());
+  expect(streamed).toStrictEqual(await table.getData());
   await sdb.close();
 });
 
-Deno.test("should stream more rows than one DuckDB chunk", async () => {
+test("should stream more rows than one DuckDB chunk", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("big");
   const data = Array.from({ length: 5000 }, (_, i) => ({
@@ -30,12 +32,12 @@ Deno.test("should stream more rows than one DuckDB chunk", async () => {
     count++;
     idSum += row.id as number;
   }
-  assertEquals(count, 5000);
-  assertEquals(idSum, (4999 * 5000) / 2);
+  expect(count).toStrictEqual(5000);
+  expect(idSum).toStrictEqual((4999 * 5000) / 2);
   await sdb.close();
 });
 
-Deno.test("should stream with columns and conditions", async () => {
+test("should stream with columns and conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("filtered");
   table.loadArray([
@@ -45,16 +47,14 @@ Deno.test("should stream with columns and conditions", async () => {
   ]);
 
   const streamed: { [key: string]: unknown }[] = [];
-  for await (
-    const row of table.stream({ columns: "name", conditions: `value > 1` })
-  ) {
+  for await (const row of table.stream({ columns: "name", conditions: `value > 1` })) {
     streamed.push(row);
   }
-  assertEquals(streamed, [{ name: "b" }, { name: "c" }]);
+  expect(streamed).toStrictEqual([{ name: "b" }, { name: "c" }]);
   await sdb.close();
 });
 
-Deno.test("should convert values while streaming like getData", async () => {
+test("should convert values while streaming like getData", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("typed");
   await sdb.customQuery(
@@ -70,7 +70,7 @@ Deno.test("should convert values while streaming like getData", async () => {
   for await (const row of table.stream()) {
     streamed.push(row);
   }
-  assertEquals(streamed, [
+  expect(streamed).toStrictEqual([
     {
       dt: new Date("2020-01-15T00:00:00.000Z"),
       ts: new Date("2020-01-15T14:30:45.123Z"),
@@ -82,12 +82,10 @@ Deno.test("should convert values while streaming like getData", async () => {
   await sdb.close();
 });
 
-Deno.test("should allow breaking out of the stream early", async () => {
+test("should allow breaking out of the stream early", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("early");
-  table.loadArray(
-    Array.from({ length: 5000 }, (_, i) => ({ id: i })),
-  );
+  table.loadArray(Array.from({ length: 5000 }, (_, i) => ({ id: i })));
 
   let count = 0;
   for await (const _row of table.stream()) {
@@ -96,14 +94,14 @@ Deno.test("should allow breaking out of the stream early", async () => {
       break;
     }
   }
-  assertEquals(count, 10);
+  expect(count).toStrictEqual(10);
 
   // The table is still usable after an early break.
-  assertEquals(await table.getRowCount(), 5000);
+  expect(await table.getRowCount()).toStrictEqual(5000);
   await sdb.close();
 });
 
-Deno.test("stream honors expressionSyntax for conditions", async () => {
+test("stream honors expressionSyntax for conditions", async () => {
   for (const expressionSyntax of ["js", "sql"] as const) {
     const sdb = new SimpleDB({ expressionSyntax });
     try {
@@ -111,20 +109,21 @@ Deno.test("stream honors expressionSyntax for conditions", async () => {
         { active: true, admin: false, text: "a || b" },
         { active: false, admin: false, text: "other" },
       ]);
-      const conditions = expressionSyntax === "js"
-        ? "(active || admin) && text === 'a || b'"
-        : "(active OR admin) AND text || '!' = 'a || b!'";
+      const conditions =
+        expressionSyntax === "js"
+          ? "(active || admin) && text === 'a || b'"
+          : "(active OR admin) AND text || '!' = 'a || b!'";
       const rows = [];
       for await (const row of table.stream({ conditions })) rows.push(row);
-      assertEquals(rows, [{ active: true, admin: false, text: "a || b" }]);
-      assertEquals(rows, await table.getData({ conditions }));
+      expect(rows).toStrictEqual([{ active: true, admin: false, text: "a || b" }]);
+      expect(rows).toStrictEqual(await table.getData({ conditions }));
     } finally {
       await sdb.close();
     }
   }
 });
 
-Deno.test("stream rejects unsafe top-level integers while retaining nested integer strings", async () => {
+test("stream rejects unsafe top-level integers while retaining nested integer strings", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE stream_integers AS SELECT
@@ -132,16 +131,18 @@ Deno.test("stream rejects unsafe top-level integers while retaining nested integ
     const table = sdb.newTable("stream_integers");
     const rows: Record<string, unknown>[] = [];
     for await (const row of table.stream()) rows.push(row);
-    assertEquals(rows, [{
-      id: Number.MAX_SAFE_INTEGER,
-      nested: ["9007199254740993"],
-    }]);
-    await sdb.customQuery(
-      `UPDATE stream_integers SET id = 9007199254740993::UBIGINT`,
-    );
+    expect(rows).toStrictEqual([
+      {
+        id: Number.MAX_SAFE_INTEGER,
+        nested: ["9007199254740993"],
+      },
+    ]);
+    await sdb.customQuery(`UPDATE stream_integers SET id = 9007199254740993::UBIGINT`);
     await assertRejects(
       async () => {
-        for await (const _row of table.stream()) { /* Consume the stream. */ }
+        for await (const _row of table.stream()) {
+          /* Consume the stream. */
+        }
       },
       Error,
       "safe integer range",

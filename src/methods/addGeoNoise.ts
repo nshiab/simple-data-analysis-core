@@ -22,20 +22,14 @@ export default function addGeoNoise(
       "addGeoNoise() maxDistance must be a finite number greater than or equal to 0.",
     );
   }
-  if (
-    options.unit !== undefined && options.unit !== "m" && options.unit !== "km"
-  ) {
+  if (options.unit !== undefined && options.unit !== "m" && options.unit !== "km") {
     throw new Error('addGeoNoise() options.unit must be "m" or "km".');
   }
 
   options = structuredClone(options);
-  const maxDistanceMeters = options.unit === "km"
-    ? maxDistance * 1_000
-    : maxDistance;
+  const maxDistanceMeters = options.unit === "km" ? maxDistance * 1_000 : maxDistance;
   if (maxDistanceMeters > Math.PI * EARTH_RADIUS_METERS) {
-    throw new Error(
-      "addGeoNoise() maxDistance cannot exceed half the Earth's circumference.",
-    );
+    throw new Error("addGeoNoise() maxDistance cannot exceed half the Earth's circumference.");
   }
 
   queueOp(simpleTable, {
@@ -46,8 +40,8 @@ export default function addGeoNoise(
     needsSpatial: true,
     preservesSchema: true,
     buildSelect: (input, schema) => {
-      const column = options.column ??
-        findGeoColumnFromSchema(schema, "addGeoNoise()", simpleTable.name);
+      const column =
+        options.column ?? findGeoColumnFromSchema(schema, "addGeoNoise()", simpleTable.name);
       return addGeoNoiseSelect(
         input,
         schema,
@@ -68,24 +62,22 @@ function addGeoNoiseSelect(
 ): string {
   const type = schema[column];
   if (type === undefined) {
-    throw new Error(
-      `addGeoNoise() could not find column ${quoteIdentifier(column)}.`,
-    );
+    throw new Error(`addGeoNoise() could not find column ${quoteIdentifier(column)}.`);
   }
   if (type !== "GEOMETRY('EPSG:4326')") {
     throw new Error(
-      `addGeoNoise() requires an EPSG:4326 geometry column, but ${
-        quoteIdentifier(column)
-      } has type ${type}. Reproject it to EPSG:4326 first.`,
+      `addGeoNoise() requires an EPSG:4326 geometry column, but ${quoteIdentifier(
+        column,
+      )} has type ${type}. Reproject it to EPSG:4326 first.`,
     );
   }
 
   const internalNames = makeInternalNames(schema, input);
   const quotedColumn = quoteIdentifier(column);
-  const pointError =
-    `error('addGeoNoise() requires POINT geometries in column ${
-      column.replaceAll("'", "''")
-    }.')`;
+  const pointError = `error('addGeoNoise() requires POINT geometries in column ${column.replaceAll(
+    "'",
+    "''",
+  )}.')`;
   const coordinateGuard = (coordinate: "X" | "Y") =>
     `CASE
     WHEN ${quotedColumn} IS NULL OR ST_IsEmpty(${quotedColumn}) THEN NULL
@@ -93,35 +85,29 @@ function addGeoNoiseSelect(
       THEN ${pointError}
     ELSE radians(ST_${coordinate}(${quotedColumn}))
   END`;
-  const duplicateCount = onlyDuplicates
-    ? `COUNT(*) OVER (PARTITION BY ${quotedColumn})`
-    : "2";
+  const duplicateCount = onlyDuplicates ? `COUNT(*) OVER (PARTITION BY ${quotedColumn})` : "2";
   const maxAngularDistance = maxDistanceMeters / EARTH_RADIUS_METERS;
 
   const latitudeExpression = `asin(
-    sin(${quoteIdentifier(internalNames.latitude)}) * cos(${
-    quoteIdentifier(internalNames.angularDistance)
-  }) +
-    cos(${quoteIdentifier(internalNames.latitude)}) * sin(${
-    quoteIdentifier(internalNames.angularDistance)
-  }) * cos(${quoteIdentifier(internalNames.bearing)})
+    sin(${quoteIdentifier(internalNames.latitude)}) * cos(${quoteIdentifier(
+      internalNames.angularDistance,
+    )}) +
+    cos(${quoteIdentifier(internalNames.latitude)}) * sin(${quoteIdentifier(
+      internalNames.angularDistance,
+    )}) * cos(${quoteIdentifier(internalNames.bearing)})
   )`;
-  const longitudeExpression = `${
-    quoteIdentifier(internalNames.longitude)
-  } + atan2(
-    sin(${quoteIdentifier(internalNames.bearing)}) * sin(${
-    quoteIdentifier(internalNames.angularDistance)
-  }) * cos(${quoteIdentifier(internalNames.latitude)}),
+  const longitudeExpression = `${quoteIdentifier(internalNames.longitude)} + atan2(
+    sin(${quoteIdentifier(internalNames.bearing)}) * sin(${quoteIdentifier(
+      internalNames.angularDistance,
+    )}) * cos(${quoteIdentifier(internalNames.latitude)}),
     cos(${quoteIdentifier(internalNames.angularDistance)}) -
-      sin(${quoteIdentifier(internalNames.latitude)}) * sin(${
-    quoteIdentifier(internalNames.destinationLatitude)
-  })
+      sin(${quoteIdentifier(internalNames.latitude)}) * sin(${quoteIdentifier(
+        internalNames.destinationLatitude,
+      )})
   )`;
   const replacement = `CASE
     WHEN ${quotedColumn} IS NULL OR ST_IsEmpty(${quotedColumn}) THEN ${quotedColumn}
-    WHEN ${
-    quoteIdentifier(internalNames.duplicateCount)
-  } <= 1 THEN ${quotedColumn}
+    WHEN ${quoteIdentifier(internalNames.duplicateCount)} <= 1 THEN ${quotedColumn}
     ELSE ST_Point(
       degrees(atan2(
         sin(${quoteIdentifier(internalNames.destinationLongitude)}),
@@ -130,9 +116,9 @@ function addGeoNoiseSelect(
       degrees(${quoteIdentifier(internalNames.destinationLatitude)})
     )::GEOMETRY('EPSG:4326')
   END AS ${quotedColumn}`;
-  const outputColumns = Object.keys(schema).map((outputColumn) =>
-    outputColumn === column ? replacement : quoteIdentifier(outputColumn)
-  ).join(", ");
+  const outputColumns = Object.keys(schema)
+    .map((outputColumn) => (outputColumn === column ? replacement : quoteIdentifier(outputColumn)))
+    .join(", ");
 
   return `WITH ${quoteIdentifier(internalNames.randomValues)} AS MATERIALIZED (
     SELECT *,
@@ -145,9 +131,9 @@ function addGeoNoiseSelect(
     SELECT *,
       ${coordinateGuard("Y")} AS ${quoteIdentifier(internalNames.latitude)},
       ${coordinateGuard("X")} AS ${quoteIdentifier(internalNames.longitude)},
-      2 * pi() * ${quoteIdentifier(internalNames.bearingRandom)} AS ${
-    quoteIdentifier(internalNames.bearing)
-  },
+      2 * pi() * ${quoteIdentifier(internalNames.bearingRandom)} AS ${quoteIdentifier(
+        internalNames.bearing,
+      )},
       2 * asin(
         sqrt(${quoteIdentifier(internalNames.distanceRandom)}) *
         sin(${maxAngularDistance} / 2)
@@ -155,15 +141,11 @@ function addGeoNoiseSelect(
     FROM ${quoteIdentifier(internalNames.randomValues)}
   ),
   ${quoteIdentifier(internalNames.destinationLatitudeCte)} AS (
-    SELECT *, ${latitudeExpression} AS ${
-    quoteIdentifier(internalNames.destinationLatitude)
-  }
+    SELECT *, ${latitudeExpression} AS ${quoteIdentifier(internalNames.destinationLatitude)}
     FROM ${quoteIdentifier(internalNames.start)}
   ),
   ${quoteIdentifier(internalNames.destination)} AS (
-    SELECT *, ${longitudeExpression} AS ${
-    quoteIdentifier(internalNames.destinationLongitude)
-  }
+    SELECT *, ${longitudeExpression} AS ${quoteIdentifier(internalNames.destinationLongitude)}
     FROM ${quoteIdentifier(internalNames.destinationLatitudeCte)}
   )
   SELECT ${outputColumns}

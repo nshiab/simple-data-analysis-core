@@ -33,7 +33,7 @@ async function executeInsertTables(
   array: SimpleTable[],
   options: { unifyColumns?: boolean },
 ): Promise<void> {
-  if (!await simpleTable.sdb.hasTable(simpleTable.name)) {
+  if (!(await simpleTable.sdb.hasTable(simpleTable.name))) {
     // The table is created directly (not with the sync setTypes builder,
     // which would queue for the next flush).
     const firstTableTypes = await array[0].getTypes();
@@ -46,11 +46,9 @@ async function executeInsertTables(
     }
     await queryDB(
       simpleTable,
-      `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} (${
-        Object.keys(firstTableTypes)
-          .map((d) => `${quoteIdentifier(d)} ${firstTableTypes[d]}`)
-          .join(", ")
-      });`,
+      `CREATE OR REPLACE TABLE ${quoteIdentifier(simpleTable.name)} (${Object.keys(firstTableTypes)
+        .map((d) => `${quoteIdentifier(d)} ${firstTableTypes[d]}`)
+        .join(", ")});`,
       mergeOptions(simpleTable, {
         table: simpleTable.name,
         method: "insertTables()",
@@ -66,38 +64,34 @@ async function executeInsertTables(
     for (const table of array) {
       const tableColumns = (await table.getColumns()).sort();
       const tableColumnSet = new Set(tableColumns);
-      const missingFromTable = thisColumns.filter((column) =>
-        !tableColumnSet.has(column)
-      );
-      const missingFromSimpleTable = tableColumns.filter((column) =>
-        !thisColumnSet.has(column)
-      );
+      const missingFromTable = thisColumns.filter((column) => !tableColumnSet.has(column));
+      const missingFromSimpleTable = tableColumns.filter((column) => !thisColumnSet.has(column));
       if (missingFromTable.length > 0 || missingFromSimpleTable.length > 0) {
         const differences: string[] = [];
         if (missingFromTable.length > 0) {
           differences.push(
             `${missingFromTable.length} column${
               missingFromTable.length === 1 ? "" : "s"
-            } missing from ${quoteIdentifier(table.name)}: ${
-              missingFromTable.map(quoteIdentifier).join(", ")
-            }.`,
+            } missing from ${quoteIdentifier(table.name)}: ${missingFromTable
+              .map(quoteIdentifier)
+              .join(", ")}.`,
           );
         }
         if (missingFromSimpleTable.length > 0) {
           differences.push(
             `${missingFromSimpleTable.length} column${
               missingFromSimpleTable.length === 1 ? "" : "s"
-            } missing from ${quoteIdentifier(simpleTable.name)}: ${
-              missingFromSimpleTable.map(quoteIdentifier).join(", ")
-            }.`,
+            } missing from ${quoteIdentifier(simpleTable.name)}: ${missingFromSimpleTable
+              .map(quoteIdentifier)
+              .join(", ")}.`,
           );
         }
         throw new Error(
-          `Tables ${quoteIdentifier(simpleTable.name)} and ${
-            quoteIdentifier(table.name)
-          } do not have the same columns.\n${
-            differences.join("\n")
-          }\nPass { unifyColumns: true } to fill missing columns with NULL values.`,
+          `Tables ${quoteIdentifier(simpleTable.name)} and ${quoteIdentifier(
+            table.name,
+          )} do not have the same columns.\n${differences.join(
+            "\n",
+          )}\nPass { unifyColumns: true } to fill missing columns with NULL values.`,
         );
       }
     }
@@ -115,13 +109,11 @@ async function executeInsertTables(
         if (allTypes[key] !== types[key]) {
           const sourceTable = typeSourceTables[key];
           throw new Error(
-            `Column ${quoteIdentifier(key)} has different types:\n${
-              quoteIdentifier(sourceTable.name)
-            }: ${allTypes[key]}\n${quoteIdentifier(table.name)}: ${
+            `Column ${quoteIdentifier(key)} has different types:\n${quoteIdentifier(
+              sourceTable.name,
+            )}: ${allTypes[key]}\n${quoteIdentifier(table.name)}: ${
               types[key]
-            }\nConvert ${
-              quoteIdentifier(key)
-            } to the same type in both tables before inserting.`,
+            }\nConvert ${quoteIdentifier(key)} to the same type in both tables before inserting.`,
           );
         }
       }
@@ -140,9 +132,9 @@ async function executeInsertTables(
     array
       .map(
         (tableToInsert) =>
-          `INSERT INTO ${
-            quoteIdentifier(simpleTable.name)
-          } BY NAME SELECT * FROM ${quoteIdentifier(tableToInsert.name)};`,
+          `INSERT INTO ${quoteIdentifier(
+            simpleTable.name,
+          )} BY NAME SELECT * FROM ${quoteIdentifier(tableToInsert.name)};`,
       )
       .join("\n"),
     mergeOptions(simpleTable, {

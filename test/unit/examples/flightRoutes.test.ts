@@ -1,4 +1,5 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 const chronological = {
@@ -24,30 +25,25 @@ const cheapest = [
   ["Sydney", 1020, 38, 5],
 ] as const;
 
-Deno.test("fictional flights compare cheapest destinations and fastest Tokyo itinerary", async () => {
+test("fictional flights compare cheapest destinations and fastest Tokyo itinerary", async () => {
   const sdb = new SimpleDB();
   try {
-    const flights = sdb.newTable("flights").loadData(
-      "test/data/graphs/flights.csv",
-    );
+    const flights = sdb.newTable("flights").loadData("test/data/graphs/flights.csv");
     const rows = await flights.getData();
-    assertEquals(rows.length, 33);
-    assertEquals(new Set(rows.map((row) => row.flightId)).size, 33);
-    assertEquals(
-      new Set(rows.flatMap((row) => [row.origin, row.destination])).size,
-      12,
-    );
+    expect(rows.length).toStrictEqual(33);
+    expect(new Set(rows.map((row) => row.flightId)).size).toStrictEqual(33);
+    expect(new Set(rows.flatMap((row) => [row.origin, row.destination])).size).toStrictEqual(12);
     const types = await flights.getTypes();
-    assertEquals(types.departure, "TIMESTAMP");
-    assertEquals(types.arrival, "TIMESTAMP");
-    const distances = await flights.distances(
-      "origin",
-      "destination",
-      "Montreal",
-      { ...chronological, minimize: "weight", outputTable: "distances" },
-    ).getData();
-    assertEquals(
-      distances,
+    expect(types.departure).toStrictEqual("TIMESTAMP");
+    expect(types.arrival).toStrictEqual("TIMESTAMP");
+    const distances = await flights
+      .distances("origin", "destination", "Montreal", {
+        ...chronological,
+        minimize: "weight",
+        outputTable: "distances",
+      })
+      .getData();
+    expect(distances).toStrictEqual(
       cheapest.map(([node, total, hours, steps]) => ({
         start: "Montreal",
         node,
@@ -56,44 +52,40 @@ Deno.test("fictional flights compare cheapest destinations and fastest Tokyo iti
         elapsedTimeMs: hours * 3_600_000,
       })),
     );
-    const fastest = await flights.shortestPath(
-      "origin",
-      "destination",
-      "flightId",
-      "Montreal",
-      "Tokyo",
-      { ...chronological, minimize: "elapsedTime", outputTable: "fastest" },
-    ).selectColumns(["flightId", "weight", "total", "elapsedTimeMs"]).getData();
-    assertEquals(fastest, [
+    const fastest = await flights
+      .shortestPath("origin", "destination", "flightId", "Montreal", "Tokyo", {
+        ...chronological,
+        minimize: "elapsedTime",
+        outputTable: "fastest",
+      })
+      .selectColumns(["flightId", "weight", "total", "elapsedTimeMs"])
+      .getData();
+    expect(fastest).toStrictEqual([
       { flightId: "F006", weight: 150, total: 150, elapsedTimeMs: 5_400_000 },
       { flightId: "F033", weight: 900, total: 1050, elapsedTimeMs: 57_600_000 },
     ]);
-    const cheapestPath = await flights.shortestPath(
-      "origin",
-      "destination",
-      "flightId",
-      "Montreal",
-      "Tokyo",
-      { ...chronological, minimize: "weight", outputTable: "cheapestPath" },
-    ).selectColumns(["flightId", "total", "elapsedTimeMs"]).getData();
-    assertEquals(cheapestPath, [
+    const cheapestPath = await flights
+      .shortestPath("origin", "destination", "flightId", "Montreal", "Tokyo", {
+        ...chronological,
+        minimize: "weight",
+        outputTable: "cheapestPath",
+      })
+      .selectColumns(["flightId", "total", "elapsedTimeMs"])
+      .getData();
+    expect(cheapestPath).toStrictEqual([
       { flightId: "F003", total: 180, elapsedTimeMs: 19_800_000 },
       { flightId: "F014", total: 700, elapsedTimeMs: 61_200_000 },
     ]);
-    const withoutLayover = await flights.shortestPath(
-      "origin",
-      "destination",
-      "flightId",
-      "Montreal",
-      "Tokyo",
-      {
+    const withoutLayover = await flights
+      .shortestPath("origin", "destination", "flightId", "Montreal", "Tokyo", {
         ...chronological,
         minGapMs: 0,
         minimize: "weight",
         outputTable: "withoutLayover",
-      },
-    ).selectColumns(["flightId", "total"]).getData();
-    assertEquals(withoutLayover, [
+      })
+      .selectColumns(["flightId", "total"])
+      .getData();
+    expect(withoutLayover).toStrictEqual([
       { flightId: "F001", total: 80 },
       { flightId: "F007", total: 280 },
     ]);

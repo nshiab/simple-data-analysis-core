@@ -5,7 +5,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 
 export default function replace(
   simpleTable: SimpleTable,
-  columns: "all" | string | string[],
+  columns: string | string[],
   replacements: { [key: string]: string },
   options: {
     entireString?: boolean;
@@ -20,14 +20,14 @@ export default function replace(
   const entries = Object.entries(replacements);
   const replacementEntries = options.entireString
     ? entries.map(([oldText]) => {
-      let newText = oldText;
-      for (const [candidate, replacement] of entries) {
-        if (newText === candidate) {
-          newText = replacement;
+        let newText = oldText;
+        for (const [candidate, replacement] of entries) {
+          if (newText === candidate) {
+            newText = replacement;
+          }
         }
-      }
-      return [oldText, newText] as const;
-    })
+        return [oldText, newText] as const;
+      })
     : entries;
   // This validation doesn't need the database, so it stays at call time.
   if (options.entireString === true && options.regex === true) {
@@ -43,26 +43,14 @@ export default function replace(
     // The schema is only needed to resolve "all" to the column list.
     needsSchema: columns === "all",
     values: (schema) => {
-      const columnList = columns === "all"
-        ? Object.keys(schema)
-        : stringToArray(columns);
+      const columnList = columns === "all" ? Object.keys(schema) : stringToArray(columns);
       return columnList.flatMap(() =>
-        replacementEntries.flatMap(([oldText, newText]) => [
-          oldText,
-          newText,
-        ])
+        replacementEntries.flatMap(([oldText, newText]) => [oldText, newText]),
       );
     },
     buildSelect: (input, schema) => {
-      const columnList = columns === "all"
-        ? Object.keys(schema)
-        : stringToArray(columns);
-      return replaceSelect(
-        input,
-        columnList,
-        replacementEntries.length,
-        options,
-      );
+      const columnList = columns === "all" ? Object.keys(schema) : stringToArray(columns);
+      return replaceSelect(input, columnList, replacementEntries.length, options);
     },
   });
 }
@@ -78,13 +66,8 @@ function replaceSelect(
   const replacements = columns.map((column) => {
     let expression = `${quoteIdentifier(column)}`;
     if (options.entireString) {
-      const branches = Array.from(
-        { length: replacementCount },
-        () => "WHEN ? THEN ?",
-      ).join(" ");
-      return `CASE ${expression} ${branches} ELSE ${expression} END AS ${
-        quoteIdentifier(column)
-      }`;
+      const branches = Array.from({ length: replacementCount }, () => "WHEN ? THEN ?").join(" ");
+      return `CASE ${expression} ${branches} ELSE ${expression} END AS ${quoteIdentifier(column)}`;
     }
     for (let i = 0; i < replacementCount; i++) {
       if (options.regex) {

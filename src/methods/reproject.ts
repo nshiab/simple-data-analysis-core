@@ -9,9 +9,7 @@ export default function reproject(
   crs: string,
   options: { column?: string } = {},
 ) {
-  const targetGeoType = `GEOMETRY${
-    crs !== "null" ? `(${parseValue(crs)})` : ""
-  }`;
+  const targetGeoType = `GEOMETRY${crs !== "null" ? `(${parseValue(crs)})` : ""}`;
 
   options = structuredClone(options);
   queueOp(simpleTable, {
@@ -21,12 +19,13 @@ export default function reproject(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "reproject()", simpleTable.name);
-      return `SELECT * REPLACE (ST_Transform(${quoteIdentifier(column)}, ${
-        parseValue(crs)
-      })::${targetGeoType} AS ${quoteIdentifier(column)}) FROM ${input}`;
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "reproject()", simpleTable.name);
+      return `SELECT * REPLACE (ST_Transform(${quoteIdentifier(column)}, ${parseValue(
+        crs,
+      )})::${targetGeoType} AS ${quoteIdentifier(column)}) FROM ${input}`;
     },
   });
 }

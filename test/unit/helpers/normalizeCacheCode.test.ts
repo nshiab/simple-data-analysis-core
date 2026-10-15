@@ -1,4 +1,5 @@
-import { assertEquals, assertNotEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import normalizeCacheCode from "../../../src/helpers/normalizeCacheCode.ts";
 
 const equivalentSources = [
@@ -39,8 +40,8 @@ const equivalentSources = [
 ];
 
 for (const [name, before, after] of equivalentSources) {
-  Deno.test(`normalizeCacheCode ignores ${name}`, () => {
-    assertEquals(normalizeCacheCode(before), normalizeCacheCode(after));
+  test(`normalizeCacheCode ignores ${name}`, () => {
+    expect(normalizeCacheCode(before)).toStrictEqual(normalizeCacheCode(after));
   });
 }
 
@@ -52,19 +53,11 @@ const differentSources = [
     '() => "https://host/* other */"',
   ],
   ["template whitespace", "() => `a b`", "() => `a  b`"],
-  [
-    "tagged template raw escapes",
-    "() => String.raw`a\\nb`",
-    "() => String.raw`a\nb`",
-  ],
+  ["tagged template raw escapes", "() => String.raw`a\\nb`", "() => String.raw`a\nb`"],
   ["regex whitespace", "() => /a b/", "() => /a  b/"],
   ["regex flags", "() => /a/g", "() => /a/i"],
   ["return line break", "() => { return 1; }", "() => { return\n1; }"],
-  [
-    "line break in a comment",
-    "() => { return /* text */ 1; }",
-    "() => { return /* text\n */ 1; }",
-  ],
+  ["line break in a comment", "() => { return /* text */ 1; }", "() => { return /* text\n */ 1; }"],
   ["update operator line break", "() => { a\n++b; }", "() => { a++\nb; }"],
   ["operator boundaries", "() => a + +b", "() => a++ + b"],
   [
@@ -80,26 +73,15 @@ const differentSources = [
 ];
 
 for (const [name, before, after] of differentSources) {
-  Deno.test(`normalizeCacheCode preserves ${name}`, () => {
-    assertNotEquals(normalizeCacheCode(before), normalizeCacheCode(after));
+  test(`normalizeCacheCode preserves ${name}`, () => {
+    expect(normalizeCacheCode(before)).not.toStrictEqual(normalizeCacheCode(after));
   });
 }
 
-Deno.test("normalizeCacheCode falls back to exact source for unsupported syntax", () => {
-  for (
-    const source of [
-      "function () { [native code] }",
-      "() => @value",
-    ]
-  ) {
-    assertEquals(
-      normalizeCacheCode(source),
-      JSON.stringify(["source", source]),
-    );
-    assertNotEquals(
-      normalizeCacheCode(source),
-      normalizeCacheCode(`${source} `),
-    );
+test("normalizeCacheCode falls back to exact source for unsupported syntax", () => {
+  for (const source of ["function () { [native code] }", "() => @value"]) {
+    expect(normalizeCacheCode(source)).toStrictEqual(JSON.stringify(["source", source]));
+    expect(normalizeCacheCode(source)).not.toStrictEqual(normalizeCacheCode(`${source} `));
   }
 });
 
@@ -122,14 +104,8 @@ const formattingFixtures = [
     "nested function",
     "() => {<gap>function compute(value) {<gap>return value + 1;<gap>}<gap>return compute(2);<gap>}",
   ],
-  [
-    "branching",
-    "() => {<gap>if (ready) {<gap>run();<gap>} else {<gap>stop();<gap>}<gap>}",
-  ],
-  [
-    "loop",
-    "() => {<gap>for (let i = 0;<gap>i < 2;<gap>i++) {<gap>run(i);<gap>}<gap>}",
-  ],
+  ["branching", "() => {<gap>if (ready) {<gap>run();<gap>} else {<gap>stop();<gap>}<gap>}"],
+  ["loop", "() => {<gap>for (let i = 0;<gap>i < 2;<gap>i++) {<gap>run(i);<gap>}<gap>}"],
   [
     "destructuring",
     "({<gap>value,<gap>nested:<gap>{<gap>count<gap>}<gap>}) => [<gap>value,<gap>count<gap>]",
@@ -149,19 +125,13 @@ const formattingFixtures = [
   ],
   ["template interpolation", "() => `value: ${<gap>value<gap>+<gap>1<gap>}`"],
   ["nested template", "() => `outer ${<gap>`inner ${<gap>value<gap>}`<gap>}`"],
-  [
-    "template object expression",
-    "() => `value ${<gap>({<gap>value:<gap>1<gap>}).value<gap>}`",
-  ],
+  ["template object expression", "() => `value ${<gap>({<gap>value:<gap>1<gap>}).value<gap>}`"],
   ["tagged template", "() => String.raw`value ${<gap>value<gap>+<gap>1<gap>}`"],
   [
     "unicode identifiers",
     "(é, 变量) => {<gap>const résultat<gap>=<gap>é + 变量;<gap>return résultat;<gap>}",
   ],
-  [
-    "bigint and numeric separators",
-    "() => [<gap>1_000n,<gap>0xff,<gap>1.5e+2,<gap>.5<gap>]",
-  ],
+  ["bigint and numeric separators", "() => [<gap>1_000n,<gap>0xff,<gap>1.5e+2,<gap>.5<gap>]"],
   ["generator", "function* () {<gap>yield 1;<gap>yield* values;<gap>}"],
   [
     "class and private fields",
@@ -183,9 +153,8 @@ const formattingGaps = [
 ];
 for (const [name, fixture] of formattingFixtures) {
   for (const [change, gap] of formattingGaps) {
-    Deno.test(`normalizeCacheCode ignores ${change} in ${name}`, () => {
-      assertEquals(
-        normalizeCacheCode(fixture.replaceAll("<gap>", " ")),
+    test(`normalizeCacheCode ignores ${change} in ${name}`, () => {
+      expect(normalizeCacheCode(fixture.replaceAll("<gap>", " "))).toStrictEqual(
         normalizeCacheCode(fixture.replaceAll("<gap>", gap)),
       );
     });
@@ -196,16 +165,8 @@ const semanticFixtures = [
   ["escaped spaces", '() => "a\\tb"', '() => "a b"'],
   ["escaped quote", String.raw`() => 'a\'b'`, String.raw`() => 'a"b'`],
   ["template comment text", "() => `a /* comment */ b`", "() => `a b`"],
-  [
-    "template line comment text",
-    "() => `https://host/path`",
-    "() => `https://host/other`",
-  ],
-  [
-    "template indentation",
-    "() => `first\n  second`",
-    "() => `first\n    second`",
-  ],
+  ["template line comment text", "() => `https://host/path`", "() => `https://host/other`"],
+  ["template indentation", "() => `first\n  second`", "() => `first\n    second`"],
   ["nested template text", "() => `outer ${`a b`}`", "() => `outer ${`a  b`}`"],
   ["template expression values", "() => `value ${1}`", "() => `value ${2}`"],
   [
@@ -213,17 +174,9 @@ const semanticFixtures = [
     "() => `${(() => { return 1; })()}`",
     "() => `${(() => { return\n1; })()}`",
   ],
-  [
-    "regex escaped whitespace",
-    String.raw`() => /a\sb/`,
-    String.raw`() => /a b/`,
-  ],
+  ["regex escaped whitespace", String.raw`() => /a\sb/`, String.raw`() => /a b/`],
   ["regex character class whitespace", "() => /[a b]/", "() => /[ab]/"],
-  [
-    "regex comment-like text",
-    String.raw`() => /\/\/a/`,
-    String.raw`() => /\/\/b/`,
-  ],
+  ["regex comment-like text", String.raw`() => /\/\/a/`, String.raw`() => /\/\/b/`],
   ["division operands", "() => value / 2", "() => value / 3"],
   [
     "division versus regex after a block",
@@ -245,11 +198,7 @@ const semanticFixtures = [
     "() => { outer: while (true) { continue outer; } }",
     "() => { outer: while (true) { continue\nouter; } }",
   ],
-  [
-    "yield line break",
-    "function* () { yield 1; }",
-    "function* () { yield\n1; }",
-  ],
+  ["yield line break", "function* () { yield 1; }", "function* () { yield\n1; }"],
   [
     "async function line break",
     "() => { async function run() {} }",
@@ -257,21 +206,9 @@ const semanticFixtures = [
   ],
   ["Unicode ASI", "() => { return 1; }", "() => { return\u20281; }"],
   ["CRLF ASI", "() => { return 1; }", "() => { return\r\n1; }"],
-  [
-    "line comment ASI",
-    "() => { return /* note */ 1; }",
-    "() => { return // note\n1; }",
-  ],
-  [
-    "empty loop body",
-    "() => { while (ready); run(); }",
-    "() => { while (ready) run(); }",
-  ],
-  [
-    "empty conditional body",
-    "() => { if (ready); run(); }",
-    "() => { if (ready) run(); }",
-  ],
+  ["line comment ASI", "() => { return /* note */ 1; }", "() => { return // note\n1; }"],
+  ["empty loop body", "() => { while (ready); run(); }", "() => { while (ready) run(); }"],
+  ["empty conditional body", "() => { if (ready); run(); }", "() => { if (ready) run(); }"],
   [
     "statement versus call continuation",
     "() => { run(); (next)(); }",
@@ -282,11 +219,7 @@ const semanticFixtures = [
     "() => { run(); [0].map(next); }",
     "() => { run()\n[0].map(next); }",
   ],
-  [
-    "statement versus tagged template",
-    "() => { run(); `value`; }",
-    "() => { run()\n`value`; }",
-  ],
+  ["statement versus tagged template", "() => { run(); `value`; }", "() => { run()\n`value`; }"],
   [
     "for loop separators",
     "() => { for (let i = 0; i < 1; i++) run(); }",
@@ -297,7 +230,7 @@ const semanticFixtures = [
   ["numeric exponent sign", "() => 1e+2", "() => 1e-2"],
 ];
 for (const [name, before, after] of semanticFixtures) {
-  Deno.test(`normalizeCacheCode invalidates for ${name}`, () => {
-    assertNotEquals(normalizeCacheCode(before), normalizeCacheCode(after));
+  test(`normalizeCacheCode invalidates for ${name}`, () => {
+    expect(normalizeCacheCode(before)).not.toStrictEqual(normalizeCacheCode(after));
   });
 }

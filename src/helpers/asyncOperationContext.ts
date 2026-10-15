@@ -18,18 +18,11 @@ export type AsyncOperationFrame = {
 const operationContext = new AsyncLocalStorage<AsyncOperationFrame[]>();
 const drainContext = new AsyncLocalStorage<Set<AsyncOperationFrame>>();
 
-export function getAsyncOperationFrame(
-  sdb: SimpleDB,
-): AsyncOperationFrame | undefined {
-  return operationContext.getStore()?.findLast((frame) =>
-    frame.sdb === sdb && frame.open
-  );
+export function getAsyncOperationFrame(sdb: SimpleDB): AsyncOperationFrame | undefined {
+  return operationContext.getStore()?.findLast((frame) => frame.sdb === sdb && frame.open);
 }
 
-export function captureAsyncOperation(
-  sdb: SimpleDB,
-  entry: PendingEntry,
-): boolean {
+export function captureAsyncOperation(sdb: SimpleDB, entry: PendingEntry): boolean {
   const frame = getAsyncOperationFrame(sdb);
   if (frame === undefined) {
     return false;
@@ -57,9 +50,7 @@ export async function runWithAsyncOperationFrame<T>(
   }
 }
 
-export function isDrainingAsyncOperationFrame(
-  frame: AsyncOperationFrame,
-): boolean {
+export function isDrainingAsyncOperationFrame(frame: AsyncOperationFrame): boolean {
   return drainContext.getStore()?.has(frame) ?? false;
 }
 

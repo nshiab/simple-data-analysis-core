@@ -25,9 +25,7 @@ export default async function stabilizeCosineVectors(
         OR list_max(list_transform(vec, value -> abs(value)))=0`,
     )
   ) {
-    throw new Error(
-      "Cosine distance requires finite, non-null values and nonzero vectors.",
-    );
+    throw new Error("Cosine distance requires finite, non-null values and nonzero vectors.");
   }
   await connection.run(`WITH magnitudes AS MATERIALIZED (
       SELECT vertex,vec,list_max(list_transform(vec, value -> abs(value))) AS magnitude

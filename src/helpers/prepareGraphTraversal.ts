@@ -1,7 +1,5 @@
 import foldIdentifier from "./foldIdentifier.ts";
-import getGraphEndpointColumns, {
-  type GraphEndpointColumns,
-} from "./getGraphEndpointColumns.ts";
+import getGraphEndpointColumns, { type GraphEndpointColumns } from "./getGraphEndpointColumns.ts";
 import type { TableSchema } from "./pendingOps.ts";
 import type { PreparedGraphStarts } from "./prepareGraphStarts.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
@@ -28,18 +26,10 @@ export default function prepareGraphTraversal(
   method: string,
   argument = "start",
 ): PreparedGraphTraversal {
-  const endpoints = validateGraphStarts(
-    schema,
-    source,
-    target,
-    starts,
-    method,
-    argument,
-  );
+  const endpoints = validateGraphStarts(schema, source, target, starts, method, argument);
   return {
     ...prepareGraphSqlFromEndpoints(input, endpoints),
-    startValues: starts.values.map(() => `(TRY_CAST(? AS ${endpoints.idType}))`)
-      .join(", "),
+    startValues: starts.values.map(() => `(TRY_CAST(? AS ${endpoints.idType}))`).join(", "),
   };
 }
 
@@ -65,18 +55,15 @@ function prepareGraphSqlFromEndpoints(
   const targetColumn = quoteIdentifier(endpoints.target);
   const idType = endpoints.idType;
   const cast = (expression: string) => `CAST(${expression} AS ${idType})`;
-  const key = endpoints.family === "string"
-    ? (expression: string) => `ENCODE(${cast(expression)})`
-    : cast;
+  const key =
+    endpoints.family === "string" ? (expression: string) => `ENCODE(${cast(expression)})` : cast;
   const edge = (from: string, to: string, selections: string[]) =>
     `SELECT ${cast(from)} AS ${quoteIdentifier("__from")},
         ${cast(to)} AS ${quoteIdentifier("__to")},
         ${key(from)} AS ${quoteIdentifier("__from_key")},
         ${key(to)} AS ${quoteIdentifier("__to_key")}${
-      selections.length === 0
-        ? ""
-        : `,\n        ${selections.join(",\n        ")}`
-    }
+          selections.length === 0 ? "" : `,\n        ${selections.join(",\n        ")}`
+        }
       FROM ${input} AS ${quoteIdentifier("edges")}`;
   const sourceReference = `${quoteIdentifier("edges")}.${sourceColumn}`;
   const targetReference = `${quoteIdentifier("edges")}.${targetColumn}`;
@@ -87,10 +74,12 @@ function prepareGraphSqlFromEndpoints(
       direction === "outgoing"
         ? edge(sourceReference, targetReference, selections)
         : direction === "incoming"
-        ? edge(targetReference, sourceReference, selections)
-        : `${edge(sourceReference, targetReference, selections)}\nUNION ALL\n${
-          edge(targetReference, sourceReference, selections)
-        }`,
+          ? edge(targetReference, sourceReference, selections)
+          : `${edge(sourceReference, targetReference, selections)}\nUNION ALL\n${edge(
+              targetReference,
+              sourceReference,
+              selections,
+            )}`,
     relationNames: (names) => uniqueRelationNames(input, names),
   };
 }
@@ -108,18 +97,14 @@ export function validateGraphStarts(
   const verb = argument === "start" ? "contains" : "contain";
   if (endpoints.family !== starts.family) {
     throw new TypeError(
-      `${method} ${argument} ${verb} ${starts.family} IDs, but endpoint columns ${
-        quoteIdentifier(endpoints.source)
-      } and ${
-        quoteIdentifier(endpoints.target)
-      } contain ${endpoints.family} IDs.`,
+      `${method} ${argument} ${verb} ${starts.family} IDs, but endpoint columns ${quoteIdentifier(
+        endpoints.source,
+      )} and ${quoteIdentifier(endpoints.target)} contain ${endpoints.family} IDs.`,
     );
   }
   if (endpoints.floating) {
     for (const value of starts.numericValues) {
-      const converted = endpoints.idType === "FLOAT"
-        ? Math.fround(Number(value))
-        : Number(value);
+      const converted = endpoints.idType === "FLOAT" ? Math.fround(Number(value)) : Number(value);
       if (!Number.isFinite(converted) || BigInt(converted) !== value) {
         throw new TypeError(
           `${method} ${argument} ${verb} ${value}n, which ${endpoints.idType} cannot represent exactly.`,
@@ -130,10 +115,7 @@ export function validateGraphStarts(
   return endpoints;
 }
 
-function uniqueRelationNames(
-  input: string,
-  requestedNames: string[],
-): Record<string, string> {
+function uniqueRelationNames(input: string, requestedNames: string[]): Record<string, string> {
   const used = new Set([foldIdentifier(input)]);
   const names: Record<string, string> = {};
   for (const requested of requestedNames) {

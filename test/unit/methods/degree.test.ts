@@ -1,10 +1,6 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStrictEquals,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
@@ -15,25 +11,21 @@ function loadScenario(
   scenario: string,
   includeWeight = false,
 ): SimpleTable {
-  return sdb.newTable(name)
+  return sdb
+    .newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
-    .selectColumns(
-      includeWeight ? ["source", "target", "weight"] : ["source", "target"],
-    );
+    .selectColumns(includeWeight ? ["source", "target", "weight"] : ["source", "target"]);
 }
 
 async function expectedCase(
   oracle: SimpleTable,
   caseName: string,
 ): Promise<Record<string, unknown>[]> {
-  return await oracle.clone()
-    .filter(`"case" = '${caseName}'`)
-    .removeColumns("case")
-    .getData();
+  return await oracle.clone().filter(`"case" = '${caseName}'`).removeColumns("case").getData();
 }
 
-Deno.test("degree matches every shared fixture oracle case", async () => {
+test("degree matches every shared fixture oracle case", async () => {
   const cases = [
     ["baseline-edges", "baseline", "edges", false],
     ["parallel-edges", "parallel", "edges", false],
@@ -47,40 +39,23 @@ Deno.test("degree matches every shared fixture oracle case", async () => {
   ] as const;
   const sdb = new SimpleDB();
   try {
-    const oracle = sdb.newTable("degreeOracle")
-      .loadData("test/data/graphs/expected/degree.csv");
-    for (
-      const [index, [caseName, scenario, count, weighted]] of cases.entries()
-    ) {
-      const input = loadScenario(
-        sdb,
-        `degreeOracleInput${index}`,
-        scenario,
-        weighted,
-      );
+    const oracle = sdb.newTable("degreeOracle").loadData("test/data/graphs/expected/degree.csv");
+    for (const [index, [caseName, scenario, count, weighted]] of cases.entries()) {
+      const input = loadScenario(sdb, `degreeOracleInput${index}`, scenario, weighted);
       const actual = weighted
         ? input.degree("source", "target", { weight: "weight" })
         : count === "neighbors"
-        ? input.degree("source", "target", { count })
-        : input.degree("source", "target");
-      assertEquals(
-        await actual.getData(),
-        await expectedCase(oracle, caseName),
-        caseName,
-      );
-      assertEquals(await actual.getColumns(), [
-        "node",
-        "incoming",
-        "outgoing",
-        "total",
-      ]);
+          ? input.degree("source", "target", { count })
+          : input.degree("source", "target");
+      expect(await actual.getData(), caseName).toStrictEqual(await expectedCase(oracle, caseName));
+      expect(await actual.getColumns()).toStrictEqual(["node", "incoming", "outgoing", "total"]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree distinguishes edge, neighbor, and weighted counts", async () => {
+test("degree distinguishes edge, neighbor, and weighted counts", async () => {
   const rows = [
     { source: "Montreal", target: "Toronto", passengers: 100 },
     { source: "Montreal", target: "Toronto", passengers: 200 },
@@ -89,9 +64,7 @@ Deno.test("degree distinguishes edge, neighbor, and weighted counts", async () =
   ];
   const sdb = new SimpleDB();
   try {
-    assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .degree("source", "target").getData(),
+    expect(await sdb.newTable().loadArray(rows).degree("source", "target").getData()).toStrictEqual(
       [
         { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
         { node: "Toronto", incoming: 2, outgoing: 0, total: 2 },
@@ -99,73 +72,76 @@ Deno.test("degree distinguishes edge, neighbor, and weighted counts", async () =
         { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
       ],
     );
-    assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .degree("source", "target", { count: "edges" }).getData(),
-      [
-        { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
-        { node: "Toronto", incoming: 2, outgoing: 0, total: 2 },
-        { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
-        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .degree("source", "target", { count: "neighbors" }).getData(),
-      [
-        { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
-        { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
-        { node: "Toronto", incoming: 1, outgoing: 0, total: 1 },
-        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(rows)
-        .degree("source", "target", { weight: "passengers" }).getData(),
-      [
-        { node: "Montreal", incoming: 25, outgoing: 350, total: 375 },
-        { node: "Toronto", incoming: 300, outgoing: 0, total: 300 },
-        { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
-        { node: "Ottawa", incoming: 0, outgoing: 25, total: 25 },
-      ],
-    );
+    expect(
+      await sdb.newTable().loadArray(rows).degree("source", "target", { count: "edges" }).getData(),
+    ).toStrictEqual([
+      { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
+      { node: "Toronto", incoming: 2, outgoing: 0, total: 2 },
+      { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
+      { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(rows)
+        .degree("source", "target", { count: "neighbors" })
+        .getData(),
+    ).toStrictEqual([
+      { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
+      { node: "Ottawa", incoming: 0, outgoing: 1, total: 1 },
+      { node: "Toronto", incoming: 1, outgoing: 0, total: 1 },
+      { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(rows)
+        .degree("source", "target", { weight: "passengers" })
+        .getData(),
+    ).toStrictEqual([
+      { node: "Montreal", incoming: 25, outgoing: 350, total: 375 },
+      { node: "Toronto", incoming: 300, outgoing: 0, total: 300 },
+      { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
+      { node: "Ottawa", incoming: 0, outgoing: 25, total: 25 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree handles sources, sinks, convergence, disconnection, and self-loops", async () => {
+test("degree handles sources, sinks, convergence, disconnection, and self-loops", async () => {
   const sdb = new SimpleDB();
   try {
-    assertEquals(
-      await loadScenario(sdb, "baselineDegree", "baseline")
-        .degree("source", "target").getData(),
-      [
-        { node: "D", incoming: 2, outgoing: 1, total: 3 },
-        { node: "A", incoming: 0, outgoing: 2, total: 2 },
-        { node: "B", incoming: 1, outgoing: 1, total: 2 },
-        { node: "C", incoming: 1, outgoing: 1, total: 2 },
-        { node: "E", incoming: 1, outgoing: 0, total: 1 },
-        { node: "F", incoming: 0, outgoing: 1, total: 1 },
-        { node: "G", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray([
-        { source: "A", target: "A", weight: 2.5 },
-        { source: "A", target: "B", weight: 0 },
-      ]).degree("source", "target", { weight: "weight" }).getData(),
-      [
-        { node: "A", incoming: 2.5, outgoing: 2.5, total: 5.0 },
-        { node: "B", incoming: 0, outgoing: 0, total: 0 },
-      ],
-    );
+    expect(
+      await loadScenario(sdb, "baselineDegree", "baseline").degree("source", "target").getData(),
+    ).toStrictEqual([
+      { node: "D", incoming: 2, outgoing: 1, total: 3 },
+      { node: "A", incoming: 0, outgoing: 2, total: 2 },
+      { node: "B", incoming: 1, outgoing: 1, total: 2 },
+      { node: "C", incoming: 1, outgoing: 1, total: 2 },
+      { node: "E", incoming: 1, outgoing: 0, total: 1 },
+      { node: "F", incoming: 0, outgoing: 1, total: 1 },
+      { node: "G", incoming: 1, outgoing: 0, total: 1 },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray([
+          { source: "A", target: "A", weight: 2.5 },
+          { source: "A", target: "B", weight: 0 },
+        ])
+        .degree("source", "target", { weight: "weight" })
+        .getData(),
+    ).toStrictEqual([
+      { node: "A", incoming: 2.5, outgoing: 2.5, total: 5.0 },
+      { node: "B", incoming: 0, outgoing: 0, total: 0 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree preserves exact numeric IDs, weight precision, and typed ordering", async () => {
+test("degree preserves exact numeric IDs, weight precision, and typed ordering", async () => {
   const sdb = new SimpleDB();
   try {
     const ids = sdb.newTable("preciseDegreeIds");
@@ -176,7 +152,7 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
         (0::BIGINT, 10::BIGINT)
       ) edges(source, target)`);
     ids.degree("source", "target").convert({ node: "string" });
-    assertEquals(await ids.getData(), [
+    expect(await ids.getData()).toStrictEqual([
       { node: "0", incoming: 0, outgoing: 2, total: 2 },
       { node: "2", incoming: 1, outgoing: 0, total: 1 },
       { node: "10", incoming: 1, outgoing: 0, total: 1 },
@@ -191,13 +167,13 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
         ('A', 'B', 0.125), ('A', 'B', 0.200), ('B', 'A', 0.000)
       ) edges(source, target, weight)`);
     decimal.degree("source", "target", { weight: "weight" });
-    assertEquals(await decimal.getTypes(), {
+    expect(await decimal.getTypes()).toStrictEqual({
       node: "VARCHAR",
       incoming: "DECIMAL(38,3)",
       outgoing: "DECIMAL(38,3)",
       total: "DECIMAL(38,3)",
     });
-    assertEquals(await decimal.getData(), [
+    expect(await decimal.getData()).toStrictEqual([
       { node: "A", incoming: "0.000", outgoing: "0.325", total: "0.325" },
       { node: "B", incoming: "0.325", outgoing: "0.000", total: "0.325" },
     ]);
@@ -208,9 +184,10 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
         ('A', 'B', 9007199254740993::BIGINT),
         ('A', 'B', 2::BIGINT)
       ) edges(source, target, weight)`);
-    integers.degree("source", "target", { weight: "weight" })
+    integers
+      .degree("source", "target", { weight: "weight" })
       .convert({ incoming: "string", outgoing: "string", total: "string" });
-    assertEquals(await integers.getData(), [
+    expect(await integers.getData()).toStrictEqual([
       {
         node: "A",
         incoming: "0",
@@ -234,13 +211,13 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
         ('A', 'B', '${maximumHugeint}'::HUGEINT)
       ) edges(source, target, weight)`);
     hugeints.degree("source", "target", { weight: "weight" });
-    assertEquals(await hugeints.getTypes(), {
+    expect(await hugeints.getTypes()).toStrictEqual({
       node: "VARCHAR",
       incoming: "BIGNUM",
       outgoing: "BIGNUM",
       total: "BIGNUM",
     });
-    assertEquals(await hugeints.getData(), [
+    expect(await hugeints.getData()).toStrictEqual([
       {
         node: "A",
         incoming: "0",
@@ -264,13 +241,13 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
         ('A', 'B', '${largeBignum}'::BIGNUM)
       ) edges(source, target, weight)`);
     bignums.degree("source", "target", { weight: "weight" });
-    assertEquals(await bignums.getTypes(), {
+    expect(await bignums.getTypes()).toStrictEqual({
       node: "VARCHAR",
       incoming: "BIGNUM",
       outgoing: "BIGNUM",
       total: "BIGNUM",
     });
-    assertEquals(await bignums.getData(), [
+    expect(await bignums.getData()).toStrictEqual([
       {
         node: "A",
         incoming: "0",
@@ -289,7 +266,7 @@ Deno.test("degree preserves exact numeric IDs, weight precision, and typed order
   }
 });
 
-Deno.test("degree retains FLOAT and DOUBLE weighted sum semantics", async () => {
+test("degree retains FLOAT and DOUBLE weighted sum semantics", async () => {
   const sdb = new SimpleDB();
   try {
     for (const type of ["FLOAT", "DOUBLE"] as const) {
@@ -299,37 +276,33 @@ Deno.test("degree retains FLOAT and DOUBLE weighted sum semantics", async () => 
           ('A', 'B', 0.1), ('A', 'B', 0.2), ('B', 'B', 0.0),
           ('C', 'D', 16777216), ('C', 'D', 1)
         ) edges(source, target, weight)`);
-      assertEquals(
+      expect(
         await sdb.customQuery(
           `SELECT SUM(weight) AS total, TYPEOF(SUM(weight)) AS type
            FROM "${table.name}" WHERE source = 'C'`,
           { returnData: true },
         ),
-        [{ total: 16777217, type: "DOUBLE" }],
-      );
+      ).toStrictEqual([{ total: 16777217, type: "DOUBLE" }]);
       const result = table.degree("source", "target", {
         weight: "weight",
         outputTable: true,
       });
-      const sum = type === "FLOAT"
-        ? Math.fround(0.1) + Math.fround(0.2)
-        : 0.1 + 0.2;
-      assertEquals(await result.getTypes(), {
+      const sum = type === "FLOAT" ? Math.fround(0.1) + Math.fround(0.2) : 0.1 + 0.2;
+      expect(await result.getTypes()).toStrictEqual({
         node: "VARCHAR",
         incoming: "DOUBLE",
         outgoing: "DOUBLE",
         total: "DOUBLE",
       });
-      assertEquals(await result.getData(), [
+      expect(await result.getData()).toStrictEqual([
         { node: "C", incoming: 0, outgoing: 16777217, total: 16777217 },
         { node: "D", incoming: 16777217, outgoing: 0, total: 16777217 },
         { node: "A", incoming: 0, outgoing: sum, total: sum },
         { node: "B", incoming: sum, outgoing: 0, total: sum },
       ]);
-      const empty = table.filter("false")
-        .degree("source", "target", { weight: "weight" });
-      assertEquals(await empty.getData(), []);
-      assertEquals(await empty.getTypes(), {
+      const empty = table.filter("false").degree("source", "target", { weight: "weight" });
+      expect(await empty.getData()).toStrictEqual([]);
+      expect(await empty.getTypes()).toStrictEqual({
         node: "VARCHAR",
         incoming: "DOUBLE",
         outgoing: "DOUBLE",
@@ -341,7 +314,7 @@ Deno.test("degree retains FLOAT and DOUBLE weighted sum semantics", async () => 
   }
 });
 
-Deno.test("degree uses byte-sensitive string identity despite collations", async () => {
+test("degree uses byte-sensitive string identity despite collations", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("collatedDegree");
@@ -349,7 +322,7 @@ Deno.test("degree uses byte-sensitive string identity despite collations", async
       source VARCHAR COLLATE NOCASE, target VARCHAR COLLATE NOCASE
     ); INSERT INTO "collatedDegree" VALUES
       ('a', 'b'), ('A', 'B'), ('001', '1'), (' A', 'A'), ('é', 'é')`);
-    assertEquals(await table.degree("source", "target").getData(), [
+    expect(await table.degree("source", "target").getData()).toStrictEqual([
       { node: "A", incoming: 1, outgoing: 1, total: 2 },
       { node: "é", incoming: 1, outgoing: 1, total: 2 },
       { node: " A", incoming: 0, outgoing: 1, total: 1 },
@@ -364,7 +337,7 @@ Deno.test("degree uses byte-sensitive string identity despite collations", async
   }
 });
 
-Deno.test("degree distinct neighbors preserve collated IDs and parallel self-loops", async () => {
+test("degree distinct neighbors preserve collated IDs and parallel self-loops", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("collatedDegreeNeighbors");
@@ -373,21 +346,18 @@ Deno.test("degree distinct neighbors preserve collated IDs and parallel self-loo
     ); INSERT INTO "collatedDegreeNeighbors" VALUES
       ('A', 'b'), ('A', 'B'), ('A', 'b'), ('A', 'A'), ('A', 'A'),
       ('a', 'B'), ('a', 'B')`);
-    assertEquals(
-      await table.degree("source", "target", { count: "neighbors" }).getData(),
-      [
-        { node: "A", incoming: 1, outgoing: 3, total: 4 },
-        { node: "B", incoming: 2, outgoing: 0, total: 2 },
-        { node: "a", incoming: 0, outgoing: 1, total: 1 },
-        { node: "b", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
+    expect(await table.degree("source", "target", { count: "neighbors" }).getData()).toStrictEqual([
+      { node: "A", incoming: 1, outgoing: 3, total: 4 },
+      { node: "B", incoming: 2, outgoing: 0, total: 2 },
+      { node: "a", incoming: 0, outgoing: 1, total: 1 },
+      { node: "b", incoming: 1, outgoing: 0, total: 1 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree output is deterministic across shuffled edge rows", async () => {
+test("degree output is deterministic across shuffled edge rows", async () => {
   const rows = [
     { source: "D", target: "D" },
     { source: "A", target: "B" },
@@ -401,30 +371,29 @@ Deno.test("degree output is deterministic across shuffled edge rows", async () =
       const outputs = [];
       for (const [index, input] of [rows, rows.toReversed()].entries()) {
         outputs.push(
-          await sdb.newTable(`${count}DegreeOrder${index}`).loadArray(input)
-            .degree("source", "target", { count }).getData(),
+          await sdb
+            .newTable(`${count}DegreeOrder${index}`)
+            .loadArray(input)
+            .degree("source", "target", { count })
+            .getData(),
         );
       }
-      assertEquals(outputs[0], outputs[1]);
+      expect(outputs[0]).toStrictEqual(outputs[1]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree keeps fixed custom output names and typed empty schemas", async () => {
+test("degree keeps fixed custom output names and typed empty schemas", async () => {
   const sdb = new SimpleDB();
   try {
-    const custom = sdb.newTable("customDegree")
+    const custom = sdb
+      .newTable("customDegree")
       .loadData("test/data/graphs/custom-columns.csv")
       .degree("ORIGIN", "Destination", { weight: "COST" });
-    assertEquals(await custom.getColumns(), [
-      "node",
-      "incoming",
-      "outgoing",
-      "total",
-    ]);
-    assertEquals(await custom.getData(), [
+    expect(await custom.getColumns()).toStrictEqual(["node", "incoming", "outgoing", "total"]);
+    expect(await custom.getData()).toStrictEqual([
       { node: "B", incoming: 1, outgoing: 2, total: 3 },
       { node: "C", incoming: 2, outgoing: 0, total: 2 },
       { node: "A", incoming: 0, outgoing: 1, total: 1 },
@@ -435,8 +404,8 @@ Deno.test("degree keeps fixed custom output names and typed empty schemas", asyn
       'CREATE TABLE "emptyDegree" (source BIGINT, target BIGINT, weight DECIMAL(6,2))',
     );
     const counts = empty.degree("source", "target", { outputTable: true });
-    assertEquals(await counts.getData(), []);
-    assertEquals(await counts.getTypes(), {
+    expect(await counts.getData()).toStrictEqual([]);
+    expect(await counts.getTypes()).toStrictEqual({
       node: "BIGINT",
       incoming: "BIGINT",
       outgoing: "BIGINT",
@@ -446,8 +415,8 @@ Deno.test("degree keeps fixed custom output names and typed empty schemas", asyn
       weight: "weight",
       outputTable: true,
     });
-    assertEquals(await weighted.getData(), []);
-    assertEquals(await weighted.getTypes(), {
+    expect(await weighted.getData()).toStrictEqual([]);
+    expect(await weighted.getTypes()).toStrictEqual({
       node: "BIGINT",
       incoming: "DECIMAL(38,2)",
       outgoing: "DECIMAL(38,2)",
@@ -458,55 +427,56 @@ Deno.test("degree keeps fixed custom output names and typed empty schemas", asyn
   }
 });
 
-Deno.test("degree supports every output destination and chaining", async () => {
+test("degree supports every output destination and chaining", async () => {
   const sdb = new SimpleDB();
   try {
-    const defaultOverwrite = sdb.newTable("defaultDegree")
+    const defaultOverwrite = sdb
+      .newTable("defaultDegree")
       .loadArray([{ source: "A", target: "B" }]);
-    assertStrictEquals(
-      defaultOverwrite.degree("source", "target"),
-      defaultOverwrite,
-    );
-    assertEquals(await defaultOverwrite.getColumns(), [
+    expect(defaultOverwrite.degree("source", "target")).toBe(defaultOverwrite);
+    expect(await defaultOverwrite.getColumns()).toStrictEqual([
       "node",
       "incoming",
       "outgoing",
       "total",
     ]);
 
-    const explicitOverwrite = sdb.newTable("explicitDegree")
+    const explicitOverwrite = sdb
+      .newTable("explicitDegree")
       .loadArray([{ source: "A", target: "B" }]);
-    assertStrictEquals(
-      explicitOverwrite.degree("source", "target", { outputTable: false }),
+    expect(explicitOverwrite.degree("source", "target", { outputTable: false })).toBe(
       explicitOverwrite,
     );
-    assertEquals(await explicitOverwrite.getRowCount(), 2);
+    expect(await explicitOverwrite.getRowCount()).toStrictEqual(2);
 
-    const source = sdb.newTable("preservedDegree")
-      .loadArray([{ source: "A", target: "B" }]);
-    const named = source.degree("source", "target", {
-      outputTable: "namedDegree",
-    }).filter("node = 'B'");
-    assertEquals(named.name, "namedDegree");
-    assertEquals(await named.getData(), [{
-      node: "B",
-      incoming: 1,
-      outgoing: 0,
-      total: 1,
-    }]);
-    assertEquals(await source.getData(), [{ source: "A", target: "B" }]);
+    const source = sdb.newTable("preservedDegree").loadArray([{ source: "A", target: "B" }]);
+    const named = source
+      .degree("source", "target", {
+        outputTable: "namedDegree",
+      })
+      .filter("node = 'B'");
+    expect(named.name).toStrictEqual("namedDegree");
+    expect(await named.getData()).toStrictEqual([
+      {
+        node: "B",
+        incoming: 1,
+        outgoing: 0,
+        total: 1,
+      },
+    ]);
+    expect(await source.getData()).toStrictEqual([{ source: "A", target: "B" }]);
 
     const generated = source.degree("source", "target", { outputTable: true });
-    assertEquals(generated.name.startsWith("table"), true);
-    assertEquals(generated.name === source.name, false);
-    assertEquals(await generated.getRowCount(), 2);
-    assertEquals(await source.getColumns(), ["source", "target"]);
+    expect(generated.name.startsWith("table")).toStrictEqual(true);
+    expect(generated.name === source.name).toStrictEqual(false);
+    expect(await generated.getRowCount()).toStrictEqual(2);
+    expect(await source.getColumns()).toStrictEqual(["source", "target"]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree snapshots options and preserves queued source order", async () => {
+test("degree snapshots options and preserves queued source order", async () => {
   const sdb = new SimpleDB();
   try {
     const options: {
@@ -514,34 +484,36 @@ Deno.test("degree snapshots options and preserves queued source order", async ()
       weight?: string;
       outputTable: string;
     } = { count: "neighbors", outputTable: "degreeSnapshot" };
-    const snapshot = sdb.newTable("snapshotDegreeSource").loadArray([
-      { source: "A", target: "B" },
-      { source: "A", target: "B" },
-    ]).degree("source", "target", options);
+    const snapshot = sdb
+      .newTable("snapshotDegreeSource")
+      .loadArray([
+        { source: "A", target: "B" },
+        { source: "A", target: "B" },
+      ])
+      .degree("source", "target", options);
     options.count = "edges";
     options.weight = "changed";
     options.outputTable = "changed";
-    assertEquals(snapshot.name, "degreeSnapshot");
-    assertEquals(await snapshot.getData(), [
+    expect(snapshot.name).toStrictEqual("degreeSnapshot");
+    expect(await snapshot.getData()).toStrictEqual([
       { node: "A", incoming: 0, outgoing: 1, total: 1 },
       { node: "B", incoming: 1, outgoing: 0, total: 1 },
     ]);
 
-    const source = sdb.newTable("changingDegreeSource")
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = sdb.newTable("changingDegreeSource").loadArray([{ source: "A", target: "B" }]);
     const result = source.degree("source", "target", { outputTable: true });
     source.loadArray([{ source: "A", target: "C" }]);
-    assertEquals(await result.getData(), [
+    expect(await result.getData()).toStrictEqual([
       { node: "A", incoming: 0, outgoing: 1, total: 1 },
       { node: "B", incoming: 1, outgoing: 0, total: 1 },
     ]);
-    assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
+    expect(await source.getData()).toStrictEqual([{ source: "A", target: "C" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree totals include both directions and remain available to chained operations", async () => {
+test("degree totals include both directions and remain available to chained operations", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -551,34 +523,43 @@ Deno.test("degree totals include both directions and remain available to chained
       { source: "Z", target: "Z", weight: 5 },
       { source: "B", target: "A", weight: 1 },
     ];
-    for (
-      const [options, expected] of [
-        [{}, [
+    for (const [options, expected] of [
+      [
+        {},
+        [
           { node: "Z", incoming: 2, outgoing: 3, total: 5 },
           { node: "A", incoming: 3, outgoing: 1, total: 4 },
-        ]],
-        [{ count: "neighbors" }, [
+        ],
+      ],
+      [
+        { count: "neighbors" },
+        [
           { node: "Z", incoming: 2, outgoing: 2, total: 4 },
           { node: "A", incoming: 2, outgoing: 1, total: 3 },
-        ]],
-        [{ weight: "weight" }, [
+        ],
+      ],
+      [
+        { weight: "weight" },
+        [
           { node: "Z", incoming: 9, outgoing: 10, total: 19 },
           { node: "A", incoming: 6, outgoing: 4, total: 10 },
-        ]],
-      ] as const
-    ) {
-      const result = sdb.newTable().loadArray(rows)
+        ],
+      ],
+    ] as const) {
+      const result = sdb
+        .newTable()
+        .loadArray(rows)
         .degree("source", "target", options)
         .filter("total >= 3")
         .selectColumns(["node", "incoming", "outgoing", "total"]);
-      assertEquals(await result.getData(), [...expected]);
+      expect(await result.getData()).toStrictEqual([...expected]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree sorts large exact totals without rounding", async () => {
+test("degree sorts large exact totals without rounding", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("largeExactDegreeTotals");
@@ -587,10 +568,11 @@ Deno.test("degree sorts large exact totals without rounding", async () => {
         ('A', 'A', 9007199254740992::BIGINT),
         ('B', 'B', 9007199254740993::BIGINT)
       ) edges(source, target, weight)`);
-    table.degree("source", "target", { weight: "weight" })
+    table
+      .degree("source", "target", { weight: "weight" })
       .selectColumns(["node", "total"])
       .convert({ total: "string" });
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { node: "B", total: "18014398509481986" },
       { node: "A", total: "18014398509481984" },
     ]);
@@ -599,7 +581,7 @@ Deno.test("degree sorts large exact totals without rounding", async () => {
   }
 });
 
-Deno.test("degree validates arguments before queuing", async () => {
+test("degree validates arguments before queuing", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -624,8 +606,7 @@ Deno.test("degree validates arguments before queuing", async () => {
       'degree() options.count must be "edges" or "neighbors".',
     );
     assertThrows(
-      () =>
-        table.degree("source", "target", { weight: 1 as unknown as string }),
+      () => table.degree("source", "target", { weight: 1 as unknown as string }),
       TypeError,
       "degree() options.weight must be a string.",
     );
@@ -646,25 +627,25 @@ Deno.test("degree validates arguments before queuing", async () => {
       TypeError,
       "weighted sums operate on edges, not distinct neighbors",
     );
-    assertEquals(table.pendingOps.length, 0);
+    expect(table.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree rejects schema errors without row validation scans", async () => {
+test("degree rejects schema errors without row validation scans", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
-    const missing = sdb.newTable("missingDegreeColumn")
-      .loadArray([{ source: "A" }]);
+    const missing = sdb.newTable("missingDegreeColumn").loadArray([{ source: "A" }]);
     await assertRejects(
       () => missing.degree("source", "target").run(),
       Error,
       'degree() the column "target" does not exist',
     );
 
-    const unsupported = sdb.newTable("unsupportedDegree")
+    const unsupported = sdb
+      .newTable("unsupportedDegree")
       .loadData("test/data/graphs/unsupported-types.csv");
     await assertRejects(
       () => unsupported.degree("dateSource", "stringTarget").run(),
@@ -673,42 +654,42 @@ Deno.test("degree rejects schema errors without row validation scans", async () 
     );
     await assertRejects(
       () =>
-        unsupported.degree("stringTarget", "stringTarget", {
-          weight: "stringWeight",
-        }).run(),
+        unsupported
+          .degree("stringTarget", "stringTarget", {
+            weight: "stringWeight",
+          })
+          .run(),
       TypeError,
       'column "stringWeight" has type VARCHAR',
     );
 
-    const incompatible = sdb.newTable("incompatibleDegree")
-      .loadArray([{ source: 1, target: "1" }]);
+    const incompatible = sdb.newTable("incompatibleDegree").loadArray([{ source: 1, target: "1" }]);
     await assertRejects(
       () => incompatible.degree("source", "target").run(),
       TypeError,
       "requires compatible source and target ID types",
     );
 
-    const valid = sdb.newTable("degreeNoPreflight").loadArray([
-      { source: "A", target: "A", weight: 0 },
-    ]).degree("source", "target", { weight: "weight" });
+    const valid = sdb
+      .newTable("degreeNoPreflight")
+      .loadArray([{ source: "A", target: "A", weight: 0 }])
+      .degree("source", "target", { weight: "weight" });
     await valid.run();
-    const query = observer.queries.find((entry) =>
-      entry.query.includes("graph_incoming")
-    )?.query ?? "";
-    assertStringIncludes(query, "SUM(");
-    assertEquals(query.includes("isfinite"), false);
-    assertEquals(query.includes("IS NULL"), false);
+    const query =
+      observer.queries.find((entry) => entry.query.includes("graph_incoming"))?.query ?? "";
+    expect(query).toContain("SUM(");
+    expect(query.includes("isfinite")).toStrictEqual(false);
+    expect(query.includes("IS NULL")).toStrictEqual(false);
   } finally {
     observer.restore();
     await sdb.close();
   }
 });
 
-Deno.test("degree rejects output collisions before queuing graph work", async () => {
+test("degree rejects output collisions before queuing graph work", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("degreeCollisionSource")
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = sdb.newTable("degreeCollisionSource").loadArray([{ source: "A", target: "B" }]);
     await source.run();
     sdb.newTable("namedDegreeCollision");
     assertThrows(
@@ -719,13 +700,13 @@ Deno.test("degree rejects output collisions before queuing graph work", async ()
       Error,
       "Table NAMEDDEGREECOLLISION already exists.",
     );
-    assertEquals(source.pendingOps.length, 0);
+    expect(source.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree output records its source as a cache dependency", async () => {
+test("degree output records its source as a cache dependency", async () => {
   let computationRuns = 0;
   const unique = crypto.randomUUID().replaceAll("-", "");
   const outputName = `degreeCacheOutput${unique}`;
@@ -739,8 +720,7 @@ Deno.test("degree output records its source as a cache dependency", async () => 
 
   const firstSdb = new SimpleDB();
   try {
-    const source = firstSdb.newTable(sourceName)
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = firstSdb.newTable(sourceName).loadArray([{ source: "A", target: "B" }]);
     await firstSdb.newTable(outputName).cache(compute(source));
   } finally {
     await firstSdb.close();
@@ -753,8 +733,8 @@ Deno.test("degree output records its source as a cache dependency", async () => 
     ]);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals(await output.getData(), [
+    expect(computationRuns).toStrictEqual(2);
+    expect(await output.getData()).toStrictEqual([
       { node: "A", incoming: 0, outgoing: 2, total: 2 },
       { node: "B", incoming: 1, outgoing: 0, total: 1 },
       { node: "C", incoming: 1, outgoing: 0, total: 1 },
@@ -764,33 +744,30 @@ Deno.test("degree output records its source as a cache dependency", async () => 
   }
 });
 
-Deno.test("degree internal relations do not shadow input table names", async () => {
+test("degree internal relations do not shadow input table names", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const [index, name] of [
-        "graph_edges",
-        "GRAPH_NODE_CANDIDATES",
-        "graph_nodes",
-        "GRAPH_INCOMING",
-        "graph_outgoing",
-      ].entries()
-    ) {
-      const table = sdb.newTable(name).loadArray([
-        { source: "A", target: "B", weight: 2 },
-      ]);
+    for (const [index, name] of [
+      "graph_edges",
+      "GRAPH_NODE_CANDIDATES",
+      "graph_nodes",
+      "GRAPH_INCOMING",
+      "graph_outgoing",
+    ].entries()) {
+      const table = sdb.newTable(name).loadArray([{ source: "A", target: "B", weight: 2 }]);
       await table.run();
-      const result = index % 2 === 0
-        ? table.degree("source", "target")
-        : table.degree("source", "target", { weight: "weight" });
-      assertEquals(await result.getRowCount(), 2);
+      const result =
+        index % 2 === 0
+          ? table.degree("source", "target")
+          : table.degree("source", "target", { weight: "weight" });
+      expect(await result.getRowCount()).toStrictEqual(2);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree JSDoc examples return their displayed outputs", async () => {
+test("degree JSDoc examples return their displayed outputs", async () => {
   const rows = [
     { origin: "Montreal", destination: "Toronto", passengers: 100 },
     { origin: "Montreal", destination: "Toronto", passengers: 200 },
@@ -801,73 +778,59 @@ Deno.test("degree JSDoc examples return their displayed outputs", async () => {
   try {
     const edgeFlights = sdb.newTable().loadArray(rows);
     await edgeFlights.degree("origin", "destination").log();
-    assertEquals(
-      await edgeFlights.getData(),
-      [
-        { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
-        { node: "Toronto", incoming: 2, outgoing: 1, total: 3 },
-        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
+    expect(await edgeFlights.getData()).toStrictEqual([
+      { node: "Montreal", incoming: 1, outgoing: 3, total: 4 },
+      { node: "Toronto", incoming: 2, outgoing: 1, total: 3 },
+      { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
+    ]);
     const neighborFlights = sdb.newTable().loadArray(rows);
-    await neighborFlights.degree("origin", "destination", {
-      count: "neighbors",
-    }).log();
-    assertEquals(
-      await neighborFlights.getData(),
-      [
-        { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
-        { node: "Toronto", incoming: 1, outgoing: 1, total: 2 },
-        { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
-    const flights = sdb.newTable("degreeExampleFlights").loadArray(rows);
-    await flights.degree("origin", "destination", { weight: "passengers" })
+    await neighborFlights
+      .degree("origin", "destination", {
+        count: "neighbors",
+      })
       .log();
-    assertEquals(
-      await flights.getData(),
-      [
-        { node: "Montreal", incoming: 150, outgoing: 350, total: 500 },
-        { node: "Toronto", incoming: 300, outgoing: 150, total: 450 },
-        { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
-      ],
-    );
+    expect(await neighborFlights.getData()).toStrictEqual([
+      { node: "Montreal", incoming: 1, outgoing: 2, total: 3 },
+      { node: "Toronto", incoming: 1, outgoing: 1, total: 2 },
+      { node: "Vancouver", incoming: 1, outgoing: 0, total: 1 },
+    ]);
+    const flights = sdb.newTable("degreeExampleFlights").loadArray(rows);
+    await flights.degree("origin", "destination", { weight: "passengers" }).log();
+    expect(await flights.getData()).toStrictEqual([
+      { node: "Montreal", incoming: 150, outgoing: 350, total: 500 },
+      { node: "Toronto", incoming: 300, outgoing: 150, total: 450 },
+      { node: "Vancouver", incoming: 50, outgoing: 0, total: 50 },
+    ]);
     const connections = sdb.newTable().loadArray([
       { source: "A", target: "A" },
       { source: "A", target: "B" },
     ]);
     await connections.degree("source", "target").log();
-    assertEquals(
-      await connections.getData(),
-      [
-        { node: "A", incoming: 1, outgoing: 2, total: 3 },
-        { node: "B", incoming: 1, outgoing: 0, total: 1 },
-      ],
-    );
+    expect(await connections.getData()).toStrictEqual([
+      { node: "A", incoming: 1, outgoing: 2, total: 3 },
+      { node: "B", incoming: 1, outgoing: 0, total: 1 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("degree orders compatible whole-number endpoint types numerically", async () => {
+test("degree orders compatible whole-number endpoint types numerically", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const [sourceType, targetType] of [
-        ["SMALLINT", "BIGINT"],
-        ["FLOAT", "DOUBLE"],
-        ["DECIMAL(12,2)", "INTEGER"],
-        ["BIGNUM", "BIGINT"],
-      ]
-    ) {
+    for (const [sourceType, targetType] of [
+      ["SMALLINT", "BIGINT"],
+      ["FLOAT", "DOUBLE"],
+      ["DECIMAL(12,2)", "INTEGER"],
+      ["BIGNUM", "BIGINT"],
+    ]) {
       const table = sdb.newTable();
       await sdb.customQuery(`CREATE TABLE "${table.name}" AS
         SELECT source::${sourceType} AS source, target::${targetType} AS target
         FROM (VALUES (-2, 10), (2, -2), (10, 2)) edges(source, target)`);
       // Cast only after degree has sorted, so a lexical sort cannot pass.
-      const result = table.degree("source", "target")
-        .convert({ node: "double" });
-      assertEquals(await result.getData(), [
+      const result = table.degree("source", "target").convert({ node: "double" });
+      expect(await result.getData()).toStrictEqual([
         { node: -2, incoming: 1, outgoing: 1, total: 2 },
         { node: 2, incoming: 1, outgoing: 1, total: 2 },
         { node: 10, incoming: 1, outgoing: 1, total: 2 },
@@ -878,7 +841,7 @@ Deno.test("degree orders compatible whole-number endpoint types numerically", as
   }
 });
 
-Deno.test("degree supports quoted columns and one column serving both endpoints", async () => {
+test("degree supports quoted columns and one column serving both endpoints", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -886,27 +849,32 @@ Deno.test("degree supports quoted columns and one column serving both endpoints"
       { 'Node "ID"': "A", 'Edge "Weight"': 0.75 },
       { 'Node "ID"': "B", 'Edge "Weight"': 0 },
     ];
-    for (
-      const [options, expected] of [
-        [{}, [
+    for (const [options, expected] of [
+      [
+        {},
+        [
           { node: "A", incoming: 2, outgoing: 2, total: 4 },
           { node: "B", incoming: 1, outgoing: 1, total: 2 },
-        ]],
-        [{ count: "neighbors" }, [
+        ],
+      ],
+      [
+        { count: "neighbors" },
+        [
           { node: "A", incoming: 1, outgoing: 1, total: 2 },
           { node: "B", incoming: 1, outgoing: 1, total: 2 },
-        ]],
-        [{ count: "edges", weight: 'edge "weight"' }, [
+        ],
+      ],
+      [
+        { count: "edges", weight: 'edge "weight"' },
+        [
           { node: "A", incoming: 1, outgoing: 1, total: 2 },
           { node: "B", incoming: 0, outgoing: 0, total: 0 },
-        ]],
-      ] as const
-    ) {
-      assertEquals(
-        await sdb.newTable().loadArray(rows)
-          .degree('node "id"', 'NODE "ID"', options).getData(),
-        [...expected],
-      );
+        ],
+      ],
+    ] as const) {
+      expect(
+        await sdb.newTable().loadArray(rows).degree('node "id"', 'NODE "ID"', options).getData(),
+      ).toStrictEqual([...expected]);
     }
   } finally {
     await sdb.close();

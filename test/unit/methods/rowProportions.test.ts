@@ -1,14 +1,16 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the horizontal proportions in new columns", async () => {
+test("should return the horizontal proportions in new columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataProportions.json"]);
   table.rowProportions(["key1", "key2", "key3"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: 1,
       key2: 2,
@@ -38,7 +40,7 @@ Deno.test("should return the horizontal proportions in new columns", async () =>
   await sdb.close();
 });
 
-Deno.test("should return the horizontal proportions in new columns with a specific suffix", async () => {
+test("should return the horizontal proportions in new columns with a specific suffix", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataProportions.json"]);
@@ -47,7 +49,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: 1,
       key2: 2,
@@ -77,7 +79,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
   await sdb.close();
 });
 
-Deno.test("should return the horizontal proportions in new columns with a specific suffix and 4 decimals", async () => {
+test("should return the horizontal proportions in new columns with a specific suffix and 4 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataProportions.json"]);
@@ -87,7 +89,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: 1,
       key2: 2,
@@ -117,7 +119,7 @@ Deno.test("should return the horizontal proportions in new columns with a specif
   await sdb.close();
 });
 
-Deno.test("should scale horizontal proportions to a custom base", async () => {
+test("should scale horizontal proportions to a custom base", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ a: 1, b: 2, c: 7 }]);
@@ -127,7 +129,7 @@ Deno.test("should scale horizontal proportions to a custom base", async () => {
     decimals: 0,
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     {
       a: 1,
       b: 2,
@@ -140,7 +142,7 @@ Deno.test("should scale horizontal proportions to a custom base", async () => {
   await sdb.close();
 });
 
-Deno.test("should reject an invalid horizontal proportion base", async () => {
+test("should reject an invalid horizontal proportion base", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -153,7 +155,7 @@ Deno.test("should reject an invalid horizontal proportion base", async () => {
   await sdb.close();
 });
 
-Deno.test("should throw when a new column name already exists, instead of silently renaming it", async () => {
+test("should throw when a new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ a: 1, b: 2, aPerc: "already here" }]);

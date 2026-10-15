@@ -1,13 +1,14 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should concatenate multiple columns in a new one", async () => {
+test("should concatenate multiple columns in a new one", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.json"]);
   table.concatenate(["Name", "Job"], "concatenated");
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -471,7 +472,7 @@ Deno.test("should concatenate multiple columns in a new one", async () => {
   await sdb.close();
 });
 
-Deno.test("should concatenate multiple columns in a new one with a separator", async () => {
+test("should concatenate multiple columns in a new one with a separator", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.json"]);
@@ -480,7 +481,7 @@ Deno.test("should concatenate multiple columns in a new one with a separator", a
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -944,20 +945,16 @@ Deno.test("should concatenate multiple columns in a new one with a separator", a
   await sdb.close();
 });
 
-Deno.test("should concatenate multiple columns in a new one with a separator and special characters in column names", async () => {
+test("should concatenate multiple columns in a new one with a separator and special characters in column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.json"]);
-  table.concatenate(
-    ["Department or unit", "End-of_year-BONUS?"],
-    "concat with sep",
-    {
-      separator: "-",
-    },
-  );
+  table.concatenate(["Department or unit", "End-of_year-BONUS?"], "concat with sep", {
+    separator: "-",
+  });
   const data = await table.getData();
 
-  assertEquals(data.slice(0, 3), [
+  expect(data.slice(0, 3)).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -989,7 +986,7 @@ Deno.test("should concatenate multiple columns in a new one with a separator and
   await sdb.close();
 });
 
-Deno.test("should bind separators containing apostrophes", async () => {
+test("should bind separators containing apostrophes", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundConcatenation");
 
@@ -997,10 +994,12 @@ Deno.test("should bind separators containing apostrophes", async () => {
     .loadArray([{ first: "rock", second: "roll" }])
     .concatenate(["first", "second"], "combined", { separator: "'n'" });
 
-  assertEquals(await table.getData(), [{
-    first: "rock",
-    second: "roll",
-    combined: "rock'n'roll",
-  }]);
+  expect(await table.getData()).toStrictEqual([
+    {
+      first: "rock",
+      second: "roll",
+      combined: "rock'n'roll",
+    },
+  ]);
   await sdb.close();
 });

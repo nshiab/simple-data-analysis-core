@@ -2,11 +2,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function updateColumn(
-  simpleTable: SimpleTable,
-  column: string,
-  definition: string,
-) {
+export default function updateColumn(simpleTable: SimpleTable, column: string, definition: string) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "updateColumn()",
@@ -17,8 +13,8 @@ export default function updateColumn(
     rawSQL: [definition],
     preservesSchema: true,
     buildSelect: (input, types) =>
-      `SELECT * REPLACE (CAST((${definition}) AS ${types[column]}) AS ${
-        quoteIdentifier(column)
-      }) FROM ${input}`,
+      `SELECT * REPLACE (CAST((${definition}) AS ${types[column]}) AS ${quoteIdentifier(
+        column,
+      )}) FROM ${input}`,
   });
 }

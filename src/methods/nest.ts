@@ -20,14 +20,10 @@ export default function nest(
       const cats = stringToArray(by);
       const groupBy = cats.map((d) => `${quoteIdentifier(d)}`).join(", ");
       const selectColumns = `${groupBy}, `;
-      const orderBy = `\nORDER BY ${
-        cats.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
-      }`;
+      const orderBy = `\nORDER BY ${cats.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")}`;
 
       return `SELECT
-  ${selectColumns}STRING_AGG(${quoteIdentifier(column)}, ?) AS ${
-        quoteIdentifier(column)
-      }
+  ${selectColumns}STRING_AGG(${quoteIdentifier(column)}, ?) AS ${quoteIdentifier(column)}
 FROM ${input}
 GROUP BY ${groupBy}${orderBy}`;
     },

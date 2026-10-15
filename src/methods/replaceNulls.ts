@@ -6,13 +6,11 @@ import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
 export default function replaceNulls(
   simpleTable: SimpleTable,
-  columns: "all" | string | string[],
+  columns: string | string[],
   value: unknown,
 ) {
   columns = Array.isArray(columns) ? [...columns] : columns;
-  const capturedValue = value instanceof Date
-    ? new Date(value.getTime())
-    : value;
+  const capturedValue = value instanceof Date ? new Date(value.getTime()) : value;
   queueOp(simpleTable, {
     kind: "fusable",
     method: "replaceNulls()",
@@ -25,24 +23,19 @@ export default function replaceNulls(
     preservesSchema: true,
     parameters: { columns, value: capturedValue },
     values: (schema) => {
-      const columnList = columns === "all"
-        ? Object.keys(schema)
-        : stringToArray(columns);
+      const columnList = columns === "all" ? Object.keys(schema) : stringToArray(columns);
       return columnList.map(() => toDuckDBValue(capturedValue));
     },
     buildSelect: (input, schema) => {
-      const columnList = columns === "all"
-        ? Object.keys(schema)
-        : stringToArray(columns);
-      return `SELECT * REPLACE (${
-        columnList
-          .map((column) =>
+      const columnList = columns === "all" ? Object.keys(schema) : stringToArray(columns);
+      return `SELECT * REPLACE (${columnList
+        .map(
+          (column) =>
             `COALESCE(${quoteIdentifier(column)}, CAST(? AS ${
               schema[column]
-            })) AS ${quoteIdentifier(column)}`
-          )
-          .join(", ")
-      }) FROM ${input}`;
+            })) AS ${quoteIdentifier(column)}`,
+        )
+        .join(", ")}) FROM ${input}`;
     },
   });
 }

@@ -1,12 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import type {
-  FusableOp,
-  PendingOp,
-  RelationalOp,
-  TableSchema,
-} from "./pendingOps.ts";
+import type { FusableOp, PendingOp, RelationalOp, TableSchema } from "./pendingOps.ts";
 import cleanSQL from "./cleanSQL.ts";
 import referencedTables from "./referencedTables.ts";
 import ensureSpatial from "./ensureSpatial.ts";
@@ -39,10 +34,7 @@ const flushContext = new AsyncLocalStorage<Set<SimpleDB>>();
  * Used by the flush itself and by connection setup, whose queries must run
  * before any queued operation.
  */
-export function runExemptFromFlush<T>(
-  sdb: SimpleDB,
-  fn: () => Promise<T>,
-): Promise<T> {
+export function runExemptFromFlush<T>(sdb: SimpleDB, fn: () => Promise<T>): Promise<T> {
   const exempt = new Set(flushContext.getStore());
   exempt.add(sdb);
   return flushContext.run(exempt, fn);
@@ -130,12 +122,9 @@ async function flush(sdb: SimpleDB): Promise<void> {
   await replayEntries(sdb, entries);
 }
 
-async function replayEntries(
-  sdb: SimpleDB,
-  pendingEntries: PendingEntry[],
-): Promise<void> {
-  const entries: (PendingEntry | null)[] = [...pendingEntries].sort((a, b) =>
-    a.op.sequence - b.op.sequence
+async function replayEntries(sdb: SimpleDB, pendingEntries: PendingEntry[]): Promise<void> {
+  const entries: (PendingEntry | null)[] = [...pendingEntries].sort(
+    (a, b) => a.op.sequence - b.op.sequence,
   );
 
   let open: Segment | null = null;
@@ -195,9 +184,7 @@ async function replayEntries(
         continue;
       }
 
-      const reads = op.rawSQL === undefined
-        ? []
-        : referencedTables(op.rawSQL, sdb);
+      const reads = op.rawSQL === undefined ? [] : referencedTables(op.rawSQL, sdb);
 
       if (op.kind === "fusable" && reads.includes(table)) {
         // User-supplied SQL referencing the operation's own table must read
@@ -217,8 +204,7 @@ async function replayEntries(
       if (
         op.kind === "fusable" &&
         segmentSource?.kind === "source" &&
-        (op.requiresMaterializedInput ||
-          (op.needsSpatial && segmentSource.schema === undefined))
+        (op.requiresMaterializedInput || (op.needsSpatial && segmentSource.schema === undefined))
       ) {
         // Materialize only the external source when this operation needs a
         // stable physical input, or when a spatial operation would otherwise
@@ -293,9 +279,7 @@ async function runAsyncBarrier(
   });
 }
 
-async function drainAsyncOperationFrame(
-  frame: AsyncOperationFrame,
-): Promise<void> {
+async function drainAsyncOperationFrame(frame: AsyncOperationFrame): Promise<void> {
   while (frame.drainPromise !== null) {
     try {
       await frame.drainPromise;
@@ -316,7 +300,7 @@ async function drainAsyncOperationFrame(
         const entries = frame.entries.splice(0, frame.entries.length);
         await replayEntries(frame.sdb, entries);
       }
-    })
+    }),
   );
   frame.drainPromise = promise;
   try {
@@ -328,10 +312,7 @@ async function drainAsyncOperationFrame(
   }
 }
 
-async function runSegment(
-  table: SimpleTable,
-  ops: RelationalOp[],
-): Promise<void> {
+async function runSegment(table: SimpleTable, ops: RelationalOp[]): Promise<void> {
   if (ops.length === 1) {
     await runStepwise(table, ops[0]);
     return;
@@ -393,27 +374,22 @@ async function compileOp(
     };
   }
 
-  const input = ctes.length === 0
-    ? quoteIdentifier(table.name)
-    : quoteIdentifier(ctes[ctes.length - 1].alias);
-  const inputSchema = op.needsSchema && schema === null
-    ? await describeChain(table, ctes)
-    : schema;
+  const input =
+    ctes.length === 0 ? quoteIdentifier(table.name) : quoteIdentifier(ctes[ctes.length - 1].alias);
+  const inputSchema = op.needsSchema && schema === null ? await describeChain(table, ctes) : schema;
   const buildSchema = inputSchema ?? {};
-  const outputSchema = inputSchema === null
-    ? null
-    : op.outputSchema !== undefined
-    ? op.outputSchema(inputSchema)
-    : op.preservesSchema === true
-    ? inputSchema
-    : null;
+  const outputSchema =
+    inputSchema === null
+      ? null
+      : op.outputSchema !== undefined
+        ? op.outputSchema(inputSchema)
+        : op.preservesSchema === true
+          ? inputSchema
+          : null;
   return {
     cte: {
       alias,
-      select: cleanSQL(
-        op.buildSelect(input, buildSchema),
-        table.sdb.expressionSyntax,
-      ),
+      select: cleanSQL(op.buildSelect(input, buildSchema), table.sdb.expressionSyntax),
       values: resolveValues(op, buildSchema),
     },
     schema: outputSchema,
@@ -426,11 +402,9 @@ async function executeFused(
   ctes: CompiledCte[],
 ): Promise<void> {
   // A trailing line comment must end before the generated CTE delimiter.
-  const query = `CREATE OR REPLACE TABLE ${
-    quoteIdentifier(table.name)
-  } AS WITH ${
-    ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select}\n)`).join(", ")
-  } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
+  const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS WITH ${ctes
+    .map((c) => `${quoteIdentifier(c.alias)} AS (${c.select}\n)`)
+    .join(", ")} SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
 
   try {
     await queryDB(
@@ -456,19 +430,18 @@ async function executeFused(
     // itself. The table now holds the correct stepwise result, so we warn
     // instead of throwing.
     console.warn(
-      `The fused query for ${
-        ops.map((op) => op.method).join(" + ")
-      } failed, but running the methods one by one succeeded. Please report this as a bug to https://github.com/nshiab/simple-data-analysis-core/issues.\n${
+      `The fused query for ${ops
+        .map((op) => op.method)
+        .join(
+          " + ",
+        )} failed, but running the methods one by one succeeded. Please report this as a bug to https://github.com/nshiab/simple-data-analysis-core/issues.\n${
         fusedError instanceof Error ? fusedError.message : String(fusedError)
       }`,
     );
   }
 }
 
-async function runStepwise(
-  table: SimpleTable,
-  op: RelationalOp,
-): Promise<void> {
+async function runStepwise(table: SimpleTable, op: RelationalOp): Promise<void> {
   if (needsSpatial(op)) {
     await ensureSpatial(table);
   }
@@ -477,9 +450,7 @@ async function runStepwise(
   const compiled = await compileOp(table, op, [], null);
   await queryDB(
     table,
-    `CREATE OR REPLACE TABLE ${
-      quoteIdentifier(table.name)
-    } AS ${compiled.cte.select}`,
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS ${compiled.cte.select}`,
     mergeOptions(table, {
       table: table.name,
       method: op.method,
@@ -495,7 +466,7 @@ function needsSpatial(op: RelationalOp): boolean {
 }
 
 function resolveValues(op: FusableOp, schema: TableSchema) {
-  return typeof op.values === "function" ? op.values(schema) : op.values ?? [];
+  return typeof op.values === "function" ? op.values(schema) : (op.values ?? []);
 }
 
 /**
@@ -503,20 +474,15 @@ function resolveValues(op: FusableOp, schema: TableSchema) {
  * yet, this describes the table itself; otherwise it describes the output of
  * the last fragment. DESCRIBE is planning-only, so no data is computed.
  */
-async function describeChain(
-  table: SimpleTable,
-  ctes: CompiledCte[],
-): Promise<TableSchema> {
-  const select = ctes.length === 0
-    ? `SELECT * FROM ${quoteIdentifier(table.name)}`
-    : `WITH ${
-      ctes.map((c) => `${quoteIdentifier(c.alias)} AS (${c.select}\n)`).join(
-        ", ",
-      )
-    } SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
-  const query = ctes.length === 0
-    ? `DESCRIBE ${quoteIdentifier(table.name)}`
-    : `DESCRIBE ${select}`;
+async function describeChain(table: SimpleTable, ctes: CompiledCte[]): Promise<TableSchema> {
+  const select =
+    ctes.length === 0
+      ? `SELECT * FROM ${quoteIdentifier(table.name)}`
+      : `WITH ${ctes
+          .map((c) => `${quoteIdentifier(c.alias)} AS (${c.select}\n)`)
+          .join(", ")} SELECT * FROM ${quoteIdentifier(ctes[ctes.length - 1].alias)}`;
+  const query =
+    ctes.length === 0 ? `DESCRIBE ${quoteIdentifier(table.name)}` : `DESCRIBE ${select}`;
   const values = ctes.flatMap((cte) => cte.values);
   const types = await queryDB(
     table,

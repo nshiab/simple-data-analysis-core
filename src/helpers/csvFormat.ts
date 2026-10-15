@@ -1,155 +1,74 @@
-// @ts-nocheck
-// deno-lint-ignore-file
-// Created by bundling csvFormat from d3-dsv.
-// Original source: https://github.com/d3/d3-dsv
+import stringifyUnknown from "./stringifyUnknown.ts";
+/*
+ * Formatting subset of d3-dsv 3.0.1: https://github.com/d3/d3-dsv
+ * Copyright 2013-2021 Mike Bostock
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any purpose
+ * with or without fee is hereby granted, provided that the above copyright notice
+ * and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+ * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+ * THIS SOFTWARE.
+ */
 
-// node_modules/.deno/d3-dsv@3.0.1/node_modules/d3-dsv/src/dsv.js
-var EOL = {};
-var EOF = {};
-var QUOTE = 34;
-var NEWLINE = 10;
-var RETURN = 13;
-function objectConverter(columns) {
-  return new Function("d", "return {" + columns.map(function(name, i) {
-    return JSON.stringify(name) + ": d[" + i + '] || ""';
-  }).join(",") + "}");
+function pad(value: number, width: number): string {
+  return String(value).padStart(width, "0");
 }
-function customConverter(columns, f) {
-  var object = objectConverter(columns);
-  return function(row, i) {
-    return f(object(row), i, columns);
-  };
+
+function formatDate(date: Date): string {
+  if (Number.isNaN(date.getTime())) return "Invalid Date";
+  const year = date.getUTCFullYear();
+  const formattedYear =
+    year < 0 ? `-${pad(-year, 6)}` : year > 9999 ? `+${pad(year, 6)}` : pad(year, 4);
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const seconds = date.getUTCSeconds();
+  const milliseconds = date.getUTCMilliseconds();
+  const day = `${formattedYear}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}`;
+  const time = `${pad(hours, 2)}:${pad(minutes, 2)}`;
+  return (
+    day +
+    (milliseconds
+      ? `T${time}:${pad(seconds, 2)}.${pad(milliseconds, 3)}Z`
+      : seconds
+        ? `T${time}:${pad(seconds, 2)}Z`
+        : minutes || hours
+          ? `T${time}Z`
+          : "")
+  );
 }
-function inferColumns(rows) {
-  var columnSet = /* @__PURE__ */ Object.create(null), columns = [];
-  rows.forEach(function(row) {
-    for (var column in row) {
-      if (!(column in columnSet)) {
-        columns.push(columnSet[column] = column);
-      }
-    }
-  });
-  return columns;
+
+function formatValue(value: unknown): string {
+  if (value == null) return "";
+  if (value instanceof Date) return formatDate(value);
+  const text = stringifyUnknown(value, "default");
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
-function pad(value, width) {
-  var s = value + "", length = s.length;
-  return length < width ? new Array(width - length + 1).join(0) + s : s;
-}
-function formatYear(year) {
-  return year < 0 ? "-" + pad(-year, 6) : year > 9999 ? "+" + pad(year, 6) : pad(year, 4);
-}
-function formatDate(date) {
-  var hours = date.getUTCHours(), minutes = date.getUTCMinutes(), seconds = date.getUTCSeconds(), milliseconds = date.getUTCMilliseconds();
-  return isNaN(date) ? "Invalid Date" : formatYear(date.getUTCFullYear(), 4) + "-" + pad(date.getUTCMonth() + 1, 2) + "-" + pad(date.getUTCDate(), 2) + (milliseconds ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(seconds, 2) + "." + pad(milliseconds, 3) + "Z" : seconds ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(seconds, 2) + "Z" : minutes || hours ? "T" + pad(hours, 2) + ":" + pad(minutes, 2) + "Z" : "");
-}
-function dsv_default(delimiter) {
-  var reFormat = new RegExp('["' + delimiter + "\n\r]"), DELIMITER = delimiter.charCodeAt(0);
-  function parse(text, f) {
-    var convert, columns, rows = parseRows(text, function(row, i) {
-      if (convert) return convert(row, i - 1);
-      columns = row, convert = f ? customConverter(row, f) : objectConverter(row);
-    });
-    rows.columns = columns || [];
-    return rows;
-  }
-  function parseRows(text, f) {
-    var rows = [], N = text.length, I = 0, n = 0, t, eof = N <= 0, eol = false;
-    if (text.charCodeAt(N - 1) === NEWLINE) --N;
-    if (text.charCodeAt(N - 1) === RETURN) --N;
-    function token() {
-      if (eof) return EOF;
-      if (eol) return eol = false, EOL;
-      var i, j = I, c;
-      if (text.charCodeAt(j) === QUOTE) {
-        while (I++ < N && text.charCodeAt(I) !== QUOTE || text.charCodeAt(++I) === QUOTE) ;
-        if ((i = I) >= N) eof = true;
-        else if ((c = text.charCodeAt(I++)) === NEWLINE) eol = true;
-        else if (c === RETURN) {
-          eol = true;
-          if (text.charCodeAt(I) === NEWLINE) ++I;
+
+export default function csvFormat(
+  rows: Record<string, unknown>[],
+  columns?: string[] | null,
+): string {
+  if (columns == null) {
+    const seen = new Set<string>();
+    columns = [];
+    for (const row of rows) {
+      for (const column in row) {
+        if (!seen.has(column)) {
+          seen.add(column);
+          columns.push(column);
         }
-        return text.slice(j + 1, i - 1).replace(/""/g, '"');
       }
-      while (I < N) {
-        if ((c = text.charCodeAt(i = I++)) === NEWLINE) eol = true;
-        else if (c === RETURN) {
-          eol = true;
-          if (text.charCodeAt(I) === NEWLINE) ++I;
-        } else if (c !== DELIMITER) continue;
-        return text.slice(j, i);
-      }
-      return eof = true, text.slice(j, N);
     }
-    while ((t = token()) !== EOF) {
-      var row = [];
-      while (t !== EOL && t !== EOF) row.push(t), t = token();
-      if (f && (row = f(row, n++)) == null) continue;
-      rows.push(row);
-    }
-    return rows;
   }
-  function preformatBody(rows, columns) {
-    return rows.map(function(row) {
-      return columns.map(function(column) {
-        return formatValue(row[column]);
-      }).join(delimiter);
-    });
-  }
-  function format(rows, columns) {
-    if (columns == null) columns = inferColumns(rows);
-    return [
-      columns.map(formatValue).join(delimiter)
-    ].concat(preformatBody(rows, columns)).join("\n");
-  }
-  function formatBody(rows, columns) {
-    if (columns == null) columns = inferColumns(rows);
-    return preformatBody(rows, columns).join("\n");
-  }
-  function formatRows(rows) {
-    return rows.map(formatRow).join("\n");
-  }
-  function formatRow(row) {
-    return row.map(formatValue).join(delimiter);
-  }
-  function formatValue(value) {
-    return value == null ? "" : value instanceof Date ? formatDate(value) : reFormat.test(value += "") ? '"' + value.replace(/"/g, '""') + '"' : value;
-  }
-  return {
-    parse,
-    parseRows,
-    format,
-    formatBody,
-    formatRows,
-    formatRow,
-    formatValue
-  };
+  const fields = columns;
+  return [
+    fields.map(formatValue).join(","),
+    ...rows.map((row) => fields.map((column) => formatValue(row[column])).join(",")),
+  ].join("\n");
 }
-
-// node_modules/.deno/d3-dsv@3.0.1/node_modules/d3-dsv/src/csv.js
-var csv = dsv_default(",");
-var csvParse = csv.parse;
-var csvParseRows = csv.parseRows;
-var csvFormat = csv.format;
-var csvFormatBody = csv.formatBody;
-var csvFormatRows = csv.formatRows;
-var csvFormatRow = csv.formatRow;
-var csvFormatValue = csv.formatValue;
-
-// node_modules/.deno/d3-dsv@3.0.1/node_modules/d3-dsv/src/tsv.js
-var tsv = dsv_default("	");
-var tsvParse = tsv.parse;
-var tsvParseRows = tsv.parseRows;
-var tsvFormat = tsv.format;
-var tsvFormatBody = tsv.formatBody;
-var tsvFormatRows = tsv.formatRows;
-var tsvFormatRow = tsv.formatRow;
-var tsvFormatValue = tsv.formatValue;
-
-// node_modules/.deno/d3-dsv@3.0.1/node_modules/d3-dsv/src/autoType.js
-var fixtz = (/* @__PURE__ */ new Date("2019-01-01T00:00")).getHours() || (/* @__PURE__ */ new Date("2019-07-01T00:00")).getHours();
-
-// tmp/csvFormat.ts
-var csvFormat_default: any = csvFormat;
-export {
-  csvFormat_default as default
-};

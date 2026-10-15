@@ -16,21 +16,16 @@ export default function centroid(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "centroid()", simpleTable.name);
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "centroid()", simpleTable.name);
       // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
       // so the cast keeps it on the new geometries.
-      const expression = `ST_Centroid(${quoteIdentifier(column)})::${
-        types[column]
-      }`;
+      const expression = `ST_Centroid(${quoteIdentifier(column)})::${types[column]}`;
       return Object.keys(types).includes(newColumn)
-        ? `SELECT * REPLACE (${expression} AS ${
-          quoteIdentifier(newColumn)
-        }) FROM ${input}`
-        : `SELECT *, ${expression} AS ${
-          quoteIdentifier(newColumn)
-        } FROM ${input}`;
+        ? `SELECT * REPLACE (${expression} AS ${quoteIdentifier(newColumn)}) FROM ${input}`
+        : `SELECT *, ${expression} AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should remove rows based on one condition", async () => {
+test("should remove rows based on one condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -9,7 +10,7 @@ Deno.test("should remove rows based on one condition", async () => {
   table.removeRows(`"Department or unit" = '50'`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: null,
       "Hire date": "17-SEP-03",
@@ -254,17 +255,15 @@ Deno.test("should remove rows based on one condition", async () => {
 
   await sdb.close();
 });
-Deno.test("should remove rows based on multiple conditions", async () => {
+test("should remove rows based on multiple conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
 
-  table.removeRows(
-    `"Job" = 'Clerk' AND "Department or unit" = '50'`,
-  );
+  table.removeRows(`"Job" = 'Clerk' AND "Department or unit" = '50'`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: null,
       "Hire date": "17-SEP-03",
@@ -564,7 +563,7 @@ Deno.test("should remove rows based on multiple conditions", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should remove the rows based on booleans", async () => {
+test("should remove the rows based on booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -574,6 +573,6 @@ Deno.test("should remove the rows based on booleans", async () => {
   table.removeRows(`value = TRUE`);
   const data = await table.getData();
 
-  assertEquals(data, [{ name: "Graeme", value: false }]);
+  expect(data).toStrictEqual([{ name: "Graeme", value: false }]);
   await sdb.close();
 });

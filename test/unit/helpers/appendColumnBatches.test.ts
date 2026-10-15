@@ -1,4 +1,6 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import {
   BIGINT,
   DOUBLE,
@@ -12,13 +14,11 @@ import {
 } from "@duckdb/node-api";
 import appendColumnBatches from "../../../src/helpers/appendColumnBatches.ts";
 
-Deno.test("column batches preserve values across full and partial chunks", async () => {
+test("column batches preserve values across full and partial chunks", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
-    await connection.run(
-      "CREATE TABLE data (id BIGINT, value DOUBLE, label VARCHAR)",
-    );
+    await connection.run("CREATE TABLE data (id BIGINT, value DOUBLE, label VARCHAR)");
     const rows = Array.from({ length: 4003 }, (_, i) => [
       9007199254740993n + BigInt(i),
       i % 7 === 0 ? null : i / 8,
@@ -31,20 +31,12 @@ Deno.test("column batches preserve values across full and partial chunks", async
       rows.length,
       (column, start, end) => rows.slice(start, end).map((row) => row[column]),
     );
-    await appendColumnBatches(
-      connection,
-      "data",
-      [BIGINT, DOUBLE, VARCHAR],
-      0,
-      () => {
-        throw new Error("Empty input must not request values.");
-      },
-    );
-    assertEquals(
-      (await connection.runAndReadAll("SELECT * FROM data ORDER BY id"))
-        .getRowsJS(),
-      rows,
-    );
+    await appendColumnBatches(connection, "data", [BIGINT, DOUBLE, VARCHAR], 0, () => {
+      throw new Error("Empty input must not request values.");
+    });
+    expect(
+      (await connection.runAndReadAll("SELECT * FROM data ORDER BY id")).getRowsJS(),
+    ).toStrictEqual(rows);
   } finally {
     connection.closeSync();
     db.closeSync();
@@ -79,45 +71,31 @@ const writeCases: {
 ];
 
 for (const { type, valid, invalid } of writeCases) {
-  Deno.test(`column batches validate ${type} and recover after a late invalid value`, async () => {
+  test(`column batches validate ${type.toString()} and recover after a late invalid value`, async () => {
     const db = await DuckDBInstance.create(":memory:");
     const connection = await db.connect();
     try {
-      await connection.run(`CREATE TABLE data (value ${type})`);
+      await connection.run(`CREATE TABLE data (value ${type.toString()})`);
       for (const value of invalid) {
         await connection.run("BEGIN TRANSACTION");
         await assertRejects(
           () =>
-            appendColumnBatches(
-              connection,
-              "data",
-              [type],
-              2001,
-              (_, start, end) =>
-                Array.from({ length: end - start }, (_, i) =>
-                  start + i === 2000 ? value : valid[0]),
+            appendColumnBatches(connection, "data", [type], 2001, (_, start, end) =>
+              Array.from({ length: end - start }, (_, i) =>
+                start + i === 2000 ? value : valid[0],
+              ),
             ),
           Error,
         );
         await connection.run("ROLLBACK");
-        assertEquals(
-          (await connection.runAndReadAll("SELECT count(*) FROM data"))
-            .getRowsJS(),
-          [[0n]],
-        );
+        expect(
+          (await connection.runAndReadAll("SELECT count(*) FROM data")).getRowsJS(),
+        ).toStrictEqual([[0n]]);
       }
-      await appendColumnBatches(
-        connection,
-        "data",
-        [type],
-        valid.length,
-        () => valid,
-      );
-      assertEquals(
-        (await connection.runAndReadAll("SELECT * FROM data ORDER BY rowid"))
-          .getRowsJS(),
-        valid.map((value) => [value]),
-      );
+      await appendColumnBatches(connection, "data", [type], valid.length, () => valid);
+      expect(
+        (await connection.runAndReadAll("SELECT * FROM data ORDER BY rowid")).getRowsJS(),
+      ).toStrictEqual(valid.map((value) => [value]));
     } finally {
       connection.closeSync();
       db.closeSync();
@@ -125,7 +103,7 @@ for (const { type, valid, invalid } of writeCases) {
   });
 }
 
-Deno.test("column batches reject unsupported VARIANT chunks and release the appender", async () => {
+test("column batches reject unsupported VARIANT chunks and release the appender", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -137,42 +115,34 @@ Deno.test("column batches reject unsupported VARIANT chunks and release the appe
     );
     await connection.run("DROP TABLE data; CREATE TABLE data (value INTEGER)");
     await appendColumnBatches(connection, "data", [INTEGER], 1, () => [42]);
-    assertEquals(
-      (await connection.runAndReadAll("SELECT * FROM data")).getRowsJS(),
-      [[42]],
-    );
+    expect((await connection.runAndReadAll("SELECT * FROM data")).getRowsJS()).toStrictEqual([
+      [42],
+    ]);
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("column batch failures allow caller rollback and subsequent appends", async () => {
+test("column batch failures allow caller rollback and subsequent appends", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
     await connection.run("CREATE TABLE data (value DOUBLE); BEGIN TRANSACTION");
     await assertRejects(
       () =>
-        appendColumnBatches(
-          connection,
-          "data",
-          [DOUBLE],
-          2001,
-          (_, start, end) => {
-            if (start > 0) throw new Error("conversion failed");
-            return Array.from({ length: end - start }, (_, row) => start + row);
-          },
-        ),
+        appendColumnBatches(connection, "data", [DOUBLE], 2001, (_, start, end) => {
+          if (start > 0) throw new Error("conversion failed");
+          return Array.from({ length: end - start }, (_, row) => start + row);
+        }),
       Error,
       "conversion failed",
     );
     await connection.run("ROLLBACK");
     await appendColumnBatches(connection, "data", [DOUBLE], 1, () => [42]);
-    assertEquals(
-      (await connection.runAndReadAll("SELECT * FROM data")).getRowsJS(),
-      [[42]],
-    );
+    expect((await connection.runAndReadAll("SELECT * FROM data")).getRowsJS()).toStrictEqual([
+      [42],
+    ]);
   } finally {
     connection.closeSync();
     db.closeSync();

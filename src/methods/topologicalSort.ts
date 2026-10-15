@@ -23,9 +23,7 @@ export default function topologicalSort(
   if (typeof targetColumn !== "string") {
     throw new TypeError("topologicalSort() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("topologicalSort() options must be an object.");
   }
   if (
@@ -33,9 +31,7 @@ export default function topologicalSort(
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "topologicalSort() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("topologicalSort() options.outputTable must be a string or boolean.");
   }
 
   options = structuredClone(options);
@@ -70,11 +66,7 @@ export default function topologicalSort(
   return result;
 }
 
-function validateEndpoints(
-  schema: TableSchema,
-  source: string,
-  target: string,
-) {
+function validateEndpoints(schema: TableSchema, source: string, target: string) {
   return getGraphEndpointColumns(schema, source, target, "topologicalSort()");
 }
 
@@ -84,13 +76,7 @@ function topologicalSortSelect(
   source: string,
   target: string,
 ): string {
-  const prepared = prepareGraphSql(
-    input,
-    schema,
-    source,
-    target,
-    "topologicalSort()",
-  );
+  const prepared = prepareGraphSql(input, schema, source, target, "topologicalSort()");
   const relations = prepared.relationNames([
     "graph_edges",
     "graph_nodes",

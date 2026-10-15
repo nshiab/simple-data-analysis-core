@@ -146,9 +146,7 @@ export default function prettyDuration(
     const ms = remainingMsAfterMin % 1000;
     prettyDuration = `${years} ${years <= 1 ? "year" : "years"}, ${months} ${
       months <= 1 ? "month" : "months"
-    }, ${days} ${
-      days <= 1 ? "day" : "days"
-    }, ${hours} h, ${min} min, ${sec} sec, ${ms} ms`;
+    }, ${days} ${days <= 1 ? "day" : "days"}, ${hours} h, ${min} min, ${sec} sec, ${ms} ms`;
   }
 
   if (typeof options.prefix === "string") {

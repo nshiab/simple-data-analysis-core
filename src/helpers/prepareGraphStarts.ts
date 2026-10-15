@@ -25,11 +25,12 @@ export default function prepareGraphStarts(
   const duplicates: GraphId[] = [];
 
   for (const value of starts) {
-    const valueFamily = typeof value === "string"
-      ? "string"
-      : typeof value === "number" || typeof value === "bigint"
-      ? "numeric"
-      : undefined;
+    const valueFamily =
+      typeof value === "string"
+        ? "string"
+        : typeof value === "number" || typeof value === "bigint"
+          ? "numeric"
+          : undefined;
     if (valueFamily === undefined) {
       throw new TypeError(
         scalar
@@ -38,9 +39,7 @@ export default function prepareGraphStarts(
       );
     }
     if (family !== undefined && family !== valueFamily) {
-      throw new TypeError(
-        `${method} ${argument} must not mix string and numeric IDs.`,
-      );
+      throw new TypeError(`${method} ${argument} must not mix string and numeric IDs.`);
     }
     family = valueFamily;
 
@@ -73,9 +72,7 @@ export default function prepareGraphStarts(
 
   if (duplicates.length > 0) {
     throw new TypeError(
-      `${method} ${argument} contains duplicate IDs: ${
-        duplicates.map(formatGraphId).join(", ")
-      }.`,
+      `${method} ${argument} contains duplicate IDs: ${duplicates.map(formatGraphId).join(", ")}.`,
     );
   }
 

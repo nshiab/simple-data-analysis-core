@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () => {
+test("addSummaryRows() adds a sum row for all numeric columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sales");
 
@@ -11,7 +13,7 @@ Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () =>
   ]);
   table.addSummaryRows("all", "region", { stats: "sum" });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { region: "North", sales: 10, expenses: 4, note: "first" },
     { region: "South", sales: 20, expenses: 6, note: "second" },
     { region: "sum", sales: 30, expenses: 10, note: null },
@@ -20,7 +22,7 @@ Deno.test("addSummaryRows() adds a sum row for all numeric columns", async () =>
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () => {
+test("addSummaryRows() accepts mixed stat strings and objects", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("selectedSales");
 
@@ -32,7 +34,7 @@ Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () =>
     stats: ["sum", { stat: "mean", label: "Average" }],
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { region: "North", sales: 10, expenses: 4 },
     { region: "South", sales: 20, expenses: 6 },
     { region: "sum", sales: 30, expenses: null },
@@ -42,7 +44,7 @@ Deno.test("addSummaryRows() accepts mixed stat strings and objects", async () =>
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() adds every supported column stat when stats are omitted", async () => {
+test("addSummaryRows() adds every supported column stat when stats are omitted", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("allSummaries");
 
@@ -54,7 +56,7 @@ Deno.test("addSummaryRows() adds every supported column stat when stats are omit
   table.addSummaryRows("value", "statistic");
 
   const data = await table.getData();
-  assertEquals(data.slice(3).map((row) => row.statistic), [
+  expect(data.slice(3).map((row) => row.statistic)).toStrictEqual([
     "countDistinct",
     "countNull",
     "min",
@@ -66,12 +68,12 @@ Deno.test("addSummaryRows() adds every supported column stat when stats are omit
     "stdDev",
     "variance",
   ]);
-  assertEquals(data.find((row) => row.statistic === "countNull")?.value, 1);
+  expect(data.find((row) => row.statistic === "countNull")?.value).toStrictEqual(1);
 
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() can add summary rows at the top", async () => {
+test("addSummaryRows() can add summary rows at the top", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("topSummaries");
 
@@ -84,7 +86,7 @@ Deno.test("addSummaryRows() can add summary rows at the top", async () => {
     position: "top",
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { statistic: "sum", value: 30 },
     { statistic: "mean", value: 15 },
     { statistic: "a", value: 10 },
@@ -94,7 +96,7 @@ Deno.test("addSummaryRows() can add summary rows at the top", async () => {
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() computes every row from the original input", async () => {
+test("addSummaryRows() computes every row from the original input", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("originalInput");
 
@@ -107,7 +109,7 @@ Deno.test("addSummaryRows() computes every row from the original input", async (
   });
 
   const data = await table.getData();
-  assertEquals(data.slice(2), [
+  expect(data.slice(2)).toStrictEqual([
     { statistic: "sum", value: 30 },
     { statistic: "mean", value: 15 },
   ]);
@@ -115,7 +117,7 @@ Deno.test("addSummaryRows() computes every row from the original input", async (
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() binds custom labels", async () => {
+test("addSummaryRows() binds custom labels", async () => {
   const sdb = new SimpleDB({ logSQL: true });
   const table = sdb.newTable("boundLabels");
 
@@ -138,23 +140,19 @@ Deno.test("addSummaryRows() binds custom labels", async () => {
     console.log = originalLog;
   }
 
-  assertEquals(data.at(-1), {
+  expect(data.at(-1)).toStrictEqual({
     statistic: "Owner's total",
     value: 2,
   });
-  assertEquals(
-    logs.some(([message]) =>
-      typeof message === "string" &&
-      message.includes("CAST(? AS VARCHAR)")
-    ),
-    true,
-  );
-  assertEquals(logs.some(([message]) => message === "Bound values:"), true);
+  expect(
+    logs.some(([message]) => typeof message === "string" && message.includes("CAST(? AS VARCHAR)")),
+  ).toStrictEqual(true);
+  expect(logs.some(([message]) => message === "Bound values:")).toStrictEqual(true);
 
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() fuses with preceding queued methods", async () => {
+test("addSummaryRows() fuses with preceding queued methods", async () => {
   const sdb = new SimpleDB({ logSQL: true });
   const table = sdb.newTable("filteredSummary");
   const logs: unknown[][] = [];
@@ -181,27 +179,27 @@ Deno.test("addSummaryRows() fuses with preceding queued methods", async () => {
     console.warn = originalWarn;
   }
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { statistic: "b", value: 2 },
     { statistic: "c", value: 3 },
     { statistic: "sum", value: 5 },
   ]);
-  const fusedStatements = logs.filter(([message]) =>
-    typeof message === "string" &&
-    message.includes('CREATE OR REPLACE TABLE "filteredSummary" AS WITH')
+  const fusedStatements = logs.filter(
+    ([message]) =>
+      typeof message === "string" &&
+      message.includes('CREATE OR REPLACE TABLE "filteredSummary" AS WITH'),
   );
-  assertEquals(fusedStatements.length, 1);
-  assertEquals(
+  expect(fusedStatements.length).toStrictEqual(1);
+  expect(
     typeof fusedStatements[0][0] === "string" &&
       fusedStatements[0][0].includes('SELECT * FROM "s2"'),
-    true,
-  );
-  assertEquals(warnings, []);
+  ).toStrictEqual(true);
+  expect(warnings).toStrictEqual([]);
 
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() rejects empty column and stat arrays", async () => {
+test("addSummaryRows() rejects empty column and stat arrays", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("emptyOptions");
 
@@ -231,7 +229,7 @@ Deno.test("addSummaryRows() rejects empty column and stat arrays", async () => {
   await sdb.close();
 });
 
-Deno.test("addSummaryRows() validates selected and label columns", async () => {
+test("addSummaryRows() validates selected and label columns", async () => {
   const sdb = new SimpleDB();
 
   const nonNumeric = sdb.newTable("nonNumericSummary");

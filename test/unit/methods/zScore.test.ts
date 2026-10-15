@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should add a column with the zScore", async () => {
+test("should add a column with the zScore", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -28,7 +30,7 @@ Deno.test("should add a column with the zScore", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "Evangeline", age: 21, ageZ: -1.2869460097256922 },
     { name: "Amelia", age: 29, ageZ: -0.7149700054031624 },
     { name: "Marie", age: 30, ageZ: -0.6434730048628461 },
@@ -50,7 +52,7 @@ Deno.test("should add a column with the zScore", async () => {
   await sdb.close();
 });
 
-Deno.test("should add a column with the zScore rounded to 3 decimals", async () => {
+test("should add a column with the zScore rounded to 3 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -79,7 +81,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals", async () 
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "Evangeline", age: 21, ageSigma: -1.287 },
     { name: "Amelia", age: 29, ageSigma: -0.715 },
     { name: "Marie", age: 30, ageSigma: -0.643 },
@@ -101,7 +103,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals", async () 
   await sdb.close();
 });
 
-Deno.test("should add a column with the zScore rounded to 3 decimals and with a category", async () => {
+test("should add a column with the zScore rounded to 3 decimals and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -133,7 +135,7 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "Philip", age: 33, gender: "Man", ageSigma: -1.02 },
     { name: "Jeremy", age: 34, gender: "Man", ageSigma: -0.947 },
     { name: "Sonny", age: 57, gender: "Man", ageSigma: 0.728 },
@@ -155,10 +157,13 @@ Deno.test("should add a column with the zScore rounded to 3 decimals and with a 
   await sdb.close();
 });
 
-Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+test("should throw when the new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{ age: 33, name: "already here" }, { age: 21, name: "x" }]);
+  table.loadArray([
+    { age: 33, name: "already here" },
+    { age: 21, name: "x" },
+  ]);
 
   await assertRejects(
     () => table.zScore("age", "name").run(),

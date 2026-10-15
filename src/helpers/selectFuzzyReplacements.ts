@@ -77,14 +77,8 @@ export default function selectFuzzyReplacements(
     if (scoreMax === null) {
       scoreMax = new Map();
       for (const { left_value, right_value, score } of pairs) {
-        scoreMax.set(
-          left_value,
-          Math.max(scoreMax.get(left_value) ?? 0, score),
-        );
-        scoreMax.set(
-          right_value,
-          Math.max(scoreMax.get(right_value) ?? 0, score),
-        );
+        scoreMax.set(left_value, Math.max(scoreMax.get(left_value) ?? 0, score));
+        scoreMax.set(right_value, Math.max(scoreMax.get(right_value) ?? 0, score));
       }
     }
     return scoreMax;

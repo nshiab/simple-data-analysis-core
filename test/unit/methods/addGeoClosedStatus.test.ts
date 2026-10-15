@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should add a new column with TRUE when geometries are closed", async () => {
+test("should add a new column with TRUE when geometries are closed", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/earthquake.geojson");
@@ -10,7 +11,7 @@ Deno.test("should add a new column with TRUE when geometries are closed", async 
   table.selectColumns(["value", "closed"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { value: 1.5, closed: false },
     { value: 2, closed: false },
     { value: 2.5, closed: false },
@@ -42,7 +43,7 @@ Deno.test("should add a new column with TRUE when geometries are closed", async 
   await sdb.close();
 });
 
-Deno.test("should add a new column with TRUE when geometries in a specific column are closed", async () => {
+test("should add a new column with TRUE when geometries in a specific column are closed", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/earthquake.geojson");
@@ -51,7 +52,7 @@ Deno.test("should add a new column with TRUE when geometries in a specific colum
   table.selectColumns(["value", "closed"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { value: 1.5, closed: false },
     { value: 2, closed: false },
     { value: 2.5, closed: false },

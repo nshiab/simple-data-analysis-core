@@ -1,12 +1,13 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the top 3", async () => {
+test("should return the top 3", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
   const data = await table.getTop(3);
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -35,14 +36,14 @@ Deno.test("should return the top 3", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the top 3 with a condition", async () => {
+test("should return the top 3 with a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
   const data = await table.getTop(3, {
     conditions: `Job = 'Programmer'`,
   });
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Hunold, Alexander",
       "Hire date": "03-JAN-06",

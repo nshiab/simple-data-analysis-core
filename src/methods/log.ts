@@ -6,15 +6,16 @@ import formatNumber from "../helpers/formatNumber.ts";
 
 export default async function log(
   simpleTable: SimpleTable,
-  options: "all" | number | {
-    count?: number | "all";
-    types?: boolean;
-    conditions?: string;
-  } = {},
+  options:
+    | "all"
+    | number
+    | {
+        count?: number | "all";
+        types?: boolean;
+        conditions?: string;
+      } = {},
 ) {
-  if (
-    simpleTable.connection === undefined
-  ) {
+  if (simpleTable.connection === undefined) {
     await simpleTable.sdb.start();
     simpleTable.db = simpleTable.sdb.db;
     simpleTable.connection = simpleTable.sdb.connection;
@@ -39,48 +40,37 @@ export default async function log(
   } else {
     count = simpleTable.rowsToLog;
   }
-  const types = typeof options === "object"
-    ? options.types ?? simpleTable.typesToLog
-    : simpleTable.typesToLog;
-  const conditions = typeof options === "object"
-    ? options.conditions ?? undefined
-    : undefined;
+  const types =
+    typeof options === "object"
+      ? (options.types ?? simpleTable.typesToLog)
+      : simpleTable.typesToLog;
+  const conditions = typeof options === "object" ? (options.conditions ?? undefined) : undefined;
 
-  if (
-    simpleTable.connection === undefined ||
-    !(await simpleTable.sdb.hasTable(simpleTable.name))
-  ) {
+  if (simpleTable.connection === undefined || !(await simpleTable.sdb.hasTable(simpleTable.name))) {
     console.log(`\nTable ${simpleTable.name}: no data`);
   } else {
     console.log(`\nTable ${simpleTable.name}:`);
-    conditions && console.log(`Conditions: ${conditions}`);
-    const data = await getData(
-      simpleTable,
-      { limit: count, conditions },
-      "log()",
-    );
-    logData(
-      types ? await simpleTable.getTypes() : null,
-      data,
-      simpleTable.charsToLog,
-    );
+    if (conditions) {
+      console.log(`Conditions: ${conditions}`);
+    }
+    const data = await getData(simpleTable, { limit: count, conditions }, "log()");
+    logData(types ? await simpleTable.getTypes() : null, data, simpleTable.charsToLog);
     const rowCount = conditions
       ? parseInt(
-        (await simpleTable.sdb.customQuery(
-          `select count(*) as count from ${
-            quoteIdentifier(simpleTable.name)
-          } where ${conditions}`,
-          { returnData: true },
-        ) as { count: string }[])[0].count,
-      )
+          (
+            (await simpleTable.sdb.customQuery(
+              `select count(*) as count from ${quoteIdentifier(
+                simpleTable.name,
+              )} where ${conditions}`,
+              { returnData: true },
+            )) as { count: string }[]
+          )[0].count,
+        )
       : await simpleTable.getRowCount();
     const displayedRows = data.length;
-    const showing = displayedRows < rowCount
-      ? ` / showing ${formatNumber(displayedRows)} rows`
-      : "";
-    console.log(
-      `${formatNumber(rowCount)} rows in total${showing}`,
-    );
+    const showing =
+      displayedRows < rowCount ? ` / showing ${formatNumber(displayedRows)} rows` : "";
+    console.log(`${formatNumber(rowCount)} rows in total${showing}`);
   }
   return;
 }

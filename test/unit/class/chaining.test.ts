@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should chain sync builder methods, with a single await at the observation point", async () => {
+test("should chain sync builder methods, with a single await at the observation point", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("chained");
 
@@ -15,7 +16,7 @@ Deno.test("should chain sync builder methods, with a single await at the observa
     .addColumn("double", "number", `value * 2`)
     .getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "b", value: 2, double: 4 },
     { name: "c", value: 3, double: 6 },
   ]);
@@ -23,7 +24,7 @@ Deno.test("should chain sync builder methods, with a single await at the observa
   await sdb.close();
 });
 
-Deno.test("should chain async mutation methods with then", async () => {
+test("should chain async mutation methods with then", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("chainedAsync");
 
@@ -38,7 +39,7 @@ Deno.test("should chain async mutation methods with then", async () => {
     .renameTable("chainedAsyncRenamed")
     .then((t) => t.getData());
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "a", amount: 1 },
     { name: "b", amount: 2 },
     { name: "c", amount: 3 },
@@ -47,12 +48,12 @@ Deno.test("should chain async mutation methods with then", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the same table instance from mutation methods", async () => {
+test("should return the same table instance from mutation methods", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sameInstance");
   const returned = table.loadArray([{ key1: 1 }]);
-  assertEquals(returned === table, true);
+  expect(returned === table).toStrictEqual(true);
   const returnedFromRun = await table.run();
-  assertEquals(returnedFromRun === table, true);
+  expect(returnedFromRun === table).toStrictEqual(true);
   await sdb.close();
 });

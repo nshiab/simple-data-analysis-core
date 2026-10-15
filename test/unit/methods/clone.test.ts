@@ -1,48 +1,49 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should clone a table", async () => {
+test("should clone a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone();
 
-  assertEquals(await table.getData(), await clone.getData());
+  expect(await table.getData()).toStrictEqual(await clone.getData());
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone and log a table", async () => {
+test("should clone and log a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone();
   // await clone.log();
 
-  assertEquals(await table.getData(), await clone.getData());
+  expect(await table.getData()).toStrictEqual(await clone.getData());
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table and give it a different name", async () => {
+test("should clone a table and give it a different name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone();
 
-  assertEquals(table.name !== clone.name, true);
+  expect(table.name !== clone.name).toStrictEqual(true);
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with a specific name", async () => {
+test("should clone a table with a specific name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone({ name: "clone" });
 
-  assertEquals(await table.getData(), await clone.getData());
+  expect(await table.getData()).toStrictEqual(await clone.getData());
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should find the table name in the DB", async () => {
+test("should find the table name in the DB", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -50,14 +51,11 @@ Deno.test("should find the table name in the DB", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? -1 : 1)),
-    ["data", "clone"],
-  );
+  expect(tables.sort((a, b) => (a > b ? -1 : 1))).toStrictEqual(["data", "clone"]);
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should keep the original table intact", async () => {
+test("should keep the original table intact", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -68,11 +66,11 @@ Deno.test("should keep the original table intact", async () => {
   originalTable.loadData("test/data/files/employees.csv");
   const originalData = await originalTable.getData();
 
-  assertEquals(await table.getData(), originalData);
+  expect(await table.getData()).toStrictEqual(originalData);
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with a condition", async () => {
+test("should clone a table with a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -84,57 +82,54 @@ Deno.test("should clone a table with a condition", async () => {
   originalTable.loadData("test/data/files/employees.csv");
   const originalData = await originalTable.getData();
 
-  assertEquals(
-    await clone.getData(),
-    originalData.filter((d) => d.Job === "Manager"),
-  );
+  expect(await clone.getData()).toStrictEqual(originalData.filter((d) => d.Job === "Manager"));
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with a specific name with spaces", async () => {
+test("should clone a table with a specific name with spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone({ name: "clone table" });
 
-  assertEquals(await table.getData(), await clone.getData());
+  expect(await table.getData()).toStrictEqual(await clone.getData());
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with a specific number of rows", async () => {
+test("should clone a table with a specific number of rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone({ limit: 2 });
 
   const data = await table.getData();
-  assertEquals(await clone.getData(), data.slice(0, 2));
+  expect(await clone.getData()).toStrictEqual(data.slice(0, 2));
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with an offset", async () => {
+test("should clone a table with an offset", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone({ offset: 2 });
 
   const data = await table.getData();
-  assertEquals(await clone.getData(), data.slice(2));
+  expect(await clone.getData()).toStrictEqual(data.slice(2));
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with a specific number of rows and an offset", async () => {
+test("should clone a table with a specific number of rows and an offset", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone({ limit: 2, offset: 2 });
 
   const data = await table.getData();
-  assertEquals(await clone.getData(), data.slice(2, 4));
+  expect(await clone.getData()).toStrictEqual(data.slice(2, 4));
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with conditions, limit and offset", async () => {
+test("should clone a table with conditions, limit and offset", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -145,40 +140,39 @@ Deno.test("should clone a table with conditions, limit and offset", async () => 
   });
 
   const data = await table.getData();
-  assertEquals(
-    await clone.getData(),
+  expect(await clone.getData()).toStrictEqual(
     data.filter((d) => d.Job === "Developer").slice(1, 3),
   );
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with a specific name with spaces and '", async () => {
+test("should clone a table with a specific name with spaces and '", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone({ name: "clone 'table" });
 
-  assertEquals(await table.getData(), await clone.getData());
+  expect(await table.getData()).toStrictEqual(await clone.getData());
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with string parameter directly", async () => {
+test("should clone a table with string parameter directly", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const clone = table.clone("my_cloned_table");
 
-  assertEquals(await table.getData(), await clone.getData());
-  assertEquals(clone.name, "my_cloned_table");
+  expect(await table.getData()).toStrictEqual(await clone.getData());
+  expect(clone.name).toStrictEqual("my_cloned_table");
 
   const tables = await sdb.getTableNames();
-  assertEquals(tables.includes("my_cloned_table"), true);
+  expect(tables.includes("my_cloned_table")).toStrictEqual(true);
 
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("should clone a table with specific columns", async () => {
+test("should clone a table with specific columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -194,7 +188,7 @@ Deno.test("should clone a table with specific columns", async () => {
   const originalData = await table.getData();
 
   // Check that the clone only has the selected columns
-  assertEquals(cloneColumns.sort(), selectedColumns.sort());
+  expect(cloneColumns.sort()).toStrictEqual(selectedColumns.sort());
 
   // Check that the data matches for the selected columns
   const expectedData = originalData.map((row) => {
@@ -205,13 +199,13 @@ Deno.test("should clone a table with specific columns", async () => {
     return filteredRow;
   });
 
-  assertEquals(cloneData, expectedData);
+  expect(cloneData).toStrictEqual(expectedData);
 
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("should clone a table with specific columns and conditions", async () => {
+test("should clone a table with specific columns and conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -233,24 +227,22 @@ Deno.test("should clone a table with specific columns and conditions", async () 
       Job: row.Job,
     }));
 
-  assertEquals(cloneData, expectedData);
+  expect(cloneData).toStrictEqual(expectedData);
 
   await sdb.run();
   await sdb.close();
 });
-Deno.test("should clone a table with geo data", async () => {
+test("should clone a table with geo data", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb
+  const table = sdb
     .newTable()
-    .loadGeoData(
-      "test/geodata/files/CanadianProvincesAndTerritories.json",
-    );
+    .loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const cloned = table.clone();
 
-  assertEquals(await table.getTypes(), await cloned.getTypes());
-  assertEquals(await table.getRowCount(), await cloned.getRowCount());
-  assertEquals(await table.getColumnCount(), await cloned.getColumnCount());
+  expect(await table.getTypes()).toStrictEqual(await cloned.getTypes());
+  expect(await table.getRowCount()).toStrictEqual(await cloned.getRowCount());
+  expect(await table.getColumnCount()).toStrictEqual(await cloned.getColumnCount());
 
   await sdb.run();
   await sdb.close();

@@ -15,12 +15,12 @@ export default async function getMedian(
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(MEDIAN(${qualifiedColumn}), ${options.decimals}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`
-      : `SELECT MEDIAN(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${
-        quoteIdentifier(SimpleTable.name)
-      }`,
+      ? `SELECT ROUND(MEDIAN(${qualifiedColumn}), ${options.decimals}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT MEDIAN(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${quoteIdentifier(
+          SimpleTable.name,
+        )}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

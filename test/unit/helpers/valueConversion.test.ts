@@ -1,4 +1,6 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 // Pins the conversion of DuckDB values to JS values on the read path
@@ -82,18 +84,16 @@ const expectedAllTypesRow = {
   nullBool: null,
 };
 
-Deno.test("should convert all DuckDB types read from a table", async () => {
+test("should convert all DuckDB types read from a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("allTypes");
-  await sdb.customQuery(
-    `CREATE OR REPLACE TABLE "allTypes" AS ${allTypesQuery}`,
-  );
+  await sdb.customQuery(`CREATE OR REPLACE TABLE "allTypes" AS ${allTypesQuery}`);
   const rows = await table.getData();
-  assertEquals(rows, [expectedAllTypesRow]);
+  expect(rows).toStrictEqual([expectedAllTypesRow]);
   await sdb.close();
 });
 
-Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => {
+test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => {
   const sdb = new SimpleDB();
   await sdb.customQuery(`SET TimeZone='UTC'`);
   const table = sdb.newTable("tstz");
@@ -101,11 +101,11 @@ Deno.test("should keep TIMESTAMP WITH TIME ZONE values as strings", async () => 
     `CREATE OR REPLACE TABLE "tstz" AS SELECT TIMESTAMPTZ '2020-01-15 14:30:45' AS tstz`,
   );
   const rows = await table.getData();
-  assertEquals(rows, [{ tstz: "2020-01-15 14:30:45+00" }]);
+  expect(rows).toStrictEqual([{ tstz: "2020-01-15 14:30:45+00" }]);
   await sdb.close();
 });
 
-Deno.test("should use UTC for TIMESTAMPTZ values", async () => {
+test("should use UTC for TIMESTAMPTZ values", async () => {
   const sdb = new SimpleDB();
   const rows = await sdb.customQuery(
     `SELECT
@@ -114,27 +114,31 @@ Deno.test("should use UTC for TIMESTAMPTZ values", async () => {
       [TIMESTAMPTZ '2024-04-07 13:14:15.123456+00'] AS timestamps`,
     { returnData: true },
   );
-  assertEquals(rows, [{
-    timezone: "UTC",
-    timestamp: "2024-04-07 13:14:15.123456+00",
-    timestamps: ["2024-04-07 13:14:15.123456+00"],
-  }]);
+  expect(rows).toStrictEqual([
+    {
+      timezone: "UTC",
+      timestamp: "2024-04-07 13:14:15.123456+00",
+      timestamps: ["2024-04-07 13:14:15.123456+00"],
+    },
+  ]);
 
   const stringTable = sdb.newTable();
   stringTable.loadArray([{ timestamp: "2024-04-07 13:14:15.123456" }]);
   stringTable.convert({ timestamp: "datetimeTz" });
-  assertEquals(await stringTable.getData(), [{
-    timestamp: "2024-04-07 13:14:15.123456+00",
-  }]);
+  expect(await stringTable.getData()).toStrictEqual([
+    {
+      timestamp: "2024-04-07 13:14:15.123456+00",
+    },
+  ]);
 
   const date = new Date("2024-04-07T13:14:15.123Z");
   const dateTable = sdb.newTable();
   dateTable.loadArray([{ timestamp: date }]);
-  assertEquals(await dateTable.getData(), [{ timestamp: date }]);
+  expect(await dateTable.getData()).toStrictEqual([{ timestamp: date }]);
   await sdb.close();
 });
 
-Deno.test("should convert dates and timestamps as UTC", async () => {
+test("should convert dates and timestamps as UTC", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("dates");
   await sdb.customQuery(
@@ -145,32 +149,24 @@ Deno.test("should convert dates and timestamps as UTC", async () => {
       TIMESTAMP '1969-12-31 23:59:59.999999' AS tsBeforeEpoch`,
   );
   const rows = await table.getData();
-  assertEquals(rows[0].dt, new Date(Date.UTC(2020, 0, 15)));
-  assertEquals(rows[0].dtBeforeEpoch, new Date(Date.UTC(1969, 11, 31)));
-  assertEquals(
-    rows[0].ts,
-    new Date(Date.UTC(2020, 0, 15, 14, 30, 45)),
-  );
+  expect(rows[0].dt).toStrictEqual(new Date(Date.UTC(2020, 0, 15)));
+  expect(rows[0].dtBeforeEpoch).toStrictEqual(new Date(Date.UTC(1969, 11, 31)));
+  expect(rows[0].ts).toStrictEqual(new Date(Date.UTC(2020, 0, 15, 14, 30, 45)));
   // Sub-millisecond precision is truncated toward the past
-  assertEquals(
-    rows[0].tsBeforeEpoch,
-    new Date(Date.UTC(1969, 11, 31, 23, 59, 59, 999)),
-  );
+  expect(rows[0].tsBeforeEpoch).toStrictEqual(new Date(Date.UTC(1969, 11, 31, 23, 59, 59, 999)));
   await sdb.close();
 });
 
-Deno.test("should return an empty array for an empty result", async () => {
+test("should return an empty array for an empty result", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("empty");
-  await sdb.customQuery(
-    `CREATE OR REPLACE TABLE "empty" AS SELECT 1 AS a WHERE false`,
-  );
+  await sdb.customQuery(`CREATE OR REPLACE TABLE "empty" AS SELECT 1 AS a WHERE false`);
   const rows = await table.getData();
-  assertEquals(rows, []);
+  expect(rows).toStrictEqual([]);
   await sdb.close();
 });
 
-Deno.test("should convert computed values from a SimpleDB custom query", async () => {
+test("should convert computed values from a SimpleDB custom query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("computedSource");
   table.loadArray([
@@ -189,7 +185,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
     `SELECT count(*) AS cnt, max(dt) AS maxDate, sum(value)::BIGINT AS sumValue FROM "computedSource2"`,
     { returnData: true },
   );
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       cnt: 3,
       maxDate: new Date("2020-01-15T00:00:00.000Z"),
@@ -199,7 +195,7 @@ Deno.test("should convert computed values from a SimpleDB custom query", async (
   await sdb.close();
 });
 
-Deno.test("should convert computed columns not present in any table schema", async () => {
+test("should convert computed columns not present in any table schema", async () => {
   const sdb = new SimpleDB({ expressionSyntax: "sql" });
   const table = sdb.newTable("computedCols");
   table.loadArray([
@@ -210,27 +206,24 @@ Deno.test("should convert computed columns not present in any table schema", asy
     `SELECT category || '!' AS exclaimed, count(*)::BIGINT AS cnt FROM "computedCols" GROUP BY category ORDER BY category`,
     { returnData: true, table: "computedCols" },
   );
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { exclaimed: "a!", cnt: 1 },
     { exclaimed: "b!", cnt: 1 },
   ]);
   await sdb.close();
 });
 
-Deno.test("should keep duplicate column names in results by suffixing them", async () => {
+test("should keep duplicate column names in results by suffixing them", async () => {
   const sdb = new SimpleDB();
   // The old JSON-based read path silently kept only one of the duplicated
   // columns. The typed read path deduplicates the names instead.
-  const data = await sdb.customQuery(
-    `SELECT 1 AS a, 2 AS a, 3 AS b`,
-    { returnData: true },
-  );
-  assertEquals(data, [{ a: 1, "a:1": 2, b: 3 }]);
+  const data = await sdb.customQuery(`SELECT 1 AS a, 2 AS a, 3 AS b`, { returnData: true });
+  expect(data).toStrictEqual([{ a: 1, "a:1": 2, b: 3 }]);
   await sdb.close();
 });
 
 for (const type of ["BIGINT", "UBIGINT", "HUGEINT", "UHUGEINT"]) {
-  Deno.test(`${type}: safe numbers, unsafe errors, exact nested strings`, async () => {
+  test(`${type}: safe numbers, unsafe errors, exact nested strings`, async () => {
     const sdb = new SimpleDB();
     try {
       const minimum = type.startsWith("U") ? 0 : Number.MIN_SAFE_INTEGER;
@@ -240,41 +233,29 @@ for (const type of ["BIGINT", "UBIGINT", "HUGEINT", "UHUGEINT"]) {
         NULL::${type} AS missing,
         [42::${type}, 9007199254740993::${type}, NULL] AS items,
         {'id': 9007199254740993::${type}, 'count': 2::INTEGER} AS nested`);
-      assertEquals(await table.getData(), [{
-        minimum,
-        maximum: Number.MAX_SAFE_INTEGER,
-        missing: null,
-        items: ["42", "9007199254740993", null],
-        nested: { id: "9007199254740993", count: 2 },
-      }]);
+      expect(await table.getData()).toStrictEqual([
+        {
+          minimum,
+          maximum: Number.MAX_SAFE_INTEGER,
+          missing: null,
+          items: ["42", "9007199254740993", null],
+          nested: { id: "9007199254740993", count: 2 },
+        },
+      ]);
       const unsafe = type.startsWith("U")
         ? ["9007199254740992", "9007199254740993"]
-        : [
-          "9007199254740992",
-          "9007199254740993",
-          "-9007199254740992",
-          "-9007199254740993",
-        ];
+        : ["9007199254740992", "9007199254740993", "-9007199254740992", "-9007199254740993"];
       for (const value of unsafe) {
-        await sdb.customQuery(
-          `CREATE OR REPLACE TABLE integers AS SELECT ${value}::${type} AS id`,
-        );
-        for (
-          const read of [
-            () => table.getData(),
-            () => table.log(),
-            () => table.logBottom(),
-          ]
-        ) {
+        await sdb.customQuery(`CREATE OR REPLACE TABLE integers AS SELECT ${value}::${type} AS id`);
+        for (const read of [() => table.getData(), () => table.log(), () => table.logBottom()]) {
           await assertRejects(read, Error, 'Column "id" of table "integers"');
         }
         await assertRejects(() => table.getData(), Error, "safe integer range");
-        assertEquals(
+        expect(
           await sdb.customQuery("SELECT id::VARCHAR AS id FROM integers", {
             returnData: true,
           }),
-          [{ id: value }],
-        );
+        ).toStrictEqual([{ id: value }]);
       }
     } finally {
       await sdb.close();

@@ -3,10 +3,7 @@ import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function unnestGeo(
-  simpleTable: SimpleTable,
-  column?: string,
-) {
+export default function unnestGeo(simpleTable: SimpleTable, column?: string) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "unnestGeo()",
@@ -14,14 +11,11 @@ export default function unnestGeo(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const col = column ??
-        findGeoColumnFromSchema(types, "unnestGeo()", simpleTable.name);
+      const col = column ?? findGeoColumnFromSchema(types, "unnestGeo()", simpleTable.name);
       // The recursive UNNEST adds a path column, removed by the outer SELECT.
-      return `SELECT * EXCLUDE(path) FROM (SELECT * EXCLUDE(${
-        quoteIdentifier(col)
-      }), UNNEST(ST_Dump(${
-        quoteIdentifier(col)
-      }), recursive := TRUE) FROM ${input})`;
+      return `SELECT * EXCLUDE(path) FROM (SELECT * EXCLUDE(${quoteIdentifier(
+        col,
+      )}), UNNEST(ST_Dump(${quoteIdentifier(col)}), recursive := TRUE) FROM ${input})`;
     },
   });
 }

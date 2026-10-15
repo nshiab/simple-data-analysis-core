@@ -1,18 +1,19 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should unnest geometries", async () => {
+test("should unnest geometries", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/earthquake.geojson");
   table.unnestGeo();
 
   const types = await table.getTypes();
-  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+  expect(types.geom).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   const data = await table.getGeoData();
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -1135,7 +1136,7 @@ Deno.test("should unnest geometries", async () => {
 
   await sdb.close();
 });
-Deno.test("should unnest geometries from a specific column", async () => {
+test("should unnest geometries from a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/earthquake.geojson");
@@ -1143,7 +1144,7 @@ Deno.test("should unnest geometries from a specific column", async () => {
 
   const data = await table.getGeoData();
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {

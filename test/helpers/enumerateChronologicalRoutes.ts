@@ -55,30 +55,24 @@ export function enumerateChronologicalRoutes<Node, EdgeId>(
       const event = events[index];
       // This oracle skips invalid events; public methods reject the whole input.
       if (!isValidEvent(event) || usedEvents.has(index)) continue;
-      const connects = direction === "outgoing"
-        ? Object.is(event.source, node)
-        : Object.is(event.target, node);
+      const connects =
+        direction === "outgoing" ? Object.is(event.source, node) : Object.is(event.target, node);
       if (!connects) continue;
       if (
         previousIndex !== undefined &&
-        !canFollow(
-          events[previousIndex],
-          event,
-          direction,
-          minGap,
-          strictOrdering,
-        )
-      ) continue;
+        !canFollow(events[previousIndex], event, direction, minGap, strictOrdering)
+      )
+        continue;
 
       const next = direction === "outgoing" ? event.target : event.source;
       const returns = options.returnToStart === true && Object.is(next, start);
       if (simpleNodes && visitedNodes.has(next) && !returns) continue;
-      const step = direction === "outgoing"
-        ? { event, source: event.source, target: event.target }
-        : { event, source: event.target, target: event.source };
+      const step =
+        direction === "outgoing"
+          ? { event, source: event.source, target: event.target }
+          : { event, source: event.target, target: event.source };
       const nextSteps = [...steps, step];
-      const reachesEnd = options.end !== undefined &&
-        Object.is(next, options.end);
+      const reachesEnd = options.end !== undefined && Object.is(next, options.end);
       if (returns || reachesEnd) {
         routes.push(nextSteps);
         continue;
@@ -106,8 +100,7 @@ function isValidEvent<Node, EdgeId>(
   endTime: bigint;
   startTime: bigint;
 } {
-  return event.startTime !== null && event.endTime !== null &&
-    event.endTime >= event.startTime;
+  return event.startTime !== null && event.endTime !== null && event.endTime >= event.startTime;
 }
 
 function canFollow<Node, EdgeId>(

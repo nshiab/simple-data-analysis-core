@@ -17,9 +17,9 @@ export default function coveredBy(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "coveredBy()");
-      return `SELECT *, CAST(ST_Covers(${quoteIdentifier(containerColumn)}, ${
-        quoteIdentifier(column)
-      }) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
+      return `SELECT *, CAST(ST_Covers(${quoteIdentifier(containerColumn)}, ${quoteIdentifier(
+        column,
+      )}) AS BOOLEAN) AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

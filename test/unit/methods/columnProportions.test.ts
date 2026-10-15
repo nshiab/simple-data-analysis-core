@@ -1,14 +1,16 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the vertical proportions in a new column", async () => {
+test("should return the vertical proportions in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
   table.columnProportions("key2", "key2Perc");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: "Rubarbe",
       key2: 1,
@@ -49,7 +51,7 @@ Deno.test("should return the vertical proportions in a new column", async () => 
   await sdb.close();
 });
 
-Deno.test("should return the vertical proportions in a new column and a specific number of decimals", async () => {
+test("should return the vertical proportions in a new column and a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -58,7 +60,7 @@ Deno.test("should return the vertical proportions in a new column and a specific
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, key2Prop: 0.0278 },
     { key1: "Fraise", key2: 11, key3: 2.345, key2Prop: 0.3056 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, key2Prop: 0.0556 },
@@ -79,7 +81,7 @@ Deno.test("should return the vertical proportions in a new column and a specific
   await sdb.close();
 });
 
-Deno.test("should scale vertical proportions to a custom base", async () => {
+test("should scale vertical proportions to a custom base", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -94,7 +96,7 @@ Deno.test("should scale vertical proportions to a custom base", async () => {
     decimals: 1,
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { group: "A", value: 1, percentage: 25 },
     { group: "A", value: 3, percentage: 75 },
     { group: "B", value: 2, percentage: 20 },
@@ -103,7 +105,7 @@ Deno.test("should scale vertical proportions to a custom base", async () => {
   await sdb.close();
 });
 
-Deno.test("should reject an invalid vertical proportion base", async () => {
+test("should reject an invalid vertical proportion base", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -116,7 +118,7 @@ Deno.test("should reject an invalid vertical proportion base", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the vertical proportions in a new column with a category", async () => {
+test("should return the vertical proportions in a new column with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -129,7 +131,7 @@ Deno.test("should return the vertical proportions in a new column with a categor
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: "Banane",
       key2: null,
@@ -170,7 +172,7 @@ Deno.test("should return the vertical proportions in a new column with a categor
   await sdb.close();
 });
 
-Deno.test("should return the vertical proportions in a new column by multiple columns", async () => {
+test("should return the vertical proportions in a new column by multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -184,7 +186,7 @@ Deno.test("should return the vertical proportions in a new column by multiple co
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: "Banane",
       key2: null,
@@ -205,7 +207,7 @@ Deno.test("should return the vertical proportions in a new column by multiple co
   await sdb.close();
 });
 
-Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+test("should throw when the new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([

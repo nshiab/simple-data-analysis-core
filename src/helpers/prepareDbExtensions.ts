@@ -11,16 +11,12 @@ export default async function prepareDbExtensions(
   const definitions = Object.values(indexes).flat();
   const physicalIndexes = await queryDbFile(
     sdb,
-    `SELECT sql FROM duckdb_indexes() WHERE database_name = ${
-      parseValue(database)
-    };`,
+    `SELECT sql FROM duckdb_indexes() WHERE database_name = ${parseValue(database)};`,
     { returnData: true },
   );
   if (
     definitions.some((index) => index.kind === "vss") ||
-    physicalIndexes!.some((index) =>
-      /\bUSING\s+HNSW\b/i.test(String(index.sql))
-    )
+    physicalIndexes!.some((index) => /\bUSING\s+HNSW\b/i.test(String(index.sql)))
   ) {
     await queryDbFile(
       sdb,
@@ -29,30 +25,23 @@ export default async function prepareDbExtensions(
   }
   const ftsSchemas = await queryDbFile(
     sdb,
-    `SELECT schema_name FROM duckdb_schemas() WHERE database_name = ${
-      parseValue(database)
-    } AND starts_with(schema_name, 'fts_');`,
+    `SELECT schema_name FROM duckdb_schemas() WHERE database_name = ${parseValue(
+      database,
+    )} AND starts_with(schema_name, 'fts_');`,
     { returnData: true },
   );
-  if (
-    definitions.some((index) => index.kind === "fts") || ftsSchemas!.length > 0
-  ) {
+  if (definitions.some((index) => index.kind === "fts") || ftsSchemas!.length > 0) {
     await queryDbFile(sdb, "INSTALL fts; LOAD fts;");
   }
   if (!sdb.spatialLoaded) {
     const geometryColumns = await queryDbFile(
       sdb,
       `SELECT column_name FROM duckdb_columns()
-       WHERE database_name = ${
-        parseValue(database)
-      } AND data_type ILIKE '%GEOMETRY%' LIMIT 1;`,
+       WHERE database_name = ${parseValue(database)} AND data_type ILIKE '%GEOMETRY%' LIMIT 1;`,
       { returnData: true },
     );
     if (geometryColumns!.length > 0) {
-      await queryDbFile(
-        sdb,
-        "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;",
-      );
+      await queryDbFile(sdb, "INSTALL spatial; LOAD spatial; SET geometry_always_xy = true;");
       sdb.spatialLoaded = true;
     }
   }

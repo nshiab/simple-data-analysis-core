@@ -1,75 +1,79 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-  assertRejects,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertAlmostEquals, assertRejects, assertThrows } from "../../helpers/assertions.ts";
+import { mkdtemp as nodeMkdtemp, rm as nodeRm } from "node:fs/promises";
+import { join as nodeJoin } from "node:path";
+import { tmpdir as nodeTmpdir } from "node:os";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-function assertVectorAlmostEquals(
-  actual: unknown,
-  expected: number[],
-  tolerance = 1e-12,
-): void {
+function assertVectorAlmostEquals(actual: unknown, expected: number[], tolerance = 1e-12): void {
   assert(Array.isArray(actual));
-  assertEquals(actual.length, expected.length);
+  expect(actual.length).toStrictEqual(expected.length);
   actual.forEach((value, index) => {
-    assertEquals(typeof value, "number");
+    assert(typeof value === "number");
     assertAlmostEquals(value, expected[index], tolerance);
   });
 }
 
 async function scratchRelations(sdb: SimpleDB): Promise<string[]> {
-  return (await sdb.connection!.runAndReadAll(
-    `SELECT table_name FROM duckdb_tables()
+  return (
+    await sdb.connection!.runAndReadAll(
+      `SELECT table_name FROM duckdb_tables()
      WHERE table_name LIKE '__sda_features_%'
         OR table_name LIKE '__sda_normalize_vector_%'
      ORDER BY table_name`,
-  )).getRowsJS().map((row) => String(row[0]));
+    )
+  )
+    .getRowsJS()
+    .map((row) => {
+      assert(typeof row[0] === "string");
+      return row[0];
+    });
 }
 
-Deno.test("normalizeVector scales dimensions across rows and preserves ARRAY/LIST sources", async () => {
+test("normalizeVector scales dimensions across rows and preserves ARRAY/LIST sources", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("source");
-    for (
-      const [expression, expectedType] of [
-        ["features::INTEGER[2]", "INTEGER[2]"],
-        ["features::INTEGER[]", "INTEGER[]"],
-      ] as const
-    ) {
+    for (const [expression, expectedType] of [
+      ["features::INTEGER[2]", "INTEGER[2]"],
+      ["features::INTEGER[]", "INTEGER[]"],
+    ] as const) {
       await sdb.customQuery(`CREATE OR REPLACE TABLE source AS
         SELECT id, label, ${expression} AS features FROM (VALUES
           (1, 'duplicate', [10,1000]),
           (2, 'middle', [20,1000]),
           (3, 'duplicate', [30,3000])
         ) rows(id,label,features)`);
-      const before = (await sdb.connection!.runAndReadAll(
-        "SELECT id, label, features::VARCHAR FROM source ORDER BY id",
-      )).getRowsJS();
+      const before = (
+        await sdb.connection!.runAndReadAll(
+          "SELECT id, label, features::VARCHAR FROM source ORDER BY id",
+        )
+      ).getRowsJS();
 
       await table.normalizeVector("features", "scaled").run();
       const data = await table.getData();
       assertVectorAlmostEquals(data[0].scaled, [0, 0]);
       assertVectorAlmostEquals(data[1].scaled, [0.5, 0]);
       assertVectorAlmostEquals(data[2].scaled, [1, 1]);
-      assertEquals((await table.getTypes()).features, expectedType);
-      assertEquals((await table.getTypes()).scaled, "DOUBLE[2]");
-      assertEquals(
-        (await sdb.connection!.runAndReadAll(
-          "SELECT id, label, features::VARCHAR FROM source ORDER BY id",
-        )).getRowsJS(),
-        before,
-      );
-      assertEquals(await scratchRelations(sdb), []);
+      expect((await table.getTypes()).features).toStrictEqual(expectedType);
+      expect((await table.getTypes()).scaled).toStrictEqual("DOUBLE[2]");
+      expect(
+        (
+          await sdb.connection!.runAndReadAll(
+            "SELECT id, label, features::VARCHAR FROM source ORDER BY id",
+          )
+        ).getRowsJS(),
+      ).toStrictEqual(before);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector handles negative, one-dimensional, duplicate, and extreme finite values", async () => {
+test("normalizeVector handles negative, one-dimensional, duplicate, and extreme finite values", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -90,16 +94,13 @@ Deno.test("normalizeVector handles negative, one-dimensional, duplicate, and ext
       SELECT i AS id, [i * 10 - 20]::INTEGER[] AS features
       FROM range(3) rows(i)`);
     await table.normalizeVector("features", "scaled").run();
-    assertEquals(
-      (await table.getData()).map((row) => row.scaled),
-      [[0], [0.5], [1]],
-    );
+    expect((await table.getData()).map((row) => row.scaled)).toStrictEqual([[0], [0.5], [1]]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector preserves typed payloads and intentionally replaces the source type", async () => {
+test("normalizeVector preserves typed payloads and intentionally replaces the source type", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -112,35 +113,38 @@ Deno.test("normalizeVector preserves typed payloads and intentionally replaces t
     ) rows(id,precise,payload,created,info,"Feature")`);
     const table = sdb.newTable("source");
     const typesBefore = await table.getTypes();
-    const payloadBefore = (await sdb.connection!.runAndReadAll(
-      `SELECT id::VARCHAR, precise::VARCHAR, payload::VARCHAR,
+    const payloadBefore = (
+      await sdb.connection!.runAndReadAll(
+        `SELECT id::VARCHAR, precise::VARCHAR, payload::VARCHAR,
         created::VARCHAR, info::VARCHAR FROM source ORDER BY id`,
-    )).getRowsJS();
+      )
+    ).getRowsJS();
 
     await table.normalizeVector("feature", "FEATURE").run();
     const typesAfter = await table.getTypes();
-    assertEquals(Object.keys(typesAfter), Object.keys(typesBefore));
-    assertEquals(typesAfter.Feature, "DOUBLE[2]");
+    expect(Object.keys(typesAfter)).toStrictEqual(Object.keys(typesBefore));
+    expect(typesAfter.Feature).toStrictEqual("DOUBLE[2]");
     for (const [name, type] of Object.entries(typesBefore)) {
-      if (name !== "Feature") assertEquals(typesAfter[name], type);
+      if (name !== "Feature") expect(typesAfter[name]).toStrictEqual(type);
     }
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        `SELECT id::VARCHAR, precise::VARCHAR, payload::VARCHAR,
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          `SELECT id::VARCHAR, precise::VARCHAR, payload::VARCHAR,
           created::VARCHAR, info::VARCHAR FROM source ORDER BY id`,
-      )).getRowsJS(),
-      payloadBefore,
-    );
-    assertEquals((await table.getData()).map((row) => row.Feature), [[0, 0], [
-      1,
-      1,
-    ]]);
+        )
+      ).getRowsJS(),
+    ).toStrictEqual(payloadBefore);
+    expect((await table.getData()).map((row) => row.Feature)).toStrictEqual([
+      [0, 0],
+      [1, 1],
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector scales subnormal and asymmetric extreme ranges", async () => {
+test("normalizeVector scales subnormal and asymmetric extreme ranges", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -154,22 +158,15 @@ Deno.test("normalizeVector scales subnormal and asymmetric extreme ranges", asyn
     await table.normalizeVector("features", "scaled").run();
     const data = await table.getData();
     assertVectorAlmostEquals(data[0].scaled, [0, 0, 0, 0, 0, 0]);
-    assertVectorAlmostEquals(data[1].scaled, [
-      0.5,
-      0.5,
-      1 / 3,
-      2 / 3,
-      1 / 3,
-      0.5,
-    ]);
+    assertVectorAlmostEquals(data[1].scaled, [0.5, 0.5, 1 / 3, 2 / 3, 1 / 3, 0.5]);
     assertVectorAlmostEquals(data[2].scaled, [1, 1, 1, 1, 1, 1]);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector rejects destination collisions before preparing vector values", async () => {
+test("normalizeVector rejects destination collisions before preparing vector values", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT
@@ -181,14 +178,14 @@ Deno.test("normalizeVector rejects destination collisions before preparing vecto
       Error,
       "column already exists",
     );
-    assertEquals(await table.getData(), before);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(before);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector follows ASCII identifier matching while keeping Unicode names distinct", async () => {
+test("normalizeVector follows ASCII identifier matching while keeping Unicode names distinct", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -197,20 +194,23 @@ Deno.test("normalizeVector follows ASCII identifier matching while keeping Unico
     ) rows("Ä","ä","É")`);
     const table = sdb.newTable("source");
     await table.normalizeVector("ä", "é").run();
-    assertEquals(Object.keys(await table.getTypes()), ["Ä", "ä", "É", "é"]);
-    assertEquals((await table.getData()).map((row) => row.é), [[0, 0], [1, 1]]);
+    expect(Object.keys(await table.getTypes())).toStrictEqual(["Ä", "ä", "É", "é"]);
+    expect((await table.getData()).map((row) => row.é)).toStrictEqual([
+      [0, 0],
+      [1, 1],
+    ]);
     await assertRejects(
       () => table.normalizeVector("Ä", "ä").run(),
       Error,
       "column already exists",
     );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector composes with queued operations and snapshots arguments", async () => {
+test("normalizeVector composes with queued operations and snapshots arguments", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("source");
@@ -221,24 +221,25 @@ Deno.test("normalizeVector composes with queued operations and snapshots argumen
     ) rows(id,features,label)`);
     let column = "FEATURES";
     let destination = "scaled";
-    table.filter("label = 'keep'")
+    table
+      .filter("label = 'keep'")
       .normalizeVector(column, destination)
       .selectColumns(["id", "scaled"]);
     column = "missing";
     destination = "changed";
 
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { id: 1, scaled: [0, 0] },
       { id: 2, scaled: [1, 1] },
     ]);
-    assertEquals(column, "missing");
-    assertEquals(destination, "changed");
+    expect(column).toStrictEqual("missing");
+    expect(destination).toStrictEqual("changed");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector agrees with scalar min-max preparation", async () => {
+test("normalizeVector agrees with scalar min-max preparation", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -251,11 +252,7 @@ Deno.test("normalizeVector agrees with scalar min-max preparation", async () => 
       .rowToVector(["a", "b"], "features", { type: "double" })
       .normalize("a", "normalizedA")
       .normalize("b", "normalizedB")
-      .rowToVector(
-        ["normalizedA", "normalizedB"],
-        "reference",
-        { type: "double" },
-      )
+      .rowToVector(["normalizedA", "normalizedB"], "reference", { type: "double" })
       .normalizeVector("features", "scaled")
       .normalizeVector("features", "explicit", {
         normalization: "dimensionMinMax",
@@ -265,24 +262,21 @@ Deno.test("normalizeVector agrees with scalar min-max preparation", async () => 
     for (const row of await table.getData()) {
       assert(Array.isArray(row.reference));
       assertVectorAlmostEquals(row.scaled, row.reference as number[]);
-      assertEquals(row.explicit, row.scaled);
+      expect(row.explicit).toStrictEqual(row.scaled);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector rejects invalid inputs and constant dimensions without changing the source", async () => {
+test("normalizeVector rejects invalid inputs and constant dimensions without changing the source", async () => {
   const cases = [
     ["NULL::DOUBLE[]", "invalid row"],
     ["[1,NULL]::DOUBLE[]", "invalid row"],
     ["[1,'NaN'::DOUBLE]::DOUBLE[]", "invalid row"],
     ["[1,'Infinity'::DOUBLE]::DOUBLE[]", "invalid row"],
     ["[]::DOUBLE[]", "empty vector"],
-    [
-      "CASE WHEN i=0 THEN [1]::INTEGER[] ELSE [1,2]::INTEGER[] END",
-      "equal dimensions",
-    ],
+    ["CASE WHEN i=0 THEN [1]::INTEGER[] ELSE [1,2]::INTEGER[] END", "equal dimensions"],
   ] as const;
   for (const [expression, message] of cases) {
     const sdb = new SimpleDB();
@@ -293,13 +287,9 @@ Deno.test("normalizeVector rejects invalid inputs and constant dimensions withou
       );
       const table = sdb.newTable("source");
       const before = await table.getTypes();
-      await assertRejects(
-        () => table.normalizeVector("features", "scaled").run(),
-        Error,
-        message,
-      );
-      assertEquals(await table.getTypes(), before);
-      assertEquals(await scratchRelations(sdb), []);
+      await assertRejects(() => table.normalizeVector("features", "scaled").run(), Error, message);
+      expect(await table.getTypes()).toStrictEqual(before);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     } finally {
       await sdb.close();
     }
@@ -320,37 +310,33 @@ Deno.test("normalizeVector rejects invalid inputs and constant dimensions withou
     );
     assert(error instanceof Error);
     assert(error.message.includes("range is zero"));
-    assertEquals(await table.getData(), before);
-    assertEquals((await table.getTypes()).features, "INTEGER[3]");
+    expect(await table.getData()).toStrictEqual(before);
+    expect((await table.getTypes()).features).toStrictEqual("INTEGER[3]");
 
     await assertRejects(
       () => table.normalizeVector("missing", "scaled").run(),
       Error,
       "could not find column",
     );
-    await sdb.customQuery(
-      "CREATE OR REPLACE TABLE source AS SELECT 1 AS id, 'text' AS features",
-    );
+    await sdb.customQuery("CREATE OR REPLACE TABLE source AS SELECT 1 AS id, 'text' AS features");
     await assertRejects(
       () => table.normalizeVector("features", "scaled").run(),
       Error,
       "numeric LIST or ARRAY",
     );
-    await sdb.customQuery(
-      "CREATE OR REPLACE TABLE source (id INTEGER, features DOUBLE[2])",
-    );
+    await sdb.customQuery("CREATE OR REPLACE TABLE source (id INTEGER, features DOUBLE[2])");
     await assertRejects(
       () => table.normalizeVector("features", "scaled").run(),
       Error,
       "dataset is empty",
     );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector reports DOUBLE precision collapse for large exact values", async () => {
+test("normalizeVector reports DOUBLE precision collapse for large exact values", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -363,14 +349,14 @@ Deno.test("normalizeVector reports DOUBLE precision collapse for large exact val
       Error,
       "precision limit",
     );
-    assertEquals((await table.getTypes()).features, "BIGINT[1]");
-    assertEquals(await scratchRelations(sdb), []);
+    expect((await table.getTypes()).features).toStrictEqual("BIGINT[1]");
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector diagnoses vector elements outside DOUBLE representation", async () => {
+test("normalizeVector diagnoses vector elements outside DOUBLE representation", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT
@@ -379,28 +365,29 @@ Deno.test("normalizeVector diagnoses vector elements outside DOUBLE representati
         ELSE concat('1', repeat('0', 400))::BIGNUM END]::BIGNUM[1] AS features
       FROM range(2) rows(i)`);
     const table = sdb.newTable("source");
-    const before = (await sdb.connection!.runAndReadAll(
-      "SELECT id, features[1]::VARCHAR FROM source ORDER BY id",
-    )).getRowsJS();
+    const before = (
+      await sdb.connection!.runAndReadAll("SELECT id, features[1]::VARCHAR FROM source ORDER BY id")
+    ).getRowsJS();
     await assertRejects(
       () => table.normalizeVector("features", "scaled").run(),
       Error,
       'Column "features" has 1 invalid row',
     );
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        "SELECT id, features[1]::VARCHAR FROM source ORDER BY id",
-      )).getRowsJS(),
-      before,
-    );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          "SELECT id, features[1]::VARCHAR FROM source ORDER BY id",
+        )
+      ).getRowsJS(),
+    ).toStrictEqual(before);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector preserves file-backed indexes and selects the temporary source on name collision", async () => {
-  const directory = await Deno.makeTempDir();
+test("normalizeVector preserves file-backed indexes and selects the temporary source on name collision", async () => {
+  const directory = await nodeMkdtemp(nodeJoin(nodeTmpdir(), "sda-test-"));
   const sdb = new SimpleDB({ file: `${directory}/normalize.duckdb` });
   try {
     await sdb.customQuery(`CREATE TABLE source AS
@@ -412,30 +399,30 @@ Deno.test("normalizeVector preserves file-backed indexes and selects the tempora
       CREATE UNIQUE INDEX source_id ON SOURCE(id)`);
     const table = sdb.newTable("SOURCE");
     await table.normalizeVector("features", "scaled").run();
-    assertEquals((await table.getData()).map((row) => row.scaled), [[0, 0], [
-      1,
-      1,
-    ]]);
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        'SELECT id, features FROM "normalize".main.source',
-      )).getRowsJS(),
-      [[99, [9, 9]]],
-    );
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        "SELECT index_name FROM duckdb_indexes() WHERE database_name = 'temp'",
-      )).getRowsJS(),
-      [["source_id"]],
-    );
-    assertEquals(await scratchRelations(sdb), []);
+    expect((await table.getData()).map((row) => row.scaled)).toStrictEqual([
+      [0, 0],
+      [1, 1],
+    ]);
+    expect(
+      (
+        await sdb.connection!.runAndReadAll('SELECT id, features FROM "normalize".main.source')
+      ).getRowsJS(),
+    ).toStrictEqual([[99, [9, 9]]]);
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          "SELECT index_name FROM duckdb_indexes() WHERE database_name = 'temp'",
+        )
+      ).getRowsJS(),
+    ).toStrictEqual([["source_id"]]);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
-    await Deno.remove(directory, { recursive: true });
+    await nodeRm(directory, { recursive: true });
   }
 });
 
-Deno.test("normalizeVector reports publication failures and cleans scratch in new and overwrite modes", async () => {
+test("normalizeVector reports publication failures and cleans scratch in new and overwrite modes", async () => {
   for (const destination of ["scaled", "features"]) {
     const sdb = new SimpleDB();
     try {
@@ -459,21 +446,24 @@ Deno.test("normalizeVector reports publication failures and cleans scratch in ne
         "Simulated publication failure",
       );
       table.runQuery = original;
-      assertEquals(await scratchRelations(sdb), []);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     } finally {
       await sdb.close();
     }
   }
 });
 
-Deno.test("normalizeVector reports an HNSW index incompatible with DOUBLE output vectors", async () => {
+test("normalizeVector reports an HNSW index incompatible with DOUBLE output vectors", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable("source").loadArray([
-      { id: 1, features: [1, 2] },
-      { id: 2, features: [2, 4] },
-      { id: 3, features: [3, 8] },
-    ], { columnTypes: { features: "FLOAT[2]" } });
+    const table = sdb.newTable("source").loadArray(
+      [
+        { id: 1, features: [1, 2] },
+        { id: 2, features: [2, 4] },
+        { id: 3, features: [3, 8] },
+      ],
+      { columnTypes: { features: "FLOAT[2]" } },
+    );
     await table.createVssIndex("features").run();
 
     await assertRejects(
@@ -481,13 +471,13 @@ Deno.test("normalizeVector reports an HNSW index incompatible with DOUBLE output
       Error,
       "could not restore an existing DuckDB index",
     );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector rowL2 preserves direction, zero vectors, source types, and row order", async () => {
+test("normalizeVector rowL2 preserves direction, zero vectors, source types, and row order", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -498,36 +488,40 @@ Deno.test("normalizeVector rowL2 preserves direction, zero vectors, source types
     ) rows(id,features)`);
     const table = sdb.newTable("source");
     const before = await table.getData();
-    await table.normalizeVector("features", "unit", {
-      normalization: "rowL2",
-    }).run();
+    await table
+      .normalizeVector("features", "unit", {
+        normalization: "rowL2",
+      })
+      .run();
     const data = await table.getData();
-    assertEquals(data.map(({ unit: _unit, ...source }) => source), before);
-    assertEquals((await table.getTypes()).features, "INTEGER[]");
-    assertEquals((await table.getTypes()).unit, "DOUBLE[3]");
-    const expected = [[0.6, 0.8, 0], [-0.6, 0, 0.8], [0, 0, 0], [0.6, 0.8, 0]];
-    data.forEach((row, index) =>
-      assertVectorAlmostEquals(row.unit, expected[index])
-    );
+    expect(data.map(({ unit: _unit, ...source }) => source)).toStrictEqual(before);
+    expect((await table.getTypes()).features).toStrictEqual("INTEGER[]");
+    expect((await table.getTypes()).unit).toStrictEqual("DOUBLE[3]");
+    const expected = [
+      [0.6, 0.8, 0],
+      [-0.6, 0, 0.8],
+      [0, 0, 0],
+      [0.6, 0.8, 0],
+    ];
+    data.forEach((row, index) => assertVectorAlmostEquals(row.unit, expected[index]));
 
     // Removing every other row must not change this row's normalized vector.
-    await table.filter("id = 1").normalizeVector("features", "FEATURES", {
-      normalization: "rowL2",
-    }).run();
+    await table
+      .filter("id = 1")
+      .normalizeVector("features", "FEATURES", {
+        normalization: "rowL2",
+      })
+      .run();
     assertVectorAlmostEquals((await table.getData())[0].features, expected[1]);
-    assertEquals(Object.keys(await table.getTypes()), [
-      "id",
-      "features",
-      "unit",
-    ]);
-    assertEquals((await table.getTypes()).features, "DOUBLE[3]");
-    assertEquals(await scratchRelations(sdb), []);
+    expect(Object.keys(await table.getTypes())).toStrictEqual(["id", "features", "unit"]);
+    expect((await table.getTypes()).features).toStrictEqual("DOUBLE[3]");
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector rowL2 handles extreme finite magnitudes without losing unit length", async () => {
+test("normalizeVector rowL2 handles extreme finite magnitudes without losing unit length", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -538,9 +532,11 @@ Deno.test("normalizeVector rowL2 handles extreme finite magnitudes without losin
       ([-5e-324, 0]::DOUBLE[2])
     ) rows(features)`);
     const table = sdb.newTable("source");
-    await table.normalizeVector("features", "unit", {
-      normalization: "rowL2",
-    }).run();
+    await table
+      .normalizeVector("features", "unit", {
+        normalization: "rowL2",
+      })
+      .run();
     const expected = [
       [Math.SQRT1_2, -Math.SQRT1_2],
       [Math.SQRT1_2, -Math.SQRT1_2],
@@ -551,15 +547,15 @@ Deno.test("normalizeVector rowL2 handles extreme finite magnitudes without losin
     (await table.getData()).forEach((row, index) => {
       assertVectorAlmostEquals(row.unit, expected[index]);
       assert(Array.isArray(row.unit));
-      assertAlmostEquals(Math.hypot(...row.unit as number[]), 1, 1e-12);
+      assertAlmostEquals(Math.hypot(...(row.unit as number[])), 1, 1e-12);
     });
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("normalizeVector captures queued normalization options and rejects invalid modes", async () => {
+test("normalizeVector captures queued normalization options and rejects invalid modes", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -575,7 +571,10 @@ Deno.test("normalizeVector captures queued normalization options and rejects inv
     options.normalization = "rowL2";
     const data = await table.getData();
     for (const row of data) assertVectorAlmostEquals(row.unit, [0.6, 0.8]);
-    assertEquals(data.map((row) => row.scaled), [[0, 0], [1, 1]]);
+    expect(data.map((row) => row.scaled)).toStrictEqual([
+      [0, 0],
+      [1, 1],
+    ]);
 
     for (const normalization of ["rowl2", "minMax", "", null, 1, false]) {
       assertThrows(
@@ -587,8 +586,8 @@ Deno.test("normalizeVector captures queued normalization options and rejects inv
         'options.normalization must be "dimensionMinMax" or "rowL2"',
       );
     }
-    assertEquals(await table.getData(), data);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(data);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }

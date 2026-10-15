@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should replace the text in one column", async () => {
+test("should replace the text in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -11,7 +12,7 @@ Deno.test("should replace the text in one column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Donald",
       hireDate: "21-JUN-07",
@@ -424,7 +425,7 @@ Deno.test("should replace the text in one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace substings in one column", async () => {
+test("should replace substings in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -434,7 +435,7 @@ Deno.test("should replace substings in one column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Don@ld",
       hireDate: "21-JUN-07",
@@ -848,21 +849,17 @@ Deno.test("should replace substings in one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace entire strings in one column", async () => {
+test("should replace entire strings in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
   table.cleanColumnNames();
 
-  table.replace(
-    ["name", "endOfYearBonus"],
-    { "Grant, Douglas": "BOSS" },
-    { entireString: true },
-  );
+  table.replace(["name", "endOfYearBonus"], { "Grant, Douglas": "BOSS" }, { entireString: true });
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Donald",
       hireDate: "21-JUN-07",
@@ -1275,7 +1272,7 @@ Deno.test("should replace entire strings in one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace multiple texts in one column", async () => {
+test("should replace multiple texts in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -1285,7 +1282,7 @@ Deno.test("should replace multiple texts in one column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Donald",
       hireDate: "21-JUN-07",
@@ -1698,7 +1695,7 @@ Deno.test("should replace multiple texts in one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace the text in multiple columns", async () => {
+test("should replace the text in multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -1708,7 +1705,7 @@ Deno.test("should replace the text in multiple columns", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell =>  Donald",
       hireDate: "21-JUN-07",
@@ -2121,7 +2118,7 @@ Deno.test("should replace the text in multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace multiple texts in multiple columns", async () => {
+test("should replace multiple texts in multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -2134,7 +2131,7 @@ Deno.test("should replace multiple texts in multiple columns", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell. Donald",
       hireDate: "21-JUN-07",
@@ -2546,7 +2543,7 @@ Deno.test("should replace multiple texts in multiple columns", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with ' without throwing an error", async () => {
+test("should work with ' without throwing an error", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -2558,7 +2555,7 @@ Deno.test("should work with ' without throwing an error", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell' Donald",
       hireDate: "21-JUN-07",
@@ -2971,7 +2968,7 @@ Deno.test("should work with ' without throwing an error", async () => {
 
   await sdb.close();
 });
-Deno.test("should use a regular expression", async () => {
+test("should use a regular expression", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -2981,7 +2978,7 @@ Deno.test("should use a regular expression", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "OConnell, Donald",
       hireDate: "--JUN--",
@@ -3394,7 +3391,7 @@ Deno.test("should use a regular expression", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace text in all columns with the 'all' option", async () => {
+test("should replace text in all columns with the 'all' option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -3406,7 +3403,7 @@ Deno.test("should replace text in all columns with the 'all' option", async () =
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "a_b", code: "x_y" },
     { name: "c_d", code: "z_w" },
   ]);
@@ -3414,38 +3411,30 @@ Deno.test("should replace text in all columns with the 'all' option", async () =
   await sdb.close();
 });
 
-Deno.test("replace captures arguments and leaves options unchanged", async () => {
+test("replace captures arguments and leaves options unchanged", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("capturedReplace");
   const replacements = { old: "new" };
   const options: { entireString?: boolean; regex?: boolean } = {};
 
-  table.loadArray([{ value: "old" }]).replace(
-    "value",
-    replacements,
-    options,
-  );
+  table.loadArray([{ value: "old" }]).replace("value", replacements, options);
   replacements.old = "later";
   options.regex = true;
 
-  assertEquals(options, { regex: true });
-  assertEquals(await table.getData(), [{ value: "new" }]);
+  expect(options).toStrictEqual({ regex: true });
+  expect(await table.getData()).toStrictEqual([{ value: "new" }]);
   await sdb.close();
 });
 
-Deno.test("entire-string replacement binds multiple sequential mappings", async () => {
+test("entire-string replacement binds multiple sequential mappings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundEntireReplacement");
 
   table
     .loadArray([{ value: "a" }, { value: "b" }, { value: "O'Brien" }])
-    .replace(
-      "value",
-      { a: "b", b: "c", "O'Brien": "D'Angelo" },
-      { entireString: true },
-    );
+    .replace("value", { a: "b", b: "c", "O'Brien": "D'Angelo" }, { entireString: true });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { value: "c" },
     { value: "c" },
     { value: "D'Angelo" },

@@ -37,21 +37,38 @@ to write clear and understandable code.
 Then, do your magic to pass the tests you created. It's a great way to stay
 focused and break down the tasks into small steps.
 
-We use [Deno](https://github.com/denoland/deno) to build and test the library.
+We use Node.js 24.21.0 or newer and Vite+ to build and test the library.
+Install dependencies with `npm ci`.
 
-Here's how to run a specific test file with one or more tests in it:
-
-```bash
-deno test -A test/unit/methods/addColumn.test.ts
-```
-
-And here's how to run all tests, including formatting, typescript checks,
-linter, and dry run to publish on
-[JSR](https://jsr.io/@nshiab/simple-data-analysis-core):
+Run a specific test file:
 
 ```bash
-deno task all-tests
+npx vp test test/unit/methods/addColumn.test.ts
 ```
+
+Run formatting, lint, type checks, tests, the package build, and documentation:
+
+```bash
+npm run all-tests
+```
+
+Use `npm run fix` to apply formatting and lint fixes. Tests run serially because
+they share native DuckDB and filesystem resources. Local test runs may load
+`.env`; CI does not load it. `CI=true` skips tests that contact public services,
+while local HTTP tests and DuckDB extension tests still run. DuckDB may download
+native extensions during these tests.
+
+Run `npm run docs` after changing public JSDoc. It generates the HTML site in
+`site/`, the Markdown reference in `docs/`, and the agent references `llm.md`
+and `llms.txt`.
+
+Benchmarks are separate from the release checks. Use `npm run benchmark` for
+workflow comparisons and `npm run benchmark-core` for focused operation timings.
+
+Releases use `npm run patch`, `npm run minor`, or `npm run major` from `main`.
+The version hooks run all checks, regenerate documentation, and atomically push
+the version commit and tag. The tag workflow publishes npm provenance, creates
+the GitHub release, and deploys documentation to GitHub Pages.
 
 When committing your work, keep in mind that your messages will be public if
 your code gets merged into the main branch.

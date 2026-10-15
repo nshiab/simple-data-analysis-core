@@ -15,12 +15,12 @@ export default async function getStdDev(
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(STDDEV(${qualifiedColumn}), ${options.decimals}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`
-      : `SELECT STDDEV(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${
-        quoteIdentifier(SimpleTable.name)
-      }`,
+      ? `SELECT ROUND(STDDEV(${qualifiedColumn}), ${options.decimals}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT STDDEV(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${quoteIdentifier(
+          SimpleTable.name,
+        )}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

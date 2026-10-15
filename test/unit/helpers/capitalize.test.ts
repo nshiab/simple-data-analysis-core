@@ -1,22 +1,23 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import capitalize from "../../../src/helpers/capitalize.ts";
 
-Deno.test("capitalize - basic usage", () => {
+test("capitalize - basic usage", () => {
   const result = capitalize("hello world");
-  assertEquals(result, "Hello world");
+  expect(result).toStrictEqual("Hello world");
 });
 
-Deno.test("capitalize - already capitalized string", () => {
+test("capitalize - already capitalized string", () => {
   const result = capitalize("Journalism");
-  assertEquals(result, "Journalism");
+  expect(result).toStrictEqual("Journalism");
 });
 
-Deno.test("capitalize - single character", () => {
+test("capitalize - single character", () => {
   const result = capitalize("a");
-  assertEquals(result, "A");
+  expect(result).toStrictEqual("A");
 });
 
-Deno.test("capitalize - empty string", () => {
+test("capitalize - empty string", () => {
   const result = capitalize("");
-  assertEquals(result, "");
+  expect(result).toStrictEqual("");
 });

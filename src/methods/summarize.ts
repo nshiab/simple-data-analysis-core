@@ -42,13 +42,11 @@ export default function summarize(
       execute: async () => {
         await queryDB(
           simpleTable,
-          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${
-            summarizeSelect(
-              `${quoteIdentifier(simpleTable.name)}`,
-              await simpleTable.getTypes(),
-              options,
-            )
-          }`,
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS ${summarizeSelect(
+            `${quoteIdentifier(simpleTable.name)}`,
+            await simpleTable.getTypes(),
+            options,
+          )}`,
           mergeOptions(simpleTable, {
             table: outputTable.name,
             method: "summarize()",
@@ -83,11 +81,7 @@ function getSummarizeColumns(options: SummarizeOptions): string[] {
   ];
 }
 
-function summarizeSelect(
-  input: string,
-  types: TableSchema,
-  options: SummarizeOptions,
-): string {
+function summarizeSelect(input: string, types: TableSchema, options: SummarizeOptions): string {
   const by = options.by ? stringToArray(options.by) : [];
   // Duplicated columns would duplicate rows now that the branches are combined
   // with UNION ALL instead of a deduplicating UNION.
@@ -134,8 +128,7 @@ function summarizeSelect(
   }
 
   const columnTypes = columns.map((d) => effectiveTypes[d]);
-  const doubleAndDate = columnTypes.includes("DOUBLE") &&
-    columnTypes.some(isTemporalStatType);
+  const doubleAndDate = columnTypes.includes("DOUBLE") && columnTypes.some(isTemporalStatType);
   if (doubleAndDate) {
     throw new Error(
       "You are trying to summarize numbers and timestamps/dates/times. You can specify columns in the options (just numbers or just timestamps/dates/times) or convert your timestamps/dates/times to the number of ms since 1970-01-01 00:00:00 by passing the option { datesToMs: true }.",
@@ -154,15 +147,11 @@ function summarizeSelect(
         ? `CAST(COUNT(*) AS INTEGER) AS ${quoteIdentifier(name)}`
         : `NULL AS ${quoteIdentifier(name)}`;
     });
-    const orderBy = by.length > 0
-      ? `\nORDER BY ${by.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")}`
-      : "";
-    return `SELECT ${
-      [
-        ...by.map((d) => `${quoteIdentifier(d)}`),
-        ...statColumns,
-      ].join(", ")
-    }\nFROM ${input}${groupBy}${orderBy}`;
+    const orderBy =
+      by.length > 0 ? `\nORDER BY ${by.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")}` : "";
+    return `SELECT ${[...by.map((d) => `${quoteIdentifier(d)}`), ...statColumns].join(
+      ", ",
+    )}\nFROM ${input}${groupBy}${orderBy}`;
   }
 
   // One UNION ALL branch per input column. DuckDB runs the branches as
@@ -198,11 +187,10 @@ function summarizeSelect(
   }
 
   const orderByColumns = columnColumn ? ["column", ...by] : by;
-  const orderBy = orderByColumns.length > 0
-    ? `\nORDER BY ${
-      orderByColumns.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")
-    }`
-    : "";
+  const orderBy =
+    orderByColumns.length > 0
+      ? `\nORDER BY ${orderByColumns.map((d) => `${quoteIdentifier(d)} ASC`).join(", ")}`
+      : "";
 
   return `${branches.join("\nUNION ALL\n")}${orderBy}`;
 }

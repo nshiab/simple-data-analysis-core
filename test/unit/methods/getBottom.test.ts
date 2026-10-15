@@ -1,12 +1,13 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the bottom 3", async () => {
+test("should return the bottom 3", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3);
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Patel, Joshua",
       "Hire date": "06-APR-06",
@@ -35,14 +36,14 @@ Deno.test("should return the bottom 3", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the bottom 3 with the original order", async () => {
+test("should return the bottom 3 with the original order", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3, {
     originalOrder: true,
   });
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Stiles, Stephen",
       "Hire date": "26-OCT-05",
@@ -71,14 +72,14 @@ Deno.test("should return the bottom 3 with the original order", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the bottom 3 with a condition", async () => {
+test("should return the bottom 3 with a condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const data = await table.getBottom(3, {
     conditions: `Job = 'Programmer'`,
   });
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Lorentz, Diana",
       "Hire date": "07-ARB-07",
@@ -107,7 +108,7 @@ Deno.test("should return the bottom 3 with a condition", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the bottom 3 with a condition with original order", async () => {
+test("should return the bottom 3 with a condition with original order", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -116,7 +117,7 @@ Deno.test("should return the bottom 3 with a condition with original order", asy
     originalOrder: true,
   });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Austin, David",
       "Hire date": "NaN",

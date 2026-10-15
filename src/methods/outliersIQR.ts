@@ -17,8 +17,7 @@ export default function outliersIQR(
     method: "outliersIQR()",
     parameters: { column, newColumn, options },
     needsSchema: false,
-    buildSelect: (input) =>
-      outliersIQRSelect(input, column, newColumn, options),
+    buildSelect: (input) => outliersIQRSelect(input, column, newColumn, options),
   });
 }
 
@@ -30,28 +29,20 @@ function outliersIQRSelect(
     by?: string | string[];
   } = {},
 ) {
-  const by = options.by
-    ? stringToArray(options.by).map((d) => `${quoteIdentifier(d)}`)
-    : [];
+  const by = options.by ? stringToArray(options.by).map((d) => `${quoteIdentifier(d)}`) : [];
 
   const partition = by.length > 0 ? `PARTITION BY ${by.join(", ")}` : "";
   const quantile = (fraction: number) =>
     `IF(COUNT(${quoteIdentifier(column)}) OVER (${partition}) % 2 = 0,
-      quantile_disc(${
-      quoteIdentifier(column)
-    }, ${fraction}) OVER (${partition}),
+      quantile_disc(${quoteIdentifier(column)}, ${fraction}) OVER (${partition}),
       quantile_cont(${quoteIdentifier(column)}, ${fraction}) OVER (${partition})
     )`;
 
   // q1/q3 are computed as window values (one pass) instead of a per-category
   // CTE joined back through a correlated subquery per row.
   return `SELECT * EXCLUDE ("_sda_q1", "_sda_q3"), CASE
-        WHEN ${
-    quoteIdentifier(column)
-  } > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
-          OR ${
-    quoteIdentifier(column)
-  } < "_sda_q1" - ("_sda_q3" - "_sda_q1") * 1.5
+        WHEN ${quoteIdentifier(column)} > "_sda_q3" + ("_sda_q3" - "_sda_q1") * 1.5
+          OR ${quoteIdentifier(column)} < "_sda_q1" - ("_sda_q3" - "_sda_q1") * 1.5
         THEN TRUE
         ELSE FALSE
     END AS ${quoteIdentifier(newColumn)}

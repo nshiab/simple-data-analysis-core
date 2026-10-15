@@ -26,13 +26,9 @@ export default function renameColumns(
       if (strict) {
         assertColumnsExist(schema, oldNames, "renameColumns()");
       }
-      return `SELECT * RENAME (${
-        oldNames
-          .map((d, i) =>
-            `${quoteIdentifier(d)} AS ${quoteIdentifier(newNames[i])}`
-          )
-          .join(", ")
-      }) FROM ${input}`;
+      return `SELECT * RENAME (${oldNames
+        .map((d, i) => `${quoteIdentifier(d)} AS ${quoteIdentifier(newNames[i])}`)
+        .join(", ")}) FROM ${input}`;
     },
   });
 }

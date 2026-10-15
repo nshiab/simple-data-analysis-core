@@ -1,9 +1,11 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import prepareNumericFeatures from "../../../src/helpers/prepareNumericFeatures.ts";
 import publishPreparedColumns from "../../../src/helpers/publishPreparedColumns.ts";
 
-Deno.test("publishPreparedColumns reports an index recreation failure", async () => {
+test("publishPreparedColumns reports an index recreation failure", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -31,18 +33,19 @@ Deno.test("publishPreparedColumns reports an index recreation failure", async ()
     } finally {
       await prepared.cleanup();
     }
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        "SELECT table_name FROM duckdb_tables() WHERE temporary",
-      )).getRowsJS(),
-      [],
-    );
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          "SELECT table_name FROM duckdb_tables() WHERE temporary",
+        )
+      ).getRowsJS(),
+    ).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("publishPreparedColumns rejects a replacement whose output name would be ignored", async () => {
+test("publishPreparedColumns rejects a replacement whose output name would be ignored", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT
@@ -60,11 +63,13 @@ Deno.test("publishPreparedColumns rejects a replacement whose output name would 
           publishPreparedColumns(table, prepared, {
             method: "testPublication()",
             parameters: null,
-            outputs: [{
-              name: "scaled",
-              expression: "[0]::DOUBLE[1]",
-              replace: "features",
-            }],
+            outputs: [
+              {
+                name: "scaled",
+                expression: "[0]::DOUBLE[1]",
+                replace: "features",
+              },
+            ],
           }),
         Error,
         "must match its replacement column",
@@ -72,7 +77,7 @@ Deno.test("publishPreparedColumns rejects a replacement whose output name would 
     } finally {
       await prepared.cleanup();
     }
-    assertEquals(await table.getData(), before);
+    expect(await table.getData()).toStrictEqual(before);
   } finally {
     await sdb.close();
   }

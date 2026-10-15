@@ -22,9 +22,7 @@ export default async function writeData(
   assertWriteDataOptions(extension, options);
 
   if (await hasGeometryColumn(simpleTable)) {
-    throw new Error(
-      "Table contains geometry columns. Use writeGeoData() instead.",
-    );
+    throw new Error("Table contains geometry columns. Use writeGeoData() instead.");
   }
 
   createDirectory(file);
@@ -44,22 +42,17 @@ export default async function writeData(
   }
 }
 
-function assertWriteDataOptions(
-  extension: string,
-  options: { dataAsArrays?: boolean },
-): void {
+function assertWriteDataOptions(extension: string, options: { dataAsArrays?: boolean }): void {
   const supported = ["csv", "json", "parquet", "db", "sqlite"];
   if (!supported.includes(extension)) {
     throw new Error(
-      `writeData() does not support the extension ${
-        JSON.stringify(extension)
-      }. Use .csv, .json, .parquet, .db, or .sqlite.`,
+      `writeData() does not support the extension ${JSON.stringify(
+        extension,
+      )}. Use .csv, .json, .parquet, .db, or .sqlite.`,
     );
   }
   if (options.dataAsArrays === true && extension !== "json") {
-    throw new Error(
-      "writeData() dataAsArrays works only with JSON files.",
-    );
+    throw new Error("writeData() dataAsArrays works only with JSON files.");
   }
 }
 
@@ -73,32 +66,22 @@ function writeDataQuery(
   if (fileExtension === "csv") {
     return `COPY ${quoteIdentifier(table)} TO '${
       options.compression ? cleanedFile + ".gz" : cleanedFile
-    }' (DELIMITER ',', HEADER TRUE${
-      options.compression ? ", COMPRESSION GZIP" : ""
-    }${
-      options.formatDates
-        ? ", DATEFORMAT '%xT%X.%gZ', TIMESTAMPFORMAT '%xT%X.%gZ'"
-        : ""
+    }' (DELIMITER ',', HEADER TRUE${options.compression ? ", COMPRESSION GZIP" : ""}${
+      options.formatDates ? ", DATEFORMAT '%xT%X.%gZ', TIMESTAMPFORMAT '%xT%X.%gZ'" : ""
     });`;
   } else if (fileExtension === "json") {
     return `COPY ${quoteIdentifier(table)} TO '${
       options.compression ? cleanedFile + ".gz" : cleanedFile
-    }' (FORMAT JSON, ARRAY TRUE${
-      options.compression ? ", COMPRESSION GZIP" : ""
-    }${
-      options.formatDates
-        ? ", DATEFORMAT '%xT%X.%gZ', TIMESTAMPFORMAT '%xT%X.%gZ'"
-        : ""
+    }' (FORMAT JSON, ARRAY TRUE${options.compression ? ", COMPRESSION GZIP" : ""}${
+      options.formatDates ? ", DATEFORMAT '%xT%X.%gZ', TIMESTAMPFORMAT '%xT%X.%gZ'" : ""
     });`;
   } else if (fileExtension === "parquet") {
     if (options.compression) {
-      return `COPY ${
-        quoteIdentifier(table)
-      } TO '${cleanedFile}' (FORMAT PARQUET, COMPRESSION ZSTD);`;
+      return `COPY ${quoteIdentifier(
+        table,
+      )} TO '${cleanedFile}' (FORMAT PARQUET, COMPRESSION ZSTD);`;
     } else {
-      return `COPY ${
-        quoteIdentifier(table)
-      } TO '${cleanedFile}' (FORMAT PARQUET);`;
+      return `COPY ${quoteIdentifier(table)} TO '${cleanedFile}' (FORMAT PARQUET);`;
     }
   } else if (fileExtension === "db") {
     if (existsSync(file)) {
@@ -107,9 +90,9 @@ function writeDataQuery(
     const database = quoteIdentifier("my_database");
     return `ATTACH '${cleanedFile}' AS ${database};
 COPY FROM DATABASE ${quoteIdentifier("memory")} TO ${database};
-CREATE OR REPLACE TABLE ${database}.${
-      quoteIdentifier(table)
-    } AS SELECT * FROM ${quoteIdentifier(table)};
+CREATE OR REPLACE TABLE ${database}.${quoteIdentifier(
+      table,
+    )} AS SELECT * FROM ${quoteIdentifier(table)};
 DETACH ${database};`;
   } else if (fileExtension === "sqlite") {
     if (existsSync(file)) {
@@ -118,15 +101,9 @@ DETACH ${database};`;
     const database = quoteIdentifier("my_sqlite_db");
     return `INSTALL sqlite; LOAD sqlite;
     ATTACH '${cleanedFile}' AS ${database} (TYPE SQLITE);
-    CREATE TABLE ${database}.${quoteIdentifier(table)} AS SELECT * FROM ${
-      quoteIdentifier(table)
-    };
+    CREATE TABLE ${database}.${quoteIdentifier(table)} AS SELECT * FROM ${quoteIdentifier(table)};
     DETACH ${database};`;
   } else {
-    throw new Error(
-      `writeData() does not support the extension ${
-        JSON.stringify(fileExtension)
-      }.`,
-    );
+    throw new Error(`writeData() does not support the extension ${JSON.stringify(fileExtension)}.`);
   }
 }

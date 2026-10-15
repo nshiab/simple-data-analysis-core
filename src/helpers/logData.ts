@@ -17,18 +17,18 @@ export default function logData(
   const formatted = data.map((row) =>
     Object.fromEntries(
       Object.entries(row).map(([key, value]) => {
-        const nested = value !== null && typeof value === "object" &&
-          !(value instanceof Date) && !(value instanceof LogValue);
-        let text = value instanceof LogValue
-          ? value.text
-          : nested
-          ? JSON.stringify(value)
-          : value;
-        const truncatable = !(value instanceof LogValue) ||
-          value.category === "string";
+        const nested =
+          value !== null &&
+          typeof value === "object" &&
+          !(value instanceof Date) &&
+          !(value instanceof LogValue);
+        let text = value instanceof LogValue ? value.text : nested ? JSON.stringify(value) : value;
+        const truncatable = !(value instanceof LogValue) || value.category === "string";
         if (
-          truncatable && typeof text === "string" &&
-          typeof charsToLog === "number" && text.length > charsToLog
+          truncatable &&
+          typeof text === "string" &&
+          typeof charsToLog === "number" &&
+          text.length > charsToLog
         ) {
           const limit = Math.max(0, Math.floor(charsToLog));
           text = text.slice(0, Math.max(0, limit - 3)) + "...".slice(0, limit);
@@ -37,33 +37,36 @@ export default function logData(
           key,
           value instanceof LogValue
             ? new LogValue(
-              String(text),
-              value.jsType,
-              value.category,
-            )
+                typeof text === "string" ? text : value.text,
+                value.jsType,
+                value.category,
+              )
             : text,
         ];
       }),
-    )
+    ),
   );
   const hasTypes = types !== null && Object.keys(types).length > 0;
   if (hasTypes) {
     formatted.unshift(
       Object.fromEntries(
         Object.entries(types).map(([key, sqlType]) => {
-          const representations = new Set(data.flatMap((row) => {
-            const value = row[key];
-            if (value instanceof LogValue) {
-              return value.category === "null" ? [] : [value.jsType];
-            }
-            return value === null || value === undefined ? [] : [typeof value];
-          }));
+          const representations = new Set(
+            data.flatMap((row) => {
+              const value = row[key];
+              if (value instanceof LogValue) {
+                return value.category === "null" ? [] : [value.jsType];
+              }
+              return value === null || value === undefined ? [] : [typeof value];
+            }),
+          );
           const first = data[0][key];
-          const representation = representations.size > 0
-            ? [...representations].join("|")
-            : first instanceof LogValue
-            ? first.jsType
-            : "null";
+          const representation =
+            representations.size > 0
+              ? [...representations].join("|")
+              : first instanceof LogValue
+                ? first.jsType
+                : "null";
           return [key, `${sqlType}/${representation}`];
         }),
       ),

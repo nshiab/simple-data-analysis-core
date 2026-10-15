@@ -1,10 +1,11 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the number of columns", async () => {
+test("should return the number of columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.json"]);
-  assertEquals(await table.getColumnCount(), 6);
+  expect(await table.getColumnCount()).toStrictEqual(6);
   await sdb.close();
 });

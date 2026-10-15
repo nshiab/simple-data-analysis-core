@@ -30,34 +30,21 @@ export default function connectedComponents(
   if (typeof targetColumn !== "string") {
     throw new TypeError("connectedComponents() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("connectedComponents() options must be an object.");
   }
-  if (
-    options.mode !== undefined &&
-    !["weak", "strong"].includes(options.mode)
-  ) {
-    throw new TypeError(
-      'connectedComponents() options.mode must be "weak" or "strong".',
-    );
+  if (options.mode !== undefined && !["weak", "strong"].includes(options.mode)) {
+    throw new TypeError('connectedComponents() options.mode must be "weak" or "strong".');
   }
   if (
     options.outputTable !== undefined &&
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "connectedComponents() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("connectedComponents() options.outputTable must be a string or boolean.");
   }
 
-  const temporalOptions = prepareGraphTemporalOptions(
-    options,
-    undefined,
-    "connectedComponents()",
-  );
+  const temporalOptions = prepareGraphTemporalOptions(options, undefined, "connectedComponents()");
   if (temporalOptions !== undefined && options.mode !== "strong") {
     throw new TypeError(
       'connectedComponents() chronological options require options.mode to be explicitly set to "strong".',
@@ -71,56 +58,31 @@ export default function connectedComponents(
     method: "connectedComponents()",
     parameters,
     outputTable: options.outputTable,
-    preflight: temporalOptions === undefined
-      ? undefined
-      : (input) =>
-        validateGraphTemporalEvents(
-          input,
-          temporalOptions,
-          "connectedComponents()",
-          parameters,
-        ),
+    preflight:
+      temporalOptions === undefined
+        ? undefined
+        : (input) =>
+            validateGraphTemporalEvents(
+              input,
+              temporalOptions,
+              "connectedComponents()",
+              parameters,
+            ),
     values: (schema) => {
-      const temporal = validateInputs(
-        schema,
-        sourceColumn,
-        targetColumn,
-        temporalOptions,
-      ).temporal;
+      const temporal = validateInputs(schema, sourceColumn, targetColumn, temporalOptions).temporal;
       return temporal === undefined ? [] : [temporal.gapParameter];
     },
     buildSelect: (input, schema) =>
-      connectedComponentsSelect(
-        input,
-        schema,
-        sourceColumn,
-        targetColumn,
-        mode,
-        temporalOptions,
-      ),
+      connectedComponentsSelect(input, schema, sourceColumn, targetColumn, mode, temporalOptions),
     outputSchema: (schema) => ({
       componentId: "BIGINT",
-      node: validateInputs(
-        schema,
-        sourceColumn,
-        targetColumn,
-        temporalOptions,
-      ).endpoints.idType,
+      node: validateInputs(schema, sourceColumn, targetColumn, temporalOptions).endpoints.idType,
     }),
   });
 }
 
-function validateEndpoints(
-  schema: TableSchema,
-  source: string,
-  target: string,
-) {
-  return getGraphEndpointColumns(
-    schema,
-    source,
-    target,
-    "connectedComponents()",
-  );
+function validateEndpoints(schema: TableSchema, source: string, target: string) {
+  return getGraphEndpointColumns(schema, source, target, "connectedComponents()");
 }
 
 function validateInputs(
@@ -130,9 +92,10 @@ function validateInputs(
   temporalOptions: PreparedGraphTemporalOptions | undefined,
 ) {
   const endpoints = validateEndpoints(schema, source, target);
-  const temporal = temporalOptions === undefined
-    ? undefined
-    : prepareGraphTemporalSql(schema, temporalOptions, "connectedComponents()");
+  const temporal =
+    temporalOptions === undefined
+      ? undefined
+      : prepareGraphTemporalSql(schema, temporalOptions, "connectedComponents()");
   return { endpoints, temporal };
 }
 
@@ -144,37 +107,23 @@ function connectedComponentsSelect(
   mode: "weak" | "strong",
   temporalOptions: PreparedGraphTemporalOptions | undefined,
 ): string {
-  const prepared = prepareGraphSql(
-    input,
-    schema,
-    source,
-    target,
-    "connectedComponents()",
-  );
+  const prepared = prepareGraphSql(input, schema, source, target, "connectedComponents()");
   if (temporalOptions !== undefined) {
     return buildChronologicalGraphComponentsSql(
       prepared,
-      prepareGraphTemporalSql(
-        schema,
-        temporalOptions,
-        "connectedComponents()",
-      ),
+      prepareGraphTemporalSql(schema, temporalOptions, "connectedComponents()"),
     );
   }
-  const relationNames = mode === "weak"
-    ? [
-      "graph_edges",
-      "graph_nodes",
-      "graph_component_labels",
-      "graph_component_roots",
-    ]
-    : [
-      "graph_edges",
-      "graph_nodes",
-      "graph_reachable",
-      "graph_component_members",
-      "graph_component_roots",
-    ];
+  const relationNames =
+    mode === "weak"
+      ? ["graph_edges", "graph_nodes", "graph_component_labels", "graph_component_roots"]
+      : [
+          "graph_edges",
+          "graph_nodes",
+          "graph_reachable",
+          "graph_component_members",
+          "graph_component_roots",
+        ];
   const relations = prepared.relationNames(relationNames);
   const edges = relations.graph_edges;
   const nodes = relations.graph_nodes;
@@ -195,9 +144,7 @@ function connectedComponentsSelect(
 
   if (mode === "weak") {
     const labels = relations.graph_component_labels;
-    return `WITH RECURSIVE ${common}, ${
-      buildWeakGraphComponentsSql(edges, nodes, labels, roots)
-    }
+    return `WITH RECURSIVE ${common}, ${buildWeakGraphComponentsSql(edges, nodes, labels, roots)}
     SELECT ${q("roots")}.${q("componentId")}, ${q("labels")}.${q("node")}
     FROM ${labels} AS ${q("labels")}
     INNER JOIN ${roots} AS ${q("roots")}

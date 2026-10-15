@@ -25,33 +25,26 @@ export default function cloneColumnWithOffset(
     execute: async () => {
       // A SELECT *, expr AS col colliding with an existing column would be
       // silently renamed by DuckDB (col -> col_1) instead of erroring.
-      assertNewColumns(
-        await simpleTable.getTypes(),
-        [newColumn],
-        "cloneColumnWithOffset()",
-      );
+      assertNewColumns(await simpleTable.getTypes(), [newColumn], "cloneColumnWithOffset()");
 
       const offset = options.offset ?? 1;
       const by = options.by ? stringToArray(options.by) : [];
-      const partition = by.length > 0
-        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
-        : "";
+      const partition =
+        by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}` : "";
 
       // When by are specified, also sort the final result by
       // by.
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE ${
-          quoteIdentifier(simpleTable.name)
-        } AS SELECT *, LEAD(${
-          quoteIdentifier(column)
-        }, ${offset}) OVER(${partition} ORDER BY rowid) AS ${
-          quoteIdentifier(newColumn)
-        } FROM ${quoteIdentifier(simpleTable.name)}${
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(
+          simpleTable.name,
+        )} AS SELECT *, LEAD(${quoteIdentifier(
+          column,
+        )}, ${offset}) OVER(${partition} ORDER BY rowid) AS ${quoteIdentifier(
+          newColumn,
+        )} FROM ${quoteIdentifier(simpleTable.name)}${
           by.length > 0
-            ? ` ORDER BY ${
-              by.map((d) => `${quoteIdentifier(d)}`).join(", ")
-            }, rowid`
+            ? ` ORDER BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}, rowid`
             : ` ORDER BY rowid`
         };`,
         mergeOptions(simpleTable, {

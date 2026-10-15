@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the number of a rows in a table", async () => {
+test("should return the number of a rows in a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -24,11 +25,11 @@ Deno.test("should return the number of a rows in a table", async () => {
   ]);
   const length = await table.getRowCount();
 
-  assertEquals(length, 16);
+  expect(length).toStrictEqual(16);
   await sdb.close();
 });
 
-Deno.test("should return the number of a rows in a table with nul values", async () => {
+test("should return the number of a rows in a table with nul values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -51,11 +52,11 @@ Deno.test("should return the number of a rows in a table with nul values", async
   ]);
   const length = await table.getRowCount();
 
-  assertEquals(length, 16);
+  expect(length).toStrictEqual(16);
   await sdb.close();
 });
 
-Deno.test("should return the number of a rows with conditions", async () => {
+test("should return the number of a rows with conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -78,6 +79,6 @@ Deno.test("should return the number of a rows with conditions", async () => {
   ]);
   const length = await table.getRowCount({ conditions: "age > 40" });
 
-  assertEquals(length, 4);
+  expect(length).toStrictEqual(4);
   await sdb.close();
 });

@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should report valid spatial join options at call time", async () => {
+test("should report valid spatial join options at call time", async () => {
   const sdb = new SimpleDB();
   const left = sdb.newTable("left");
   const right = sdb.newTable("right");
@@ -34,12 +36,10 @@ Deno.test("should report valid spatial join options at call time", async () => {
   await sdb.close();
 });
 
-Deno.test("should do a left spatial join the intersect method", async () => {
+test("should do a left spatial join the intersect method", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -47,7 +47,7 @@ Deno.test("should do a left spatial join the intersect method", async () => {
   prov.selectColumns(["nameEnglish", "name"]);
 
   const data = await prov.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Quebec", name: "polygonA" },
     { nameEnglish: "Ontario", name: "polygonA" },
     { nameEnglish: "Manitoba", name: "polygonB" },
@@ -64,12 +64,10 @@ Deno.test("should do a left spatial join the intersect method", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method and output the results to a new table", async () => {
+test("should do a left spatial join the intersect method and output the results to a new table", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -79,7 +77,7 @@ Deno.test("should do a left spatial join the intersect method and output the res
   table.selectColumns(["nameEnglish", "name"]);
 
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Quebec", name: "polygonA" },
     { nameEnglish: "Ontario", name: "polygonA" },
     { nameEnglish: "Manitoba", name: "polygonB" },
@@ -96,12 +94,10 @@ Deno.test("should do a left spatial join the intersect method and output the res
   ]);
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method and output the results to a new table with a specific name", async () => {
+test("should do a left spatial join the intersect method and output the results to a new table with a specific name", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -109,12 +105,11 @@ Deno.test("should do a left spatial join the intersect method and output the res
     outputTable: "specificTable",
   });
 
-  const data = await sdb.customQuery(
-    "select nameEnglish, name from specificTable",
-    { returnData: true },
-  );
+  const data = await sdb.customQuery("select nameEnglish, name from specificTable", {
+    returnData: true,
+  });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Quebec", name: "polygonA" },
     { nameEnglish: "Ontario", name: "polygonA" },
     { nameEnglish: "Manitoba", name: "polygonB" },
@@ -131,12 +126,10 @@ Deno.test("should do a left spatial join the intersect method and output the res
   ]);
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method with tables with default names", async () => {
+test("should do a left spatial join the intersect method with tables with default names", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -144,7 +137,7 @@ Deno.test("should do a left spatial join the intersect method with tables with d
 
   const columnsLeftTable = await prov.getColumns();
 
-  assertEquals(columnsLeftTable, [
+  expect(columnsLeftTable).toStrictEqual([
     "nameEnglish",
     "nameFrench",
     "geom",
@@ -153,12 +146,10 @@ Deno.test("should do a left spatial join the intersect method with tables with d
   ]);
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method with tables with specific names", async () => {
+test("should do a left spatial join the intersect method with tables with specific names", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -166,21 +157,13 @@ Deno.test("should do a left spatial join the intersect method with tables with s
 
   const columnsLeftTable = await prov.getColumns();
 
-  assertEquals(columnsLeftTable, [
-    "nameEnglish",
-    "nameFrench",
-    "geom",
-    "name",
-    "geomPoly",
-  ]);
+  expect(columnsLeftTable).toStrictEqual(["nameEnglish", "nameFrench", "geom", "name", "geomPoly"]);
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method without changing the name of the original tables", async () => {
+test("should do a left spatial join the intersect method without changing the name of the original tables", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -189,27 +172,16 @@ Deno.test("should do a left spatial join the intersect method without changing t
   const columnsLeftTable = await prov.getColumns();
   const columnsRightTable = await poly.getColumns();
 
-  assertEquals(
-    { columnsLeftTable, columnsRightTable },
-    {
-      columnsLeftTable: [
-        "nameEnglish",
-        "nameFrench",
-        "geom",
-        "name",
-        "geomTable2",
-      ],
-      columnsRightTable: ["name", "geom"],
-    },
-  );
+  expect({ columnsLeftTable, columnsRightTable }).toStrictEqual({
+    columnsLeftTable: ["nameEnglish", "nameFrench", "geom", "name", "geomTable2"],
+    columnsRightTable: ["name", "geom"],
+  });
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method without changing the name of the original tables with an outputTable option", async () => {
+test("should do a left spatial join the intersect method without changing the name of the original tables with an outputTable option", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
@@ -220,66 +192,41 @@ Deno.test("should do a left spatial join the intersect method without changing t
   const columnsLeftTable = await prov.getColumns();
   const columnsRightTable = await poly.getColumns();
 
-  assertEquals(
-    { columnsJoinedTable, columnsLeftTable, columnsRightTable },
-    {
-      columnsJoinedTable: [
-        "nameEnglish",
-        "nameFrench",
-        "geom",
-        "name",
-        "geomTable2",
-      ],
-      columnsLeftTable: ["nameEnglish", "nameFrench", "geom"],
-      columnsRightTable: ["name", "geom"],
-    },
-  );
+  expect({ columnsJoinedTable, columnsLeftTable, columnsRightTable }).toStrictEqual({
+    columnsJoinedTable: ["nameEnglish", "nameFrench", "geom", "name", "geomTable2"],
+    columnsLeftTable: ["nameEnglish", "nameFrench", "geom"],
+    columnsRightTable: ["name", "geom"],
+  });
   await sdb.close();
 });
-Deno.test("should exclude the right geometry from a spatial join", async () => {
+test("should exclude the right geometry from a spatial join", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
   prov.joinGeo(poly, "intersect", { excludeRightGeometry: true });
 
-  assertEquals(await prov.getColumns(), [
-    "nameEnglish",
-    "nameFrench",
-    "geom",
-    "name",
-  ]);
+  expect(await prov.getColumns()).toStrictEqual(["nameEnglish", "nameFrench", "geom", "name"]);
   await sdb.close();
 });
-Deno.test("should exclude the left geometry from a spatial join", async () => {
+test("should exclude the left geometry from a spatial join", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
   prov.joinGeo(poly, "intersect", { excludeLeftGeometry: true });
 
-  assertEquals(await prov.getColumns(), [
-    "nameEnglish",
-    "nameFrench",
-    "name",
-    "geom",
-  ]);
+  expect(await prov.getColumns()).toStrictEqual(["nameEnglish", "nameFrench", "name", "geom"]);
   await sdb.close();
 });
-Deno.test("should exclude both geometries from a spatial join", async () => {
+test("should exclude both geometries from a spatial join", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
 
@@ -289,19 +236,13 @@ Deno.test("should exclude both geometries from a spatial join", async () => {
     outputTable: "joined",
   });
 
-  assertEquals(await joined.getColumns(), [
-    "nameEnglish",
-    "nameFrench",
-    "name",
-  ]);
+  expect(await joined.getColumns()).toStrictEqual(["nameEnglish", "nameFrench", "name"]);
   await sdb.close();
 });
-Deno.test("should exclude only the selected right geometry", async () => {
+test("should exclude only the selected right geometry", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
   poly.cloneColumn("geom", "otherGeom");
@@ -312,7 +253,7 @@ Deno.test("should exclude only the selected right geometry", async () => {
     excludeRightGeometry: true,
   });
 
-  assertEquals(await prov.getColumns(), [
+  expect(await prov.getColumns()).toStrictEqual([
     "nameEnglish",
     "nameFrench",
     "geom",
@@ -321,12 +262,10 @@ Deno.test("should exclude only the selected right geometry", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should exclude only the selected left geometry", async () => {
+test("should exclude only the selected left geometry", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   prov.cloneColumn("geom", "otherGeom");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
@@ -337,7 +276,7 @@ Deno.test("should exclude only the selected left geometry", async () => {
     excludeLeftGeometry: true,
   });
 
-  assertEquals(await prov.getColumns(), [
+  expect(await prov.getColumns()).toStrictEqual([
     "nameEnglish",
     "nameFrench",
     "otherGeom",
@@ -346,12 +285,10 @@ Deno.test("should exclude only the selected left geometry", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should throw when the generated right geometry name already exists", async () => {
+test("should throw when the generated right geometry name already exists", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   prov.addColumn("geomPoly", "string", "'collision'");
   const poly = sdb.newTable("poly");
   poly.loadGeoData("test/geodata/files/polygons.geojson");
@@ -365,12 +302,10 @@ Deno.test("should throw when the generated right geometry name already exists", 
   );
   await sdb.close();
 });
-Deno.test("should do a left spatial join the intersect method with specific options", async () => {
+test("should do a left spatial join the intersect method with specific options", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable();
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   prov.renameColumns({ geom: "geomProvince" });
   const poly = sdb.newTable();
   poly.loadGeoData("test/geodata/files/polygons.geojson");
@@ -386,7 +321,7 @@ Deno.test("should do a left spatial join the intersect method with specific opti
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Quebec", name: "polygonA" },
     { nameEnglish: "Ontario", name: "polygonA" },
     { nameEnglish: "Manitoba", name: "polygonB" },
@@ -398,7 +333,7 @@ Deno.test("should do a left spatial join the intersect method with specific opti
   ]);
   await sdb.close();
 });
-Deno.test("should do a left spatial join the inside method", async () => {
+test("should do a left spatial join the inside method", async () => {
   const sdb = new SimpleDB();
   const points = sdb.newTable();
   points.loadGeoData("test/geodata/files/pointsInside.json");
@@ -412,7 +347,7 @@ Deno.test("should do a left spatial join the inside method", async () => {
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "pointC", polygonName: "container" },
     { name: "pointD", polygonName: "container" },
     { name: "pointA", polygonName: null },
@@ -420,12 +355,10 @@ Deno.test("should do a left spatial join the inside method", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should return all intersections and all rows from leftTable when doing a left join", async () => {
+test("should return all intersections and all rows from leftTable when doing a left join", async () => {
   const sdb = new SimpleDB();
   const polygonsWithin = sdb.newTable();
-  polygonsWithin.loadGeoData(
-    "test/geodata/files/polygonsWithinPolygons.json",
-  );
+  polygonsWithin.loadGeoData("test/geodata/files/polygonsWithinPolygons.json");
 
   const polygonsWithinNotNull = polygonsWithin.clone({
     conditions: `name NOT NULL`,
@@ -437,18 +370,14 @@ Deno.test("should return all intersections and all rows from leftTable when doin
   });
   containers.removeColumns("name");
 
-  const joined = polygonsWithinNotNull.joinGeo(
-    containers,
-    "intersect",
-    {
-      outputTable: "joined",
-    },
-  );
+  const joined = polygonsWithinNotNull.joinGeo(containers, "intersect", {
+    outputTable: "joined",
+  });
   joined.selectColumns(["name", "container"]);
   joined.sort({ name: "asc" });
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "A", container: null },
     { name: "B", container: "A" },
     { name: "B", container: "B" },
@@ -459,12 +388,10 @@ Deno.test("should return all intersections and all rows from leftTable when doin
   await sdb.close();
 });
 
-Deno.test("should return all intersections - and just intersections - when doing an inner join", async () => {
+test("should return all intersections - and just intersections - when doing an inner join", async () => {
   const sdb = new SimpleDB();
   const polygonsWithin = sdb.newTable();
-  polygonsWithin.loadGeoData(
-    "test/geodata/files/polygonsWithinPolygons.json",
-  );
+  polygonsWithin.loadGeoData("test/geodata/files/polygonsWithinPolygons.json");
 
   const polygonsWithinNotNull = polygonsWithin.clone({
     conditions: `name NOT NULL`,
@@ -476,19 +403,15 @@ Deno.test("should return all intersections - and just intersections - when doing
   });
   containers.removeColumns("name");
 
-  const joined = polygonsWithinNotNull.joinGeo(
-    containers,
-    "intersect",
-    {
-      outputTable: "joined",
-      type: "inner",
-    },
-  );
+  const joined = polygonsWithinNotNull.joinGeo(containers, "intersect", {
+    outputTable: "joined",
+    type: "inner",
+  });
   joined.selectColumns(["name", "container"]);
   joined.sort({ name: "asc" });
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "B", container: "A" },
     { name: "B", container: "B" },
     { name: "C", container: "A" },
@@ -498,7 +421,7 @@ Deno.test("should return all intersections - and just intersections - when doing
   await sdb.close();
 });
 
-Deno.test("should return all points within a target distance (srs method)", async () => {
+test("should return all points within a target distance (srs method)", async () => {
   const sdb = new SimpleDB();
   const cities = sdb.newTable();
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -510,7 +433,7 @@ Deno.test("should return all points within a target distance (srs method)", asyn
 
   const data = await cities.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "toronto", name_1: "montreal", dist: 5.66 },
     { name: "montreal", name_1: "toronto", dist: 5.66 },
@@ -520,7 +443,7 @@ Deno.test("should return all points within a target distance (srs method)", asyn
   await sdb.close();
 });
 
-Deno.test("should return all points within a target distance (haversine method)", async () => {
+test("should return all points within a target distance (haversine method)", async () => {
   const sdb = new SimpleDB();
   const cities = sdb.newTable();
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -539,7 +462,7 @@ Deno.test("should return all points within a target distance (haversine method)"
   cities.selectColumns(["name", "name_1", "dist"]);
   const data = await cities.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 464577 },
     { name: "toronto", name_1: "montreal", dist: 464577 },
@@ -549,7 +472,7 @@ Deno.test("should return all points within a target distance (haversine method)"
   await sdb.close();
 });
 
-Deno.test("should return all points within a target distance (spheroid method)", async () => {
+test("should return all points within a target distance (spheroid method)", async () => {
   const sdb = new SimpleDB();
   const cities = sdb.newTable();
   cities.loadGeoData("test/geodata/files/coordinates.geojson");
@@ -569,7 +492,7 @@ Deno.test("should return all points within a target distance (spheroid method)",
 
   const data = await cities.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "toronto", name_1: "toronto", dist: 0 },
     { name: "montreal", name_1: "toronto", dist: 465639 },
     { name: "toronto", name_1: "montreal", dist: 465639 },
@@ -578,7 +501,7 @@ Deno.test("should return all points within a target distance (spheroid method)",
   ]);
   await sdb.close();
 });
-Deno.test("should log a table after a joinGeo", async () => {
+test("should log a table after a joinGeo", async () => {
   // Example from Code Like a Journalist geospatial lesson
 
   const sdb = new SimpleDB();
@@ -589,9 +512,7 @@ Deno.test("should log a table after a joinGeo", async () => {
   fires.createPoints("lat", "lon", "geom");
 
   const provinces = sdb.newTable("provinces");
-  provinces.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  provinces.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const firesInsideProvinces = fires.joinGeo(provinces, "inside", {
     outputTable: "firesInsideProvinces",
@@ -602,41 +523,53 @@ Deno.test("should log a table after a joinGeo", async () => {
   await sdb.close();
 });
 
-Deno.test("should fuse spatial joins with downstream projection, filtering, and aggregation", async () => {
+test("should fuse spatial joins with downstream projection, filtering, and aggregation", async () => {
   const sdb = new SimpleDB();
   try {
     const left = sdb.newTable("points");
     const right = sdb.newTable("regions");
-    await left.loadArray([{ x: 1, y: 1, value: 10 }, { x: 2, y: 2, value: 20 }])
-      .createPoints("y", "x", "geom").run();
-    await right.loadArray([{ x: 1, y: 1, category: "a" }])
-      .createPoints("y", "x", "geom").selectColumns(["geom", "category"]).run();
+    await left
+      .loadArray([
+        { x: 1, y: 1, value: 10 },
+        { x: 2, y: 2, value: 20 },
+      ])
+      .createPoints("y", "x", "geom")
+      .run();
+    await right
+      .loadArray([{ x: 1, y: 1, category: "a" }])
+      .createPoints("y", "x", "geom")
+      .selectColumns(["geom", "category"])
+      .run();
     const baseline = left.joinGeo(right, "withinDistance", {
       distance: 10,
       outputTable: "baseline",
     });
     await baseline.run();
-    const expected = await baseline.selectColumns(["value", "category"])
-      .filter("value > 10").summarize({
+    const expected = await baseline
+      .selectColumns(["value", "category"])
+      .filter("value > 10")
+      .summarize({
         columns: "value",
         by: "category",
         stats: "sum",
-      }).getData();
+      })
+      .getData();
     const queries: string[] = [];
     const original = left.runQuery;
     left.runQuery = (query, connection, returnData, options) => {
       queries.push(query);
       return original(query, connection, returnData, options);
     };
-    const actual = await left.joinGeo(right, "withinDistance", { distance: 10 })
-      .selectColumns(["value", "category"]).filter("value > 10")
-      .summarize({ columns: "value", by: "category", stats: "sum" }).getData();
-    assertEquals(actual, expected);
-    assertEquals(
-      queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE"))
-        .length,
-      1,
-    );
+    const actual = await left
+      .joinGeo(right, "withinDistance", { distance: 10 })
+      .selectColumns(["value", "category"])
+      .filter("value > 10")
+      .summarize({ columns: "value", by: "category", stats: "sum" })
+      .getData();
+    expect(actual).toStrictEqual(expected);
+    expect(
+      queries.filter((query) => query.startsWith("CREATE OR REPLACE TABLE")).length,
+    ).toStrictEqual(1);
   } finally {
     await sdb.close();
   }

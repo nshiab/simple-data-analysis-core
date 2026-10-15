@@ -25,11 +25,11 @@ export default function wider(
     execute: async () => {
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE ${
-          quoteIdentifier(simpleTable.name)
-        } AS SELECT * FROM (PIVOT ${quoteIdentifier(simpleTable.name)} ON ${
-          quoteIdentifier(namesFrom)
-        } USING ${aggregateFunction}(${quoteIdentifier(valuesFrom)}));`,
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(
+          simpleTable.name,
+        )} AS SELECT * FROM (PIVOT ${quoteIdentifier(simpleTable.name)} ON ${quoteIdentifier(
+          namesFrom,
+        )} USING ${aggregateFunction}(${quoteIdentifier(valuesFrom)}));`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "wider()",

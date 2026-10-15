@@ -1,22 +1,18 @@
-# The Simple Data Analysis (Core) Library
+# Simple Data Analysis Core v2.1.12
 
-> Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Deno, Node.js, and Bun.
+> Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Node.js.
 
-- Package: `@nshiab/simple-data-analysis-core`
-- Version: `2.1.12`
+- [README](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/README.md): Installation, examples and usage.
 
-Install with Deno: `deno add jsr:@nshiab/simple-data-analysis-core`
-
-Install with Node.js: `npm i @nshiab/simple-data-analysis-core`
-
-Install with Bun: `bun add @nshiab/simple-data-analysis-core`
-
-## Documentation
-
-- [README](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/README.md): Installation, quick start, concepts, and examples.
-- [Complete API reference](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/main/llm.md): Generated documentation for public classes, methods, parameters, and examples.
-- [JSR API reference](https://jsr.io/@nshiab/simple-data-analysis-core/doc): Searchable documentation for the published package.
-
-## Optional
-
-- [Source repository](https://github.com/nshiab/simple-data-analysis-core): Source code, issues, releases, and contribution guidance.
+## API
+- [SDAError](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/classes/SDAError.md): SDAError class
+- [SimpleDB](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/classes/SimpleDB.md): SimpleDB class
+- [SimpleTable](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/classes/SimpleTable.md): SimpleTable class
+- [createDirectory](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/createDirectory.md): createDirectory function
+- [mergeOptions](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/mergeOptions.md): mergeOptions function
+- [parseValue](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/parseValue.md): parseValue function
+- [queryDB](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/queryDB.md): queryDB function
+- [queueAsyncBarrier](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/queueAsyncBarrier.md): queueAsyncBarrier function
+- [quoteIdentifier](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/quoteIdentifier.md): quoteIdentifier function
+- [stringToArray](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/stringToArray.md): stringToArray function
+- [updateColumnsWithJS](https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/v2.1.12/docs/functions/updateColumnsWithJS.md): updateColumnsWithJS function

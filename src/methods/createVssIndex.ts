@@ -38,29 +38,25 @@ async function executeCreateVssIndex(
   },
 ): Promise<void> {
   const indexName = `vss_cosine_index_${camelCase(simpleTable.name)}`;
-  const indexPosition = simpleTable.indexes.findIndex(({ name }) =>
-    name === indexName
-  );
+  const indexPosition = simpleTable.indexes.findIndex(({ name }) => name === indexName);
   const indexExists = indexPosition >= 0;
 
   if (indexExists && options.overwrite) {
-    options.verbose &&
-      console.log(
-        `\nDropping existing VSS index on ${quoteIdentifier(column)} column...`,
-      );
+    if (options.verbose) {
+      console.log(`\nDropping existing VSS index on ${quoteIdentifier(column)} column...`);
+    }
 
-    await simpleTable.sdb.customQuery(
-      `DROP INDEX IF EXISTS ${indexName};`,
-    );
+    await simpleTable.sdb.customQuery(`DROP INDEX IF EXISTS ${indexName};`);
 
-    options.verbose && console.log("VSS index dropped.");
+    if (options.verbose) {
+      console.log("VSS index dropped.");
+    }
   }
 
   if (!indexExists || options.overwrite) {
-    options.verbose &&
-      console.log(
-        `\nCreating VSS index on ${quoteIdentifier(column)} column...`,
-      );
+    if (options.verbose) {
+      console.log(`\nCreating VSS index on ${quoteIdentifier(column)} column...`);
+    }
 
     const indexOptions: VssIndexDefinition["options"] = {};
     if (options.efConstruction !== undefined) {
@@ -92,8 +88,12 @@ async function executeCreateVssIndex(
       simpleTable.indexes.push(definition);
     }
 
-    options.verbose && console.log("VSS index created successfully.");
+    if (options.verbose) {
+      console.log("VSS index created successfully.");
+    }
   } else {
-    options.verbose && console.log("VSS index already exists.");
+    if (options.verbose) {
+      console.log("VSS index already exists.");
+    }
   }
 }

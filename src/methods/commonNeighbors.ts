@@ -30,9 +30,7 @@ export default function commonNeighbors(
   if (typeof targetColumn !== "string") {
     throw new TypeError("commonNeighbors() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("commonNeighbors() options must be an object.");
   }
   if (
@@ -48,9 +46,7 @@ export default function commonNeighbors(
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "commonNeighbors() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("commonNeighbors() options.outputTable must be a string or boolean.");
   }
 
   const nodes = prepareNodes(nodeA, nodeB);
@@ -67,14 +63,7 @@ export default function commonNeighbors(
       return nodes.values;
     },
     buildSelect: (input, schema) =>
-      commonNeighborsSelect(
-        input,
-        schema,
-        sourceColumn,
-        targetColumn,
-        nodes,
-        direction,
-      ),
+      commonNeighborsSelect(input, schema, sourceColumn, targetColumn, nodes, direction),
     outputSchema: (schema) => ({
       node: validateNodes(schema, sourceColumn, targetColumn, nodes).idType,
     }),
@@ -96,9 +85,7 @@ function prepareNodes(nodeA: GraphId, nodeB: GraphId): PreparedGraphStarts {
     );
   }
   if (first.values[0] === second.values[0]) {
-    throw new TypeError(
-      "commonNeighbors() nodeA and nodeB must be different.",
-    );
+    throw new TypeError("commonNeighbors() nodeA and nodeB must be different.");
   }
   return {
     family: first.family,
@@ -113,14 +100,7 @@ function validateNodes(
   target: string,
   nodes: PreparedGraphStarts,
 ) {
-  return validateGraphStarts(
-    schema,
-    source,
-    target,
-    nodes,
-    "commonNeighbors()",
-    "nodeA and nodeB",
-  );
+  return validateGraphStarts(schema, source, target, nodes, "commonNeighbors()", "nodeA and nodeB");
 }
 
 function commonNeighborsSelect(

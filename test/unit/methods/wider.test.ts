@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("wider leaves the connection usable after a failed pivot", async () => {
+test("wider leaves the connection usable after a failed pivot", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("failedPivot");
@@ -14,16 +16,15 @@ Deno.test("wider leaves the connection usable after a failed pivot", async () =>
       Error,
       "missing_value",
     );
-    assertEquals(
-      await sdb.customQuery("SELECT 42 AS answer", { returnData: true }),
-      [{ answer: 42 }],
-    );
+    expect(await sdb.customQuery("SELECT 42 AS answer", { returnData: true })).toStrictEqual([
+      { answer: 42 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("should untidy data by expanding mutiple columns", async () => {
+test("should untidy data by expanding mutiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataTidy.json");
@@ -32,7 +33,7 @@ Deno.test("should untidy data by expanding mutiple columns", async () => {
   table.sort({ Department: "asc" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       "2015": 1,
       "2016": 2,
@@ -65,7 +66,7 @@ Deno.test("should untidy data by expanding mutiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should untidy data by expanding mutiple columns with spaces in their names", async () => {
+test("should untidy data by expanding mutiple columns with spaces in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -165,7 +166,7 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
   table.sort({ Department: "asc" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       "2015": 1,
       "2016": 2,
@@ -198,7 +199,7 @@ Deno.test("should untidy data by expanding mutiple columns with spaces in their 
   await sdb.close();
 });
 
-Deno.test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
+test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -209,12 +210,12 @@ Deno.test("should sum values by default when namesFrom/grouping has duplicate co
 
   const data = await table.getData();
 
-  assertEquals(data, [{ Department: "accounting", "2015": 15 }]);
+  expect(data).toStrictEqual([{ Department: "accounting", "2015": 15 }]);
 
   await sdb.close();
 });
 
-Deno.test("should use the stat option instead of the default sum", async () => {
+test("should use the stat option instead of the default sum", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -225,7 +226,7 @@ Deno.test("should use the stat option instead of the default sum", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [{ Department: "accounting", "2015": 7.5 }]);
+  expect(data).toStrictEqual([{ Department: "accounting", "2015": 7.5 }]);
 
   await sdb.close();
 });

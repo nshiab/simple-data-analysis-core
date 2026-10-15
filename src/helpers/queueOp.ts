@@ -16,10 +16,7 @@ import { captureAsyncOperation } from "./asyncOperationContext.ts";
  *
  * @internal
  */
-export default function queueOp(
-  simpleTable: SimpleTable,
-  op: PendingOpInput,
-): void {
+export default function queueOp(simpleTable: SimpleTable, op: PendingOpInput): void {
   assertCacheTableMutation(simpleTable);
   const sdb = simpleTable.sdb;
   if (sdb.lifecycleState !== "open") {
@@ -34,9 +31,7 @@ export default function queueOp(
   if (capturedOp.kind === "fusable" || capturedOp.kind === "source") {
     capturedOp = {
       ...capturedOp,
-      rawSQL: capturedOp.rawSQL === undefined
-        ? undefined
-        : [...capturedOp.rawSQL],
+      rawSQL: capturedOp.rawSQL === undefined ? undefined : [...capturedOp.rawSQL],
     };
     if (capturedOp.rawSQL !== undefined) {
       recordCacheTableReferences(simpleTable, capturedOp.rawSQL);
@@ -73,9 +68,7 @@ export default function queueOp(
  * Empties every table's pending queue without executing it and returns what
  * was dropped, so close() can report forgotten work after cleaning up.
  */
-export function discardAllPending(
-  sdb: SimpleDB,
-): { table: SimpleTable; methods: string[] }[] {
+export function discardAllPending(sdb: SimpleDB): { table: SimpleTable; methods: string[] }[] {
   const discarded: { table: SimpleTable; methods: string[] }[] = [];
   for (const table of getRegisteredTables(sdb)) {
     if (table.pendingOps.length > 0) {

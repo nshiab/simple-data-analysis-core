@@ -2,10 +2,7 @@ import type { IndexDefinition } from "./indexDefinitions.ts";
 import parseValue from "./parseValue.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 
-export default function buildCreateIndexQuery(
-  table: string,
-  index: IndexDefinition,
-): string {
+export default function buildCreateIndexQuery(table: string, index: IndexDefinition): string {
   switch (index.kind) {
     case "fts":
       return buildFtsIndexQuery(table, index);
@@ -34,9 +31,7 @@ function buildVssIndexQuery(
   if (index.options.M !== undefined) {
     withOptions.push(`M = ${index.options.M}`);
   }
-  return `CREATE INDEX ${quoteIdentifier(index.name)} ON ${
-    quoteIdentifier(table)
-  }
+  return `CREATE INDEX ${quoteIdentifier(index.name)} ON ${quoteIdentifier(table)}
     USING HNSW (${quoteIdentifier(index.column)})
     WITH (${withOptions.join(", ")});`;
 }
@@ -46,17 +41,13 @@ function buildFtsIndexQuery(
   index: Extract<IndexDefinition, { kind: "fts" }>,
 ): string {
   const options = index.options;
-  return `PRAGMA create_fts_index(${quoteIdentifier(table)}, ${
-    quoteIdentifier(index.idColumn)
-  }, ${quoteIdentifier(index.textColumn)}${
+  return `PRAGMA create_fts_index(${quoteIdentifier(table)}, ${quoteIdentifier(
+    index.idColumn,
+  )}, ${quoteIdentifier(index.textColumn)}${
     options.stemmer ? `, stemmer = ${parseValue(options.stemmer)}` : ""
   }${
     options.stopwords ? `, stopwords = ${parseValue(options.stopwords)}` : ""
   }${options.ignore ? `, ignore = ${parseValue(options.ignore)}` : ""}${
-    options.stripAccents !== undefined
-      ? `, strip_accents = ${options.stripAccents ? 1 : 0}`
-      : ""
-  }${
-    options.lower !== undefined ? `, lower = ${options.lower ? 1 : 0}` : ""
-  });`;
+    options.stripAccents !== undefined ? `, strip_accents = ${options.stripAccents ? 1 : 0}` : ""
+  }${options.lower !== undefined ? `, lower = ${options.lower ? 1 : 0}` : ""});`;
 }

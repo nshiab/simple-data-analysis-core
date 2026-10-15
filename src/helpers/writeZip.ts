@@ -1,12 +1,7 @@
 import { createReadStream } from "node:fs";
 import { type FileHandle, open, rm, stat } from "node:fs/promises";
 import { basename } from "node:path";
-import {
-  Transform,
-  type TransformCallback,
-  Writable,
-  type WritableOptions,
-} from "node:stream";
+import { Transform, type TransformCallback, Writable, type WritableOptions } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import * as zlib from "node:zlib";
 import { constants, createDeflateRaw } from "node:zlib";
@@ -64,12 +59,14 @@ class FileHandleWritable extends Writable {
     _encoding: BufferEncoding,
     callback: (error?: Error | null) => void,
   ): void {
-    writeAll(this.#fileHandle, chunk).then(() => {
-      this.bytesWritten += chunk.byteLength;
-      callback();
-    }).catch((error: unknown) => {
-      callback(error instanceof Error ? error : new Error(String(error)));
-    });
+    writeAll(this.#fileHandle, chunk)
+      .then(() => {
+        this.bytesWritten += chunk.byteLength;
+        callback();
+      })
+      .catch((error: unknown) => {
+        callback(error instanceof Error ? error : new Error(String(error)));
+      });
   }
 }
 
@@ -81,14 +78,9 @@ class FileHandleWritable extends Writable {
  * still exceed ZIP32 limits; those cases fail explicitly instead of producing
  * a corrupt archive.
  */
-export default async function writeZip(
-  archive: string,
-  inputs: ZipInput[],
-): Promise<void> {
+export default async function writeZip(archive: string, inputs: ZipInput[]): Promise<void> {
   if (inputs.length > maximumZip32Entries) {
-    throw new Error(
-      `ZIP archives support at most ${maximumZip32Entries} files.`,
-    );
+    throw new Error(`ZIP archives support at most ${maximumZip32Entries} files.`);
   }
 
   const fileHandle = await open(archive, "w");
@@ -100,22 +92,14 @@ export default async function writeZip(
     for (const input of inputs) {
       const fileStats = await stat(input.file);
       if (!fileStats.isFile()) {
-        throw new Error(
-          `ZIP input is not a file: ${JSON.stringify(input.file)}`,
-        );
+        throw new Error(`ZIP input is not a file: ${JSON.stringify(input.file)}`);
       }
       assertZip32Value(fileStats.size, "uncompressed file size");
 
       const name = encodeZipName(input.name ?? basename(input.file));
-      const { modificationTime, modificationDate } = encodeDosDateTime(
-        fileStats.mtime,
-      );
+      const { modificationTime, modificationDate } = encodeDosDateTime(fileStats.mtime);
       const localHeaderOffset = offset;
-      const localHeader = createLocalHeader(
-        name,
-        modificationTime,
-        modificationDate,
-      );
+      const localHeader = createLocalHeader(name, modificationTime, modificationDate);
       await writeAll(fileHandle, localHeader);
       offset += localHeader.byteLength;
 
@@ -129,11 +113,7 @@ export default async function writeZip(
       );
 
       assertZip32Value(output.bytesWritten, "compressed file size");
-      const descriptor = createDataDescriptor(
-        checksum.crc32,
-        output.bytesWritten,
-        checksum.size,
-      );
+      const descriptor = createDataDescriptor(checksum.crc32, output.bytesWritten, checksum.size);
       await writeAll(fileHandle, descriptor);
       offset += output.bytesWritten + descriptor.byteLength;
 
@@ -161,11 +141,7 @@ export default async function writeZip(
     assertZip32Value(centralDirectorySize, "central directory size");
     await writeAll(
       fileHandle,
-      createEndOfCentralDirectory(
-        entries.length,
-        centralDirectorySize,
-        centralDirectoryOffset,
-      ),
+      createEndOfCentralDirectory(entries.length, centralDirectorySize, centralDirectoryOffset),
     );
   } catch (error) {
     operationError = error;
@@ -226,7 +202,8 @@ function updateCrc32(data: Uint8Array, previous: number): number {
 function encodeZipName(name: string): Uint8Array {
   const normalizedName = name.replaceAll("\\", "/");
   if (
-    normalizedName === "" || normalizedName.startsWith("/") ||
+    normalizedName === "" ||
+    normalizedName.startsWith("/") ||
     normalizedName.split("/").includes("..")
   ) {
     throw new Error(`Invalid ZIP entry name: ${JSON.stringify(name)}`);
@@ -244,12 +221,9 @@ function encodeDosDateTime(date: Date): {
 } {
   const year = Math.min(2107, Math.max(1980, date.getFullYear()));
   return {
-    modificationTime: (date.getHours() << 11) |
-      (date.getMinutes() << 5) |
-      Math.floor(date.getSeconds() / 2),
-    modificationDate: ((year - 1980) << 9) |
-      ((date.getMonth() + 1) << 5) |
-      date.getDate(),
+    modificationTime:
+      (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+    modificationDate: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate(),
   };
 }
 
@@ -321,16 +295,11 @@ function createEndOfCentralDirectory(
 
 function assertZip32Value(value: number, label: string): void {
   if (!Number.isSafeInteger(value) || value < 0 || value > maximumZip32Value) {
-    throw new Error(
-      `Cannot create ZIP archive: ${label} exceeds the 4 GB ZIP32 limit.`,
-    );
+    throw new Error(`Cannot create ZIP archive: ${label} exceeds the 4 GB ZIP32 limit.`);
   }
 }
 
-async function writeAll(
-  fileHandle: FileHandle,
-  data: Uint8Array,
-): Promise<void> {
+async function writeAll(fileHandle: FileHandle, data: Uint8Array): Promise<void> {
   let offset = 0;
   while (offset < data.byteLength) {
     const { bytesWritten } = await fileHandle.write(data.subarray(offset));

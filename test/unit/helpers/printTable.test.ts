@@ -1,9 +1,11 @@
-import { assertEquals } from "@std/assert";
+import { stripVTControlCharacters } from "node:util";
+import { test, expect } from "vite-plus/test";
+
 import printTable from "../../../src/helpers/printTable.ts";
 
 // Capture console output to check rendering and layout.
 
-Deno.test("printTable - empty data shows message", () => {
+test("printTable - empty data shows message", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(args.join(" "));
@@ -13,10 +15,10 @@ Deno.test("printTable - empty data shows message", () => {
 
   console.log = originalLog;
 
-  assertEquals(logs, ["(empty table)", "(empty table)"]);
+  expect(logs).toStrictEqual(["(empty table)", "(empty table)"]);
 });
 
-Deno.test("printTable - basic table renders without error", () => {
+test("printTable - basic table renders without error", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -31,15 +33,15 @@ Deno.test("printTable - basic table renders without error", () => {
 
   // Should have top border, header, separator, rows, bottom border
   // Without word wrapping: top | header | sep | row1 | row2 | bottom = 6 lines
-  assertEquals(logs.length, 6);
+  expect(logs.length).toStrictEqual(6);
 
   const allOutput = logs.join("\n");
   // Check box-drawing characters exist
-  assertEquals(allOutput.includes("┌"), true);
-  assertEquals(allOutput.includes("└"), true);
+  expect(allOutput.includes("┌")).toStrictEqual(true);
+  expect(allOutput.includes("└")).toStrictEqual(true);
 });
 
-Deno.test("printTable - word wrapping with maxColumnWidth", () => {
+test("printTable - word wrapping with maxColumnWidth", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -55,10 +57,10 @@ Deno.test("printTable - word wrapping with maxColumnWidth", () => {
   console.log = originalLog;
 
   // Should have more than 4 lines due to wrapping
-  assertEquals(logs.length > 4, true);
+  expect(logs.length > 4).toStrictEqual(true);
 });
 
-Deno.test("printTable - minColumnWidth enforcement", () => {
+test("printTable - minColumnWidth enforcement", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -70,10 +72,10 @@ Deno.test("printTable - minColumnWidth enforcement", () => {
 
   // Should have: top | header | sep | bottom = 4 lines (no data row with single char)
   // Actually: top | header | sep | data | bottom = 5 lines
-  assertEquals(logs.length, 5);
+  expect(logs.length).toStrictEqual(5);
 });
 
-Deno.test("printTable - types row rendered in grey", () => {
+test("printTable - types row rendered in grey", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -86,12 +88,12 @@ Deno.test("printTable - types row rendered in grey", () => {
 
   // Should have: top | header | types | sep | data | bottom = 6 lines
   // (separator after types row, not after header since typesRowIndex is 0)
-  assertEquals(logs.length, 6);
+  expect(logs.length).toStrictEqual(6);
   // The separator (├) should be at index 3 (after types row at index 2)
-  assertEquals(logs[3].includes("├"), true);
+  expect(logs[3].includes("├")).toStrictEqual(true);
 });
 
-Deno.test("printTable - Date objects formatted as ISO strings", () => {
+test("printTable - Date objects formatted as ISO strings", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -104,10 +106,10 @@ Deno.test("printTable - Date objects formatted as ISO strings", () => {
   // The ISO string should appear in the output
   const isoString = "1993-01-01T00:00:00.000Z";
   const found = logs.some((log) => log.includes(isoString));
-  assertEquals(found, true);
+  expect(found).toStrictEqual(true);
 });
 
-Deno.test("printTable - ANSI color codes for different types", () => {
+test("printTable - ANSI color codes for different types", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -128,10 +130,10 @@ Deno.test("printTable - ANSI color codes for different types", () => {
   // All ANSI codes should be present in the output
   const allOutput = logs.join("\n");
   // The output should contain ANSI escape sequences
-  assertEquals(allOutput.includes("\x1b["), true);
+  expect(allOutput.includes("\x1b[")).toStrictEqual(true);
 });
 
-Deno.test("printTable - box-drawing characters", () => {
+test("printTable - box-drawing characters", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -143,17 +145,17 @@ Deno.test("printTable - box-drawing characters", () => {
   console.log = originalLog;
 
   const allOutput = logs.join("\n");
-  assertEquals(allOutput.includes("┌"), true); // top-left
-  assertEquals(allOutput.includes("┐"), true); // top-right
-  assertEquals(allOutput.includes("└"), true); // bottom-left
-  assertEquals(allOutput.includes("┘"), true); // bottom-right
-  assertEquals(allOutput.includes("├"), true); // junction
-  assertEquals(allOutput.includes("┤"), true); // junction
-  assertEquals(allOutput.includes("┬"), true); // junction
-  assertEquals(allOutput.includes("┴"), true); // junction
-  assertEquals(allOutput.includes("┼"), true); // junction
-  assertEquals(allOutput.includes("│"), true); // vertical bar
-  assertEquals(allOutput.includes("─"), true); // horizontal bar
+  expect(allOutput.includes("┌")).toStrictEqual(true); // top-left
+  expect(allOutput.includes("┐")).toStrictEqual(true); // top-right
+  expect(allOutput.includes("└")).toStrictEqual(true); // bottom-left
+  expect(allOutput.includes("┘")).toStrictEqual(true); // bottom-right
+  expect(allOutput.includes("├")).toStrictEqual(true); // junction
+  expect(allOutput.includes("┤")).toStrictEqual(true); // junction
+  expect(allOutput.includes("┬")).toStrictEqual(true); // junction
+  expect(allOutput.includes("┴")).toStrictEqual(true); // junction
+  expect(allOutput.includes("┼")).toStrictEqual(true); // junction
+  expect(allOutput.includes("│")).toStrictEqual(true); // vertical bar
+  expect(allOutput.includes("─")).toStrictEqual(true); // horizontal bar
 });
 
 function captureTable(
@@ -169,11 +171,10 @@ function captureTable(
     console.log = originalLog;
   }
   // Strip the renderer's ANSI colors before checking the table layout.
-  // deno-lint-ignore no-control-regex
-  return logs.map((line) => line.replace(/\x1b\[[0-9;]*m/g, ""));
+  return logs.map(stripVTControlCharacters);
 }
 
-Deno.test("printTable - decomposed accents preserve filename column alignment", () => {
+test("printTable - decomposed accents preserve filename column alignment", () => {
   const fileName = "006 PLQ_Gue\u0301rette Thomas_QC 2026.png";
   const rows = [
     { fileName: "001 PQ_Tremblay Stephane_QC 2026.png", detected: false },
@@ -182,20 +183,23 @@ Deno.test("printTable - decomposed accents preserve filename column alignment", 
     { fileName: "Thunder Bay cand photo.png", detected: true },
   ];
   const logs = captureTable(rows);
-  const composed = captureTable(rows.map((row) => ({
-    ...row,
-    fileName: row.fileName.normalize("NFC"),
-  })));
-  assertEquals(logs.map((line) => line.normalize("NFC")), composed);
-  assertEquals(logs.some((line) => line.includes(fileName)), true);
-  assertEquals(rows[1].fileName, fileName);
+  const composed = captureTable(
+    rows.map((row) => ({
+      ...row,
+      fileName: row.fileName.normalize("NFC"),
+    })),
+  );
+  expect(logs.map((line) => line.normalize("NFC"))).toStrictEqual(composed);
+  expect(logs.some((line) => line.includes(fileName))).toStrictEqual(true);
+  expect(rows[1].fileName).toStrictEqual(fileName);
 });
 
-Deno.test("printTable - combining accents align in wrapped headers and multiline cells", () => {
-  const logs = captureTable([
-    { "e\u0301e\u0301e\u0301e\u0301": "a\u0301bc\u0301d\n\ne\u0301", id: 1 },
-  ], { maxColumnWidth: 3 });
-  assertEquals(logs, [
+test("printTable - combining accents align in wrapped headers and multiline cells", () => {
+  const logs = captureTable(
+    [{ "e\u0301e\u0301e\u0301e\u0301": "a\u0301bc\u0301d\n\ne\u0301", id: 1 }],
+    { maxColumnWidth: 3 },
+  );
+  expect(logs).toStrictEqual([
     "┌─────┬─────┐",
     "│ e\u0301e\u0301e\u0301 │ id  │",
     "│ e\u0301   │     │",
@@ -208,10 +212,10 @@ Deno.test("printTable - combining accents align in wrapped headers and multiline
   ]);
 });
 
-Deno.test("printTable - long headers wrap at the default ceiling with aligned columns", () => {
+test("printTable - long headers wrap at the default ceiling with aligned columns", () => {
   const header = "x".repeat(80);
   const logs = captureTable([{ [header]: "value", id: 1 }]);
-  assertEquals(logs, [
+  expect(logs).toStrictEqual([
     `┌${"─".repeat(77)}┬─────┐`,
     `│ ${"x".repeat(75)} │ id  │`,
     `│ xxxxx${" ".repeat(71)}│     │`,
@@ -221,9 +225,9 @@ Deno.test("printTable - long headers wrap at the default ceiling with aligned co
   ]);
 });
 
-Deno.test("printTable - multiline headers size by their longest line and preserve blank lines", () => {
+test("printTable - multiline headers size by their longest line and preserve blank lines", () => {
   const logs = captureTable([{ "a\n\nbb\n": "x", id: 1 }]);
-  assertEquals(logs, [
+  expect(logs).toStrictEqual([
     "┌─────┬─────┐",
     "│ a   │ id  │",
     "│     │     │",
@@ -235,13 +239,16 @@ Deno.test("printTable - multiline headers size by their longest line and preserv
   ]);
 });
 
-Deno.test("printTable - headers and cells share word wrapping and align with wrapped types", () => {
+test("printTable - headers and cells share word wrapping and align with wrapped types", () => {
   const header = "first second\nabcdefghijk";
-  const logs = captureTable([
-    { [header]: "VARCHAR/string", id: "INTEGER/number" },
-    { [header]: header, id: 1 },
-  ], { maxColumnWidth: 10, typesRowIndex: 0 });
-  assertEquals(logs, [
+  const logs = captureTable(
+    [
+      { [header]: "VARCHAR/string", id: "INTEGER/number" },
+      { [header]: header, id: 1 },
+    ],
+    { maxColumnWidth: 10, typesRowIndex: 0 },
+  );
+  expect(logs).toStrictEqual([
     "┌────────────┬────────────┐",
     "│ first      │ id         │",
     "│ second     │            │",

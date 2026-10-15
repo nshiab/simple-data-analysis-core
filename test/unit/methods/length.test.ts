@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should calculate the length of geometries in meters", async () => {
+test("should calculate the length of geometries in meters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
@@ -10,11 +11,11 @@ Deno.test("should calculate the length of geometries in meters", async () => {
   table.selectColumns("length");
   const data = await table.getData();
 
-  assertEquals(data, [{ length: 70175 }]);
+  expect(data).toStrictEqual([{ length: 70175 }]);
   await sdb.close();
 });
 
-Deno.test("should calculate the length of geometries from a specific column in meters", async () => {
+test("should calculate the length of geometries from a specific column in meters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
@@ -23,11 +24,11 @@ Deno.test("should calculate the length of geometries from a specific column in m
   table.selectColumns("length");
   const data = await table.getData();
 
-  assertEquals(data, [{ length: 70175 }]);
+  expect(data).toStrictEqual([{ length: 70175 }]);
   await sdb.close();
 });
 
-Deno.test("should calculate the length of geometries in meters from an EPSG:4326 file", async () => {
+test("should calculate the length of geometries in meters from an EPSG:4326 file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
@@ -36,11 +37,11 @@ Deno.test("should calculate the length of geometries in meters from an EPSG:4326
   table.selectColumns("length");
   const data = await table.getData();
 
-  assertEquals(data, [{ length: 70175 }]);
+  expect(data).toStrictEqual([{ length: 70175 }]);
   await sdb.close();
 });
 
-Deno.test("should calculate the length of geometries in kilometers", async () => {
+test("should calculate the length of geometries in kilometers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
@@ -49,18 +50,18 @@ Deno.test("should calculate the length of geometries in kilometers", async () =>
   table.selectColumns("length");
   const data = await table.getData();
 
-  assertEquals(data, [{ length: 70 }]);
+  expect(data).toStrictEqual([{ length: 70 }]);
   await sdb.close();
 });
 
-Deno.test("should round lengths after converting their unit", async () => {
+test("should round lengths after converting their unit", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/line.json");
   table.length("length", { unit: "km", decimals: 2 });
   table.selectColumns("length");
 
-  assertEquals(await table.getData(), [{ length: 70.18 }]);
+  expect(await table.getData()).toStrictEqual([{ length: 70.18 }]);
 
   await sdb.close();
 });
