@@ -52,7 +52,8 @@ Run formatting, lint, type checks, tests, the package build, and documentation:
 npm run all-tests
 ```
 
-Use `npm run fix` to apply formatting and lint fixes. Tests run with two workers,
+Use `npm run fix` to apply formatting and lint fixes. Tests run with four workers
+locally and two when `CI=true`,
 each test file using a temporary working directory for outputs and caches.
 Fixtures are shared and must remain read-only. Local test runs may load
 `.env`; CI does not load it. `CI=true` skips tests that contact public services,
