@@ -26,9 +26,10 @@ export default function joinGeo(
   validateJoinGeoOptions(method, options);
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
-  const outputTable = typeof options.outputTable === "string"
-    ? leftTable.sdb.newTable(options.outputTable)
-    : leftTable;
+  const outputTable =
+    typeof options.outputTable === "string"
+      ? leftTable.sdb.newTable(options.outputTable)
+      : leftTable;
 
   queueOp(outputTable, {
     kind: "source",
@@ -36,8 +37,7 @@ export default function joinGeo(
     needsSpatial: true,
     method: "joinGeo()",
     parameters: { method, rightTable: rightTable.name, options },
-    buildSelect: () =>
-      buildJoinGeoSelect(leftTable, method, rightTable, options),
+    buildSelect: () => buildJoinGeoSelect(leftTable, method, rightTable, options),
   });
 
   return outputTable;
@@ -53,19 +53,16 @@ function validateJoinGeoOptions(
 ): void {
   if (!["intersect", "inside", "withinDistance"].includes(method)) {
     throw new Error(
-      `joinGeo() method must be "intersect", "inside", or "withinDistance". Received ${
-        formatReceivedValue(method)
-      }.`,
+      `joinGeo() method must be "intersect", "inside", or "withinDistance". Received ${formatReceivedValue(
+        method,
+      )}.`,
     );
   }
-  if (
-    options.type !== undefined &&
-    !["inner", "left", "right", "full"].includes(options.type)
-  ) {
+  if (options.type !== undefined && !["inner", "left", "right", "full"].includes(options.type)) {
     throw new Error(
-      `joinGeo() options.type must be "inner", "left", "right", or "full". Received ${
-        formatReceivedValue(options.type)
-      }.`,
+      `joinGeo() options.type must be "inner", "left", "right", or "full". Received ${formatReceivedValue(
+        options.type,
+      )}.`,
     );
   }
   if (
@@ -73,9 +70,9 @@ function validateJoinGeoOptions(
     !["srs", "haversine", "spheroid"].includes(options.distanceMethod)
   ) {
     throw new Error(
-      `joinGeo() options.distanceMethod must be "srs", "haversine", or "spheroid". Received ${
-        formatReceivedValue(options.distanceMethod)
-      }.`,
+      `joinGeo() options.distanceMethod must be "srs", "haversine", or "spheroid". Received ${formatReceivedValue(
+        options.distanceMethod,
+      )}.`,
     );
   }
   if (
@@ -83,9 +80,9 @@ function validateJoinGeoOptions(
     (typeof options.distance !== "number" || !Number.isFinite(options.distance))
   ) {
     throw new Error(
-      `joinGeo() options.distance must be a finite number when method is "withinDistance". Received ${
-        formatReceivedValue(options.distance)
-      }.`,
+      `joinGeo() options.distance must be a finite number when method is "withinDistance". Received ${formatReceivedValue(
+        options.distance,
+      )}.`,
     );
   }
 }
@@ -110,38 +107,33 @@ async function buildJoinGeoSelect(
 ): Promise<string> {
   const leftTypes = await leftTable.getTypes();
   const rightTypes = await rightTable.getTypes();
-  const leftColumn = options.leftColumn ??
-    findGeoColumnFromSchema(leftTypes, "joinGeo()", leftTable.name);
-  const rightColumn = options.rightColumn ??
-    findGeoColumnFromSchema(rightTypes, "joinGeo()", rightTable.name);
+  const leftColumn =
+    options.leftColumn ?? findGeoColumnFromSchema(leftTypes, "joinGeo()", leftTable.name);
+  const rightColumn =
+    options.rightColumn ?? findGeoColumnFromSchema(rightTypes, "joinGeo()", rightTable.name);
 
   const leftTableColumns = Object.keys(leftTypes);
   const rightTableColumns = Object.keys(rightTypes);
   const sharedColumn = leftColumn === rightColumn ? leftColumn : "";
-  const identicalColumns = (
-    getIdenticalColumns(
-      leftTableColumns,
-      rightTableColumns,
-    )
-  ).filter((d) => d !== sharedColumn);
+  const identicalColumns = getIdenticalColumns(leftTableColumns, rightTableColumns).filter(
+    (d) => d !== sharedColumn,
+  );
   if (identicalColumns.length > 0) {
     throw new Error(
       `The tables have columns with identical names ${
         sharedColumn !== ""
-          ? `(excluding the columns ${
-            quoteIdentifier(sharedColumn)
-          } used for the geospatial join)`
+          ? `(excluding the columns ${quoteIdentifier(sharedColumn)} used for the geospatial join)`
           : ""
-      }. Rename or remove ${
-        identicalColumns.map((d) => `${quoteIdentifier(d)}`).join(", ")
-      } in one of the two tables before doing the join.`,
+      }. Rename or remove ${identicalColumns
+        .map((d) => `${quoteIdentifier(d)}`)
+        .join(", ")} in one of the two tables before doing the join.`,
     );
   }
 
   const excludeLeftGeometry = options.excludeLeftGeometry ?? false;
   const excludeRightGeometry = options.excludeRightGeometry ?? false;
-  const retainSharedGeometries = sharedColumn !== "" &&
-    !excludeLeftGeometry && !excludeRightGeometry;
+  const retainSharedGeometries =
+    sharedColumn !== "" && !excludeLeftGeometry && !excludeRightGeometry;
   const rightGeometryOutputColumn = retainSharedGeometries
     ? `${rightColumn}${capitalize(rightTable.name)}`
     : undefined;
@@ -153,11 +145,11 @@ async function buildJoinGeoSelect(
       .includes(rightGeometryOutputColumn)
   ) {
     throw new Error(
-      `Cannot name the right geometry column ${
-        quoteIdentifier(rightGeometryOutputColumn)
-      } because a column with that name already exists. Rename the existing ${
-        quoteIdentifier(rightGeometryOutputColumn)
-      } column before calling joinGeo(), or call joinGeo() with { excludeRightGeometry: true }.`,
+      `Cannot name the right geometry column ${quoteIdentifier(
+        rightGeometryOutputColumn,
+      )} because a column with that name already exists. Rename the existing ${quoteIdentifier(
+        rightGeometryOutputColumn,
+      )} column before calling joinGeo(), or call joinGeo() with { excludeRightGeometry: true }.`,
     );
   }
 
@@ -171,11 +163,13 @@ async function buildJoinGeoSelect(
   const selectList = [
     leftSelect,
     rightSelect,
-    ...(rightGeometryOutputColumn === undefined ? [] : [
-      `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(rightColumn)} AS ${
-        quoteIdentifier(rightGeometryOutputColumn)
-      }`,
-    ]),
+    ...(rightGeometryOutputColumn === undefined
+      ? []
+      : [
+          `${quoteIdentifier(rightTable.name)}.${quoteIdentifier(rightColumn)} AS ${quoteIdentifier(
+            rightGeometryOutputColumn,
+          )}`,
+        ]),
   ].join(", ");
 
   const type = options.type ?? "left";
@@ -206,64 +200,52 @@ function joinGeoQuery(
 ) {
   let query = `SELECT ${selectList}`;
   if (join === "inner") {
-    query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} JOIN ${quoteIdentifier(rightTable)}`;
   } else if (join === "left") {
-    query += ` FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} LEFT JOIN ${quoteIdentifier(rightTable)}`;
   } else if (join === "right") {
-    query += ` FROM ${quoteIdentifier(leftTable)} RIGHT JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} RIGHT JOIN ${quoteIdentifier(rightTable)}`;
   } else if (join === "full") {
-    query += ` FROM ${quoteIdentifier(leftTable)} FULL JOIN ${
-      quoteIdentifier(rightTable)
-    }`;
+    query += ` FROM ${quoteIdentifier(leftTable)} FULL JOIN ${quoteIdentifier(rightTable)}`;
   } else {
-    throw new Error(`Unknown ${join} join.`);
+    throw new Error(`Unknown ${String(join)} join.`);
   }
 
   if (method === "intersect") {
-    query += ` ON ST_Intersects(${quoteIdentifier(leftTable)}.${
-      quoteIdentifier(leftColumn)
-    }, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)})`;
+    query += ` ON ST_Intersects(${quoteIdentifier(leftTable)}.${quoteIdentifier(
+      leftColumn,
+    )}, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)})`;
   } else if (method === "inside") {
     // Order is important
-    query += ` ON ST_Covers(${quoteIdentifier(rightTable)}.${
-      quoteIdentifier(rightColumn)
-    }, ${quoteIdentifier(leftTable)}.${quoteIdentifier(leftColumn)})`;
+    query += ` ON ST_Covers(${quoteIdentifier(rightTable)}.${quoteIdentifier(
+      rightColumn,
+    )}, ${quoteIdentifier(leftTable)}.${quoteIdentifier(leftColumn)})`;
   } else if (method === "withinDistance") {
     if (typeof distance === "number") {
       if (distanceMethod === undefined || distanceMethod === "srs") {
-        query += ` ON ST_DWithin(${quoteIdentifier(leftTable)}.${
-          quoteIdentifier(leftColumn)
-        }, ${quoteIdentifier(rightTable)}.${
-          quoteIdentifier(rightColumn)
-        }, ${distance})`;
+        query += ` ON ST_DWithin(${quoteIdentifier(leftTable)}.${quoteIdentifier(
+          leftColumn,
+        )}, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)}, ${distance})`;
       } else if (distanceMethod === "haversine") {
         // Maybe ST_DWithin_Sphere will be available soon?
-        query += ` ON ST_Distance_Sphere(${quoteIdentifier(leftTable)}.${
-          quoteIdentifier(leftColumn)
-        }, ${quoteIdentifier(rightTable)}.${
-          quoteIdentifier(rightColumn)
-        }) < ${distance}`;
+        query += ` ON ST_Distance_Sphere(${quoteIdentifier(leftTable)}.${quoteIdentifier(
+          leftColumn,
+        )}, ${quoteIdentifier(rightTable)}.${quoteIdentifier(rightColumn)}) < ${distance}`;
       } else if (distanceMethod === "spheroid") {
         // Should be using ST_DWithin_Spheroid but doesn't work?
-        query += ` ON ST_Distance_Spheroid(${quoteIdentifier(leftTable)}.${
-          quoteIdentifier(leftColumn)
-        }::GEOMETRY, ${quoteIdentifier(rightTable)}.${
-          quoteIdentifier(rightColumn)
-        }::GEOMETRY) < ${distance}`;
+        query += ` ON ST_Distance_Spheroid(${quoteIdentifier(leftTable)}.${quoteIdentifier(
+          leftColumn,
+        )}::GEOMETRY, ${quoteIdentifier(rightTable)}.${quoteIdentifier(
+          rightColumn,
+        )}::GEOMETRY) < ${distance}`;
       } else {
-        throw new Error(`Unknown ${distanceMethod}`);
+        throw new Error(`Unknown ${String(distanceMethod)}`);
       }
     } else {
       throw new Error("options.distance must be a number");
     }
   } else {
-    throw new Error(`Unknown ${method} method`);
+    throw new Error(`Unknown ${String(method)} method`);
   }
 
   return query;

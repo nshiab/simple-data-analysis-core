@@ -1,14 +1,15 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the count of null values, non null values, and distinct values in each column of a table", async () => {
+test("should return the count of null values, non null values, and distinct values in each column of a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.json");
 
   const description = await table.getDescription();
 
-  assertEquals(description, [
+  expect(description).toStrictEqual([
     {
       column: "Department or unit",
       type: "JSON",
@@ -37,19 +38,14 @@ Deno.test("should return the count of null values, non null values, and distinct
   await sdb.close();
 });
 
-Deno.test("should describe a table with a single column", async () => {
+test("should describe a table with a single column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  table.loadArray([
-    { name: "Chloe" },
-    { name: "Philip" },
-    { name: null },
-    { name: "Chloe" },
-  ]);
+  table.loadArray([{ name: "Chloe" }, { name: "Philip" }, { name: null }, { name: "Chloe" }]);
 
   const description = await table.getDescription();
 
-  assertEquals(description, [
+  expect(description).toStrictEqual([
     { column: "name", type: "VARCHAR", count: 4, unique: 2, null: 1 },
   ]);
   await sdb.close();

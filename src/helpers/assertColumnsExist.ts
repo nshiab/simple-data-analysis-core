@@ -23,11 +23,9 @@ export default function assertColumnsExist(
   if (missing.length > 0) {
     const plural = missing.length > 1;
     throw new Error(
-      `${method} the column${plural ? "s" : ""} ${
-        missing.map((column) => `${quoteIdentifier(column)}`).join(", ")
-      } ${
-        plural ? "do" : "does"
-      } not exist. Check for typos, or load the data first.`,
+      `${method} the column${plural ? "s" : ""} ${missing
+        .map((column) => `${quoteIdentifier(column)}`)
+        .join(", ")} ${plural ? "do" : "does"} not exist. Check for typos, or load the data first.`,
     );
   }
 }

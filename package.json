@@ -1,0 +1,73 @@
+{
+  "name": "@nshiab/simple-data-analysis-core",
+  "version": "2.1.12",
+  "description": "Lightweight DuckDB-powered TypeScript library for tabular, SQL, CSV, Parquet, and geospatial data analysis on Node.js.",
+  "keywords": [
+    "csv",
+    "data-analysis",
+    "dataframe",
+    "duckdb",
+    "geospatial",
+    "nodejs",
+    "parquet",
+    "spatial-analysis",
+    "sql",
+    "tabular",
+    "typescript"
+  ],
+  "homepage": "https://nshiab.github.io/simple-data-analysis-core/",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nshiab/simple-data-analysis-core.git"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE",
+    "llm.md",
+    "llms.txt"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./helpers": {
+      "types": "./dist/helpers/index.d.mts",
+      "default": "./dist/helpers/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "fix": "vp check --fix",
+    "docs": "typedoc && node scripts/docs.ts",
+    "all-tests": "vp check && vp test && vp pack && npm run docs",
+    "preversion": "node scripts/check-release-branch.ts && npm run all-tests",
+    "version": "npm run docs && git add docs llm.md llms.txt",
+    "postversion": "git push --atomic origin HEAD \"v$npm_package_version\"",
+    "patch": "npm version patch",
+    "minor": "npm version minor",
+    "major": "npm version major",
+    "benchmark": "node benchmarks/run.ts",
+    "benchmark-core": "node benchmarks/operations/run.ts"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "1.5.6-r.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typedoc": "0.28.20",
+    "typedoc-plugin-llms-txt": "0.1.2",
+    "typedoc-plugin-markdown": "4.14.0",
+    "typescript": "6.0.3",
+    "vite-plus": "1.2.0"
+  },
+  "engines": {
+    "node": ">=24.21.0"
+  }
+}

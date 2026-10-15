@@ -1,9 +1,9 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import quoteQualifiedIdentifier from "../../../src/helpers/quoteQualifiedIdentifier.ts";
 
-Deno.test("quoteQualifiedIdentifier - quotes the relation and identifier separately", () => {
-  assertEquals(
-    quoteQualifiedIdentifier('people "archive"', "full name"),
+test("quoteQualifiedIdentifier - quotes the relation and identifier separately", () => {
+  expect(quoteQualifiedIdentifier('people "archive"', "full name")).toStrictEqual(
     '"people ""archive"""."full name"',
   );
 });

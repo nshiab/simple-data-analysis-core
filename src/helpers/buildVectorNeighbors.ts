@@ -60,13 +60,8 @@ export default async function buildVectorNeighbors(
     throw new Error("Vector dimensions must be a positive safe integer.");
   }
   const maximum = count - (options.includeSelf ? 0 : 1);
-  if (
-    !Number.isSafeInteger(neighborCount) || neighborCount < 1 ||
-    neighborCount > maximum
-  ) {
-    throw new Error(
-      `Neighbor count must be a safe integer between 1 and ${maximum}.`,
-    );
+  if (!Number.isSafeInteger(neighborCount) || neighborCount < 1 || neighborCount > maximum) {
+    throw new Error(`Neighbor count must be a safe integer between 1 and ${maximum}.`);
   }
   if (options.metric === "cosine") {
     await stabilizeCosineVectors(connection, names.rows);
@@ -74,8 +69,7 @@ export default async function buildVectorNeighbors(
   // FLOAT representation limits apply only to the HNSW search vectors.
   // Exact Euclidean distance does not require representable squared norms.
   if (options.search === "hnsw") {
-    const normExpression =
-      `array_inner_product(vec::FLOAT[${dimensions}],vec::FLOAT[${dimensions}])`;
+    const normExpression = `array_inner_product(vec::FLOAT[${dimensions}],vec::FLOAT[${dimensions}])`;
     if (
       await readScalarNumber(
         connection,
@@ -83,22 +77,14 @@ export default async function buildVectorNeighbors(
           ${options.metric === "cosine" ? `OR ${normExpression}=0` : ""}`,
       )
     ) {
-      throw new Error(
-        "HNSW requires vectors with finite FLOAT norms (and nonzero cosine norms).",
-      );
+      throw new Error("HNSW requires vectors with finite FLOAT norms (and nonzero cosine norms).");
     }
   }
 
-  const distanceFunction = options.metric === "cosine"
-    ? "array_cosine_distance"
-    : "array_distance";
+  const distanceFunction = options.metric === "cosine" ? "array_cosine_distance" : "array_distance";
   // Equal vectors must have exactly zero cosine distance. Positive roundoff can
   // otherwise alter downstream density estimates. Clamp negative roundoff too.
-  const exactDistance = vectorDistanceExpression(
-    "a.vec",
-    "b.vec",
-    options.metric,
-  );
+  const exactDistance = vectorDistanceExpression("a.vec", "b.vec", options.metric);
   const otherCount = neighborCount - (options.includeSelf ? 1 : 0);
 
   await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.candidates}
@@ -107,13 +93,7 @@ export default async function buildVectorNeighbors(
     if (options.search === "exact") {
       // O(n²d) work with a bounded source batch and top-k heaps. The full
       // distance matrix is never materialized.
-      await buildExactCandidates(
-        connection,
-        input,
-        names,
-        exactDistance,
-        otherCount,
-      );
+      await buildExactCandidates(connection, input, names, exactDistance, otherCount);
     } else {
       await buildHnswCandidates(
         connection,
@@ -151,15 +131,10 @@ export default async function buildVectorNeighbors(
     QUALIFY row_number() OVER (PARTITION BY source ORDER BY ${rankOrder})
       <= ${neighborCount}`);
 
-  const produced = await readScalarNumber(
-    connection,
-    `SELECT count(*) FROM ${names.neighbors}`,
-  );
+  const produced = await readScalarNumber(connection, `SELECT count(*) FROM ${names.neighbors}`);
   if (produced !== count * neighborCount) {
     throw new Error(
-      `Neighbor search returned ${produced} rows; ${
-        count * neighborCount
-      } were required.`,
+      `Neighbor search returned ${produced} rows; ${count * neighborCount} were required.`,
     );
   }
   if (
@@ -191,9 +166,7 @@ async function buildHnswCandidates(
     ? "list_transform(vec,x -> x/sqrt(array_inner_product(vec,vec)))"
     : "vec";
   const previousThreads = Number(
-    (await connection.runAndReadAll(
-      "SELECT current_setting('threads')",
-    )).getRowsJS()[0][0],
+    (await connection.runAndReadAll("SELECT current_setting('threads')")).getRowsJS()[0][0],
   );
   try {
     if (settings?.singleThreaded) await connection.run("SET threads=1");
@@ -202,42 +175,31 @@ async function buildHnswCandidates(
       SELECT vertex,${searchVector}::FLOAT[${dimensions}] AS vec
       FROM ${names.rows} ORDER BY vertex;
       CREATE INDEX ${names.hnsw} ON ${names.search} USING HNSW(vec)
-      WITH (metric='${
-      options.metric === "cosine" && !cosineAsL2 ? "cosine" : "l2sq"
-    }',
+      WITH (metric='${options.metric === "cosine" && !cosineAsL2 ? "cosine" : "l2sq"}',
         ef_construction=${settings?.efConstruction ?? 128},
-        ef_search=${settings?.efSearch ?? 128},M=${
-      settings?.connectivity ?? 16
-    })`);
+        ef_search=${settings?.efSearch ?? 128},M=${settings?.connectivity ?? 16})`);
   } finally {
     if (settings?.singleThreaded) {
       await connection.run(`SET threads=${previousThreads}`);
     }
   }
-  const previous = String(
-    (await connection.runAndReadAll(
-      "SELECT current_setting('disabled_optimizers')",
-    )).getRowsJS()[0][0],
-  );
+  const previous = (
+    await connection.runAndReadAll("SELECT current_setting('disabled_optimizers')")
+  ).getRowsJS()[0][0];
+  if (typeof previous !== "string") throw new Error("Expected disabled_optimizers to be a string.");
   const disabled = [
-    ...new Set([
-      ...previous.split(",").filter(Boolean),
-      "top_n_window_elimination",
-    ]),
+    ...new Set([...previous.split(",").filter(Boolean), "top_n_window_elimination"]),
   ].join(",");
   try {
-    await connection.run(
-      `SET disabled_optimizers='${disabled.replaceAll("'", "''")}'`,
-    );
+    await connection.run(`SET disabled_optimizers='${disabled.replaceAll("'", "''")}'`);
     // Preserve UMAP's established candidate budget when self is included.
     // Excluding self needs one extra result because HNSW normally returns it.
-    const candidateCount = settings?.candidateCount ??
+    const candidateCount =
+      settings?.candidateCount ??
       (options.includeSelf
         ? Math.max(otherCount + 1, Math.min(neighborCount + 1, count - 1))
         : Math.min(otherCount + 1, count));
-    const candidateDistanceFunction = cosineAsL2
-      ? "array_distance"
-      : distanceFunction;
+    const candidateDistanceFunction = cosineAsL2 ? "array_distance" : distanceFunction;
     const query = `SELECT a.vertex AS source,b.vertex AS target,b.distance
       FROM ${names.search} a,LATERAL (
         SELECT vertex,${candidateDistanceFunction}(vec,a.vec) AS distance
@@ -253,23 +215,13 @@ async function buildHnswCandidates(
     );
     if (!plan.includes("HNSW_INDEX_JOIN")) {
       if (count <= 1000) {
-        return await buildExactCandidates(
-          connection,
-          input,
-          names,
-          exactDistance,
-          otherCount,
-        );
+        return await buildExactCandidates(connection, input, names, exactDistance, otherCount);
       }
-      throw new Error(
-        "DuckDB could not use its vector index for neighbor search.",
-      );
+      throw new Error("DuckDB could not use its vector index for neighbor search.");
     }
     await connection.run(`INSERT INTO ${names.candidates} ${candidates}`);
   } finally {
-    await connection.run(
-      `SET disabled_optimizers='${previous.replaceAll("'", "''")}'`,
-    );
+    await connection.run(`SET disabled_optimizers='${previous.replaceAll("'", "''")}'`);
   }
 }
 

@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should throw when a column to select does not exist", async () => {
+test("should throw when a column to select does not exist", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -13,7 +15,7 @@ Deno.test("should throw when a column to select does not exist", async () => {
   await sdb.close();
 });
 
-Deno.test("should return one column", async () => {
+test("should return one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -21,7 +23,7 @@ Deno.test("should return one column", async () => {
   table.selectColumns("Name");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "OConnell, Donald" },
     { Name: "OConnell, Donald" },
     { Name: "Grant, Douglas" },
@@ -78,7 +80,7 @@ Deno.test("should return one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should return one column with spaces in its name", async () => {
+test("should return one column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -86,7 +88,7 @@ Deno.test("should return one column with spaces in its name", async () => {
   table.selectColumns("Department or unit");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { "Department or unit": "50" },
     { "Department or unit": "50" },
     { "Department or unit": "50" },
@@ -143,7 +145,7 @@ Deno.test("should return one column with spaces in its name", async () => {
   await sdb.close();
 });
 
-Deno.test("should return multiple columns", async () => {
+test("should return multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -151,7 +153,7 @@ Deno.test("should return multiple columns", async () => {
   table.selectColumns(["Name", "Salary"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "OConnell, Donald", Salary: "2600" },
     { Name: "OConnell, Donald", Salary: "2600" },
     { Name: "Grant, Douglas", Salary: "NaN" },

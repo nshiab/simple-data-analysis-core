@@ -35,10 +35,7 @@ export default async function buildApproximateMutualReachabilityMst(
   const quoted = Object.fromEntries(
     Object.entries(names).map(([key, value]) => [key, q(value)]),
   ) as { [Key in keyof typeof names]: string };
-  const neighborCount = Math.min(
-    input.count - 1,
-    Math.max(input.minSamples, 64),
-  );
+  const neighborCount = Math.min(input.count - 1, Math.max(input.minSamples, 64));
   await buildVectorNeighbors(
     connection,
     {
@@ -96,11 +93,7 @@ export default async function buildApproximateMutualReachabilityMst(
       bridgeCandidates: names.bridgeCandidates,
     },
   );
-  const mst = await buildSparseMutualReachabilityMst(
-    connection,
-    quoted.edges,
-    input.count,
-  );
+  const mst = await buildSparseMutualReachabilityMst(connection, quoted.edges, input.count);
   await connection.run(
     `CREATE OR REPLACE TEMP TABLE ${quoted.mst}
       (source INTEGER,target INTEGER,distance DOUBLE)`,
@@ -111,9 +104,9 @@ export default async function buildApproximateMutualReachabilityMst(
     [INTEGER, INTEGER, DOUBLE],
     mst.length,
     (column, start, end) =>
-      mst.slice(start, end).map((edge) =>
-        column === 0 ? edge.source : column === 1 ? edge.target : edge.distance
-      ),
+      mst
+        .slice(start, end)
+        .map((edge) => (column === 0 ? edge.source : column === 1 ? edge.target : edge.distance)),
   );
   return { candidateComponents: componentCount, neighborCount };
 }
@@ -137,11 +130,7 @@ export async function repairApproximateConnectivity(
   const quoted = Object.fromEntries(
     Object.entries(names).map(([key, value]) => [key, q(value)]),
   ) as { [Key in keyof typeof names]: string };
-  const componentOf = await readComponents(
-    connection,
-    quoted.edges,
-    input.count,
-  );
+  const componentOf = await readComponents(connection, quoted.edges, input.count);
   let maximumComponent = -1;
   for (const component of componentOf) {
     if (component > maximumComponent) maximumComponent = component;
@@ -155,50 +144,43 @@ export async function repairApproximateConnectivity(
     // We also connect each member of a run to the nearest projected endpoint
     // in both adjacent runs. All weights are recomputed in the actual metric.
     const dimensions = Number(
-      (await connection.runAndReadAll(
-        `SELECT len(vec) FROM ${quoted.rows} LIMIT 1`,
-      )).getRowsJS()[0][0],
+      (
+        await connection.runAndReadAll(`SELECT len(vec) FROM ${quoted.rows} LIMIT 1`)
+      ).getRowsJS()[0][0],
     );
     await connection.run(
       `CREATE OR REPLACE TEMP TABLE ${quoted.bridgeCandidates}
       (source INTEGER,target INTEGER,distance DOUBLE)`,
     );
-    const rawDistance = vectorDistanceExpression(
-      "a.vec",
-      "b.vec",
-      options.metric,
-    );
+    const rawDistance = vectorDistanceExpression("a.vec", "b.vec", options.metric);
     const projectionCount = Math.min(dimensions, 8) + (dimensions > 1 ? 16 : 0);
     for (let projection = 0; projection < projectionCount; projection++) {
       // Coordinate directions handle axis-aligned and one-dimensional data;
       // fixed pseudo-random directions cover rotated component boundaries.
       // Coefficients do not depend on table names, execution order, or RNG state.
-      const coefficients = Array.from(
-        { length: dimensions },
-        (_, dimension) => {
-          if (projection < Math.min(dimensions, 8)) {
-            return dimension === projection ? 1 : 0;
-          }
-          let hash = Math.imul(projection + 1, 0x9e3779b1) ^
-            Math.imul(dimension + 1, 0x85ebca6b);
-          hash = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
-          hash = Math.imul(hash ^ (hash >>> 15), 0x846ca68b);
-          return ((hash ^ (hash >>> 16)) >>> 0) / 0x100000000 * 2 - 1;
-        },
-      );
+      const coefficients = Array.from({ length: dimensions }, (_, dimension) => {
+        if (projection < Math.min(dimensions, 8)) {
+          return dimension === projection ? 1 : 0;
+        }
+        let hash = Math.imul(projection + 1, 0x9e3779b1) ^ Math.imul(dimension + 1, 0x85ebca6b);
+        hash = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
+        hash = Math.imul(hash ^ (hash >>> 15), 0x846ca68b);
+        return (((hash ^ (hash >>> 16)) >>> 0) / 0x100000000) * 2 - 1;
+      });
       // Scaling each coordinate by the same global factor prevents overflow
       // in the projection without changing its ordering. Unit directions are
       // the appropriate search geometry for cosine.
-      const vector = options.metric === "cosine"
-        ? `list_transform(r.vec,x -> x/sqrt(array_inner_product(r.vec,r.vec)))::DOUBLE[${dimensions}]`
-        : `list_transform(r.vec,x -> x/scale.maximum)::DOUBLE[${dimensions}]`;
+      const vector =
+        options.metric === "cosine"
+          ? `list_transform(r.vec,x -> x/sqrt(array_inner_product(r.vec,r.vec)))::DOUBLE[${dimensions}]`
+          : `list_transform(r.vec,x -> x/scale.maximum)::DOUBLE[${dimensions}]`;
       await connection.run(
         `CREATE OR REPLACE TEMP TABLE ${quoted.representatives} AS
         WITH projected AS (
           SELECT r.vertex,c.component,
-            array_inner_product(${vector},[${
-          coefficients.join(",")
-        }]::DOUBLE[${dimensions}]) AS position
+            array_inner_product(${vector},[${coefficients.join(
+              ",",
+            )}]::DOUBLE[${dimensions}]) AS position
           FROM ${quoted.rows} r JOIN ${quoted.components} c USING(vertex)
           CROSS JOIN (SELECT greatest(1,max(list_max(list_transform(vec,x -> abs(x))))) AS maximum FROM ${quoted.rows}) scale
         ), ordered AS (
@@ -225,10 +207,12 @@ export async function repairApproximateConnectivity(
       );
     }
     const invalidBridgeDistances = Number(
-      (await connection.runAndReadAll(
-        `SELECT count(*) FROM ${quoted.bridgeCandidates}
+      (
+        await connection.runAndReadAll(
+          `SELECT count(*) FROM ${quoted.bridgeCandidates}
        WHERE distance IS NULL OR NOT isfinite(distance)`,
-      )).getRowsJS()[0][0],
+        )
+      ).getRowsJS()[0][0],
     );
     if (invalidBridgeDistances > 0) {
       throw new Error(
@@ -239,11 +223,7 @@ export async function repairApproximateConnectivity(
       SELECT source,target,min(distance) AS distance
       FROM ${quoted.bridgeCandidates} GROUP BY source,target`);
   }
-  const connectivity = await inspectGraphConnectivity(
-    connection,
-    quoted.edges,
-    input.count,
-  );
+  const connectivity = await inspectGraphConnectivity(connection, quoted.edges, input.count);
   if (connectivity.componentCount !== 1) {
     throw new Error(
       `Approximate HDBSCAN connectivity repair left ${connectivity.componentCount} graph components.`,
@@ -272,7 +252,8 @@ async function readComponents(
     return root;
   };
   const union = (left: number, right: number) => {
-    let a = find(left), b = find(right);
+    let a = find(left),
+      b = find(right);
     if (a === b) return;
     if (size[a] < size[b]) [a, b] = [b, a];
     parent[b] = a;
@@ -319,10 +300,8 @@ async function createComponentRows(
     [INTEGER, INTEGER],
     componentOf.length,
     (column, start, end) =>
-      Array.from(
-        { length: end - start },
-        (_, offset) =>
-          column === 0 ? start + offset : componentOf[start + offset],
+      Array.from({ length: end - start }, (_, offset) =>
+        column === 0 ? start + offset : componentOf[start + offset],
       ),
   );
 }

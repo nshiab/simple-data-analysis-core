@@ -33,16 +33,10 @@ export default async function buildExactMutualReachabilityMst(
 ): Promise<void> {
   const { count, minSamples } = input;
   if (count < 2 || !Number.isSafeInteger(count)) {
-    throw new Error(
-      "Exact mutual-reachability MST requires at least two rows.",
-    );
+    throw new Error("Exact mutual-reachability MST requires at least two rows.");
   }
-  if (
-    !Number.isSafeInteger(minSamples) || minSamples < 1 || minSamples >= count
-  ) {
-    throw new Error(
-      `minSamples must be a safe integer between 1 and ${count - 1}.`,
-    );
+  if (!Number.isSafeInteger(minSamples) || minSamples < 1 || minSamples >= count) {
+    throw new Error(`minSamples must be a safe integer between 1 and ${count - 1}.`);
   }
   await validateVectorRowIds(connection, names.rows, count);
   if (options.metric === "cosine") {
@@ -65,25 +59,17 @@ export default async function buildExactMutualReachabilityMst(
       ),UNNEST(closest) AS t(item) GROUP BY source`);
   }
   if (
-    await readScalarNumber(
+    (await readScalarNumber(
       connection,
       `SELECT count(*) FROM ${names.coreDistances}
         WHERE NOT isfinite(distance)`,
-    ) ||
-    await readScalarNumber(
-        connection,
-        `SELECT count(*) FROM ${names.coreDistances}`,
-      ) !== count
+    )) ||
+    (await readScalarNumber(connection, `SELECT count(*) FROM ${names.coreDistances}`)) !== count
   ) {
-    throw new Error(
-      "Exact core-distance computation returned missing or non-finite values.",
-    );
+    throw new Error("Exact core-distance computation returned missing or non-finite values.");
   }
 
-  const root = await readScalarNumber(
-    connection,
-    `SELECT min(vertex) FROM ${names.rows}`,
-  );
+  const root = await readScalarNumber(connection, `SELECT min(vertex) FROM ${names.rows}`);
   await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.frontier} AS
     SELECT b.vertex,${root}::INTEGER AS parent,
       greatest(ca.distance,cb.distance,${distance})::DOUBLE AS distance
@@ -95,11 +81,13 @@ export default async function buildExactMutualReachabilityMst(
       (source INTEGER,target INTEGER,distance DOUBLE)`);
 
   for (let edge = 0; edge < count - 1; edge++) {
-    const chosen = (await connection.runAndReadAll(
-      `SELECT vertex,parent,distance FROM ${names.frontier}
+    const chosen = (
+      await connection.runAndReadAll(
+        `SELECT vertex,parent,distance FROM ${names.frontier}
        ORDER BY distance,least(parent,vertex),greatest(parent,vertex),parent,vertex
        LIMIT 1`,
-    )).getRowsJS()[0];
+      )
+    ).getRowsJS()[0];
     if (chosen === undefined) {
       throw new Error("Exact mutual-reachability graph became disconnected.");
     }
@@ -107,20 +95,12 @@ export default async function buildExactMutualReachabilityMst(
     const parent = Number(chosen[1]);
     const edgeDistance = Number(chosen[2]);
     if (!Number.isFinite(edgeDistance)) {
-      throw new Error(
-        "Exact mutual-reachability MST returned a non-finite distance.",
-      );
+      throw new Error("Exact mutual-reachability MST returned a non-finite distance.");
     }
     await connection.run(`INSERT INTO ${names.mst} VALUES
-      (${Math.min(vertex, parent)},${
-      Math.max(vertex, parent)
-    },${edgeDistance})`);
+      (${Math.min(vertex, parent)},${Math.max(vertex, parent)},${edgeDistance})`);
     if (edge === count - 2) break;
-    const candidateDistance = vectorDistanceExpression(
-      "added.vec",
-      "target.vec",
-      options.metric,
-    );
+    const candidateDistance = vectorDistanceExpression("added.vec", "target.vec", options.metric);
     await connection.run(`CREATE OR REPLACE TEMP TABLE ${names.frontier} AS
       WITH candidates AS (
         SELECT f.*,greatest(ca.distance,cb.distance,${candidateDistance})::DOUBLE

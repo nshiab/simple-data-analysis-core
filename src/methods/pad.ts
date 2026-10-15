@@ -11,9 +11,7 @@ export default function pad(
   options: { side?: "left" | "right"; character?: string } = {},
 ) {
   if (!Number.isFinite(length) || !Number.isInteger(length) || length < 0) {
-    throw new Error(
-      "pad() length must be a finite integer greater than or equal to 0.",
-    );
+    throw new Error("pad() length must be a finite integer greater than or equal to 0.");
   }
 
   columns = Array.isArray(columns) ? [...columns] : columns;
@@ -26,8 +24,7 @@ export default function pad(
     needsSchema: true,
     preservesSchema: true,
     values: padValues(columnList, length, options),
-    buildSelect: (input, schema) =>
-      padSelect(input, schema, columnList, length, options),
+    buildSelect: (input, schema) => padSelect(input, schema, columnList, length, options),
   });
 }
 
@@ -58,17 +55,22 @@ function padSelect(
     return alias;
   });
   const func = options.side === "right" ? "RPAD" : "LPAD";
-  const counts = columns.map((column, index) =>
-    `COUNT(*) FILTER (WHERE LENGTH(${
-      quoteIdentifier(column)
-    }) > ${length}) OVER () AS ${quoteIdentifier(overflowAliases[index])}`
-  ).join(", ");
-  const replacements = columns.map((column, index) => {
-    const alias = quoteIdentifier(overflowAliases[index]);
-    return `CASE WHEN ${alias} > 0 THEN error(CONCAT(?, CAST(${alias} AS VARCHAR), ?)) ELSE ${func}(${
-      quoteIdentifier(column)
-    }, ${length}, ?) END AS ${quoteIdentifier(column)}`;
-  }).join(", ");
+  const counts = columns
+    .map(
+      (column, index) =>
+        `COUNT(*) FILTER (WHERE LENGTH(${quoteIdentifier(
+          column,
+        )}) > ${length}) OVER () AS ${quoteIdentifier(overflowAliases[index])}`,
+    )
+    .join(", ");
+  const replacements = columns
+    .map((column, index) => {
+      const alias = quoteIdentifier(overflowAliases[index]);
+      return `CASE WHEN ${alias} > 0 THEN error(CONCAT(?, CAST(${alias} AS VARCHAR), ?)) ELSE ${func}(${quoteIdentifier(
+        column,
+      )}, ${length}, ?) END AS ${quoteIdentifier(column)}`;
+    })
+    .join(", ");
   const excluded = overflowAliases.map(quoteIdentifier).join(", ");
   return `SELECT * EXCLUDE (${excluded}) REPLACE (${replacements})
 FROM (
@@ -76,11 +78,7 @@ FROM (
 ) AS ${quoteIdentifier("__sda_pad_source")}`;
 }
 
-function padValues(
-  columns: string[],
-  length: number,
-  options: { character?: string },
-): string[] {
+function padValues(columns: string[], length: number, options: { character?: string }): string[] {
   const character = options.character ?? "0";
   return columns.flatMap((column) => [
     `The column ${quoteIdentifier(column)} has `,

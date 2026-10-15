@@ -1,4 +1,5 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import { existsSync, mkdirSync } from "node:fs";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
@@ -7,48 +8,52 @@ if (!existsSync(output)) {
   mkdirSync(output);
 }
 
-Deno.test("should do an union of all geometries and overwrite the table", async () => {
+test("should do an union of all geometries and overwrite the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
   table.aggregateGeo("union");
 
   const types = await table.getTypes();
-  assertEquals(types.geom, "GEOMETRY('EPSG:4326')");
+  expect(types.geom).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   const data = await table.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-65.25312249560916, 44.318971411012456],
-          [-66.37632383108026, 38.66006974362426],
-          [-71.30309021987173, 39.18549421953887],
-          [-74.0185899104202, 41.67609329308551],
-          [-76.54154303811467, 39.25827938796405],
-          [-81.90936810407574, 41.7832801769253],
-          [-80.41235394219134, 43.43544164915107],
-          [-84.42488724739361, 44.568200476215395],
-          [-82.83893567445328, 50.62640104969924],
-          [-77.46330450485964, 48.96271632192344],
-          [-77.56963960950426, 49.48976039820121],
-          [-72.87692566862715, 52.492872979444854],
-          [-64.09300368099305, 47.82512483484163],
-          [-66.73687547327239, 44.853788962049634],
-          [-65.25312249560916, 44.318971411012456],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-65.25312249560916, 44.318971411012456],
+              [-66.37632383108026, 38.66006974362426],
+              [-71.30309021987173, 39.18549421953887],
+              [-74.0185899104202, 41.67609329308551],
+              [-76.54154303811467, 39.25827938796405],
+              [-81.90936810407574, 41.7832801769253],
+              [-80.41235394219134, 43.43544164915107],
+              [-84.42488724739361, 44.568200476215395],
+              [-82.83893567445328, 50.62640104969924],
+              [-77.46330450485964, 48.96271632192344],
+              [-77.56963960950426, 49.48976039820121],
+              [-72.87692566862715, 52.492872979444854],
+              [-64.09300368099305, 47.82512483484163],
+              [-66.73687547327239, 44.853788962049634],
+              [-65.25312249560916, 44.318971411012456],
+            ],
+          ],
+        },
+        properties: {},
       },
-      "properties": {},
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("should do an union of all geometries from a specific column and overwrite the table", async () => {
+test("should do an union of all geometries from a specific column and overwrite the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -56,37 +61,41 @@ Deno.test("should do an union of all geometries from a specific column and overw
 
   const data = await table.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-65.25312249560916, 44.318971411012456],
-          [-66.37632383108026, 38.66006974362426],
-          [-71.30309021987173, 39.18549421953887],
-          [-74.0185899104202, 41.67609329308551],
-          [-76.54154303811467, 39.25827938796405],
-          [-81.90936810407574, 41.7832801769253],
-          [-80.41235394219134, 43.43544164915107],
-          [-84.42488724739361, 44.568200476215395],
-          [-82.83893567445328, 50.62640104969924],
-          [-77.46330450485964, 48.96271632192344],
-          [-77.56963960950426, 49.48976039820121],
-          [-72.87692566862715, 52.492872979444854],
-          [-64.09300368099305, 47.82512483484163],
-          [-66.73687547327239, 44.853788962049634],
-          [-65.25312249560916, 44.318971411012456],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-65.25312249560916, 44.318971411012456],
+              [-66.37632383108026, 38.66006974362426],
+              [-71.30309021987173, 39.18549421953887],
+              [-74.0185899104202, 41.67609329308551],
+              [-76.54154303811467, 39.25827938796405],
+              [-81.90936810407574, 41.7832801769253],
+              [-80.41235394219134, 43.43544164915107],
+              [-84.42488724739361, 44.568200476215395],
+              [-82.83893567445328, 50.62640104969924],
+              [-77.46330450485964, 48.96271632192344],
+              [-77.56963960950426, 49.48976039820121],
+              [-72.87692566862715, 52.492872979444854],
+              [-64.09300368099305, 47.82512483484163],
+              [-66.73687547327239, 44.853788962049634],
+              [-65.25312249560916, 44.318971411012456],
+            ],
+          ],
+        },
+        properties: {},
       },
-      "properties": {},
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("should do an union of all geometries and return the results in a new table", async () => {
+test("should do an union of all geometries and return the results in a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -96,37 +105,41 @@ Deno.test("should do an union of all geometries and return the results in a new 
 
   const data = await newTable.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-65.25312249560916, 44.318971411012456],
-          [-66.37632383108026, 38.66006974362426],
-          [-71.30309021987173, 39.18549421953887],
-          [-74.0185899104202, 41.67609329308551],
-          [-76.54154303811467, 39.25827938796405],
-          [-81.90936810407574, 41.7832801769253],
-          [-80.41235394219134, 43.43544164915107],
-          [-84.42488724739361, 44.568200476215395],
-          [-82.83893567445328, 50.62640104969924],
-          [-77.46330450485964, 48.96271632192344],
-          [-77.56963960950426, 49.48976039820121],
-          [-72.87692566862715, 52.492872979444854],
-          [-64.09300368099305, 47.82512483484163],
-          [-66.73687547327239, 44.853788962049634],
-          [-65.25312249560916, 44.318971411012456],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-65.25312249560916, 44.318971411012456],
+              [-66.37632383108026, 38.66006974362426],
+              [-71.30309021987173, 39.18549421953887],
+              [-74.0185899104202, 41.67609329308551],
+              [-76.54154303811467, 39.25827938796405],
+              [-81.90936810407574, 41.7832801769253],
+              [-80.41235394219134, 43.43544164915107],
+              [-84.42488724739361, 44.568200476215395],
+              [-82.83893567445328, 50.62640104969924],
+              [-77.46330450485964, 48.96271632192344],
+              [-77.56963960950426, 49.48976039820121],
+              [-72.87692566862715, 52.492872979444854],
+              [-64.09300368099305, 47.82512483484163],
+              [-66.73687547327239, 44.853788962049634],
+              [-65.25312249560916, 44.318971411012456],
+            ],
+          ],
+        },
+        properties: {},
       },
-      "properties": {},
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("should do an union of all geometries and return the results in a new table with a specific name in the DB", async () => {
+test("should do an union of all geometries and return the results in a new table with a specific name in the DB", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -136,37 +149,41 @@ Deno.test("should do an union of all geometries and return the results in a new 
 
   const data = await newTable.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-65.25312249560916, 44.318971411012456],
-          [-66.37632383108026, 38.66006974362426],
-          [-71.30309021987173, 39.18549421953887],
-          [-74.0185899104202, 41.67609329308551],
-          [-76.54154303811467, 39.25827938796405],
-          [-81.90936810407574, 41.7832801769253],
-          [-80.41235394219134, 43.43544164915107],
-          [-84.42488724739361, 44.568200476215395],
-          [-82.83893567445328, 50.62640104969924],
-          [-77.46330450485964, 48.96271632192344],
-          [-77.56963960950426, 49.48976039820121],
-          [-72.87692566862715, 52.492872979444854],
-          [-64.09300368099305, 47.82512483484163],
-          [-66.73687547327239, 44.853788962049634],
-          [-65.25312249560916, 44.318971411012456],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-65.25312249560916, 44.318971411012456],
+              [-66.37632383108026, 38.66006974362426],
+              [-71.30309021987173, 39.18549421953887],
+              [-74.0185899104202, 41.67609329308551],
+              [-76.54154303811467, 39.25827938796405],
+              [-81.90936810407574, 41.7832801769253],
+              [-80.41235394219134, 43.43544164915107],
+              [-84.42488724739361, 44.568200476215395],
+              [-82.83893567445328, 50.62640104969924],
+              [-77.46330450485964, 48.96271632192344],
+              [-77.56963960950426, 49.48976039820121],
+              [-72.87692566862715, 52.492872979444854],
+              [-64.09300368099305, 47.82512483484163],
+              [-66.73687547327239, 44.853788962049634],
+              [-65.25312249560916, 44.318971411012456],
+            ],
+          ],
+        },
+        properties: {},
       },
-      "properties": {},
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("should do an union of geometries based on by", async () => {
+test("should do an union of geometries based on by", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategories");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -175,51 +192,58 @@ Deno.test("should do an union of geometries based on by", async () => {
   });
   const data = await table.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-76.43367458579074, 42.312239966269544],
-          [-84.42488724739361, 44.568200476215395],
-          [-82.83893567445328, 50.62640104969924],
-          [-77.46330450485964, 48.96271632192344],
-          [-77.56963960950426, 49.48976039820121],
-          [-72.87692566862715, 52.492872979444854],
-          [-64.09300368099305, 47.82512483484163],
-          [-68.00427901202615, 43.429407639551414],
-          [-75.86062003122073, 44.537223459668695],
-          [-76.43367458579074, 42.312239966269544],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-76.43367458579074, 42.312239966269544],
+              [-84.42488724739361, 44.568200476215395],
+              [-82.83893567445328, 50.62640104969924],
+              [-77.46330450485964, 48.96271632192344],
+              [-77.56963960950426, 49.48976039820121],
+              [-72.87692566862715, 52.492872979444854],
+              [-64.09300368099305, 47.82512483484163],
+              [-68.00427901202615, 43.429407639551414],
+              [-75.86062003122073, 44.537223459668695],
+              [-76.43367458579074, 42.312239966269544],
+            ],
+          ],
+        },
+        properties: { groups: "A" },
       },
-      "properties": { "groups": "A" },
-    }, {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-70.79752409112032, 46.317446445548114],
-          [-65.25312249560916, 44.318971411012456],
-          [-66.37632383108026, 38.66006974362426],
-          [-71.30309021987173, 39.18549421953887],
-          [-74.0185899104202, 41.67609329308551],
-          [-76.54154303811467, 39.25827938796405],
-          [-81.90936810407574, 41.7832801769253],
-          [-78.66686680022147, 45.361827303778455],
-          [-73.31482829407085, 46.422116081922724],
-          [-72.67730706669975, 45.29202451317114],
-          [-70.79752409112032, 46.317446445548114],
-        ]],
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-70.79752409112032, 46.317446445548114],
+              [-65.25312249560916, 44.318971411012456],
+              [-66.37632383108026, 38.66006974362426],
+              [-71.30309021987173, 39.18549421953887],
+              [-74.0185899104202, 41.67609329308551],
+              [-76.54154303811467, 39.25827938796405],
+              [-81.90936810407574, 41.7832801769253],
+              [-78.66686680022147, 45.361827303778455],
+              [-73.31482829407085, 46.422116081922724],
+              [-72.67730706669975, 45.29202451317114],
+              [-70.79752409112032, 46.317446445548114],
+            ],
+          ],
+        },
+        properties: { groups: "B" },
       },
-      "properties": { "groups": "B" },
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("should do an union of geometries based on by and return the results in a new table", async () => {
+test("should do an union of geometries based on by and return the results in a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategoriesAndNewTable");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -230,50 +254,57 @@ Deno.test("should do an union of geometries based on by and return the results i
 
   const data = await newTable.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-76.43367458579074, 42.312239966269544],
-          [-84.42488724739361, 44.568200476215395],
-          [-82.83893567445328, 50.62640104969924],
-          [-77.46330450485964, 48.96271632192344],
-          [-77.56963960950426, 49.48976039820121],
-          [-72.87692566862715, 52.492872979444854],
-          [-64.09300368099305, 47.82512483484163],
-          [-68.00427901202615, 43.429407639551414],
-          [-75.86062003122073, 44.537223459668695],
-          [-76.43367458579074, 42.312239966269544],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-76.43367458579074, 42.312239966269544],
+              [-84.42488724739361, 44.568200476215395],
+              [-82.83893567445328, 50.62640104969924],
+              [-77.46330450485964, 48.96271632192344],
+              [-77.56963960950426, 49.48976039820121],
+              [-72.87692566862715, 52.492872979444854],
+              [-64.09300368099305, 47.82512483484163],
+              [-68.00427901202615, 43.429407639551414],
+              [-75.86062003122073, 44.537223459668695],
+              [-76.43367458579074, 42.312239966269544],
+            ],
+          ],
+        },
+        properties: { groups: "A" },
       },
-      "properties": { "groups": "A" },
-    }, {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-70.79752409112032, 46.317446445548114],
-          [-65.25312249560916, 44.318971411012456],
-          [-66.37632383108026, 38.66006974362426],
-          [-71.30309021987173, 39.18549421953887],
-          [-74.0185899104202, 41.67609329308551],
-          [-76.54154303811467, 39.25827938796405],
-          [-81.90936810407574, 41.7832801769253],
-          [-78.66686680022147, 45.361827303778455],
-          [-73.31482829407085, 46.422116081922724],
-          [-72.67730706669975, 45.29202451317114],
-          [-70.79752409112032, 46.317446445548114],
-        ]],
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-70.79752409112032, 46.317446445548114],
+              [-65.25312249560916, 44.318971411012456],
+              [-66.37632383108026, 38.66006974362426],
+              [-71.30309021987173, 39.18549421953887],
+              [-74.0185899104202, 41.67609329308551],
+              [-76.54154303811467, 39.25827938796405],
+              [-81.90936810407574, 41.7832801769253],
+              [-78.66686680022147, 45.361827303778455],
+              [-73.31482829407085, 46.422116081922724],
+              [-72.67730706669975, 45.29202451317114],
+              [-70.79752409112032, 46.317446445548114],
+            ],
+          ],
+        },
+        properties: { groups: "B" },
       },
-      "properties": { "groups": "B" },
-    }],
+    ],
   });
   await sdb.close();
 });
-Deno.test("should do an intersection of geometries based on by and return the results in a new table", async () => {
+test("should do an intersection of geometries based on by and return the results in a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategoriesAndNewTableIntersection");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -284,40 +315,47 @@ Deno.test("should do an intersection of geometries based on by and return the re
 
   const data = await newTable.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-76.59121317032408, 44.64024376334319],
-          [-77.46330450485964, 48.96271632192344],
-          [-74.92327882645311, 48.17661292382837],
-          [-75.86062003122073, 44.537223459668695],
-          [-76.59121317032408, 44.64024376334319],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-76.59121317032408, 44.64024376334319],
+              [-77.46330450485964, 48.96271632192344],
+              [-74.92327882645311, 48.17661292382837],
+              [-75.86062003122073, 44.537223459668695],
+              [-76.59121317032408, 44.64024376334319],
+            ],
+          ],
+        },
+        properties: { groups: "A" },
       },
-      "properties": { "groups": "A" },
-    }, {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-75.99049285283641, 43.484681104234824],
-          [-72.67730706669975, 45.29202451317114],
-          [-71.82392829577653, 43.77929660299827],
-          [-74.0185899104202, 41.67609329308551],
-          [-75.99049285283641, 43.484681104234824],
-        ]],
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-75.99049285283641, 43.484681104234824],
+              [-72.67730706669975, 45.29202451317114],
+              [-71.82392829577653, 43.77929660299827],
+              [-74.0185899104202, 41.67609329308551],
+              [-75.99049285283641, 43.484681104234824],
+            ],
+          ],
+        },
+        properties: { groups: "B" },
       },
-      "properties": { "groups": "B" },
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("should do an intersection of geometries based on by and return the results in a new table with a specific name in the DB", async () => {
+test("should do an intersection of geometries based on by and return the results in a new table with a specific name in the DB", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geoCategoriesAndNewTableIntersection");
   table.loadGeoData("test/geodata/files/polygonsGroups.json");
@@ -328,40 +366,47 @@ Deno.test("should do an intersection of geometries based on by and return the re
 
   const data = await newTable.getGeoData({ column: "geom" });
 
-  assertEquals(data, {
-    "type": "FeatureCollection",
-    "features": [{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-76.59121317032408, 44.64024376334319],
-          [-77.46330450485964, 48.96271632192344],
-          [-74.92327882645311, 48.17661292382837],
-          [-75.86062003122073, 44.537223459668695],
-          [-76.59121317032408, 44.64024376334319],
-        ]],
+  expect(data).toStrictEqual({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-76.59121317032408, 44.64024376334319],
+              [-77.46330450485964, 48.96271632192344],
+              [-74.92327882645311, 48.17661292382837],
+              [-75.86062003122073, 44.537223459668695],
+              [-76.59121317032408, 44.64024376334319],
+            ],
+          ],
+        },
+        properties: { groups: "A" },
       },
-      "properties": { "groups": "A" },
-    }, {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [-75.99049285283641, 43.484681104234824],
-          [-72.67730706669975, 45.29202451317114],
-          [-71.82392829577653, 43.77929660299827],
-          [-74.0185899104202, 41.67609329308551],
-          [-75.99049285283641, 43.484681104234824],
-        ]],
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-75.99049285283641, 43.484681104234824],
+              [-72.67730706669975, 45.29202451317114],
+              [-71.82392829577653, 43.77929660299827],
+              [-74.0185899104202, 41.67609329308551],
+              [-75.99049285283641, 43.484681104234824],
+            ],
+          ],
+        },
+        properties: { groups: "B" },
       },
-      "properties": { "groups": "B" },
-    }],
+    ],
   });
   await sdb.close();
 });
 
-Deno.test("aggregateGeo() should handle null geometries", async () => {
+test("aggregateGeo() should handle null geometries", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("testAggregateGeoNull");
 
@@ -389,35 +434,24 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
   });
   const unionData = await unionTable.getGeoData({ column: "geom" });
 
-  assertEquals(
-    (unionData.features[0] as { properties: { category: string } }).properties
-      .category,
-    "A",
-  );
-  assertEquals(
-    (unionData.features[0] as { geometry: { type: string } }).geometry?.type,
+  expect(
+    (unionData.features[0] as { properties: { category: string } }).properties.category,
+  ).toStrictEqual("A");
+  expect((unionData.features[0] as { geometry: { type: string } }).geometry?.type).toStrictEqual(
     "Polygon",
   );
 
-  assertEquals(
-    (unionData.features[1] as { properties: { category: string } }).properties
-      .category,
-    "B",
-  );
-  assertEquals(
-    (unionData.features[1] as { geometry: { type: string } }).geometry?.type,
+  expect(
+    (unionData.features[1] as { properties: { category: string } }).properties.category,
+  ).toStrictEqual("B");
+  expect((unionData.features[1] as { geometry: { type: string } }).geometry?.type).toStrictEqual(
     "Polygon",
   ); // Null is ignored in Union_Agg if there's at least one non-null
 
-  assertEquals(
-    (unionData.features[2] as { properties: { category: string } }).properties
-      .category,
-    "C",
-  );
-  assertEquals(
-    (unionData.features[2] as { geometry: null }).geometry,
-    null,
-  ); // All nulls result in null (previously was empty collection)
+  expect(
+    (unionData.features[2] as { properties: { category: string } }).properties.category,
+  ).toStrictEqual("C");
+  expect((unionData.features[2] as { geometry: null }).geometry).toStrictEqual(null); // All nulls result in null (previously was empty collection)
 
   // Intersection
   const interTable = table.aggregateGeo("intersection", {
@@ -426,35 +460,24 @@ Deno.test("aggregateGeo() should handle null geometries", async () => {
   });
   const interData = await interTable.getGeoData({ column: "geom" });
 
-  assertEquals(
-    (interData.features[0] as { properties: { category: string } }).properties
-      .category,
-    "A",
-  );
-  assertEquals(
-    (interData.features[0] as { geometry: { type: string } }).geometry?.type,
+  expect(
+    (interData.features[0] as { properties: { category: string } }).properties.category,
+  ).toStrictEqual("A");
+  expect((interData.features[0] as { geometry: { type: string } }).geometry?.type).toStrictEqual(
     "Polygon",
   );
 
-  assertEquals(
-    (interData.features[1] as { properties: { category: string } }).properties
-      .category,
-    "B",
-  );
-  assertEquals(
-    (interData.features[1] as { geometry: { type: string } }).geometry?.type,
+  expect(
+    (interData.features[1] as { properties: { category: string } }).properties.category,
+  ).toStrictEqual("B");
+  expect((interData.features[1] as { geometry: { type: string } }).geometry?.type).toStrictEqual(
     "Polygon",
   ); // Null is IGNORED in Intersection_Agg if there's at least one non-null
 
-  assertEquals(
-    (interData.features[2] as { properties: { category: string } }).properties
-      .category,
-    "C",
-  );
-  assertEquals(
-    (interData.features[2] as { geometry: null }).geometry,
-    null,
-  ); // All nulls result in null
+  expect(
+    (interData.features[2] as { properties: { category: string } }).properties.category,
+  ).toStrictEqual("C");
+  expect((interData.features[2] as { geometry: null }).geometry).toStrictEqual(null); // All nulls result in null
 
   await sdb.close();
 });

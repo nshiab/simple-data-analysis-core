@@ -5,9 +5,7 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import queueOp from "../helpers/queueOp.ts";
 import buildFuzzyMatchSql from "../helpers/buildFuzzyMatchSql.ts";
-import selectFuzzyReplacements, {
-  type FuzzyPair,
-} from "../helpers/selectFuzzyReplacements.ts";
+import selectFuzzyReplacements, { type FuzzyPair } from "../helpers/selectFuzzyReplacements.ts";
 
 export default function fuzzyClean(
   table: SimpleTable,
@@ -15,17 +13,8 @@ export default function fuzzyClean(
   newColumn: string,
   threshold: number,
   options: {
-    method?:
-      | "ratio"
-      | "partial_ratio"
-      | "token_sort_ratio"
-      | "token_set_ratio";
-    strategy?:
-      | "mostCommon"
-      | "longestString"
-      | "shortestString"
-      | "mostCentral"
-      | "maxScore";
+    method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio";
+    strategy?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore";
     prefilterPrefixLength?: number;
   } = {},
 ): void {
@@ -36,8 +25,7 @@ export default function fuzzyClean(
     kind: "barrier",
     method: "fuzzyClean()",
     parameters: { column, newColumn, threshold, options },
-    execute: () =>
-      executeFuzzyClean(table, column, newColumn, threshold, options),
+    execute: () => executeFuzzyClean(table, column, newColumn, threshold, options),
   });
 }
 
@@ -47,17 +35,8 @@ async function executeFuzzyClean(
   newColumn: string,
   threshold: number,
   options: {
-    method?:
-      | "ratio"
-      | "partial_ratio"
-      | "token_sort_ratio"
-      | "token_set_ratio";
-    strategy?:
-      | "mostCommon"
-      | "longestString"
-      | "shortestString"
-      | "mostCentral"
-      | "maxScore";
+    method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio";
+    strategy?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore";
     prefilterPrefixLength?: number;
   } = {},
 ): Promise<void> {
@@ -74,7 +53,7 @@ async function executeFuzzyClean(
   // Compute fuzzy pairs and embed counts for both sides. Only values that
   // appear in at least one pair above the threshold can be normalized —
   // singletons need no processing at all.
-  const pairsData = await queryDB(
+  const pairsData = (await queryDB(
     table,
     `INSTALL rapidfuzz FROM community; LOAD rapidfuzz;
      WITH uniques AS (
@@ -99,18 +78,14 @@ async function executeFuzzyClean(
       parameters: { column, newColumn, threshold, options },
       returnData: true,
     }),
-  ) as
-    | FuzzyPair[]
-    | null;
+  )) as FuzzyPair[] | null;
 
   const pairs = pairsData ?? [];
   if (pairs.length === 0) {
     if (newColumn !== column) {
       await queryDB(
         table,
-        `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
-          quoteIdentifier(newColumn)
-        } VARCHAR;
+        `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${quoteIdentifier(newColumn)} VARCHAR;
          UPDATE ${quoteIdentifier(table.name)}
            SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};`,
         mergeOptions(table, {
@@ -138,26 +113,21 @@ async function executeFuzzyClean(
     SELECT UNNEST(?::VARCHAR[]), UNNEST(?::VARCHAR[])
   )`;
 
-  const query = newColumn !== column
-    ? `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
-      quoteIdentifier(newColumn)
-    } VARCHAR;
+  const query =
+    newColumn !== column
+      ? `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${quoteIdentifier(newColumn)} VARCHAR;
        UPDATE ${quoteIdentifier(table.name)}
          SET ${quoteIdentifier(newColumn)} = ${quoteIdentifier(column)};
        ${mapping}
        UPDATE ${quoteIdentifier(table.name)}
          SET ${quoteIdentifier(newColumn)} = m.canonical
          FROM mapping m
-         WHERE ${quoteIdentifier(table.name)}.${
-      quoteIdentifier(newColumn)
-    } = m.original`
-    : `${mapping}
+         WHERE ${quoteIdentifier(table.name)}.${quoteIdentifier(newColumn)} = m.original`
+      : `${mapping}
        UPDATE ${quoteIdentifier(table.name)}
          SET ${quoteIdentifier(column)} = m.canonical
          FROM mapping m
-         WHERE ${quoteIdentifier(table.name)}.${
-      quoteIdentifier(column)
-    } = m.original`;
+         WHERE ${quoteIdentifier(table.name)}.${quoteIdentifier(column)} = m.original`;
 
   await queryDB(
     table,

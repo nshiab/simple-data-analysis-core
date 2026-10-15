@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should rename a table", async () => {
+test("should rename a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/cities.csv"]);
@@ -9,24 +11,20 @@ Deno.test("should rename a table", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(tables, ["canadianCities"]);
+  expect(tables).toStrictEqual(["canadianCities"]);
   await sdb.close();
 });
 
-Deno.test("rename rejects a case-insensitive collision with an unmaterialized table", async () => {
+test("rename rejects a case-insensitive collision with an unmaterialized table", async () => {
   const sdb = new SimpleDB();
   try {
     const reserved = sdb.newTable("reservedName");
     const source = sdb.newTable("renameSource").loadArray([{ value: 1 }]);
-    await assertRejects(
-      () => source.renameTable("RESERVEDNAME"),
-      Error,
-      "already exists",
-    );
-    assertEquals(source.name, "renameSource");
-    assertEquals(sdb.getTables(), [reserved, source]);
-    assertEquals(await source.getData(), [{ value: 1 }]);
-    assertEquals(await sdb.getTableNames(), [source.name]);
+    await assertRejects(() => source.renameTable("RESERVEDNAME"), Error, "already exists");
+    expect(source.name).toStrictEqual("renameSource");
+    expect(sdb.getTables()).toStrictEqual([reserved, source]);
+    expect(await source.getData()).toStrictEqual([{ value: 1 }]);
+    expect(await sdb.getTableNames()).toStrictEqual([source.name]);
   } finally {
     await sdb.close();
   }

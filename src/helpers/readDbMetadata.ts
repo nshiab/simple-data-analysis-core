@@ -18,18 +18,11 @@ export default async function readDbMetadata(
   if (schemas!.length > 0) {
     const rows = await queryDbFile(
       sdb,
-      `SELECT version, indexes FROM ${
-        quoteIdentifier(database)
-      }.__sda.metadata;`,
+      `SELECT version, indexes FROM ${quoteIdentifier(database)}.__sda.metadata;`,
       { returnData: true },
     );
-    if (
-      rows!.length !== 1 || rows![0].version !== 1 ||
-      typeof rows![0].indexes !== "string"
-    ) {
-      throw new Error(
-        "Unsupported SDA database metadata in the reserved __sda schema.",
-      );
+    if (rows!.length !== 1 || rows![0].version !== 1 || typeof rows![0].indexes !== "string") {
+      throw new Error("Unsupported SDA database metadata in the reserved __sda schema.");
     }
     return validateIndexes(JSON.parse(rows![0].indexes));
   }
@@ -40,7 +33,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function validateIndexes(value: unknown): Record<string, IndexDefinition[]> {
+export function validateIndexes(value: unknown): Record<string, IndexDefinition[]> {
   if (!isRecord(value)) throw new Error("Invalid SDA index metadata.");
   for (const definitions of Object.values(value)) {
     if (!Array.isArray(definitions)) {
@@ -48,7 +41,8 @@ function validateIndexes(value: unknown): Record<string, IndexDefinition[]> {
     }
     for (const definition of definitions) {
       if (
-        !isRecord(definition) || typeof definition.name !== "string" ||
+        !isRecord(definition) ||
+        typeof definition.name !== "string" ||
         !isRecord(definition.options)
       ) {
         throw new Error("Invalid SDA index definition.");
@@ -58,11 +52,11 @@ function validateIndexes(value: unknown): Record<string, IndexDefinition[]> {
         if (
           typeof definition.idColumn !== "string" ||
           typeof definition.textColumn !== "string" ||
-          ["stemmer", "stopwords", "ignore"].some((key) =>
-            options[key] !== undefined && typeof options[key] !== "string"
+          ["stemmer", "stopwords", "ignore"].some(
+            (key) => options[key] !== undefined && typeof options[key] !== "string",
           ) ||
-          ["stripAccents", "lower"].some((key) =>
-            options[key] !== undefined && typeof options[key] !== "boolean"
+          ["stripAccents", "lower"].some(
+            (key) => options[key] !== undefined && typeof options[key] !== "boolean",
           )
         ) {
           throw new Error("Invalid SDA FTS index definition.");
@@ -70,9 +64,10 @@ function validateIndexes(value: unknown): Record<string, IndexDefinition[]> {
       } else if (definition.kind === "vss") {
         if (
           typeof definition.column !== "string" ||
-          ["efConstruction", "efSearch", "M"].some((key) =>
-            options[key] !== undefined &&
-            (typeof options[key] !== "number" || !Number.isFinite(options[key]))
+          ["efConstruction", "efSearch", "M"].some(
+            (key) =>
+              options[key] !== undefined &&
+              (typeof options[key] !== "number" || !Number.isFinite(options[key])),
           )
         ) {
           throw new Error("Invalid SDA VSS index definition.");

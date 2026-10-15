@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return a column with new computed values", async () => {
+test("should return a column with new computed values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -9,7 +10,7 @@ Deno.test("should return a column with new computed values", async () => {
   table.addColumn("multiply", "double", `key2 * key3`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, multiply: 10.5 },
     { key1: "Fraise", key2: 11, key3: 2.345, multiply: 25.795 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, multiply: 9.1314 },
@@ -19,7 +20,7 @@ Deno.test("should return a column with new computed values", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should return a column with booleans", async () => {
+test("should return a column with booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -28,7 +29,7 @@ Deno.test("should return a column with booleans", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: "Rubarbe",
       key2: 1,
@@ -68,7 +69,7 @@ Deno.test("should return a column with booleans", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should return a column with geometry", async () => {
+test("should return a column with geometry", async () => {
   const sdb = new SimpleDB();
   const geo = sdb.newTable("geo");
   geo.loadGeoData("test/geodata/files/polygons.geojson");
@@ -78,7 +79,7 @@ Deno.test("should return a column with geometry", async () => {
   geo.reducePrecision(6);
   const data = await geo.getGeoData({ column: "centroid" });
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     type: "FeatureCollection",
     features: [
       {
@@ -102,7 +103,7 @@ Deno.test("should return a column with geometry", async () => {
 
   await sdb.close();
 });
-Deno.test("should return a column with a space in its name", async () => {
+test("should return a column with a space in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -110,7 +111,7 @@ Deno.test("should return a column with a space in its name", async () => {
   table.addColumn("key 4", "double", `key2 * key3`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, "key 4": 10.5 },
     { key1: "Fraise", key2: 11, key3: 2.345, "key 4": 25.795 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, "key 4": 9.1314 },
@@ -120,7 +121,7 @@ Deno.test("should return a column with a space in its name", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should return a column with a $ in its name", async () => {
+test("should return a column with a $ in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataSummarize.json"]);
@@ -128,81 +129,85 @@ Deno.test("should return a column with a $ in its name", async () => {
   table.addColumn("$key4", "double", `key2 * key3`);
   const data = await table.getData();
 
-  assertEquals(data, [
-    { key1: "Rubarbe", key2: 1, key3: 10.5, "$key4": 10.5 },
-    { key1: "Fraise", key2: 11, key3: 2.345, "$key4": 25.795 },
-    { key1: "Rubarbe", key2: 2, key3: 4.5657, "$key4": 9.1314 },
-    { key1: "Fraise", key2: 22, key3: 12.3434, "$key4": 271.5548 },
-    { key1: "Banane", key2: null, key3: null, "$key4": null },
-    { key1: "Banane", key2: null, key3: null, "$key4": null },
+  expect(data).toStrictEqual([
+    { key1: "Rubarbe", key2: 1, key3: 10.5, $key4: 10.5 },
+    { key1: "Fraise", key2: 11, key3: 2.345, $key4: 25.795 },
+    { key1: "Rubarbe", key2: 2, key3: 4.5657, $key4: 9.1314 },
+    { key1: "Fraise", key2: 22, key3: 12.3434, $key4: 271.5548 },
+    { key1: "Banane", key2: null, key3: null, $key4: null },
+    { key1: "Banane", key2: null, key3: null, $key4: null },
   ]);
   await sdb.close();
 });
-Deno.test("should return a column with null values", async () => {
+test("should return a column with null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ key1: "Nael" }, { key1: "Graeme" }]);
   table.addColumn("age", "integer", "null");
   const data = await table.getData();
 
-  assertEquals(data, [{ key1: "Nael", age: null }, {
-    key1: "Graeme",
-    age: null,
-  }]);
+  expect(data).toStrictEqual([
+    { key1: "Nael", age: null },
+    {
+      key1: "Graeme",
+      age: null,
+    },
+  ]);
   await sdb.close();
 });
-Deno.test("should add a column with a case statement and null", async () => {
+test("should add a column with a case statement and null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  table.loadArray([{ votes: 10, winnerMax: 10, party: "LIB" }, {
-    votes: 5,
-    winnerMax: 10,
-    party: "CON",
-  }]);
-  table.addColumn(
-    "winner",
-    "string",
-    `CASE WHEN votes === winnerMax THEN party ELSE NULL END`,
-  );
+  table.loadArray([
+    { votes: 10, winnerMax: 10, party: "LIB" },
+    {
+      votes: 5,
+      winnerMax: 10,
+      party: "CON",
+    },
+  ]);
+  table.addColumn("winner", "string", `CASE WHEN votes === winnerMax THEN party ELSE NULL END`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { votes: 10, winnerMax: 10, party: "LIB", winner: "LIB" },
     { votes: 5, winnerMax: 10, party: "CON", winner: null },
   ]);
   await sdb.close();
 });
 
-for (
-  const [json, vector, geometry] of [
-    ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
-    ["json", "float[3]", "geometry('EPSG:4326')"],
-  ] as const
-) {
-  Deno.test(`addColumn creates JSON, vector and geometry values (${json})`, async () => {
+for (const [json, vector, geometry] of [
+  ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
+  ["json", "float[3]", "geometry('EPSG:4326')"],
+] as const) {
+  test(`addColumn creates JSON, vector and geometry values (${json})`, async () => {
     const sdb = new SimpleDB();
     try {
-      const table = sdb.newTable().loadArray([{ value: 3 }])
+      const table = sdb
+        .newTable()
+        .loadArray([{ value: 3 }])
         .addColumn("details", json, "json_object('count', value)")
         .addColumn("embedding", vector, "[0.25, 0.5, 0.75]")
         .addColumn("geom", geometry, "ST_Point(-73, 45)");
-      assertEquals(await table.getTypes(), {
+      expect(await table.getTypes()).toStrictEqual({
         value: "DOUBLE",
         details: "JSON",
         embedding: "FLOAT[3]",
         geom: "GEOMETRY('EPSG:4326')",
       });
-      assertEquals(await table.getGeoData(), {
+      expect(await table.getGeoData()).toStrictEqual({
         type: "FeatureCollection",
-        features: [{
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [-73, 45] },
-          properties: {
-            value: 3,
-            details: '{"count":3.0}',
-            embedding: [0.25, 0.5, 0.75],
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [-73, 45] },
+            properties: {
+              value: 3,
+              details: '{"count":3.0}',
+              embedding: [0.25, 0.5, 0.75],
+            },
           },
-        }],
+        ],
       });
     } finally {
       await sdb.close();

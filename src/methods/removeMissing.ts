@@ -14,13 +14,7 @@ export default function removeMissing(
   } = {},
 ) {
   options = structuredClone(options);
-  const missingValues = options.missingValues ?? [
-    "undefined",
-    "NaN",
-    "null",
-    "NULL",
-    "",
-  ];
+  const missingValues = options.missingValues ?? ["undefined", "NaN", "null", "NULL", ""];
   queueOp(simpleTable, {
     kind: "fusable",
     method: "removeMissing()",
@@ -61,8 +55,8 @@ function getRemoveMissingValues(
     missingValues.filter((missingValue) =>
       typeof missingValue === "string"
         ? types[column] === "VARCHAR"
-        : ["BIGINT", "DOUBLE"].includes(types[column])
-    )
+        : ["BIGINT", "DOUBLE"].includes(types[column]),
+    ),
   );
 }
 
@@ -76,11 +70,7 @@ function removeMissingSelect(
     invert?: boolean;
   } = {},
 ) {
-  let query = `SELECT ${
-    allColumns
-      .map((d) => `${quoteIdentifier(d)}`)
-      .join(", ")
-  } FROM ${input}
+  let query = `SELECT ${allColumns.map((d) => `${quoteIdentifier(d)}`).join(", ")} FROM ${input}
         WHERE`;
 
   if (options.invert) {
@@ -88,10 +78,7 @@ function removeMissingSelect(
       query += `\n${quoteIdentifier(columns[i])} IS NULL OR`;
       if (options.missingValues) {
         for (const otherMissingValue of options.missingValues) {
-          if (
-            typeof otherMissingValue === "string" &&
-            types[columns[i]] === "VARCHAR"
-          ) {
+          if (typeof otherMissingValue === "string" && types[columns[i]] === "VARCHAR") {
             query += `\n${quoteIdentifier(columns[i])} = ? OR`;
           } else if (
             typeof otherMissingValue === "number" &&
@@ -107,10 +94,7 @@ function removeMissingSelect(
       query += `\n${quoteIdentifier(columns[i])} IS NOT NULL AND`;
       if (options.missingValues) {
         for (const otherMissingValue of options.missingValues) {
-          if (
-            typeof otherMissingValue === "string" &&
-            types[columns[i]] === "VARCHAR"
-          ) {
+          if (typeof otherMissingValue === "string" && types[columns[i]] === "VARCHAR") {
             query += `\n${quoteIdentifier(columns[i])} != ? AND`;
           } else if (
             typeof otherMissingValue === "number" &&
@@ -123,7 +107,5 @@ function removeMissingSelect(
     }
   }
 
-  return options.invert
-    ? query.slice(0, query.length - 3)
-    : query.slice(0, query.length - 4);
+  return options.invert ? query.slice(0, query.length - 3) : query.slice(0, query.length - 4);
 }

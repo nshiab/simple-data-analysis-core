@@ -36,10 +36,7 @@ export default async function publishPreparedColumns(
   table: SimpleTable,
   prepared: Pick<
     PreparedNumericFeatures,
-    | "relation"
-    | "rowIdColumn"
-    | "sourceColumns"
-    | "sourceTemporary"
+    "relation" | "rowIdColumn" | "sourceColumns" | "sourceTemporary"
   >,
   options: {
     method: string;
@@ -53,15 +50,17 @@ export default async function publishPreparedColumns(
   const connection = table.connection!;
   const q = quoteIdentifier;
   const source = q(table.name);
-  const tableDetails = (await connection.runAndReadAll(
-    `SELECT table_oid FROM duckdb_tables()
+  const tableDetails = (
+    await connection.runAndReadAll(
+      `SELECT table_oid FROM duckdb_tables()
      WHERE translate(table_name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = $1
        AND schema_name = current_schema()
        AND database_name IN (current_database(), 'temp')
        AND temporary = $2
      LIMIT 1`,
-    [foldIdentifier(table.name), prepared.sourceTemporary],
-  )).getRowsJS()[0];
+      [foldIdentifier(table.name), prepared.sourceTemporary],
+    )
+  ).getRowsJS()[0];
   if (tableDetails === undefined) {
     throw new Error(`${options.method} requires a materialized source table.`);
   }
@@ -70,14 +69,21 @@ export default async function publishPreparedColumns(
     throw new Error(`${options.method} could not identify the source table.`);
   }
 
-  const indexes = (await connection.runAndReadAll(
-    "SELECT sql FROM duckdb_indexes() WHERE table_oid = $1 ORDER BY index_name",
-    [tableOid],
-  )).getRowsJS().map((row) => String(row[0]));
+  const indexes = (
+    await connection.runAndReadAll(
+      "SELECT sql FROM duckdb_indexes() WHERE table_oid = $1 ORDER BY index_name",
+      [tableOid],
+    )
+  )
+    .getRowsJS()
+    .map((row) => {
+      if (typeof row[0] !== "string") throw new Error("Expected index SQL to be a string.");
+      return row[0];
+    });
   const replacements = new Map(
-    options.outputs.filter((output) => output.replace !== undefined).map((
-      output,
-    ) => [foldIdentifier(output.replace!), output]),
+    options.outputs
+      .filter((output) => output.replace !== undefined)
+      .map((output) => [foldIdentifier(output.replace!), output]),
   );
   const select = prepared.sourceColumns.map((column) => {
     const replacement = replacements.get(foldIdentifier(column));
@@ -90,16 +96,15 @@ export default async function publishPreparedColumns(
       select.push(`${output.expression} AS ${q(output.name)}`);
     }
   }
-  const resultJoin = options.result === undefined
-    ? ""
-    : ` JOIN ${q(options.result.relation)} r
+  const resultJoin =
+    options.result === undefined
+      ? ""
+      : ` JOIN ${q(options.result.relation)} r
       ON p.${q(prepared.rowIdColumn)} = r.${q(options.result.rowIdColumn)}`;
 
   await queryDB(
     table,
-    `CREATE OR REPLACE ${
-      prepared.sourceTemporary ? "TEMP " : ""
-    }TABLE ${source} AS
+    `CREATE OR REPLACE ${prepared.sourceTemporary ? "TEMP " : ""}TABLE ${source} AS
      SELECT ${select.join(", ")}
      FROM ${q(prepared.relation)} p${resultJoin}
      ORDER BY p.${q(prepared.rowIdColumn)}`,
@@ -123,30 +128,21 @@ export default async function publishPreparedColumns(
   }
 }
 
-function validateOutputs(
-  sourceColumns: string[],
-  outputs: PublicationOutput[],
-): void {
+function validateOutputs(sourceColumns: string[], outputs: PublicationOutput[]): void {
   const outputNames = new Set<string>();
   const replacements = new Set<string>();
   for (const output of outputs) {
     const outputName = foldIdentifier(output.name);
     if (outputNames.has(outputName)) {
       throw new Error(
-        `Internal publication received duplicate output column ${
-          quoteIdentifier(output.name)
-        }.`,
+        `Internal publication received duplicate output column ${quoteIdentifier(output.name)}.`,
       );
     }
     outputNames.add(outputName);
     if (output.replace === undefined) {
-      if (
-        sourceColumns.some((column) => foldIdentifier(column) === outputName)
-      ) {
+      if (sourceColumns.some((column) => foldIdentifier(column) === outputName)) {
         throw new Error(
-          `Internal publication cannot append existing column ${
-            quoteIdentifier(output.name)
-          }.`,
+          `Internal publication cannot append existing column ${quoteIdentifier(output.name)}.`,
         );
       }
       continue;
@@ -154,27 +150,21 @@ function validateOutputs(
     const replacement = foldIdentifier(output.replace);
     if (outputName !== replacement) {
       throw new Error(
-        `Internal publication output ${
-          quoteIdentifier(output.name)
-        } must match its replacement column ${
-          quoteIdentifier(output.replace)
-        }.`,
+        `Internal publication output ${quoteIdentifier(
+          output.name,
+        )} must match its replacement column ${quoteIdentifier(output.replace)}.`,
       );
     }
-    if (
-      !sourceColumns.some((column) => foldIdentifier(column) === replacement)
-    ) {
+    if (!sourceColumns.some((column) => foldIdentifier(column) === replacement)) {
       throw new Error(
-        `Internal publication cannot replace missing column ${
-          quoteIdentifier(output.replace)
-        }.`,
+        `Internal publication cannot replace missing column ${quoteIdentifier(output.replace)}.`,
       );
     }
     if (replacements.has(replacement)) {
       throw new Error(
-        `Internal publication received duplicate replacement column ${
-          quoteIdentifier(output.replace)
-        }.`,
+        `Internal publication received duplicate replacement column ${quoteIdentifier(
+          output.replace,
+        )}.`,
       );
     }
     replacements.add(replacement);

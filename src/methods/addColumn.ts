@@ -46,9 +46,9 @@ export default function addColumn(
     outputSchema: (types) => ({ ...types, [newColumn]: newType }),
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addColumn()");
-      return `SELECT *, CAST((${definition}) AS ${newType}) AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      return `SELECT *, CAST((${definition}) AS ${newType}) AS ${quoteIdentifier(
+        newColumn,
+      )} FROM ${input}`;
     },
   });
 }

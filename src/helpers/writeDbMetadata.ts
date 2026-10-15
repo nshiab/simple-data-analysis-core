@@ -14,8 +14,6 @@ export default async function writeDbMetadata(
     sdb,
     `CREATE SCHEMA IF NOT EXISTS ${catalog}.__sda;
      CREATE OR REPLACE TABLE ${catalog}.__sda.metadata AS
-     SELECT 1 AS version, ${
-      parseValue(JSON.stringify(indexes))
-    }::VARCHAR AS indexes;`,
+     SELECT 1 AS version, ${parseValue(JSON.stringify(indexes))}::VARCHAR AS indexes;`,
   );
 }

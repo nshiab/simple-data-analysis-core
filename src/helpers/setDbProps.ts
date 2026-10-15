@@ -25,11 +25,7 @@ export default async function setDbProps(
     }
   }
 
-  while (
-    simpleDB.getTables().some((table) =>
-      table.name === `table${simpleDB.tableIncrement}`
-    )
-  ) {
+  while (simpleDB.getTables().some((table) => table.name === `table${simpleDB.tableIncrement}`)) {
     simpleDB.tableIncrement++;
   }
 }

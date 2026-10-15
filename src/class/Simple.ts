@@ -1,8 +1,4 @@
-import type {
-  DuckDBConnection,
-  DuckDBInstance,
-  DuckDBValue,
-} from "@duckdb/node-api";
+import type { DuckDBConnection, DuckDBInstance, DuckDBValue } from "@duckdb/node-api";
 
 /**
  * Shared implementation of the properties used by SimpleDB and SimpleTable.
@@ -88,8 +84,8 @@ export default class Simple {
     },
   ) => Promise<
     | {
-      [key: string]: unknown;
-    }[]
+        [key: string]: unknown;
+      }[]
     | null
   >;
 

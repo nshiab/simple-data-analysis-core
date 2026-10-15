@@ -9,13 +9,11 @@ export default function round(
   options:
     | number
     | {
-      decimals?: number;
-      method?: "round" | "ceiling" | "floor";
-    } = {},
+        decimals?: number;
+        method?: "round" | "ceiling" | "floor";
+      } = {},
 ) {
-  const optionsNormalized = typeof options === "number"
-    ? { decimals: options }
-    : options;
+  const optionsNormalized = typeof options === "number" ? { decimals: options } : options;
   const cols = stringToArray(columns);
   const method = optionsNormalized.method?.toUpperCase() ?? "ROUND";
   const decimals = optionsNormalized.decimals ?? 0;
@@ -26,16 +24,12 @@ export default function round(
     parameters: { columns, options },
     needsSchema: false,
     buildSelect: (input) =>
-      `SELECT * REPLACE (${
-        cols
-          .map((c) =>
-            method === "ROUND"
-              ? `${method}(${quoteIdentifier(c)}, ${decimals}) AS ${
-                quoteIdentifier(c)
-              }`
-              : `${method}(${quoteIdentifier(c)}) AS ${quoteIdentifier(c)}`
-          )
-          .join(", ")
-      }) FROM ${input}`,
+      `SELECT * REPLACE (${cols
+        .map((c) =>
+          method === "ROUND"
+            ? `${method}(${quoteIdentifier(c)}, ${decimals}) AS ${quoteIdentifier(c)}`
+            : `${method}(${quoteIdentifier(c)}) AS ${quoteIdentifier(c)}`,
+        )
+        .join(", ")}) FROM ${input}`,
   });
 }

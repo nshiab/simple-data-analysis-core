@@ -47,14 +47,10 @@ async function execute(
     throw new Error("hdbscan() newColumn must be a string.");
   }
   if (!Number.isSafeInteger(minClusterSize) || minClusterSize < 2) {
-    throw new Error(
-      "hdbscan() minClusterSize must be a safe integer of at least 2.",
-    );
+    throw new Error("hdbscan() minClusterSize must be a safe integer of at least 2.");
   }
   if (!Number.isSafeInteger(minSamples) || minSamples < 1) {
-    throw new Error(
-      "hdbscan() minSamples must be a safe integer of at least 1.",
-    );
+    throw new Error("hdbscan() minSamples must be a safe integer of at least 1.");
   }
   if (!(["euclidean", "cosine"] as unknown[]).includes(metric)) {
     throw new Error('hdbscan() metric must be "euclidean" or "cosine".');
@@ -65,24 +61,17 @@ async function execute(
   if (typeof approximate !== "boolean") {
     throw new Error("hdbscan() approximate must be a boolean.");
   }
-  if (
-    membershipScoreColumn !== undefined &&
-    typeof membershipScoreColumn !== "string"
-  ) {
+  if (membershipScoreColumn !== undefined && typeof membershipScoreColumn !== "string") {
     throw new Error("hdbscan() membershipScoreColumn must be a string.");
   }
-  if (
-    outlierScoreColumn !== undefined &&
-    typeof outlierScoreColumn !== "string"
-  ) {
+  if (outlierScoreColumn !== undefined && typeof outlierScoreColumn !== "string") {
     throw new Error("hdbscan() outlierScoreColumn must be a string.");
   }
 
   const sourceColumns = Object.keys(await table.getTypes());
-  const outputNames = [newColumn, membershipScoreColumn, outlierScoreColumn]
-    .filter(
-      (name): name is string => name !== undefined,
-    );
+  const outputNames = [newColumn, membershipScoreColumn, outlierScoreColumn].filter(
+    (name): name is string => name !== undefined,
+  );
   validateOutputNames(sourceColumns, outputNames);
 
   const prepared = await prepareNumericFeatures(
@@ -123,15 +112,11 @@ async function execute(
       );
     }
     if (minSamples >= prepared.rowCount) {
-      const defaulted = options.minSamples === undefined
-        ? " (defaulted from minClusterSize)"
-        : "";
+      const defaulted = options.minSamples === undefined ? " (defaulted from minClusterSize)" : "";
       throw new Error(
         `hdbscan() minSamples is ${minSamples}${defaulted}, but ${prepared.rowCount} rows provide at most ${
           prepared.rowCount - 1
-        } other point${
-          prepared.rowCount === 2 ? "" : "s"
-        }. Set minSamples between 1 and ${
+        } other point${prepared.rowCount === 2 ? "" : "s"}. Set minSamples between 1 and ${
           prepared.rowCount - 1
         }, or provide at least ${minSamples + 1} rows.`,
       );
@@ -197,14 +182,10 @@ async function execute(
     const resultColumns = [
       "row_id INTEGER",
       `${labelColumn} VARCHAR`,
-      membershipScoreColumn === undefined
-        ? undefined
-        : `${membershipColumn} DOUBLE`,
+      membershipScoreColumn === undefined ? undefined : `${membershipColumn} DOUBLE`,
       outlierScoreColumn === undefined ? undefined : `${gloshColumn} DOUBLE`,
     ].filter((definition): definition is string => definition !== undefined);
-    await connection.run(
-      `CREATE TEMP TABLE ${q(names.result)} (${resultColumns.join(",")})`,
-    );
+    await connection.run(`CREATE TEMP TABLE ${q(names.result)} (${resultColumns.join(",")})`);
     const outputTypes = [
       INTEGER,
       VARCHAR,
@@ -218,15 +199,11 @@ async function execute(
       prepared.rowCount,
       (column, start, end) => {
         if (column === 0) {
-          return Array.from(
-            { length: end - start },
-            (_, offset) => start + offset,
-          );
+          return Array.from({ length: end - start }, (_, offset) => start + offset);
         }
         if (column === 1) {
-          return Array.from(
-            result.labels.subarray(start, end),
-            (label) => label < 0 ? "noise" : `cluster-${label}`,
+          return Array.from(result.labels.subarray(start, end), (label) =>
+            label < 0 ? "noise" : `cluster-${label}`,
           );
         }
         const membershipIndex = membershipScoreColumn === undefined ? -1 : 2;
@@ -237,10 +214,12 @@ async function execute(
         );
       },
     );
-    const publicationOutputs = [{
-      name: newColumn,
-      expression: `r.${q(labelColumn)}`,
-    }];
+    const publicationOutputs = [
+      {
+        name: newColumn,
+        expression: `r.${q(labelColumn)}`,
+      },
+    ];
     if (membershipScoreColumn !== undefined) {
       publicationOutputs.push({
         name: membershipScoreColumn,
@@ -260,21 +239,16 @@ async function execute(
       outputs: publicationOutputs,
     });
   } finally {
-    for (
-      const relation of Object.entries(names).reverse().flatMap((
-        [key, value],
-      ) => key === "hnsw" ? [] : [value])
-    ) {
+    for (const relation of Object.entries(names)
+      .reverse()
+      .flatMap(([key, value]) => (key === "hnsw" ? [] : [value]))) {
       await connection.run(`DROP TABLE IF EXISTS ${quoteIdentifier(relation)}`);
     }
     await prepared.cleanup();
   }
 }
 
-function validateOutputNames(
-  sourceColumns: string[],
-  outputNames: string[],
-): void {
+function validateOutputNames(sourceColumns: string[], outputNames: string[]): void {
   const seen = new Map<string, string>();
   for (const name of outputNames) {
     if (name.length === 0 || name.includes("\0")) {
@@ -283,22 +257,20 @@ function validateOutputNames(
       );
     }
     const folded = foldIdentifier(name);
-    const source = sourceColumns.find((column) =>
-      foldIdentifier(column) === folded
-    );
+    const source = sourceColumns.find((column) => foldIdentifier(column) === folded);
     if (source !== undefined) {
       throw new Error(
-        `hdbscan() cannot create ${
-          quoteIdentifier(name)
-        } because that source column already exists. Remove it first or choose different output names.`,
+        `hdbscan() cannot create ${quoteIdentifier(
+          name,
+        )} because that source column already exists. Remove it first or choose different output names.`,
       );
     }
     const duplicate = seen.get(folded);
     if (duplicate !== undefined) {
       throw new Error(
-        `hdbscan() output columns ${quoteIdentifier(duplicate)} and ${
-          quoteIdentifier(name)
-        } refer to the same column. Choose distinct output names.`,
+        `hdbscan() output columns ${quoteIdentifier(duplicate)} and ${quoteIdentifier(
+          name,
+        )} refer to the same column. Choose distinct output names.`,
       );
     }
     seen.set(folded, name);

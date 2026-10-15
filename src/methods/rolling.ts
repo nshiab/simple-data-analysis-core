@@ -24,16 +24,7 @@ export default function rolling(
     parameters: { column, newColumn, stat, preceding, following, options },
     needsSchema: true,
     buildSelect: (input, schema) =>
-      rollingSelect(
-        input,
-        schema,
-        column,
-        newColumn,
-        stat,
-        preceding,
-        following,
-        options,
-      ),
+      rollingSelect(input, schema, column, newColumn, stat, preceding, following, options),
   });
 }
 
@@ -62,9 +53,8 @@ function rollingSelect(
   };
 
   const by = options.by ? stringToArray(options.by) : [];
-  const partition = by.length > 0
-    ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
-    : "";
+  const partition =
+    by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}` : "";
 
   const window = `OVER (${partition}
                 ROWS BETWEEN ${preceding} PRECEDING AND ${following} FOLLOWING)`;
@@ -75,14 +65,12 @@ function rollingSelect(
   // fewer values than requested, so their result is NULL.
   return `SELECT *,
     CASE
-        WHEN COUNT(${quoteIdentifier(column)}) ${window} != ${
-    preceding + following + 1
-  } THEN NULL
+        WHEN COUNT(${quoteIdentifier(column)}) ${window} != ${preceding + following + 1} THEN NULL
         ELSE ${
-    typeof options.decimals === "number"
-      ? `ROUND(${tempQuery}, ${options.decimals})`
-      : tempQuery
-  }
+          typeof options.decimals === "number"
+            ? `ROUND(${tempQuery}, ${options.decimals})`
+            : tempQuery
+        }
     END AS ${quoteIdentifier(newColumn)}
         FROM ${input}`;
 }

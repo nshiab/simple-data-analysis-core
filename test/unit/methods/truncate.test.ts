@@ -1,52 +1,47 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should truncate strings in one column to specified length", async () => {
+test("should truncate strings in one column to specified length", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { description: "This is a long description" },
-  ]);
+  table.loadArray([{ description: "This is a long description" }]);
 
   table.truncate("description", 10);
 
   const data = await table.getData();
 
-  assertEquals(data, [{ description: "This is a " }]);
+  expect(data).toStrictEqual([{ description: "This is a " }]);
   await sdb.close();
 });
 
-Deno.test("should truncate strings shorter than specified length unchanged", async () => {
+test("should truncate strings shorter than specified length unchanged", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { name: "John" },
-  ]);
+  table.loadArray([{ name: "John" }]);
 
   table.truncate("name", 10);
 
   const data = await table.getData();
 
-  assertEquals(data, [{ name: "John" }]);
+  expect(data).toStrictEqual([{ name: "John" }]);
   await sdb.close();
 });
 
-Deno.test("should truncate strings to zero characters", async () => {
+test("should truncate strings to zero characters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { text: "Hello World" },
-  ]);
+  table.loadArray([{ text: "Hello World" }]);
 
   table.truncate("text", 0);
 
   const data = await table.getData();
 
-  assertEquals(data, [{ text: "" }]);
+  expect(data).toStrictEqual([{ text: "" }]);
   await sdb.close();
 });
 
-Deno.test("should truncate multiple rows", async () => {
+test("should truncate multiple rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -59,7 +54,7 @@ Deno.test("should truncate multiple rows", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { firstName: "Alexa", lastName: "Washington" },
     { firstName: "Eliza", lastName: "Montgomery" },
     { firstName: "Chris", lastName: "Anderson" },
@@ -67,19 +62,15 @@ Deno.test("should truncate multiple rows", async () => {
   await sdb.close();
 });
 
-Deno.test("should truncate strings in column with spaces in name", async () => {
+test("should truncate strings in column with spaces in name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { "full name": "Alexander Washington" },
-  ]);
+  table.loadArray([{ "full name": "Alexander Washington" }]);
 
   table.truncate("full name", 9);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { "full name": "Alexander" },
-  ]);
+  expect(data).toStrictEqual([{ "full name": "Alexander" }]);
   await sdb.close();
 });

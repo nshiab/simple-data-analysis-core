@@ -19,9 +19,6 @@ const COLUMN_TYPES = {
   volume: "DOUBLE",
 } as const;
 
-const USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-
 type YahooInterval = keyof typeof INTERVAL_SECONDS;
 type YahooQuoteVariable = "open" | "high" | "low" | "close" | "volume";
 type YahooValues = Array<number | null>;
@@ -109,9 +106,7 @@ async function getYahooFinanceData(request: {
   const startTime = startDate.getTime();
   const exclusiveEndTime = getExclusiveEndTime(endDate, interval);
   const url = new URL(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${
-      encodeURIComponent(symbol)
-    }`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`,
   );
   url.search = new URLSearchParams({
     includeAdjustedClose: "true",
@@ -120,9 +115,7 @@ async function getYahooFinanceData(request: {
     period2: String(Math.ceil(exclusiveEndTime / 1000)),
   }).toString();
 
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const response = await fetch(url);
   if (!response.ok) {
     const text = (await response.text()).slice(0, 500).trim();
     throw new Error(
@@ -132,12 +125,9 @@ async function getYahooFinanceData(request: {
     );
   }
 
-  const data = await response.json() as YahooFinanceResponse;
+  const data = (await response.json()) as YahooFinanceResponse;
   if (data.chart?.error) {
-    throw new Error(
-      data.chart.error.description ??
-        "Yahoo Finance returned an unknown error.",
-    );
+    throw new Error(data.chart.error.description ?? "Yahoo Finance returned an unknown error.");
   }
 
   const result = data.chart?.result?.[0];
@@ -151,10 +141,7 @@ async function getYahooFinanceData(request: {
   const rows: YahooFinanceRow[] = [];
   for (let index = 0; index < timestamps.length; index++) {
     const timestamp = timestamps[index] * 1000;
-    if (
-      Number.isFinite(timestamp) && timestamp >= startTime &&
-      timestamp < exclusiveEndTime
-    ) {
+    if (Number.isFinite(timestamp) && timestamp >= startTime && timestamp < exclusiveEndTime) {
       rows.push({
         datetime: new Date(timestamp),
         open: getFiniteValue(quote?.open, index),
@@ -173,10 +160,7 @@ async function getYahooFinanceData(request: {
   return rows;
 }
 
-function getFiniteValue(
-  values: YahooValues | undefined,
-  index: number,
-): number | null {
+function getFiniteValue(values: YahooValues | undefined, index: number): number | null {
   const value = values?.[index];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -200,17 +184,15 @@ function assertArguments(
   interval: YahooInterval,
 ): void {
   if (typeof symbol !== "string" || symbol.trim().length === 0) {
-    throw new TypeError(
-      "loadYahooFinanceData() symbol must be a non-empty string.",
-    );
+    throw new TypeError("loadYahooFinanceData() symbol must be a non-empty string.");
   }
   if (
-    !(startDate instanceof Date) || !(endDate instanceof Date) ||
-    !Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime())
+    !(startDate instanceof Date) ||
+    !(endDate instanceof Date) ||
+    !Number.isFinite(startDate.getTime()) ||
+    !Number.isFinite(endDate.getTime())
   ) {
-    throw new RangeError(
-      "loadYahooFinanceData() startDate and endDate must be valid dates.",
-    );
+    throw new RangeError("loadYahooFinanceData() startDate and endDate must be valid dates.");
   }
   if (endDate.getTime() < startDate.getTime()) {
     throw new RangeError(
@@ -218,8 +200,6 @@ function assertArguments(
     );
   }
   if (interval !== "1d" && interval !== "1h" && interval !== "1m") {
-    throw new Error(
-      'loadYahooFinanceData() interval must be "1d", "1h", or "1m".',
-    );
+    throw new Error('loadYahooFinanceData() interval must be "1d", "1h", or "1m".');
   }
 }

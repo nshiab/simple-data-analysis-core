@@ -25,11 +25,7 @@ export default function accumulate(
     execute: async () => {
       // A SELECT *, expr AS col colliding with an existing column would be
       // silently renamed by DuckDB (col -> col_1) instead of erroring.
-      assertNewColumns(
-        await simpleTable.getTypes(),
-        [newColumn],
-        "accumulate()",
-      );
+      assertNewColumns(await simpleTable.getTypes(), [newColumn], "accumulate()");
 
       await queryDB(
         simpleTable,
@@ -53,15 +49,14 @@ function accumulateQuery(
   } = {},
 ) {
   const by = options.by ? stringToArray(options.by) : [];
-  const partition = by.length > 0
-    ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")} `
-    : "";
+  const partition =
+    by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")} ` : "";
 
-  const query = `CREATE OR REPLACE TABLE ${
-    quoteIdentifier(table)
-  } AS SELECT *, SUM(${
-    quoteIdentifier(column)
-  }) OVER (${partition}ORDER BY rowid) AS ${quoteIdentifier(newColumn)}
+  const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(
+    table,
+  )} AS SELECT *, SUM(${quoteIdentifier(
+    column,
+  )}) OVER (${partition}ORDER BY rowid) AS ${quoteIdentifier(newColumn)}
     FROM ${quoteIdentifier(table)}
     ORDER BY rowid;`;
 

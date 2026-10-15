@@ -1,13 +1,12 @@
-import { assertRejects } from "@std/assert";
+import { test } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("column getters throw when a missing column matches the table name", async () => {
+test("column getters throw when a missing column matches the table name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  table.loadArray([
-    { value: 1 },
-    { value: 2 },
-  ]);
+  table.loadArray([{ value: 1 }, { value: 2 }]);
 
   const getters: { name: string; call: () => Promise<unknown> }[] = [
     { name: "getData()", call: () => table.getData({ columns: "data" }) },
@@ -32,12 +31,7 @@ Deno.test("column getters throw when a missing column matches the table name", a
   ];
 
   for (const getter of getters) {
-    await assertRejects(
-      getter.call,
-      Error,
-      "does not have a column named",
-      getter.name,
-    );
+    await assertRejects(getter.call, Error, "does not have a column named", getter.name);
   }
 
   await sdb.close();

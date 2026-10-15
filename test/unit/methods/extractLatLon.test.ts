@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should extract the lat and lon of points", async () => {
+test("should extract the lat and lon of points", async () => {
   const sdb = new SimpleDB();
 
   const table = sdb.newTable();
@@ -11,7 +12,7 @@ Deno.test("should extract the lat and lon of points", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "pointA",
       lat: 48.241182892559266,

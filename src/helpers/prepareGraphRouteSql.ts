@@ -6,9 +6,7 @@ import prepareGraphStarts, {
   type GraphId,
   type PreparedGraphStarts,
 } from "./prepareGraphStarts.ts";
-import prepareGraphTraversal, {
-  validateGraphStarts,
-} from "./prepareGraphTraversal.ts";
+import prepareGraphTraversal, { validateGraphStarts } from "./prepareGraphTraversal.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 
 export type PreparedGraphRouteEndpoints = {
@@ -32,9 +30,7 @@ export function prepareGraphRouteEndpoints(
   const preparedStart = prepareGraphStarts(start, method);
   const preparedEnd = prepareGraphStarts(end, method);
   if (preparedStart.family !== preparedEnd.family) {
-    throw new TypeError(
-      `${method} start and end must both be string IDs or both be numeric IDs.`,
-    );
+    throw new TypeError(`${method} start and end must both be string IDs or both be numeric IDs.`);
   }
   if (preparedStart.values[0] === preparedEnd.values[0]) {
     throw new TypeError(
@@ -46,10 +42,7 @@ export function prepareGraphRouteEndpoints(
     end: preparedEnd,
     values: {
       family: preparedStart.family,
-      numericValues: [
-        ...preparedStart.numericValues,
-        ...preparedEnd.numericValues,
-      ],
+      numericValues: [...preparedStart.numericValues, ...preparedEnd.numericValues],
       values: [preparedStart.values[0], preparedEnd.values[0]],
     },
   };
@@ -66,17 +59,10 @@ export function validateGraphRouteInputs(
   method: string,
   includeTotal = true,
 ) {
-  const nodes = validateGraphStarts(
-    schema,
-    source,
-    target,
-    endpoints.values,
-    method,
-  );
+  const nodes = validateGraphStarts(schema, source, target, endpoints.values, method);
   const edges = getGraphEdgeIdColumn(schema, edgeId, method);
-  const weightColumn = weight === undefined
-    ? undefined
-    : getGraphWeightColumn(schema, weight, method);
+  const weightColumn =
+    weight === undefined ? undefined : getGraphWeightColumn(schema, weight, method);
   validateGraphRouteResultSchema(schema, method, [], includeTotal);
   return {
     distanceType: weightColumn?.distanceType ?? "BIGINT",
@@ -98,38 +84,27 @@ export function prepareGraphRouteSql(
   includeTotal = true,
 ) {
   validateGraphRouteResultSchema(schema, method, [], includeTotal);
-  const traversal = prepareGraphTraversal(
-    input,
-    schema,
-    source,
-    target,
-    endpoints.values,
-    method,
-  );
+  const traversal = prepareGraphTraversal(input, schema, source, target, endpoints.values, method);
   const edgeIdColumn = getGraphEdgeIdColumn(schema, edgeId, method);
-  const weightColumn = weight === undefined
-    ? undefined
-    : getGraphWeightColumn(schema, weight, method);
+  const weightColumn =
+    weight === undefined ? undefined : getGraphWeightColumn(schema, weight, method);
   const distanceType = weightColumn?.distanceType ?? "BIGINT";
   const q = quoteIdentifier;
   const edgeIdReference = `${q("edges")}.${q(edgeIdColumn.column)}`;
   const typedEdgeId = `CAST(${edgeIdReference} AS ${edgeIdColumn.idType})`;
-  const edgeKey = edgeIdColumn.family === "string"
-    ? `ENCODE(${typedEdgeId})`
-    : typedEdgeId;
-  const edgeWeight = weightColumn === undefined
-    ? `CAST(1 AS ${distanceType})`
-    : `CAST(${q("edges")}.${q(weightColumn.column)} AS ${distanceType})`;
-  const keyType = edgeIdColumn.family === "string"
-    ? "BLOB"
-    : edgeIdColumn.idType;
-  const stepType = `STRUCT(${q("edgeId")} ${edgeIdColumn.idType}, ${
-    q("source")
-  } ${traversal.endpoints.idType}, ${
-    q("target")
-  } ${traversal.endpoints.idType}, ${q("weight")} ${distanceType}, ${
-    q("distance")
-  } ${distanceType})`;
+  const edgeKey = edgeIdColumn.family === "string" ? `ENCODE(${typedEdgeId})` : typedEdgeId;
+  const edgeWeight =
+    weightColumn === undefined
+      ? `CAST(1 AS ${distanceType})`
+      : `CAST(${q("edges")}.${q(weightColumn.column)} AS ${distanceType})`;
+  const keyType = edgeIdColumn.family === "string" ? "BLOB" : edgeIdColumn.idType;
+  const stepType = `STRUCT(${q("edgeId")} ${edgeIdColumn.idType}, ${q(
+    "source",
+  )} ${traversal.endpoints.idType}, ${q(
+    "target",
+  )} ${traversal.endpoints.idType}, ${q("weight")} ${distanceType}, ${q(
+    "distance",
+  )} ${distanceType})`;
 
   return {
     distanceType,

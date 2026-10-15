@@ -63,18 +63,12 @@ export default async function writeDB(
   try {
     await queryDbFile(
       sdb,
-      `ATTACH '${
-        cleanPath(temporary)
-      }' AS ${target} (TYPE ${type}, READ_WRITE);`,
+      `ATTACH '${cleanPath(temporary)}' AS ${target} (TYPE ${type}, READ_WRITE);`,
     );
     attached = true;
     if (type === "duckdb") {
       await queryDbFile(sdb, `COPY FROM DATABASE ${source} TO ${target};`);
-      await writeDbMetadata(
-        sdb,
-        name,
-        options.metadata === false ? {} : indexes,
-      );
+      await writeDbMetadata(sdb, name, options.metadata === false ? {} : indexes);
       await queryDbFile(sdb, `CHECKPOINT ${target};`);
     } else {
       // SQLite is an interchange format: materialize main-schema relations,
@@ -82,9 +76,7 @@ export default async function writeDB(
       const tables = await queryDbFile(
         sdb,
         `SELECT table_name FROM information_schema.tables
-         WHERE table_catalog = ${
-          parseValue(database)
-        } AND table_schema = 'main';`,
+         WHERE table_catalog = ${parseValue(database)} AND table_schema = 'main';`,
         { returnData: true },
       );
       for (const { table_name } of tables!) {
@@ -130,8 +122,6 @@ function assertDestination(file: string, overwrite: boolean): void {
     );
   }
   if (!overwrite) {
-    throw new Error(
-      `The file ${file} already exists. Set overwrite to true to replace it.`,
-    );
+    throw new Error(`The file ${file} already exists. Set overwrite to true to replace it.`);
   }
 }

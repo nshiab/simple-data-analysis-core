@@ -46,36 +46,34 @@ export default function validateNumericalAnalysis(
     if (type === undefined) {
       const availableColumns = Object.keys(types).sort();
       throw new Error(
-        `${method} could not find column ${quoteIdentifier(column)} in table ${
-          quoteIdentifier(tableName)
-        }. Available columns: ${
-          availableColumns.map(quoteIdentifier).join(", ")
-        }.`,
+        `${method} could not find column ${quoteIdentifier(column)} in table ${quoteIdentifier(
+          tableName,
+        )}. Available columns: ${availableColumns.map(quoteIdentifier).join(", ")}.`,
       );
     }
     if (!numericalColumns.includes(column)) {
       throw new Error(
-        `${method} requires numeric columns, but column ${
-          quoteIdentifier(column)
-        } in table ${quoteIdentifier(tableName)} has type ${type}. Convert ${
-          quoteIdentifier(column)
-        } to a numeric type first.`,
+        `${method} requires numeric columns, but column ${quoteIdentifier(
+          column,
+        )} in table ${quoteIdentifier(tableName)} has type ${type}. Convert ${quoteIdentifier(
+          column,
+        )} to a numeric type first.`,
       );
     }
   }
 
   if (options.y === undefined && numericalColumns.length < 2) {
-    const found = numericalColumns.length === 0
-      ? ""
-      : `: ${numericalColumns.map(quoteIdentifier).join(", ")}`;
+    const found =
+      numericalColumns.length === 0 ? "" : `: ${numericalColumns.map(quoteIdentifier).join(", ")}`;
     const missingCount = 2 - numericalColumns.length;
-    const columnsToConvert = numericalColumns.length === 0
-      ? `${missingCount} columns`
-      : `${missingCount} more column${missingCount === 1 ? "" : "s"}`;
+    const columnsToConvert =
+      numericalColumns.length === 0
+        ? `${missingCount} columns`
+        : `${missingCount} more column${missingCount === 1 ? "" : "s"}`;
     throw new Error(
-      `${method} requires at least 2 numeric columns in table ${
-        quoteIdentifier(tableName)
-      }, but found ${numericalColumns.length}${found}. Convert at least ${columnsToConvert} to ${
+      `${method} requires at least 2 numeric columns in table ${quoteIdentifier(
+        tableName,
+      )}, but found ${numericalColumns.length}${found}. Convert at least ${columnsToConvert} to ${
         missingCount === 1 ? "a numeric type" : "numeric types"
       } first.`,
     );

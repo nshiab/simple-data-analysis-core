@@ -29,11 +29,7 @@ export default function umap(
   });
 }
 
-async function execute(
-  table: SimpleTable,
-  columns: string | string[],
-  options: Options,
-) {
+async function execute(table: SimpleTable, columns: string | string[], options: Options) {
   const { neighbors = 15, metric = "euclidean" } = options;
   if (!Number.isSafeInteger(neighbors) || neighbors < 2) {
     throw new Error("neighbors must be a safe integer of at least 2.");
@@ -44,27 +40,25 @@ async function execute(
   }
   const sourceColumns = await table.getColumns();
   if (sourceColumns.some((c) => ["umapx", "umapy"].includes(c.toLowerCase()))) {
-    throw new Error(
-      "UMAP output columns umapX and umapY must not already exist.",
-    );
+    throw new Error("UMAP output columns umapX and umapY must not already exist.");
   }
 
   const connection = table.connection!;
-  const [sourceOid, sourceTemporary] = (await connection.runAndReadAll(
-    `SELECT table_oid,temporary FROM duckdb_tables()
+  const [sourceOid, sourceTemporary] =
+    (
+      await connection.runAndReadAll(
+        `SELECT table_oid,temporary FROM duckdb_tables()
       WHERE lower(table_name)=lower($1) AND schema_name=current_schema()
         AND database_name IN (current_database(),'temp')
       ORDER BY temporary DESC LIMIT 1`,
-    [table.name],
-  )).getRowsJS()[0] ?? [];
+        [table.name],
+      )
+    ).getRowsJS()[0] ?? [];
   if (typeof sourceOid !== "number" && typeof sourceOid !== "bigint") {
     throw new Error("UMAP requires a materialized source table.");
   }
   const q = quoteIdentifier;
-  const count = await readScalarNumber(
-    connection,
-    `SELECT count(*) FROM ${q(table.name)}`,
-  );
+  const count = await readScalarNumber(connection, `SELECT count(*) FROM ${q(table.name)}`);
   if (count < 3 || count > 0x7fffffff) {
     throw new Error("UMAP requires between 3 and 2147483647 rows.");
   }
@@ -79,8 +73,10 @@ async function execute(
   const suffix = crypto.randomUUID().replaceAll("-", "");
   const name = (part: string) => `__sda_umap_${suffix}_${part}`;
   const ordinal = q(prepared.rowIdColumn);
-  const source = q(table.name), snapshot = q(prepared.relation);
-  const layoutName = name("layout"), layout = q(layoutName);
+  const source = q(table.name),
+    snapshot = q(prepared.relation);
+  const layoutName = name("layout"),
+    layout = q(layoutName);
   const names = {
     rows: q(name("rows")),
     knn: q(name("knn")),
@@ -94,17 +90,14 @@ async function execute(
   const scratch = [
     layout,
     ...Object.entries(names)
-      .filter(([key]) => key !== "hnsw").map(([, value]) => value),
+      .filter(([key]) => key !== "hnsw")
+      .map(([, value]) => value),
   ];
   try {
     await connection.run(`CREATE TEMP TABLE ${names.rows} AS
       SELECT (row_number() OVER (ORDER BY ${ordinal})-1)::INTEGER AS vertex,
-        ${ordinal} AS ordinal, ${
-      q(prepared.vectorColumn)
-    } AS vec FROM ${snapshot}`);
-    await connection.run(
-      `ALTER TABLE ${snapshot} DROP COLUMN ${q(prepared.vectorColumn)}`,
-    );
+        ${ordinal} AS ordinal, ${q(prepared.vectorColumn)} AS vec FROM ${snapshot}`);
+    await connection.run(`ALTER TABLE ${snapshot} DROP COLUMN ${q(prepared.vectorColumn)}`);
     if (
       await readScalarNumber(
         connection,
@@ -113,9 +106,7 @@ async function execute(
       ${metric === "cosine" ? "OR array_inner_product(vec,vec)=0" : ""}`,
       )
     ) {
-      throw new Error(
-        "Vector norms overflow, or cosine distance received a zero vector.",
-      );
+      throw new Error("Vector norms overflow, or cosine distance received a zero vector.");
     }
     const graph = await buildUmapGraph(
       connection,
@@ -131,16 +122,14 @@ async function execute(
       names,
     );
     // Release index and vector scratch before allocating optimizer state.
-    for (
-      const relation of [
-        names.search,
-        names.candidates,
-        names.knn,
-        names.directed,
-        names.scales,
-        names.graph,
-      ]
-    ) {
+    for (const relation of [
+      names.search,
+      names.candidates,
+      names.knn,
+      names.directed,
+      names.scales,
+      names.graph,
+    ]) {
       await connection.run(`DROP TABLE IF EXISTS ${relation}`);
     }
     await connection.run(`ALTER TABLE ${names.rows} DROP COLUMN vec`);
@@ -149,35 +138,35 @@ async function execute(
       initialUmapCoordinates(count, layoutOptions.seed),
       layoutOptions,
     );
-    await connection.run(
-      `CREATE TEMP TABLE ${layout} (vertex INTEGER,x DOUBLE,y DOUBLE)`,
-    );
+    await connection.run(`CREATE TEMP TABLE ${layout} (vertex INTEGER,x DOUBLE,y DOUBLE)`);
     await appendColumnBatches(
       connection,
       layoutName,
       [INTEGER, DOUBLE, DOUBLE],
       count,
       (column, start, end) =>
-        Array.from(
-          { length: end - start },
-          (_, row) =>
-            column === 0
-              ? start + row
-              : coordinates[2 * (start + row) + column - 1],
+        Array.from({ length: end - start }, (_, row) =>
+          column === 0 ? start + row : coordinates[2 * (start + row) + column - 1],
         ),
     );
     // Replace the table and recreate existing native indexes, which
     // CREATE OR REPLACE drops.
-    const indexes = (await connection.runAndReadAll(
-      "SELECT sql FROM duckdb_indexes() WHERE table_oid=$1",
-      [sourceOid],
-    )).getRowsJS().map((row) => String(row[0]));
+    const indexes = (
+      await connection.runAndReadAll("SELECT sql FROM duckdb_indexes() WHERE table_oid=$1", [
+        sourceOid,
+      ])
+    )
+      .getRowsJS()
+      .map((row) => {
+        if (typeof row[0] !== "string") throw new Error("Expected index SQL to be a string.");
+        return row[0];
+      });
     await queryDB(
       table,
       `CREATE OR REPLACE ${sourceTemporary ? "TEMP " : ""}TABLE ${source} AS
-      SELECT ${
-        prepared.sourceColumns.map((c) => `s.${q(c)}`).join(",")
-      }, l.x AS "umapX", l.y AS "umapY"
+      SELECT ${prepared.sourceColumns
+        .map((c) => `s.${q(c)}`)
+        .join(",")}, l.x AS "umapX", l.y AS "umapY"
       FROM ${snapshot} s JOIN ${names.rows} r ON s.${ordinal}=r.ordinal
       JOIN ${layout} l ON r.vertex=l.vertex ORDER BY s.${ordinal}`,
       mergeOptions(table, {

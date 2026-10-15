@@ -242,28 +242,28 @@ export default class SimpleTable extends Simple {
    */
   indexes: (
     | {
-      kind: "vss";
-      name: string;
-      column: string;
-      options: {
-        efConstruction?: number;
-        efSearch?: number;
-        M?: number;
-      };
-    }
+        kind: "vss";
+        name: string;
+        column: string;
+        options: {
+          efConstruction?: number;
+          efSearch?: number;
+          M?: number;
+        };
+      }
     | {
-      kind: "fts";
-      name: string;
-      idColumn: string;
-      textColumn: string;
-      options: {
-        stemmer?: string;
-        stopwords?: string;
-        ignore?: string;
-        stripAccents?: boolean;
-        lower?: boolean;
-      };
-    }
+        kind: "fts";
+        name: string;
+        idColumn: string;
+        textColumn: string;
+        options: {
+          stemmer?: string;
+          stopwords?: string;
+          ignore?: string;
+          stripAccents?: boolean;
+          lower?: boolean;
+        };
+      }
   )[];
   /**
    * The operations queued by sync builder methods, waiting to be executed at
@@ -899,12 +899,14 @@ export default class SimpleTable extends Simple {
    * @category Geospatial
    */
   loadOpenStreetMap(
-    source: string | {
-      west: number;
-      south: number;
-      east: number;
-      north: number;
-    },
+    source:
+      | string
+      | {
+          west: number;
+          south: number;
+          east: number;
+          north: number;
+        },
     options: {
       filters?: string | [string, string] | [string, string][];
       endpoint?: string;
@@ -1410,14 +1412,7 @@ export default class SimpleTable extends Simple {
       scoreColumn?: string;
     } = {},
   ): this {
-    return bm25(
-      this,
-      text,
-      idColumn,
-      textColumn,
-      count,
-      options,
-    ) as this;
+    return bm25(this, text, idColumn, textColumn, count, options) as this;
   }
 
   /**
@@ -1498,13 +1493,7 @@ export default class SimpleTable extends Simple {
    * @category Importing Data
    */
   loadSample(
-    sample:
-      | "fires"
-      | "recipes"
-      | "temperatures"
-      | "temperaturesCities"
-      | "canada"
-      | "firesGeo",
+    sample: "fires" | "recipes" | "temperatures" | "temperaturesCities" | "canada" | "firesGeo",
   ): this {
     return loadSample(this, sample) as this;
   }
@@ -1579,13 +1568,15 @@ export default class SimpleTable extends Simple {
    * @category Table Management
    */
   clone(
-    nameOrOptions: string | {
-      name?: string;
-      conditions?: string;
-      columns?: string | string[];
-      limit?: number;
-      offset?: number;
-    } = {},
+    nameOrOptions:
+      | string
+      | {
+          name?: string;
+          conditions?: string;
+          columns?: string | string[];
+          limit?: number;
+          offset?: number;
+        } = {},
   ): this {
     return clone(this, nameOrOptions) as this;
   }
@@ -2023,7 +2014,7 @@ export default class SimpleTable extends Simple {
    * @category Updating Data
    */
   trim(
-    columns: "all" | string | string[],
+    columns: string | string[],
     options: {
       character?: string;
       side?: "left" | "right" | "both";
@@ -2093,9 +2084,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    */
-  keepValues(
-    columnsAndValues: { [key: string]: unknown },
-  ): this {
+  keepValues(columnsAndValues: { [key: string]: unknown }): this {
     keepValues(this, columnsAndValues);
     return this;
   }
@@ -2124,9 +2113,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    */
-  removeValues(
-    columnsAndValues: { [key: string]: unknown },
-  ): this {
+  removeValues(columnsAndValues: { [key: string]: unknown }): this {
     removeValues(this, columnsAndValues);
     return this;
   }
@@ -2194,10 +2181,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Column Operations
    */
-  renameColumns(
-    names: { [key: string]: string },
-    options: { strict?: boolean } = {},
-  ): this {
+  renameColumns(names: { [key: string]: string }, options: { strict?: boolean } = {}): this {
     renameColumns(this, names, options);
     return this;
   }
@@ -2222,13 +2206,9 @@ export default class SimpleTable extends Simple {
       // The schema provides the column names to clean.
       needsSchema: true,
       buildSelect: (input, schema) =>
-        `SELECT * RENAME (${
-          Object.keys(schema)
-            .map((col) =>
-              `${quoteIdentifier(col)} AS ${quoteIdentifier(camelCase(col))}`
-            )
-            .join(", ")
-        }) FROM ${input}`,
+        `SELECT * RENAME (${Object.keys(schema)
+          .map((col) => `${quoteIdentifier(col)} AS ${quoteIdentifier(camelCase(col))}`)
+          .join(", ")}) FROM ${input}`,
     });
     return this;
   }
@@ -2268,11 +2248,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
-  longer(
-    columns: string[],
-    namesTo: string,
-    valuesTo: string,
-  ): this {
+  longer(columns: string[], namesTo: string, valuesTo: string): this {
     longer(this, columns, namesTo, valuesTo);
     return this;
   }
@@ -2319,14 +2295,7 @@ export default class SimpleTable extends Simple {
     namesFrom: string,
     valuesFrom: string,
     options: {
-      stat?:
-        | "sum"
-        | "count"
-        | "min"
-        | "max"
-        | "mean"
-        | "median"
-        | "first";
+      stat?: "sum" | "count" | "min" | "max" | "mean" | "median" | "first";
     } = {},
   ): this {
     wider(this, namesFrom, valuesFrom, options);
@@ -2577,10 +2546,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Column Operations
    */
-  addId(
-    newColumn: string,
-    options: { prefix?: string } = {},
-  ): this {
+  addId(newColumn: string, options: { prefix?: string } = {}): this {
     addId(this, newColumn, options);
     return this;
   }
@@ -2907,14 +2873,7 @@ export default class SimpleTable extends Simple {
       outputTable?: string | boolean;
     } = {},
   ): SimpleTable {
-    return commonNeighbors(
-      this,
-      sourceColumn,
-      targetColumn,
-      nodeA,
-      nodeB,
-      options,
-    );
+    return commonNeighbors(this, sourceColumn, targetColumn, nodeA, nodeB, options);
   }
 
   /**
@@ -3947,15 +3906,7 @@ export default class SimpleTable extends Simple {
       weight?: string;
     } = {},
   ): SimpleTable {
-    return shortestPath(
-      this,
-      sourceColumn,
-      targetColumn,
-      edgeId,
-      start,
-      end,
-      options,
-    );
+    return shortestPath(this, sourceColumn, targetColumn, edgeId, start, end, options);
   }
 
   /**
@@ -4584,14 +4535,7 @@ export default class SimpleTable extends Simple {
       weight?: string;
     } = {},
   ): SimpleTable {
-    return findCycles(
-      this,
-      sourceColumn,
-      targetColumn,
-      edgeId,
-      startNodes,
-      options,
-    );
+    return findCycles(this, sourceColumn, targetColumn, edgeId, startNodes, options);
   }
 
   /**
@@ -4641,18 +4585,18 @@ export default class SimpleTable extends Simple {
       | "minute"
       | "second"
       | {
-        [newColumn: string]:
-          | "year"
-          | "quarter"
-          | "month"
-          | "week"
-          | "day"
-          | "dayOfWeek"
-          | "dayOfYear"
-          | "hour"
-          | "minute"
-          | "second";
-      },
+          [newColumn: string]:
+            | "year"
+            | "quarter"
+            | "month"
+            | "week"
+            | "day"
+            | "dayOfWeek"
+            | "dayOfYear"
+            | "hour"
+            | "minute"
+            | "second";
+        },
   ): this {
     extractDatePart(this, column, parts);
     return this;
@@ -4678,10 +4622,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Column Operations
    */
-  addRowNumber(
-    newColumn: string,
-    options: { by?: string | string[] } = {},
-  ): this {
+  addRowNumber(newColumn: string, options: { by?: string | string[] } = {}): this {
     addRowNumber(this, newColumn, options);
     return this;
   }
@@ -4834,11 +4775,7 @@ export default class SimpleTable extends Simple {
     rightColumn: string,
     threshold: number,
     options: {
-      method?:
-        | "ratio"
-        | "partial_ratio"
-        | "token_sort_ratio"
-        | "token_set_ratio";
+      method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio";
       similarityColumn?: string;
       outputTable?: string | boolean;
       prefilterPrefixLength?: number;
@@ -4849,14 +4786,7 @@ export default class SimpleTable extends Simple {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
-    return fuzzyJoin(
-      this,
-      rightTable,
-      leftColumn,
-      rightColumn,
-      threshold,
-      options,
-    ) as this;
+    return fuzzyJoin(this, rightTable, leftColumn, rightColumn, threshold, options) as this;
   }
 
   /**
@@ -4919,17 +4849,8 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     threshold: number,
     options: {
-      method?:
-        | "ratio"
-        | "partial_ratio"
-        | "token_sort_ratio"
-        | "token_set_ratio";
-      strategy?:
-        | "mostCommon"
-        | "longestString"
-        | "shortestString"
-        | "mostCentral"
-        | "maxScore";
+      method?: "ratio" | "partial_ratio" | "token_sort_ratio" | "token_set_ratio";
+      strategy?: "mostCommon" | "longestString" | "shortestString" | "mostCentral" | "maxScore";
       prefilterPrefixLength?: number;
     } = {},
   ): this {
@@ -4979,7 +4900,7 @@ export default class SimpleTable extends Simple {
    * @category Updating Data
    */
   replace(
-    columns: "all" | string | string[],
+    columns: string | string[],
     replacements: { [key: string]: string },
     options: {
       entireString?: boolean;
@@ -5153,12 +5074,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  splitExtract(
-    column: string,
-    separator: string,
-    index: number,
-    newColumn: string,
-  ): this {
+  splitExtract(column: string, separator: string, index: number, newColumn: string): this {
     splitExtract(this, column, separator, index, newColumn);
     return this;
   }
@@ -5279,10 +5195,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  replaceNulls(
-    columns: "all" | string | string[],
-    value: unknown,
-  ): this {
+  replaceNulls(columns: string | string[], value: unknown): this {
     replaceNulls(this, columns, value);
     return this;
   }
@@ -5367,10 +5280,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  rowToText(
-    columns: string[],
-    newColumn: string,
-  ): this {
+  rowToText(columns: string[], newColumn: string): this {
     rowToText(this, columns, newColumn);
     return this;
   }
@@ -5590,10 +5500,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  repeatRows(
-    column: string,
-    options: { index?: string } = {},
-  ): this {
+  repeatRows(column: string, options: { index?: string } = {}): this {
     repeatRows(this, column, options);
     return this;
   }
@@ -5627,11 +5534,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  nest(
-    column: string,
-    separator: string,
-    by: string | string[],
-  ): this {
+  nest(column: string, separator: string, by: string | string[]): this {
     nest(this, column, separator, by);
     return this;
   }
@@ -5680,9 +5583,9 @@ export default class SimpleTable extends Simple {
     options:
       | number
       | {
-        decimals?: number;
-        method?: "round" | "ceiling" | "floor";
-      } = {},
+          decimals?: number;
+          method?: "round" | "ceiling" | "floor";
+        } = {},
   ): this {
     round(this, columns, options);
     return this;
@@ -5991,19 +5894,13 @@ export default class SimpleTable extends Simple {
    * ```
    * @param columns - The numeric columns to rank within each row.
    * @param options - The output columns and ranking configuration. At least one of `nameColumn` or `valueColumn` is required.
-   * @param options.nameColumn - The name of a new column containing the selected source column's name.
-   * @param options.valueColumn - The name of a new column containing the selected source column's value.
-   * @param options.rank - The one-based rank to select. Must not exceed the number of supplied columns. Defaults to `1`.
-   * @param options.order - The ranking order: `"desc"` ranks the highest value first and `"asc"` ranks the lowest value first. Defaults to `"desc"`.
-   * @param options.ties - How to handle a tie at the requested rank: `"strict"` throws, `"first"` selects the first supplied column, and `"all"` produces one row per tied column. Defaults to `"strict"`.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
   rowRanks(
     columns: string[],
-    options:
-      & (
-        | {
+    options: (
+      | {
           /**
            * The name of a new column containing the selected source column's name.
            *
@@ -6023,7 +5920,7 @@ export default class SimpleTable extends Simple {
            */
           valueColumn?: string;
         }
-        | {
+      | {
           /**
            * The name of a new column containing the selected source column's name.
            *
@@ -6043,37 +5940,39 @@ export default class SimpleTable extends Simple {
            */
           valueColumn: string;
         }
-      )
-      & {
-        /**
-         * The one-based rank to select. Must not exceed the number of supplied
-         * columns. Defaults to `1`.
-         *
-         * @example
-         * ```ts
-         * { rank: 2 }
-         * ```
-         */
-        rank?: number;
-        /**
-         * The ranking order. Defaults to `"desc"`.
-         *
-         * @example
-         * ```ts
-         * { order: "asc" }
-         * ```
-         */
-        order?: "asc" | "desc";
-        /**
-         * How to handle a tie at the requested rank. Defaults to `"strict"`.
-         *
-         * @example
-         * ```ts
-         * { ties: "all" }
-         * ```
-         */
-        ties?: "strict" | "first" | "all";
-      },
+    ) & {
+      /**
+       * The one-based rank to select. Must not exceed the number of supplied
+       * columns. Defaults to `1`.
+       *
+       * @example
+       * ```ts
+       * { rank: 2 }
+       * ```
+       */
+      rank?: number;
+      /**
+       * The ranking order: `"desc"` ranks the highest value first and `"asc"`
+       * ranks the lowest value first. Defaults to `"desc"`.
+       *
+       * @example
+       * ```ts
+       * { order: "asc" }
+       * ```
+       */
+      order?: "asc" | "desc";
+      /**
+       * How to handle a tie at the requested rank: `"strict"` throws, `"first"`
+       * selects the first supplied column, and `"all"` produces one row per
+       * tied column. Defaults to `"strict"`.
+       *
+       * @example
+       * ```ts
+       * { ties: "all" }
+       * ```
+       */
+      ties?: "strict" | "first" | "all";
+    },
   ): this {
     rowRanks(this, columns, options);
     return this;
@@ -6221,33 +6120,6 @@ export default class SimpleTable extends Simple {
       by?: string | string[];
       stats?:
         | (
-          | "count"
-          | "countDistinct"
-          | "countNull"
-          | "min"
-          | "max"
-          | "mean"
-          | "median"
-          | "sum"
-          | "skew"
-          | "stdDev"
-          | "variance"
-        )
-        | (
-          | "count"
-          | "countDistinct"
-          | "countNull"
-          | "min"
-          | "max"
-          | "mean"
-          | "median"
-          | "sum"
-          | "skew"
-          | "stdDev"
-          | "variance"
-        )[]
-        | {
-          [key: string]:
             | "count"
             | "countDistinct"
             | "countNull"
@@ -6258,8 +6130,35 @@ export default class SimpleTable extends Simple {
             | "sum"
             | "skew"
             | "stdDev"
-            | "variance";
-        };
+            | "variance"
+          )
+        | (
+            | "count"
+            | "countDistinct"
+            | "countNull"
+            | "min"
+            | "max"
+            | "mean"
+            | "median"
+            | "sum"
+            | "skew"
+            | "stdDev"
+            | "variance"
+          )[]
+        | {
+            [key: string]:
+              | "count"
+              | "countDistinct"
+              | "countNull"
+              | "min"
+              | "max"
+              | "mean"
+              | "median"
+              | "sum"
+              | "skew"
+              | "stdDev"
+              | "variance";
+          };
       decimals?: number;
       outputTable?: string | boolean;
       datesToMs?: boolean;
@@ -6312,7 +6211,7 @@ export default class SimpleTable extends Simple {
    * @category Analyzing Data
    */
   addSummaryRows(
-    columns: "all" | string | string[],
+    columns: string | string[],
     labelColumn: string,
     options: {
       stats?:
@@ -6327,31 +6226,6 @@ export default class SimpleTable extends Simple {
         | "stdDev"
         | "variance"
         | {
-          stat:
-            | "countDistinct"
-            | "countNull"
-            | "min"
-            | "max"
-            | "mean"
-            | "median"
-            | "sum"
-            | "skew"
-            | "stdDev"
-            | "variance";
-          label?: string;
-        }
-        | (
-          | "countDistinct"
-          | "countNull"
-          | "min"
-          | "max"
-          | "mean"
-          | "median"
-          | "sum"
-          | "skew"
-          | "stdDev"
-          | "variance"
-          | {
             stat:
               | "countDistinct"
               | "countNull"
@@ -6365,7 +6239,32 @@ export default class SimpleTable extends Simple {
               | "variance";
             label?: string;
           }
-        )[];
+        | (
+            | "countDistinct"
+            | "countNull"
+            | "min"
+            | "max"
+            | "mean"
+            | "median"
+            | "sum"
+            | "skew"
+            | "stdDev"
+            | "variance"
+            | {
+                stat:
+                  | "countDistinct"
+                  | "countNull"
+                  | "min"
+                  | "max"
+                  | "mean"
+                  | "median"
+                  | "sum"
+                  | "skew"
+                  | "stdDev"
+                  | "variance";
+                label?: string;
+              }
+          )[];
       position?: "top" | "bottom";
     } = {},
   ): this {
@@ -6458,15 +6357,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
     } = {},
   ): this {
-    rolling(
-      this,
-      column,
-      newColumn,
-      stat,
-      preceding,
-      following,
-      options,
-    );
+    rolling(this, column, newColumn, stat, preceding, following, options);
     return this;
   }
 
@@ -6760,27 +6651,23 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     reference:
       | {
-        stat:
-          | "min"
-          | "max"
-          | "mean"
-          | "median";
-        column?: never;
-        equals?: never;
-        at?: never;
-      }
+          stat: "min" | "max" | "mean" | "median";
+          column?: never;
+          equals?: never;
+          at?: never;
+        }
       | {
-        column: string;
-        equals: string | number | bigint | boolean | Date;
-        stat?: never;
-        at?: never;
-      }
+          column: string;
+          equals: string | number | bigint | boolean | Date;
+          stat?: never;
+          at?: never;
+        }
       | {
-        column: string;
-        at: "min" | "max";
-        stat?: never;
-        equals?: never;
-      },
+          column: string;
+          at: "min" | "max";
+          stat?: never;
+          equals?: never;
+        },
     options: {
       by?: string | string[];
       base?: number;
@@ -6879,21 +6766,21 @@ export default class SimpleTable extends Simple {
   updateWithJS(
     dataModifier:
       | ((
-        rows: {
-          [key: string]: unknown;
-        }[],
-      ) => Promise<
-        {
-          [key: string]: unknown;
-        }[]
-      >)
+          rows: {
+            [key: string]: unknown;
+          }[],
+        ) => Promise<
+          {
+            [key: string]: unknown;
+          }[]
+        >)
       | ((
-        rows: {
+          rows: {
+            [key: string]: unknown;
+          }[],
+        ) => {
           [key: string]: unknown;
-        }[],
-      ) => {
-        [key: string]: unknown;
-      }[]),
+        }[]),
     options: {
       batchSize?: number;
       columnTypes?: { [key: string]: string };
@@ -7186,9 +7073,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to an array containing all values from the specified column.
    * @category Getting Data
    */
-  async getValues(
-    column: string,
-  ): Promise<unknown[]> {
+  async getValues(column: string): Promise<unknown[]> {
     return await getValues(this, column);
   }
 
@@ -7206,9 +7091,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to the minimum value of the specified column.
    * @category Getting Data
    */
-  async getMin(
-    column: string,
-  ): Promise<unknown> {
+  async getMin(column: string): Promise<unknown> {
     return await getMin(this, column);
   }
 
@@ -7226,9 +7109,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to the maximum value of the specified column.
    * @category Getting Data
    */
-  async getMax(
-    column: string,
-  ): Promise<unknown> {
+  async getMax(column: string): Promise<unknown> {
     return await getMax(this, column);
   }
 
@@ -7246,14 +7127,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to an array `[min, max]` containing the minimum and maximum values of the specified column.
    * @category Getting Data
    */
-  async getExtent(
-    column: string,
-  ): Promise<
-    [
-      unknown,
-      unknown,
-    ]
-  > {
+  async getExtent(column: string): Promise<[unknown, unknown]> {
     return [await this.getMin(column), await this.getMax(column)];
   }
 
@@ -7474,9 +7348,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
    * @category Getting Data
    */
-  async getUniques(
-    column: string,
-  ): Promise<unknown[]> {
+  async getUniques(column: string): Promise<unknown[]> {
     return await getUniques(this, column);
   }
 
@@ -7507,11 +7379,9 @@ export default class SimpleTable extends Simple {
     options: {
       conditions?: string;
     } = {},
-  ): Promise<
-    {
-      [key: string]: unknown;
-    } | null
-  > {
+  ): Promise<{
+    [key: string]: unknown;
+  } | null> {
     return await getFirstRow(this, options);
   }
 
@@ -7542,11 +7412,9 @@ export default class SimpleTable extends Simple {
     options: {
       conditions?: string;
     } = {},
-  ): Promise<
-    {
-      [key: string]: unknown;
-    } | null
-  > {
+  ): Promise<{
+    [key: string]: unknown;
+  } | null> {
     return await getLastRow(this, options);
   }
 
@@ -7669,11 +7537,9 @@ export default class SimpleTable extends Simple {
   async getRow(
     conditions: string,
     options: { strict?: boolean } = {},
-  ): Promise<
-    {
-      [key: string]: unknown;
-    }
-  > {
+  ): Promise<{
+    [key: string]: unknown;
+  }> {
     return await getRow(this, conditions, options);
   }
 
@@ -7830,10 +7696,12 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to a CSV-formatted string representation of the table data.
    * @category Getting Data
    */
-  async getDataAsCSV(options: {
-    columns?: string | string[];
-    conditions?: string;
-  } = {}): Promise<string> {
+  async getDataAsCSV(
+    options: {
+      columns?: string | string[];
+      conditions?: string;
+    } = {},
+  ): Promise<string> {
     const data = await this.getData(options);
     return csvFormat(data);
   }
@@ -7895,10 +7763,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  addGeoValidity(
-    newColumn: string,
-    options: { column?: string } = {},
-  ): this {
+  addGeoValidity(newColumn: string, options: { column?: string } = {}): this {
     addGeoValidity(this, newColumn, options);
     return this;
   }
@@ -7924,10 +7789,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  addVertexCount(
-    newColumn: string,
-    options: { column?: string } = {},
-  ): this {
+  addVertexCount(newColumn: string, options: { column?: string } = {}): this {
     addVertexCount(this, newColumn, options);
     return this;
   }
@@ -7975,10 +7837,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  addGeoClosedStatus(
-    newColumn: string,
-    options: { column?: string } = {},
-  ): this {
+  addGeoClosedStatus(newColumn: string, options: { column?: string } = {}): this {
     addGeoClosedStatus(this, newColumn, options);
     return this;
   }
@@ -8003,10 +7862,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  addGeoType(
-    newColumn: string,
-    options: { column?: string } = {},
-  ): this {
+  addGeoType(newColumn: string, options: { column?: string } = {}): this {
     addGeoType(this, newColumn, options);
     return this;
   }
@@ -8097,10 +7953,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  reducePrecision(
-    decimals: number,
-    options: { column?: string } = {},
-  ): this {
+  reducePrecision(decimals: number, options: { column?: string } = {}): this {
     reducePrecision(this, decimals, options);
     return this;
   }
@@ -8125,10 +7978,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  reproject(
-    crs: string,
-    options: { column?: string } = {},
-  ): this {
+  reproject(crs: string, options: { column?: string } = {}): this {
     reproject(this, crs, options);
     return this;
   }
@@ -8296,11 +8146,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  buffer(
-    newColumn: string,
-    distance: number,
-    options: { column?: string } = {},
-  ): this {
+  buffer(newColumn: string, distance: number, options: { column?: string } = {}): this {
     buffer(this, newColumn, distance, options);
     return this;
   }
@@ -8387,12 +8233,7 @@ export default class SimpleTable extends Simple {
       options.outputTable = `table${this.sdb.tableIncrement}`;
       this.sdb.tableIncrement += 1;
     }
-    return joinGeo(
-      this,
-      method,
-      rightTable,
-      options,
-    ) as this;
+    return joinGeo(this, method, rightTable, options) as this;
   }
 
   /**
@@ -8409,11 +8250,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  intersection(
-    column1: string,
-    column2: string,
-    newColumn: string,
-  ): this {
+  intersection(column1: string, column2: string, newColumn: string): this {
     intersection(this, column1, column2, newColumn);
     return this;
   }
@@ -8432,11 +8269,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  difference(
-    column1: string,
-    column2: string,
-    newColumn: string,
-  ): this {
+  difference(column1: string, column2: string, newColumn: string): this {
     difference(this, column1, column2, newColumn);
     return this;
   }
@@ -8478,11 +8311,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  intersects(
-    column1: string,
-    column2: string,
-    newColumn: string,
-  ): this {
+  intersects(column1: string, column2: string, newColumn: string): this {
     intersects(this, column1, column2, newColumn);
     return this;
   }
@@ -8501,11 +8330,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  coveredBy(
-    column: string,
-    containerColumn: string,
-    newColumn: string,
-  ): this {
+  coveredBy(column: string, containerColumn: string, newColumn: string): this {
     coveredBy(this, column, containerColumn, newColumn);
     return this;
   }
@@ -8524,11 +8349,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  union(
-    column1: string,
-    column2: string,
-    newColumn: string,
-  ): this {
+  union(column1: string, column2: string, newColumn: string): this {
     union(this, column1, column2, newColumn);
     return this;
   }
@@ -8548,11 +8369,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  extractLatLon(
-    column: string,
-    latColumn: string,
-    lonColumn: string,
-  ): this {
+  extractLatLon(column: string, latColumn: string, lonColumn: string): this {
     extractLatLon(this, column, latColumn, lonColumn);
     return this;
   }
@@ -8578,10 +8395,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  simplify(
-    tolerance: number,
-    options: { column?: string; simplifyBoundary?: boolean } = {},
-  ): this {
+  simplify(tolerance: number, options: { column?: string; simplifyBoundary?: boolean } = {}): this {
     simplify(this, tolerance, options);
     return this;
   }
@@ -8607,10 +8421,7 @@ export default class SimpleTable extends Simple {
    * @returns The table, so methods can be chained.
    * @category Geospatial
    */
-  centroid(
-    newColumn: string,
-    options: { column?: string } = {},
-  ): this {
+  centroid(newColumn: string, options: { column?: string } = {}): this {
     centroid(this, newColumn, options);
     return this;
   }
@@ -8844,9 +8655,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to an array `[minLon, minLat, maxLon, maxLat]` representing the bounding box.
    * @category Geospatial
    */
-  async getBoundingBox(
-    column?: string,
-  ): Promise<[number, number, number, number]> {
+  async getBoundingBox(column?: string): Promise<[number, number, number, number]> {
     return await getBoundingBox(this, column);
   }
 
@@ -8882,9 +8691,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to a GeoJSON object representing the table's geospatial data.
    * @category Getting Data
    */
-  async getGeoData(
-    options: { column?: string; rewind?: boolean } = {},
-  ): Promise<{
+  async getGeoData(options: { column?: string; rewind?: boolean } = {}): Promise<{
     type: string;
     features: unknown[];
   }> {
@@ -8940,7 +8747,7 @@ export default class SimpleTable extends Simple {
    * @param file - The absolute path to the output file (e.g., `"./output.csv"`, `"./output.json"`).
    * @param options - An optional object with configuration options:
    * @param options.compression - A boolean indicating whether to compress the output file. If `true`, CSV and JSON files will be compressed with GZIP, while Parquet files will use ZSTD. Defaults to `false`.
-   * @param options.dataAsArrays - For JSON files only. If `true`, JSON files are written as a single object with arrays for each column (e.g., `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This can reduce file size for web projects. You can use the `arraysToData` function from the [journalism-format library](https://jsr.io/@nshiab/journalism-format/doc/~/arraysToData) to convert it back.
+   * @param options.dataAsArrays - For JSON files only. If `true`, JSON files are written as a single object with arrays for each column (e.g., `{ "col1": [v1, v2], "col2": [v3, v4] }`) instead of an array of objects. This can reduce file size for web projects. You can use the `arraysToData` function from the [journalism-format library](https://nshiab.github.io/journalism-format/functions/arraysToData.html) to convert it back.
    * @param options.formatDates - For CSV and JSON files only. If `true`, date and timestamp columns will be formatted as ISO 8601 strings (e.g., `"2025-01-01T01:00:00.000Z"`). Defaults to `false`.
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category File Operations
@@ -9186,11 +8993,14 @@ export default class SimpleTable extends Simple {
    * @category Logging
    */
   async log(
-    options: "all" | number | {
-      count?: number | "all";
-      types?: boolean;
-      conditions?: string;
-    } = {},
+    options:
+      | "all"
+      | number
+      | {
+          count?: number | "all";
+          types?: boolean;
+          conditions?: string;
+        } = {},
   ): Promise<this> {
     await log(this, options);
     return this;
@@ -9236,18 +9046,11 @@ export default class SimpleTable extends Simple {
    */
   async logDescription(): Promise<this> {
     await this.run();
-    if (
-      this.connection === undefined ||
-      !(await this.sdb.hasTable(this.name))
-    ) {
+    if (this.connection === undefined || !(await this.sdb.hasTable(this.name))) {
       console.log(`\nTable ${this.name}: no data`);
     } else {
       console.log(`\nTable ${this.name}:`);
-      logData(
-        null,
-        await getDescription(this),
-        this.charsToLog,
-      );
+      logData(null, await getDescription(this), this.charsToLog);
     }
     return this;
   }
@@ -9265,12 +9068,14 @@ export default class SimpleTable extends Simple {
    * @category Geospatial
    */
   async getProjection(column: string): Promise<string> {
-    const res = (await this.sdb.customQuery(
-      `SELECT ST_CRS(${quoteIdentifier(column)}) AS proj FROM ${
-        quoteIdentifier(this.name)
-      } LIMIT 1;`,
-      { returnData: true },
-    ) as { proj: string | null }[])[0];
+    const res = (
+      (await this.sdb.customQuery(
+        `SELECT ST_CRS(${quoteIdentifier(column)}) AS proj FROM ${quoteIdentifier(
+          this.name,
+        )} LIMIT 1;`,
+        { returnData: true },
+      )) as { proj: string | null }[]
+    )[0];
     const proj = res && res.proj !== "null" ? res.proj : null;
 
     return `GEOMETRY${proj ? `('${proj}')` : ""}`;
@@ -9291,7 +9096,7 @@ export default class SimpleTable extends Simple {
     console.log(`\nTable ${this.name} projections:`);
     const types = await this.getTypes();
     const geoColumns = Object.entries(types)
-      .filter(([_, type]) => type.toLowerCase().includes("geometry"))
+      .filter(([, type]) => type.toLowerCase().includes("geometry"))
       .map(([column]) => column);
 
     if (geoColumns.length === 0) {
@@ -9303,7 +9108,7 @@ export default class SimpleTable extends Simple {
       }
     }
 
-    return await this;
+    return this;
   }
 
   /**
@@ -9320,7 +9125,7 @@ export default class SimpleTable extends Simple {
   async logTypes(): Promise<this> {
     console.log(`\nTable ${this.name} types:`);
     console.log(await this.getTypes());
-    return await this;
+    return this;
   }
 
   /**
@@ -9344,10 +9149,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to the SimpleTable instance after logging the unique values.
    * @category Logging
    */
-  async logUniques(
-    column: string,
-    options: { stringify?: boolean } = {},
-  ): Promise<this> {
+  async logUniques(column: string, options: { stringify?: boolean } = {}): Promise<this> {
     const values = await this.getUniques(column);
     console.log(`\nTable ${this.name} — unique values in ${column}:`);
     if (options.stringify) {
@@ -9355,7 +9157,7 @@ export default class SimpleTable extends Simple {
     } else {
       console.log(values);
     }
-    return await this;
+    return this;
   }
 
   /**
@@ -9385,7 +9187,7 @@ export default class SimpleTable extends Simple {
       console.log(await this.getColumns());
     }
 
-    return await this;
+    return this;
   }
 
   /**
@@ -9402,7 +9204,7 @@ export default class SimpleTable extends Simple {
   async logRowCount(): Promise<this> {
     const rowCount = await this.getRowCount();
     console.log(`\nTable ${this.name}: ${formatNumber(rowCount)} rows.`);
-    return await this;
+    return this;
   }
 
   /**
@@ -9435,10 +9237,7 @@ export default class SimpleTable extends Simple {
    * @returns A promise that resolves to the table, so methods can be chained.
    * @category Logging
    */
-  async logBottom(
-    count?: number,
-    options: { originalOrder?: boolean } = {},
-  ): Promise<this> {
+  async logBottom(count?: number, options: { originalOrder?: boolean } = {}): Promise<this> {
     await logBottom(this, count, options);
     return this;
   }

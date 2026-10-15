@@ -28,8 +28,7 @@ export default function selectRows(
       // and execute before this SELECT runs, as it would at this call
       // position.
       rawSQL: [`${quoteIdentifier(simpleTable.name)}`],
-      buildSelect: () =>
-        `SELECT * FROM ${quoteIdentifier(simpleTable.name)} ${limitAndOffset}`,
+      buildSelect: () => `SELECT * FROM ${quoteIdentifier(simpleTable.name)} ${limitAndOffset}`,
     });
     return outputTable;
   }

@@ -15,13 +15,9 @@ export default async function removeColumnsNow(
 ): Promise<void> {
   await queryDB(
     simpleTable,
-    columns.map((d) =>
-      `ALTER TABLE ${quoteIdentifier(simpleTable.name)} DROP ${
-        quoteIdentifier(d)
-      };`
-    ).join(
-      "\n",
-    ),
+    columns
+      .map((d) => `ALTER TABLE ${quoteIdentifier(simpleTable.name)} DROP ${quoteIdentifier(d)};`)
+      .join("\n"),
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method,

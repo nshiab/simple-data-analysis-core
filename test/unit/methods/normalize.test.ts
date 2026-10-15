@@ -1,8 +1,10 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 
-Deno.test("should normalize values in a column", async () => {
+test("should normalize values in a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -12,7 +14,7 @@ Deno.test("should normalize values in a column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, normalized: 0 },
     {
       key1: "Rubarbe",
@@ -34,7 +36,7 @@ Deno.test("should normalize values in a column", async () => {
   await sdb.close();
 });
 
-Deno.test("should normalize values in a column with two decimals", async () => {
+test("should normalize values in a column with two decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -46,7 +48,7 @@ Deno.test("should normalize values in a column with two decimals", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, normalized: 0 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, normalized: 0.05 },
     { key1: "Fraise", key2: 11, key3: 2.345, normalized: 0.48 },
@@ -58,7 +60,7 @@ Deno.test("should normalize values in a column with two decimals", async () => {
   await sdb.close();
 });
 
-Deno.test("should normalize values in a column and keep 4 decimals", async () => {
+test("should normalize values in a column and keep 4 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -70,7 +72,7 @@ Deno.test("should normalize values in a column and keep 4 decimals", async () =>
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Rubarbe", key2: 1, key3: 10.5, normalized: 0 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, normalized: 0.0476 },
     { key1: "Fraise", key2: 11, key3: 2.345, normalized: 0.4762 },
@@ -82,7 +84,7 @@ Deno.test("should normalize values in a column and keep 4 decimals", async () =>
   await sdb.close();
 });
 
-Deno.test("should normalize values by a grouping column", async () => {
+test("should normalize values by a grouping column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -94,7 +96,7 @@ Deno.test("should normalize values by a grouping column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Fraise", key2: 11, key3: 2.345, normalized: 0 },
     { key1: "Rubarbe", key2: 2, key3: 4.5657, normalized: 1 },
     { key1: "Rubarbe", key2: 1, key3: 10.5, normalized: 0 },
@@ -106,23 +108,17 @@ Deno.test("should normalize values by a grouping column", async () => {
   await sdb.close();
 });
 
-Deno.test("should normalize data with positive and negative values", async () => {
+test("should normalize data with positive and negative values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { key1: -1 },
-    { key1: -0.5 },
-    { key1: 0 },
-    { key1: 0.5 },
-    { key1: 1 },
-  ]);
+  table.loadArray([{ key1: -1 }, { key1: -0.5 }, { key1: 0 }, { key1: 0.5 }, { key1: 1 }]);
 
   table.normalize("key1", "normalized");
   table.sort({ key1: "asc" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: -1, normalized: 0 },
     { key1: -0.5, normalized: 0.25 },
     { key1: 0, normalized: 0.5 },
@@ -133,19 +129,14 @@ Deno.test("should normalize data with positive and negative values", async () =>
   await sdb.close();
 });
 
-Deno.test("should normalize values to a custom range", async () => {
+test("should normalize values to a custom range", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { value: 10 },
-    { value: 15 },
-    { value: 20 },
-    { value: null },
-  ]);
+  table.loadArray([{ value: 10 }, { value: 15 }, { value: 20 }, { value: null }]);
 
   table.normalize("value", "normalized", { range: [0, 10] });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { value: 10, normalized: 0 },
     { value: 15, normalized: 5 },
     { value: 20, normalized: 10 },
@@ -155,7 +146,7 @@ Deno.test("should normalize values to a custom range", async () => {
   await sdb.close();
 });
 
-Deno.test("should normalize values to a custom range with an offset and rounding", async () => {
+test("should normalize values to a custom range with an offset and rounding", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ value: 0 }, { value: 1 }, { value: 3 }]);
@@ -165,7 +156,7 @@ Deno.test("should normalize values to a custom range with an offset and rounding
     decimals: 2,
   });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { value: 0, normalized: -1 },
     { value: 1, normalized: -0.33 },
     { value: 3, normalized: 1 },
@@ -174,11 +165,15 @@ Deno.test("should normalize values to a custom range with an offset and rounding
   await sdb.close();
 });
 
-Deno.test("should reject an invalid custom range", async () => {
+test("should reject an invalid custom range", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
-  for (const range of [[1, 1], [10, 0], [0, Infinity]] as const) {
+  for (const range of [
+    [1, 1],
+    [10, 0],
+    [0, Infinity],
+  ] as const) {
     assertThrows(
       () => table.normalize("value", "normalized", { range: [...range] }),
       Error,
@@ -189,7 +184,7 @@ Deno.test("should reject an invalid custom range", async () => {
   await sdb.close();
 });
 
-Deno.test("should report column and newColumn in a thrown SDAError's parameters", async () => {
+test("should report column and newColumn in a thrown SDAError's parameters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ key1: 1 }]);
@@ -203,10 +198,10 @@ Deno.test("should report column and newColumn in a thrown SDAError's parameters"
     error = e;
   }
 
-  assertEquals(error instanceof SDAError, true);
+  expect(error instanceof SDAError).toStrictEqual(true);
   const sdaError = error as SDAError;
-  assertEquals(sdaError.method, "normalize()");
-  assertEquals(sdaError.parameters, {
+  expect(sdaError.method).toStrictEqual("normalize()");
+  expect(sdaError.parameters).toStrictEqual({
     column: "aColumnThatDoesNotExist",
     newColumn: "normalized",
     options: {},
@@ -215,7 +210,7 @@ Deno.test("should report column and newColumn in a thrown SDAError's parameters"
   await sdb.close();
 });
 
-Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+test("should throw when the new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ key1: 1, normalized: "already here" }]);

@@ -1,17 +1,16 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should find that geometries are valid", async () => {
+test("should find that geometries are valid", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   table.addGeoValidity("isValid");
   table.selectColumns(["nameEnglish", "nameFrench", "isValid"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       nameEnglish: "Newfoundland and Labrador",
       nameFrench: "Terre-Neuve-et-Labrador",
@@ -58,17 +57,15 @@ Deno.test("should find that geometries are valid", async () => {
   await sdb.close();
 });
 
-Deno.test("should find that geometries are valid when checking a specific column", async () => {
+test("should find that geometries are valid when checking a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
-  table.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  table.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   table.addGeoValidity("isValid", { column: "geom" });
   table.selectColumns(["nameEnglish", "nameFrench", "isValid"]);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       nameEnglish: "Newfoundland and Labrador",
       nameFrench: "Terre-Neuve-et-Labrador",
@@ -115,7 +112,7 @@ Deno.test("should find that geometries are valid when checking a specific column
   await sdb.close();
 });
 
-Deno.test("should find that geometries are not valid", async () => {
+test("should find that geometries are not valid", async () => {
   const sdb = new SimpleDB();
   // From https://github.com/chrieke/geojson-invalid-geometry
   const table = sdb.newTable("geodata");
@@ -124,7 +121,7 @@ Deno.test("should find that geometries are not valid", async () => {
   table.selectColumns("isValid");
   const data = await table.getData();
 
-  assertEquals(data, [{ isValid: false }]);
+  expect(data).toStrictEqual([{ isValid: false }]);
 
   await sdb.close();
 });

@@ -1,7 +1,10 @@
-import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("addNoise should add bounded independent noise to numeric columns", async () => {
+test("addNoise should add bounded independent noise to numeric columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("measurements");
   table.loadArray([
@@ -11,7 +14,7 @@ Deno.test("addNoise should add bounded independent noise to numeric columns", as
   ]);
 
   table.addNoise(["x", "y"], 0.25);
-  const data = await table.getData() as {
+  const data = (await table.getData()) as {
     id: number;
     x: number;
     y: number | null;
@@ -26,20 +29,20 @@ Deno.test("addNoise should add bounded independent noise to numeric columns", as
     const original = originals.get(row.id)!;
     assert(Math.abs(row.x - original.x) <= 0.25);
     if (original.y === null) {
-      assertEquals(row.y, null);
+      expect(row.y).toStrictEqual(null);
     } else {
       assert(row.y !== null);
       assert(Math.abs(row.y - original.y) <= 0.25);
     }
   }
   const types = await table.getTypes();
-  assertEquals(types.x, "DOUBLE");
-  assertEquals(types.y, "DOUBLE");
+  expect(types.x).toStrictEqual("DOUBLE");
+  expect(types.y).toStrictEqual("DOUBLE");
 
   await sdb.close();
 });
 
-Deno.test("addNoise should evaluate duplicates independently in each column", async () => {
+test("addNoise should evaluate duplicates independently in each column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("measurements");
   table.loadArray([
@@ -53,7 +56,7 @@ Deno.test("addNoise should evaluate duplicates independently in each column", as
   table.addNoise(["x", "y"], 0.01, {
     onlyDuplicates: true,
   });
-  const data = await table.getData() as {
+  const data = (await table.getData()) as {
     id: string;
     x: number;
     y: number;
@@ -69,13 +72,13 @@ Deno.test("addNoise should evaluate duplicates independently in each column", as
   for (const row of data) {
     const original = originals.get(row.id)!;
     if (row.id === "duplicate-y" || row.id === "unique") {
-      assertEquals(row.x, original.x);
+      expect(row.x).toStrictEqual(original.x);
     } else {
       assert(row.x !== original.x);
       assert(Math.abs(row.x - original.x) <= 0.01);
     }
     if (row.id === "duplicate-x" || row.id === "unique") {
-      assertEquals(row.y, original.y);
+      expect(row.y).toStrictEqual(original.y);
     } else {
       assert(row.y !== original.y);
       assert(Math.abs(row.y - original.y) <= 0.01);
@@ -85,7 +88,7 @@ Deno.test("addNoise should evaluate duplicates independently in each column", as
   await sdb.close();
 });
 
-Deno.test("addNoise should validate call-time arguments", async () => {
+test("addNoise should validate call-time arguments", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -94,11 +97,7 @@ Deno.test("addNoise should validate call-time arguments", async () => {
     Error,
     "addNoise() max must be a finite number greater than or equal to 0.",
   );
-  assertThrows(
-    () => table.addNoise([], 1),
-    Error,
-    "addNoise() requires at least one column.",
-  );
+  assertThrows(() => table.addNoise([], 1), Error, "addNoise() requires at least one column.");
   assertThrows(
     () => table.addNoise(["value", "value"], 1),
     Error,
@@ -108,7 +107,7 @@ Deno.test("addNoise should validate call-time arguments", async () => {
   await sdb.close();
 });
 
-Deno.test("addNoise should reject non-numeric columns", async () => {
+test("addNoise should reject non-numeric columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ name: "Ada" }]);

@@ -24,10 +24,7 @@ export default async function loadDB(sdb: SimpleDB, file: string) {
   const name = `__sda_import_${crypto.randomUUID().replaceAll("-", "")}`;
   const source = quoteIdentifier(name);
   if (type === "sqlite") await queryDbFile(sdb, "INSTALL sqlite; LOAD sqlite;");
-  await queryDbFile(
-    sdb,
-    `ATTACH '${cleanPath(file)}' AS ${source} (TYPE ${type}, READ_ONLY);`,
-  );
+  await queryDbFile(sdb, `ATTACH '${cleanPath(file)}' AS ${source} (TYPE ${type}, READ_ONLY);`);
 
   try {
     const indexes = type === "duckdb" ? await readDbMetadata(sdb, name) : {};
@@ -52,20 +49,15 @@ export default async function loadDB(sdb: SimpleDB, file: string) {
        WHERE table_catalog = ${parseValue(name)} AND table_schema = 'main';`,
       { returnData: true },
     );
-    const registered = new Set(
-      sdb.getTables().map((table) => table.name.toLowerCase()),
-    );
+    const registered = new Set(sdb.getTables().map((table) => table.name.toLowerCase()));
     const names = new Set([
-      ...conflicts!.map((row) => `${row.table_schema}.${row.table_name}`),
-      ...incoming!.filter((row) =>
-        registered.has(String(row.table_name).toLowerCase())
-      )
-        .map((row) => `main.${row.table_name}`),
+      ...conflicts!.map((row) => `${String(row.table_schema)}.${String(row.table_name)}`),
+      ...incoming!
+        .filter((row) => registered.has(String(row.table_name).toLowerCase()))
+        .map((row) => `main.${String(row.table_name)}`),
     ]);
     if (names.size > 0) {
-      throw new Error(
-        `loadDB() cannot import existing tables: ${[...names].join(", ")}.`,
-      );
+      throw new Error(`loadDB() cannot import existing tables: ${[...names].join(", ")}.`);
     }
     const mergedIndexes = { ...getDbIndexes(sdb), ...indexes };
     await queryDbFile(

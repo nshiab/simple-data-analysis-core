@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should change the name of one column", async () => {
+test("should change the name of one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
@@ -11,7 +13,7 @@ Deno.test("should change the name of one column", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { A: 1, key2: "un" },
     { A: 2, key2: "deux" },
     { A: 3, key2: "trois" },
@@ -21,7 +23,7 @@ Deno.test("should change the name of one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should change the name of multiple columns", async () => {
+test("should change the name of multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
@@ -32,7 +34,7 @@ Deno.test("should change the name of multiple columns", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { A: 1, B: "un" },
     { A: 2, B: "deux" },
     { A: 3, B: "trois" },
@@ -42,7 +44,7 @@ Deno.test("should change the name of multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should throw when a source column does not exist", async () => {
+test("should throw when a source column does not exist", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
@@ -54,7 +56,7 @@ Deno.test("should throw when a source column does not exist", async () => {
   await sdb.close();
 });
 
-Deno.test("should throw when only some source columns exist", async () => {
+test("should throw when only some source columns exist", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
@@ -66,7 +68,7 @@ Deno.test("should throw when only some source columns exist", async () => {
   await sdb.close();
 });
 
-Deno.test("should skip the existence check when strict is false", async () => {
+test("should skip the existence check when strict is false", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/data.json"]);
@@ -76,7 +78,7 @@ Deno.test("should skip the existence check when strict is false", async () => {
   table.renameColumns({ key1: "A", nope: "B" }, { strict: false });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { A: 1, key2: "un" },
     { A: 2, key2: "deux" },
     { A: 3, key2: "trois" },
@@ -86,7 +88,7 @@ Deno.test("should skip the existence check when strict is false", async () => {
   await sdb.close();
 });
 
-Deno.test("should change the name of a column with $ in its name", async () => {
+test("should change the name of a column with $ in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
@@ -96,10 +98,7 @@ Deno.test("should change the name of a column with $ in its name", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
-    { value: 10 },
-    { value: 20 },
-  ]);
+  expect(data).toStrictEqual([{ value: 10 }, { value: 20 }]);
 
   await sdb.close();
 });

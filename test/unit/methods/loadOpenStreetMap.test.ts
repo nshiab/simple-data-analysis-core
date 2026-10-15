@@ -1,10 +1,10 @@
-import {
-  assert,
-  assertEquals,
-  assertRejects,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import serveFixture from "../../helpers/serveFixture.ts";
+import { mkdtemp } from "node:fs/promises";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+import { copyFile as nodeCopyFile } from "node:fs/promises";
+
 import {
   appendFileSync,
   existsSync,
@@ -26,77 +26,69 @@ const bbox = {
   north: 45.51,
 };
 
-Deno.test("generateOverpassQuery creates one nwr selection", () => {
-  assertEquals(
-    generateOverpassQuery(bbox, ['["amenity"="school"]'], 60),
+test("generateOverpassQuery creates one nwr selection", () => {
+  expect(generateOverpassQuery(bbox, ['["amenity"="school"]'], 60)).toStrictEqual(
     `[out:xml][timeout:60];nwr["amenity"="school"](45.5,-73.6,45.51,-73.59);(._;>;);out body;`,
   );
 });
 
-Deno.test("generateOverpassQuery creates a union for multiple filters", () => {
-  assertEquals(
-    generateOverpassQuery(
-      bbox,
-      ['["amenity"="school"]', '["amenity"="college"]'],
-    ),
+test("generateOverpassQuery creates a union for multiple filters", () => {
+  expect(
+    generateOverpassQuery(bbox, ['["amenity"="school"]', '["amenity"="college"]']),
+  ).toStrictEqual(
     `[out:xml];(nwr["amenity"="school"](45.5,-73.6,45.51,-73.59);nwr["amenity"="college"](45.5,-73.6,45.51,-73.59););(._;>;);out body;`,
   );
 });
 
-Deno.test("loadOpenStreetMap loads an OSM XML file", async () => {
+test("loadOpenStreetMap loads an OSM XML file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("osmFixture");
   table.loadOpenStreetMap("test/geodata/files/osm-fixture.osm", {
     cache: false,
   });
 
-  assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
-  assertEquals(
+  expect((await table.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
+  expect(
     await sdb.customQuery(
       `SELECT kind, type, id, ST_AsText(geom) AS wkt
       FROM osmFixture WHERE id IN (1, 10, 20) ORDER BY id`,
       { returnData: true },
     ),
-    [
-      { kind: "node", type: "node", id: 1, wkt: "POINT (-73.599 45.501)" },
-      {
-        kind: "area",
-        type: "way",
-        id: 10,
-        wkt:
-          "POLYGON ((-73.598 45.502, -73.596 45.502, -73.596 45.504, -73.598 45.504, -73.598 45.502))",
-      },
-      {
-        kind: "area",
-        type: "relation",
-        id: 20,
-        wkt:
-          "MULTIPOLYGON (((-73.595 45.505, -73.593 45.505, -73.593 45.507, -73.595 45.507, -73.595 45.505)))",
-      },
-    ],
-  );
+  ).toStrictEqual([
+    { kind: "node", type: "node", id: 1, wkt: "POINT (-73.599 45.501)" },
+    {
+      kind: "area",
+      type: "way",
+      id: 10,
+      wkt: "POLYGON ((-73.598 45.502, -73.596 45.502, -73.596 45.504, -73.598 45.504, -73.598 45.502))",
+    },
+    {
+      kind: "area",
+      type: "relation",
+      id: 20,
+      wkt: "MULTIPOLYGON (((-73.595 45.505, -73.593 45.505, -73.593 45.507, -73.595 45.507, -73.595 45.505)))",
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("loadOpenStreetMap supports filtering and projection after loading", async () => {
+test("loadOpenStreetMap supports filtering and projection after loading", async () => {
   const sdb = new SimpleDB();
   try {
-    assertEquals(
-      await sdb.newTable().loadOpenStreetMap(
-        "test/geodata/files/osm-fixture.osm",
-        { cache: false },
-      )
+    expect(
+      await sdb
+        .newTable()
+        .loadOpenStreetMap("test/geodata/files/osm-fixture.osm", { cache: false })
         .filter("kind = 'node' AND ST_X(geom) < -73.5985")
         .selectColumns(["id"])
         .getData(),
-      [{ id: 1 }],
-    );
+    ).toStrictEqual([{ id: 1 }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("loadOpenStreetMap loads an OSM PBF file", async () => {
+test("loadOpenStreetMap loads an OSM PBF file", async () => {
   const file = join(tmpdir(), `${crypto.randomUUID()}.osm.pbf`);
   // Base64-encoded osmium-tool test/formats/f1.osm.pbf fixture.
   const fixture =
@@ -108,74 +100,58 @@ Deno.test("loadOpenStreetMap loads an OSM PBF file", async () => {
     const table = sdb.newTable("osmPbfFixture");
     table.loadOpenStreetMap(file, { cache: false });
 
-    assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
-    assertEquals(
+    expect((await table.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
+    expect(
       await sdb.customQuery(
         `SELECT kind, type, id, ST_AsText(geom) AS wkt
         FROM osmPbfFixture WHERE id = 20`,
         { returnData: true },
       ),
-      [{
+    ).toStrictEqual([
+      {
         kind: "line",
         type: "way",
         id: 20,
         wkt: "LINESTRING (1 1, 1.2355 2.034523, 1 3)",
-      }],
-    );
+      },
+    ]);
     await sdb.close();
   } finally {
     rmSync(file, { force: true });
   }
 });
 
-Deno.test("loadOpenStreetMap stages and removes a remote OSM file", async () => {
+test("loadOpenStreetMap stages and removes a remote OSM file", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    () => new Response(fixture),
-  );
-  const url =
-    `http://${server.addr.hostname}:${server.addr.port}/fixture.osm?download=1`;
+  const server = await serveFixture(() => new Response(fixture));
+  const url = `${server.url}/fixture.osm?download=1`;
 
   try {
     const sdb = new SimpleDB();
     const table = sdb.newTable();
     table.loadOpenStreetMap(url);
-    assertEquals((await table.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+    expect((await table.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
     await sdb.close();
-    assertEquals(readdirSync(".sda-cache/tmp"), []);
+    expect(readdirSync(".sda-cache/tmp")).toStrictEqual([]);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("loadOpenStreetMap validates its public parameters at call time", async () => {
+test("loadOpenStreetMap validates its public parameters at call time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
+  assertThrows(() => table.loadOpenStreetMap("data.geojson"), Error, ".osm or .osm.pbf");
   assertThrows(
-    () => table.loadOpenStreetMap("data.geojson"),
-    Error,
-    ".osm or .osm.pbf",
-  );
-  assertThrows(
-    () =>
-      table.loadOpenStreetMap({ ...bbox, west: 200 }, { filters: "[amenity]" }),
+    () => table.loadOpenStreetMap({ ...bbox, west: 200 }, { filters: "[amenity]" }),
     Error,
     "bbox.west",
   );
-  assertThrows(
-    () => table.loadOpenStreetMap(bbox),
-    TypeError,
-    "options.filters is required",
-  );
-  assertThrows(
-    () => table.loadOpenStreetMap(bbox, { filters: [] }),
-    Error,
-    "filters",
-  );
+  assertThrows(() => table.loadOpenStreetMap(bbox), TypeError, "options.filters is required");
+  assertThrows(() => table.loadOpenStreetMap(bbox, { filters: [] }), Error, "filters");
   assertThrows(
     () => table.loadOpenStreetMap(bbox, { filters: ["", "school"] }),
     Error,
@@ -225,27 +201,23 @@ Deno.test("loadOpenStreetMap validates its public parameters at call time", asyn
   await sdb.close();
 });
 
-Deno.test("loadOpenStreetMap downloads, materializes, caches, and reuses OSM data", async () => {
+test("loadOpenStreetMap downloads, materializes, caches, and reuses OSM data", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
   let requests = 0;
   let requestBody = "";
   let acceptEncoding = "";
   let userAgent = "";
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    async (request) => {
-      requests++;
-      requestBody = await request.text();
-      acceptEncoding = request.headers.get("accept-encoding") ?? "";
-      userAgent = request.headers.get("user-agent") ?? "";
-      return new Response(fixture, {
-        headers: { "content-type": "application/xml" },
-      });
-    },
-  );
-  const endpoint =
-    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+  const server = await serveFixture(async (request) => {
+    requests++;
+    requestBody = await request.text();
+    acceptEncoding = request.headers.get("accept-encoding") ?? "";
+    userAgent = request.headers.get("user-agent") ?? "";
+    return new Response(fixture, {
+      headers: { "content-type": "application/xml" },
+    });
+  });
+  const endpoint = `${server.url}/interpreter`;
 
   try {
     const firstSdb = new SimpleDB({
@@ -258,25 +230,24 @@ Deno.test("loadOpenStreetMap downloads, materializes, caches, and reuses OSM dat
       timeout: 60,
     });
     const missLogs = await captureConsoleLogs(async () => {
-      assertEquals((await first.getTypes()).geom, "GEOMETRY('EPSG:4326')");
+      expect((await first.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
     });
-    assertStringIncludes(missLogs, "No processed cache entry matched");
-    assertStringIncludes(missLogs, "Querying Overpass");
-    assertStringIncludes(missLogs, "Processing OSM data with Osmium");
-    assertStringIncludes(missLogs, "Writing processed GeoParquet cache");
+    expect(missLogs).toContain("No processed cache entry matched");
+    expect(missLogs).toContain("Querying Overpass");
+    expect(missLogs).toContain("Processing OSM data with Osmium");
+    expect(missLogs).toContain("Writing processed GeoParquet cache");
     await firstSdb.close();
 
     const cacheFiles = readdirSync(".sda-cache/osm");
-    assertEquals(cacheFiles.some((file) => file.endsWith(".geoparquet")), true);
-    assertEquals(
+    expect(cacheFiles.some((file) => file.endsWith(".geoparquet"))).toStrictEqual(true);
+    expect(
       Object.values(
         JSON.parse(readFileSync(".sda-cache/osm/sources.json", "utf-8")) as {
           [key: string]: unknown;
         },
       ).length,
-      1,
-    );
-    assertEquals(existsSync(".sda-cache/sources.json"), false);
+    ).toStrictEqual(1);
+    expect(existsSync(".sda-cache/sources.json")).toStrictEqual(false);
 
     const secondSdb = new SimpleDB({
       cacheVerbose: true,
@@ -295,39 +266,34 @@ Deno.test("loadOpenStreetMap downloads, materializes, caches, and reuses OSM dat
         { returnData: true },
       );
     });
-    assertStringIncludes(hitLogs, "Processed cache hit.");
-    assertStringIncludes(hitLogs, "Osmium will not run");
-    assertStringIncludes(hitLogs, "Loaded");
-    assertEquals(hitLogs.includes("Querying Overpass (attempt"), false);
-    assertEquals(rows, [
+    expect(hitLogs).toContain("Processed cache hit.");
+    expect(hitLogs).toContain("Osmium will not run");
+    expect(hitLogs).toContain("Loaded");
+    expect(hitLogs.includes("Querying Overpass (attempt")).toStrictEqual(false);
+    expect(rows).toStrictEqual([
       { kind: "node", type: "node", id: 1, wkt: "POINT (-73.599 45.501)" },
       {
         kind: "area",
         type: "way",
         id: 10,
-        wkt:
-          "POLYGON ((-73.598 45.502, -73.596 45.502, -73.596 45.504, -73.598 45.504, -73.598 45.502))",
+        wkt: "POLYGON ((-73.598 45.502, -73.596 45.502, -73.596 45.504, -73.598 45.504, -73.598 45.502))",
       },
       {
         kind: "area",
         type: "relation",
         id: 20,
-        wkt:
-          "MULTIPOLYGON (((-73.595 45.505, -73.593 45.505, -73.593 45.507, -73.595 45.507, -73.595 45.505)))",
+        wkt: "MULTIPOLYGON (((-73.595 45.505, -73.593 45.505, -73.593 45.507, -73.595 45.507, -73.595 45.505)))",
       },
     ]);
     await secondSdb.close();
 
-    assertEquals(requests, 1);
-    assertStringIncludes(requestBody, "data=%5Bout%3Axml%5D");
-    assertStringIncludes(
-      new URLSearchParams(requestBody).get("data") ?? "",
-      'nwr["amenity"="school"]',
-    );
-    assertStringIncludes(acceptEncoding, "gzip");
-    assertStringIncludes(userAgent, "simple-data-analysis-core");
-    assertEquals(existsSync(".sda-cache/tmp"), true);
-    assertEquals(readdirSync(".sda-cache/tmp"), []);
+    expect(requests).toStrictEqual(1);
+    expect(requestBody).toContain("data=%5Bout%3Axml%5D");
+    expect(new URLSearchParams(requestBody).get("data") ?? "").toContain('nwr["amenity"="school"]');
+    expect(acceptEncoding).toContain("gzip");
+    expect(userAgent).toContain("simple-data-analysis-core");
+    expect(existsSync(".sda-cache/tmp")).toStrictEqual(true);
+    expect(readdirSync(".sda-cache/tmp")).toStrictEqual([]);
 
     const thirdSdb = new SimpleDB();
     const third = thirdSdb.newTable("differentOsmSource");
@@ -338,34 +304,29 @@ Deno.test("loadOpenStreetMap downloads, materializes, caches, and reuses OSM dat
     });
     await third.run();
     await thirdSdb.close();
-    assertEquals(requests, 2);
-    assertEquals(
+    expect(requests).toStrictEqual(2);
+    expect(
       Object.values(
         JSON.parse(readFileSync(".sda-cache/osm/sources.json", "utf-8")) as {
           [key: string]: unknown;
         },
       ).length,
-      2,
-    );
+    ).toStrictEqual(2);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("loadOpenStreetMap with cache false always requests fresh data", async () => {
+test("loadOpenStreetMap with cache false always requests fresh data", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
   let requests = 0;
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    () => {
-      requests++;
-      return new Response(fixture);
-    },
-  );
-  const endpoint =
-    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+  const server = await serveFixture(() => {
+    requests++;
+    return new Response(fixture);
+  });
+  const endpoint = `${server.url}/interpreter`;
 
   try {
     let uncachedLogs = "";
@@ -386,30 +347,26 @@ Deno.test("loadOpenStreetMap with cache false always requests fresh data", async
       }
       await sdb.close();
     }
-    assertStringIncludes(uncachedLogs, "Processed cache disabled.");
-    assertStringIncludes(uncachedLogs, "without reading or writing");
-    assertEquals(requests, 2);
-    assertEquals(existsSync(".sda-cache/osm/sources.json"), false);
-    assertEquals(readdirSync(".sda-cache/tmp"), []);
+    expect(uncachedLogs).toContain("Processed cache disabled.");
+    expect(uncachedLogs).toContain("without reading or writing");
+    expect(requests).toStrictEqual(2);
+    expect(existsSync(".sda-cache/osm/sources.json")).toStrictEqual(false);
+    expect(readdirSync(".sda-cache/tmp")).toStrictEqual([]);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("loadOpenStreetMap preserves a raw Overpass filter fragment", async () => {
+test("loadOpenStreetMap preserves a raw Overpass filter fragment", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
   let requestBody = "";
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    async (request) => {
-      requestBody = await request.text();
-      return new Response(fixture);
-    },
-  );
-  const endpoint =
-    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+  const server = await serveFixture(async (request) => {
+    requestBody = await request.text();
+    return new Response(fixture);
+  });
+  const endpoint = `${server.url}/interpreter`;
 
   try {
     const sdb = new SimpleDB();
@@ -422,24 +379,19 @@ Deno.test("loadOpenStreetMap preserves a raw Overpass filter fragment", async ()
     await table.run();
     await sdb.close();
 
-    assertStringIncludes(
-      new URLSearchParams(requestBody).get("data") ?? "",
+    expect(new URLSearchParams(requestBody).get("data") ?? "").toContain(
       'nwr["amenity"~"school|college"]',
     );
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("loadOpenStreetMap does not cache failed or incomplete responses", async () => {
+test("loadOpenStreetMap does not cache failed or incomplete responses", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    () => new Response("<osm><node", { status: 200 }),
-  );
-  const endpoint =
-    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+  const server = await serveFixture(() => new Response("<osm><node", { status: 200 }));
+  const endpoint = `${server.url}/interpreter`;
 
   try {
     const sdb = new SimpleDB();
@@ -448,36 +400,32 @@ Deno.test("loadOpenStreetMap does not cache failed or incomplete responses", asy
     await assertRejects(() => table.run(), Error, "loadOpenStreetMap()");
     await sdb.close();
 
-    assertEquals(existsSync(".sda-cache/osm/sources.json"), false);
-    assertEquals(readdirSync(".sda-cache/tmp"), []);
+    expect(existsSync(".sda-cache/osm/sources.json")).toStrictEqual(false);
+    expect(readdirSync(".sda-cache/tmp")).toStrictEqual([]);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("loadOpenStreetMap rejects well-formed Overpass error responses", async () => {
+test("loadOpenStreetMap rejects well-formed Overpass error responses", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const responses = [
     { tag: "remark", message: "runtime error: Query timed out" },
     { tag: "error", message: "internal server error" },
   ];
   let responseIndex = 0;
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    () => {
-      const response = responses[responseIndex++];
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?>
+  const server = await serveFixture(() => {
+    const response = responses[responseIndex++];
+    return new Response(
+      `<?xml version="1.0" encoding="UTF-8"?>
         <osm version="0.6" generator="Overpass API">
           <${response.tag}>${response.message}</${response.tag}>
         </osm>`,
-        { headers: { "content-type": "application/xml" } },
-      );
-    },
-  );
-  const endpoint =
-    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+      { headers: { "content-type": "application/xml" } },
+    );
+  });
+  const endpoint = `${server.url}/interpreter`;
 
   try {
     for (const response of responses) {
@@ -494,16 +442,16 @@ Deno.test("loadOpenStreetMap rejects well-formed Overpass error responses", asyn
       }
     }
 
-    assertEquals(responseIndex, responses.length);
-    assertEquals(existsSync(".sda-cache/osm/sources.json"), false);
-    assertEquals(readdirSync(".sda-cache/tmp"), []);
+    expect(responseIndex).toStrictEqual(responses.length);
+    expect(existsSync(".sda-cache/osm/sources.json")).toStrictEqual(false);
+    expect(readdirSync(".sda-cache/tmp")).toStrictEqual([]);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("OSM requests retry transient responses and honor Retry-After", async () => {
+test("OSM requests retry transient responses and honor Retry-After", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
   const originalFetch = globalThis.fetch;
@@ -514,9 +462,9 @@ Deno.test("OSM requests retry transient responses and honor Retry-After", async 
     return Promise.resolve(
       requests === 1
         ? new Response("busy", {
-          status: 503,
-          headers: { "retry-after": "30" },
-        })
+            status: 503,
+            headers: { "retry-after": "30" },
+          })
         : new Response(fixture),
     );
   }) as typeof fetch;
@@ -538,20 +486,20 @@ Deno.test("OSM requests retry transient responses and honor Retry-After", async 
       );
     });
     rmSync(temporaryFile, { force: true });
-    assertEquals(requests, 2);
-    assertEquals(waits, [30_000]);
-    assertStringIncludes(logs, "HTTP 503");
-    assertStringIncludes(logs, "Retry-After: 30");
-    assertEquals(logs.includes("password"), false);
-    assertEquals(logs.includes("secret"), false);
-    assertStringIncludes(logs, "%5BREDACTED%5D");
+    expect(requests).toStrictEqual(2);
+    expect(waits).toStrictEqual([30_000]);
+    expect(logs).toContain("HTTP 503");
+    expect(logs).toContain("Retry-After: 30");
+    expect(logs.includes("password")).toStrictEqual(false);
+    expect(logs.includes("secret")).toStrictEqual(false);
+    expect(logs).toContain("%5BREDACTED%5D");
   } finally {
     globalThis.fetch = originalFetch;
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("OSM requests do not retry nontransient responses", async () => {
+test("OSM requests do not retry nontransient responses", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const originalFetch = globalThis.fetch;
   let requests = 0;
@@ -572,16 +520,16 @@ Deno.test("OSM requests do not retry nontransient responses", async () => {
       Error,
       "nonretryable",
     );
-    assertEquals(requests, 1);
-    assertStringIncludes(error.message, "HTTP 404");
-    assertStringIncludes(error.message, "No invalid cached data was returned");
+    expect(requests).toStrictEqual(1);
+    expect(error.message).toContain("HTTP 404");
+    expect(error.message).toContain("No invalid cached data was returned");
   } finally {
     globalThis.fetch = originalFetch;
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("OSM requests report retry exhaustion and total delay", async () => {
+test("OSM requests report retry exhaustion and total delay", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const originalFetch = globalThis.fetch;
   const waits: number[] = [];
@@ -606,20 +554,21 @@ Deno.test("OSM requests report retry exhaustion and total delay", async () => {
       Error,
       "configured retries were exhausted",
     );
-    assertEquals(requests, 3);
-    assertEquals(waits, [2_000, 4_000]);
-    assertStringIncludes(error.message, "Total retry delay: 6 seconds");
-    assertStringIncludes(error.message, "Last failure: HTTP 429");
+    expect(requests).toStrictEqual(3);
+    expect(waits).toStrictEqual([2_000, 4_000]);
+    expect(error.message).toContain("Total retry delay: 6 seconds");
+    expect(error.message).toContain("Last failure: HTTP 429");
   } finally {
     globalThis.fetch = originalFetch;
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("local OSM cache retains fingerprints, bypasses safely, expires, and repairs corruption", async () => {
+test("local OSM cache retains fingerprints, bypasses safely, expires, and repairs corruption", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
-  const file = await Deno.makeTempFile({ suffix: ".osm" });
-  await Deno.copyFile("test/geodata/files/osm-fixture.osm", file);
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "sda-fixture-"));
+  const file = join(temporaryDirectory, "fixture.osm");
+  await nodeCopyFile("test/geodata/files/osm-fixture.osm", file);
 
   try {
     const load = async (options: { cache?: boolean; ttl?: number } = {}) => {
@@ -635,50 +584,45 @@ Deno.test("local OSM cache retains fingerprints, bypasses safely, expires, and r
 
     await load();
     const sourcesFile = ".sda-cache/osm/sources.json";
-    assertEquals(Object.keys(readSources(sourcesFile)).length, 1);
+    expect(Object.keys(readSources(sourcesFile)).length).toStrictEqual(1);
     const hitLogs = await load();
-    assertStringIncludes(hitLogs, "Processed cache hit");
-    assertStringIncludes(hitLogs, "Osmium will not run");
+    expect(hitLogs).toContain("Processed cache hit");
+    expect(hitLogs).toContain("Osmium will not run");
 
     appendFileSync(file, "\n");
     await load();
-    assertEquals(Object.keys(readSources(sourcesFile)).length, 2);
+    expect(Object.keys(readSources(sourcesFile)).length).toStrictEqual(2);
 
     const beforeBypass = readFileSync(sourcesFile, "utf-8");
     await load({ cache: false });
-    assertEquals(readFileSync(sourcesFile, "utf-8"), beforeBypass);
+    expect(readFileSync(sourcesFile, "utf-8")).toStrictEqual(beforeBypass);
 
     const expiryLogs = await load({ ttl: 0 });
-    assertStringIncludes(expiryLogs, "Processed cache entry expired");
-    assertStringIncludes(expiryLogs, "matching cache file was removed");
-    assertEquals(Object.keys(readSources(sourcesFile)).length, 2);
+    expect(expiryLogs).toContain("Processed cache entry expired");
+    expect(expiryLogs).toContain("matching cache file was removed");
+    expect(Object.keys(readSources(sourcesFile)).length).toStrictEqual(2);
 
     const sources = readSources(sourcesFile);
-    const newest = Object.values(sources).sort((a, b) =>
-      b.creation - a.creation
-    )[0];
+    const newest = Object.values(sources).sort((a, b) => b.creation - a.creation)[0];
     writeFileSync(newest.file, "not parquet");
     const repairLogs = await load();
-    assertStringIncludes(repairLogs, "corrupt or unusable");
-    assertEquals(Object.keys(readSources(sourcesFile)).length, 2);
+    expect(repairLogs).toContain("corrupt or unusable");
+    expect(Object.keys(readSources(sourcesFile)).length).toStrictEqual(2);
   } finally {
-    rmSync(file, { force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("remote OSM URLs retain independent processed cache entries", async () => {
+test("remote OSM URLs retain independent processed cache entries", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
   let requests = 0;
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    () => {
-      requests++;
-      return new Response(fixture);
-    },
-  );
-  const origin = `http://${server.addr.hostname}:${server.addr.port}`;
+  const server = await serveFixture(() => {
+    requests++;
+    return new Response(fixture);
+  });
+  const origin = `${server.url}`;
 
   try {
     for (const path of ["a.osm", "b.osm", "a.osm"]) {
@@ -689,39 +633,33 @@ Deno.test("remote OSM URLs retain independent processed cache entries", async ()
         await sdb.close();
       }
     }
-    assertEquals(requests, 2);
-    assertEquals(
-      Object.keys(readSources(".sda-cache/osm/sources.json")).length,
-      2,
-    );
+    expect(requests).toStrictEqual(2);
+    expect(Object.keys(readSources(".sda-cache/osm/sources.json")).length).toStrictEqual(2);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test("an expired OSM cache entry is not returned when refresh fails", async () => {
+test("an expired OSM cache entry is not returned when refresh fails", async () => {
   rmSync(".sda-cache", { recursive: true, force: true });
   const fixture = readFileSync("test/geodata/files/osm-fixture.osm");
   let requests = 0;
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0 },
-    () => {
-      requests++;
-      return requests === 1
-        ? new Response(fixture)
-        : new Response("unavailable", { status: 503 });
-    },
-  );
-  const endpoint =
-    `http://${server.addr.hostname}:${server.addr.port}/interpreter`;
+  const server = await serveFixture(() => {
+    requests++;
+    return requests === 1 ? new Response(fixture) : new Response("unavailable", { status: 503 });
+  });
+  const endpoint = `${server.url}/interpreter`;
 
   try {
     const firstSdb = new SimpleDB();
-    await firstSdb.newTable().loadOpenStreetMap(bbox, {
-      filters: "[amenity]",
-      endpoint,
-    }).run();
+    await firstSdb
+      .newTable()
+      .loadOpenStreetMap(bbox, {
+        filters: "[amenity]",
+        endpoint,
+      })
+      .run();
     await firstSdb.close();
 
     const sourcesFile = ".sda-cache/osm/sources.json";
@@ -745,51 +683,46 @@ Deno.test("an expired OSM cache entry is not returned when refresh fails", async
         Error,
         "No invalid cached data was returned",
       );
-      assertStringIncludes(error.message, "HTTP 503");
+      expect(error.message).toContain("HTTP 503");
     } finally {
       await secondSdb.close();
     }
 
-    assertEquals(requests, 2);
-    assertEquals(Object.keys(readSources(sourcesFile)).length, 0);
-    assertEquals(
-      readdirSync(".sda-cache/osm").some((file) =>
-        file.endsWith(".geoparquet")
-      ),
-      false,
-    );
+    expect(requests).toStrictEqual(2);
+    expect(Object.keys(readSources(sourcesFile)).length).toStrictEqual(0);
+    expect(
+      readdirSync(".sda-cache/osm").some((file) => file.endsWith(".geoparquet")),
+    ).toStrictEqual(false);
   } finally {
-    await server.shutdown();
+    await server.close();
     rmSync(".sda-cache", { recursive: true, force: true });
   }
 });
 
-Deno.test({
-  name: "loadOpenStreetMap works with the public Overpass endpoint",
-  // Avoid repeatedly querying the public Overpass service in GitHub Actions.
-  ignore: Deno.env.get("GITHUB_ACTIONS") === "true",
-}, async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable("publicOverpassSchools");
+test.skipIf(process.env.CI === "true")(
+  "loadOpenStreetMap works with the public Overpass endpoint",
+  async () => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable("publicOverpassSchools");
 
-  try {
-    table.loadOpenStreetMap(
-      {
-        west: -73.587799,
-        south: 45.445078,
-        east: -73.552265,
-        north: 45.471086,
-      },
-      {
-        filters: ["amenity", "school"],
-        cache: false,
-        timeout: 120,
-      },
-    );
-    await table.run();
+    try {
+      table.loadOpenStreetMap(
+        {
+          west: -73.587799,
+          south: 45.445078,
+          east: -73.552265,
+          north: 45.471086,
+        },
+        {
+          filters: ["amenity", "school"],
+          cache: false,
+          timeout: 120,
+        },
+      );
+      await table.run();
 
-    const [summary] = await sdb.customQuery(
-      `SELECT
+      const [summary] = (await sdb.customQuery(
+        `SELECT
         count(*)::INTEGER AS featureCount,
         count(*) FILTER (WHERE geom IS NULL)::INTEGER AS missingGeometryCount,
         count(*) FILTER (
@@ -797,28 +730,27 @@ Deno.test({
         )::INTEGER AS invalidGeometryCount
       FROM publicOverpassSchools
       WHERE tags['amenity'] = 'school';`,
-      { returnData: true },
-    ) as {
-      featureCount: number;
-      missingGeometryCount: number;
-      invalidGeometryCount: number;
-    }[];
+        { returnData: true },
+      )) as {
+        featureCount: number;
+        missingGeometryCount: number;
+        invalidGeometryCount: number;
+      }[];
 
-    assert(summary !== undefined);
-    assert(
-      summary.featureCount > 0,
-      "The public Overpass endpoint returned no schools for the test bbox.",
-    );
-    assertEquals(summary.missingGeometryCount, 0);
-    assertEquals(summary.invalidGeometryCount, 0);
-  } finally {
-    await sdb.close();
-  }
-});
+      assert(summary !== undefined);
+      assert(
+        summary.featureCount > 0,
+        "The public Overpass endpoint returned no schools for the test bbox.",
+      );
+      expect(summary.missingGeometryCount).toStrictEqual(0);
+      expect(summary.invalidGeometryCount).toStrictEqual(0);
+    } finally {
+      await sdb.close();
+    }
+  },
+);
 
-async function captureConsoleLogs(
-  run: () => Promise<unknown>,
-): Promise<string> {
+async function captureConsoleLogs(run: () => Promise<unknown>): Promise<string> {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));

@@ -19,16 +19,17 @@ export default function reducePrecision(
     // schema is unchanged.
     preservesSchema: true,
     buildSelect: (input, types) => {
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "reducePrecision()", simpleTable.name);
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "reducePrecision()", simpleTable.name);
       // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
       // so the cast keeps it on the new geometries.
-      return `SELECT * REPLACE (ST_ReducePrecision(${
-        quoteIdentifier(column)
-      }, ${1 / Math.pow(10, decimals)})::${types[column]} AS ${
-        quoteIdentifier(column)
-      }) FROM ${input}`;
+      return `SELECT * REPLACE (ST_ReducePrecision(${quoteIdentifier(
+        column,
+      )}, ${1 / Math.pow(10, decimals)})::${types[column]} AS ${quoteIdentifier(
+        column,
+      )}) FROM ${input}`;
     },
   });
 }

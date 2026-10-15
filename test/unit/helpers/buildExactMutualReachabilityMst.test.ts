@@ -1,12 +1,13 @@
+import { test, expect } from "vite-plus/test";
+import { assertAlmostEquals, assertRejects } from "../../helpers/assertions.ts";
+import { readFile as nodeReadFile } from "node:fs/promises";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { assertAlmostEquals, assertEquals, assertRejects } from "@std/assert";
+
 import inspectGraphConnectivity from "../../../src/helpers/inspectGraphConnectivity.ts";
 import buildExactMutualReachabilityMst from "../../../src/helpers/buildExactMutualReachabilityMst.ts";
 
 const fixture = JSON.parse(
-  await Deno.readTextFile(
-    new URL("../../data/hdbscan/reference.json", import.meta.url),
-  ),
+  await nodeReadFile(new URL("../../data/hdbscan/reference.json", import.meta.url), "utf8"),
 ) as {
   packages: { hdbscan: string };
   referenceSettings: {
@@ -23,23 +24,21 @@ const fixture = JSON.parse(
   }[];
 };
 
-assertEquals(fixture.packages.hdbscan, "0.8.44");
-assertEquals(fixture.referenceSettings.algorithm, "generic");
-assertEquals(fixture.referenceSettings.approx_min_span_tree, false);
+expect(fixture.packages.hdbscan).toStrictEqual("0.8.44");
+expect(fixture.referenceSettings.algorithm).toStrictEqual("generic");
+expect(fixture.referenceSettings.approx_min_span_tree).toStrictEqual(false);
 
 for (const reference of fixture.cases) {
-  Deno.test(`exact mutual-reachability MST matches pinned Python weights for ${reference.name}`, async () => {
+  test(`exact mutual-reachability MST matches pinned Python weights for ${reference.name}`, async () => {
     const db = await DuckDBInstance.create(":memory:");
     const connection = await db.connect();
     try {
       const dimensions = reference.vectors[0].length;
       await connection.run(`SET threads=1; CREATE TEMP TABLE vectors AS
         SELECT vertex,vec::DOUBLE[${dimensions}] AS vec FROM (VALUES
-          ${
-        reference.vectors.map((vector, vertex) =>
-          `(${vertex},[${vector.join(",")}])`
-        ).join(",")
-      }) t(vertex,vec)`);
+          ${reference.vectors
+            .map((vector, vertex) => `(${vertex},[${vector.join(",")}])`)
+            .join(",")}) t(vertex,vec)`);
       await buildExactMutualReachabilityMst(
         connection,
         { count: reference.vectors.length, minSamples: reference.minSamples },
@@ -51,50 +50,45 @@ for (const reference of fixture.cases) {
           mst: '"mst"',
         },
       );
-      const coreDistances = (await connection.runAndReadAll(
-        "SELECT distance FROM core_distances ORDER BY vertex",
-      )).getRowsJS().map((row) => Number(row[0]));
-      assertEquals(coreDistances.length, reference.coreDistances.length);
+      const coreDistances = (
+        await connection.runAndReadAll("SELECT distance FROM core_distances ORDER BY vertex")
+      )
+        .getRowsJS()
+        .map((row) => Number(row[0]));
+      expect(coreDistances.length).toStrictEqual(reference.coreDistances.length);
       coreDistances.forEach((distance, index) =>
-        assertAlmostEquals(distance, reference.coreDistances[index], 1e-12)
+        assertAlmostEquals(distance, reference.coreDistances[index], 1e-12),
       );
 
       // Tied mutual-reachability weights can yield multiple valid edge sets.
       // Comparing the sorted weight multiset verifies the exact MST objective
       // independently of Python's internal tie choice.
-      const weights = (await connection.runAndReadAll(
-        "SELECT distance FROM mst ORDER BY distance",
-      )).getRowsJS().map((row) => Number(row[0]));
-      const expected = reference.mst.map((edge) => edge[2]).toSorted((a, b) =>
-        a - b
-      );
-      assertEquals(weights.length, reference.vectors.length - 1);
-      weights.forEach((distance, index) =>
-        assertAlmostEquals(distance, expected[index], 1e-12)
-      );
+      const weights = (await connection.runAndReadAll("SELECT distance FROM mst ORDER BY distance"))
+        .getRowsJS()
+        .map((row) => Number(row[0]));
+      const expected = reference.mst.map((edge) => edge[2]).toSorted((a, b) => a - b);
+      expect(weights.length).toStrictEqual(reference.vectors.length - 1);
+      weights.forEach((distance, index) => assertAlmostEquals(distance, expected[index], 1e-12));
       // A matching multiset alone does not establish that returned endpoints
       // form a tree or that each reported weight belongs to its actual edge.
-      assertEquals(
-        await inspectGraphConnectivity(
-          connection,
-          '"mst"',
-          reference.vectors.length,
-        ),
-        { componentCount: 1, sizes: [reference.vectors.length] },
-      );
-      const edges = (await connection.runAndReadAll(
-        "SELECT * FROM mst ORDER BY source,target",
-      )).getRowsJS();
+      expect(
+        await inspectGraphConnectivity(connection, '"mst"', reference.vectors.length),
+      ).toStrictEqual({ componentCount: 1, sizes: [reference.vectors.length] });
+      const edges = (
+        await connection.runAndReadAll("SELECT * FROM mst ORDER BY source,target")
+      ).getRowsJS();
       for (const [sourceValue, targetValue, weightValue] of edges) {
-        const source = Number(sourceValue), target = Number(targetValue);
+        const source = Number(sourceValue),
+          target = Number(targetValue);
         const left = reference.vectors[source],
           right = reference.vectors[target];
         const dot = left.reduce((sum, value, i) => sum + value * right[i], 0);
         const norm = (values: number[]) =>
           Math.sqrt(values.reduce((sum, value) => sum + value * value, 0));
-        const distance = reference.metric === "euclidean"
-          ? Math.hypot(...left.map((value, i) => value - right[i]))
-          : Math.max(0, 1 - dot / (norm(left) * norm(right)));
+        const distance =
+          reference.metric === "euclidean"
+            ? Math.hypot(...left.map((value, i) => value - right[i]))
+            : Math.max(0, 1 - dot / (norm(left) * norm(right)));
         assertAlmostEquals(
           Number(weightValue),
           Math.max(coreDistances[source], coreDistances[target], distance),
@@ -112,12 +106,9 @@ for (const reference of fixture.cases) {
           mst: '"mst"',
         },
       );
-      assertEquals(
-        (await connection.runAndReadAll(
-          "SELECT * FROM mst ORDER BY source,target",
-        )).getRowsJS(),
-        edges,
-      );
+      expect(
+        (await connection.runAndReadAll("SELECT * FROM mst ORDER BY source,target")).getRowsJS(),
+      ).toStrictEqual(edges);
     } finally {
       connection.closeSync();
       db.closeSync();
@@ -125,7 +116,7 @@ for (const reference of fixture.cases) {
   });
 }
 
-Deno.test("exact mutual-reachability MST validates minSamples", async () => {
+test("exact mutual-reachability MST validates minSamples", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -153,7 +144,7 @@ Deno.test("exact mutual-reachability MST validates minSamples", async () => {
   }
 });
 
-Deno.test("exact MST rejects non-finite cross-group distances despite finite nearest distances", async () => {
+test("exact MST rejects non-finite cross-group distances despite finite nearest distances", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -182,7 +173,7 @@ Deno.test("exact MST rejects non-finite cross-group distances despite finite nea
   }
 });
 
-Deno.test("exact MST supports identical points and minSamples at both valid boundaries", async () => {
+test("exact MST supports identical points and minSamples at both valid boundaries", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -200,13 +191,15 @@ Deno.test("exact MST supports identical points and minSamples at both valid boun
           mst: '"mst"',
         },
       );
-      assertEquals(
-        (await connection.runAndReadAll(
-          "SELECT * FROM mst ORDER BY source,target",
-        ))
-          .getRowsJS().map((row) => row.map(Number)),
-        [[0, 1, 0], [0, 2, 0], [0, 3, 0]],
-      );
+      expect(
+        (await connection.runAndReadAll("SELECT * FROM mst ORDER BY source,target"))
+          .getRowsJS()
+          .map((row) => row.map(Number)),
+      ).toStrictEqual([
+        [0, 1, 0],
+        [0, 2, 0],
+        [0, 3, 0],
+      ]);
     }
   } finally {
     connection.closeSync();

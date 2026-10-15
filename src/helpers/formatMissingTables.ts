@@ -27,11 +27,13 @@ export default function formatMissingTables(
 ): string {
   const missing = [...missingTables].sort();
   const available = [...availableTables].sort();
-  const missingDescription = missing.length === 1
-    ? `table ${quoteIdentifier(missing[0])}`
-    : `tables ${missing.map(quoteIdentifier).join(", ")}`;
-  const availableDescription = available.length === 0
-    ? "No tables are currently available."
-    : `Available tables: ${available.map(quoteIdentifier).join(", ")}.`;
+  const missingDescription =
+    missing.length === 1
+      ? `table ${quoteIdentifier(missing[0])}`
+      : `tables ${missing.map(quoteIdentifier).join(", ")}`;
+  const availableDescription =
+    available.length === 0
+      ? "No tables are currently available."
+      : `Available tables: ${available.map(quoteIdentifier).join(", ")}.`;
   return `${method} could not find ${missingDescription}. ${availableDescription}`;
 }

@@ -8,10 +8,7 @@ import {
 } from "./asyncOperationContext.ts";
 import flushAllTables, { runExemptFromFlush } from "./flushAllTables.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
-import {
-  getRegisteredTables,
-  retainRegisteredTables,
-} from "./tableRegistry.ts";
+import { getRegisteredTables, retainRegisteredTables } from "./tableRegistry.ts";
 import {
   getTableGeneration,
   peekTableGeneration,
@@ -50,12 +47,8 @@ export function captureCacheTableOperation(op: PendingOpInput): PendingOpInput {
   return {
     ...op,
     buildSelect: bindCacheContext(op.buildSelect),
-    outputSchema: op.outputSchema === undefined
-      ? undefined
-      : bindCacheContext(op.outputSchema),
-    values: typeof op.values === "function"
-      ? bindCacheContext(op.values)
-      : op.values,
+    outputSchema: op.outputSchema === undefined ? undefined : bindCacheContext(op.outputSchema),
+    values: typeof op.values === "function" ? bindCacheContext(op.values) : op.values,
   };
 }
 
@@ -72,13 +65,8 @@ function bindCacheContext<Args extends unknown[], Result>(
 /** Rejects mutations before they can queue work or execute SQL. */
 export function assertCacheTableMutation(table: SimpleTable): void {
   for (const frame of dependencyContext.getStore() ?? []) {
-    if (
-      frame.open && table !== frame.cachedTable &&
-      frame.availableBeforeCompute.has(table)
-    ) {
-      throw new Error(
-        cacheTableMutationMessage(frame.cachedTable, [table.name]),
-      );
+    if (frame.open && table !== frame.cachedTable && frame.availableBeforeCompute.has(table)) {
+      throw new Error(cacheTableMutationMessage(frame.cachedTable, [table.name]));
     }
   }
 }
@@ -87,7 +75,8 @@ export function assertCacheTableMutation(table: SimpleTable): void {
 export function recordCacheTableCreation(table: SimpleTable): void {
   for (const frame of dependencyContext.getStore() ?? []) {
     if (
-      frame.open && table.sdb === frame.cachedTable.sdb &&
+      frame.open &&
+      table.sdb === frame.cachedTable.sdb &&
       !frame.availableBeforeCompute.has(table)
     ) {
       frame.created.add(table);
@@ -96,10 +85,7 @@ export function recordCacheTableCreation(table: SimpleTable): void {
 }
 
 /** Tracks queued work across nested callbacks, including async barriers. */
-export function recordCacheTableOperation(
-  table: SimpleTable,
-  op: PendingOp,
-): void {
+export function recordCacheTableOperation(table: SimpleTable, op: PendingOp): void {
   for (const frame of dependencyContext.getStore() ?? []) {
     if (frame.open && table.sdb === frame.cachedTable.sdb) {
       frame.queued.add(op.sequence);
@@ -117,10 +103,7 @@ export function recordCacheTableAccess(table: SimpleTable): void {
 }
 
 /** Records registered tables named in user-supplied SQL fragments. */
-export function recordCacheTableReferences(
-  table: SimpleTable,
-  sql: readonly string[],
-): void {
+export function recordCacheTableReferences(table: SimpleTable, sql: readonly string[]): void {
   if (dependencyContext.getStore() === undefined) {
     return;
   }
@@ -153,18 +136,15 @@ export async function captureCacheTableDependencies(
     open: true,
   };
   try {
-    await dependencyContext.run(
-      [...(dependencyContext.getStore() ?? []), frame],
-      async () => {
-        await compute();
-        // A callback can queue a whole computation without observing it.
-        // Reject leaked handles before executing that pending computation.
-        assertCacheTableCleanup(frame);
-        await flushAllTables(cachedTable.sdb);
-        // Async barriers may create tables during the final flush.
-        assertCacheTableCleanup(frame);
-      },
-    );
+    await dependencyContext.run([...(dependencyContext.getStore() ?? []), frame], async () => {
+      await compute();
+      // A callback can queue a whole computation without observing it.
+      // Reject leaked handles before executing that pending computation.
+      assertCacheTableCleanup(frame);
+      await flushAllTables(cachedTable.sdb);
+      // Async barriers may create tables during the final flush.
+      assertCacheTableCleanup(frame);
+    });
   } catch (error) {
     await cleanupCacheComputation(frame);
     throw error;
@@ -173,9 +153,7 @@ export async function captureCacheTableDependencies(
   }
 
   return [...accessed]
-    .filter((table) =>
-      table !== cachedTable && availableBeforeCompute.has(table)
-    )
+    .filter((table) => table !== cachedTable && availableBeforeCompute.has(table))
     .map((table) => {
       const snapshot = availableBeforeCompute.get(table);
       if (snapshot === undefined) {
@@ -190,12 +168,11 @@ export async function captureCacheTableDependencies(
 }
 
 function assertCacheTableCleanup(frame: CacheComputation): void {
-  const created = getRegisteredTables(frame.cachedTable.sdb)
-    .filter((table) => frame.created.has(table));
+  const created = getRegisteredTables(frame.cachedTable.sdb).filter((table) =>
+    frame.created.has(table),
+  );
   if (created.length > 0) {
-    throw new Error(
-      cacheTableCleanupMessage(created.map((table) => table.name)),
-    );
+    throw new Error(cacheTableCleanupMessage(created.map((table) => table.name)));
   }
 }
 
@@ -205,29 +182,24 @@ async function cleanupCacheComputation(frame: CacheComputation): Promise<void> {
   // their database-wide ordering. A nested failure also discards work captured
   // by an enclosing async barrier, which is stored outside pendingOps.
   for (const table of getRegisteredTables(sdb)) {
-    const retained = table.pendingOps.filter((op) =>
-      !frame.queued.has(op.sequence)
-    );
+    const retained = table.pendingOps.filter((op) => !frame.queued.has(op.sequence));
     sdb.pendingCount -= table.pendingOps.length - retained.length;
     table.pendingOps.splice(0, table.pendingOps.length, ...retained);
   }
   const operationFrame = getAsyncOperationFrame(sdb);
   if (operationFrame !== undefined) {
-    operationFrame.entries = operationFrame.entries.filter((entry) =>
-      !frame.queued.has(entry.op.sequence)
+    operationFrame.entries = operationFrame.entries.filter(
+      (entry) => !frame.queued.has(entry.op.sequence),
     );
   }
-  const created = getRegisteredTables(sdb)
-    .filter((table) => frame.created.has(table));
+  const created = getRegisteredTables(sdb).filter((table) => frame.created.has(table));
   if (created.length === 0) return;
   // Observers inside compute may already have materialized temporary tables.
   // Cleanup must not flush work requeued after an execution error.
   const removeCreatedTables = () =>
     runExemptFromFlush(sdb, async () => {
       for (const table of created) {
-        await sdb.customQuery(
-          `DROP TABLE IF EXISTS ${quoteIdentifier(table.name)};`,
-        );
+        await sdb.customQuery(`DROP TABLE IF EXISTS ${quoteIdentifier(table.name)};`);
       }
     });
   if (operationFrame === undefined) {
@@ -235,10 +207,7 @@ async function cleanupCacheComputation(frame: CacheComputation): Promise<void> {
   } else {
     // Async frames take precedence over the database-wide flush exemption.
     // Suppress their drain too, without consuming unrelated captured work.
-    await runWhileDrainingAsyncOperationFrame(
-      operationFrame,
-      removeCreatedTables,
-    );
+    await runWhileDrainingAsyncOperationFrame(operationFrame, removeCreatedTables);
   }
   retainRegisteredTables(sdb, (table) => !frame.created.has(table));
 }
@@ -273,11 +242,8 @@ export function cacheTableDependenciesMatch(
   }
   const registered = getRegisteredTables(cachedTable.sdb);
   return dependencies.every((dependency) => {
-    const table = registered.find((candidate) =>
-      candidate.name === dependency.tableName
-    );
-    return table !== undefined &&
-      getTableGeneration(table) === dependency.generationId;
+    const table = registered.find((candidate) => candidate.name === dependency.tableName);
+    return table !== undefined && getTableGeneration(table) === dependency.generationId;
   });
 }
 
@@ -290,13 +256,8 @@ export function changedCacheTableDependenciesMessage(
   const changed: CacheTableDependency[] = [];
   const unchanged: CacheTableDependency[] = [];
   for (const dependency of dependencies) {
-    const table = registered.find((candidate) =>
-      candidate.name === dependency.tableName
-    );
-    if (
-      table === undefined ||
-      getTableGeneration(table) !== dependency.generationId
-    ) {
+    const table = registered.find((candidate) => candidate.name === dependency.tableName);
+    if (table === undefined || getTableGeneration(table) !== dependency.generationId) {
       changed.push(dependency);
     } else {
       unchanged.push(dependency);
@@ -306,7 +267,9 @@ export function changedCacheTableDependenciesMessage(
   return [
     cacheTableDependencyStatusMessage("changed", changed),
     cacheTableDependencyStatusMessage("unchanged", unchanged),
-  ].filter((message) => message.length > 0).join("\n");
+  ]
+    .filter((message) => message.length > 0)
+    .join("\n");
 }
 
 /** Lists unchanged dependencies for cache-hit verbose logging. */
@@ -323,8 +286,7 @@ function cacheTableDependencyStatusMessage(
   if (dependencies.length === 0) {
     return "";
   }
-  return `Table dependencies ${status}: ${
-    dependencies.map((dependency) => JSON.stringify(dependency.tableName))
-      .join(", ")
-  }.`;
+  return `Table dependencies ${status}: ${dependencies
+    .map((dependency) => JSON.stringify(dependency.tableName))
+    .join(", ")}.`;
 }

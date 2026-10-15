@@ -1,92 +1,79 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import normalizeString from "../../../src/methods/normalizeString.ts";
 
-Deno.test("normalizeString - convert to lowercase and strip punctuation", async () => {
+test("normalizeString - convert to lowercase and strip punctuation", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "Hello, World!" },
-    { text: "HELLO" },
-    { text: "hElLo" },
-  ]);
+  table.loadArray([{ text: "Hello, World!" }, { text: "HELLO" }, { text: "hElLo" }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "hello world");
-  assertEquals(results[1].normalized, "hello");
-  assertEquals(results[2].normalized, "hello");
+  expect(results[0].normalized).toStrictEqual("hello world");
+  expect(results[1].normalized).toStrictEqual("hello");
+  expect(results[2].normalized).toStrictEqual("hello");
 });
 
-Deno.test("normalizeString - strip punctuation keeps alphanumeric", async () => {
+test("normalizeString - strip punctuation keeps alphanumeric", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "100%" },
-    { text: "email@example.com" },
-    { text: "multi-word-string" },
-  ]);
+  table.loadArray([{ text: "100%" }, { text: "email@example.com" }, { text: "multi-word-string" }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "100");
-  assertEquals(results[1].normalized, "emailexamplecom");
-  assertEquals(results[2].normalized, "multiwordstring");
+  expect(results[0].normalized).toStrictEqual("100");
+  expect(results[1].normalized).toStrictEqual("emailexamplecom");
+  expect(results[2].normalized).toStrictEqual("multiwordstring");
 });
 
-Deno.test("normalizeString - keep punctuation option", async () => {
+test("normalizeString - keep punctuation option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "Hello, World!" },
-    { text: "100%" },
-  ]);
+  table.loadArray([{ text: "Hello, World!" }, { text: "100%" }]);
 
-  await normalizeString(table, "text", "normalized", {
+  normalizeString(table, "text", "normalized", {
     stripPunctuation: false,
   });
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "hello, world!");
-  assertEquals(results[1].normalized, "100%");
+  expect(results[0].normalized).toStrictEqual("hello, world!");
+  expect(results[1].normalized).toStrictEqual("100%");
 });
 
-Deno.test("normalizeString - keep punctuation for emails and URLs", async () => {
+test("normalizeString - keep punctuation for emails and URLs", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "User@Example.com" },
-    { text: "https://example.com/path" },
-  ]);
+  table.loadArray([{ text: "User@Example.com" }, { text: "https://example.com/path" }]);
 
-  await normalizeString(table, "text", "normalized", {
+  normalizeString(table, "text", "normalized", {
     stripPunctuation: false,
   });
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "user@example.com");
-  assertEquals(results[1].normalized, "https://example.com/path");
+  expect(results[0].normalized).toStrictEqual("user@example.com");
+  expect(results[1].normalized).toStrictEqual("https://example.com/path");
 });
 
-Deno.test("normalizeString - trim and normalize whitespace", async () => {
+test("normalizeString - trim and normalize whitespace", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
@@ -95,118 +82,103 @@ Deno.test("normalizeString - trim and normalize whitespace", async () => {
     { text: "  multiple   spaces  " },
   ]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "hello");
-  assertEquals(results[1].normalized, "world");
-  assertEquals(results[2].normalized, "multiple spaces");
+  expect(results[0].normalized).toStrictEqual("hello");
+  expect(results[1].normalized).toStrictEqual("world");
+  expect(results[2].normalized).toStrictEqual("multiple spaces");
 });
 
-Deno.test("normalizeString - NULL handling", async () => {
+test("normalizeString - NULL handling", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "Hello" },
-    { text: null },
-    { text: "World" },
-  ]);
+  table.loadArray([{ text: "Hello" }, { text: null }, { text: "World" }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string | null;
     normalized: string | null;
   }[];
 
-  assertEquals(results[0].normalized, "hello");
-  assertEquals(results[1].normalized, null);
-  assertEquals(results[2].normalized, "world");
+  expect(results[0].normalized).toStrictEqual("hello");
+  expect(results[1].normalized).toStrictEqual(null);
+  expect(results[2].normalized).toStrictEqual("world");
 });
 
-Deno.test("normalizeString - empty and whitespace-only strings", async () => {
+test("normalizeString - empty and whitespace-only strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "" },
-    { text: "   " },
-  ]);
+  table.loadArray([{ text: "" }, { text: "   " }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "");
-  assertEquals(results[1].normalized, "");
+  expect(results[0].normalized).toStrictEqual("");
+  expect(results[1].normalized).toStrictEqual("");
 });
 
-Deno.test("normalizeString - special patterns", async () => {
+test("normalizeString - special patterns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "email@example.com" },
-    { text: "price: $99.99" },
-  ]);
+  table.loadArray([{ text: "email@example.com" }, { text: "price: $99.99" }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized, "emailexamplecom");
-  assertEquals(results[1].normalized, "price 9999");
+  expect(results[0].normalized).toStrictEqual("emailexamplecom");
+  expect(results[1].normalized).toStrictEqual("price 9999");
 });
 
-Deno.test("normalizeString - mixed string types", async () => {
+test("normalizeString - mixed string types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
-  table.loadArray([
-    { text: "Hello" },
-    { text: "123" },
-    { text: "World" },
-    { text: null },
-  ]);
+  table.loadArray([{ text: "Hello" }, { text: "123" }, { text: "World" }, { text: null }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string | null;
     normalized: string | null;
   }[];
 
-  assertEquals(results[0].normalized, "hello");
-  assertEquals(results[1].normalized, "123");
-  assertEquals(results[2].normalized, "world");
-  assertEquals(results[3].normalized, null);
+  expect(results[0].normalized).toStrictEqual("hello");
+  expect(results[1].normalized).toStrictEqual("123");
+  expect(results[2].normalized).toStrictEqual("world");
+  expect(results[3].normalized).toStrictEqual(null);
 });
 
-Deno.test("normalizeString - long strings", async () => {
+test("normalizeString - long strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   const longText = "Hello " + "World ".repeat(10000) + "!";
   table.loadArray([{ text: longText }]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
   }[];
 
-  assertEquals(results[0].normalized.charAt(0), "h");
-  assertEquals(typeof results[0].normalized, "string");
+  expect(results[0].normalized.charAt(0)).toStrictEqual("h");
+  expect(typeof results[0].normalized).toStrictEqual("string");
 });
 
-Deno.test("normalizeString - matches journalism-format core tests", async () => {
+test("normalizeString - matches journalism-format core tests", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
@@ -224,20 +196,20 @@ Deno.test("normalizeString - matches journalism-format core tests", async () => 
     { text: "underscore_test", expected: "underscoretest" },
   ]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
     expected: string;
   }[];
 
   for (const row of results) {
-    assertEquals(row.normalized, row.expected);
+    expect(row.normalized).toStrictEqual(row.expected);
   }
 });
 
-Deno.test("normalizeString - complex accented strings", async () => {
+test("normalizeString - complex accented strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([
@@ -247,13 +219,13 @@ Deno.test("normalizeString - complex accented strings", async () => {
     },
   ]);
 
-  await normalizeString(table, "text", "normalized");
+  normalizeString(table, "text", "normalized");
 
-  const results = await table.getData() as {
+  const results = (await table.getData()) as {
     text: string;
     normalized: string;
     expected: string;
   }[];
 
-  assertEquals(results[0].normalized, results[0].expected);
+  expect(results[0].normalized).toStrictEqual(results[0].expected);
 });

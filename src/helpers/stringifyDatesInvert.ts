@@ -9,13 +9,11 @@ export default async function stringifyDatesInvert(
   const toConvertBack: { [key: string]: "timestamp" | "date" } = {};
   for (let i = 0; i < typesKeys.length; i++) {
     if (typesValues[i] === "TIMESTAMP" || typesValues[i] === "DATE") {
-      toConvertBack[typesKeys[i]] = typesValues[i].toLowerCase() as
-        | "timestamp"
-        | "date";
+      toConvertBack[typesKeys[i]] = typesValues[i].toLowerCase() as "timestamp" | "date";
     }
   }
   if (Object.keys(toConvertBack).length > 0) {
-    await simpleTable.replace(Object.keys(toConvertBack), { "Z": "+00" });
-    await simpleTable.convert(toConvertBack);
+    simpleTable.replace(Object.keys(toConvertBack), { Z: "+00" });
+    simpleTable.convert(toConvertBack);
   }
 }

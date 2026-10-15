@@ -1,10 +1,11 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
-Deno.test("should create a new SimpleTable", async () => {
+test("should create a new SimpleTable", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  assertEquals(table instanceof SimpleTable, true);
+  expect(table instanceof SimpleTable).toStrictEqual(true);
   await sdb.close();
 });

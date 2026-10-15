@@ -68,15 +68,13 @@ export default function buildChronologicalGraphComponentsSql(
           ${q("reverse")}.${q("__start_key")}
       WHERE ${q("forward")}.${q("__start_key")} !=
         ${q("forward")}.${q("__node_key")}
-    ), ${
-    buildMaximalGraphCliquesSql(nodes, mutual, {
+    ), ${buildMaximalGraphCliquesSql(nodes, mutual, {
       adjacency,
       initial,
       maximal,
       numbered,
       search,
-    })
-  }
+    })}
     SELECT ${q("numbered")}.${q("componentId")},
       ${q("nodes")}.${q("node")}
     FROM ${numbered} AS ${q("numbered")}

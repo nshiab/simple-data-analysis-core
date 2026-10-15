@@ -15,12 +15,12 @@ export default async function getMean(
   const queryResult = await queryDB(
     simpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(AVG(${qualifiedColumn}), ${options.decimals}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(simpleTable.name)}`
-      : `SELECT AVG(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${
-        quoteIdentifier(simpleTable.name)
-      }`,
+      ? `SELECT ROUND(AVG(${qualifiedColumn}), ${options.decimals}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(simpleTable.name)}`
+      : `SELECT AVG(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${quoteIdentifier(
+          simpleTable.name,
+        )}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,

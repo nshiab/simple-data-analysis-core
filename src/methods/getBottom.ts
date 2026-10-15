@@ -15,9 +15,9 @@ export default async function getBottom(
   const queryResult = await queryDB(
     simpleTable,
     `WITH "numberedRowsForGetBottom" AS (
-                SELECT *, row_number() OVER () as "rowNumberForGetBottom" FROM ${
-      quoteIdentifier(simpleTable.name)
-    }${options.conditions ? ` WHERE ${options.conditions}` : ""}
+                SELECT *, row_number() OVER () as "rowNumberForGetBottom" FROM ${quoteIdentifier(
+                  simpleTable.name,
+                )}${options.conditions ? ` WHERE ${options.conditions}` : ""}
             )
             SELECT * FROM "numberedRowsForGetBottom" ORDER BY "rowNumberForGetBottom" DESC LIMIT ${count};`,
     mergeOptions(simpleTable, {

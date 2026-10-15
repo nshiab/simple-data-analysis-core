@@ -15,9 +15,9 @@ export default function addCharacterCount(
     needsSchema: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "addCharacterCount()");
-      return `SELECT *, LENGTH(${quoteIdentifier(column)}) AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      return `SELECT *, LENGTH(${quoteIdentifier(column)}) AS ${quoteIdentifier(
+        newColumn,
+      )} FROM ${input}`;
     },
   });
 }

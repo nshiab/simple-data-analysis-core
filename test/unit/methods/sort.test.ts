@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should sort one number column ascendingly", async () => {
+test("should sort one number column ascendingly", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
@@ -9,7 +10,7 @@ Deno.test("should sort one number column ascendingly", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1, key2: "Roi", key3: "A" },
     { key1: 2, key2: "Alambic", key3: "B" },
     { key1: 4, key2: "Extérieur", key3: "B" },
@@ -21,7 +22,7 @@ Deno.test("should sort one number column ascendingly", async () => {
   await sdb.close();
 });
 
-Deno.test("should sort one column with spaces in its name", async () => {
+test("should sort one column with spaces in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "column 1": 2 }, { "column 1": 1 }]);
@@ -29,19 +30,19 @@ Deno.test("should sort one column with spaces in its name", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [{ "column 1": 1 }, { "column 1": 2 }]);
+  expect(data).toStrictEqual([{ "column 1": 1 }, { "column 1": 2 }]);
 
   await sdb.close();
 });
 
-Deno.test("should sort one number column descendingly", async () => {
+test("should sort one number column descendingly", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort({ key1: "desc" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 900, key2: "Zéphir", key3: "A" },
     { key1: 56.7, key2: "Éléphant", key3: "A" },
     { key1: 5, key2: "À l'ouest", key3: "A" },
@@ -53,7 +54,7 @@ Deno.test("should sort one number column descendingly", async () => {
   await sdb.close();
 });
 
-Deno.test("should sort one text column ascendingly with a specific language", async () => {
+test("should sort one text column ascendingly with a specific language", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
@@ -64,7 +65,7 @@ Deno.test("should sort one text column ascendingly with a specific language", as
     },
   );
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 5, key2: "À l'ouest", key3: "A" },
     { key1: 2, key2: "Alambic", key3: "B" },
     { key1: 56.7, key2: "Éléphant", key3: "A" },
@@ -76,7 +77,7 @@ Deno.test("should sort one text column ascendingly with a specific language", as
   await sdb.close();
 });
 
-Deno.test("should sort one text column descendingly with a specific language", async () => {
+test("should sort one text column descendingly with a specific language", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
@@ -88,7 +89,7 @@ Deno.test("should sort one text column descendingly with a specific language", a
   );
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 900, key2: "Zéphir", key3: "A" },
     { key1: 1, key2: "Roi", key3: "A" },
     { key1: 4, key2: "Extérieur", key3: "B" },
@@ -100,7 +101,7 @@ Deno.test("should sort one text column descendingly with a specific language", a
   await sdb.close();
 });
 
-Deno.test("should sort mutiple columns ascendingly or descendingly with a specific language", async () => {
+test("should sort mutiple columns ascendingly or descendingly with a specific language", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
@@ -112,7 +113,7 @@ Deno.test("should sort mutiple columns ascendingly or descendingly with a specif
   );
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 900, key2: "Zéphir", key3: "A" },
     { key1: 56.7, key2: "Éléphant", key3: "A" },
     { key1: 5, key2: "À l'ouest", key3: "A" },
@@ -124,14 +125,14 @@ Deno.test("should sort mutiple columns ascendingly or descendingly with a specif
   await sdb.close();
 });
 
-Deno.test("should sort all columns by defaut, from left to right, in ascending order", async () => {
+test("should sort all columns by defaut, from left to right, in ascending order", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSort.csv");
   table.sort();
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1, key2: "Roi", key3: "A" },
     { key1: 2, key2: "Alambic", key3: "B" },
     { key1: 4, key2: "Extérieur", key3: "B" },
@@ -143,7 +144,7 @@ Deno.test("should sort all columns by defaut, from left to right, in ascending o
   await sdb.close();
 });
 
-Deno.test("sort captures mutable arguments when queued", async () => {
+test("sort captures mutable arguments when queued", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("capturedSort");
   const order: { value: "asc" | "desc" } = { value: "asc" };
@@ -154,12 +155,12 @@ Deno.test("sort captures mutable arguments when queued", async () => {
   order.value = "desc";
   lang.value = "fr";
 
-  assertEquals(await table.getData(), [{ value: 1 }, { value: 2 }]);
-  assertEquals(options, { lang: { value: "fr" } });
+  expect(await table.getData()).toStrictEqual([{ value: 1 }, { value: 2 }]);
+  expect(options).toStrictEqual({ lang: { value: "fr" } });
   await sdb.close();
 });
 
-Deno.test("order-preserving fused methods retain an earlier sort", async () => {
+test("order-preserving fused methods retain an earlier sort", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sortBeforeTransforms");
 
@@ -175,14 +176,14 @@ Deno.test("order-preserving fused methods retain an earlier sort", async () => {
     .selectColumns(["name", "value"])
     .getData();
 
-  assertEquals(result, [
+  expect(result).toStrictEqual([
     { name: "c", value: 3 },
     { name: "b", value: 2 },
   ]);
   await sdb.close();
 });
 
-Deno.test("grouped results can be sorted deterministically afterward", async () => {
+test("grouped results can be sorted deterministically afterward", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sortedGroups");
 
@@ -195,30 +196,33 @@ Deno.test("grouped results can be sorted deterministically afterward", async () 
     .summarize({ columns: "value", by: "group", stats: "sum" })
     .sort({ group: "asc" });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { group: "a", sum: 3 },
     { group: "b", sum: 6 },
   ]);
   await sdb.close();
 });
 
-Deno.test("aggregated results can be sorted deterministically afterward", async () => {
+test("aggregated results can be sorted deterministically afterward", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sortedAggregates");
 
   table
-    .loadArray([{ x: 1, y: 10 }, { x: 2, y: 20 }])
+    .loadArray([
+      { x: 1, y: 10 },
+      { x: 2, y: 20 },
+    ])
     .summarize({ columns: ["x", "y"], stats: "sum" })
     .sort({ column: "desc" });
 
-  assertEquals(await table.getData(), [
+  expect(await table.getData()).toStrictEqual([
     { column: "y", sum: 30 },
     { column: "x", sum: 3 },
   ]);
   await sdb.close();
 });
 
-Deno.test("sampled results can be sorted deterministically afterward", async () => {
+test("sampled results can be sorted deterministically afterward", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("sortedSample");
 
@@ -228,6 +232,6 @@ Deno.test("sampled results can be sorted deterministically afterward", async () 
     .sort({ value: "asc" });
 
   const values = (await table.getData()).map((row) => row.value as number);
-  assertEquals(values, [...values].sort((a, b) => a - b));
+  expect(values).toStrictEqual([...values].sort((a, b) => a - b));
   await sdb.close();
 });

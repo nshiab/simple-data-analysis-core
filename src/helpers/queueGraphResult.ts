@@ -21,9 +21,8 @@ export default function queueGraphResult(
   result: GraphResult,
 ): SimpleTable {
   const resolvedOutput = resolveOutputTable(simpleTable, result.outputTable);
-  const outputTable = typeof resolvedOutput === "string"
-    ? simpleTable.sdb.newTable(resolvedOutput)
-    : simpleTable;
+  const outputTable =
+    typeof resolvedOutput === "string" ? simpleTable.sdb.newTable(resolvedOutput) : simpleTable;
 
   if (outputTable !== simpleTable) {
     queueOp(outputTable, {

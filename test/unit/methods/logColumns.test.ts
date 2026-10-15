@@ -1,23 +1,17 @@
-import { assertEquals } from "@std/assert";
+import { test, expect, vi } from "vite-plus/test";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should log columns", async () => {
+test("logColumns prints column names and optionally their types", async () => {
   const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.logColumns();
-
-  // How to test?
-  assertEquals(true, true);
-  await sdb.close();
-});
-Deno.test("should log columns with types", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/employees.csv");
-  await table.logColumns({ types: true });
-
-  // How to test?
-  assertEquals(true, true);
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    const table = sdb.newTable("names").loadArray([{ name: "Alice", age: 30 }]);
+    await table.logColumns();
+    expect(log.mock.calls.at(-1)).toStrictEqual([["name", "age"]]);
+    await table.logColumns({ types: true });
+    expect(log.mock.calls.at(-1)).toStrictEqual([{ name: "VARCHAR", age: "DOUBLE" }]);
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });

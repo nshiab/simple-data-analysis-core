@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should add a whitespace-delimited word count for each string", async () => {
+test("should add a whitespace-delimited word count for each string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   const paragraphs = `First paragraph.
@@ -23,7 +25,7 @@ Second paragraph has words.`;
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { text: "hello world", wordCount: 2 },
     { text: "hello   world\tfrom\nSDA", wordCount: 4 },
     { text: paragraphs, wordCount: 6 },
@@ -38,7 +40,7 @@ Second paragraph has words.`;
   await sdb.close();
 });
 
-Deno.test("should support spaces in source and new column names", async () => {
+test("should support spaces in source and new column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ "full text": "hello world" }]);
@@ -46,11 +48,11 @@ Deno.test("should support spaces in source and new column names", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [{ "full text": "hello world", "word count": 2 }]);
+  expect(data).toStrictEqual([{ "full text": "hello world", "word count": 2 }]);
   await sdb.close();
 });
 
-Deno.test("should reject an existing output column", async () => {
+test("should reject an existing output column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ text: "hello world" }]);

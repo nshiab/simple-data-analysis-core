@@ -1,10 +1,11 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import {
   getIndexCacheStrategy,
   type IndexDefinition,
 } from "../../../src/helpers/indexDefinitions.ts";
 
-Deno.test("should define the cache strategy for every index kind", () => {
+test("should define the cache strategy for every index kind", () => {
   const indexes: IndexDefinition[] = [
     {
       kind: "fts",
@@ -21,5 +22,5 @@ Deno.test("should define the cache strategy for every index kind", () => {
     },
   ];
 
-  assertEquals(indexes.map(getIndexCacheStrategy), ["persist", "rebuild"]);
+  expect(indexes.map(getIndexCacheStrategy)).toStrictEqual(["persist", "rebuild"]);
 });

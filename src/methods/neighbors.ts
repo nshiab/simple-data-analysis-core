@@ -29,34 +29,24 @@ export default function neighbors(
   if (typeof targetColumn !== "string") {
     throw new TypeError("neighbors() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("neighbors() options must be an object.");
   }
   if (
     options.direction !== undefined &&
     !["outgoing", "incoming", "both"].includes(options.direction)
   ) {
-    throw new TypeError(
-      'neighbors() options.direction must be "outgoing", "incoming", or "both".',
-    );
+    throw new TypeError('neighbors() options.direction must be "outgoing", "incoming", or "both".');
   }
   if (
     options.outputTable !== undefined &&
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "neighbors() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("neighbors() options.outputTable must be a string or boolean.");
   }
 
-  const preparedStarts = prepareGraphStarts(
-    startNodes,
-    "neighbors()",
-    "startNodes",
-  );
+  const preparedStarts = prepareGraphStarts(startNodes, "neighbors()", "startNodes");
   options = structuredClone(options);
   const direction = options.direction ?? "outgoing";
   const parameters = {
@@ -75,21 +65,9 @@ export default function neighbors(
       return preparedStarts.values;
     },
     buildSelect: (input, schema) =>
-      neighborsSelect(
-        input,
-        schema,
-        sourceColumn,
-        targetColumn,
-        preparedStarts,
-        direction,
-      ),
+      neighborsSelect(input, schema, sourceColumn, targetColumn, preparedStarts, direction),
     outputSchema: (schema) => {
-      const endpoints = validateStarts(
-        schema,
-        sourceColumn,
-        targetColumn,
-        preparedStarts,
-      );
+      const endpoints = validateStarts(schema, sourceColumn, targetColumn, preparedStarts);
       return { start: endpoints.idType, node: endpoints.idType };
     },
   });
@@ -101,14 +79,7 @@ function validateStarts(
   target: string,
   starts: PreparedGraphStarts,
 ) {
-  return validateGraphStarts(
-    schema,
-    source,
-    target,
-    starts,
-    "neighbors()",
-    "startNodes",
-  );
+  return validateGraphStarts(schema, source, target, starts, "neighbors()", "startNodes");
 }
 
 function neighborsSelect(
@@ -128,11 +99,7 @@ function neighborsSelect(
     "neighbors()",
     "startNodes",
   );
-  const relations = prepared.relationNames([
-    "graph_starts",
-    "graph_edges",
-    "neighbor_matches",
-  ]);
+  const relations = prepared.relationNames(["graph_starts", "graph_edges", "neighbor_matches"]);
   const startsRelation = relations.graph_starts;
   const edgesRelation = relations.graph_edges;
   const matchesRelation = relations.neighbor_matches;
@@ -143,32 +110,24 @@ function neighborsSelect(
       ${prepared.edges(direction)}
     ), ${matchesRelation} AS (
       SELECT ${quoteIdentifier("starts")}.${quoteIdentifier("start")},
-        ${quoteIdentifier("edges")}.${quoteIdentifier("__to")} AS ${
-    quoteIdentifier("node")
-  },
-        ${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")} AS ${
-    quoteIdentifier("__start_key")
-  },
-        ${quoteIdentifier("edges")}.${quoteIdentifier("__to_key")} AS ${
-    quoteIdentifier("__node_key")
-  }
+        ${quoteIdentifier("edges")}.${quoteIdentifier("__to")} AS ${quoteIdentifier("node")},
+        ${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")} AS ${quoteIdentifier(
+          "__start_key",
+        )},
+        ${quoteIdentifier("edges")}.${quoteIdentifier("__to_key")} AS ${quoteIdentifier(
+          "__node_key",
+        )}
       FROM ${edgesRelation} AS ${quoteIdentifier("edges")}
       INNER JOIN ${startsRelation} AS ${quoteIdentifier("starts")}
         ON ${quoteIdentifier("edges")}.${quoteIdentifier("__from_key")} =
-          ${
-    prepared.key(
-      `${quoteIdentifier("starts")}.${quoteIdentifier("start")}`,
-    )
-  }
+          ${prepared.key(`${quoteIdentifier("starts")}.${quoteIdentifier("start")}`)}
     )
     SELECT ${quoteIdentifier("start")}, ${quoteIdentifier("node")}
     FROM (
-      SELECT DISTINCT ${quoteIdentifier("start")}, ${
-    quoteIdentifier("node")
-  }, ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")}
+      SELECT DISTINCT ${quoteIdentifier("start")}, ${quoteIdentifier(
+        "node",
+      )}, ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")}
       FROM ${matchesRelation}
     ) AS ${quoteIdentifier("distinct_neighbors")}
-    ORDER BY ${quoteIdentifier("__start_key")}, ${
-    quoteIdentifier("__node_key")
-  }`;
+    ORDER BY ${quoteIdentifier("__start_key")}, ${quoteIdentifier("__node_key")}`;
 }

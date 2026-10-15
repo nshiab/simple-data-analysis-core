@@ -67,8 +67,8 @@ export default async function queryDB(
   },
 ): Promise<
   | {
-    [key: string]: unknown;
-  }[]
+      [key: string]: unknown;
+    }[]
   | null
 > {
   if (simple instanceof SimpleTable) {
@@ -76,18 +76,11 @@ export default async function queryDB(
   }
   const sdb = simple instanceof SimpleTable ? simple.sdb : simple;
   if (sdb.lifecycleState === "closed") {
-    throw new Error(
-      `${
-        options.method ?? "The query"
-      } cannot run because its SimpleDB is closed.`,
-    );
+    throw new Error(`${options.method ?? "The query"} cannot run because its SimpleDB is closed.`);
   }
   if (simple instanceof SimpleDB && simple.connection === undefined) {
     await simple.start();
-  } else if (
-    simple instanceof SimpleTable &&
-    simple.connection === undefined
-  ) {
+  } else if (simple instanceof SimpleTable && simple.connection === undefined) {
     await simple.sdb.start();
     simple.db = simple.sdb.db;
     simple.connection = simple.sdb.connection;
@@ -111,12 +104,7 @@ export default async function queryDB(
   };
 
   if (options.returnData) {
-    const data = await simple.runQuery(
-      query,
-      simple.connection,
-      true,
-      executionOptions,
-    );
+    const data = await simple.runQuery(query, simple.connection, true, executionOptions);
     if (data === null) {
       throw new Error("data is null");
     }

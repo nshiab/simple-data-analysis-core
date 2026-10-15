@@ -1,18 +1,16 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should tidy data by stacking mutiple columns", async () => {
+test("should tidy data by stacking mutiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataUntidy.json");
-  table.longer(
-    ["2015", "2016", "2017", "2018", "2019", "2020"],
-    "year",
-    "employees",
-  );
+  table.longer(["2015", "2016", "2017", "2018", "2019", "2020"], "year", "employees");
 
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Department: "accounting", year: "2015", employees: 10 },
     { Department: "accounting", year: "2016", employees: 9 },
     { Department: "accounting", year: "2017", employees: 15 },
@@ -33,7 +31,7 @@ Deno.test("should tidy data by stacking mutiple columns", async () => {
     { Department: "sales", year: "2020", employees: 27 },
   ]);
 });
-Deno.test("should tidy data by stacking mutiple columns with spaces in their names", async () => {
+test("should tidy data by stacking mutiple columns with spaces in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -73,7 +71,7 @@ Deno.test("should tidy data by stacking mutiple columns with spaces in their nam
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       "Department or unit": "accounting and others",
       "multiples years": "2015",
@@ -167,19 +165,15 @@ Deno.test("should tidy data by stacking mutiple columns with spaces in their nam
   ]);
   await sdb.close();
 });
-Deno.test("should tidy data by stacking mutiple columns and by including null values", async () => {
+test("should tidy data by stacking mutiple columns and by including null values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataUntidyWithNulls.json");
-  table.longer(
-    ["2015", "2016", "2017", "2018", "2019", "2020"],
-    "year",
-    "employees",
-  );
+  table.longer(["2015", "2016", "2017", "2018", "2019", "2020"], "year", "employees");
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Department: "accounting", year: "2015", employees: null },
     { Department: "accounting", year: "2016", employees: 9 },
     { Department: "accounting", year: "2017", employees: 15 },
@@ -202,7 +196,7 @@ Deno.test("should tidy data by stacking mutiple columns and by including null va
   await sdb.close();
 });
 
-Deno.test("should tidy data with columns with $ in their names", async () => {
+test("should tidy data with columns with $ in their names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -430,141 +424,141 @@ Deno.test("should tidy data with columns with $ in their names", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { "v0": "1998", "crime": "Breaking and entering", "rate": "1,163" },
-    { "v0": "1998", "crime": "Motor vehicle theft", "rate": "550" },
-    { "v0": "1998", "crime": "Robbery", "rate": "109" },
-    { "v0": "1998", "crime": "Shoplifting of $5,000 or under", "rate": "303" },
-    { "v0": "1998", "crime": "Theft of $5,000 or under", "rate": "2,063" },
-    { "v0": "1999", "crime": "Breaking and entering", "rate": "1,046" },
-    { "v0": "1999", "crime": "Motor vehicle theft", "rate": "531" },
-    { "v0": "1999", "crime": "Robbery", "rate": "107" },
-    { "v0": "1999", "crime": "Shoplifting of $5,000 or under", "rate": "276" },
-    { "v0": "1999", "crime": "Theft of $5,000 or under", "rate": "1,955" },
-    { "v0": "2000", "crime": "Breaking and entering", "rate": "956" },
-    { "v0": "2000", "crime": "Motor vehicle theft", "rate": "522" },
-    { "v0": "2000", "crime": "Robbery", "rate": "100" },
-    { "v0": "2000", "crime": "Shoplifting of $5,000 or under", "rate": "262" },
-    { "v0": "2000", "crime": "Theft of $5,000 or under", "rate": "1,899" },
-    { "v0": "2001", "crime": "Breaking and entering", "rate": "901" },
-    { "v0": "2001", "crime": "Motor vehicle theft", "rate": "544" },
-    { "v0": "2001", "crime": "Robbery", "rate": "99" },
-    { "v0": "2001", "crime": "Shoplifting of $5,000 or under", "rate": "258" },
-    { "v0": "2001", "crime": "Theft of $5,000 or under", "rate": "1,869" },
-    { "v0": "2002", "crime": "Breaking and entering", "rate": "879" },
-    { "v0": "2002", "crime": "Motor vehicle theft", "rate": "516" },
-    { "v0": "2002", "crime": "Robbery", "rate": "96" },
-    { "v0": "2002", "crime": "Shoplifting of $5,000 or under", "rate": "257" },
-    { "v0": "2002", "crime": "Theft of $5,000 or under", "rate": "1,871" },
-    { "v0": "2003", "crime": "Breaking and entering", "rate": "901" },
-    { "v0": "2003", "crime": "Motor vehicle theft", "rate": "551" },
-    { "v0": "2003", "crime": "Robbery", "rate": "101" },
-    { "v0": "2003", "crime": "Shoplifting of $5,000 or under", "rate": "271" },
-    { "v0": "2003", "crime": "Theft of $5,000 or under", "rate": "1,944" },
-    { "v0": "2004", "crime": "Breaking and entering", "rate": "864" },
-    { "v0": "2004", "crime": "Motor vehicle theft", "rate": "532" },
-    { "v0": "2004", "crime": "Robbery", "rate": "97" },
-    { "v0": "2004", "crime": "Shoplifting of $5,000 or under", "rate": "240" },
-    { "v0": "2004", "crime": "Theft of $5,000 or under", "rate": "1,871" },
-    { "v0": "2005", "crime": "Breaking and entering", "rate": "811" },
-    { "v0": "2005", "crime": "Motor vehicle theft", "rate": "496" },
-    { "v0": "2005", "crime": "Robbery", "rate": "101" },
-    { "v0": "2005", "crime": "Shoplifting of $5,000 or under", "rate": "237" },
-    { "v0": "2005", "crime": "Theft of $5,000 or under", "rate": "1,743" },
-    { "v0": "2006", "crime": "Breaking and entering", "rate": "772" },
-    { "v0": "2006", "crime": "Motor vehicle theft", "rate": "487" },
-    { "v0": "2006", "crime": "Robbery", "rate": "106" },
-    { "v0": "2006", "crime": "Shoplifting of $5,000 or under", "rate": "245" },
-    { "v0": "2006", "crime": "Theft of $5,000 or under", "rate": "1,652" },
-    { "v0": "2007", "crime": "Breaking and entering", "rate": "704" },
-    { "v0": "2007", "crime": "Motor vehicle theft", "rate": "443" },
-    { "v0": "2007", "crime": "Robbery", "rate": "104" },
-    { "v0": "2007", "crime": "Shoplifting of $5,000 or under", "rate": "234" },
-    { "v0": "2007", "crime": "Theft of $5,000 or under", "rate": "1,530" },
-    { "v0": "2008", "crime": "Breaking and entering", "rate": "635" },
-    { "v0": "2008", "crime": "Motor vehicle theft", "rate": "378" },
-    { "v0": "2008", "crime": "Robbery", "rate": "97" },
-    { "v0": "2008", "crime": "Shoplifting of $5,000 or under", "rate": "238" },
-    { "v0": "2008", "crime": "Theft of $5,000 or under", "rate": "1,425" },
-    { "v0": "2009", "crime": "Breaking and entering", "rate": "613" },
-    { "v0": "2009", "crime": "Motor vehicle theft", "rate": "321" },
-    { "v0": "2009", "crime": "Robbery", "rate": "97" },
-    { "v0": "2009", "crime": "Shoplifting of $5,000 or under", "rate": "276" },
-    { "v0": "2009", "crime": "Theft of $5,000 or under", "rate": "1,386" },
-    { "v0": "2010", "crime": "Breaking and entering", "rate": "579" },
-    { "v0": "2010", "crime": "Motor vehicle theft", "rate": "272" },
-    { "v0": "2010", "crime": "Robbery", "rate": "90" },
-    { "v0": "2010", "crime": "Shoplifting of $5,000 or under", "rate": "268" },
-    { "v0": "2010", "crime": "Theft of $5,000 or under", "rate": "1,286" },
-    { "v0": "2011", "crime": "Breaking and entering", "rate": "528" },
-    { "v0": "2011", "crime": "Motor vehicle theft", "rate": "240" },
-    { "v0": "2011", "crime": "Robbery", "rate": "87" },
-    { "v0": "2011", "crime": "Shoplifting of $5,000 or under", "rate": "260" },
-    { "v0": "2011", "crime": "Theft of $5,000 or under", "rate": "1,197" },
-    { "v0": "2012", "crime": "Breaking and entering", "rate": "508" },
-    { "v0": "2012", "crime": "Motor vehicle theft", "rate": "225" },
-    { "v0": "2012", "crime": "Robbery", "rate": "80" },
-    { "v0": "2012", "crime": "Shoplifting of $5,000 or under", "rate": "264" },
-    { "v0": "2012", "crime": "Theft of $5,000 or under", "rate": "1,175" },
-    { "v0": "2013", "crime": "Breaking and entering", "rate": "446" },
-    { "v0": "2013", "crime": "Motor vehicle theft", "rate": "207" },
-    { "v0": "2013", "crime": "Robbery", "rate": "66" },
-    { "v0": "2013", "crime": "Shoplifting of $5,000 or under", "rate": "250" },
-    { "v0": "2013", "crime": "Theft of $5,000 or under", "rate": "1,096" },
-    { "v0": "2014", "crime": "Breaking and entering", "rate": "429" },
-    { "v0": "2014", "crime": "Motor vehicle theft", "rate": "209" },
-    { "v0": "2014", "crime": "Robbery", "rate": "59" },
-    { "v0": "2014", "crime": "Shoplifting of $5,000 or under", "rate": "265" },
-    { "v0": "2014", "crime": "Theft of $5,000 or under", "rate": "1,069" },
-    { "v0": "2015", "crime": "Breaking and entering", "rate": "447" },
-    { "v0": "2015", "crime": "Motor vehicle theft", "rate": "221" },
-    { "v0": "2015", "crime": "Robbery", "rate": "62" },
-    { "v0": "2015", "crime": "Shoplifting of $5,000 or under", "rate": "280" },
-    { "v0": "2015", "crime": "Theft of $5,000 or under", "rate": "1,085" },
-    { "v0": "2016", "crime": "Breaking and entering", "rate": "444" },
-    { "v0": "2016", "crime": "Motor vehicle theft", "rate": "219" },
-    { "v0": "2016", "crime": "Robbery", "rate": "61" },
-    { "v0": "2016", "crime": "Shoplifting of $5,000 or under", "rate": "285" },
-    { "v0": "2016", "crime": "Theft of $5,000 or under", "rate": "1,091" },
-    { "v0": "2017", "crime": "Breaking and entering", "rate": "437" },
-    { "v0": "2017", "crime": "Motor vehicle theft", "rate": "233" },
-    { "v0": "2017", "crime": "Robbery", "rate": "62" },
-    { "v0": "2017", "crime": "Shoplifting of $5,000 or under", "rate": "296" },
-    { "v0": "2017", "crime": "Theft of $5,000 or under", "rate": "1,086" },
-    { "v0": "2018", "crime": "Breaking and entering", "rate": "432" },
-    { "v0": "2018", "crime": "Motor vehicle theft", "rate": "232" },
-    { "v0": "2018", "crime": "Robbery", "rate": "61" },
-    { "v0": "2018", "crime": "Shoplifting of $5,000 or under", "rate": "337" },
-    { "v0": "2018", "crime": "Theft of $5,000 or under", "rate": "1,099" },
-    { "v0": "2019", "crime": "Breaking and entering", "rate": "429" },
-    { "v0": "2019", "crime": "Motor vehicle theft", "rate": "231" },
-    { "v0": "2019", "crime": "Robbery", "rate": "62" },
-    { "v0": "2019", "crime": "Shoplifting of $5,000 or under", "rate": "373" },
-    { "v0": "2019", "crime": "Theft of $5,000 or under", "rate": "1,129" },
-    { "v0": "2020", "crime": "Breaking and entering", "rate": "363" },
-    { "v0": "2020", "crime": "Motor vehicle theft", "rate": "206" },
-    { "v0": "2020", "crime": "Robbery", "rate": "51" },
-    { "v0": "2020", "crime": "Shoplifting of $5,000 or under", "rate": "240" },
-    { "v0": "2020", "crime": "Theft of $5,000 or under", "rate": "910" },
-    { "v0": "2021", "crime": "Breaking and entering", "rate": "329" },
-    { "v0": "2021", "crime": "Motor vehicle theft", "rate": "218" },
-    { "v0": "2021", "crime": "Robbery", "rate": "49" },
-    { "v0": "2021", "crime": "Shoplifting of $5,000 or under", "rate": "249" },
-    { "v0": "2021", "crime": "Theft of $5,000 or under", "rate": "879" },
-    { "v0": "2022", "crime": "Breaking and entering", "rate": "342" },
-    { "v0": "2022", "crime": "Motor vehicle theft", "rate": "272" },
-    { "v0": "2022", "crime": "Robbery", "rate": "56" },
-    { "v0": "2022", "crime": "Shoplifting of $5,000 or under", "rate": "329" },
-    { "v0": "2022", "crime": "Theft of $5,000 or under", "rate": "964" },
-    { "v0": "2023", "crime": "Breaking and entering", "rate": "326" },
-    { "v0": "2023", "crime": "Motor vehicle theft", "rate": "286" },
-    { "v0": "2023", "crime": "Robbery", "rate": "59" },
-    { "v0": "2023", "crime": "Shoplifting of $5,000 or under", "rate": "387" },
-    { "v0": "2023", "crime": "Theft of $5,000 or under", "rate": "924" },
+  expect(data).toStrictEqual([
+    { v0: "1998", crime: "Breaking and entering", rate: "1,163" },
+    { v0: "1998", crime: "Motor vehicle theft", rate: "550" },
+    { v0: "1998", crime: "Robbery", rate: "109" },
+    { v0: "1998", crime: "Shoplifting of $5,000 or under", rate: "303" },
+    { v0: "1998", crime: "Theft of $5,000 or under", rate: "2,063" },
+    { v0: "1999", crime: "Breaking and entering", rate: "1,046" },
+    { v0: "1999", crime: "Motor vehicle theft", rate: "531" },
+    { v0: "1999", crime: "Robbery", rate: "107" },
+    { v0: "1999", crime: "Shoplifting of $5,000 or under", rate: "276" },
+    { v0: "1999", crime: "Theft of $5,000 or under", rate: "1,955" },
+    { v0: "2000", crime: "Breaking and entering", rate: "956" },
+    { v0: "2000", crime: "Motor vehicle theft", rate: "522" },
+    { v0: "2000", crime: "Robbery", rate: "100" },
+    { v0: "2000", crime: "Shoplifting of $5,000 or under", rate: "262" },
+    { v0: "2000", crime: "Theft of $5,000 or under", rate: "1,899" },
+    { v0: "2001", crime: "Breaking and entering", rate: "901" },
+    { v0: "2001", crime: "Motor vehicle theft", rate: "544" },
+    { v0: "2001", crime: "Robbery", rate: "99" },
+    { v0: "2001", crime: "Shoplifting of $5,000 or under", rate: "258" },
+    { v0: "2001", crime: "Theft of $5,000 or under", rate: "1,869" },
+    { v0: "2002", crime: "Breaking and entering", rate: "879" },
+    { v0: "2002", crime: "Motor vehicle theft", rate: "516" },
+    { v0: "2002", crime: "Robbery", rate: "96" },
+    { v0: "2002", crime: "Shoplifting of $5,000 or under", rate: "257" },
+    { v0: "2002", crime: "Theft of $5,000 or under", rate: "1,871" },
+    { v0: "2003", crime: "Breaking and entering", rate: "901" },
+    { v0: "2003", crime: "Motor vehicle theft", rate: "551" },
+    { v0: "2003", crime: "Robbery", rate: "101" },
+    { v0: "2003", crime: "Shoplifting of $5,000 or under", rate: "271" },
+    { v0: "2003", crime: "Theft of $5,000 or under", rate: "1,944" },
+    { v0: "2004", crime: "Breaking and entering", rate: "864" },
+    { v0: "2004", crime: "Motor vehicle theft", rate: "532" },
+    { v0: "2004", crime: "Robbery", rate: "97" },
+    { v0: "2004", crime: "Shoplifting of $5,000 or under", rate: "240" },
+    { v0: "2004", crime: "Theft of $5,000 or under", rate: "1,871" },
+    { v0: "2005", crime: "Breaking and entering", rate: "811" },
+    { v0: "2005", crime: "Motor vehicle theft", rate: "496" },
+    { v0: "2005", crime: "Robbery", rate: "101" },
+    { v0: "2005", crime: "Shoplifting of $5,000 or under", rate: "237" },
+    { v0: "2005", crime: "Theft of $5,000 or under", rate: "1,743" },
+    { v0: "2006", crime: "Breaking and entering", rate: "772" },
+    { v0: "2006", crime: "Motor vehicle theft", rate: "487" },
+    { v0: "2006", crime: "Robbery", rate: "106" },
+    { v0: "2006", crime: "Shoplifting of $5,000 or under", rate: "245" },
+    { v0: "2006", crime: "Theft of $5,000 or under", rate: "1,652" },
+    { v0: "2007", crime: "Breaking and entering", rate: "704" },
+    { v0: "2007", crime: "Motor vehicle theft", rate: "443" },
+    { v0: "2007", crime: "Robbery", rate: "104" },
+    { v0: "2007", crime: "Shoplifting of $5,000 or under", rate: "234" },
+    { v0: "2007", crime: "Theft of $5,000 or under", rate: "1,530" },
+    { v0: "2008", crime: "Breaking and entering", rate: "635" },
+    { v0: "2008", crime: "Motor vehicle theft", rate: "378" },
+    { v0: "2008", crime: "Robbery", rate: "97" },
+    { v0: "2008", crime: "Shoplifting of $5,000 or under", rate: "238" },
+    { v0: "2008", crime: "Theft of $5,000 or under", rate: "1,425" },
+    { v0: "2009", crime: "Breaking and entering", rate: "613" },
+    { v0: "2009", crime: "Motor vehicle theft", rate: "321" },
+    { v0: "2009", crime: "Robbery", rate: "97" },
+    { v0: "2009", crime: "Shoplifting of $5,000 or under", rate: "276" },
+    { v0: "2009", crime: "Theft of $5,000 or under", rate: "1,386" },
+    { v0: "2010", crime: "Breaking and entering", rate: "579" },
+    { v0: "2010", crime: "Motor vehicle theft", rate: "272" },
+    { v0: "2010", crime: "Robbery", rate: "90" },
+    { v0: "2010", crime: "Shoplifting of $5,000 or under", rate: "268" },
+    { v0: "2010", crime: "Theft of $5,000 or under", rate: "1,286" },
+    { v0: "2011", crime: "Breaking and entering", rate: "528" },
+    { v0: "2011", crime: "Motor vehicle theft", rate: "240" },
+    { v0: "2011", crime: "Robbery", rate: "87" },
+    { v0: "2011", crime: "Shoplifting of $5,000 or under", rate: "260" },
+    { v0: "2011", crime: "Theft of $5,000 or under", rate: "1,197" },
+    { v0: "2012", crime: "Breaking and entering", rate: "508" },
+    { v0: "2012", crime: "Motor vehicle theft", rate: "225" },
+    { v0: "2012", crime: "Robbery", rate: "80" },
+    { v0: "2012", crime: "Shoplifting of $5,000 or under", rate: "264" },
+    { v0: "2012", crime: "Theft of $5,000 or under", rate: "1,175" },
+    { v0: "2013", crime: "Breaking and entering", rate: "446" },
+    { v0: "2013", crime: "Motor vehicle theft", rate: "207" },
+    { v0: "2013", crime: "Robbery", rate: "66" },
+    { v0: "2013", crime: "Shoplifting of $5,000 or under", rate: "250" },
+    { v0: "2013", crime: "Theft of $5,000 or under", rate: "1,096" },
+    { v0: "2014", crime: "Breaking and entering", rate: "429" },
+    { v0: "2014", crime: "Motor vehicle theft", rate: "209" },
+    { v0: "2014", crime: "Robbery", rate: "59" },
+    { v0: "2014", crime: "Shoplifting of $5,000 or under", rate: "265" },
+    { v0: "2014", crime: "Theft of $5,000 or under", rate: "1,069" },
+    { v0: "2015", crime: "Breaking and entering", rate: "447" },
+    { v0: "2015", crime: "Motor vehicle theft", rate: "221" },
+    { v0: "2015", crime: "Robbery", rate: "62" },
+    { v0: "2015", crime: "Shoplifting of $5,000 or under", rate: "280" },
+    { v0: "2015", crime: "Theft of $5,000 or under", rate: "1,085" },
+    { v0: "2016", crime: "Breaking and entering", rate: "444" },
+    { v0: "2016", crime: "Motor vehicle theft", rate: "219" },
+    { v0: "2016", crime: "Robbery", rate: "61" },
+    { v0: "2016", crime: "Shoplifting of $5,000 or under", rate: "285" },
+    { v0: "2016", crime: "Theft of $5,000 or under", rate: "1,091" },
+    { v0: "2017", crime: "Breaking and entering", rate: "437" },
+    { v0: "2017", crime: "Motor vehicle theft", rate: "233" },
+    { v0: "2017", crime: "Robbery", rate: "62" },
+    { v0: "2017", crime: "Shoplifting of $5,000 or under", rate: "296" },
+    { v0: "2017", crime: "Theft of $5,000 or under", rate: "1,086" },
+    { v0: "2018", crime: "Breaking and entering", rate: "432" },
+    { v0: "2018", crime: "Motor vehicle theft", rate: "232" },
+    { v0: "2018", crime: "Robbery", rate: "61" },
+    { v0: "2018", crime: "Shoplifting of $5,000 or under", rate: "337" },
+    { v0: "2018", crime: "Theft of $5,000 or under", rate: "1,099" },
+    { v0: "2019", crime: "Breaking and entering", rate: "429" },
+    { v0: "2019", crime: "Motor vehicle theft", rate: "231" },
+    { v0: "2019", crime: "Robbery", rate: "62" },
+    { v0: "2019", crime: "Shoplifting of $5,000 or under", rate: "373" },
+    { v0: "2019", crime: "Theft of $5,000 or under", rate: "1,129" },
+    { v0: "2020", crime: "Breaking and entering", rate: "363" },
+    { v0: "2020", crime: "Motor vehicle theft", rate: "206" },
+    { v0: "2020", crime: "Robbery", rate: "51" },
+    { v0: "2020", crime: "Shoplifting of $5,000 or under", rate: "240" },
+    { v0: "2020", crime: "Theft of $5,000 or under", rate: "910" },
+    { v0: "2021", crime: "Breaking and entering", rate: "329" },
+    { v0: "2021", crime: "Motor vehicle theft", rate: "218" },
+    { v0: "2021", crime: "Robbery", rate: "49" },
+    { v0: "2021", crime: "Shoplifting of $5,000 or under", rate: "249" },
+    { v0: "2021", crime: "Theft of $5,000 or under", rate: "879" },
+    { v0: "2022", crime: "Breaking and entering", rate: "342" },
+    { v0: "2022", crime: "Motor vehicle theft", rate: "272" },
+    { v0: "2022", crime: "Robbery", rate: "56" },
+    { v0: "2022", crime: "Shoplifting of $5,000 or under", rate: "329" },
+    { v0: "2022", crime: "Theft of $5,000 or under", rate: "964" },
+    { v0: "2023", crime: "Breaking and entering", rate: "326" },
+    { v0: "2023", crime: "Motor vehicle theft", rate: "286" },
+    { v0: "2023", crime: "Robbery", rate: "59" },
+    { v0: "2023", crime: "Shoplifting of $5,000 or under", rate: "387" },
+    { v0: "2023", crime: "Theft of $5,000 or under", rate: "924" },
   ]);
 });
 
-Deno.test("should throw when namesTo/valuesTo collides with a remaining column, instead of silently renaming it", async () => {
+test("should throw when namesTo/valuesTo collides with a remaining column, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ Department: "accounting", c1: 1, c2: 2 }]);
@@ -578,7 +572,7 @@ Deno.test("should throw when namesTo/valuesTo collides with a remaining column, 
   await sdb.close();
 });
 
-Deno.test("should allow valuesTo to reuse the name of one of the pivoted columns", async () => {
+test("should allow valuesTo to reuse the name of one of the pivoted columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ Department: "accounting", c1: 1, c2: 2 }]);
@@ -588,7 +582,7 @@ Deno.test("should allow valuesTo to reuse the name of one of the pivoted columns
   table.longer(["c1", "c2"], "key", "c1");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Department: "accounting", key: "c1", c1: 1 },
     { Department: "accounting", key: "c2", c1: 2 },
   ]);

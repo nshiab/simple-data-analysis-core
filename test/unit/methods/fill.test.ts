@@ -1,9 +1,10 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should fill empty cells for one column", async () => {
+test("should fill empty cells for one column", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb
+  const table = sdb
     .newTable()
     .loadArray([
       { first: "Nael" },
@@ -18,7 +19,7 @@ Deno.test("should fill empty cells for one column", async () => {
     ]);
   table.fill("first");
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { first: "Nael" },
     { first: "Nael" },
     { first: "Nael" },
@@ -32,9 +33,9 @@ Deno.test("should fill empty cells for one column", async () => {
   await sdb.close();
 });
 
-Deno.test("should fill empty cells for multiple columns", async () => {
+test("should fill empty cells for multiple columns", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb.newTable().loadArray([
+  const table = sdb.newTable().loadArray([
     { first: "Nael", job: "Senior producer" },
     { first: null, job: null },
     { first: null, job: "Senior producer" },
@@ -47,7 +48,7 @@ Deno.test("should fill empty cells for multiple columns", async () => {
   ]);
   table.fill(["first", "job"]);
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { first: "Nael", job: "Senior producer" },
     { first: "Nael", job: "Senior producer" },
     { first: "Nael", job: "Senior producer" },
@@ -61,9 +62,9 @@ Deno.test("should fill empty cells for multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should fill empty cells by one grouping column", async () => {
+test("should fill empty cells by one grouping column", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb.newTable().loadArray([
+  const table = sdb.newTable().loadArray([
     { group: "A", value: 1 },
     { group: "B", value: null },
     { group: "A", value: null },
@@ -72,7 +73,7 @@ Deno.test("should fill empty cells by one grouping column", async () => {
   ]);
   table.fill("value", { by: "group" });
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { group: "A", value: 1 },
     { group: "B", value: null },
     { group: "A", value: 1 },
@@ -82,9 +83,9 @@ Deno.test("should fill empty cells by one grouping column", async () => {
   await sdb.close();
 });
 
-Deno.test("should fill empty cells by multiple columns", async () => {
+test("should fill empty cells by multiple columns", async () => {
   const sdb = new SimpleDB();
-  const table = await sdb.newTable().loadArray([
+  const table = sdb.newTable().loadArray([
     { group: "A", subgroup: "X", value: 10 },
     { group: "A", subgroup: "X", value: null },
     { group: "A", subgroup: "Y", value: null },
@@ -93,7 +94,7 @@ Deno.test("should fill empty cells by multiple columns", async () => {
   ]);
   table.fill("value", { by: ["group", "subgroup"] });
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { group: "A", subgroup: "X", value: 10 },
     { group: "A", subgroup: "X", value: 10 },
     { group: "A", subgroup: "Y", value: null },
@@ -105,21 +106,17 @@ Deno.test("should fill empty cells by multiple columns", async () => {
 
 // Linear interpolation
 
-Deno.test("should linearly interpolate NULL values between non-NULL values", async () => {
+test("should linearly interpolate NULL values between non-NULL values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  table.loadArray([
-    { val: 1 },
-    { val: null },
-    { val: 3 },
-  ]);
+  table.loadArray([{ val: 1 }, { val: null }, { val: 3 }]);
   table.fill("val", { interpolate: true });
   const data = await table.getData();
-  assertEquals(data, [{ val: 1 }, { val: 2 }, { val: 3 }]);
+  expect(data).toStrictEqual([{ val: 1 }, { val: 2 }, { val: 3 }]);
   await sdb.close();
 });
 
-Deno.test("should linearly interpolate NULL values independently within each category", async () => {
+test("should linearly interpolate NULL values independently within each category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -132,7 +129,7 @@ Deno.test("should linearly interpolate NULL values independently within each cat
   ]);
   table.fill("val", { by: "group", interpolate: true });
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { group: "a", val: 1 },
     { group: "a", val: 2 },
     { group: "a", val: 3 },
@@ -143,21 +140,17 @@ Deno.test("should linearly interpolate NULL values independently within each cat
   await sdb.close();
 });
 
-Deno.test("should linearly extrapolate NULL values at the end of the table", async () => {
+test("should linearly extrapolate NULL values at the end of the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
-  table.loadArray([
-    { val: 2 },
-    { val: 4 },
-    { val: null },
-  ]);
+  table.loadArray([{ val: 2 }, { val: 4 }, { val: null }]);
   table.fill("val", { interpolate: true });
   const data = await table.getData();
-  assertEquals(data, [{ val: 2 }, { val: 4 }, { val: 6 }]);
+  expect(data).toStrictEqual([{ val: 2 }, { val: 4 }, { val: 6 }]);
   await sdb.close();
 });
 
-Deno.test("should interpolate proportionally to a non-equidistant x column", async () => {
+test("should interpolate proportionally to a non-equidistant x column", async () => {
   // x=[0,1,3], y=[0,null,6]: y at x=1 should be 2 (1/3 of the way), not 3 (row midpoint)
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
@@ -168,11 +161,15 @@ Deno.test("should interpolate proportionally to a non-equidistant x column", asy
   ]);
   table.fill("y", { interpolate: true, interpolateBy: "x" });
   const data = await table.getData();
-  assertEquals(data, [{ x: 0, y: 0 }, { x: 1, y: 2 }, { x: 3, y: 6 }]);
+  expect(data).toStrictEqual([
+    { x: 0, y: 0 },
+    { x: 1, y: 2 },
+    { x: 3, y: 6 },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should interpolate proportionally to a non-equidistant x column within by", async () => {
+test("should interpolate proportionally to a non-equidistant x column within by", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -190,7 +187,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column withi
   });
   const data = await table.getData();
   // Row order is preserved (not reordered by group)
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { group: "a", x: 0, y: 0 },
     { group: "a", x: 1, y: 2 },
     { group: "a", x: 3, y: 6 },
@@ -201,7 +198,7 @@ Deno.test("should interpolate proportionally to a non-equidistant x column withi
   await sdb.close();
 });
 
-Deno.test("should assume interpolate: true when only interpolateBy is set", async () => {
+test("should assume interpolate: true when only interpolateBy is set", async () => {
   // x=[0,1,3], y=[0,null,6]: y at x=1 should be 2 (1/3 of the way), not 3 (row midpoint)
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
@@ -212,11 +209,15 @@ Deno.test("should assume interpolate: true when only interpolateBy is set", asyn
   ]);
   table.fill("y", { interpolateBy: "x" });
   const data = await table.getData();
-  assertEquals(data, [{ x: 0, y: 0 }, { x: 1, y: 2 }, { x: 3, y: 6 }]);
+  expect(data).toStrictEqual([
+    { x: 0, y: 0 },
+    { x: 1, y: 2 },
+    { x: 3, y: 6 },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should throw when interpolateBy is set and interpolate is false", async () => {
+test("should throw when interpolateBy is set and interpolate is false", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -230,17 +231,14 @@ Deno.test("should throw when interpolateBy is set and interpolate is false", asy
   } catch (e) {
     error = e as Error;
   }
-  assertEquals(
-    error?.message,
-    "interpolate cannot be false when interpolateBy is set.",
-  );
+  expect(error?.message).toStrictEqual("interpolate cannot be false when interpolateBy is set.");
   await table.run();
   await sdb.close();
 });
 
 // Row order preservation tests
 
-Deno.test("should preserve row order after grouped fill() with interpolation", async () => {
+test("should preserve row order after grouped fill() with interpolation", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   const input = [
@@ -255,8 +253,8 @@ Deno.test("should preserve row order after grouped fill() with interpolation", a
   table.fill("val", { by: "group", interpolate: true });
   const data = await table.getData();
   // Row order must match input order (by id)
-  assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5, 6]);
-  assertEquals(data, [
+  expect(data.map((r) => r.id)).toStrictEqual([1, 2, 3, 4, 5, 6]);
+  expect(data).toStrictEqual([
     { id: 1, group: "a", val: 10 },
     { id: 2, group: "b", val: 100 },
     { id: 3, group: "a", val: 15 },
@@ -267,7 +265,7 @@ Deno.test("should preserve row order after grouped fill() with interpolation", a
   await sdb.close();
 });
 
-Deno.test("should preserve row order after simple fill() with no options", async () => {
+test("should preserve row order after simple fill() with no options", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   const input = [
@@ -281,8 +279,8 @@ Deno.test("should preserve row order after simple fill() with no options", async
   table.fill("val");
   const data = await table.getData();
   // Row order must match input order (by id)
-  assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5]);
-  assertEquals(data, [
+  expect(data.map((r) => r.id)).toStrictEqual([1, 2, 3, 4, 5]);
+  expect(data).toStrictEqual([
     { id: 1, val: "A" },
     { id: 2, val: "A" },
     { id: 3, val: "A" },
@@ -292,7 +290,7 @@ Deno.test("should preserve row order after simple fill() with no options", async
   await sdb.close();
 });
 
-Deno.test("should preserve row order after grouped fill() with interpolateBy", async () => {
+test("should preserve row order after grouped fill() with interpolateBy", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   const input = [
@@ -310,8 +308,8 @@ Deno.test("should preserve row order after grouped fill() with interpolateBy", a
   });
   const data = await table.getData();
   // Row order must match input order (by id)
-  assertEquals(data.map((r) => r.id), [1, 2, 3, 4, 5, 6]);
-  assertEquals(data, [
+  expect(data.map((r) => r.id)).toStrictEqual([1, 2, 3, 4, 5, 6]);
+  expect(data).toStrictEqual([
     { id: 1, group: "a", x: 0, y: 0 },
     { id: 2, group: "b", x: 0, y: 10 },
     { id: 3, group: "a", x: 1, y: 2 },

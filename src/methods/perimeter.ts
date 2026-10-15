@@ -18,18 +18,19 @@ export default function perimeter(
     needsSpatial: true,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "perimeter()");
-      const column = typeof options.column === "string"
-        ? options.column
-        : findGeoColumnFromSchema(types, "perimeter()", simpleTable.name);
+      const column =
+        typeof options.column === "string"
+          ? options.column
+          : findGeoColumnFromSchema(types, "perimeter()", simpleTable.name);
       let expression = `ST_Perimeter_Spheroid(${quoteIdentifier(column)}) ${
         options.unit === "km" ? "/ 1000" : ""
       }`;
       if (typeof options.decimals === "number") {
         expression = `ROUND(${expression}, ${options.decimals})`;
       }
-      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      return `SELECT *, CAST(${expression} AS DOUBLE) AS ${quoteIdentifier(
+        newColumn,
+      )} FROM ${input}`;
     },
   });
 }

@@ -39,13 +39,9 @@ function sortSelect(
   } else {
     for (const column of Object.keys(order)) {
       if (options.lang && options.lang[column]) {
-        query += `\n${quoteIdentifier(column)} COLLATE ${
-          options.lang[column]
-        } ${
-          order[
-            column
-          ].toUpperCase()
-        },`;
+        query += `\n${quoteIdentifier(column)} COLLATE ${options.lang[column]} ${order[
+          column
+        ].toUpperCase()},`;
       } else {
         query += `\n${quoteIdentifier(column)} ${order[column].toUpperCase()},`;
       }

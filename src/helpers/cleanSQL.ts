@@ -1,14 +1,11 @@
 import scanSQL from "./scanSQL.ts";
 
-export default function cleanSQL(
-  query: string,
-  syntax: "js" | "sql" = "js",
-): string {
+export default function cleanSQL(query: string, syntax: "js" | "sql" = "js"): string {
   if (syntax === "sql") return query;
   const tokens = scanSQL(query);
   const significant = tokens.filter((token) => token.kind !== "trivia");
   const original = significant.map((token) =>
-    token.kind === "sql" ? token.text.toUpperCase() : ""
+    token.kind === "sql" ? token.text.toUpperCase() : "",
   );
   const pairs = new Map<number, number>();
   const stack: number[] = [];
@@ -117,9 +114,10 @@ export default function cleanSQL(
   // Only infer types that are explicit in the expression. Never infer a
   // column's or an arbitrary function's type from its name or argument types.
   function isTextType(start: number, end: number): boolean {
-    return textTypes.has(original[start]) &&
-      (start + 1 === end ||
-        (original[start + 1] === "(" && pairs.get(start + 1) === end - 1));
+    return (
+      textTypes.has(original[start]) &&
+      (start + 1 === end || (original[start + 1] === "(" && pairs.get(start + 1) === end - 1))
+    );
   }
 
   function concatenable(start: number, end: number): boolean {
@@ -144,8 +142,7 @@ export default function cleanSQL(
     }
     if (original[start] === "[" && pairs.get(start) === end - 1) return true;
     if (end === start + 1) {
-      return significant[start].kind === "quoted" &&
-        !significant[start].text.startsWith('"');
+      return significant[start].kind === "quoted" && !significant[start].text.startsWith('"');
     }
     if (original[start + 1] === "(" && pairs.get(start + 1) === end - 1) {
       if (["CONCAT", "CONCAT_WS"].includes(original[start])) return true;
@@ -162,18 +159,12 @@ export default function cleanSQL(
     return false;
   }
 
-  function obviousConcatenation(
-    pipe: number,
-    start: number,
-    end: number,
-  ): boolean {
+  function obviousConcatenation(pipe: number, start: number, end: number): boolean {
     const [left, right] = range(
       pipe,
       start,
       end,
-      (i) =>
-        (boundaries.has(original[i]) && !betweenAnd.has(i)) ||
-        original[i] === "||",
+      (i) => (boundaries.has(original[i]) && !betweenAnd.has(i)) || original[i] === "||",
     );
     // A literal in a comparison is not evidence that the comparison returns text.
     if (predicate(left, pipe) && predicate(pipe + 1, right)) return false;
@@ -191,11 +182,13 @@ export default function cleanSQL(
         // Do not use the RHS literal of a preceding comparison to infer OR's
         // meaning (text = 'a' || active). Other operands can still prove concat.
         if (
-          !(operand === groupStart &&
-            (comparisons.has(original[groupStart - 1]) ||
-              betweenAnd.has(groupStart - 1))) &&
+          !(
+            operand === groupStart &&
+            (comparisons.has(original[groupStart - 1]) || betweenAnd.has(groupStart - 1))
+          ) &&
           concatenable(operand, i)
-        ) return true;
+        )
+          return true;
         operand = i + 1;
       }
     }
@@ -214,10 +207,9 @@ export default function cleanSQL(
       if (
         ["WITH", "EXPLAIN", "PREPARE"].includes(statement) &&
         ["SELECT", "INSERT", "UPDATE", "DELETE", "MERGE"].includes(word)
-      ) statement = word;
-      if (
-        word === "UPDATE" && ["DO", "THEN"].includes(original[i - 1])
-      ) statement = word;
+      )
+        statement = word;
+      if (word === "UPDATE" && ["DO", "THEN"].includes(original[i - 1])) statement = word;
       if (["(", "[", "CASE"].includes(word)) {
         const close = pairs.get(i);
         if (close !== undefined) {
@@ -250,10 +242,10 @@ export default function cleanSQL(
         inSetClause = false;
         assignmentTarget = false;
       } else if (
-        word === "SET" && !inSetClause &&
+        word === "SET" &&
+        !inSetClause &&
         (statement === "UPDATE" ||
-          (statement === "SET" &&
-            (original[i + 1] === "VARIABLE" || original[i + 2] === "=")))
+          (statement === "SET" && (original[i + 1] === "VARIABLE" || original[i + 2] === "=")))
       ) {
         inSetClause = true;
         assignmentTarget = true;
@@ -279,5 +271,8 @@ export default function cleanSQL(
     }
   }
   normalize(0, significant.length);
-  return tokens.map((token) => token.text).join("").trim();
+  return tokens
+    .map((token) => token.text)
+    .join("")
+    .trim();
 }

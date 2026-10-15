@@ -1,4 +1,9 @@
-import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { stripVTControlCharacters } from "node:util";
+import { test, expect, vi } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+import { statSync as nodeStatSync, readFileSync as nodeReadFileSync } from "node:fs";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
@@ -11,41 +16,41 @@ if (!existsSync(output)) {
   mkdirSync(output);
 }
 
-Deno.test("should instantiate a SimpleDB class", async () => {
+test("should instantiate a SimpleDB class", async () => {
   const sdb = new SimpleDB();
-  assertEquals(sdb instanceof SimpleDB, true);
+  expect(sdb instanceof SimpleDB).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should start and instantiate a db", async () => {
+test("should start and instantiate a db", async () => {
   const sdb = new SimpleDB();
   await sdb.start();
-  assertEquals(sdb.db instanceof DuckDBInstance, true);
+  expect(sdb.db instanceof DuckDBInstance).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should start and return an instance of SimpleDB", async () => {
+test("should start and return an instance of SimpleDB", async () => {
   const sdb = new SimpleDB();
   const returned = await sdb.start();
-  assertEquals(returned instanceof SimpleDB, true);
+  expect(returned instanceof SimpleDB).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should start and instantiate a connection", async () => {
+test("should start and instantiate a connection", async () => {
   const sdb = new SimpleDB();
   await sdb.start();
-  assertEquals(sdb.connection instanceof DuckDBConnection, true);
+  expect(sdb.connection instanceof DuckDBConnection).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should run a custom query and return the result", async () => {
+test("should run a custom query and return the result", async () => {
   const sdb = new SimpleDB();
   const result = await sdb.customQuery(`select 42 as result`, {
     returnData: true,
   });
-  assertEquals(result, [{ result: 42 }]);
+  expect(result).toStrictEqual([{ result: 42 }]);
   await sdb.close();
 });
 
-Deno.test("should create tables without names", async () => {
+test("should create tables without names", async () => {
   const sdb = new SimpleDB();
   // Table 2 first to make sure results are sorted alphabetically
   const table1 = sdb.newTable("table2");
@@ -55,14 +60,11 @@ Deno.test("should create tables without names", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["table1", "table2"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table1", "table2"]);
   await sdb.close();
 });
 
-Deno.test("should create multiple tables without names before loading data", async () => {
+test("should create multiple tables without names before loading data", async () => {
   const sdb = new SimpleDB();
 
   const table1 = sdb.newTable();
@@ -73,28 +75,22 @@ Deno.test("should create multiple tables without names before loading data", asy
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["table1", "table2"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table1", "table2"]);
   await sdb.close();
 });
 
-Deno.test("should create tables with names", async () => {
+test("should create tables with names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("tableWithName");
   table.loadData(["test/data/files/data.json"]);
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["tableWithName"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["tableWithName"]);
   await sdb.close();
 });
 
-Deno.test("should remove one table as an instance", async () => {
+test("should remove one table as an instance", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -105,14 +101,11 @@ Deno.test("should remove one table as an instance", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["table2"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table2"]);
   await sdb.close();
 });
 
-Deno.test("should remove one table as a string", async () => {
+test("should remove one table as a string", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -123,14 +116,11 @@ Deno.test("should remove one table as a string", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["table2"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table2"]);
   await sdb.close();
 });
 
-Deno.test("should remove multiple tables as instances or strings", async () => {
+test("should remove multiple tables as instances or strings", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -141,11 +131,11 @@ Deno.test("should remove multiple tables as instances or strings", async () => {
 
   const tables = sdb.getTables();
 
-  assertEquals(tables, []);
+  expect(tables).toStrictEqual([]);
   await sdb.close();
 });
 
-Deno.test("should remove all tables with 'all'", async () => {
+test("should remove all tables with 'all'", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -158,11 +148,11 @@ Deno.test("should remove all tables with 'all'", async () => {
 
   const tables = sdb.getTables();
 
-  assertEquals(tables, []);
+  expect(tables).toStrictEqual([]);
   await sdb.close();
 });
 
-Deno.test("should select one table as an instance", async () => {
+test("should select one table as an instance", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -173,13 +163,10 @@ Deno.test("should select one table as an instance", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["table1"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table1"]);
   await sdb.close();
 });
-Deno.test("should select one table as a string", async () => {
+test("should select one table as a string", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -190,14 +177,11 @@ Deno.test("should select one table as a string", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["table1"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table1"]);
   await sdb.close();
 });
 
-Deno.test("should select multiple tables as instances or strings", async () => {
+test("should select multiple tables as instances or strings", async () => {
   const sdb = new SimpleDB();
   const table1 = sdb.newTable("table1");
   table1.loadData(["test/data/files/data.json"]);
@@ -210,88 +194,76 @@ Deno.test("should select multiple tables as instances or strings", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(tables.sort((a, b) => (a > b ? 1 : -1)), ["table1", "table2"]);
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["table1", "table2"]);
   await sdb.close();
 });
 
-Deno.test("should retrieve a SimpleTable instance", async () => {
+test("should retrieve a SimpleTable instance", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
   tableJSON.loadData(["test/data/files/data.json"]);
 
   const tableJsonAgain = await sdb.getTable("tableJSON");
 
-  assertEquals(
-    {
-      instance: tableJsonAgain,
-      name: tableJsonAgain.name,
-      data: await tableJsonAgain.getData(),
-    },
-    {
-      instance: tableJSON,
-      name: tableJSON.name,
-      data: await tableJSON.getData(),
-    },
-  );
+  expect({
+    instance: tableJsonAgain,
+    name: tableJsonAgain.name,
+    data: await tableJsonAgain.getData(),
+  }).toStrictEqual({
+    instance: tableJSON,
+    name: tableJSON.name,
+    data: await tableJSON.getData(),
+  });
   await sdb.close();
 });
-Deno.test("should list available tables when getTable cannot find one", async () => {
+test("should list available tables when getTable cannot find one", async () => {
   const sdb = new SimpleDB();
   sdb.newTable("votes");
   sdb.newTable("districts");
 
   const error = await assertRejects(() => sdb.getTable("missing"));
   assert(error instanceof Error);
-  assertEquals(
-    error.message,
+  expect(error.message).toStrictEqual(
     `getTable() could not find table "missing". Available tables: "districts", "votes".`,
   );
 
   await sdb.close();
 });
-Deno.test("should list missing and available tables for selectTables", async () => {
+test("should list missing and available tables for selectTables", async () => {
   const sdb = new SimpleDB();
   const votes = sdb.newTable("votes");
   votes.loadArray([{ id: 1 }]);
   const districts = sdb.newTable("districts");
   districts.loadArray([{ id: 1 }]);
 
-  const error = await assertRejects(() =>
-    sdb.selectTables(["missingVotes", "missingDistricts"])
-  );
+  const error = await assertRejects(() => sdb.selectTables(["missingVotes", "missingDistricts"]));
   assert(error instanceof Error);
-  assertEquals(
-    error.message,
+  expect(error.message).toStrictEqual(
     `selectTables() could not find tables "missingDistricts", "missingVotes". Available tables: "districts", "votes".`,
   );
 
   await sdb.close();
 });
-Deno.test("should retrieve a SimpleTable instance with geo data", async () => {
+test("should retrieve a SimpleTable instance with geo data", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableGEOJSON");
-  tableJSON.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  tableJSON.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
 
   const tableJsonAgain = await sdb.getTable("tableGEOJSON");
 
-  assertEquals(
-    {
-      instance: tableJsonAgain,
-      name: tableJsonAgain.name,
-      data: await tableJsonAgain.getGeoData(),
-    },
-    {
-      instance: tableJSON,
-      name: tableJSON.name,
-      data: await tableJSON.getGeoData(),
-    },
-  );
+  expect({
+    instance: tableJsonAgain,
+    name: tableJsonAgain.name,
+    data: await tableJsonAgain.getGeoData(),
+  }).toStrictEqual({
+    instance: tableJSON,
+    name: tableJSON.name,
+    data: await tableJSON.getGeoData(),
+  });
   await sdb.close();
 });
 
-Deno.test("should return table names", async () => {
+test("should return table names", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
   tableJSON.loadData(["test/data/files/data.json"]);
@@ -300,47 +272,47 @@ Deno.test("should return table names", async () => {
 
   const tables = await sdb.getTableNames();
 
-  assertEquals(
-    tables.sort((a, b) => (a > b ? 1 : -1)),
-    ["tableCSV", "tableJSON"],
-  );
+  expect(tables.sort((a, b) => (a > b ? 1 : -1))).toStrictEqual(["tableCSV", "tableJSON"]);
   await sdb.close();
 });
 
-Deno.test("should return true when a table exists", async () => {
+test("should return true when a table exists", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
   tableJSON.loadData(["test/data/files/data.json"]);
 
-  assertEquals(await sdb.hasTable("tableJSON"), true);
+  expect(await sdb.hasTable("tableJSON")).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should return false when a table doesn't exist", async () => {
+test("should return false when a table doesn't exist", async () => {
   const sdb = new SimpleDB();
   const tableJSON = sdb.newTable("tableJSON");
   tableJSON.loadData(["test/data/files/data.json"]);
 
-  assertEquals(await sdb.hasTable("tableX"), false);
+  expect(await sdb.hasTable("tableX")).toStrictEqual(false);
   await sdb.close();
 });
 
-Deno.test("should return the DuckDB extensions", async () => {
+test("should return the DuckDB extensions", async () => {
   const sdb = new SimpleDB();
   await sdb.getExtensions();
   // Not sure how to test. Different depending on the environment?
   await sdb.close();
 });
 
-Deno.test("should close the db", async () => {
+test("should close the db", async () => {
   const sdb = new SimpleDB();
   await sdb.close();
   // How to test?
 });
 
-Deno.test("should explain when the connection closes before an async method finishes", async () => {
+test("should explain when the connection closes before an async method finishes", async () => {
   const sdb = new SimpleDB();
-  const logPromise = sdb.newTable("test").loadArray([{ value: 1 }]).log();
+  const logPromise = sdb
+    .newTable("test")
+    .loadArray([{ value: 1 }])
+    .log();
   const rejection = assertRejects(
     () => logPromise,
     SDAError,
@@ -351,7 +323,7 @@ Deno.test("should explain when the connection closes before an async method fini
   await rejection;
 });
 
-Deno.test("file-backed close executes all pending work before cleanup", async () => {
+test("file-backed close executes all pending work before cleanup", async () => {
   const file = `${output}pending_done.db`;
   const tempDir = `${output}pending_done.tmp`;
   const sdb = new SimpleDB({
@@ -368,15 +340,15 @@ Deno.test("file-backed close executes all pending work before cleanup", async ()
 
   await sdb.close();
 
-  assertEquals(first.pendingOps.length, 0);
-  assertEquals(second.pendingOps.length, 0);
-  assertEquals(existsSync(tempDir), false);
+  expect(first.pendingOps.length).toStrictEqual(0);
+  expect(second.pendingOps.length).toStrictEqual(0);
+  expect(existsSync(tempDir)).toStrictEqual(false);
   await assertRejects(() => sdb.connection.run("SELECT 1"));
 });
 
-Deno.test("should log SQL when logSQL is true", async () => {
+test("should log SQL when logSQL is true", async () => {
   const sdb = new SimpleDB({ logSQL: true });
-  const test = await sdb.newTable("test");
+  const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
 
   // How to test?
@@ -384,36 +356,60 @@ Deno.test("should log SQL when logSQL is true", async () => {
   await sdb.close();
 });
 
-Deno.test("should log the types", async () => {
+test("should apply the default types option when logging", async () => {
   const sdb = new SimpleDB({ typesToLog: true });
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  // await test.log();
-  // How to test?
-  await test.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb
+      .newTable("typed")
+      .loadArray([{ name: "Alice" }])
+      .log();
+    const output = log.mock.calls.flat().join("\n");
+    expect(output).toContain("VARCHAR/string");
+    expect(output).toContain("Alice");
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
 
-Deno.test("should log a specific number of rows", async () => {
+test("should apply the default row limit when logging", async () => {
   const sdb = new SimpleDB({ rowsToLog: 2 });
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  // await test.log();
-  // How to test?
-  await test.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb
+      .newTable("limited")
+      .loadArray([{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }])
+      .log();
+    const output = log.mock.calls.flat().join("\n");
+    expect(output).toContain("Alice");
+    expect(output).toContain("Bob");
+    expect(output).not.toContain("Charlie");
+    expect(log.mock.calls.at(-1)).toStrictEqual(["3 rows in total / showing 2 rows"]);
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
 
-Deno.test("should log a specific number of characters", async () => {
+test("should apply the default character limit when logging", async () => {
   const sdb = new SimpleDB({ charsToLog: 5 });
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  // await test.log();
-  // How to test?
-  await test.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb
+      .newTable("truncated")
+      .loadArray([{ name: "Charlie" }])
+      .log();
+    const output = stripVTControlCharacters(log.mock.calls.flat().join("\n"));
+    expect(output).toContain("Ch...");
+    expect(output).not.toContain("Charlie");
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
-Deno.test("should log the total duration", async () => {
+
+test("should log the total duration", async () => {
   const sdb = new SimpleDB({ logDuration: true });
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
@@ -421,7 +417,7 @@ Deno.test("should log the total duration", async () => {
   await test.run();
   await sdb.close();
 });
-Deno.test("should enable a progress bar", async () => {
+test("should enable a progress bar", async () => {
   const sdb = new SimpleDB({ progressBar: true });
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
@@ -429,7 +425,7 @@ Deno.test("should enable a progress bar", async () => {
   await test.run();
   await sdb.close();
 });
-Deno.test("should write the db", async () => {
+test("should write the db", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
@@ -438,7 +434,7 @@ Deno.test("should write the db", async () => {
   // How to test?
   await sdb.close();
 });
-Deno.test("should write the SQLite db", async () => {
+test("should write the SQLite db", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
@@ -447,7 +443,7 @@ Deno.test("should write the SQLite db", async () => {
   // How to test?
   await sdb.close();
 });
-Deno.test("should throw when writing the db with an unsupported extension", async () => {
+test("should throw when writing the db with an unsupported extension", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
   test.loadData("test/data/files/cities.csv");
@@ -461,7 +457,7 @@ Deno.test("should throw when writing the db with an unsupported extension", asyn
 
   await sdb.close();
 });
-Deno.test("should load the db", async () => {
+test("should load the db", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.db`);
@@ -472,7 +468,7 @@ Deno.test("should load the db", async () => {
   await sdb.close();
 });
 
-Deno.test("should load the sqlite db", async () => {
+test("should load the sqlite db", async () => {
   const sdb = new SimpleDB();
 
   await sdb.loadDB(`${output}database.sqlite`);
@@ -481,7 +477,7 @@ Deno.test("should load the sqlite db", async () => {
 
   await sdb.close();
 });
-Deno.test("should throw when loading a db with an unsupported extension", async () => {
+test("should throw when loading a db with an unsupported extension", async () => {
   const sdb = new SimpleDB();
   // loadDB() checks the file exists before checking its extension.
   writeFileSync(`${output}database.txt`, "");
@@ -494,23 +490,17 @@ Deno.test("should throw when loading a db with an unsupported extension", async 
 
   await sdb.close();
 });
-Deno.test("should throw when loading a db file that doesn't exist", async () => {
+test("should throw when loading a db file that doesn't exist", async () => {
   const sdb = new SimpleDB();
 
-  await assertRejects(
-    () => sdb.loadDB(`${output}notARealDatabase.db`),
-    Error,
-    "does not exist",
-  );
+  await assertRejects(() => sdb.loadDB(`${output}notARealDatabase.db`), Error, "does not exist");
 
   await sdb.close();
 });
-Deno.test("should write the db with geometries", async () => {
+test("should write the db with geometries", async () => {
   const sdb = new SimpleDB();
   const test = sdb.newTable("test");
-  test.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  test.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   // await test.logProjections();
   // await test.log();
 
@@ -518,7 +508,7 @@ Deno.test("should write the db with geometries", async () => {
   // How to test?
   await sdb.close();
 });
-Deno.test("should load the db with geometries", async () => {
+test("should load the db with geometries", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_geometry.db`);
   const test = await sdb.getTable("test");
@@ -529,20 +519,23 @@ Deno.test("should load the db with geometries", async () => {
   await test.run();
   await sdb.close();
 });
-Deno.test("should log the table names in the db", async () => {
+test("should log table names and the empty database message", async () => {
   const sdb = new SimpleDB();
-  const test = sdb.newTable("test");
-  test.loadData("test/data/files/cities.csv");
-  const test1 = sdb.newTable("test1");
-  test1.loadData("test/data/files/cities.csv");
-
-  // await sdb.logTableNames();
-
-  // How to test?
-  await sdb.run();
-  await sdb.close();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await sdb.logTableNames();
+    expect(log.mock.calls.at(-1)).toStrictEqual(["\nSimpleDB - No tables found."]);
+    sdb.newTable("first").loadArray([{ value: 1 }]);
+    sdb.newTable("second").loadArray([{ value: 2 }]);
+    await sdb.logTableNames();
+    expect(log.mock.calls.at(-1)).toStrictEqual(['\nSimpleDB - Tables:  ["first","second"]']);
+  } finally {
+    log.mockRestore();
+    await sdb.close();
+  }
 });
-Deno.test("should instantiate by creating a new file", async () => {
+
+test("should instantiate by creating a new file", async () => {
   const sdb = new SimpleDB({
     file: `${output}database_new.db`,
     overwrite: true,
@@ -554,7 +547,7 @@ Deno.test("should instantiate by creating a new file", async () => {
   await data.run();
   await sdb.close();
 });
-Deno.test("should load a db created when instantiating", async () => {
+test("should load a db created when instantiating", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_new.db`);
   const data2 = sdb.newTable("data2");
@@ -564,21 +557,19 @@ Deno.test("should load a db created when instantiating", async () => {
   await data2.run();
   await sdb.close();
 });
-Deno.test("should instantiate by creating a new file and geospatial data", async () => {
+test("should instantiate by creating a new file and geospatial data", async () => {
   const sdb = new SimpleDB({
     file: `${output}database_new_geo.db`,
     overwrite: true,
   });
   const data = sdb.newTable("geodata");
-  data.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  data.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   // await data.log();
 
   await data.run();
   await sdb.close();
 });
-Deno.test("should load a db created with geospatial data", async () => {
+test("should load a db created with geospatial data", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_new_geo.db`);
   const data = await sdb.getTable("geodata");
@@ -589,22 +580,48 @@ Deno.test("should load a db created with geospatial data", async () => {
   await data.run();
   await sdb.close();
 });
-Deno.test("should not change the enable_external_file_cache option", async () => {
+test("should preserve DuckDB's default external file cache setting for null", async () => {
+  const nativeDb = await DuckDBInstance.create(":memory:");
+  const connection = await nativeDb.connect();
   const sdb = new SimpleDB({ duckDbCache: null });
-  await sdb.start();
-  await sdb.close();
+  try {
+    const query = "SELECT current_setting('enable_external_file_cache') AS enabled";
+    const defaults = (await connection.runAndReadAll(query)).getRowObjects();
+    expect(await sdb.customQuery(query, { returnData: true })).toStrictEqual(defaults);
+  } finally {
+    connection.closeSync();
+    nativeDb.closeSync();
+    await sdb.close();
+  }
 });
-Deno.test("should set the enable_external_file_cache option to true", async () => {
+
+test("should set the enable_external_file_cache option to true", async () => {
   const sdb = new SimpleDB({ duckDbCache: true });
-  await sdb.start();
-  await sdb.close();
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('enable_external_file_cache') AS enabled", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ enabled: true }]);
+  } finally {
+    await sdb.close();
+  }
 });
-Deno.test("should set the enable_external_file_cache option to false", async () => {
+
+test("should set the enable_external_file_cache option to false", async () => {
   const sdb = new SimpleDB({ duckDbCache: false });
-  await sdb.start();
-  await sdb.close();
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('enable_external_file_cache') AS enabled", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ enabled: false }]);
+  } finally {
+    await sdb.close();
+  }
 });
-Deno.test("should respect the data types when returning data with custom query", async () => {
+
+test("should respect the data types when returning data with custom query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -616,18 +633,15 @@ Deno.test("should respect the data types when returning data with custom query",
   ];
   table.loadArray(data);
 
-  const returnedData = await sdb.customQuery(
-    `SELECT date, value FROM "${table.name}"`,
-    {
-      returnData: true,
-      table: table.name,
-    },
-  );
+  const returnedData = await sdb.customQuery(`SELECT date, value FROM "${table.name}"`, {
+    returnData: true,
+    table: table.name,
+  });
 
-  assertEquals(returnedData, data);
+  expect(returnedData).toStrictEqual(data);
   await sdb.close();
 });
-Deno.test("should create a DB with bm25 index", async () => {
+test("should create a DB with bm25 index", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/recipes.parquet");
@@ -639,19 +653,19 @@ Deno.test("should create a DB with bm25 index", async () => {
   await sdb.writeDB(`${output}database_bm25.db`, { overwrite: true });
 
   // Just making sure it's doesnt crash for now
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should load a DB with bm25 index", async () => {
+test("should load a DB with bm25 index", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_bm25.db`);
   const table = await sdb.getTable("data");
   await table.getRowCount();
   // Just making sure it's doesnt crash for now
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should instantiate by creating a new file and add bm25 index", async () => {
+test("should instantiate by creating a new file and add bm25 index", async () => {
   const sdb = new SimpleDB({
     file: `${output}database_bm25_new.db`,
     overwrite: true,
@@ -664,20 +678,20 @@ Deno.test("should instantiate by creating a new file and add bm25 index", async 
   // await table.log(1);
 
   // Just making sure it's doesnt crash for now
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await table.run();
   await sdb.close();
 });
-Deno.test("should load a DB instantiated with a file, with bm25 index", async () => {
+test("should load a DB instantiated with a file, with bm25 index", async () => {
   const sdb = new SimpleDB();
   await sdb.loadDB(`${output}database_bm25_new.db`);
   const table = await sdb.getTable("data");
   await table.getRowCount();
   // Just making sure it's doesnt crash for now
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
-Deno.test("should preserve complete index definitions when writing and loading a DB", async () => {
+test("should preserve complete index definitions when writing and loading a DB", async () => {
   const file = `${output}database_index_definitions.db`;
   const sourceSdb = new SimpleDB();
   const sourceTable = sourceSdb.newTable("articles");
@@ -685,11 +699,13 @@ Deno.test("should preserve complete index definitions when writing and loading a
     { id: 1, text: "fresh tomato pasta" },
     { id: 2, text: "chocolate cake" },
   ]);
-  await sourceTable.createFtsIndex("id", "text", {
-    stemmer: "english",
-    lower: true,
-    stripAccents: false,
-  }).run();
+  await sourceTable
+    .createFtsIndex("id", "text", {
+      stemmer: "english",
+      lower: true,
+      stripAccents: false,
+    })
+    .run();
   const expectedIndexes = structuredClone(sourceTable.indexes);
 
   await sourceSdb.writeDB(file, { overwrite: true });
@@ -698,72 +714,92 @@ Deno.test("should preserve complete index definitions when writing and loading a
   const loadedSdb = new SimpleDB();
   await loadedSdb.loadDB(file);
   const loadedTable = await loadedSdb.getTable("articles");
-  assertEquals(loadedTable.indexes, expectedIndexes);
+  expect(loadedTable.indexes).toStrictEqual(expectedIndexes);
   await loadedSdb.close();
 });
-Deno.test("should start with memoryLimit option", async () => {
-  const sdb = new SimpleDB({ memoryLimit: "1GB" });
-  await sdb.start();
-  assertEquals(true, true);
-  await sdb.close();
-});
-Deno.test("should start with tempDir option", async () => {
-  const sdb = new SimpleDB({ tempDir: `${output}tmp` });
-  await sdb.start();
-  assertEquals(true, true);
-  await sdb.close();
+test("should configure DuckDB's memory limit", async () => {
+  const sdb = new SimpleDB({ memoryLimit: "1GiB" });
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('memory_limit') AS memory", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ memory: "1.0 GiB" }]);
+  } finally {
+    await sdb.close();
+  }
 });
 
-Deno.test("persistent databases reopen existing tables and close without replacing the file", async () => {
+test("should configure DuckDB's temporary directory", async () => {
+  const tempDir = `${output}tmp`;
+  const sdb = new SimpleDB({ tempDir });
+  try {
+    expect(
+      await sdb.customQuery("SELECT current_setting('temp_directory') AS directory", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ directory: tempDir }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("persistent databases reopen existing tables and close without replacing the file", async () => {
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "persistent.duckdb");
     const first = db({ file });
-    await first.newTable("articles").loadArray([{
-      id: "one",
-      text: "tomato pasta",
-    }]).createFtsIndex("id", "text").run();
-    const inode = Deno.statSync(file).ino;
+    await first
+      .newTable("articles")
+      .loadArray([
+        {
+          id: "one",
+          text: "tomato pasta",
+        },
+      ])
+      .createFtsIndex("id", "text")
+      .run();
+    const inode = nodeStatSync(file).ino;
     await first.close();
-    assertEquals(Deno.statSync(file).ino, inode);
-    assertEquals(existsSync(join(directory, "persistent_compacted.db")), false);
+    expect(nodeStatSync(file).ino).toStrictEqual(inode);
+    expect(existsSync(join(directory, "persistent_compacted.db"))).toStrictEqual(false);
     const second = db({ file });
     const table = await second.getTable("articles");
-    assertEquals(table.indexes.length, 1);
-    assertEquals(await table.getData(), [{ id: "one", text: "tomato pasta" }]);
+    expect(table.indexes.length).toStrictEqual(1);
+    expect(await table.getData()).toStrictEqual([{ id: "one", text: "tomato pasta" }]);
     second.newTable("added").loadArray([{ id: 2 }]);
     await second.close();
     const third = db({ file, readOnly: true });
-    assertEquals(await third.getTableNames(), ["added", "articles"]);
-    assertEquals(await (await third.getTable("added")).getData(), [{ id: 2 }]);
+    expect(await third.getTableNames()).toStrictEqual(["added", "articles"]);
+    expect(await (await third.getTable("added")).getData()).toStrictEqual([{ id: 2 }]);
   });
 });
 
-Deno.test("read-only databases reject modifications and leave files unchanged", async () => {
+test("read-only databases reject modifications and leave files unchanged", async () => {
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "readonly.db");
     const source = db({ file });
     source.newTable("data").loadArray([{ id: 1 }]);
     await source.close();
-    const before = Deno.readFileSync(file);
+    const before = nodeReadFileSync(file);
     const readOnly = db({ file, readOnly: true });
     const table = await readOnly.getTable("data");
-    assertEquals(await table.getData(), [{ id: 1 }]);
+    expect(await table.getData()).toStrictEqual([{ id: 1 }]);
     await assertRejects(() => table.filter("id = 2").run(), Error, "read-only");
     await assertRejects(() => readOnly.loadDB(file), Error, "read-only");
     await readOnly.close();
-    assertEquals(Deno.readFileSync(file), before);
+    expect(nodeReadFileSync(file)).toStrictEqual(before);
     const noFile = db({ readOnly: true });
     await assertRejects(() => noFile.start(), Error, "readOnly requires");
     const incompatible = db({ file, readOnly: true, overwrite: true });
     await assertRejects(() => incompatible.start(), Error, "readOnly requires");
-    assertEquals(Deno.readFileSync(file), before);
+    expect(nodeReadFileSync(file)).toStrictEqual(before);
     const missing = db({ file: join(directory, "missing.db"), readOnly: true });
     await assertRejects(() => missing.start(), Error, "does not exist");
-    assertEquals(existsSync(join(directory, "missing.db")), false);
+    expect(existsSync(join(directory, "missing.db"))).toStrictEqual(false);
   });
 });
 
-Deno.test("explicit persistent overwrite replaces existing contents", async () => {
+test("explicit persistent overwrite replaces existing contents", async () => {
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "overwrite.db");
     const first = db({ file });
@@ -773,36 +809,40 @@ Deno.test("explicit persistent overwrite replaces existing contents", async () =
     replacement.newTable("new").loadArray([{ id: 2 }]);
     await replacement.close();
     const reopened = db({ file, readOnly: true });
-    assertEquals(await reopened.getTableNames(), ["new"]);
+    expect(await reopened.getTableNames()).toStrictEqual(["new"]);
   });
 });
 
-Deno.test("persistent VSS indexes retain definitions and physical indexes after reopening", async () => {
+test("persistent VSS indexes retain definitions and physical indexes after reopening", async () => {
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "vectors.db");
     const first = db({ file });
-    const table = first.newTable("vectors").loadArray([{
-      id: 1,
-      embedding: [0.1, 0.2, 0.3].map(Math.fround),
-    }], { columnTypes: { embedding: "FLOAT[3]" } }).createVssIndex(
-      "embedding",
-      { M: 8 },
-    );
+    const table = first
+      .newTable("vectors")
+      .loadArray(
+        [
+          {
+            id: 1,
+            embedding: [0.1, 0.2, 0.3].map(Math.fround),
+          },
+        ],
+        { columnTypes: { embedding: "FLOAT[3]" } },
+      )
+      .createVssIndex("embedding", { M: 8 });
     await first.close();
     const second = db({ file, readOnly: true });
     const restored = await second.getTable("vectors");
-    assertEquals(restored.indexes, table.indexes);
-    assertEquals(await restored.getRowCount(), 1);
-    assertEquals(
+    expect(restored.indexes).toStrictEqual(table.indexes);
+    expect(await restored.getRowCount()).toStrictEqual(1);
+    expect(
       await second.customQuery("SELECT index_name FROM duckdb_indexes();", {
         returnData: true,
       }),
-      [{ index_name: table.indexes[0].name }],
-    );
+    ).toStrictEqual([{ index_name: table.indexes[0].name }]);
   });
 });
 
-Deno.test("persistent startup rejects newTable names already saved in the file", async () => {
+test("persistent startup rejects newTable names already saved in the file", async () => {
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "existing.db");
     const first = db({ file });
@@ -810,19 +850,25 @@ Deno.test("persistent startup rejects newTable names already saved in the file",
     await first.close();
     const second = db({ file });
     await assertRejects(
-      () => second.newTable("existing").loadArray([{ id: 2 }]).run(),
+      () =>
+        second
+          .newTable("existing")
+          .loadArray([{ id: 2 }])
+          .run(),
       Error,
       "Use getTable()",
     );
     await second.close();
     const third = db({ file, readOnly: true });
-    assertEquals(await (await third.getTable("existing")).getData(), [{
-      id: 1,
-    }]);
+    expect(await (await third.getTable("existing")).getData()).toStrictEqual([
+      {
+        id: 1,
+      },
+    ]);
   });
 });
 
-Deno.test("restored default table names skip gaps without collisions", async () => {
+test("restored default table names skip gaps without collisions", async () => {
   await withDbFiles(async ({ directory, db }) => {
     const file = join(directory, "names.db");
     const first = db({ file });
@@ -831,174 +877,171 @@ Deno.test("restored default table names skip gaps without collisions", async () 
     await first.close();
     const second = db({ file });
     await second.start();
-    assertEquals(second.newTable().name, "table2");
-    assertEquals(second.newTable().name, "table4");
+    expect(second.newTable().name).toStrictEqual("table2");
+    expect(second.newTable().name).toStrictEqual("table4");
   });
 });
 
-Deno.test("expressionSyntax defaults to JS shorthand for boolean columns and projections", async () => {
+test("expressionSyntax defaults to JS shorthand for boolean columns and projections", async () => {
   const sdb = new SimpleDB();
   try {
-    assertEquals(sdb.expressionSyntax, "js");
-    const table = sdb.newTable().loadArray([{ active: true, admin: false }, {
-      active: false,
-      admin: false,
-    }]);
-    assertEquals(
-      await table.filter("active || admin").addColumn(
-        "allowed",
-        "boolean",
-        "active || admin",
-      ).getData(),
-      [{ active: true, admin: false, allowed: true }],
-    );
-    assertEquals(
-      await sdb.customQuery(
-        "SELECT false || true AS allowed, NULL == null AS missing",
-        { returnData: true },
-      ),
-      [{ allowed: true, missing: true }],
-    );
+    expect(sdb.expressionSyntax).toStrictEqual("js");
+    const table = sdb.newTable().loadArray([
+      { active: true, admin: false },
+      {
+        active: false,
+        admin: false,
+      },
+    ]);
+    expect(
+      await table
+        .filter("active || admin")
+        .addColumn("allowed", "boolean", "active || admin")
+        .getData(),
+    ).toStrictEqual([{ active: true, admin: false, allowed: true }]);
+    expect(
+      await sdb.customQuery("SELECT false || true AS allowed, NULL == null AS missing", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ allowed: true, missing: true }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("SQL expressionSyntax preserves operators and null comparisons in queued and custom queries", async () => {
+test("SQL expressionSyntax preserves operators and null comparisons in queued and custom queries", async () => {
   const sdb = new SimpleDB({ expressionSyntax: "sql" });
   try {
-    assertEquals(sdb.expressionSyntax, "sql");
+    expect(sdb.expressionSyntax).toStrictEqual("sql");
     const table = sdb.newTable().loadArray([{ first: "Jane", last: "Doe" }]);
-    assertEquals(
-      await table.addColumn("name", "string", "first || ' ' || last").filter(
-        "name = 'Jane Doe'",
-      ).getData(),
-      [{ first: "Jane", last: "Doe", name: "Jane Doe" }],
-    );
-    assertEquals(
-      await sdb.customQuery(
-        "SELECT NULL = NULL AS missing, 'a' || 'b' AS joined",
-        { returnData: true },
-      ),
-      [{ missing: null, joined: "ab" }],
-    );
+    expect(
+      await table
+        .addColumn("name", "string", "first || ' ' || last")
+        .filter("name = 'Jane Doe'")
+        .getData(),
+    ).toStrictEqual([{ first: "Jane", last: "Doe", name: "Jane Doe" }]);
+    expect(
+      await sdb.customQuery("SELECT NULL = NULL AS missing, 'a' || 'b' AS joined", {
+        returnData: true,
+      }),
+    ).toStrictEqual([{ missing: null, joined: "ab" }]);
     await assertRejects(() => sdb.customQuery("SELECT 1 === 1"));
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("expressionSyntax applies to stepwise operations and observer conditions", async () => {
+test("expressionSyntax applies to stepwise operations and observer conditions", async () => {
   for (const expressionSyntax of ["js", "sql"] as const) {
     const sdb = new SimpleDB({ expressionSyntax });
     try {
-      const table = sdb.newTable().loadArray([{ a: true, b: false }, {
-        a: false,
-        b: false,
-      }]);
+      const table = sdb.newTable().loadArray([
+        { a: true, b: false },
+        {
+          a: false,
+          b: false,
+        },
+      ]);
       await table.run();
       const condition = expressionSyntax === "js" ? "a || b" : "a OR b";
-      assertEquals(await table.getData({ conditions: condition }), [{
-        a: true,
-        b: false,
-      }]);
-      assertEquals(await table.filter(condition).getData(), [{
-        a: true,
-        b: false,
-      }]);
+      expect(await table.getData({ conditions: condition })).toStrictEqual([
+        {
+          a: true,
+          b: false,
+        },
+      ]);
+      expect(await table.filter(condition).getData()).toStrictEqual([
+        {
+          a: true,
+          b: false,
+        },
+      ]);
     } finally {
       await sdb.close();
     }
   }
 });
 
-Deno.test("generated rowToText SQL works in both expression modes", async () => {
+test("generated rowToText SQL works in both expression modes", async () => {
   for (const expressionSyntax of ["js", "sql"] as const) {
     const sdb = new SimpleDB({ expressionSyntax });
     try {
-      assertEquals(
-        await sdb.newTable().loadArray([{ name: "a || b" }]).rowToText(
-          ["name"],
-          "text",
-        ).getData(),
-        [{ name: "a || b", text: "name:\na || b" }],
-      );
+      expect(
+        await sdb
+          .newTable()
+          .loadArray([{ name: "a || b" }])
+          .rowToText(["name"], "text")
+          .getData(),
+      ).toStrictEqual([{ name: "a || b", text: "name:\na || b" }]);
     } finally {
       await sdb.close();
     }
   }
 });
 
-Deno.test("default JS mode combines obvious concatenation and logical OR across execution paths", async () => {
+test("default JS mode combines obvious concatenation and logical OR across execution paths", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadArray([
-      { first: "Jane", last: "Doe", active: true, admin: false },
-      { first: "John", last: "Doe", active: false, admin: false },
-    ]).addColumn("name", "string", "first || ' ' || last")
+    const table = sdb
+      .newTable()
+      .loadArray([
+        { first: "Jane", last: "Doe", active: true, admin: false },
+        { first: "John", last: "Doe", active: false, admin: false },
+      ])
+      .addColumn("name", "string", "first || ' ' || last")
       .filter("(active || admin) && name === 'Jane Doe'");
-    const expected = [{
-      first: "Jane",
-      last: "Doe",
-      active: true,
-      admin: false,
-      name: "Jane Doe",
-    }];
-    assertEquals(await table.getData(), expected);
+    const expected = [
+      {
+        first: "Jane",
+        last: "Doe",
+        active: true,
+        admin: false,
+        name: "Jane Doe",
+      },
+    ];
+    expect(await table.getData()).toStrictEqual(expected);
     const streamed = [];
-    for await (
-      const row of table.stream({
-        conditions: "name || '!' === 'Jane Doe!' && (active || admin)",
-      })
-    ) streamed.push(row);
-    assertEquals(streamed, expected);
-    assertEquals(
+    for await (const row of table.stream({
+      conditions: "name || '!' === 'Jane Doe!' && (active || admin)",
+    }))
+      streamed.push(row);
+    expect(streamed).toStrictEqual(expected);
+    expect(
       await sdb.customQuery(
         "SELECT ('a' || 'b') || 'c' AS text, [true] || [false] AS items, CAST(true AS VARCHAR) || '!' AS castText, false || true AS allowed",
         { returnData: true },
       ),
-      [{ text: "abc", items: [true, false], castText: "true!", allowed: true }],
-    );
+    ).toStrictEqual([{ text: "abc", items: [true, false], castText: "true!", allowed: true }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("table registration rejects case-insensitive name collisions", async () => {
+test("table registration rejects case-insensitive name collisions", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("registeredSource").loadArray([{ value: 1 }]);
-    assertThrows(
-      () => sdb.newTable("REGISTEREDSOURCE"),
-      Error,
-      "already exists",
-    );
-    assertEquals(sdb.getTables(), [table]);
-    assertEquals(await table.getData(), [{ value: 1 }]);
+    assertThrows(() => sdb.newTable("REGISTEREDSOURCE"), Error, "already exists");
+    expect(sdb.getTables()).toStrictEqual([table]);
+    expect(await table.getData()).toStrictEqual([{ value: 1 }]);
     await table.removeTable();
-    const replacement = sdb.newTable("REGISTEREDSOURCE").loadArray([
-      { value: 2 },
-    ]);
-    assertThrows(
-      () => table.loadArray([{ value: 3 }]),
-      Error,
-      "already exists",
-    );
-    assertEquals(sdb.getTables(), [replacement]);
-    assertEquals(await replacement.getData(), [{ value: 2 }]);
-    assertEquals(sdb.pendingCount, 0);
+    const replacement = sdb.newTable("REGISTEREDSOURCE").loadArray([{ value: 2 }]);
+    assertThrows(() => table.loadArray([{ value: 3 }]), Error, "already exists");
+    expect(sdb.getTables()).toStrictEqual([replacement]);
+    expect(await replacement.getData()).toStrictEqual([{ value: 2 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("table registration preserves DuckDB's distinct non-ASCII names", async () => {
+test("table registration preserves DuckDB's distinct non-ASCII names", async () => {
   const sdb = new SimpleDB();
   try {
     const upper = sdb.newTable("É").loadArray([{ value: 1 }]);
     const lower = sdb.newTable("é").loadArray([{ value: 2 }]);
-    assertEquals(await upper.getData(), [{ value: 1 }]);
-    assertEquals(await lower.getData(), [{ value: 2 }]);
+    expect(await upper.getData()).toStrictEqual([{ value: 1 }]);
+    expect(await lower.getData()).toStrictEqual([{ value: 2 }]);
   } finally {
     await sdb.close();
   }

@@ -18,8 +18,7 @@ export default function normalizeString(
     ? `regexp_replace(${lowercased}, '[[:punct:]]', '', 'g')`
     : lowercased;
 
-  const normalizedClause =
-    `trim(regexp_replace(${punctuationRemoved}, '\\s+', ' ', 'g'))`;
+  const normalizedClause = `trim(regexp_replace(${punctuationRemoved}, '\\s+', ' ', 'g'))`;
 
   queueOp(simpleTable, {
     kind: "fusable",

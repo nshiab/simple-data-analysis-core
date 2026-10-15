@@ -17,13 +17,13 @@ export default function repeatRows(
     buildSelect: (input, schema) => {
       if (options.index) {
         assertNewColumns(schema, [options.index], "repeatRows()");
-        return `SELECT *, UNNEST(range(CAST(${
-          quoteIdentifier(column)
-        } AS BIGINT))) AS ${quoteIdentifier(options.index)} FROM ${input}`;
+        return `SELECT *, UNNEST(range(CAST(${quoteIdentifier(
+          column,
+        )} AS BIGINT))) AS ${quoteIdentifier(options.index)} FROM ${input}`;
       }
-      return `SELECT * EXCLUDE (_index) FROM (SELECT *, UNNEST(range(CAST(${
-        quoteIdentifier(column)
-      } AS BIGINT))) AS _index FROM ${input})`;
+      return `SELECT * EXCLUDE (_index) FROM (SELECT *, UNNEST(range(CAST(${quoteIdentifier(
+        column,
+      )} AS BIGINT))) AS _index FROM ${input})`;
     },
   });
 }

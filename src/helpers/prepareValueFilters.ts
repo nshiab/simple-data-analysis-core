@@ -8,13 +8,11 @@ export type ValueFilter = {
 };
 
 /** Converts column filter values to bindable values while tracking nulls. */
-export default function prepareValueFilters(
-  columnsAndValues: { [key: string]: unknown },
-): ValueFilter[] {
+export default function prepareValueFilters(columnsAndValues: {
+  [key: string]: unknown;
+}): ValueFilter[] {
   return Object.entries(columnsAndValues).map(([column, value]) => {
-    const boundValues = (Array.isArray(value) ? value : [value]).map(
-      toDuckDBValue,
-    );
+    const boundValues = (Array.isArray(value) ? value : [value]).map(toDuckDBValue);
     return {
       column,
       values: boundValues.filter((boundValue) => boundValue !== null),

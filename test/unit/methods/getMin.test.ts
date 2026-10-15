@@ -1,22 +1,23 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the min value", async () => {
+test("should return the min value", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
-  assertEquals(await table.getMin("key1"), 1);
+  expect(await table.getMin("key1")).toStrictEqual(1);
   await sdb.close();
 });
-Deno.test("should return the min value even when there are spaces in the column name", async () => {
+test("should return the min value even when there are spaces in the column name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.json");
   table.renameColumns({ key1: "key 1" });
-  assertEquals(await table.getMin("key 1"), 1);
+  expect(await table.getMin("key 1")).toStrictEqual(1);
   await sdb.close();
 });
-Deno.test("should return the min value with Dates", async () => {
+test("should return the min value with Dates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -25,6 +26,6 @@ Deno.test("should return the min value with Dates", async () => {
     { key1: new Date("2022-01-01") },
     { key1: new Date("2023-01-01") },
   ]);
-  assertEquals(await table.getMin("key1"), new Date("2020-01-01"));
+  expect(await table.getMin("key1")).toStrictEqual(new Date("2020-01-01"));
   await sdb.close();
 });

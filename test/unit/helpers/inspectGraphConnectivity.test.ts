@@ -1,9 +1,11 @@
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { assertEquals, assertRejects } from "@std/assert";
+
 import buildVectorNeighbors from "../../../src/helpers/buildVectorNeighbors.ts";
 import inspectGraphConnectivity from "../../../src/helpers/inspectGraphConnectivity.ts";
 
-Deno.test("graph connectivity reports components including isolated vertices", async () => {
+test("graph connectivity reports components including isolated vertices", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -11,12 +13,12 @@ Deno.test("graph connectivity reports components including isolated vertices", a
       `CREATE TEMP TABLE edges(source INTEGER,target INTEGER);
       INSERT INTO edges VALUES (0,1),(1,2),(3,4)`,
     );
-    assertEquals(await inspectGraphConnectivity(connection, '"edges"', 6), {
+    expect(await inspectGraphConnectivity(connection, '"edges"', 6)).toStrictEqual({
       componentCount: 3,
       sizes: [3, 2, 1],
     });
     await connection.run("INSERT INTO edges VALUES (2,3),(4,5)");
-    assertEquals(await inspectGraphConnectivity(connection, '"edges"', 6), {
+    expect(await inspectGraphConnectivity(connection, '"edges"', 6)).toStrictEqual({
       componentCount: 1,
       sizes: [6],
     });
@@ -26,7 +28,7 @@ Deno.test("graph connectivity reports components including isolated vertices", a
   }
 });
 
-Deno.test("an exact fixed-k graph can omit every edge between dense groups", async () => {
+test("an exact fixed-k graph can omit every edge between dense groups", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -46,17 +48,17 @@ Deno.test("an exact fixed-k graph can omit every edge between dense groups", asy
         candidates: '"neighbor_candidates"',
       },
     );
-    assertEquals(
-      await inspectGraphConnectivity(connection, '"neighbors"', 6),
-      { componentCount: 2, sizes: [3, 3] },
-    );
+    expect(await inspectGraphConnectivity(connection, '"neighbors"', 6)).toStrictEqual({
+      componentCount: 2,
+      sizes: [3, 3],
+    });
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("graph connectivity rejects invalid edge ids", async () => {
+test("graph connectivity rejects invalid edge ids", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {

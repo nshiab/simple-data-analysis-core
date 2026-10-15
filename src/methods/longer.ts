@@ -23,9 +23,9 @@ export default function longer(
       return `SELECT * FROM (
             FROM ${input} UNPIVOT INCLUDE NULLS (
             ${quoteIdentifier(valuesTo)}
-            for ${quoteIdentifier(namesTo)} in (${
-        columns.map((d) => `${quoteIdentifier(d)}`).join(", ")
-      })
+            for ${quoteIdentifier(namesTo)} in (${columns
+              .map((d) => `${quoteIdentifier(d)}`)
+              .join(", ")})
             )
         )`;
     },

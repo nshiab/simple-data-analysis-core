@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should add the character count for each string", async () => {
+test("should add the character count for each string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   const familyEmoji = "👨‍👩‍👧‍👦";
@@ -19,7 +21,7 @@ Deno.test("should add the character count for each string", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { text: "hello", characterCount: 5 },
     { text: "café", characterCount: 4 },
     { text: "🙂", characterCount: 1 },
@@ -31,7 +33,7 @@ Deno.test("should add the character count for each string", async () => {
   await sdb.close();
 });
 
-Deno.test("should support spaces in source and new column names", async () => {
+test("should support spaces in source and new column names", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ "full text": "hello world" }]);
@@ -39,11 +41,11 @@ Deno.test("should support spaces in source and new column names", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [{ "full text": "hello world", "character count": 11 }]);
+  expect(data).toStrictEqual([{ "full text": "hello world", "character count": 11 }]);
   await sdb.close();
 });
 
-Deno.test("should count line breaks in multiple paragraphs", async () => {
+test("should count line breaks in multiple paragraphs", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   const paragraphs = `First paragraph.
@@ -56,11 +58,11 @@ Third paragraph.`;
 
   const data = await table.getData();
 
-  assertEquals(data, [{ text: paragraphs, characterCount: 53 }]);
+  expect(data).toStrictEqual([{ text: paragraphs, characterCount: 53 }]);
   await sdb.close();
 });
 
-Deno.test("should reject an existing output column", async () => {
+test("should reject an existing output column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ text: "hello" }]);

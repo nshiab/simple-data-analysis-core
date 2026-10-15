@@ -1,25 +1,19 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { runInNewContext } from "node:vm";
+import { ok as assert } from "node:assert/strict";
+import parseJson from "../../helpers/parseJson.ts";
+import { test, expect, vi } from "vite-plus/test";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 import queueAsyncBarrier from "../../../src/helpers/queueAsyncBarrier.ts";
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
 if (existsSync("./.sda-cache")) {
   rmSync("./.sda-cache", { recursive: true });
 }
 
-Deno.test("should reuse cache after callback whitespace and comment changes", async () => {
+test("should reuse cache after callback whitespace and comment changes", async () => {
   let computationRuns = 0;
   const sources = [
     "run(); table.loadArray([{ value: 1 }]);",
@@ -36,34 +30,24 @@ Deno.test("should reuse cache after callback whitespace and comment changes", as
     try {
       const table = sdb.newTable("cacheCallbackFormatting");
       // Construct source explicitly so transpilation cannot erase the changes.
-      const compute = new Function("run", `return (table) => {${source}}`)(
-        () => computationRuns++,
-      ) as (table: SimpleTable) => void;
+      const compute = runInNewContext(`(table) => {${source}}`, {
+        run: () => computationRuns++,
+      }) as (table: SimpleTable) => void;
       await table.cache(compute);
-      assertEquals(await table.getData(), [{ value: 1 }]);
+      expect(await table.getData()).toStrictEqual([{ value: 1 }]);
     } finally {
       await sdb.close();
     }
   }
-  assertEquals(computationRuns, 1);
+  expect(computationRuns).toStrictEqual(1);
 });
 
-Deno.test("should invalidate cache for meaningful whitespace and literal changes", async () => {
+test("should invalidate cache for meaningful whitespace and literal changes", async () => {
   const cases = [
     ['"a b"', '"a  b"', "a b", "a  b"],
     ["`a b`", "`a  b`", "a b", "a  b"],
-    [
-      'String(/a b/.test("a b"))',
-      'String(/a  b/.test("a b"))',
-      "true",
-      "false",
-    ],
-    [
-      '(() => { return "yes"; })() ?? "no"',
-      '(() => { return\n"yes"; })() ?? "no"',
-      "yes",
-      "no",
-    ],
+    ['String(/a b/.test("a b"))', 'String(/a  b/.test("a b"))', "true", "false"],
+    ['(() => { return "yes"; })() ?? "no"', '(() => { return\n"yes"; })() ?? "no"', "yes", "no"],
     [
       '"https://host/* first */"',
       '"https://host/* second */"',
@@ -71,154 +55,134 @@ Deno.test("should invalidate cache for meaningful whitespace and literal changes
       "https://host/* second */",
     ],
   ];
-  for (
-    const [index, [before, after, firstValue, secondValue]] of cases.entries()
-  ) {
+  for (const [index, [before, after, firstValue, secondValue]] of cases.entries()) {
     let computationRuns = 0;
-    for (
-      const [expression, expected] of [[before, firstValue], [
-        after,
-        secondValue,
-      ]]
-    ) {
+    for (const [expression, expected] of [
+      [before, firstValue],
+      [after, secondValue],
+    ]) {
       const sdb = new SimpleDB();
       try {
         const table = sdb.newTable(`cacheMeaningfulWhitespace${index}`);
-        const compute = new Function(
-          "run",
-          `return (table) => { run(); table.loadArray([{ value: ${expression} }]); }`,
-        )(() => computationRuns++) as (table: SimpleTable) => void;
+        const compute = runInNewContext(
+          `(table) => { run(); table.loadArray([{ value: ${expression} }]); }`,
+          { run: () => computationRuns++ },
+        ) as (table: SimpleTable) => void;
         await table.cache(compute);
-        assertEquals(await table.getData(), [{ value: expected }]);
+        expect(await table.getData()).toStrictEqual([{ value: expected }]);
       } finally {
         await sdb.close();
       }
     }
-    assertEquals(computationRuns, 2);
+    expect(computationRuns).toStrictEqual(2);
   }
 });
 
-Deno.test("should reuse cache after function and class input formatting changes", async () => {
+test("should reuse cache after function and class input formatting changes", async () => {
   let computationRuns = 0;
   const compute = (table: SimpleTable) => {
     computationRuns++;
     table.loadArray([{ value: 1 }]);
   };
-  for (
-    const source of [
-      "return [value => value + 1, class Strategy { run() { return 1; } }];",
-      `return [(value) => /* comment */ value+1,
+  for (const source of [
+    "return [value => value + 1, class Strategy { run() { return 1; } }];",
+    `return [(value) => /* comment */ value+1,
       class Strategy { run () { return 1 } }];`,
-    ]
-  ) {
+  ]) {
     const sdb = new SimpleDB();
     try {
       await sdb.newTable("cacheFormattedCodeInputs").cache(compute, {
-        inputs: new Function(source)() as unknown[],
+        inputs: runInNewContext(`(() => {${source}})()`) as unknown[],
       });
     } finally {
       await sdb.close();
     }
   }
-  assertEquals(computationRuns, 1);
+  expect(computationRuns).toStrictEqual(1);
 });
 
-Deno.test("should log a warning, not an error, when no data or table", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  await table.cache(() => {
-    // Nothing in cache
-  });
-  await sdb.close();
-  assertEquals(true, true);
+test("should report empty cache results and flush pending work on a cache hit", async () => {
+  let computationRuns = 0;
+  const compute = () => {
+    computationRuns++;
+  };
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    for (const cacheHit of [false, true]) {
+      const sdb = new SimpleDB({ cacheVerbose: true });
+      try {
+        const table = sdb.newTable("emptyCache");
+        const pending = sdb.newTable("pendingBeforeEmptyCache");
+        pending.loadArray([{ value: 1 }]);
+        log.mockClear();
+        await table.cache(compute);
+        expect(log).toHaveBeenCalledWith(
+          cacheHit
+            ? "No data in cache. Nothing to load."
+            : "No data in table emptyCache. Nothing stored in cache.",
+        );
+        expect(computationRuns).toStrictEqual(1);
+        expect(pending.pendingOps.length).toStrictEqual(0);
+        expect(sdb.pendingCount).toStrictEqual(0);
+        expect(await pending.getData()).toStrictEqual([{ value: 1 }]);
+      } finally {
+        await sdb.close();
+      }
+    }
+  } finally {
+    log.mockRestore();
+  }
 });
-Deno.test("should log a warning, not an error, when loading cache when no data or table", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  const pending = sdb.newTable("pendingBeforeEmptyCacheHit");
-  pending.loadArray([{ value: 1 }]);
-  await table.cache(() => {
-    // Nothing in cache
-  });
-  assertEquals(pending.pendingOps.length, 0);
-  assertEquals(sdb.pendingCount, 0);
-  await sdb.close();
-  assertEquals(true, true);
-});
-Deno.test("should cache computed values for tabular data", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  await table.cache(() => {
+
+test("should cache tabular results without repeating computations", async () => {
+  let computationRuns = 0;
+  const compute = (table: SimpleTable) => {
+    computationRuns++;
     table.loadData("test/data/files/dataSummarize.json");
-    table.summarize({
-      columns: "key2",
-      decimals: 4,
-    });
-  });
-  const data = await table.getData();
-  assertEquals(data, [
-    {
-      count: 6,
-      countDistinct: 4,
-      countNull: 2,
-      min: 1,
-      max: 22,
-      mean: 9,
-      median: 6.5,
-      sum: 36,
-      skew: 0.9669,
-      stdDev: 9.7639,
-      variance: 95.3333,
-    },
-  ]);
-  await sdb.close();
+    table.summarize({ columns: "key2", decimals: 4 });
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable("cachedSummary");
+      await table.cache(compute);
+      const data = await table.getData();
+      expect(data).toStrictEqual([
+        {
+          count: 6,
+          countDistinct: 4,
+          countNull: 2,
+          min: 1,
+          max: 22,
+          mean: 9,
+          median: 6.5,
+          sum: 36,
+          skew: 0.9669,
+          stdDev: 9.7639,
+          variance: 95.3333,
+        },
+      ]);
+      expect(computationRuns).toStrictEqual(1);
+    } finally {
+      await sdb.close();
+    }
+  }
 });
-Deno.test("should pass the table to the compute callback for chaining", async () => {
+
+test("should pass the table to the compute callback for chaining", async () => {
   const sdb = new SimpleDB();
   let callbackTable: SimpleTable | undefined;
 
-  const items = await sdb.newTable("chainedCacheCallback").cache(
-    (table) => {
-      callbackTable = table;
-      table
-        .loadArray([{ value: 1 }, { value: 2 }])
-        .filter("value > 1");
-    },
-  );
-
-  assertEquals(callbackTable, items);
-  assertEquals(await items.getData(), [{ value: 2 }]);
-  await sdb.close();
-});
-Deno.test("should load data from the cache instead of running computations", async () => {
-  const sdb = new SimpleDB({ cacheVerbose: true });
-  const table = sdb.newTable();
-  await table.cache(() => {
-    table.loadData("test/data/files/dataSummarize.json");
-    table.summarize({
-      columns: "key2",
-      decimals: 4,
-    });
+  const items = await sdb.newTable("chainedCacheCallback").cache((table) => {
+    callbackTable = table;
+    table.loadArray([{ value: 1 }, { value: 2 }]).filter("value > 1");
   });
-  const data = await table.getData();
-  assertEquals(data, [
-    {
-      count: 6,
-      countDistinct: 4,
-      countNull: 2,
-      min: 1,
-      max: 22,
-      mean: 9,
-      median: 6.5,
-      sum: 36,
-      skew: 0.9669,
-      stdDev: 9.7639,
-      variance: 95.3333,
-    },
-  ]);
+
+  expect(callbackTable).toStrictEqual(items);
+  expect(await items.getData()).toStrictEqual([{ value: 2 }]);
   await sdb.close();
 });
-Deno.test("should execute a cached load before cache resolves", async () => {
+test("should execute a cached load before cache resolves", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -234,12 +198,12 @@ Deno.test("should execute a cached load before cache resolves", async () => {
   const secondTable = secondSdb.newTable("cacheHitExecution");
   await secondTable.cache(createCompute(secondTable));
 
-  assertEquals(computationRuns, 1);
-  assertEquals(secondTable.pendingOps.map((op) => op.method), []);
+  expect(computationRuns).toStrictEqual(1);
+  expect(secondTable.pendingOps.map((op) => op.method)).toStrictEqual([]);
 
   await secondSdb.close();
 });
-Deno.test("should execute a cached geospatial load before cache resolves", async () => {
+test("should execute a cached geospatial load before cache resolves", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -255,12 +219,12 @@ Deno.test("should execute a cached geospatial load before cache resolves", async
   const secondTable = secondSdb.newTable("geoCacheHitExecution");
   await secondTable.cache(createCompute(secondTable));
 
-  assertEquals(computationRuns, 1);
-  assertEquals(secondTable.pendingOps.map((op) => op.method), []);
+  expect(computationRuns).toStrictEqual(1);
+  expect(secondTable.pendingOps.map((op) => op.method)).toStrictEqual([]);
 
   await secondSdb.close();
 });
-Deno.test("should preserve geometry projections when loading from cache", async () => {
+test("should preserve geometry projections when loading from cache", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -270,36 +234,30 @@ Deno.test("should preserve geometry projections when loading from cache", async 
   const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheGeometryProjection");
   await firstTable.cache(createCompute(firstTable));
-  assertEquals(
-    (await firstTable.getTypes()).geom,
-    "GEOMETRY('EPSG:4326')",
-  );
+  expect((await firstTable.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
   await firstSdb.close();
 
   const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheGeometryProjection");
   await secondTable.cache(createCompute(secondTable));
 
-  assertEquals(computationRuns, 1);
-  assertEquals(
-    (await secondTable.getTypes()).geom,
-    "GEOMETRY('EPSG:4326')",
-  );
-  assertEquals(
-    await secondTable.getProjection("geom"),
-    "GEOMETRY('EPSG:4326')",
-  );
+  expect(computationRuns).toStrictEqual(1);
+  expect((await secondTable.getTypes()).geom).toStrictEqual("GEOMETRY('EPSG:4326')");
+  expect(await secondTable.getProjection("geom")).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   await secondSdb.close();
 });
-Deno.test("should restore fixed array types and VSS indexes from cache", async () => {
+test("should restore fixed array types and VSS indexes from cache", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
-    table.loadArray([
-      { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
-      { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
-    ], { columnTypes: { embedding: "FLOAT[3]" } });
+    table.loadArray(
+      [
+        { id: 1, embedding: [0.1, 0.2, 0.3].map(Math.fround) },
+        { id: 2, embedding: [0.4, 0.5, 0.6].map(Math.fround) },
+      ],
+      { columnTypes: { embedding: "FLOAT[3]" } },
+    );
     table.createVssIndex("embedding", {
       efConstruction: 64,
       efSearch: 32,
@@ -307,21 +265,19 @@ Deno.test("should restore fixed array types and VSS indexes from cache", async (
     });
   };
   const getIndexCount = async (sdb: SimpleDB) => {
-    const indexes = await sdb.customQuery(
+    const indexes = (await sdb.customQuery(
       "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'cacheVssIndex'",
       { returnData: true },
-    ) as { index_name: string }[];
+    )) as { index_name: string }[];
     return indexes.length;
   };
 
   const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cacheVssIndex");
   await firstTable.cache(createCompute(firstTable));
-  assertEquals(await getIndexCount(firstSdb), 1);
-  assertEquals((await firstTable.getTypes()).embedding, "FLOAT[3]");
-  const cacheSources = JSON.parse(
-    readFileSync(".sda-cache/sources.json", "utf-8"),
-  ) as {
+  expect(await getIndexCount(firstSdb)).toStrictEqual(1);
+  expect((await firstTable.getTypes()).embedding).toStrictEqual("FLOAT[3]");
+  const cacheSources = parseJson(readFileSync(".sda-cache/sources.json", "utf-8")) as {
     [key: string]: {
       file: string | null;
       indexes?: Array<{
@@ -333,9 +289,9 @@ Deno.test("should restore fixed array types and VSS indexes from cache", async (
     };
   };
   const cacheSource = Object.values(cacheSources).find(({ indexes }) =>
-    indexes?.some(({ kind }) => kind === "vss")
+    indexes?.some(({ kind }) => kind === "vss"),
   );
-  assertEquals(cacheSource?.indexes?.[0], {
+  expect(cacheSource?.indexes?.[0]).toStrictEqual({
     kind: "vss",
     name: "vss_cosine_index_cachevssindex",
     column: "embedding",
@@ -344,34 +300,32 @@ Deno.test("should restore fixed array types and VSS indexes from cache", async (
   if (cacheSource?.file === undefined || cacheSource.file === null) {
     throw new Error("The VSS cache test did not create an artifact.");
   }
-  await firstSdb.customQuery(
-    `ATTACH '${cacheSource.file}' AS cached_vss (READ_ONLY);`,
-  );
-  const cachedIndexes = await firstSdb.customQuery(
+  await firstSdb.customQuery(`ATTACH '${cacheSource.file}' AS cached_vss (READ_ONLY);`);
+  const cachedIndexes = (await firstSdb.customQuery(
     "SELECT index_name FROM duckdb_indexes() WHERE database_name = 'cached_vss' AND table_name = 'cacheVssIndex'",
     { returnData: true },
-  ) as { index_name: string }[];
+  )) as { index_name: string }[];
   await firstSdb.customQuery("DETACH cached_vss;");
-  assertEquals(cachedIndexes.length, 0);
+  expect(cachedIndexes.length).toStrictEqual(0);
 
   await firstTable.cache(createCompute(firstTable));
-  assertEquals(computationRuns, 1);
-  assertEquals(await getIndexCount(firstSdb), 1);
-  assertEquals(firstTable.indexes.length, 1);
-  assertEquals((await firstTable.getTypes()).embedding, "FLOAT[3]");
+  expect(computationRuns).toStrictEqual(1);
+  expect(await getIndexCount(firstSdb)).toStrictEqual(1);
+  expect(firstTable.indexes.length).toStrictEqual(1);
+  expect((await firstTable.getTypes()).embedding).toStrictEqual("FLOAT[3]");
   await firstSdb.close();
 
   const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cacheVssIndex");
   await secondTable.cache(createCompute(secondTable));
 
-  assertEquals(computationRuns, 1);
-  assertEquals(await getIndexCount(secondSdb), 1);
-  assertEquals(secondTable.indexes.length, 1);
-  assertEquals((await secondTable.getTypes()).embedding, "FLOAT[3]");
+  expect(computationRuns).toStrictEqual(1);
+  expect(await getIndexCount(secondSdb)).toStrictEqual(1);
+  expect(secondTable.indexes.length).toStrictEqual(1);
+  expect((await secondTable.getTypes()).embedding).toStrictEqual("FLOAT[3]");
   await secondSdb.close();
 });
-Deno.test("should restore FTS indexes from cache", async () => {
+test("should restore FTS indexes from cache", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -389,55 +343,55 @@ Deno.test("should restore FTS indexes from cache", async () => {
   const firstSdb = new SimpleDB();
   const firstTable = firstSdb.newTable("cache_Fts_Index");
   await firstTable.cache(createCompute(firstTable));
-  const cacheSources = JSON.parse(
-    readFileSync(".sda-cache/sources.json", "utf-8"),
-  ) as { [key: string]: { file: string | null } };
+  const cacheSources = parseJson(readFileSync(".sda-cache/sources.json", "utf-8")) as {
+    [key: string]: { file: string | null };
+  };
   const cacheFile = Object.values(cacheSources).find(({ file }) =>
-    file?.includes("cache_Fts_Index")
+    file?.includes("cache_Fts_Index"),
   )?.file;
   if (cacheFile === undefined || cacheFile === null) {
     throw new Error("The FTS cache test did not create an artifact.");
   }
-  await firstSdb.customQuery(
-    `ATTACH '${cacheFile}' AS cached_fts (READ_ONLY);`,
-  );
-  const cachedSchemas = await firstSdb.customQuery(
+  await firstSdb.customQuery(`ATTACH '${cacheFile}' AS cached_fts (READ_ONLY);`);
+  const cachedSchemas = (await firstSdb.customQuery(
     "SELECT schema_name FROM duckdb_schemas() WHERE database_name = 'cached_fts' AND schema_name = 'fts_main_cache_Fts_Index'",
     { returnData: true },
-  ) as { schema_name: string }[];
+  )) as { schema_name: string }[];
   await firstSdb.customQuery("DETACH cached_fts;");
-  assertEquals(cachedSchemas.length, 1);
+  expect(cachedSchemas.length).toStrictEqual(1);
   await firstSdb.close();
 
   const secondSdb = new SimpleDB();
   const secondTable = secondSdb.newTable("cache_Fts_Index");
   await secondTable.cache(createCompute(secondTable));
-  const schemas = await secondSdb.customQuery(
+  const schemas = (await secondSdb.customQuery(
     "SELECT schema_name FROM duckdb_schemas() WHERE schema_name = 'fts_main_cache_Fts_Index'",
     { returnData: true },
-  ) as { schema_name: string }[];
+  )) as { schema_name: string }[];
 
-  assertEquals(computationRuns, 1);
-  assertEquals(schemas.length, 1);
-  assertEquals(secondTable.indexes, [{
-    kind: "fts",
-    name: "fts_index_cacheFtsIndex",
-    idColumn: "id",
-    textColumn: "text",
-    options: {
-      stemmer: "english",
-      lower: true,
-      stripAccents: true,
+  expect(computationRuns).toStrictEqual(1);
+  expect(schemas.length).toStrictEqual(1);
+  expect(secondTable.indexes).toStrictEqual([
+    {
+      kind: "fts",
+      name: "fts_index_cacheFtsIndex",
+      idColumn: "id",
+      textColumn: "text",
+      options: {
+        stemmer: "english",
+        lower: true,
+        stripAccents: true,
+      },
     },
-  }]);
+  ]);
 
   const results = secondTable.bm25("tomato", "id", "text", 1, {
     outputTable: "cacheFtsResults",
   });
-  assertEquals(await results.getValues("id"), [1]);
+  expect(await results.getValues("id")).toStrictEqual([1]);
   await secondSdb.close();
 });
-Deno.test("should recompute a corrupt DuckDB cache entry", async () => {
+test("should recompute a corrupt DuckDB cache entry", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -449,11 +403,11 @@ Deno.test("should recompute a corrupt DuckDB cache entry", async () => {
   await firstTable.cache(createCompute(firstTable));
   await firstSdb.close();
 
-  const cacheSources = JSON.parse(
-    readFileSync(".sda-cache/sources.json", "utf-8"),
-  ) as { [key: string]: { file: string | null } };
+  const cacheSources = parseJson(readFileSync(".sda-cache/sources.json", "utf-8")) as {
+    [key: string]: { file: string | null };
+  };
   const cacheFile = Object.values(cacheSources).find(({ file }) =>
-    file?.includes("corruptCacheEntry")
+    file?.includes("corruptCacheEntry"),
   )?.file;
   if (cacheFile === undefined || cacheFile === null) {
     throw new Error("The corrupt cache test did not create an artifact.");
@@ -464,11 +418,11 @@ Deno.test("should recompute a corrupt DuckDB cache entry", async () => {
   const secondTable = secondSdb.newTable("corruptCacheEntry");
   await secondTable.cache(createCompute(secondTable));
 
-  assertEquals(computationRuns, 2);
-  assertEquals(await secondTable.getValues("value"), [2]);
+  expect(computationRuns).toStrictEqual(2);
+  expect(await secondTable.getValues("value")).toStrictEqual([2]);
   await secondSdb.close();
 });
-Deno.test("should invalidate the cache when a captured input changes", async () => {
+test("should invalidate the cache when a captured input changes", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable, value: number) => () => {
     computationRuns++;
@@ -488,12 +442,12 @@ Deno.test("should invalidate the cache when a captured input changes", async () 
     inputs: [2],
   });
 
-  assertEquals(computationRuns, 2);
-  assertEquals(await secondTable.getData(), [{ value: 2 }]);
+  expect(computationRuns).toStrictEqual(2);
+  expect(await secondTable.getData()).toStrictEqual([{ value: 2 }]);
 
   await secondSdb.close();
 });
-Deno.test("should explain which cache input changed", async () => {
+test("should explain which cache input changed", async () => {
   const createCompute = (table: SimpleTable, value: number) => () => {
     table.loadArray([{ value }]);
   };
@@ -514,17 +468,17 @@ Deno.test("should explain which cache input changed", async () => {
     secondTable.cache(createCompute(secondTable, 2), {
       inputs: [2, "stable"],
       ttl: 0,
-    })
+    }),
   );
 
-  assertStringIncludes(logs, "Cache miss.");
-  assertStringIncludes(logs, "Compute function unchanged.");
-  assertStringIncludes(logs, "Inputs changed: inputs[0] changed.");
-  assertEquals(logs.includes("TTL"), false);
+  expect(logs).toContain("Cache miss.");
+  expect(logs).toContain("Compute function unchanged.");
+  expect(logs).toContain("Inputs changed: inputs[0] changed.");
+  expect(logs.includes("TTL")).toStrictEqual(false);
 
   await secondSdb.close();
 });
-Deno.test("should explain when the current table changed", async () => {
+test("should explain when the current table changed", async () => {
   const createSourceCompute = (rows: { value: number }[]) => {
     return (table: SimpleTable) => {
       table.loadArray(rows);
@@ -552,11 +506,11 @@ Deno.test("should explain when the current table changed", async () => {
   await run([{ value: 1 }, { value: 2 }]);
   const logs = await run([{ value: 1 }, { value: 3 }], true);
 
-  assertStringIncludes(logs, "Cache miss.");
-  assertStringIncludes(logs, "Compute function unchanged.");
-  assertStringIncludes(logs, "The current table has changed.");
+  expect(logs).toContain("Cache miss.");
+  expect(logs).toContain("Compute function unchanged.");
+  expect(logs).toContain("The current table has changed.");
 });
-Deno.test("should not infer a code change from another cache call on the same table", async () => {
+test("should not infer a code change from another cache call on the same table", async () => {
   const createFirstCompute = (table: SimpleTable) => () => {
     table.loadArray([{ value: 1 }]);
   };
@@ -569,26 +523,20 @@ Deno.test("should not infer a code change from another cache call on the same ta
   });
   const table = sdb.newTable("cacheVerboseMultipleCalls");
   const firstLogs = await captureConsoleLogs(() =>
-    table.cache(createFirstCompute(table), { inputs: [1] })
+    table.cache(createFirstCompute(table), { inputs: [1] }),
   );
   const secondLogs = await captureConsoleLogs(() =>
-    table.cache(createSecondCompute(table), { inputs: [1] })
+    table.cache(createSecondCompute(table), { inputs: [1] }),
   );
 
-  assertStringIncludes(
-    firstLogs,
-    "No matching cache entry exists for this computation.",
-  );
-  assertStringIncludes(secondLogs, "Cache miss.");
-  assertStringIncludes(
-    secondLogs,
-    "No matching cache entry exists for this computation.",
-  );
-  assertEquals(secondLogs.includes("Compute function changed."), false);
+  expect(firstLogs).toContain("No matching cache entry exists for this computation.");
+  expect(secondLogs).toContain("Cache miss.");
+  expect(secondLogs).toContain("No matching cache entry exists for this computation.");
+  expect(secondLogs.includes("Compute function changed.")).toStrictEqual(false);
 
   await sdb.close();
 });
-Deno.test("should confirm unchanged inputs before reporting ttl status", async () => {
+test("should confirm unchanged inputs before reporting ttl status", async () => {
   const createCompute = (table: SimpleTable) => () => {
     table.loadArray([{ value: 1 }]);
   };
@@ -609,17 +557,17 @@ Deno.test("should confirm unchanged inputs before reporting ttl status", async (
     secondTable.cache(createCompute(secondTable), {
       inputs: [1, "stable"],
       ttl: 60,
-    })
+    }),
   );
 
-  assertStringIncludes(logs, "Cache hit.");
-  assertStringIncludes(logs, "Compute function unchanged.");
-  assertStringIncludes(logs, "Inputs unchanged (2 checked).");
-  assertStringIncludes(logs, "has not expired.");
+  expect(logs).toContain("Cache hit.");
+  expect(logs).toContain("Compute function unchanged.");
+  expect(logs).toContain("Inputs unchanged (2 checked).");
+  expect(logs).toContain("has not expired.");
 
   await secondSdb.close();
 });
-Deno.test("should omit input status when no explicit inputs were supplied", async () => {
+test("should omit input status when no explicit inputs were supplied", async () => {
   const createCompute = (table: SimpleTable) => () => {
     table.loadArray([{ value: 1 }]);
   };
@@ -633,16 +581,14 @@ Deno.test("should omit input status when no explicit inputs were supplied", asyn
     cacheVerbose: true,
   });
   const secondTable = secondSdb.newTable("cacheVerboseNoInputs");
-  const logs = await captureConsoleLogs(() =>
-    secondTable.cache(createCompute(secondTable))
-  );
+  const logs = await captureConsoleLogs(() => secondTable.cache(createCompute(secondTable)));
 
-  assertStringIncludes(logs, "Cache hit.\nCompute function unchanged.");
-  assertEquals(logs.includes("No explicit inputs to check."), false);
+  expect(logs).toContain("Cache hit.\nCompute function unchanged.");
+  expect(logs.includes("No explicit inputs to check.")).toStrictEqual(false);
 
   await secondSdb.close();
 });
-Deno.test("should identify a changed SimpleTable dependency by name", async () => {
+test("should identify a changed SimpleTable dependency by name", async () => {
   const sdb = new SimpleDB({
     cacheVerbose: true,
   });
@@ -657,14 +603,11 @@ Deno.test("should identify a changed SimpleTable dependency by name", async () =
   source.filter("value = 1");
   const logs = await captureConsoleLogs(() => output.cache(compute));
 
-  assertStringIncludes(
-    logs,
-    'Table dependencies changed: "cacheVerboseTableInput".',
-  );
+  expect(logs).toContain('Table dependencies changed: "cacheVerboseTableInput".');
 
   await sdb.close();
 });
-Deno.test("should identify changed and unchanged table dependencies", async () => {
+test("should identify changed and unchanged table dependencies", async () => {
   const sdb = new SimpleDB({
     cacheVerbose: true,
   });
@@ -674,34 +617,24 @@ Deno.test("should identify changed and unchanged table dependencies", async () =
   changed.loadArray([{ value: 1 }]);
   unchanged.loadArray([{ value: 2 }]);
   const compute = async () => {
-    output.loadArray([
-      ...await changed.getData(),
-      ...await unchanged.getData(),
-    ]);
+    output.loadArray([...(await changed.getData()), ...(await unchanged.getData())]);
   };
 
   await output.cache(compute);
   changed.filter("value = 1");
   const logs = await captureConsoleLogs(() => output.cache(compute));
 
-  assertStringIncludes(
-    logs,
-    'Table dependencies changed: "cacheVerboseChangedDependency".',
-  );
-  assertStringIncludes(
-    logs,
-    'Table dependencies unchanged: "cacheVerboseUnchangedDependency".',
-  );
+  expect(logs).toContain('Table dependencies changed: "cacheVerboseChangedDependency".');
+  expect(logs).toContain('Table dependencies unchanged: "cacheVerboseUnchangedDependency".');
 
   const hitLogs = await captureConsoleLogs(() => output.cache(compute));
-  assertStringIncludes(
-    hitLogs,
+  expect(hitLogs).toContain(
     'Table dependencies unchanged: "cacheVerboseChangedDependency", "cacheVerboseUnchangedDependency".',
   );
 
   await sdb.close();
 });
-Deno.test("should compare cache inputs structurally", async () => {
+test("should compare cache inputs structurally", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -721,11 +654,11 @@ Deno.test("should compare cache inputs structurally", async () => {
     inputs: [{ nested: { enabled: true }, threshold: 2 }],
   });
 
-  assertEquals(computationRuns, 1);
+  expect(computationRuns).toStrictEqual(1);
 
   await secondSdb.close();
 });
-Deno.test("should compare cache inputs by array position", async () => {
+test("should compare cache inputs by array position", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -741,11 +674,11 @@ Deno.test("should compare cache inputs by array position", async () => {
   const secondTable = secondSdb.newTable("cacheInputPositions");
   await secondTable.cache(createCompute(secondTable), { inputs: [20, 10] });
 
-  assertEquals(computationRuns, 2);
+  expect(computationRuns).toStrictEqual(2);
 
   await secondSdb.close();
 });
-Deno.test("should preserve legacy identity for empty inputs", async () => {
+test("should preserve legacy identity for empty inputs", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -761,11 +694,11 @@ Deno.test("should preserve legacy identity for empty inputs", async () => {
   const secondTable = secondSdb.newTable("cacheEmptyInputs");
   await secondTable.cache(createCompute(secondTable), { inputs: [] });
 
-  assertEquals(computationRuns, 1);
+  expect(computationRuns).toStrictEqual(1);
 
   await secondSdb.close();
 });
-Deno.test("should exclude ttl from cache identity with inputs", async () => {
+test("should exclude ttl from cache identity with inputs", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -787,11 +720,11 @@ Deno.test("should exclude ttl from cache identity with inputs", async () => {
     ttl: 20,
   });
 
-  assertEquals(computationRuns, 1);
+  expect(computationRuns).toStrictEqual(1);
 
   await secondSdb.close();
 });
-Deno.test("should hash function and class inputs by source", async () => {
+test("should hash function and class inputs by source", async () => {
   let computationRuns = 0;
   const createCompute = (table: SimpleTable) => () => {
     computationRuns++;
@@ -826,24 +759,19 @@ Deno.test("should hash function and class inputs by source", async () => {
   await run(transformA, StrategyA);
   await run(transformB, StrategyB);
 
-  assertEquals(computationRuns, 2);
+  expect(computationRuns).toStrictEqual(2);
 });
-Deno.test("should automatically track SimpleTable dependencies by generation", async () => {
+test("should automatically track SimpleTable dependencies by generation", async () => {
   let sourceRuns = 0;
   let outputRuns = 0;
-  const createSourceCompute = (
-    source: SimpleTable,
-    rows: { value: number }[],
-  ) =>
-  () => {
+  const createSourceCompute = (source: SimpleTable, rows: { value: number }[]) => () => {
     sourceRuns++;
     source.loadArray(rows);
   };
-  const createCompute =
-    (source: SimpleTable, output: SimpleTable) => async () => {
-      outputRuns++;
-      output.loadArray(await source.getData());
-    };
+  const createCompute = (source: SimpleTable, output: SimpleTable) => async () => {
+    outputRuns++;
+    output.loadArray(await source.getData());
+  };
   const run = async (rows: { value: number }[]) => {
     const sdb = new SimpleDB();
     const source = sdb.newTable("cacheTableInputSource");
@@ -855,13 +783,13 @@ Deno.test("should automatically track SimpleTable dependencies by generation", a
     return data;
   };
 
-  assertEquals(await run([{ value: 1 }]), [{ value: 1 }]);
-  assertEquals(await run([{ value: 1 }]), [{ value: 1 }]);
-  assertEquals(await run([{ value: 2 }]), [{ value: 2 }]);
-  assertEquals(sourceRuns, 2);
-  assertEquals(outputRuns, 2);
+  expect(await run([{ value: 1 }])).toStrictEqual([{ value: 1 }]);
+  expect(await run([{ value: 1 }])).toStrictEqual([{ value: 1 }]);
+  expect(await run([{ value: 2 }])).toStrictEqual([{ value: 2 }]);
+  expect(sourceRuns).toStrictEqual(2);
+  expect(outputRuns).toStrictEqual(2);
 });
-Deno.test("should cache computations that read without mutating table inputs", async () => {
+test("should cache computations that read without mutating table inputs", async () => {
   let computationRuns = 0;
   const sdb = new SimpleDB();
   const source = sdb.newTable("cacheReadOnlyInputSource");
@@ -869,20 +797,18 @@ Deno.test("should cache computations that read without mutating table inputs", a
   source.loadArray([{ year: 2025 }, { year: 2026 }]);
   const compute = async () => {
     computationRuns++;
-    output.loadArray(
-      await source.getData({ conditions: "year = 2026" }),
-    );
+    output.loadArray(await source.getData({ conditions: "year = 2026" }));
   };
 
   await output.cache(compute, { inputs: [2026] });
   await output.cache(compute, { inputs: [2026] });
 
-  assertEquals(computationRuns, 1);
-  assertEquals(await output.getData(), [{ year: 2026 }]);
+  expect(computationRuns).toStrictEqual(1);
+  expect(await output.getData()).toStrictEqual([{ year: 2026 }]);
 
   await sdb.close();
 });
-Deno.test("should not track tables created inside the computation", async () => {
+test("should not track tables created inside the computation", async () => {
   let computationRuns = 0;
   const sdb = new SimpleDB();
   const output = sdb.newTable("cacheLocalTableOutput");
@@ -897,12 +823,12 @@ Deno.test("should not track tables created inside the computation", async () => 
   await output.cache(compute);
   await output.cache(compute);
 
-  assertEquals(computationRuns, 1);
-  assertEquals(await output.getData(), [{ value: 1 }]);
+  expect(computationRuns).toStrictEqual(1);
+  expect(await output.getData()).toStrictEqual([{ value: 1 }]);
 
   await sdb.close();
 });
-Deno.test("should reject tables created inside the computation that are not removed", async () => {
+test("should reject tables created inside the computation that are not removed", async () => {
   const sdb = new SimpleDB();
   const output = sdb.newTable("cacheLeakedLocalTableOutput");
 
@@ -915,12 +841,12 @@ Deno.test("should reject tables created inside the computation that are not remo
     'Call removeTable() on "cacheLeakedLocalTable" before the callback finishes to avoid downstream errors',
   );
 
-  assertEquals(sdb.getTables().map((table) => table.name), [output.name]);
-  assertEquals(await sdb.getTableNames(), []);
+  expect(sdb.getTables().map((table) => table.name)).toStrictEqual([output.name]);
+  expect(await sdb.getTableNames()).toStrictEqual([]);
 
   await sdb.close();
 });
-Deno.test("should reject mutations of tables that existed before the computation", async () => {
+test("should reject mutations of tables that existed before the computation", async () => {
   const sdb = new SimpleDB();
   const source = sdb.newTable("cacheMutatedDependencySource");
   const output = sdb.newTable("cacheMutatedDependencyOutput");
@@ -937,12 +863,12 @@ Deno.test("should reject mutations of tables that existed before the computation
     'cache() called on "cacheMutatedDependencyOutput" cannot modify pre-existing table "cacheMutatedDependencySource"',
   );
 
-  assertEquals(await source.getData(), [{ value: 1 }, { value: 2 }]);
-  assertEquals(sdb.pendingCount, 0);
+  expect(await source.getData()).toStrictEqual([{ value: 1 }, { value: 2 }]);
+  expect(sdb.pendingCount).toStrictEqual(0);
 
   await sdb.close();
 });
-Deno.test("should track SimpleTable dependencies in queued SQL", async () => {
+test("should track SimpleTable dependencies in queued SQL", async () => {
   let computationRuns = 0;
   const sdb = new SimpleDB();
   const source = sdb.newTable("cacheQueuedSqlSource");
@@ -952,21 +878,19 @@ Deno.test("should track SimpleTable dependencies in queued SQL", async () => {
     computationRuns++;
     output
       .loadArray([{ value: 1 }, { value: 2 }])
-      .filter(
-        `value IN (SELECT value FROM "${source.name}")`,
-      );
+      .filter(`value IN (SELECT value FROM "${source.name}")`);
   };
 
   await output.cache(compute);
   source.filter("value = 2");
   await output.cache(compute);
 
-  assertEquals(computationRuns, 2);
-  assertEquals(await output.getData(), [{ value: 2 }]);
+  expect(computationRuns).toStrictEqual(2);
+  expect(await output.getData()).toStrictEqual([{ value: 2 }]);
 
   await sdb.close();
 });
-Deno.test("should invalidate SimpleTable generations when removed", async () => {
+test("should invalidate SimpleTable generations when removed", async () => {
   let computationRuns = 0;
   const sdb = new SimpleDB();
   const source = sdb.newTable("cacheRemovedInputSource");
@@ -981,12 +905,12 @@ Deno.test("should invalidate SimpleTable generations when removed", async () => 
   await source.removeTable();
   await output.cache(compute, { inputs: [source] });
 
-  assertEquals(computationRuns, 2);
-  assertEquals(await output.getData(), [{ value: 2 }]);
+  expect(computationRuns).toStrictEqual(2);
+  expect(await output.getData()).toStrictEqual([{ value: 2 }]);
 
   await sdb.close();
 });
-Deno.test("should allow the cached table as an explicit input", async () => {
+test("should allow the cached table as an explicit input", async () => {
   let sourceRuns = 0;
   let transformRuns = 0;
   const createSourceCompute = (table: SimpleTable) => () => {
@@ -1007,17 +931,15 @@ Deno.test("should allow the cached table as an explicit input", async () => {
     return data;
   };
 
-  assertEquals(await run(), [{ value: 2 }]);
-  assertEquals(await run(), [{ value: 2 }]);
-  assertEquals(sourceRuns, 1);
-  assertEquals(transformRuns, 1);
+  expect(await run()).toStrictEqual([{ value: 2 }]);
+  expect(await run()).toStrictEqual([{ value: 2 }]);
+  expect(sourceRuns).toStrictEqual(1);
+  expect(transformRuns).toStrictEqual(1);
 });
-Deno.test("should invalidate a cached pipeline stage when its entry generation changes", async () => {
+test("should invalidate a cached pipeline stage when its entry generation changes", async () => {
   let sourceRuns = 0;
   let transformRuns = 0;
-  const createSourceCompute = (
-    rows: { value: number }[],
-  ) => {
+  const createSourceCompute = (rows: { value: number }[]) => {
     return (table: SimpleTable) => {
       sourceRuns++;
       table.loadArray(rows);
@@ -1037,24 +959,23 @@ Deno.test("should invalidate a cached pipeline stage when its entry generation c
     return data;
   };
 
-  assertEquals(await run([{ value: 1 }, { value: 2 }]), [{ value: 2 }]);
-  assertEquals(await run([{ value: 1 }, { value: 2 }]), [{ value: 2 }]);
-  assertEquals(await run([{ value: 1 }, { value: 3 }]), [{ value: 3 }]);
-  assertEquals(sourceRuns, 2);
-  assertEquals(transformRuns, 2);
+  expect(await run([{ value: 1 }, { value: 2 }])).toStrictEqual([{ value: 2 }]);
+  expect(await run([{ value: 1 }, { value: 2 }])).toStrictEqual([{ value: 2 }]);
+  expect(await run([{ value: 1 }, { value: 3 }])).toStrictEqual([{ value: 3 }]);
+  expect(sourceRuns).toStrictEqual(2);
+  expect(transformRuns).toStrictEqual(2);
 });
-Deno.test("should restore SimpleTable generations on cache hits", async () => {
+test("should restore SimpleTable generations on cache hits", async () => {
   let sourceRuns = 0;
   let outputRuns = 0;
   const createSourceCompute = (source: SimpleTable) => () => {
     sourceRuns++;
     source.loadArray([{ value: 1 }]);
   };
-  const createOutputCompute =
-    (source: SimpleTable, output: SimpleTable) => async () => {
-      outputRuns++;
-      output.loadArray(await source.getData());
-    };
+  const createOutputCompute = (source: SimpleTable, output: SimpleTable) => async () => {
+    outputRuns++;
+    output.loadArray(await source.getData());
+  };
   const run = async () => {
     const sdb = new SimpleDB();
     const source = sdb.newTable("cacheGenerationSource");
@@ -1067,10 +988,10 @@ Deno.test("should restore SimpleTable generations on cache hits", async () => {
   await run();
   await run();
 
-  assertEquals(sourceRuns, 1);
-  assertEquals(outputRuns, 1);
+  expect(sourceRuns).toStrictEqual(1);
+  expect(outputRuns).toStrictEqual(1);
 });
-Deno.test("should invalidate SimpleTable generations after a mutation", async () => {
+test("should invalidate SimpleTable generations after a mutation", async () => {
   let outputRuns = 0;
   const sdb = new SimpleDB();
   const source = sdb.newTable("cacheGenerationMutationSource");
@@ -1085,22 +1006,21 @@ Deno.test("should invalidate SimpleTable generations after a mutation", async ()
   source.filter("value = 1");
   await output.cache(compute);
 
-  assertEquals(outputRuns, 2);
+  expect(outputRuns).toStrictEqual(2);
 
   await sdb.close();
 });
-Deno.test("should invalidate SimpleTable generations after a refresh", async () => {
+test("should invalidate SimpleTable generations after a refresh", async () => {
   let sourceRuns = 0;
   let outputRuns = 0;
   const createSourceCompute = (source: SimpleTable) => () => {
     sourceRuns++;
     source.loadArray([{ value: 1 }]);
   };
-  const createOutputCompute =
-    (source: SimpleTable, output: SimpleTable) => async () => {
-      outputRuns++;
-      output.loadArray(await source.getData());
-    };
+  const createOutputCompute = (source: SimpleTable, output: SimpleTable) => async () => {
+    outputRuns++;
+    output.loadArray(await source.getData());
+  };
   const run = async () => {
     const sdb = new SimpleDB();
     const source = sdb.newTable("cacheGenerationRefreshSource");
@@ -1113,10 +1033,10 @@ Deno.test("should invalidate SimpleTable generations after a refresh", async () 
   await run();
   await run();
 
-  assertEquals(sourceRuns, 2);
-  assertEquals(outputRuns, 2);
+  expect(sourceRuns).toStrictEqual(2);
+  expect(outputRuns).toStrictEqual(2);
 });
-Deno.test("should reject cyclic cache inputs before computing", async () => {
+test("should reject cyclic cache inputs before computing", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("cacheCyclicInputs");
   const cyclic: { self?: unknown } = {};
@@ -1135,11 +1055,11 @@ Deno.test("should reject cyclic cache inputs before computing", async () => {
     TypeError,
     "cache() inputs[0].self is cyclic",
   );
-  assertEquals(computationRuns, 0);
+  expect(computationRuns).toStrictEqual(0);
 
   await sdb.close();
 });
-Deno.test("should load data from the cache if ttl has not expired", async () => {
+test("should load data from the cache if ttl has not expired", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
@@ -1153,7 +1073,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
     { ttl: 10 },
   );
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       count: 6,
       countDistinct: 4,
@@ -1170,7 +1090,7 @@ Deno.test("should load data from the cache if ttl has not expired", async () => 
   ]);
   await sdb.close();
 });
-Deno.test("should not load data from the cache if ttl has expired", async () => {
+test("should not load data from the cache if ttl has expired", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const table = sdb.newTable();
   await table.cache(
@@ -1184,7 +1104,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
     { ttl: 0 },
   );
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       count: 6,
       countDistinct: 4,
@@ -1201,7 +1121,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   ]);
   await sdb.close();
 });
-Deno.test("should cache computed values for geospatial data", async () => {
+test("should cache computed values for geospatial data", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(() => {
@@ -1214,7 +1134,7 @@ Deno.test("should cache computed values for geospatial data", async () => {
   tableGeo.sort();
   const data = await tableGeo.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "pointA",
       lat: 48.241182892559266,
@@ -1238,7 +1158,7 @@ Deno.test("should cache computed values for geospatial data", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should load geospatial data from the cache instead of running computations", async () => {
+test("should load geospatial data from the cache instead of running computations", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
 
@@ -1251,7 +1171,7 @@ Deno.test("should load geospatial data from the cache instead of running computa
   tableGeo.removeColumns("points");
   const data = await tableGeo.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "pointA",
       lat: 48.241182892559266,
@@ -1275,14 +1195,12 @@ Deno.test("should load geospatial data from the cache instead of running computa
   ]);
   await sdb.close();
 });
-Deno.test("should not load data from the cache if ttl has expired", async () => {
+test("should not load data from the cache if ttl has expired", async () => {
   const sdb = new SimpleDB({ cacheVerbose: true });
   const tableGeo = sdb.newTable("geodata");
   await tableGeo.cache(
     () => {
-      tableGeo.loadGeoData(
-        "test/geodata/files/pointsInside.json",
-      );
+      tableGeo.loadGeoData("test/geodata/files/pointsInside.json");
       tableGeo.renameColumns({ geom: "points" });
       tableGeo.extractLatLon("points", "lat", "lon");
     },
@@ -1292,7 +1210,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   tableGeo.removeColumns("points");
   const data = await tableGeo.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       name: "pointA",
       lat: 48.241182892559266,
@@ -1316,7 +1234,7 @@ Deno.test("should not load data from the cache if ttl has expired", async () => 
   ]);
   await sdb.close();
 });
-Deno.test("should clean the cache and log cleanup after the duration when calling close", async () => {
+test("should clean the cache and log cleanup after the duration when calling close", async () => {
   if (existsSync("./.sda-cache")) {
     rmSync("./.sda-cache", { recursive: true });
   }
@@ -1333,43 +1251,41 @@ Deno.test("should clean the cache and log cleanup after the duration when callin
 
   // We create a fake cached file.
 
-  const cacheSources = JSON.parse(
-    readFileSync(".sda-cache/sources.json", "utf-8"),
-  );
+  const cacheSources = parseJson(readFileSync(".sda-cache/sources.json", "utf-8"));
+  assert(typeof cacheSources === "object" && cacheSources !== null);
   const expectedIds = Object.keys(cacheSources);
-  cacheSources["testForCache"] = {
-    timestamp: 1720117189389,
-    file: "./.sda-cache/testForCache.json",
-    geo: false,
-    geoColumnName: null,
-  };
+  Object.defineProperty(cacheSources, "testForCache", {
+    enumerable: true,
+    value: {
+      timestamp: 1720117189389,
+      file: "./.sda-cache/testForCache.json",
+      geo: false,
+      geoColumnName: null,
+    },
+  });
   writeFileSync(".sda-cache/sources.json", JSON.stringify(cacheSources));
   writeFileSync(".sda-cache/testForCache.json", JSON.stringify("Hi!"));
 
   sdb.cacheTimeSaved = 1000;
   const logs = await captureConsoleLogs(() => sdb.close());
-  const cleanupMessage =
-    "Removing unused file from cache: ./.sda-cache/testForCache.json";
+  const cleanupMessage = "Removing unused file from cache: ./.sda-cache/testForCache.json";
   const lines = logs.split("\n");
-  assertEquals(lines, ["", "", lines[2], "", cleanupMessage, ""]);
-  assertStringIncludes(lines[2], "SimpleDB ran for ");
-  assertStringIncludes(lines[2], "saved by using the cache");
-  assertEquals(await captureConsoleLogs(() => sdb.close()), "");
+  expect(lines).toStrictEqual(["", "", lines[2], "", cleanupMessage, ""]);
+  expect(lines[2]).toContain("SimpleDB ran for ");
+  expect(lines[2]).toContain("saved by using the cache");
+  expect(await captureConsoleLogs(() => sdb.close())).toStrictEqual("");
 
-  const cacheSourcesIdsUpdated = Object.keys(
-    JSON.parse(readFileSync(".sda-cache/sources.json", "utf-8")),
-  );
-  const files = readdirSync(".sda-cache/").sort((a, b) => a > b ? 1 : -1);
+  const updatedSources = parseJson(readFileSync(".sda-cache/sources.json", "utf-8"));
+  assert(typeof updatedSources === "object" && updatedSources !== null);
+  const cacheSourcesIdsUpdated = Object.keys(updatedSources);
+  const files = readdirSync(".sda-cache/").sort((a, b) => (a > b ? 1 : -1));
 
-  assertEquals(
-    { cacheSourcesIdsUpdated, files },
-    {
-      cacheSourcesIdsUpdated: expectedIds,
-      files: ["sources.json", ...expectedIds.map((id) => `${id}.db`)].sort(),
-    },
-  );
+  expect({ cacheSourcesIdsUpdated, files }).toStrictEqual({
+    cacheSourcesIdsUpdated: expectedIds,
+    files: ["sources.json", ...expectedIds.map((id) => `${id}.db`)].sort(),
+  });
 });
-Deno.test("should cache dates and retrieve dates", async () => {
+test("should cache dates and retrieve dates", async () => {
   // Example from Code Like a Journalist lesson about tabular data
 
   const sdb = new SimpleDB({ cacheVerbose: true });
@@ -1396,12 +1312,10 @@ Deno.test("should cache dates and retrieve dates", async () => {
 
   await sdb.close();
 
-  assertEquals(firstPass, secondPass);
+  expect(firstPass).toStrictEqual(secondPass);
 });
 
-async function captureConsoleLogs(
-  run: () => Promise<unknown>,
-): Promise<string> {
+async function captureConsoleLogs(run: () => Promise<unknown>): Promise<string> {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
@@ -1413,7 +1327,7 @@ async function captureConsoleLogs(
   return logs.join("\n");
 }
 
-Deno.test("cache separates identical computations using different expression syntaxes", async () => {
+test("cache separates identical computations using different expression syntaxes", async () => {
   let runs = 0;
   const databases = [
     new SimpleDB({ expressionSyntax: "js" }),
@@ -1426,24 +1340,22 @@ Deno.test("cache separates identical computations using different expression syn
       const table = sdb.newTable("syntaxCacheIsolation");
       await table.cache(() => {
         runs++;
-        table.loadArray([{ value: 1 }]).addColumn(
-          "missing",
-          "boolean",
-          "NULL = NULL",
-        );
+        table.loadArray([{ value: 1 }]).addColumn("missing", "boolean", "NULL = NULL");
       });
-      assertEquals(await table.getData(), [{
-        value: 1,
-        missing: sdb.expressionSyntax === "js" ? true : null,
-      }]);
+      expect(await table.getData()).toStrictEqual([
+        {
+          value: 1,
+          missing: sdb.expressionSyntax === "js" ? true : null,
+        },
+      ]);
     }
-    assertEquals(runs, 2);
+    expect(runs).toStrictEqual(2);
   } finally {
     for (const sdb of databases) await sdb.close();
   }
 });
 
-Deno.test("escaped quoted SQL dependencies invalidate cached results", async () => {
+test("escaped quoted SQL dependencies invalidate cached results", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable('cache"quotedSource');
@@ -1452,22 +1364,23 @@ Deno.test("escaped quoted SQL dependencies invalidate cached results", async () 
     let runs = 0;
     const compute = () => {
       runs++;
-      output.loadArray([{ value: 1 }, { value: 2 }])
+      output
+        .loadArray([{ value: 1 }, { value: 2 }])
         .filter('value IN (SELECT value FROM "cache""quotedSource")');
     };
     await output.cache(compute);
     await output.cache(compute);
-    assertEquals(runs, 1);
+    expect(runs).toStrictEqual(1);
     source.filter("value = 2");
     await output.cache(compute);
-    assertEquals(runs, 2);
-    assertEquals(await output.getData(), [{ value: 2 }]);
+    expect(runs).toStrictEqual(2);
+    expect(await output.getData()).toStrictEqual([{ value: 2 }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("table names in SQL literals and comments do not invalidate caches", async () => {
+test("table names in SQL literals and comments do not invalidate caches", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("cacheLiteralSource");
@@ -1476,27 +1389,26 @@ Deno.test("table names in SQL literals and comments do not invalidate caches", a
     let runs = 0;
     const compute = () => {
       runs++;
-      output.loadArray([{ value: 1 }])
-        .filter(`'cacheLiteralSource' = $$cacheLiteralSource$$
+      output.loadArray([{ value: 1 }]).filter(`'cacheLiteralSource' = $$cacheLiteralSource$$
           /* cacheLiteralSource */ -- cacheLiteralSource
         `);
     };
     await output.cache(compute);
     source.filter("value = 2");
     await output.cache(compute);
-    assertEquals(runs, 1);
-    assertEquals(await output.getData(), [{ value: 1 }]);
+    expect(runs).toStrictEqual(1);
+    expect(await output.getData()).toStrictEqual([{ value: 1 }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache rejects mutations before queuing work on multiple dependencies", async () => {
+test("cache rejects mutations before queuing work on multiple dependencies", async () => {
   const sdb = new SimpleDB();
   try {
     const output = sdb.newTable("guardOutput");
     const sources = ["guardSourceA", "guardSourceB"].map((name) =>
-      sdb.newTable(name).loadArray([{ value: 1 }, { value: 2 }])
+      sdb.newTable(name).loadArray([{ value: 1 }, { value: 2 }]),
     );
     await output.cache(async (table) => {
       for (const source of sources) {
@@ -1507,19 +1419,19 @@ Deno.test("cache rejects mutations before queuing work on multiple dependencies"
           Error,
           "cannot modify pre-existing table",
         );
-        assertEquals(source.pendingOps.length, 0);
-        assertEquals(await source.getData(), [{ value: 1 }, { value: 2 }]);
+        expect(source.pendingOps.length).toStrictEqual(0);
+        expect(await source.getData()).toStrictEqual([{ value: 1 }, { value: 2 }]);
       }
       table.loadArray([{ value: 3 }]).filter("value = 3");
     });
-    assertEquals(await output.getData(), [{ value: 3 }]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(await output.getData()).toStrictEqual([{ value: 3 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache rejects async removal and rename before changing dependencies", async () => {
+test("cache rejects async removal and rename before changing dependencies", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("guardAsyncSource").loadArray([{ value: 1 }]);
@@ -1542,26 +1454,28 @@ Deno.test("cache rejects async removal and rename before changing dependencies",
         Error,
         "cannot modify pre-existing table",
       );
-      assertEquals(source.name, "guardAsyncSource");
-      assertEquals(await source.getData(), [{ value: 1 }]);
-      assertEquals(await output.getData(), [{ value: 2 }]);
-      assertEquals(sdb.getTables(), [source, output]);
+      expect(source.name).toStrictEqual("guardAsyncSource");
+      expect(await source.getData()).toStrictEqual([{ value: 1 }]);
+      expect(await output.getData()).toStrictEqual([{ value: 2 }]);
+      expect(sdb.getTables()).toStrictEqual([source, output]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache cleans up materialized and queued temporary tables after rejection", async () => {
+test("cache cleans up materialized and queued temporary tables after rejection", async () => {
   const sdb = new SimpleDB();
   try {
     const output = sdb.newTable("guardCleanupOutput").loadArray([{ value: 1 }]);
     await assertRejects(
       () =>
         output.cache(async (table) => {
-          const local = sdb.newTable("guardMaterializedLocal").loadArray([{
-            value: 2,
-          }]);
+          const local = sdb.newTable("guardMaterializedLocal").loadArray([
+            {
+              value: 2,
+            },
+          ]);
           await local.getData();
           await local.renameTable("guardRenamedLocal");
           sdb.newTable("guardQueuedLocal").loadArray([{ value: 3 }]);
@@ -1570,16 +1484,16 @@ Deno.test("cache cleans up materialized and queued temporary tables after reject
       Error,
       "did not remove them",
     );
-    assertEquals(sdb.getTables(), [output]);
-    assertEquals(await sdb.getTableNames(), [output.name]);
-    assertEquals(await output.getData(), [{ value: 1 }]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(sdb.getTables()).toStrictEqual([output]);
+    expect(await sdb.getTableNames()).toStrictEqual([output.name]);
+    expect(await output.getData()).toStrictEqual([{ value: 1 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache does not execute leaked temporary table builders", async () => {
+test("cache does not execute leaked temporary table builders", async () => {
   const sdb = new SimpleDB();
   try {
     const output = sdb.newTable("guardUnexecutedOutput");
@@ -1587,7 +1501,9 @@ Deno.test("cache does not execute leaked temporary table builders", async () => 
     await assertRejects(
       () =>
         output.cache(() => {
-          sdb.newTable("guardUnexecutedLocal").loadArray([{ value: 1 }])
+          sdb
+            .newTable("guardUnexecutedLocal")
+            .loadArray([{ value: 1 }])
             .updateWithJS((rows) => {
               executions++;
               return rows;
@@ -1596,23 +1512,25 @@ Deno.test("cache does not execute leaked temporary table builders", async () => 
       Error,
       "did not remove it",
     );
-    assertEquals(executions, 0);
-    assertEquals(await sdb.getTableNames(), []);
-    assertEquals(sdb.getTables(), [output]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(executions).toStrictEqual(0);
+    expect(await sdb.getTableNames()).toStrictEqual([]);
+    expect(sdb.getTables()).toStrictEqual([output]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache cleans up temporary tables and pending work when compute throws", async () => {
+test("cache cleans up temporary tables and pending work when compute throws", async () => {
   const sdb = new SimpleDB();
   try {
     const output = sdb.newTable("guardThrownOutput").loadArray([{ value: 1 }]);
     await assertRejects(
       () =>
         output.cache(async (table) => {
-          await sdb.newTable("guardThrownLocal").loadArray([{ value: 2 }])
+          await sdb
+            .newTable("guardThrownLocal")
+            .loadArray([{ value: 2 }])
             .run();
           table.filter("value = 99");
           throw new Error("callback failed");
@@ -1620,16 +1538,16 @@ Deno.test("cache cleans up temporary tables and pending work when compute throws
       Error,
       "callback failed",
     );
-    assertEquals(await output.getData(), [{ value: 1 }]);
-    assertEquals(sdb.getTables(), [output]);
-    assertEquals(await sdb.getTableNames(), [output.name]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(await output.getData()).toStrictEqual([{ value: 1 }]);
+    expect(sdb.getTables()).toStrictEqual([output]);
+    expect(await sdb.getTableNames()).toStrictEqual([output.name]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("nested cache callbacks respect both inner and outer mutation guards", async () => {
+test("nested cache callbacks respect both inner and outer mutation guards", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("guardNestedSource").loadArray([{ value: 1 }]);
@@ -1658,15 +1576,15 @@ Deno.test("nested cache callbacks respect both inner and outer mutation guards",
       table.loadArray(await local.getData());
       await local.removeTable();
     });
-    assertEquals(await source.getData(), [{ value: 1 }]);
-    assertEquals(await output.getData(), [{ value: 3 }]);
-    assertEquals(sdb.getTables(), [source, output]);
+    expect(await source.getData()).toStrictEqual([{ value: 1 }]);
+    expect(await output.getData()).toStrictEqual([{ value: 3 }]);
+    expect(sdb.getTables()).toStrictEqual([source, output]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("nested cache cannot replace a dependency with a cache hit", async () => {
+test("nested cache cannot replace a dependency with a cache hit", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("guardNestedHitSource");
@@ -1683,13 +1601,13 @@ Deno.test("nested cache cannot replace a dependency with a cache hit", async () 
       Error,
       "cannot modify pre-existing table",
     );
-    assertEquals(await source.getData(), [{ value: 1 }]);
+    expect(await source.getData()).toStrictEqual([{ value: 1 }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache guards mutations issued while flushing an async barrier", async () => {
+test("cache guards mutations issued while flushing an async barrier", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("guardBarrierSource").loadArray([{ value: 1 }]);
@@ -1709,15 +1627,15 @@ Deno.test("cache guards mutations issued while flushing an async barrier", async
       Error,
       "cannot modify pre-existing table",
     );
-    assertEquals(await source.getData(), [{ value: 1 }]);
-    assertEquals(await output.getData(), [{ value: 2 }]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(await source.getData()).toStrictEqual([{ value: 1 }]);
+    expect(await output.getData()).toStrictEqual([{ value: 2 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache cleans up temporary tables created during the final flush", async () => {
+test("cache cleans up temporary tables created during the final flush", async () => {
   const sdb = new SimpleDB();
   try {
     const output = sdb.newTable("guardFinalFlushOutput");
@@ -1728,29 +1646,36 @@ Deno.test("cache cleans up temporary tables created during the final flush", asy
             method: "guardFinalFlush()",
             parameters: null,
             execute: async () => {
-              await sdb.newTable("guardFinalFlushLocal").loadArray([{
-                value: 1,
-              }]).run();
+              await sdb
+                .newTable("guardFinalFlushLocal")
+                .loadArray([
+                  {
+                    value: 1,
+                  },
+                ])
+                .run();
             },
           });
         }),
       Error,
       "did not remove it",
     );
-    assertEquals(sdb.getTables(), [output]);
-    assertEquals(await sdb.getTableNames(), []);
-    assertEquals(sdb.pendingCount, 0);
+    expect(sdb.getTables()).toStrictEqual([output]);
+    expect(await sdb.getTableNames()).toStrictEqual([]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache failure inside an async barrier discards captured work", async () => {
+test("cache failure inside an async barrier discards captured work", async () => {
   const sdb = new SimpleDB();
   try {
-    const output = sdb.newTable("guardEnclosingBarrierOutput").loadArray([{
-      value: 1,
-    }]);
+    const output = sdb.newTable("guardEnclosingBarrierOutput").loadArray([
+      {
+        value: 1,
+      },
+    ]);
     queueAsyncBarrier(output, {
       method: "guardEnclosingBarrier()",
       parameters: null,
@@ -1759,27 +1684,29 @@ Deno.test("cache failure inside an async barrier discards captured work", async 
           () =>
             output.cache((table) => {
               table.filter("value = 99");
-              sdb.newTable("guardEnclosingBarrierLocal").loadArray([{
-                value: 2,
-              }]);
+              sdb.newTable("guardEnclosingBarrierLocal").loadArray([
+                {
+                  value: 2,
+                },
+              ]);
             }),
           Error,
           "did not remove it",
         );
-        assertEquals(await output.getData(), [{ value: 1 }]);
+        expect(await output.getData()).toStrictEqual([{ value: 1 }]);
       },
     });
     await output.run();
-    assertEquals(sdb.getTables(), [output]);
-    assertEquals(await sdb.getTableNames(), [output.name]);
-    assertEquals(await output.getData(), [{ value: 1 }]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(sdb.getTables()).toStrictEqual([output]);
+    expect(await sdb.getTableNames()).toStrictEqual([output.name]);
+    expect(await output.getData()).toStrictEqual([{ value: 1 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache cleanup does not drain unrelated work in an enclosing async barrier", async () => {
+test("cache cleanup does not drain unrelated work in an enclosing async barrier", async () => {
   const sdb = new SimpleDB();
   try {
     const output = sdb.newTable("guardIndependentOutput");
@@ -1807,20 +1734,20 @@ Deno.test("cache cleanup does not drain unrelated work in an enclosing async bar
         });
         resume.resolve();
         await assertRejects(() => computation, Error, "did not remove it");
-        assertEquals(executions, 0);
+        expect(executions).toStrictEqual(0);
         await other.run();
-        assertEquals(executions, 1);
+        expect(executions).toStrictEqual(1);
       },
     });
     await output.run();
-    assertEquals(sdb.getTables(), [output, other]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(sdb.getTables()).toStrictEqual([output, other]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache cleanup preserves existing tables with case-conflicting handles", async () => {
+test("cache cleanup preserves existing tables with case-conflicting handles", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable("guardCaseSource").loadArray([{ value: 1 }]);
@@ -1829,27 +1756,23 @@ Deno.test("cache cleanup preserves existing tables with case-conflicting handles
     await assertRejects(() =>
       output.cache(() => {
         sdb.newTable(source.name.toUpperCase());
-      })
+      }),
     );
-    assertEquals(await source.getData(), [{ value: 1 }]);
-    assertEquals(sdb.getTables(), [source, output]);
-    assertEquals(await sdb.getTableNames(), [source.name]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(await source.getData()).toStrictEqual([{ value: 1 }]);
+    expect(sdb.getTables()).toStrictEqual([source, output]);
+    expect(await sdb.getTableNames()).toStrictEqual([source.name]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
 for (const kind of ["asyncBarrier", "updateWithJS"] as const) {
-  Deno.test(`cache guards ${kind} mutations flushed by a concurrent observer`, async () => {
+  test(`cache guards ${kind} mutations flushed by a concurrent observer`, async () => {
     const sdb = new SimpleDB();
     try {
-      const source = sdb.newTable(`guardConcurrentSource_${kind}`).loadArray([
-        { value: 1 },
-      ]);
-      const output = sdb.newTable(`guardConcurrentOutput_${kind}`).loadArray([
-        { value: 2 },
-      ]);
+      const source = sdb.newTable(`guardConcurrentSource_${kind}`).loadArray([{ value: 1 }]);
+      const output = sdb.newTable(`guardConcurrentOutput_${kind}`).loadArray([{ value: 2 }]);
       const entered = Promise.withResolvers<void>();
       const resume = Promise.withResolvers<void>();
       const computation = output.cache(async (table) => {
@@ -1873,31 +1796,25 @@ for (const kind of ["asyncBarrier", "updateWithJS"] as const) {
       });
       await entered.promise;
       try {
-        await assertRejects(
-          () => output.getData(),
-          Error,
-          "cannot modify pre-existing table",
-        );
+        await assertRejects(() => output.getData(), Error, "cannot modify pre-existing table");
       } finally {
         resume.resolve();
         await computation;
       }
-      assertEquals(await source.getData(), [{ value: 1 }]);
-      assertEquals(await output.getData(), [{ value: 2 }]);
-      assertEquals(sdb.getTables(), [source, output]);
-      assertEquals(sdb.pendingCount, 0);
+      expect(await source.getData()).toStrictEqual([{ value: 1 }]);
+      expect(await output.getData()).toStrictEqual([{ value: 2 }]);
+      expect(sdb.getTables()).toStrictEqual([source, output]);
+      expect(sdb.pendingCount).toStrictEqual(0);
     } finally {
       await sdb.close();
     }
   });
 }
 
-Deno.test("cache tracks dependencies read by a concurrent observer's async barrier", async () => {
+test("cache tracks dependencies read by a concurrent observer's async barrier", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("guardConcurrentReadSource").loadArray([
-      { value: 1 },
-    ]);
+    const source = sdb.newTable("guardConcurrentReadSource").loadArray([{ value: 1 }]);
     const output = sdb.newTable("guardConcurrentReadOutput");
     const entered = Promise.withResolvers<void>();
     const resume = Promise.withResolvers<void>();
@@ -1917,28 +1834,26 @@ Deno.test("cache tracks dependencies read by a concurrent observer's async barri
     const computation = output.cache(compute);
     await entered.promise;
     try {
-      assertEquals(await output.getData(), [{ value: 1 }]);
+      expect(await output.getData()).toStrictEqual([{ value: 1 }]);
     } finally {
       resume.resolve();
       await computation;
     }
     await output.cache(compute);
-    assertEquals(executions, 1);
+    expect(executions).toStrictEqual(1);
     source.loadArray([{ value: 3 }]);
     await output.cache(compute);
-    assertEquals(executions, 2);
-    assertEquals(await output.getData(), [{ value: 3 }]);
+    expect(executions).toStrictEqual(2);
+    expect(await output.getData()).toStrictEqual([{ value: 3 }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache cleans up temporary tables created by a concurrent observer's barrier", async () => {
+test("cache cleans up temporary tables created by a concurrent observer's barrier", async () => {
   const sdb = new SimpleDB();
   try {
-    const output = sdb.newTable("guardConcurrentCleanupOutput").loadArray([
-      { value: 1 },
-    ]);
+    const output = sdb.newTable("guardConcurrentCleanupOutput").loadArray([{ value: 1 }]);
     const entered = Promise.withResolvers<void>();
     const resume = Promise.withResolvers<void>();
     const computation = output.cache(async (table) => {
@@ -1946,9 +1861,10 @@ Deno.test("cache cleans up temporary tables created by a concurrent observer's b
         method: "concurrentTemporaryTable()",
         parameters: null,
         execute: async () => {
-          await sdb.newTable("guardConcurrentCleanupLocal").loadArray([
-            { value: 2 },
-          ]).run();
+          await sdb
+            .newTable("guardConcurrentCleanupLocal")
+            .loadArray([{ value: 2 }])
+            .run();
         },
       });
       entered.resolve();
@@ -1961,24 +1877,28 @@ Deno.test("cache cleans up temporary tables created by a concurrent observer's b
       resume.resolve();
       await assertRejects(() => computation, Error, "did not remove it");
     }
-    assertEquals(sdb.getTables(), [output]);
-    assertEquals(await sdb.getTableNames(), [output.name]);
-    assertEquals(await output.getData(), [{ value: 1 }]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(sdb.getTables()).toStrictEqual([output]);
+    expect(await sdb.getTableNames()).toStrictEqual([output.name]);
+    expect(await output.getData()).toStrictEqual([{ value: 1 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("cache does not guard unrelated barriers queued outside its callback", async () => {
+test("cache does not guard unrelated barriers queued outside its callback", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("guardUnrelatedSource").loadArray([{
-      value: 1,
-    }]);
-    const output = sdb.newTable("guardUnrelatedOutput").loadArray([{
-      value: 2,
-    }]);
+    const source = sdb.newTable("guardUnrelatedSource").loadArray([
+      {
+        value: 1,
+      },
+    ]);
+    const output = sdb.newTable("guardUnrelatedOutput").loadArray([
+      {
+        value: 2,
+      },
+    ]);
     const entered = Promise.withResolvers<void>();
     const resume = Promise.withResolvers<void>();
     const computation = output.cache(async () => {
@@ -1996,9 +1916,9 @@ Deno.test("cache does not guard unrelated barriers queued outside its callback",
     });
     resume.resolve();
     await computation;
-    assertEquals(await source.getData(), [{ value: 3 }]);
-    assertEquals(await output.getData(), [{ value: 2 }]);
-    assertEquals(sdb.pendingCount, 0);
+    expect(await source.getData()).toStrictEqual([{ value: 3 }]);
+    expect(await output.getData()).toStrictEqual([{ value: 2 }]);
+    expect(sdb.pendingCount).toStrictEqual(0);
   } finally {
     await sdb.close();
   }

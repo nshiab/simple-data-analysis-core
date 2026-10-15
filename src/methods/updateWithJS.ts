@@ -11,13 +11,9 @@ import parseDuckDBType from "../helpers/parseDuckDBType.ts";
 
 type Row = { [key: string]: unknown };
 
-type DataModifier = (
-  rows: Row[],
-) => Row[] | Promise<Row[]>;
+type DataModifier = (rows: Row[]) => Row[] | Promise<Row[]>;
 
-type UpdateWithJSOptions = NonNullable<
-  Parameters<SimpleTable["updateWithJS"]>[1]
->;
+type UpdateWithJSOptions = NonNullable<Parameters<SimpleTable["updateWithJS"]>[1]>;
 
 export default function updateWithJS(
   simpleTable: SimpleTable,
@@ -47,16 +43,16 @@ async function executeUpdateWithJS(
 ): Promise<void> {
   const types = await simpleTable.getTypes();
   const geometryColumns = Object.keys(types).filter((key) =>
-    types[key].toUpperCase().startsWith("GEOMETRY")
+    types[key].toUpperCase().startsWith("GEOMETRY"),
   );
   for (const column of geometryColumns) {
     if (types[column].toUpperCase() !== "GEOMETRY('EPSG:4326')") {
       throw new Error(
         `Column ${JSON.stringify(column)} has CRS ${
           types[column]
-        }. Call .reproject("EPSG:4326", { column: ${
-          JSON.stringify(column)
-        } }) before updateWithJS().`,
+        }. Call .reproject("EPSG:4326", { column: ${JSON.stringify(
+          column,
+        )} }) before updateWithJS().`,
       );
     }
     const name = quoteIdentifier(column);
@@ -65,28 +61,22 @@ async function executeUpdateWithJS(
     const result = await simpleTable.connection!.runAndReadAll(
       `SELECT count(*) AS invalid FROM ${quoteIdentifier(simpleTable.name)}
        WHERE ${name} IS NOT NULL AND
-       ST_AsWKB(${name}) != ST_AsWKB(${
-        geometryFromJSON(`ST_AsGeoJSON(${name})`)
-      })`,
+       ST_AsWKB(${name}) != ST_AsWKB(${geometryFromJSON(`ST_AsGeoJSON(${name})`)})`,
     );
     if (result.getRows()[0][0] !== 0n) {
       throw new Error(
-        `Column ${
-          JSON.stringify(column)
-        } contains geometry that cannot round-trip through GeoJSON without losing precision or dimensions; unsupported representations cannot be updated with updateWithJS().`,
+        `Column ${JSON.stringify(
+          column,
+        )} contains geometry that cannot round-trip through GeoJSON without losing precision or dimensions; unsupported representations cannot be updated with updateWithJS().`,
       );
     }
   }
   for (const key of Object.keys(options.columnTypes ?? {})) {
-    if (
-      Object.keys(types).some((name) =>
-        name.toLowerCase() === key.toLowerCase()
-      )
-    ) {
+    if (Object.keys(types).some((name) => name.toLowerCase() === key.toLowerCase())) {
       throw new Error(
-        `updateWithJS() columnTypes may only declare new columns; ${
-          JSON.stringify(key)
-        } already exists.`,
+        `updateWithJS() columnTypes may only declare new columns; ${JSON.stringify(
+          key,
+        )} already exists.`,
       );
     }
   }
@@ -97,7 +87,7 @@ async function executeUpdateWithJS(
     // DuckDB resolves identifiers case-insensitively, and a real rowid column
     // shadows its hidden row identifier used for pagination.
     const conflictingColumn = Object.keys(types).find((column) =>
-      ["rowid", "__sda_rowid"].includes(column.toLowerCase())
+      ["rowid", "__sda_rowid"].includes(column.toLowerCase()),
     );
     if (conflictingColumn !== undefined) {
       throw new Error(
@@ -133,20 +123,14 @@ async function executeUpdateWithJS(
         : page;
       const source = await readMutationRows(
         simpleTable.connection!,
-        `SELECT ${
-          Object.keys(types).map((key) =>
+        `SELECT ${Object.keys(types)
+          .map((key) =>
             geometryColumns.includes(key)
-              ? `ST_AsGeoJSON(${quoteIdentifier(key)})::VARCHAR AS ${
-                quoteIdentifier(key)
-              }`
-              : quoteIdentifier(key)
-          ).join(", ")
-        }${
-          batchSize === undefined
-            ? ""
-            : geometryBatch
-            ? ", __sda_rowid"
-            : ", rowid AS __sda_rowid"
+              ? `ST_AsGeoJSON(${quoteIdentifier(key)})::VARCHAR AS ${quoteIdentifier(key)}`
+              : quoteIdentifier(key),
+          )
+          .join(", ")}${
+          batchSize === undefined ? "" : geometryBatch ? ", __sda_rowid" : ", rowid AS __sda_rowid"
         } FROM ${from}`,
         batchSize === undefined ? undefined : "__sda_rowid",
       );
@@ -176,27 +160,24 @@ async function executeUpdateWithJS(
       const keys = Object.keys(modified[0]);
       for (const key of Object.keys(options.columnTypes ?? {})) {
         if (!keys.includes(key)) {
-          throw new Error(
-            `Unknown column ${
-              JSON.stringify(key)
-            } in updateWithJS columnTypes.`,
-          );
+          throw new Error(`Unknown column ${JSON.stringify(key)} in updateWithJS columnTypes.`);
         }
       }
       const newKeys = keys.filter((key) => !source.types.has(key));
-      const added = newKeys.length === 0 ? undefined : prepareArray(
-        modified.map((row) =>
-          Object.fromEntries(newKeys.map((key) => [key, row[key]]))
-        ),
-        options.columnTypes,
+      const added =
+        newKeys.length === 0
+          ? undefined
+          : prepareArray(
+              modified.map((row) => Object.fromEntries(newKeys.map((key) => [key, row[key]]))),
+              options.columnTypes,
+            );
+      const outputGeometry = keys.filter(
+        (key) =>
+          geometryColumns.includes(key) ||
+          (added && added.types[newKeys.indexOf(key)] === "GEOMETRY('EPSG:4326')"),
       );
-      const outputGeometry = keys.filter((key) =>
-        geometryColumns.includes(key) ||
-        (added && added.types[newKeys.indexOf(key)] === "GEOMETRY('EPSG:4326')")
-      );
-      const outputJSON = keys.filter((key) =>
-        types[key] === "JSON" ||
-        (added && added.types[newKeys.indexOf(key)] === "JSON")
+      const outputJSON = keys.filter(
+        (key) => types[key] === "JSON" || (added && added.types[newKeys.indexOf(key)] === "JSON"),
       );
       if (outputGeometry.length && !simpleTable.sdb.spatialLoaded) {
         await simpleTable.sdb.customQuery(
@@ -204,35 +185,33 @@ async function executeUpdateWithJS(
         );
         simpleTable.sdb.spatialLoaded = true;
       }
-      const geometryData = new Map(outputGeometry.map((key) => [
-        key,
-        geometryColumns.includes(key)
-          ? modified.map((row, i) =>
-            prepareGeometry(row[key], key, outputOffset + i + 1)
-          )
-          : added!.columnsData[newKeys.indexOf(key)],
-      ]));
+      const geometryData = new Map(
+        outputGeometry.map((key) => [
+          key,
+          geometryColumns.includes(key)
+            ? modified.map((row, i) => prepareGeometry(row[key], key, outputOffset + i + 1))
+            : added!.columnsData[newKeys.indexOf(key)],
+        ]),
+      );
       outputOffset += modified.length;
       const columnTypes = keys.map((key) =>
         outputGeometry.includes(key) || outputJSON.includes(key)
           ? parseDuckDBType("VARCHAR")
-          : source.types.get(key) ??
-            parseDuckDBType(added!.types[newKeys.indexOf(key)])
+          : (source.types.get(key) ?? parseDuckDBType(added!.types[newKeys.indexOf(key)])),
       );
-      const schema = JSON.stringify(
-        keys.map((key, i) => [key, columnTypes[i].toString()]),
-      );
+      const schema = JSON.stringify(keys.map((key, i) => [key, columnTypes[i].toString()]));
       // Append matching native batches directly. SQL still handles conversion
       // and BY NAME alignment when a callback changes the batch schema.
-      const direct = outputGeometry.length === 0 && outputJSON.length === 0 &&
+      const direct =
+        outputGeometry.length === 0 &&
+        outputJSON.length === 0 &&
         (first || schema === accumulatorSchema);
       const destination = direct ? accumulator : scratch.name;
       if (!direct || first) {
         await simpleTable.sdb.customQuery(
-          `CREATE OR REPLACE TABLE ${quoteIdentifier(destination)} (${
-            keys.map((key, i) => `${quoteIdentifier(key)} ${columnTypes[i]}`)
-              .join(", ")
-          })`,
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(destination)} (${keys
+            .map((key, i) => `${quoteIdentifier(key)} ${columnTypes[i].toString()}`)
+            .join(", ")})`,
         );
       }
       await appendColumnBatches(
@@ -245,36 +224,36 @@ async function executeUpdateWithJS(
           return outputGeometry.includes(key)
             ? geometryData.get(key)!.slice(start, end)
             : source.types.has(key)
-            ? modified.slice(start, end).map((row) =>
-              source.toNative(row[key], columnTypes[column])
-            )
-            : added!.columnsData[newKeys.indexOf(key)].slice(start, end);
+              ? modified
+                  .slice(start, end)
+                  .map((row) => source.toNative(row[key], columnTypes[column]))
+              : added!.columnsData[newKeys.indexOf(key)].slice(start, end);
         },
       );
-      const projection = keys.map((key) =>
-        outputGeometry.includes(key)
-          ? `${geometryFromJSON(quoteIdentifier(key))} AS ${
-            quoteIdentifier(key)
-          }`
-          : outputJSON.includes(key)
-          ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
-          : quoteIdentifier(key)
-      ).join(", ");
+      const projection = keys
+        .map((key) =>
+          outputGeometry.includes(key)
+            ? `${geometryFromJSON(quoteIdentifier(key))} AS ${quoteIdentifier(key)}`
+            : outputJSON.includes(key)
+              ? `${quoteIdentifier(key)}::JSON AS ${quoteIdentifier(key)}`
+              : quoteIdentifier(key),
+        )
+        .join(", ");
       if (direct) {
         accumulatorSchema = schema;
         first = false;
       } else if (first) {
         await simpleTable.sdb.customQuery(
-          `CREATE OR REPLACE TABLE ${
-            quoteIdentifier(accumulator)
-          } AS SELECT ${projection} FROM ${quoteIdentifier(scratch.name)}`,
+          `CREATE OR REPLACE TABLE ${quoteIdentifier(
+            accumulator,
+          )} AS SELECT ${projection} FROM ${quoteIdentifier(scratch.name)}`,
         );
         first = false;
       } else {
         await simpleTable.sdb.customQuery(
-          `INSERT INTO ${
-            quoteIdentifier(accumulator)
-          } BY NAME SELECT ${projection} FROM ${quoteIdentifier(scratch.name)}`,
+          `INSERT INTO ${quoteIdentifier(
+            accumulator,
+          )} BY NAME SELECT ${projection} FROM ${quoteIdentifier(scratch.name)}`,
         );
       }
       if (batchSize === undefined || inputCount === 0) break;
@@ -292,23 +271,21 @@ async function executeUpdateWithJS(
     const namespace = await simpleTable.connection!.runAndReadAll(
       "SELECT current_database(), current_schema()",
     );
-    const prefix = namespace.getRows()[0].map((name) =>
-      quoteIdentifier(String(name))
-    ).join(".");
+    const prefix = namespace
+      .getRows()[0]
+      .map((name) => quoteIdentifier(String(name)))
+      .join(".");
     await simpleTable.sdb.customQuery(
       `DROP TABLE IF EXISTS ${prefix}.${quoteIdentifier(simpleTable.name)};
-ALTER TABLE ${prefix}.${quoteIdentifier(accumulator)} RENAME TO ${
-        quoteIdentifier(simpleTable.name)
-      };`,
+ALTER TABLE ${prefix}.${quoteIdentifier(accumulator)} RENAME TO ${quoteIdentifier(
+        simpleTable.name,
+      )};`,
     );
   } finally {
     await simpleTable.sdb.customQuery(
       `DROP TABLE IF EXISTS ${quoteIdentifier(accumulator)};
 DROP TABLE IF EXISTS ${quoteIdentifier(scratch.name)};`,
     );
-    retainRegisteredTables(
-      simpleTable.sdb,
-      (table) => table !== scratch,
-    );
+    retainRegisteredTables(simpleTable.sdb, (table) => table !== scratch);
   }
 }

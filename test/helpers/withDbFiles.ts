@@ -1,3 +1,6 @@
+import { mkdtempSync as nodeMkdtempSync, rmSync as nodeRmSync } from "node:fs";
+import { join as nodeJoin } from "node:path";
+import { tmpdir as nodeTmpdir } from "node:os";
 import { join } from "node:path";
 import SimpleDB from "../../src/class/SimpleDB.ts";
 
@@ -7,7 +10,7 @@ export default async function withDbFiles(
     db: (options?: ConstructorParameters<typeof SimpleDB>[0]) => SimpleDB;
   }) => Promise<void>,
 ): Promise<void> {
-  const directory = Deno.makeTempDirSync({ prefix: "sda-db-files-" });
+  const directory = nodeMkdtempSync(nodeJoin(nodeTmpdir(), "sda-db-files-"));
   const databases: SimpleDB[] = [];
   const errors: unknown[] = [];
   try {
@@ -27,17 +30,16 @@ export default async function withDbFiles(
   } finally {
     const results = await Promise.allSettled(
       databases.map((database) =>
-        database.lifecycleState === "closed"
-          ? Promise.resolve()
-          : database.close()
+        database.lifecycleState === "closed" ? Promise.resolve() : database.close(),
       ),
     );
-    Deno.removeSync(directory, { recursive: true });
-    errors.push(
-      ...results.filter((result) => result.status === "rejected").map((
-        result,
-      ) => result.reason),
-    );
+    nodeRmSync(directory, { recursive: true });
+    for (const result of results) {
+      if (result.status === "rejected") {
+        const reason: unknown = result.reason;
+        errors.push(reason);
+      }
+    }
   }
   if (errors.length === 1) throw errors[0];
   if (errors.length > 1) {

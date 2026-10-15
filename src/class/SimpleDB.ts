@@ -22,9 +22,7 @@ import removeTables from "../methods/removeTables.ts";
 import selectTables from "../methods/selectTables.ts";
 import loadDB from "../methods/loadDB.ts";
 import writeDB from "../methods/writeDB.ts";
-import flushAllTables, {
-  runExemptFromFlush,
-} from "../helpers/flushAllTables.ts";
+import flushAllTables, { runExemptFromFlush } from "../helpers/flushAllTables.ts";
 import { discardAllPending } from "../helpers/queueOp.ts";
 import {
   initializeTableRegistry,
@@ -68,8 +66,7 @@ import formatMissingTables from "../helpers/formatMissingTables.ts";
  * ```
  */
 
-export default class SimpleDB<Table extends SimpleTable = SimpleTable>
-  extends Simple {
+export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends Simple {
   /**
    * The operator syntax used by expressions and custom queries in this database.
    * `"js"` translates JavaScript-style operators (`&&`, `||`, `==`, `===`,
@@ -436,9 +433,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.cacheTimeSaved = 0;
     this.cacheTimeWriting = 0;
     this.progressBar = options.progressBar ?? false;
-    this.duckDbCache = options.duckDbCache === undefined
-      ? false
-      : options.duckDbCache;
+    this.duckDbCache = options.duckDbCache === undefined ? false : options.duckDbCache;
     this.memoryLimit = options.memoryLimit;
     this.tempDir = options.tempDir;
     this.flushPromise = null;
@@ -461,9 +456,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async start(): Promise<SimpleDB> {
     if (this.lifecycleState === "closed") {
-      throw new Error(
-        `start() cannot use a SimpleDB that is ${this.lifecycleState}.`,
-      );
+      throw new Error(`start() cannot use a SimpleDB that is ${this.lifecycleState}.`);
     }
     if (this.#startPromise === null) {
       // The setup queries below must run before any queued operation, so
@@ -513,9 +506,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     // By default, DuckDB does not compress in-memory databases, so we enable it here.
     if (this.file === ":memory:") {
       await this.customQuery(
-        `ATTACH OR REPLACE ':memory:' AS ${
-          quoteIdentifier("memory")
-        } (COMPRESS);`,
+        `ATTACH OR REPLACE ':memory:' AS ${quoteIdentifier("memory")} (COMPRESS);`,
       );
     }
 
@@ -526,34 +517,28 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     }
 
     if (this.progressBar) {
-      await this.customQuery(
-        `SET enable_progress_bar = TRUE; SET progress_bar_time = 0;`,
-      );
+      await this.customQuery(`SET enable_progress_bar = TRUE; SET progress_bar_time = 0;`);
     }
 
     if (this.memoryLimit !== undefined) {
       await this.customQuery(`SET memory_limit = '${this.memoryLimit}';`);
     }
     if (this.tempDir !== undefined) {
-      await this.customQuery(
-        `SET temp_directory = '${this.tempDir}';`,
-      );
+      await this.customQuery(`SET temp_directory = '${this.tempDir}';`);
     }
     if (this.file !== ":memory:") {
       const database = await getCurrentDatabase(this);
       const indexes = await readDbMetadata(this, database);
       await prepareDbExtensions(this, database, indexes);
-      const existingNames = new Set(
-        (await this.getTableNames()).map((name) => name.toLowerCase()),
-      );
+      const existingNames = new Set((await this.getTableNames()).map((name) => name.toLowerCase()));
       const conflicts = this.getTables().filter((table) =>
-        existingNames.has(table.name.toLowerCase())
+        existingNames.has(table.name.toLowerCase()),
       );
       if (conflicts.length > 0) {
         throw new Error(
-          `Tables already exist in ${this.file}: ${
-            conflicts.map((table) => table.name).join(", ")
-          }. Use getTable() to access them.`,
+          `Tables already exist in ${this.file}: ${conflicts
+            .map((table) => table.name)
+            .join(", ")}. Use getTable() to access them.`,
         );
       }
       await setDbProps(this, indexes);
@@ -586,13 +571,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @returns A new table instance.
    * @category Table Management
    */
-  newTable(
-    name?: string,
-  ): Table {
+  newTable(name?: string): Table {
     if (this.lifecycleState !== "open") {
-      throw new Error(
-        `newTable() cannot use a SimpleDB that is ${this.lifecycleState}.`,
-      );
+      throw new Error(`newTable() cannot use a SimpleDB that is ${this.lifecycleState}.`);
     }
     const TableClass = this.tableClass;
 
@@ -607,9 +588,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       table.defaultTableName = false;
     } else {
       while (
-        this.getTables().some((table) =>
-          table.name.toLowerCase() === `table${this.tableIncrement}`
-        )
+        this.getTables().some((table) => table.name.toLowerCase() === `table${this.tableIncrement}`)
       ) {
         this.tableIncrement++;
       }
@@ -646,7 +625,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     const tables = this.getTables();
     const table = tables.find((t) => t.name === name);
     if (table) {
-      return await table;
+      return table;
     } else {
       throw new Error(
         formatMissingTables(
@@ -691,9 +670,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    */
-  async removeTables(
-    tables: Table | string | (Table | string)[],
-  ): Promise<this> {
+  async removeTables(tables: Table | string | (Table | string)[]): Promise<this> {
     await removeTables(this, tables);
     return this;
   }
@@ -725,9 +702,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    * @returns A promise that resolves to the database, so methods can be chained.
    * @category Table Management
    */
-  async selectTables(
-    tables: Table | string | (Table | string)[],
-  ): Promise<this> {
+  async selectTables(tables: Table | string | (Table | string)[]): Promise<this> {
     await selectTables(this, tables);
     return this;
   }
@@ -765,9 +740,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
   async logTableNames(): Promise<this> {
     const tables = await this.getTableNames();
     if (tables.length > 0) {
-      console.log(
-        `\nSimpleDB - Tables:  ${JSON.stringify(tables)}`,
-      );
+      console.log(`\nSimpleDB - Tables:  ${JSON.stringify(tables)}`);
     } else {
       console.log(`\nSimpleDB - No tables found.`);
     }
@@ -896,8 +869,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     } = {},
   ): Promise<
     | {
-      [key: string]: unknown;
-    }[]
+        [key: string]: unknown;
+      }[]
     | null
   > {
     return await queryDB(
@@ -1027,9 +1000,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
    */
   async run(): Promise<SimpleDB> {
     if (this.lifecycleState !== "open") {
-      throw new Error(
-        `run() cannot use a SimpleDB that is ${this.lifecycleState}.`,
-      );
+      throw new Error(`run() cannot use a SimpleDB that is ${this.lifecycleState}.`);
     }
     await flushAllTables(this);
     return this;
@@ -1093,8 +1064,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       }
     }
     try {
-      const tmpDir = this.tempDir ??
-        (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
+      const tmpDir = this.tempDir ?? (this.file === ":memory:" ? ".tmp" : `${this.file}.tmp`);
       if (existsSync(tmpDir)) {
         rmSync(tmpDir, { recursive: true });
       }
@@ -1106,7 +1076,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
     this.lifecycleState = "closed";
 
     if (
-      operationError === undefined && cleanupErrors.length === 0 &&
+      operationError === undefined &&
+      cleanupErrors.length === 0 &&
       typeof this.durationStart === "number"
     ) {
       let string = prettyDuration(this.durationStart, {
@@ -1114,18 +1085,14 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       });
 
       if (this.cacheTimeSaved > 0) {
-        string += ` / ${
-          prettyDuration(0, {
-            end: this.cacheTimeSaved,
-          })
-        } saved by using the cache`;
+        string += ` / ${prettyDuration(0, {
+          end: this.cacheTimeSaved,
+        })} saved by using the cache`;
       }
       if (this.cacheTimeWriting > 0) {
-        string += ` / ${
-          prettyDuration(0, {
-            end: this.cacheTimeWriting,
-          })
-        } spent writing the cache`;
+        string += ` / ${prettyDuration(0, {
+          end: this.cacheTimeWriting,
+        })} spent writing the cache`;
       }
 
       console.log(`${string}\n`);
@@ -1159,6 +1126,6 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable>
       );
     }
 
-    return await this;
+    return this;
   }
 }

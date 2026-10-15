@@ -20,16 +20,10 @@ export default function splitExtract(
       // Writing back to the split column itself is allowed (in-place); any
       // other existing column is a duplicate, like v1's ALTER TABLE ADD.
       assertNewColumns(types, [newColumn], "splitExtract()", [column]);
-      const expression = `SPLIT_PART(${quoteIdentifier(column)}, ?, ${
-        index + 1
-      })`;
+      const expression = `SPLIT_PART(${quoteIdentifier(column)}, ?, ${index + 1})`;
       return column === newColumn
-        ? `SELECT * REPLACE (${expression} AS ${
-          quoteIdentifier(newColumn)
-        }) FROM ${input}`
-        : `SELECT *, ${expression} AS ${
-          quoteIdentifier(newColumn)
-        } FROM ${input}`;
+        ? `SELECT * REPLACE (${expression} AS ${quoteIdentifier(newColumn)}) FROM ${input}`
+        : `SELECT *, ${expression} AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

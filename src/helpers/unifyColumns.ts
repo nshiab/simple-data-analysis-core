@@ -28,9 +28,9 @@ export default async function unifyColumns(
       if (!existingColumns.get(table)!.has(column)) {
         await queryDB(
           table,
-          `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${
-            quoteIdentifier(column)
-          } ${allTypes[column]};`,
+          `ALTER TABLE ${quoteIdentifier(table.name)} ADD ${quoteIdentifier(
+            column,
+          )} ${allTypes[column]};`,
           mergeOptions(table, {
             table: table.name,
             method: "insertTables()",

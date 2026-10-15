@@ -11,21 +11,16 @@ export default async function removeTables(
   simpleDB: SimpleDB,
   tables: SimpleTable | string | (SimpleTable | string)[],
 ) {
-  const tablesToBeRemoved = tables === "all"
-    ? [...simpleDB.getTables()]
-    : Array.isArray(tables)
-    ? tables
-    : [tables];
+  const tablesToBeRemoved =
+    tables === "all" ? [...simpleDB.getTables()] : Array.isArray(tables) ? tables : [tables];
   assertSameDatabase(
     simpleDB,
-    tablesToBeRemoved.filter((table): table is SimpleTable =>
-      table instanceof SimpleTable
-    ),
+    tablesToBeRemoved.filter((table): table is SimpleTable => table instanceof SimpleTable),
     "removeTables()",
   );
 
   const names = tablesToBeRemoved.map((table) =>
-    (table instanceof SimpleTable ? table.name : table).toLowerCase()
+    (table instanceof SimpleTable ? table.name : table).toLowerCase(),
   );
   for (const table of simpleDB.getTables()) {
     if (names.includes(table.name.toLowerCase())) {
@@ -35,9 +30,9 @@ export default async function removeTables(
 
   await queryDB(
     simpleDB,
-    tablesToBeRemoved.map((d) =>
-      `DROP TABLE ${quoteIdentifier(d instanceof SimpleTable ? d.name : d)};`
-    ).join("\n"),
+    tablesToBeRemoved
+      .map((d) => `DROP TABLE ${quoteIdentifier(d instanceof SimpleTable ? d.name : d)};`)
+      .join("\n"),
     mergeOptions(simpleDB, {
       table: null,
       method: "removeTable()",
@@ -46,10 +41,7 @@ export default async function removeTables(
   );
 
   const tablesNamesToBeRemoved = tablesToBeRemoved.map((t) =>
-    t instanceof SimpleTable ? t.name : t
+    t instanceof SimpleTable ? t.name : t,
   );
-  retainRegisteredTables(
-    simpleDB,
-    (table) => !tablesNamesToBeRemoved.includes(table.name),
-  );
+  retainRegisteredTables(simpleDB, (table) => !tablesNamesToBeRemoved.includes(table.name));
 }

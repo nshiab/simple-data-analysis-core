@@ -37,7 +37,8 @@ export default async function buildSparseMutualReachabilityMst(
       const source = Number(sources.getItem(row));
       const target = Number(targets.getItem(row));
       const distance = Number(distances.getItem(row));
-      let left = find(source), right = find(target);
+      let left = find(source),
+        right = find(target);
       if (left === right) continue;
       if (size[left] < size[right]) [left, right] = [right, left];
       parent[right] = left;
@@ -46,9 +47,7 @@ export default async function buildSparseMutualReachabilityMst(
     }
   }
   if (mst.length !== count - 1) {
-    throw new Error(
-      "Approximate HDBSCAN candidate graph has no spanning tree.",
-    );
+    throw new Error("Approximate HDBSCAN candidate graph has no spanning tree.");
   }
   return mst;
 }

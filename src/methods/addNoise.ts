@@ -14,26 +14,20 @@ export default function addNoise(
 ) {
   // This validation doesn't need the database, so it stays at call time.
   if (!Number.isFinite(max) || max < 0) {
-    throw new Error(
-      "addNoise() max must be a finite number greater than or equal to 0.",
-    );
+    throw new Error("addNoise() max must be a finite number greater than or equal to 0.");
   }
 
   const cols = stringToArray(columns);
   if (cols.length === 0) {
     throw new Error("addNoise() requires at least one column.");
   }
-  const duplicateColumns = cols.filter((column, index) =>
-    cols.indexOf(column) !== index
-  );
+  const duplicateColumns = cols.filter((column, index) => cols.indexOf(column) !== index);
   if (duplicateColumns.length > 0) {
     const duplicates = [...new Set(duplicateColumns)];
     throw new Error(
-      `addNoise() received duplicate column${
-        duplicates.length === 1 ? "" : "s"
-      } ${
-        duplicates.map(quoteIdentifier).join(", ")
-      }. Include each column only once.`,
+      `addNoise() received duplicate column${duplicates.length === 1 ? "" : "s"} ${duplicates
+        .map(quoteIdentifier)
+        .join(", ")}. Include each column only once.`,
     );
   }
 
@@ -62,33 +56,31 @@ function addNoiseSelect(
   assertColumnsExist(schema, columns, "addNoise()");
 
   const numericalColumns = new Set(keepNumericalColumns(schema));
-  const nonNumericalColumns = columns.filter((column) =>
-    !numericalColumns.has(column)
-  );
+  const nonNumericalColumns = columns.filter((column) => !numericalColumns.has(column));
   if (nonNumericalColumns.length > 0) {
     throw new Error(
-      `addNoise() requires numeric columns, but ${
-        nonNumericalColumns.map((column) =>
-          `${quoteIdentifier(column)} has type ${schema[column]}`
-        ).join(", ")
-      }. Convert ${
+      `addNoise() requires numeric columns, but ${nonNumericalColumns
+        .map((column) => `${quoteIdentifier(column)} has type ${schema[column]}`)
+        .join(", ")}. Convert ${
         nonNumericalColumns.length === 1 ? "it" : "them"
       } to a numeric type first.`,
     );
   }
 
-  const replacements = columns.map((column) => {
-    const quotedColumn = quoteIdentifier(column);
-    const duplicateCondition = onlyDuplicates
-      ? `COUNT(*) OVER (PARTITION BY ${quotedColumn}) > 1`
-      : "TRUE";
-    return `CASE
+  const replacements = columns
+    .map((column) => {
+      const quotedColumn = quoteIdentifier(column);
+      const duplicateCondition = onlyDuplicates
+        ? `COUNT(*) OVER (PARTITION BY ${quotedColumn}) > 1`
+        : "TRUE";
+      return `CASE
       WHEN ${quotedColumn} IS NULL THEN NULL
       WHEN ${duplicateCondition}
         THEN CAST(${quotedColumn} AS DOUBLE) + (random() * 2 - 1) * ${max}
       ELSE CAST(${quotedColumn} AS DOUBLE)
     END AS ${quotedColumn}`;
-  }).join(", ");
+    })
+    .join(", ");
 
   return `SELECT * REPLACE (${replacements}) FROM ${input}`;
 }

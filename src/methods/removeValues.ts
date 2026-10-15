@@ -1,9 +1,7 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
-import prepareValueFilters, {
-  type ValueFilter,
-} from "../helpers/prepareValueFilters.ts";
+import prepareValueFilters, { type ValueFilter } from "../helpers/prepareValueFilters.ts";
 
 export default function removeValues(
   simpleTable: SimpleTable,
@@ -12,7 +10,7 @@ export default function removeValues(
   const captured = Object.fromEntries(
     Object.entries(columnsAndValues).map(([column, values]) => [
       column,
-      Array.isArray(values) ? [...values] : values,
+      Array.isArray(values) ? values.map((value: unknown) => value) : values,
     ]),
   ) as typeof columnsAndValues;
   const filters = prepareValueFilters(captured);
@@ -26,24 +24,24 @@ export default function removeValues(
   });
 }
 
-function removeValuesSelect(
-  input: string,
-  filters: ValueFilter[],
-) {
+function removeValuesSelect(input: string, filters: ValueFilter[]) {
   let query = `SELECT * FROM ${input} WHERE\n`;
 
   const conditions = [];
   for (const filter of filters) {
     const column = quoteIdentifier(filter.column);
-    const notInValues = filter.values.length > 0
-      ? `${column} NOT IN (${filter.values.map(() => "?").join(", ")})`
-      : null;
+    const notInValues =
+      filter.values.length > 0
+        ? `${column} NOT IN (${filter.values.map(() => "?").join(", ")})`
+        : null;
     conditions.push(
       notInValues === null
-        ? filter.includesNull ? `${column} IS NOT NULL` : "TRUE"
+        ? filter.includesNull
+          ? `${column} IS NOT NULL`
+          : "TRUE"
         : filter.includesNull
-        ? `(${notInValues} AND ${column} IS NOT NULL)`
-        : `(${notInValues} OR ${column} IS NULL)`,
+          ? `(${notInValues} AND ${column} IS NOT NULL)`
+          : `(${notInValues} OR ${column} IS NULL)`,
     );
   }
 

@@ -23,10 +23,7 @@ export type PreparedGraphTemporalSql = {
   eventValidity: (tableAlias?: string) => string;
   gapParameter: string;
   gapUnit: "microsecond" | "nanosecond";
-  journeyAnchor: (
-    alias: string,
-    direction: Exclude<GraphDirection, "both">,
-  ) => string;
+  journeyAnchor: (alias: string, direction: Exclude<GraphDirection, "both">) => string;
   journeyElapsed: (
     alias: string,
     anchor: string,
@@ -59,34 +56,21 @@ export function prepareGraphTemporalOptions(
 ): PreparedGraphTemporalOptions | undefined {
   const startTimeColumn = options.startTimeColumn;
   const endTimeColumn = options.endTimeColumn;
-  if (
-    startTimeColumn !== undefined && typeof startTimeColumn !== "string"
-  ) {
-    throw new TypeError(
-      `${method} options.startTimeColumn must be a string.`,
-    );
+  if (startTimeColumn !== undefined && typeof startTimeColumn !== "string") {
+    throw new TypeError(`${method} options.startTimeColumn must be a string.`);
   }
   if (endTimeColumn !== undefined && typeof endTimeColumn !== "string") {
     throw new TypeError(`${method} options.endTimeColumn must be a string.`);
   }
-  if (
-    options.strictOrdering !== undefined &&
-    typeof options.strictOrdering !== "boolean"
-  ) {
-    throw new TypeError(
-      `${method} options.strictOrdering must be a boolean.`,
-    );
+  if (options.strictOrdering !== undefined && typeof options.strictOrdering !== "boolean") {
+    throw new TypeError(`${method} options.strictOrdering must be a boolean.`);
   }
-  if (
-    options.minGapMs !== undefined && typeof options.minGapMs !== "number"
-  ) {
+  if (options.minGapMs !== undefined && typeof options.minGapMs !== "number") {
     throw new TypeError(`${method} options.minGapMs must be a number.`);
   }
 
-  const hasTimeColumn = startTimeColumn !== undefined ||
-    endTimeColumn !== undefined;
-  const hasTemporalSetting = options.minGapMs !== undefined ||
-    options.strictOrdering !== undefined;
+  const hasTimeColumn = startTimeColumn !== undefined || endTimeColumn !== undefined;
+  const hasTemporalSetting = options.minGapMs !== undefined || options.strictOrdering !== undefined;
   if (!hasTimeColumn) {
     if (hasTemporalSetting) {
       throw new TypeError(
@@ -102,17 +86,11 @@ export function prepareGraphTemporalOptions(
   }
 
   const minGapMs = options.minGapMs ?? 0;
-  if (
-    !Number.isFinite(minGapMs) || minGapMs < 0 || !Number.isInteger(minGapMs)
-  ) {
-    throw new TypeError(
-      `${method} options.minGapMs must be a finite, non-negative integer.`,
-    );
+  if (!Number.isFinite(minGapMs) || minGapMs < 0 || !Number.isInteger(minGapMs)) {
+    throw new TypeError(`${method} options.minGapMs must be a finite, non-negative integer.`);
   }
   if (minGapMs > Number.MAX_SAFE_INTEGER) {
-    throw new TypeError(
-      `${method} options.minGapMs must not exceed Number.MAX_SAFE_INTEGER.`,
-    );
+    throw new TypeError(`${method} options.minGapMs must not exceed Number.MAX_SAFE_INTEGER.`);
   }
   const gapMicroseconds = BigInt(minGapMs) * 1000n;
 
@@ -130,12 +108,14 @@ export default function prepareGraphTemporalSql(
   options: PreparedGraphTemporalOptions,
   method: string,
 ): PreparedGraphTemporalSql {
-  const start = options.startTimeColumn === undefined
-    ? undefined
-    : getTemporalColumn(schema, options.startTimeColumn, method);
-  const end = options.endTimeColumn === undefined
-    ? undefined
-    : getTemporalColumn(schema, options.endTimeColumn, method);
+  const start =
+    options.startTimeColumn === undefined
+      ? undefined
+      : getTemporalColumn(schema, options.startTimeColumn, method);
+  const end =
+    options.endTimeColumn === undefined
+      ? undefined
+      : getTemporalColumn(schema, options.endTimeColumn, method);
   if (start?.zoned !== undefined && end?.zoned !== undefined) {
     if (start.zoned !== end.zoned) {
       throw new TypeError(
@@ -148,13 +128,9 @@ export default function prepareGraphTemporalSql(
   const endColumn = end?.column ?? start!.column;
   const startType = start?.type ?? end!.type;
   const endType = end?.type ?? start!.type;
-  const gapUnit = start?.type === "TIMESTAMP_NS" ||
-      end?.type === "TIMESTAMP_NS"
-    ? "nanosecond"
-    : "microsecond";
-  const gap = gapUnit === "nanosecond"
-    ? options.gapMicroseconds * 1000n
-    : options.gapMicroseconds;
+  const gapUnit =
+    start?.type === "TIMESTAMP_NS" || end?.type === "TIMESTAMP_NS" ? "nanosecond" : "microsecond";
+  const gap = gapUnit === "nanosecond" ? options.gapMicroseconds * 1000n : options.gapMicroseconds;
   const q = quoteIdentifier;
   const reference = (alias: string | undefined, column: string) =>
     `${alias === undefined ? "" : `${q(alias)}.`}${q(column)}`;
@@ -168,28 +144,18 @@ export default function prepareGraphTemporalSql(
     gapUnit,
     journeyAnchor: (alias, direction) =>
       direction === "outgoing"
-        ? temporalUnits(
-          eventReference(alias, "__event_start"),
-          startType,
-          gapUnit,
-        )
+        ? temporalUnits(eventReference(alias, "__event_start"), startType, gapUnit)
         : temporalUnits(eventReference(alias, "__event_end"), endType, gapUnit),
     journeyElapsed: (alias, anchor, direction) =>
       direction === "outgoing"
-        ? `(${
-          temporalUnits(eventReference(alias, "__event_end"), endType, gapUnit)
-        } - (${anchor}))`
-        : `((${anchor}) - ${
-          temporalUnits(
+        ? `(${temporalUnits(eventReference(alias, "__event_end"), endType, gapUnit)} - (${anchor}))`
+        : `((${anchor}) - ${temporalUnits(
             eventReference(alias, "__event_start"),
             startType,
             gapUnit,
-          )
-        })`,
+          )})`,
     elapsedMilliseconds: (elapsed) =>
-      `(CAST(${elapsed} AS DOUBLE) / ${
-        gapUnit === "nanosecond" ? 1000000 : 1000
-      })`,
+      `(CAST(${elapsed} AS DOUBLE) / ${gapUnit === "nanosecond" ? 1000000 : 1000})`,
     eventSelections: (alias) => [
       `row_number() OVER () AS ${q("__event_id")}`,
       `${reference(alias, startColumn)} AS ${q("__event_start")}`,
@@ -201,9 +167,11 @@ export default function prepareGraphTemporalSql(
       return `CASE
         WHEN ${eventStart} IS NULL OR ${eventEnd} IS NULL THEN false
         WHEN NOT isfinite(${eventStart}) OR NOT isfinite(${eventEnd}) THEN false
-        ELSE ${temporalUnits(eventEnd, endType, gapUnit)} >= ${
-        temporalUnits(eventStart, startType, gapUnit)
-      }
+        ELSE ${temporalUnits(eventEnd, endType, gapUnit)} >= ${temporalUnits(
+          eventStart,
+          startType,
+          gapUnit,
+        )}
       END`;
     },
     transition: (currentAlias, candidateAlias, direction, gapExpression) => {
@@ -212,12 +180,12 @@ export default function prepareGraphTemporalSql(
       const candidateStart = eventReference(candidateAlias, "__event_start");
       const candidateEnd = eventReference(candidateAlias, "__event_end");
       const earlierEnd = direction === "outgoing" ? currentEnd : candidateEnd;
-      const laterStart = direction === "outgoing"
-        ? candidateStart
-        : currentStart;
-      const elapsed = `${temporalUnits(laterStart, startType, gapUnit)} - ${
-        temporalUnits(earlierEnd, endType, gapUnit)
-      }`;
+      const laterStart = direction === "outgoing" ? candidateStart : currentStart;
+      const elapsed = `${temporalUnits(laterStart, startType, gapUnit)} - ${temporalUnits(
+        earlierEnd,
+        endType,
+        gapUnit,
+      )}`;
       const ordering = options.strictOrdering
         ? `
         AND ${elapsed} > 0`
@@ -251,22 +219,20 @@ function getTemporalColumn(
   method: string,
 ): { column: string; type: string; zoned: boolean } {
   const folded = foldIdentifier(requested);
-  const column = Object.keys(schema).find((name) =>
-    foldIdentifier(name) === folded
-  );
+  const column = Object.keys(schema).find((name) => foldIdentifier(name) === folded);
   if (column === undefined) {
     throw new Error(
-      `${method} the column ${
-        quoteIdentifier(requested)
-      } does not exist. Check for typos, or load the data first.`,
+      `${method} the column ${quoteIdentifier(
+        requested,
+      )} does not exist. Check for typos, or load the data first.`,
     );
   }
   const type = normalizeTemporalType(schema[column]);
   if (!temporalTypes.has(type)) {
     throw new TypeError(
-      `${method} requires DATE or TIMESTAMP chronological columns, but column ${
-        quoteIdentifier(column)
-      } has type ${schema[column].toUpperCase()}.`,
+      `${method} requires DATE or TIMESTAMP chronological columns, but column ${quoteIdentifier(
+        column,
+      )} has type ${schema[column].toUpperCase()}.`,
     );
   }
   return {

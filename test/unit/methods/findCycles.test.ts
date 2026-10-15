@@ -1,10 +1,6 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStrictEquals,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects, assertThrows } from "../../helpers/assertions.ts";
+
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
@@ -22,7 +18,8 @@ function loadScenario(
   const columns = weighted
     ? ["edgeId", "source", "target", "weight"]
     : ["edgeId", "source", "target"];
-  const table = sdb.newTable(name)
+  const table = sdb
+    .newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(columns);
@@ -30,7 +27,8 @@ function loadScenario(
 }
 
 function expectedCase(sdb: SimpleDB, name: string, caseName: string) {
-  return sdb.newTable(name)
+  return sdb
+    .newTable(name)
     .loadData("test/data/graphs/expected/find_cycles.csv")
     .filter(`"case" = '${caseName}'`)
     .removeColumns("case");
@@ -38,19 +36,14 @@ function expectedCase(sdb: SimpleDB, name: string, caseName: string) {
 
 const chronologicalBase = Date.parse("2025-01-01T00:00:00.000Z");
 
-function chronologicalRows(
-  events: ReferenceChronologicalEvent<string, number>[],
-) {
+function chronologicalRows(events: ReferenceChronologicalEvent<string, number>[]) {
   return events.map((event) => ({
     edgeId: event.edgeId,
     source: event.source,
     target: event.target,
-    startTime: event.startTime === null
-      ? null
-      : new Date(chronologicalBase + Number(event.startTime)),
-    endTime: event.endTime === null
-      ? null
-      : new Date(chronologicalBase + Number(event.endTime)),
+    startTime:
+      event.startTime === null ? null : new Date(chronologicalBase + Number(event.startTime)),
+    endTime: event.endTime === null ? null : new Date(chronologicalBase + Number(event.endTime)),
   }));
 }
 
@@ -63,10 +56,7 @@ function compareNumberLists(left: number[], right: number[]): number {
 
 function compareStrings(left: string, right: string): number {
   const encoder = new TextEncoder();
-  return compareNumberLists(
-    [...encoder.encode(left)],
-    [...encoder.encode(right)],
-  );
+  return compareNumberLists([...encoder.encode(left)], [...encoder.encode(right)]);
 }
 
 function referenceChronologicalCycleRows(
@@ -76,13 +66,8 @@ function referenceChronologicalCycleRows(
   minGap: bigint,
   strictOrdering: boolean,
 ) {
-  type Route = ReturnType<typeof enumerateChronologicalRoutes<string, number>>[
-    number
-  ];
-  const selected = new Map<
-    string,
-    { identity: number[]; route: Route; start: string }
-  >();
+  type Route = ReturnType<typeof enumerateChronologicalRoutes<string, number>>[number];
+  const selected = new Map<string, { identity: number[]; route: Route; start: string }>();
   for (const start of starts) {
     const routes = enumerateChronologicalRoutes(events, start, {
       direction,
@@ -99,9 +84,9 @@ function referenceChronologicalCycleRows(
       if (
         current === undefined ||
         compareNumberLists(
-            sequence,
-            current.route.map((step) => step.event.edgeId),
-          ) < 0
+          sequence,
+          current.route.map((step) => step.event.edgeId),
+        ) < 0
       ) {
         selected.set(key, { identity, route, start });
       }
@@ -109,13 +94,12 @@ function referenceChronologicalCycleRows(
   }
   return [...selected.values()]
     .toSorted((left, right) => {
-      return compareStrings(left.start, right.start) ||
-        compareNumberLists(left.identity, right.identity);
+      return (
+        compareStrings(left.start, right.start) || compareNumberLists(left.identity, right.identity)
+      );
     })
     .flatMap(({ route, start }, index, cycles) => {
-      const pathId = cycles.slice(0, index).filter((cycle) =>
-        cycle.start === start
-      ).length;
+      const pathId = cycles.slice(0, index).filter((cycle) => cycle.start === start).length;
       return route.map((routeStep, step) => ({
         start,
         pathId,
@@ -129,97 +113,89 @@ function referenceChronologicalCycleRows(
     });
 }
 
-Deno.test("findCycles defaults to outgoing with omitted or empty options", async () => {
+test("findCycles defaults to outgoing with omitted or empty options", async () => {
   const sdb = new SimpleDB();
   try {
-    const expected = await expectedCase(
-      sdb,
-      "defaultOracle",
-      "triangle-outgoing",
-    ).getData();
-    assertEquals(
+    const expected = await expectedCase(sdb, "defaultOracle", "triangle-outgoing").getData();
+    expect(
       await loadScenario(sdb, "implicitDefault", "triangle")
-        .findCycles("source", "target", "edgeId", "A").getData(),
-      expected,
-    );
-    for (
-      const [index, options] of [{}, { direction: "outgoing" as const }]
-        .entries()
-    ) {
-      assertEquals(
+        .findCycles("source", "target", "edgeId", "A")
+        .getData(),
+    ).toStrictEqual(expected);
+    for (const [index, options] of [{}, { direction: "outgoing" as const }].entries()) {
+      expect(
         await loadScenario(sdb, `defaultOptions${index}`, "triangle")
-          .findCycles("source", "target", "edgeId", "A", options).getData(),
-        expected,
-      );
+          .findCycles("source", "target", "edgeId", "A", options)
+          .getData(),
+      ).toStrictEqual(expected);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles roots directed and undirected cycles at requested nodes", async () => {
+test("findCycles roots directed and undirected cycles at requested nodes", async () => {
   const sdb = new SimpleDB();
   try {
     for (const direction of ["outgoing", "incoming", "both"] as const) {
-      const actual = loadScenario(sdb, `triangle_${direction}`, "triangle")
-        .findCycles("source", "target", "edgeId", "A", {
+      const actual = loadScenario(sdb, `triangle_${direction}`, "triangle").findCycles(
+        "source",
+        "target",
+        "edgeId",
+        "A",
+        {
           direction,
           outputTable: true,
-        });
-      const expected = expectedCase(
-        sdb,
-        `triangle_${direction}_oracle`,
-        `triangle-${direction}`,
+        },
       );
-      assertEquals(await actual.getData(), await expected.getData());
+      const expected = expectedCase(sdb, `triangle_${direction}_oracle`, `triangle-${direction}`);
+      expect(await actual.getData()).toStrictEqual(await expected.getData());
     }
 
-    const undirected = loadScenario(
-      sdb,
-      "undirected_triangle",
-      "undirected-triangle",
-    );
-    assertEquals(
-      await undirected.findCycles("source", "target", "edgeId", "A", {
-        direction: "both",
-        outputTable: true,
-      }).getData(),
-      await expectedCase(
-        sdb,
-        "undirected_oracle",
-        "undirected-triangle-both",
-      ).getData(),
+    const undirected = loadScenario(sdb, "undirected_triangle", "undirected-triangle");
+    expect(
+      await undirected
+        .findCycles("source", "target", "edgeId", "A", {
+          direction: "both",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual(
+      await expectedCase(sdb, "undirected_oracle", "undirected-triangle-both").getData(),
     );
     for (const direction of ["outgoing", "incoming"] as const) {
-      assertEquals(
-        await undirected.findCycles("source", "target", "edgeId", "A", {
-          direction,
-          outputTable: true,
-        }).getData(),
-        [],
-      );
+      expect(
+        await undirected
+          .findCycles("source", "target", "edgeId", "A", {
+            direction,
+            outputTable: true,
+          })
+          .getData(),
+      ).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles enumerates each directed cycle once per requested root", async () => {
+test("findCycles enumerates each directed cycle once per requested root", async () => {
   const sdb = new SimpleDB();
   try {
-    const actual = loadScenario(sdb, "branching_cycle", "cycle")
-      .findCycles("source", "target", "edgeId", "A");
-    assertEquals(
-      await actual.getData(),
-      await expectedCase(sdb, "branching_cycle_oracle", "cycle-outgoing")
-        .getData(),
+    const actual = loadScenario(sdb, "branching_cycle", "cycle").findCycles(
+      "source",
+      "target",
+      "edgeId",
+      "A",
+    );
+    expect(await actual.getData()).toStrictEqual(
+      await expectedCase(sdb, "branching_cycle_oracle", "cycle-outgoing").getData(),
     );
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles handles self-loops and distinct parallel-edge cycles", async () => {
+test("findCycles handles self-loops and distinct parallel-edge cycles", async () => {
   const sdb = new SimpleDB();
   try {
     for (const direction of ["outgoing", "incoming", "both"] as const) {
@@ -229,8 +205,7 @@ Deno.test("findCycles handles self-loops and distinct parallel-edge cycles", asy
           weight: "cost",
         })
         .removeColumns("cost");
-      assertEquals(
-        await loop.getData(),
+      expect(await loop.getData()).toStrictEqual(
         await expectedCase(
           sdb,
           `loop_${direction}_oracle`,
@@ -239,65 +214,52 @@ Deno.test("findCycles handles self-loops and distinct parallel-edge cycles", asy
       );
     }
 
-    for (
-      const [scenario, caseName] of [
-        ["parallel", "parallel-both-weighted"],
-        ["parallel-opposite", "parallel-opposite-both-weighted"],
-      ] as const
-    ) {
-      const result = loadScenario(sdb, scenario, scenario, true).findCycles(
-        "source",
-        "target",
-        "edgeId",
-        "A",
-        { direction: "both", weight: "cost" },
-      ).removeColumns("cost");
-      assertEquals(
-        await result.getData(),
+    for (const [scenario, caseName] of [
+      ["parallel", "parallel-both-weighted"],
+      ["parallel-opposite", "parallel-opposite-both-weighted"],
+    ] as const) {
+      const result = loadScenario(sdb, scenario, scenario, true)
+        .findCycles("source", "target", "edgeId", "A", { direction: "both", weight: "cost" })
+        .removeColumns("cost");
+      expect(await result.getData()).toStrictEqual(
         await expectedCase(sdb, `${scenario}_oracle`, caseName).getData(),
       );
     }
 
     for (const direction of ["outgoing", "incoming", "both"] as const) {
-      assertEquals(
+      expect(
         await loadScenario(sdb, `single_${direction}`, "single")
           .findCycles("source", "target", "edgeId", "A", { direction })
           .getData(),
-        [],
-      );
+      ).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles preserves weights, floating sums, and numeric identity ordering", async () => {
+test("findCycles preserves weights, floating sums, and numeric identity ordering", async () => {
   const sdb = new SimpleDB();
   try {
     const zero = loadScenario(sdb, "zero", "zero-cycle", true)
-      .findCycles(
-        "source",
-        "target",
-        "edgeId",
-        "A",
-        { weight: "cost" },
-      )
+      .findCycles("source", "target", "edgeId", "A", { weight: "cost" })
       .removeColumns("cost");
-    assertEquals(
-      await zero.getData(),
+    expect(await zero.getData()).toStrictEqual(
       await expectedCase(sdb, "zero_oracle", "zero-cycle-weighted").getData(),
     );
 
     for (const direction of ["outgoing", "incoming", "both"] as const) {
-      const numeric = sdb.newTable(`numeric_${direction}`)
+      const numeric = sdb
+        .newTable(`numeric_${direction}`)
         .loadData("test/data/graphs/numeric-cycle.csv")
         .removeColumns("weight")
         .findCycles("source", "target", "edgeId", 0, { direction });
-      const expected = sdb.newTable(`numeric_${direction}_oracle`)
+      const expected = sdb
+        .newTable(`numeric_${direction}_oracle`)
         .loadData("test/data/graphs/expected/numeric/find_cycles.csv")
         .filter(`"case" = 'numeric-cycle-${direction}'`)
         .removeColumns("case");
-      assertEquals(await numeric.getData(), await expected.getData());
+      expect(await numeric.getData()).toStrictEqual(await expected.getData());
     }
 
     const floating = sdb.newTable("float_cycle");
@@ -307,36 +269,34 @@ Deno.test("findCycles preserves weights, floating sums, and numeric identity ord
         (1, 1, 2, 0.2::FLOAT),
         (2, 2, 0, 0.3::FLOAT)
       ) AS edges(edgeId, source, target, cost)`);
-    assertEquals(
-      await floating.findCycles("source", "target", "edgeId", 0, {
-        weight: "cost",
-      }).getTypes(),
-      {
-        start: "INTEGER",
-        pathId: "BIGINT",
-        step: "BIGINT",
-        edgeId: "INTEGER",
-        source: "INTEGER",
-        target: "INTEGER",
-        weight: "FLOAT",
-        total: "FLOAT",
-        cost: "FLOAT",
-      },
-    );
+    expect(
+      await floating
+        .findCycles("source", "target", "edgeId", 0, {
+          weight: "cost",
+        })
+        .getTypes(),
+    ).toStrictEqual({
+      start: "INTEGER",
+      pathId: "BIGINT",
+      step: "BIGINT",
+      edgeId: "INTEGER",
+      source: "INTEGER",
+      target: "INTEGER",
+      weight: "FLOAT",
+      total: "FLOAT",
+      cost: "FLOAT",
+    });
     const floatRows = await floating.getData();
-    assertEquals(floatRows.map((row) => row.edgeId), [3, 1, 2]);
-    assertEquals(
-      floatRows.at(-1)?.total,
-      Math.fround(
-        Math.fround(Math.fround(0.1) + Math.fround(0.2)) + Math.fround(0.3),
-      ),
+    expect(floatRows.map((row) => row.edgeId)).toStrictEqual([3, 1, 2]);
+    expect(floatRows.at(-1)?.total).toStrictEqual(
+      Math.fround(Math.fround(Math.fround(0.1) + Math.fround(0.2)) + Math.fround(0.3)),
     );
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles preserves distinct edge combinations and is row-order deterministic", async () => {
+test("findCycles preserves distinct edge combinations and is row-order deterministic", async () => {
   const edges = [
     { edgeId: "E4", source: "C", target: "A", weight: 4 },
     { edgeId: "E2", source: "A", target: "B", weight: 2 },
@@ -346,14 +306,12 @@ Deno.test("findCycles preserves distinct edge combinations and is row-order dete
   const sdb = new SimpleDB();
   try {
     const run = (name: string, rows: typeof edges) =>
-      sdb.newTable(name).loadArray(rows).renameColumns({ weight: "cost" })
-        .findCycles(
-          "source",
-          "target",
-          "edgeId",
-          "A",
-          { weight: "cost" },
-        ).getData();
+      sdb
+        .newTable(name)
+        .loadArray(rows)
+        .renameColumns({ weight: "cost" })
+        .findCycles("source", "target", "edgeId", "A", { weight: "cost" })
+        .getData();
     const expected = [
       [0, "E1", 1, 1],
       [0, "E3", 3, 4],
@@ -364,28 +322,31 @@ Deno.test("findCycles preserves distinct edge combinations and is row-order dete
     ];
     const project = (rows: Awaited<ReturnType<typeof run>>) =>
       rows.map((row) => [row.pathId, row.edgeId, row.weight, row.total]);
-    assertEquals(project(await run("ordered_cycles", edges)), expected);
-    assertEquals(
-      project(await run("shuffled_cycles", edges.toReversed())),
-      expected,
-    );
+    expect(project(await run("ordered_cycles", edges))).toStrictEqual(expected);
+    expect(project(await run("shuffled_cycles", edges.toReversed()))).toStrictEqual(expected);
 
-    const numeric = await sdb.newTable("numeric_cycle_order").loadArray([
-      { edgeId: 30, source: 1, target: 0 },
-      { edgeId: 40, source: 2, target: 0 },
-      { edgeId: 10, source: 0, target: 1 },
-      { edgeId: 2, source: 0, target: 2 },
-    ]).findCycles("source", "target", "edgeId", 0).getData();
-    assertEquals(
-      numeric.map((row) => [row.pathId, row.edgeId]),
-      [[0, 2], [0, 40], [1, 10], [1, 30]],
-    );
+    const numeric = await sdb
+      .newTable("numeric_cycle_order")
+      .loadArray([
+        { edgeId: 30, source: 1, target: 0 },
+        { edgeId: 40, source: 2, target: 0 },
+        { edgeId: 10, source: 0, target: 1 },
+        { edgeId: 2, source: 0, target: 2 },
+      ])
+      .findCycles("source", "target", "edgeId", 0)
+      .getData();
+    expect(numeric.map((row) => [row.pathId, row.edgeId])).toStrictEqual([
+      [0, 2],
+      [0, 40],
+      [1, 10],
+      [1, 30],
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles starts chronological cycles at a feasible event in both directions", async () => {
+test("findCycles starts chronological cycles at a feasible event in both directions", async () => {
   const rows = [
     {
       edgeId: "F1",
@@ -411,27 +372,33 @@ Deno.test("findCycles starts chronological cycles at a feasible event in both di
   ];
   const sdb = new SimpleDB();
   try {
-    for (
-      const [direction, expected] of [
-        ["outgoing", [
+    for (const [direction, expected] of [
+      [
+        "outgoing",
+        [
           [0, 1, "F1", "B", "C", 2, 2],
           [0, 2, "F2", "C", "A", 3, 5],
           [0, 3, "F3", "A", "B", 4, 9],
-        ]],
-        ["incoming", [
+        ],
+      ],
+      [
+        "incoming",
+        [
           [0, 1, "F3", "A", "B", 4, 4],
           [0, 2, "F2", "C", "A", 3, 7],
           [0, 3, "F1", "B", "C", 2, 9],
-        ]],
-      ] as const
-    ) {
-      const result = sdb.newTable(`non_smallest_${direction}`).loadArray(rows)
+        ],
+      ],
+    ] as const) {
+      const result = sdb
+        .newTable(`non_smallest_${direction}`)
+        .loadArray(rows)
         .findCycles("source", "target", "edgeId", "B", {
           direction,
           startTimeColumn: "time",
           weight: "cost",
         });
-      assertEquals(
+      expect(
         (await result.getData()).map((row) => [
           row.start,
           row.pathId,
@@ -442,15 +409,14 @@ Deno.test("findCycles starts chronological cycles at a feasible event in both di
           row.weight,
           row.total,
         ]),
-        expected.map((row) => ["B", ...row]),
-      );
+      ).toStrictEqual(expected.map((row) => ["B", ...row]));
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles applies strict, non-strict, gap, and self-loop chronology", async () => {
+test("findCycles applies strict, non-strict, gap, and self-loop chronology", async () => {
   const equalEvents: ReferenceChronologicalEvent<string, number>[] = [
     { edgeId: 3, source: "C", target: "A", startTime: 0n, endTime: 0n },
     { edgeId: 1, source: "A", target: "B", startTime: 0n, endTime: 0n },
@@ -476,13 +442,14 @@ Deno.test("findCycles applies strict, non-strict, gap, and self-loop chronology"
   ];
   const sdb = new SimpleDB();
   try {
-    const strict = sdb.newTable("strict_equal_cycles")
+    const strict = sdb
+      .newTable("strict_equal_cycles")
       .loadArray(chronologicalRows(equalEvents))
       .findCycles("source", "target", "edgeId", ["A", "D"], {
         startTimeColumn: "startTime",
         endTimeColumn: "endTime",
       });
-    assertEquals((await strict.getData()).map((row) => row.edgeId), [4]);
+    expect((await strict.getData()).map((row) => row.edgeId)).toStrictEqual([4]);
 
     for (const direction of ["outgoing", "incoming"] as const) {
       const expected = referenceChronologicalCycleRows(
@@ -492,11 +459,9 @@ Deno.test("findCycles applies strict, non-strict, gap, and self-loop chronology"
         0n,
         false,
       );
-      for (
-        const [order, events] of [equalEvents, equalEvents.toReversed()]
-          .entries()
-      ) {
-        const actual = sdb.newTable(`equal_${direction}_${order}`)
+      for (const [order, events] of [equalEvents, equalEvents.toReversed()].entries()) {
+        const actual = sdb
+          .newTable(`equal_${direction}_${order}`)
           .loadArray(chronologicalRows(events))
           .findCycles("source", "target", "edgeId", ["A", "D"], {
             direction,
@@ -504,39 +469,36 @@ Deno.test("findCycles applies strict, non-strict, gap, and self-loop chronology"
             endTimeColumn: "endTime",
             strictOrdering: false,
           });
-        assertEquals(
-          await actual.removeColumns(["startTime", "endTime"]).getData(),
+        expect(await actual.removeColumns(["startTime", "endTime"]).getData()).toStrictEqual(
           expected,
         );
       }
     }
 
-    const inclusive = sdb.newTable("inclusive_gap_cycles")
+    const inclusive = sdb
+      .newTable("inclusive_gap_cycles")
       .loadArray(chronologicalRows(gapEvents))
       .findCycles("source", "target", "edgeId", "A", {
         startTimeColumn: "startTime",
         endTimeColumn: "endTime",
         minGapMs: 1_000,
       });
-    assertEquals((await inclusive.getData()).map((row) => row.edgeId), [
-      10,
-      11,
-      12,
-    ]);
-    const above = sdb.newTable("above_gap_cycles")
+    expect((await inclusive.getData()).map((row) => row.edgeId)).toStrictEqual([10, 11, 12]);
+    const above = sdb
+      .newTable("above_gap_cycles")
       .loadArray(chronologicalRows(gapEvents))
       .findCycles("source", "target", "edgeId", "A", {
         startTimeColumn: "startTime",
         endTimeColumn: "endTime",
         minGapMs: 1_001,
       });
-    assertEquals(await above.getData(), []);
+    expect(await above.getData()).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", async () => {
+test("findCycles preserves nanoseconds with an end-only inclusive gap", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("nanosecond_cycles");
@@ -553,8 +515,7 @@ Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", asy
         minGapMs: 1,
         outputTable: true,
       });
-      assertEquals(
-        (await exact.getData()).map((row) => row.edgeId),
+      expect((await exact.getData()).map((row) => row.edgeId)).toStrictEqual(
         direction === "outgoing" ? [1, 2, 3] : [3, 2, 1],
       );
       const above = table.findCycles("source", "target", "edgeId", "B", {
@@ -563,23 +524,21 @@ Deno.test("findCycles preserves nanoseconds with an end-only inclusive gap", asy
         minGapMs: 2,
         outputTable: true,
       });
-      assertEquals(await above.getData(), []);
+      expect(await above.getData()).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loops", async () => {
+test("findCycles keeps mixed-precision gap boundaries and isolated self-loops", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const [nanoseconds, end] of [
-        [999_999, "2025-01-01 00:00:00.000000001"],
-        [1_000_000, "2025-01-01 00:00:00"],
-        [1_000_001, "2024-12-31 23:59:59.999999999"],
-      ] as const
-    ) {
+    for (const [nanoseconds, end] of [
+      [999_999, "2025-01-01 00:00:00.000000001"],
+      [1_000_000, "2025-01-01 00:00:00"],
+      [1_000_001, "2024-12-31 23:59:59.999999999"],
+    ] as const) {
       const table = sdb.newTable(`mixed_precision_cycles_${nanoseconds}`);
       await sdb.customQuery(`CREATE TABLE "${table.name}" AS
         SELECT * FROM (VALUES
@@ -591,28 +550,19 @@ Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loo
         ) AS events(edgeId, source, target, departure, arrival)`);
       for (const direction of ["outgoing", "incoming"] as const) {
         for (const strictOrdering of [true, false]) {
-          const actual = table.findCycles(
-            "source",
-            "target",
-            "edgeId",
-            ["B", "Q"],
-            {
-              direction,
-              startTimeColumn: "departure",
-              endTimeColumn: "arrival",
-              minGapMs: 1,
-              strictOrdering,
-              outputTable: true,
-            },
-          );
-          assertEquals(
+          const actual = table.findCycles("source", "target", "edgeId", ["B", "Q"], {
+            direction,
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            minGapMs: 1,
+            strictOrdering,
+            outputTable: true,
+          });
+          expect(
             (await actual.getData()).map((row) => row.edgeId),
-            nanoseconds < 1_000_000
-              ? [3]
-              : direction === "outgoing"
-              ? [2, 1, 3]
-              : [1, 2, 3],
             `${nanoseconds}, ${direction}, strict=${strictOrdering}`,
+          ).toStrictEqual(
+            nanoseconds < 1_000_000 ? [3] : direction === "outgoing" ? [2, 1, 3] : [1, 2, 3],
           );
         }
         const isolated = table.findCycles("source", "target", "edgeId", "Q", {
@@ -622,7 +572,7 @@ Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loo
           minGapMs: Number.MAX_SAFE_INTEGER,
           outputTable: true,
         });
-        assertEquals((await isolated.getData()).map((row) => row.edgeId), [3]);
+        expect((await isolated.getData()).map((row) => row.edgeId)).toStrictEqual([3]);
       }
     }
   } finally {
@@ -630,7 +580,7 @@ Deno.test("findCycles keeps mixed-precision gap boundaries and isolated self-loo
   }
 });
 
-Deno.test("findCycles preserves temporal binary root and edge IDs with decimal totals", async () => {
+test("findCycles preserves temporal binary root and edge IDs with decimal totals", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("temporal_collated_cycles");
@@ -643,36 +593,31 @@ Deno.test("findCycles preserves temporal binary root and edge IDs with decimal t
       ('A', 'a', 'b', TIMESTAMP '2025-01-01', 1.25),
       ('z', 'b', 'a', TIMESTAMP '2025-01-01', 2.50)`);
     for (const direction of ["outgoing", "incoming"] as const) {
-      const result = table.findCycles(
-        "source",
-        "target",
-        "edgeId",
-        ["A", "a"],
-        {
+      const result = table
+        .findCycles("source", "target", "edgeId", ["A", "a"], {
           direction,
           startTimeColumn: "time",
           strictOrdering: false,
           weight: "cost",
           outputTable: true,
-        },
-      ).convert({ weight: "string", total: "string" });
-      assertEquals(
-        (await result.getData()).map((
-          row,
-        ) => [row.start, row.pathId, row.edgeId, row.total]),
+        })
+        .convert({ weight: "string", total: "string" });
+      expect(
+        (await result.getData()).map((row) => [row.start, row.pathId, row.edgeId, row.total]),
+      ).toStrictEqual(
         direction === "outgoing"
           ? [
-            ["A", 0, "a", "99999999999999999999.25"],
-            ["A", 0, "Z", "99999999999999999999.75"],
-            ["a", 0, "A", "1.25"],
-            ["a", 0, "z", "3.75"],
-          ]
+              ["A", 0, "a", "99999999999999999999.25"],
+              ["A", 0, "Z", "99999999999999999999.75"],
+              ["a", 0, "A", "1.25"],
+              ["a", 0, "z", "3.75"],
+            ]
           : [
-            ["A", 0, "Z", "0.50"],
-            ["A", 0, "a", "99999999999999999999.75"],
-            ["a", 0, "z", "2.50"],
-            ["a", 0, "A", "3.75"],
-          ],
+              ["A", 0, "Z", "0.50"],
+              ["A", 0, "a", "99999999999999999999.75"],
+              ["a", 0, "z", "2.50"],
+              ["a", 0, "A", "3.75"],
+            ],
       );
     }
   } finally {
@@ -680,7 +625,7 @@ Deno.test("findCycles preserves temporal binary root and edge IDs with decimal t
   }
 });
 
-Deno.test("findCycles keeps exact IDs for the requested feasible root", async () => {
+test("findCycles keeps exact IDs for the requested feasible root", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("wide_temporal_cycles");
@@ -696,24 +641,18 @@ Deno.test("findCycles keeps exact IDs for the requested feasible root", async ()
           9007199254741001::BIGINT,
           TIMESTAMP_NS '2025-01-01 00:00:00.000000003')
       ) AS events(edgeId, source, target, eventTime)`);
-    const result = table.findCycles(
-      "source",
-      "target",
-      "edgeId",
-      9007199254741001n,
-      {
-        startTimeColumn: "eventTime",
-        outputTable: true,
-      },
-    );
-    assertEquals((await result.getTypes()).start, "BIGINT");
+    const result = table.findCycles("source", "target", "edgeId", 9007199254741001n, {
+      startTimeColumn: "eventTime",
+      outputTable: true,
+    });
+    expect((await result.getTypes()).start).toStrictEqual("BIGINT");
     result.convert({
       start: "string",
       edgeId: "string",
       source: "string",
       target: "string",
     });
-    assertEquals(
+    expect(
       (await result.getData()).map((row) => [
         row.start,
         row.pathId,
@@ -721,30 +660,11 @@ Deno.test("findCycles keeps exact IDs for the requested feasible root", async ()
         row.source,
         row.target,
       ]),
-      [
-        [
-          "9007199254741001",
-          0,
-          "9007199254740995",
-          "9007199254741001",
-          "9007199254741003",
-        ],
-        [
-          "9007199254741001",
-          0,
-          "9007199254740997",
-          "9007199254741003",
-          "9007199254741005",
-        ],
-        [
-          "9007199254741001",
-          0,
-          "9007199254740993",
-          "9007199254741005",
-          "9007199254741001",
-        ],
-      ],
-    );
+    ).toStrictEqual([
+      ["9007199254741001", 0, "9007199254740995", "9007199254741001", "9007199254741003"],
+      ["9007199254741001", 0, "9007199254740997", "9007199254741003", "9007199254741005"],
+      ["9007199254741001", 0, "9007199254740993", "9007199254741005", "9007199254741001"],
+    ]);
 
     const decimals = sdb.newTable("decimal_cycle_starts");
     await sdb.customQuery(`CREATE TABLE "decimal_cycle_starts" AS
@@ -754,24 +674,19 @@ Deno.test("findCycles keeps exact IDs for the requested feasible root", async ()
         (2, 9007199254741002::DECIMAL(20,0),
           9007199254741001::DECIMAL(20,0))
       ) AS edges(edgeId, source, target)`);
-    const decimalResult = decimals.findCycles(
-      "source",
-      "target",
-      "edgeId",
-      9007199254741001n,
-    );
-    assertEquals((await decimalResult.getTypes()).start, "DECIMAL(20,0)");
+    const decimalResult = decimals.findCycles("source", "target", "edgeId", 9007199254741001n);
+    expect((await decimalResult.getTypes()).start).toStrictEqual("DECIMAL(20,0)");
     decimalResult.convert({ start: "string" });
-    assertEquals(
-      (await decimalResult.getData()).map((row) => row.start),
-      ["9007199254741001", "9007199254741001"],
-    );
+    expect((await decimalResult.getData()).map((row) => row.start)).toStrictEqual([
+      "9007199254741001",
+      "9007199254741001",
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles preserves temporal parallel identities and deterministic cycle IDs", async () => {
+test("findCycles preserves temporal parallel identities and deterministic cycle IDs", async () => {
   const events: ReferenceChronologicalEvent<string, number>[] = [
     { edgeId: 20, source: "B", target: "C", startTime: 0n, endTime: 0n },
     { edgeId: 10, source: "B", target: "C", startTime: 0n, endTime: 0n },
@@ -790,29 +705,23 @@ Deno.test("findCycles preserves temporal parallel identities and deterministic c
       endTime: 2_000n,
     },
   ];
-  const expected = referenceChronologicalCycleRows(
-    events,
-    ["B"],
-    "outgoing",
-    0n,
-    true,
-  );
+  const expected = referenceChronologicalCycleRows(events, ["B"], "outgoing", 0n, true);
   const sdb = new SimpleDB();
   try {
     for (const [order, rows] of [events, events.toReversed()].entries()) {
-      const actual = sdb.newTable(`parallel_temporal_${order}`)
+      const actual = sdb
+        .newTable(`parallel_temporal_${order}`)
         .loadArray(chronologicalRows(rows))
         .findCycles("source", "target", "edgeId", "B", {
           startTimeColumn: "startTime",
           endTimeColumn: "endTime",
           outputTable: true,
         });
-      assertEquals(
-        await actual.removeColumns(["startTime", "endTime"]).getData(),
+      expect(await actual.removeColumns(["startTime", "endTime"]).getData()).toStrictEqual(
         expected,
       );
     }
-    assertEquals(expected.map((row) => [row.pathId, row.edgeId]), [
+    expect(expected.map((row) => [row.pathId, row.edgeId])).toStrictEqual([
       [0, 10],
       [0, 30],
       [0, 40],
@@ -825,7 +734,7 @@ Deno.test("findCycles preserves temporal parallel identities and deterministic c
   }
 });
 
-Deno.test("findCycles orders requested roots and ignores unknown roots", async () => {
+test("findCycles orders requested roots and ignores unknown roots", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -833,59 +742,58 @@ Deno.test("findCycles orders requested roots and ignores unknown roots", async (
       { edgeId: "E2", source: "B", target: "C" },
       { edgeId: "E3", source: "C", target: "A" },
     ];
-    const actual = await sdb.newTable("requested_cycle_roots")
+    const actual = await sdb
+      .newTable("requested_cycle_roots")
       .loadArray(rows)
       .findCycles("source", "target", "edgeId", ["B", "unknown", "A"])
       .getData();
-    assertEquals(
-      actual.map((row) => [row.start, row.pathId, row.edgeId]),
-      [
-        ["A", 0, "E1"],
-        ["A", 0, "E2"],
-        ["A", 0, "E3"],
-        ["B", 0, "E2"],
-        ["B", 0, "E3"],
-        ["B", 0, "E1"],
-      ],
-    );
-    assertEquals(
-      await sdb.newTable("unknown_cycle_root").loadArray(rows)
-        .findCycles("source", "target", "edgeId", "unknown").getData(),
-      [],
-    );
+    expect(actual.map((row) => [row.start, row.pathId, row.edgeId])).toStrictEqual([
+      ["A", 0, "E1"],
+      ["A", 0, "E2"],
+      ["A", 0, "E3"],
+      ["B", 0, "E2"],
+      ["B", 0, "E3"],
+      ["B", 0, "E1"],
+    ]);
+    expect(
+      await sdb
+        .newTable("unknown_cycle_root")
+        .loadArray(rows)
+        .findCycles("source", "target", "edgeId", "unknown")
+        .getData(),
+    ).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles restarts path IDs for every requested root", async () => {
+test("findCycles restarts path IDs for every requested root", async () => {
   const sdb = new SimpleDB();
   try {
-    const rows = await sdb.newTable("per_root_cycle_ids").loadArray([
-      { edgeId: "E2", source: "A", target: "B" },
-      { edgeId: "E4", source: "C", target: "A" },
-      { edgeId: "E1", source: "A", target: "B" },
-      { edgeId: "E3", source: "B", target: "C" },
-    ]).findCycles("source", "target", "edgeId", ["B", "A"]).getData();
-    assertEquals(
-      rows.filter((row) => row.step === 1).map((row) => [
-        row.start,
-        row.pathId,
-        row.edgeId,
-      ]),
-      [
-        ["A", 0, "E1"],
-        ["A", 1, "E2"],
-        ["B", 0, "E3"],
-        ["B", 1, "E3"],
-      ],
-    );
+    const rows = await sdb
+      .newTable("per_root_cycle_ids")
+      .loadArray([
+        { edgeId: "E2", source: "A", target: "B" },
+        { edgeId: "E4", source: "C", target: "A" },
+        { edgeId: "E1", source: "A", target: "B" },
+        { edgeId: "E3", source: "B", target: "C" },
+      ])
+      .findCycles("source", "target", "edgeId", ["B", "A"])
+      .getData();
+    expect(
+      rows.filter((row) => row.step === 1).map((row) => [row.start, row.pathId, row.edgeId]),
+    ).toStrictEqual([
+      ["A", 0, "E1"],
+      ["A", 1, "E2"],
+      ["B", 0, "E3"],
+      ["B", 1, "E3"],
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles validates every temporal event for an unknown root", async () => {
+test("findCycles validates every temporal event for an unknown root", async () => {
   const sdb = new SimpleDB();
   try {
     const invalid = sdb.newTable("invalid_unknown_cycle_root").loadArray([
@@ -899,11 +807,13 @@ Deno.test("findCycles validates every temporal event for an unknown root", async
     ]);
     await assertRejects(
       () =>
-        invalid.findCycles("source", "target", "edgeId", "unknown", {
-          startTimeColumn: "startTime",
-          endTimeColumn: "endTime",
-          outputTable: true,
-        }).run(),
+        invalid
+          .findCycles("source", "target", "edgeId", "unknown", {
+            startTimeColumn: "startTime",
+            endTimeColumn: "endTime",
+            outputTable: true,
+          })
+          .run(),
       TypeError,
       'selected end-time column "endTime" contains a timestamp before its start in "startTime"',
     );
@@ -912,7 +822,7 @@ Deno.test("findCycles validates every temporal event for an unknown root", async
   }
 });
 
-Deno.test("findCycles validates required arguments and schema without data audits", async () => {
+test("findCycles validates required arguments and schema without data audits", async () => {
   const sdb = new SimpleDB();
   try {
     const table = loadScenario(sdb, "validation", "triangle");
@@ -962,12 +872,7 @@ Deno.test("findCycles validates required arguments and schema without data audit
       TypeError,
       "options.weight must be a string",
     );
-    for (
-      const options of [
-        { minGapMs: 0 },
-        { strictOrdering: false },
-      ]
-    ) {
+    for (const options of [{ minGapMs: 0 }, { strictOrdering: false }]) {
       assertThrows(
         () => table.findCycles("source", "target", "edgeId", "A", options),
         TypeError,
@@ -994,26 +899,26 @@ Deno.test("findCycles validates required arguments and schema without data audit
 
     await assertRejects(
       () =>
-        loadScenario(sdb, "missing_column", "triangle").findCycles(
-          "missing",
-          "target",
-          "edgeId",
-          "A",
-        ).run(),
+        loadScenario(sdb, "missing_column", "triangle")
+          .findCycles("missing", "target", "edgeId", "A")
+          .run(),
       Error,
       'column "missing" does not exist',
     );
     await assertRejects(
       () =>
-        sdb.newTable("without_id")
+        sdb
+          .newTable("without_id")
           .loadData("test/data/graphs/without-edge-id.csv")
-          .findCycles("source", "target", "edgeId", "A").run(),
+          .findCycles("source", "target", "edgeId", "A")
+          .run(),
       Error,
       'column "edgeId" does not exist',
     );
     await assertRejects(
       () =>
-        sdb.newTable("unsupported_id")
+        sdb
+          .newTable("unsupported_id")
           .loadData("test/data/graphs/unsupported-types.csv")
           .findCycles("dateSource", "stringTarget", "booleanEdgeId", "A")
           .run(),
@@ -1021,9 +926,11 @@ Deno.test("findCycles validates required arguments and schema without data audit
     );
     await assertRejects(
       () =>
-        table.findCycles("source", "target", "edgeId", "A", {
-          startTimeColumn: "source",
-        }).run(),
+        table
+          .findCycles("source", "target", "edgeId", "A", {
+            startTimeColumn: "source",
+          })
+          .run(),
       TypeError,
       "requires DATE or TIMESTAMP chronological columns",
     );
@@ -1034,10 +941,12 @@ Deno.test("findCycles validates required arguments and schema without data audit
     )`);
     await assertRejects(
       () =>
-        mixedTimes.findCycles("source", "target", "edgeId", "A", {
-          startTimeColumn: "departure",
-          endTimeColumn: "arrival",
-        }).run(),
+        mixedTimes
+          .findCycles("source", "target", "edgeId", "A", {
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+          })
+          .run(),
       TypeError,
       "cannot mix time-zone-aware and time-zone-naive",
     );
@@ -1046,7 +955,7 @@ Deno.test("findCycles validates required arguments and schema without data audit
   }
 });
 
-Deno.test("findCycles keeps typed empty outputs and supports output snapshots", async () => {
+test("findCycles keeps typed empty outputs and supports output snapshots", async () => {
   const sdb = new SimpleDB();
   try {
     const empty = sdb.newTable("empty_cycles");
@@ -1056,8 +965,8 @@ Deno.test("findCycles keeps typed empty outputs and supports output snapshots", 
     empty.findCycles("source", "target", "edgeId", "A", {
       weight: "cost",
     });
-    assertEquals(await empty.getData(), []);
-    assertEquals(await empty.getTypes(), {
+    expect(await empty.getData()).toStrictEqual([]);
+    expect(await empty.getTypes()).toStrictEqual({
       start: "VARCHAR",
       pathId: "BIGINT",
       step: "BIGINT",
@@ -1070,13 +979,12 @@ Deno.test("findCycles keeps typed empty outputs and supports output snapshots", 
     });
 
     const overwritten = loadScenario(sdb, "overwritten_cycles", "triangle");
-    assertStrictEquals(
+    expect(
       overwritten.findCycles("source", "target", "edgeId", "A", {
         outputTable: false,
       }),
-      overwritten,
-    );
-    assertEquals((await overwritten.getData()).length, 3);
+    ).toBe(overwritten);
+    expect((await overwritten.getData()).length).toStrictEqual(3);
 
     const source = loadScenario(sdb, "preserved_cycles", "triangle");
     const options: {
@@ -1087,20 +995,19 @@ Deno.test("findCycles keeps typed empty outputs and supports output snapshots", 
       direction: "incoming",
       outputTable: "namedCycles",
     };
-    const named = source.findCycles("source", "target", "edgeId", "A", options)
-      .filter("step = 1");
+    const named = source.findCycles("source", "target", "edgeId", "A", options).filter("step = 1");
     options.direction = "outgoing";
     options.outputTable = "changed";
     options.weight = "changed";
-    assertEquals(named.name, "namedCycles");
-    assertEquals((await named.getData()).map((row) => row.edgeId), ["T3"]);
-    assertEquals(await source.getRowCount(), 3);
+    expect(named.name).toStrictEqual("namedCycles");
+    expect((await named.getData()).map((row) => row.edgeId)).toStrictEqual(["T3"]);
+    expect(await source.getRowCount()).toStrictEqual(3);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles snapshots starts and chronological options across queued conversion", async () => {
+test("findCycles snapshots starts and chronological options across queued conversion", async () => {
   const sdb = new SimpleDB();
   try {
     const options = {
@@ -1108,66 +1015,64 @@ Deno.test("findCycles snapshots starts and chronological options across queued c
       strictOrdering: true,
       outputTable: "chronologicalCycleSnapshot",
     };
-    const source = sdb.newTable().loadArray([
-      { edgeId: "E1", source: "B", target: "C", time: "2025-01-01 09:00:00" },
-      { edgeId: "E2", source: "C", target: "A", time: "2025-01-01 10:00:00" },
-      { edgeId: "E3", source: "A", target: "B", time: "2025-01-01 11:00:00" },
-    ]).convert({ time: "datetime" });
+    const source = sdb
+      .newTable()
+      .loadArray([
+        { edgeId: "E1", source: "B", target: "C", time: "2025-01-01 09:00:00" },
+        { edgeId: "E2", source: "C", target: "A", time: "2025-01-01 10:00:00" },
+        { edgeId: "E3", source: "A", target: "B", time: "2025-01-01 11:00:00" },
+      ])
+      .convert({ time: "datetime" });
     const starts = ["B"];
-    const result = source.findCycles(
-      "source",
-      "target",
-      "edgeId",
-      starts,
-      options,
-    );
+    const result = source.findCycles("source", "target", "edgeId", starts, options);
     starts[0] = "A";
     options.startTimeColumn = "missing";
     options.strictOrdering = false;
     options.outputTable = "changed";
-    assertEquals(result.name, "chronologicalCycleSnapshot");
-    assertEquals((await result.getData()).map((row) => row.edgeId), [
-      "E1",
-      "E2",
-      "E3",
-    ]);
-    assertEquals(await source.getRowCount(), 3);
+    expect(result.name).toStrictEqual("chronologicalCycleSnapshot");
+    expect((await result.getData()).map((row) => row.edgeId)).toStrictEqual(["E1", "E2", "E3"]);
+    expect(await source.getRowCount()).toStrictEqual(3);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles accepts custom and generated edge IDs", async () => {
+test("findCycles accepts custom and generated edge IDs", async () => {
   const sdb = new SimpleDB();
   try {
-    const custom = sdb.newTable("custom_cycles").loadArray([
-      { flightId: "F1", ORIGIN: "A", Destination: "B", COST: 1 },
-      { flightId: "F2", ORIGIN: "B", Destination: "C", COST: 2 },
-      { flightId: "F3", ORIGIN: "C", Destination: "A", COST: 3 },
-    ]).findCycles("origin", "destination", "flightId", "A", {
-      weight: "cost",
-    });
-    assertEquals(
-      (await custom.getData()).map((row) => [row.flightId, row.total]),
-      [["F1", 1], ["F2", 3], ["F3", 6]],
-    );
+    const custom = sdb
+      .newTable("custom_cycles")
+      .loadArray([
+        { flightId: "F1", ORIGIN: "A", Destination: "B", COST: 1 },
+        { flightId: "F2", ORIGIN: "B", Destination: "C", COST: 2 },
+        { flightId: "F3", ORIGIN: "C", Destination: "A", COST: 3 },
+      ])
+      .findCycles("origin", "destination", "flightId", "A", {
+        weight: "cost",
+      });
+    expect((await custom.getData()).map((row) => [row.flightId, row.total])).toStrictEqual([
+      ["F1", 1],
+      ["F2", 3],
+      ["F3", 6],
+    ]);
 
     const rows = [
       { source: "A", target: "B" },
       { source: "B", target: "C" },
       { source: "C", target: "A" },
     ];
-    const numeric = sdb.newTable("generated_numeric_cycles").loadArray(rows)
-      .addId("edgeId").findCycles("source", "target", "edgeId", "A");
-    const prefixed = sdb.newTable("generated_prefixed_cycles").loadArray(rows)
-      .addId("edgeId", { prefix: "edge-" }).findCycles(
-        "source",
-        "target",
-        "edgeId",
-        "A",
-      );
-    assertEquals((await numeric.getData()).map((row) => row.edgeId), [0, 1, 2]);
-    assertEquals((await prefixed.getData()).map((row) => row.edgeId), [
+    const numeric = sdb
+      .newTable("generated_numeric_cycles")
+      .loadArray(rows)
+      .addId("edgeId")
+      .findCycles("source", "target", "edgeId", "A");
+    const prefixed = sdb
+      .newTable("generated_prefixed_cycles")
+      .loadArray(rows)
+      .addId("edgeId", { prefix: "edge-" })
+      .findCycles("source", "target", "edgeId", "A");
+    expect((await numeric.getData()).map((row) => row.edgeId)).toStrictEqual([0, 1, 2]);
+    expect((await prefixed.getData()).map((row) => row.edgeId)).toStrictEqual([
       "edge-0",
       "edge-1",
       "edge-2",
@@ -1177,7 +1082,7 @@ Deno.test("findCycles accepts custom and generated edge IDs", async () => {
   }
 });
 
-Deno.test("findCycles uses native uncapped simple-cycle enumeration and avoids aliases", async () => {
+test("findCycles uses native uncapped simple-cycle enumeration and avoids aliases", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
@@ -1187,26 +1092,28 @@ Deno.test("findCycles uses native uncapped simple-cycle enumeration and avoids a
       target: edgeId + 1,
     }));
     edges.push({ edgeId: 140, source: 140, target: 0 });
-    const result = await sdb.newTable("graph_cycle_walks").loadArray(edges)
-      .findCycles("source", "target", "edgeId", 0).getData();
-    assertEquals(result.length, 141);
-    assertEquals(result.at(-1)?.total, 141);
+    const result = await sdb
+      .newTable("graph_cycle_walks")
+      .loadArray(edges)
+      .findCycles("source", "target", "edgeId", 0)
+      .getData();
+    expect(result.length).toStrictEqual(141);
+    expect(result.at(-1)?.total).toStrictEqual(141);
 
-    const query = observer.queries.find((entry) =>
-      entry.query.includes("graph_complete_cycles")
-    )?.query ?? "";
-    assertStringIncludes(query, "WITH RECURSIVE");
-    assertStringIncludes(query, "list_contains");
-    assertStringIncludes(query, "UNNEST");
-    assertStringIncludes(query, '"graph_cycle_walks_1"');
-    assertEquals(query.includes("LIMIT"), false);
+    const query =
+      observer.queries.find((entry) => entry.query.includes("graph_complete_cycles"))?.query ?? "";
+    expect(query).toContain("WITH RECURSIVE");
+    expect(query).toContain("list_contains");
+    expect(query).toContain("UNNEST");
+    expect(query).toContain('"graph_cycle_walks_1"');
+    expect(query.includes("LIMIT")).toStrictEqual(false);
   } finally {
     observer.restore();
     await sdb.close();
   }
 });
 
-Deno.test("findCycles preserves binary string identity under collations", async () => {
+test("findCycles preserves binary string identity under collations", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("collated_cycles");
@@ -1217,58 +1124,56 @@ Deno.test("findCycles preserves binary string identity under collations", async 
     ); INSERT INTO "collated_cycles" VALUES
       ('z', 'A', 'b'), ('a', 'b', 'A'),
       ('m', 'a', 'B'), ('A', 'B', 'a')`);
-    assertEquals(
-      await table.findCycles("source", "target", "edgeId", ["A", "a"])
-        .getData(),
-      [
-        {
-          start: "A",
-          pathId: 0,
-          step: 1,
-          edgeId: "z",
-          source: "A",
-          target: "b",
-          weight: 1,
-          total: 1,
-        },
-        {
-          start: "A",
-          pathId: 0,
-          step: 2,
-          edgeId: "a",
-          source: "b",
-          target: "A",
-          weight: 1,
-          total: 2,
-        },
-        {
-          start: "a",
-          pathId: 0,
-          step: 1,
-          edgeId: "m",
-          source: "a",
-          target: "B",
-          weight: 1,
-          total: 1,
-        },
-        {
-          start: "a",
-          pathId: 0,
-          step: 2,
-          edgeId: "A",
-          source: "B",
-          target: "a",
-          weight: 1,
-          total: 2,
-        },
-      ],
-    );
+    expect(
+      await table.findCycles("source", "target", "edgeId", ["A", "a"]).getData(),
+    ).toStrictEqual([
+      {
+        start: "A",
+        pathId: 0,
+        step: 1,
+        edgeId: "z",
+        source: "A",
+        target: "b",
+        weight: 1,
+        total: 1,
+      },
+      {
+        start: "A",
+        pathId: 0,
+        step: 2,
+        edgeId: "a",
+        source: "b",
+        target: "A",
+        weight: 1,
+        total: 2,
+      },
+      {
+        start: "a",
+        pathId: 0,
+        step: 1,
+        edgeId: "m",
+        source: "a",
+        target: "B",
+        weight: 1,
+        total: 1,
+      },
+      {
+        start: "a",
+        pathId: 0,
+        step: 2,
+        edgeId: "A",
+        source: "B",
+        target: "a",
+        weight: 1,
+        total: 2,
+      },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles widens exact weight accumulators", async () => {
+test("findCycles widens exact weight accumulators", async () => {
   const sdb = new SimpleDB();
   try {
     const decimal = sdb.newTable("decimal_cycles");
@@ -1277,10 +1182,12 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
         (1, 0, 1, 99999999999999999999.25::DECIMAL(22,2)),
         (2, 1, 0, 0.50::DECIMAL(22,2))
       ) AS edges(edgeId, source, target, cost)`);
-    decimal.findCycles("source", "target", "edgeId", 0, {
-      weight: "cost",
-    }).convert({ weight: "string", total: "string" });
-    assertEquals(await decimal.getData(), [
+    decimal
+      .findCycles("source", "target", "edgeId", 0, {
+        weight: "cost",
+      })
+      .convert({ weight: "string", total: "string" });
+    expect(await decimal.getData()).toStrictEqual([
       {
         start: 0,
         pathId: 0,
@@ -1314,19 +1221,16 @@ Deno.test("findCycles widens exact weight accumulators", async () => {
     const result = integers.findCycles("source", "target", "edgeId", 0, {
       weight: "cost",
     });
-    assertEquals((await result.getTypes()).total, "HUGEINT");
+    expect((await result.getTypes()).total).toStrictEqual("HUGEINT");
     result.convert({ weight: "string", total: "string", cost: "string" });
-    assertEquals(
-      (await result.getData()).at(-1)?.total,
-      "36893488147419103230",
-    );
+    expect((await result.getData()).at(-1)?.total).toStrictEqual("36893488147419103230");
   } finally {
     await sdb.close();
   }
 });
 
 for (const chronological of [false, true]) {
-  Deno.test(`findCycles ${chronological ? "chronological" : "static"} output records its source as a cache dependency`, async () => {
+  test(`findCycles ${chronological ? "chronological" : "static"} output records its source as a cache dependency`, async () => {
     let computationRuns = 0;
     const unique = crypto.randomUUID().replaceAll("-", "");
     const outputName = `cyclesCacheOutput${unique}`;
@@ -1374,18 +1278,17 @@ for (const chronological of [false, true]) {
       ]);
       const output = secondSdb.newTable(outputName);
       await output.cache(compute(source));
-      assertEquals(computationRuns, 2);
-      assertEquals(
-        (await output.getData()).map((row) => [row.start, row.edgeId]),
-        [["A", "E3"]],
-      );
+      expect(computationRuns).toStrictEqual(2);
+      expect((await output.getData()).map((row) => [row.start, row.edgeId])).toStrictEqual([
+        ["A", "E3"],
+      ]);
     } finally {
       await secondSdb.close();
     }
   });
 }
 
-Deno.test("findCycles start nodes participate in cache invalidation", async () => {
+test("findCycles start nodes participate in cache invalidation", async () => {
   let computationRuns = 0;
   const unique = crypto.randomUUID().replaceAll("-", "");
   const outputName = `cyclesStartCacheOutput${unique}`;
@@ -1395,27 +1298,20 @@ Deno.test("findCycles start nodes participate in cache invalidation", async () =
     { edgeId: "E2", source: "B", target: "C" },
     { edgeId: "E3", source: "C", target: "A" },
   ];
-  const compute =
-    (source: SimpleTable, start: string) => async (output: SimpleTable) => {
-      computationRuns++;
-      const result = source.findCycles(
-        "source",
-        "target",
-        "edgeId",
-        start,
-        { outputTable: true },
-      );
-      output.loadArray(await result.getData());
-      await result.removeTable();
-    };
+  const compute = (source: SimpleTable, start: string) => async (output: SimpleTable) => {
+    computationRuns++;
+    const result = source.findCycles("source", "target", "edgeId", start, { outputTable: true });
+    output.loadArray(await result.getData());
+    await result.removeTable();
+  };
 
   const firstSdb = new SimpleDB();
   try {
     const source = firstSdb.newTable(sourceName).loadArray(rows);
     const output = firstSdb.newTable(outputName);
     await output.cache(compute(source, "A"));
-    assertEquals((await output.getData())[0]?.start, "A");
-    assertEquals((await output.getData())[0]?.edgeId, "E1");
+    expect((await output.getData())[0]?.start).toStrictEqual("A");
+    expect((await output.getData())[0]?.edgeId).toStrictEqual("E1");
   } finally {
     await firstSdb.close();
   }
@@ -1425,15 +1321,15 @@ Deno.test("findCycles start nodes participate in cache invalidation", async () =
     const source = secondSdb.newTable(sourceName).loadArray(rows);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source, "B"));
-    assertEquals(computationRuns, 2);
-    assertEquals((await output.getData())[0]?.start, "B");
-    assertEquals((await output.getData())[0]?.edgeId, "E2");
+    expect(computationRuns).toStrictEqual(2);
+    expect((await output.getData())[0]?.start).toStrictEqual("B");
+    expect((await output.getData())[0]?.edgeId).toStrictEqual("E2");
   } finally {
     await secondSdb.close();
   }
 });
 
-Deno.test("findCycles matches an independent per-root chronological oracle", async () => {
+test("findCycles matches an independent per-root chronological oracle", async () => {
   const generate = (seed: number) => {
     let state = seed;
     const random = () => {
@@ -1482,17 +1378,11 @@ Deno.test("findCycles matches an independent per-root chronological oracle", asy
     return events;
   };
 
-  const generated = Array.from(
-    { length: 6 },
-    (_, index) => generate(index + 1),
-  );
+  const generated = Array.from({ length: 6 }, (_, index) => generate(index + 1));
   const extras = generated.flatMap((events) => events.slice(3));
-  assertEquals(new Set(extras.map((event) => event.source)).size, 4);
-  assertEquals(new Set(extras.map((event) => event.target)).size, 4);
-  assertEquals(
-    extras.some((event) => event.endTime! > event.startTime!),
-    true,
-  );
+  expect(new Set(extras.map((event) => event.source)).size).toStrictEqual(4);
+  expect(new Set(extras.map((event) => event.target)).size).toStrictEqual(4);
+  expect(extras.some((event) => event.endTime! > event.startTime!)).toStrictEqual(true);
 
   const sdb = new SimpleDB();
   try {
@@ -1502,9 +1392,7 @@ Deno.test("findCycles matches an independent per-root chronological oracle", asy
         for (const strictOrdering of [true, false]) {
           const minGap = seed % 2 === 0 ? 1_000n : 0n;
           const eventRows = chronologicalRows(events);
-          const eventsById = new Map(
-            eventRows.map((event) => [event.edgeId, event]),
-          );
+          const eventsById = new Map(eventRows.map((event) => [event.edgeId, event]));
           const expected = referenceChronologicalCycleRows(
             events,
             ["A", "B", "C", "D"],
@@ -1516,30 +1404,28 @@ Deno.test("findCycles matches an independent per-root chronological oracle", asy
             startTime: eventsById.get(row.edgeId)!.startTime,
             endTime: eventsById.get(row.edgeId)!.endTime,
           }));
-          assertEquals(expected.length > 0, true, `seed ${seed}`);
-          for (
-            const [order, rows] of [events, events.toReversed()].entries()
-          ) {
-            const actual = sdb.newTable(
-              `generated_cycles_${seed}_${direction}_${strictOrdering}_${order}`,
-            ).loadArray(chronologicalRows(rows)).findCycles(
-              "source",
-              "target",
-              "edgeId",
-              order === 0 ? ["A", "B", "C", "D"] : ["D", "C", "B", "A"],
-              {
-                direction,
-                startTimeColumn: "startTime",
-                endTimeColumn: "endTime",
-                minGapMs: Number(minGap),
-                strictOrdering,
-              },
-            );
-            assertEquals(
+          expect(expected.length > 0, `seed ${seed}`).toStrictEqual(true);
+          for (const [order, rows] of [events, events.toReversed()].entries()) {
+            const actual = sdb
+              .newTable(`generated_cycles_${seed}_${direction}_${strictOrdering}_${order}`)
+              .loadArray(chronologicalRows(rows))
+              .findCycles(
+                "source",
+                "target",
+                "edgeId",
+                order === 0 ? ["A", "B", "C", "D"] : ["D", "C", "B", "A"],
+                {
+                  direction,
+                  startTimeColumn: "startTime",
+                  endTimeColumn: "endTime",
+                  minGapMs: Number(minGap),
+                  strictOrdering,
+                },
+              );
+            expect(
               await actual.getData(),
-              expected,
               `seed ${seed}, ${direction}, strict=${strictOrdering}, order ${order}`,
-            );
+            ).toStrictEqual(expected);
           }
         }
       }
@@ -1549,7 +1435,7 @@ Deno.test("findCycles matches an independent per-root chronological oracle", asy
   }
 });
 
-Deno.test("findCycles matches an independent permutation oracle in every mode", async () => {
+test("findCycles matches an independent permutation oracle in every mode", async () => {
   type Id = string | number;
   type Edge = { edgeId: Id; source: Id; target: Id; cost: number };
   type Direction = "outgoing" | "incoming" | "both";
@@ -1573,9 +1459,7 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
     return left.length - right.length;
   };
   const oracle = (edges: Edge[], starts: Id[], direction: Direction) => {
-    const nodes = [
-      ...new Set(edges.flatMap((edge) => [edge.source, edge.target])),
-    ];
+    const nodes = [...new Set(edges.flatMap((edge) => [edge.source, edge.target]))];
     const cycles = new Map<string, Edge[]>();
     const record = (cycle: Edge[]) => {
       if (new Set(cycle.map((edge) => edge.edgeId)).size !== cycle.length) {
@@ -1591,10 +1475,7 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
         if (compareCycles(reversed, normalized) < 0) normalized = reversed;
       }
       cycles.set(
-        JSON.stringify([
-          normalized[0].source,
-          normalized.map((edge) => edge.edgeId),
-        ]),
+        JSON.stringify([normalized[0].source, normalized.map((edge) => edge.edgeId)]),
         normalized,
       );
     };
@@ -1610,10 +1491,7 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
       for (const edge of edges) {
         const forward = edge.source === source && edge.target === target;
         const backward = edge.target === source && edge.source === target;
-        if (
-          (direction !== "incoming" && forward) ||
-          (direction !== "outgoing" && backward)
-        ) {
+        if ((direction !== "incoming" && forward) || (direction !== "outgoing" && backward)) {
           chooseEdges(order, [...cycle, { ...edge, source, target }]);
         }
       }
@@ -1628,28 +1506,31 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
       }
     };
     for (const start of starts) {
-      permutations([start], nodes.filter((node) => node !== start));
+      permutations(
+        [start],
+        nodes.filter((node) => node !== start),
+      );
     }
-    return [...cycles.values()].sort((left, right) =>
-      compare(left[0].source, right[0].source) || compareCycles(left, right)
-    ).flatMap((cycle, index, allCycles) => {
-      const start = cycle[0].source;
-      const pathId = allCycles.slice(0, index).filter((candidate) =>
-        compare(candidate[0].source, start) === 0
-      ).length;
-      let total = 0;
-      return cycle.map((edge, index) => {
-        total += edge.cost;
-        return {
-          start,
-          pathId,
-          step: index + 1,
-          weight: edge.cost,
-          total,
-          ...edge,
-        };
+    return [...cycles.values()]
+      .sort((left, right) => compare(left[0].source, right[0].source) || compareCycles(left, right))
+      .flatMap((cycle, index, allCycles) => {
+        const start = cycle[0].source;
+        const pathId = allCycles
+          .slice(0, index)
+          .filter((candidate) => compare(candidate[0].source, start) === 0).length;
+        let total = 0;
+        return cycle.map((edge, index) => {
+          total += edge.cost;
+          return {
+            start,
+            pathId,
+            step: index + 1,
+            weight: edge.cost,
+            total,
+            ...edge,
+          };
+        });
       });
-    });
   };
 
   const numeric: Edge[] = [
@@ -1679,18 +1560,13 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
   }));
   const sdb = new SimpleDB();
   try {
-    for (
-      const [kind, edges] of [["numeric", numeric], [
-        "strings",
-        strings,
-      ]] as const
-    ) {
-      const starts = [
-        ...new Set(edges.flatMap((edge) => [
-          edge.source,
-          edge.target,
-        ])),
-      ].toSorted(compare);
+    for (const [kind, edges] of [
+      ["numeric", numeric],
+      ["strings", strings],
+    ] as const) {
+      const starts = [...new Set(edges.flatMap((edge) => [edge.source, edge.target]))].toSorted(
+        compare,
+      );
       for (const direction of ["outgoing", "incoming", "both"] as const) {
         const expected = oracle(edges, starts, direction).map((row) => {
           const original = edges.find((edge) => edge.edgeId === row.edgeId)!;
@@ -1701,22 +1577,15 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
           };
         });
         for (const [order, rows] of [edges, edges.toReversed()].entries()) {
-          const actual = await sdb.newTable(
-            `oracle_${kind}_${direction}_${order}`,
-          )
+          const actual = await sdb
+            .newTable(`oracle_${kind}_${direction}_${order}`)
             .loadArray(rows)
-            .findCycles(
-              "source",
-              "target",
-              "edgeId",
-              order === 0 ? starts : starts.toReversed(),
-              { direction, weight: "cost" },
-            ).getData();
-          assertEquals(
-            actual,
-            expected,
-            `${kind}, ${direction}, order ${order}`,
-          );
+            .findCycles("source", "target", "edgeId", order === 0 ? starts : starts.toReversed(), {
+              direction,
+              weight: "cost",
+            })
+            .getData();
+          expect(actual, `${kind}, ${direction}, order ${order}`).toStrictEqual(expected);
         }
       }
     }
@@ -1725,19 +1594,15 @@ Deno.test("findCycles matches an independent permutation oracle in every mode", 
   }
 });
 
-Deno.test("findCycles executes all nine JSDoc examples with their displayed rows", async () => {
+test("findCycles executes all nine JSDoc examples with their displayed rows", async () => {
   const sdb = new SimpleDB();
   const triangleRows = [
     { edgeId: "E1", source: "A", target: "B" },
     { edgeId: "E2", source: "B", target: "C" },
     { edgeId: "E3", source: "C", target: "A" },
   ];
-  const expectedRows = (
-    rows: [string, number, number, string, string, string, number, number][],
-  ) =>
-    rows.map((
-      [start, pathId, step, edgeId, source, target, weight, total],
-    ) => ({
+  const expectedRows = (rows: [string, number, number, string, string, string, number, number][]) =>
+    rows.map(([start, pathId, step, edgeId, source, target, weight, total]) => ({
       start,
       pathId,
       step,
@@ -1754,23 +1619,14 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
   ]);
   try {
     {
-      const triangle = sdb.newTable("doc_cycles_outgoing").loadArray(
-        triangleRows,
-      );
-      await triangle
-        .findCycles("source", "target", "edgeId", "A")
-        .log();
-      assertEquals(await triangle.getData(), forwardRows);
+      const triangle = sdb.newTable("doc_cycles_outgoing").loadArray(triangleRows);
+      await triangle.findCycles("source", "target", "edgeId", "A").log();
+      expect(await triangle.getData()).toStrictEqual(forwardRows);
     }
     {
-      const triangle = sdb.newTable("doc_cycles_multiple_starts").loadArray(
-        triangleRows,
-      );
-      await triangle
-        .findCycles("source", "target", "edgeId", ["A", "B"])
-        .log();
-      assertEquals(
-        await triangle.getData(),
+      const triangle = sdb.newTable("doc_cycles_multiple_starts").loadArray(triangleRows);
+      await triangle.findCycles("source", "target", "edgeId", ["A", "B"]).log();
+      expect(await triangle.getData()).toStrictEqual(
         expectedRows([
           ["A", 0, 1, "E1", "A", "B", 1, 1],
           ["A", 0, 2, "E2", "B", "C", 1, 2],
@@ -1782,16 +1638,13 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
       );
     }
     {
-      const triangle = sdb.newTable("doc_cycles_incoming").loadArray(
-        triangleRows,
-      );
+      const triangle = sdb.newTable("doc_cycles_incoming").loadArray(triangleRows);
       await triangle
         .findCycles("source", "target", "edgeId", "A", {
           direction: "incoming",
         })
         .log();
-      assertEquals(
-        await triangle.getData(),
+      expect(await triangle.getData()).toStrictEqual(
         expectedRows([
           ["A", 0, 1, "E3", "C", "A", 1, 1],
           ["A", 0, 2, "E2", "B", "C", 1, 2],
@@ -1806,7 +1659,7 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
           direction: "both",
         })
         .log();
-      assertEquals(await triangle.getData(), forwardRows);
+      expect(await triangle.getData()).toStrictEqual(forwardRows);
     }
     {
       const parallelAndLoop = sdb.newTable("doc_cycles_parallel").loadArray([
@@ -1820,8 +1673,7 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
           weight: "cost",
         })
         .log();
-      assertEquals(
-        await parallelAndLoop.getData(),
+      expect(await parallelAndLoop.getData()).toStrictEqual(
         expectedRows([
           ["A", 0, 1, "P1", "A", "B", 1, 1],
           ["A", 0, 2, "P2", "A", "B", 2, 3],
@@ -1840,15 +1692,12 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
           weight: "minutes",
         })
         .log();
-      assertEquals(
-        await flights.getData(),
+      expect(await flights.getData()).toStrictEqual(
         [
           ["A", 0, 1, "F1", "A", "B", 1, 1],
           ["A", 0, 2, "F2", "B", "C", 2, 3],
           ["A", 0, 3, "F3", "C", "A", 3, 6],
-        ].map((
-          [start, pathId, step, flightId, origin, destination, weight, total],
-        ) => ({
+        ].map(([start, pathId, step, flightId, origin, destination, weight, total]) => ({
           start,
           pathId,
           step,
@@ -1862,18 +1711,16 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
       );
     }
     {
-      const unnumberedConnections = sdb.newTable("doc_cycles_generated")
-        .loadArray([
-          { source: "A", target: "B" },
-          { source: "B", target: "C" },
-          { source: "C", target: "A" },
-        ]);
+      const unnumberedConnections = sdb.newTable("doc_cycles_generated").loadArray([
+        { source: "A", target: "B" },
+        { source: "B", target: "C" },
+        { source: "C", target: "A" },
+      ]);
       await unnumberedConnections
         .addId("edgeId", { prefix: "edge-" })
         .findCycles("source", "target", "edgeId", "A")
         .log();
-      assertEquals(
-        await unnumberedConnections.getData(),
+      expect(await unnumberedConnections.getData()).toStrictEqual(
         expectedRows([
           ["A", 0, 1, "edge-0", "A", "B", 1, 1],
           ["A", 0, 2, "edge-1", "B", "C", 1, 2],
@@ -1881,41 +1728,44 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
         ]),
       );
     }
-    for (
-      const [direction, rows] of [
-        ["outgoing", [
+    for (const [direction, rows] of [
+      [
+        "outgoing",
+        [
           ["B", 0, 1, "F1", "B", "C", 1, 1],
           ["B", 0, 2, "F2", "C", "A", 1, 2],
           ["B", 0, 3, "F3", "A", "B", 1, 3],
-        ]],
-        ["incoming", [
+        ],
+      ],
+      [
+        "incoming",
+        [
           ["B", 0, 1, "F3", "A", "B", 1, 1],
           ["B", 0, 2, "F2", "C", "A", 1, 2],
           ["B", 0, 3, "F1", "B", "C", 1, 3],
-        ]],
-      ] as const
-    ) {
-      const timedFlights = sdb.newTable(`doc_cycles_timed_${direction}`)
-        .loadArray([
-          {
-            flightId: "F1",
-            origin: "B",
-            destination: "C",
-            departureTime: new Date("2025-01-01T09:00:00Z"),
-          },
-          {
-            flightId: "F2",
-            origin: "C",
-            destination: "A",
-            departureTime: new Date("2025-01-01T10:00:00Z"),
-          },
-          {
-            flightId: "F3",
-            origin: "A",
-            destination: "B",
-            departureTime: new Date("2025-01-01T11:00:00Z"),
-          },
-        ]);
+        ],
+      ],
+    ] as const) {
+      const timedFlights = sdb.newTable(`doc_cycles_timed_${direction}`).loadArray([
+        {
+          flightId: "F1",
+          origin: "B",
+          destination: "C",
+          departureTime: new Date("2025-01-01T09:00:00Z"),
+        },
+        {
+          flightId: "F2",
+          origin: "C",
+          destination: "A",
+          departureTime: new Date("2025-01-01T10:00:00Z"),
+        },
+        {
+          flightId: "F3",
+          origin: "A",
+          destination: "B",
+          departureTime: new Date("2025-01-01T11:00:00Z"),
+        },
+      ]);
       await timedFlights
         .findCycles(
           "origin",
@@ -1928,27 +1778,20 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
           },
         )
         .log();
-      assertEquals(
-        await timedFlights.getData(),
-        rows.map(
-          (
-            [start, pathId, step, flightId, origin, destination, weight, total],
-          ) => ({
-            start,
-            pathId,
-            step,
-            weight,
-            total,
-            flightId,
-            origin,
-            destination,
-            departureTime: new Date(
-              `2025-01-01T${
-                String(Number(flightId.slice(1)) + 8).padStart(2, "0")
-              }:00:00Z`,
-            ),
-          }),
-        ),
+      expect(await timedFlights.getData()).toStrictEqual(
+        rows.map(([start, pathId, step, flightId, origin, destination, weight, total]) => ({
+          start,
+          pathId,
+          step,
+          weight,
+          total,
+          flightId,
+          origin,
+          destination,
+          departureTime: new Date(
+            `2025-01-01T${String(Number(flightId.slice(1)) + 8).padStart(2, "0")}:00:00Z`,
+          ),
+        })),
       );
     }
   } finally {
@@ -1956,7 +1799,7 @@ Deno.test("findCycles executes all nine JSDoc examples with their displayed rows
   }
 });
 
-Deno.test("findCycles reports elapsed journey time independently of weights and connection totals", async () => {
+test("findCycles reports elapsed journey time independently of weights and connection totals", async () => {
   const sdb = new SimpleDB();
   const rows = [
     {
@@ -1988,22 +1831,16 @@ Deno.test("findCycles reports elapsed journey time independently of weights and 
     const source = sdb.newTable().loadArray(rows);
     for (const direction of ["outgoing", "incoming"] as const) {
       for (const weighted of [false, true]) {
-        const result = source.findCycles(
-          "source",
-          "target",
-          "edgeId",
-          "A",
-          {
-            direction,
-            weight: weighted ? "cost" : undefined,
-            elapsedTime: true,
-            startTimeColumn: "departure",
-            endTimeColumn: "arrival",
-            minGapMs: 1000,
-            outputTable: true,
-          },
-        );
-        assertEquals(await result.getColumns(), [
+        const result = source.findCycles("source", "target", "edgeId", "A", {
+          direction,
+          weight: weighted ? "cost" : undefined,
+          elapsedTime: true,
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+          minGapMs: 1000,
+          outputTable: true,
+        });
+        expect(await result.getColumns()).toStrictEqual([
           "start",
           "pathId",
           "step",
@@ -2012,25 +1849,22 @@ Deno.test("findCycles reports elapsed journey time independently of weights and 
           "elapsedTimeMs",
           ...Object.keys(rows[0]),
         ]);
-        assertEquals((await result.getTypes()).elapsedTimeMs, "DOUBLE");
-        const expected = direction === "outgoing"
-          ? [[0, 1, 1, 1000, 2, 2], [0, 2, 3, 12000, 3, 5], [
-            1,
-            1,
-            2,
-            2000,
-            4,
-            4,
-          ], [1, 2, 3, 7000, 3, 7]]
-          : [[0, 1, 3, 2000, 3, 3], [0, 2, 1, 12000, 2, 5], [
-            1,
-            1,
-            3,
-            2000,
-            3,
-            3,
-          ], [1, 2, 2, 7000, 4, 7]];
-        assertEquals(
+        expect((await result.getTypes()).elapsedTimeMs).toStrictEqual("DOUBLE");
+        const expected =
+          direction === "outgoing"
+            ? [
+                [0, 1, 1, 1000, 2, 2],
+                [0, 2, 3, 12000, 3, 5],
+                [1, 1, 2, 2000, 4, 4],
+                [1, 2, 3, 7000, 3, 7],
+              ]
+            : [
+                [0, 1, 3, 2000, 3, 3],
+                [0, 2, 1, 12000, 2, 5],
+                [1, 1, 3, 2000, 3, 3],
+                [1, 2, 2, 7000, 4, 7],
+              ];
+        expect(
           (await result.getData()).map((row) => [
             row.pathId,
             row.step,
@@ -2039,6 +1873,7 @@ Deno.test("findCycles reports elapsed journey time independently of weights and 
             row.weight,
             row.total,
           ]),
+        ).toStrictEqual(
           expected.map(([pathId, step, edgeId, elapsed, weight, total]) => [
             pathId,
             step,
@@ -2050,26 +1885,21 @@ Deno.test("findCycles reports elapsed journey time independently of weights and 
         );
       }
     }
-    assertEquals(await source.getData(), rows);
+    expect(await source.getData()).toStrictEqual(rows);
     const options = {
       elapsedTime: true,
       startTimeColumn: "departure",
       endTimeColumn: "arrival",
       outputTable: "elapsedCycleSnapshot",
     };
-    const selected = source.findCycles(
-      "source",
-      "target",
-      "edgeId",
-      "A",
-      options,
-    )
+    const selected = source
+      .findCycles("source", "target", "edgeId", "A", options)
       .filter("elapsedTimeMs >= 7000")
       .selectColumns(["edgeId", "elapsedTimeMs"]);
     options.elapsedTime = false;
     options.startTimeColumn = "missing";
-    assertEquals(selected.name, "elapsedCycleSnapshot");
-    assertEquals(await selected.getData(), [
+    expect(selected.name).toStrictEqual("elapsedCycleSnapshot");
+    expect(await selected.getData()).toStrictEqual([
       { edgeId: 3, elapsedTimeMs: 12000 },
       { edgeId: 3, elapsedTimeMs: 7000 },
     ]);
@@ -2079,21 +1909,22 @@ Deno.test("findCycles reports elapsed journey time independently of weights and 
       endTimeColumn: "arrival",
       outputTable: true,
     });
-    assertEquals(await empty.getData(), []);
-    assertEquals((await empty.getTypes()).elapsedTimeMs, "DOUBLE");
+    expect(await empty.getData()).toStrictEqual([]);
+    expect((await empty.getTypes()).elapsedTimeMs).toStrictEqual("DOUBLE");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles preserves fractional milliseconds at native timestamp precision", async () => {
+test("findCycles preserves fractional milliseconds at native timestamp precision", async () => {
   const sdb = new SimpleDB();
   try {
     for (const type of ["TIMESTAMP", "TIMESTAMP_NS"]) {
       const table = sdb.newTable(`elapsed_${type}`);
-      const fractions = type === "TIMESTAMP_NS"
-        ? ["000000001", "000000002", "000001001", "000001002"]
-        : ["000001", "000002", "001001", "001002"];
+      const fractions =
+        type === "TIMESTAMP_NS"
+          ? ["000000001", "000000002", "000001001", "000001002"]
+          : ["000001", "000002", "001001", "001002"];
       await sdb.customQuery(`CREATE TABLE "${table.name}" AS
         SELECT * FROM (VALUES
           (1, 'A', 'B', ${type} '2025-01-01 00:00:00.${fractions[0]}',
@@ -2102,22 +1933,17 @@ Deno.test("findCycles preserves fractional milliseconds at native timestamp prec
             ${type} '2025-01-01 00:00:00.${fractions[3]}', 0.2::DECIMAL(10, 2))
         ) edges(edgeId, source, target, departure, arrival, cost)`);
       for (const direction of ["outgoing", "incoming"] as const) {
-        const result = table.findCycles(
-          "source",
-          "target",
-          "edgeId",
-          "A",
-          {
+        const result = table
+          .findCycles("source", "target", "edgeId", "A", {
             direction,
             elapsedTime: true,
             weight: "cost",
             startTimeColumn: "departure",
             endTimeColumn: "arrival",
             outputTable: true,
-          },
-        ).convert({ total: "string" });
-        assertEquals(
-          (await result.getData()).map((row) => [row.elapsedTimeMs, row.total]),
+          })
+          .convert({ total: "string" });
+        expect((await result.getData()).map((row) => [row.elapsedTimeMs, row.total])).toStrictEqual(
           [
             [
               type === "TIMESTAMP_NS" ? 0.000001 : 0.001,
@@ -2133,17 +1959,15 @@ Deno.test("findCycles preserves fractional milliseconds at native timestamp prec
   }
 });
 
-Deno.test("findCycles validates elapsed reporting and rejects route minimization before queueing", async () => {
+test("findCycles validates elapsed reporting and rejects route minimization before queueing", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
-    for (
-      const options of [
-        { elapsedTime: true },
-        { elapsedTime: true, startTimeColumn: "departure" },
-        { elapsedTime: true, endTimeColumn: "arrival" },
-      ]
-    ) {
+    for (const options of [
+      { elapsedTime: true },
+      { elapsedTime: true, startTimeColumn: "departure" },
+      { elapsedTime: true, endTimeColumn: "arrival" },
+    ]) {
       assertThrows(
         () => table.findCycles("source", "target", "edgeId", "A", options),
         TypeError,
@@ -2181,37 +2005,41 @@ Deno.test("findCycles validates elapsed reporting and rejects route minimization
       TypeError,
       'options.direction cannot be "both"',
     );
-    assertEquals(table.pendingOps.length, 0);
+    expect(table.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("findCycles reserves elapsedTimeMs only when reporting is enabled", async () => {
+test("findCycles reserves elapsedTimeMs only when reporting is enabled", async () => {
   const sdb = new SimpleDB();
-  const rows = [{
-    edgeId: 1,
-    source: "A",
-    target: "A",
-    departure: new Date(chronologicalBase),
-    arrival: new Date(chronologicalBase + 1000),
-    ElapsedTimeMS: 123,
-  }];
+  const rows = [
+    {
+      edgeId: 1,
+      source: "A",
+      target: "A",
+      departure: new Date(chronologicalBase),
+      arrival: new Date(chronologicalBase + 1000),
+      ElapsedTimeMS: 123,
+    },
+  ];
   try {
     const table = sdb.newTable().loadArray(rows);
     for (const outputTable of [false, true]) {
       await assertRejects(
         () =>
-          table.findCycles("source", "target", "edgeId", "A", {
-            elapsedTime: true,
-            startTimeColumn: "departure",
-            endTimeColumn: "arrival",
-            outputTable,
-          }).getData(),
+          table
+            .findCycles("source", "target", "edgeId", "A", {
+              elapsedTime: true,
+              startTimeColumn: "departure",
+              endTimeColumn: "arrival",
+              outputTable,
+            })
+            .getData(),
         Error,
         "ElapsedTimeMS",
       );
-      assertEquals(await table.getData(), rows);
+      expect(await table.getData()).toStrictEqual(rows);
     }
     for (const elapsedTime of [undefined, false]) {
       const result = table.findCycles("source", "target", "edgeId", "A", {
@@ -2220,15 +2048,17 @@ Deno.test("findCycles reserves elapsedTimeMs only when reporting is enabled", as
         endTimeColumn: "arrival",
         outputTable: true,
       });
-      assertEquals(await result.getData(), [{
-        start: "A",
-        pathId: 0,
-        step: 1,
-        weight: 1,
-        total: 1,
-        ...rows[0],
-      }]);
-      assertEquals(await result.getColumns(), [
+      expect(await result.getData()).toStrictEqual([
+        {
+          start: "A",
+          pathId: 0,
+          step: 1,
+          weight: 1,
+          total: 1,
+          ...rows[0],
+        },
+      ]);
+      expect(await result.getColumns()).toStrictEqual([
         "start",
         "pathId",
         "step",
@@ -2242,7 +2072,7 @@ Deno.test("findCycles reserves elapsedTimeMs only when reporting is enabled", as
   }
 });
 
-Deno.test("findCycles elapsed time includes self-cycles and zero-duration events without a wraparound gap", async () => {
+test("findCycles elapsed time includes self-cycles and zero-duration events without a wraparound gap", async () => {
   const sdb = new SimpleDB();
   try {
     const source = sdb.newTable().loadArray([
@@ -2284,17 +2114,20 @@ Deno.test("findCycles elapsed time includes self-cycles and zero-duration events
         minGapMs: 1000,
         outputTable: true,
       });
-      assertEquals(
-        (await result.getData()).map((
-          row,
-        ) => [row.pathId, row.step, row.edgeId, row.elapsedTimeMs, row.total]),
-        [
-          [0, 1, 1, 0, 1],
-          [1, 1, 2, 2000, 1],
-          [2, 1, direction === "outgoing" ? 3 : 4, 0, 1],
-          [2, 2, direction === "outgoing" ? 4 : 3, 1000, 2],
-        ],
-      );
+      expect(
+        (await result.getData()).map((row) => [
+          row.pathId,
+          row.step,
+          row.edgeId,
+          row.elapsedTimeMs,
+          row.total,
+        ]),
+      ).toStrictEqual([
+        [0, 1, 1, 0, 1],
+        [1, 1, 2, 2000, 1],
+        [2, 1, direction === "outgoing" ? 3 : 4, 0, 1],
+        [2, 2, direction === "outgoing" ? 4 : 3, 1000, 2],
+      ]);
     }
   } finally {
     await sdb.close();

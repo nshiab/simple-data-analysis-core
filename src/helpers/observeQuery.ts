@@ -1,3 +1,4 @@
+import stringifyUnknown from "./stringifyUnknown.ts";
 import type { DuckDBConnection, DuckDBValue } from "@duckdb/node-api";
 
 const explainableStatements = new Set([
@@ -20,20 +21,19 @@ export default async function observeQuery(
   values: DuckDBValue[],
   options: { logSQL: boolean; explainSQL: boolean },
 ): Promise<void> {
-  if (options.explainSQL && await canExplain(connection, query)) {
+  if (options.explainSQL && (await canExplain(connection, query))) {
     try {
       const explain = `EXPLAIN ${query}`;
-      const result = values.length === 0
-        ? await connection.run(explain)
-        : await connection.run(explain, values);
+      const result =
+        values.length === 0 ? await connection.run(explain) : await connection.run(explain, values);
       const rows = await result.getRowsJS();
-      const plan = rows.map((row) => String(row[1] ?? row[0] ?? "")).join("\n");
+      const plan = rows.map((row) => stringifyUnknown(row[1] ?? row[0] ?? "")).join("\n");
       console.log(`EXPLAIN ${query}\n${plan}`);
     } catch (error) {
       console.warn(
-        `SDA: Could not explain the following SQL; executing it normally.\n${query}\n${
-          String(error)
-        }`,
+        `SDA: Could not explain the following SQL; executing it normally.\n${query}\n${String(
+          error,
+        )}`,
       );
     }
   }
@@ -48,11 +48,11 @@ export default async function observeQuery(
   }
 }
 
-async function canExplain(
-  connection: DuckDBConnection,
-  query: string,
-): Promise<boolean> {
-  const keyword = query.trimStart().match(/^([A-Za-z]+)/)?.[1].toUpperCase();
+async function canExplain(connection: DuckDBConnection, query: string): Promise<boolean> {
+  const keyword = query
+    .trimStart()
+    .match(/^([A-Za-z]+)/)?.[1]
+    .toUpperCase();
   if (keyword === undefined || !explainableStatements.has(keyword)) {
     return false;
   }

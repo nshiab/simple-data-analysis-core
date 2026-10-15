@@ -69,9 +69,7 @@ export default function printTable(
   const formatValue = (value: unknown): string => {
     if (value instanceof LogValue) return value.text;
     if (value instanceof Date) {
-      return Number.isNaN(value.getTime())
-        ? "Invalid Date"
-        : value.toISOString();
+      return Number.isNaN(value.getTime()) ? "Invalid Date" : value.toISOString();
     }
     return String(value);
   };
@@ -88,9 +86,7 @@ export default function printTable(
   // First, seed widths from header names.
   const columnWidths: { [key: string]: number } = {};
   for (const col of columns) {
-    columnWidths[col] = Math.max(
-      ...col.split("\n").map((line) => splitGraphemes(line).length),
-    );
+    columnWidths[col] = Math.max(...col.split("\n").map((line) => splitGraphemes(line).length));
   }
 
   // Format every cell, track the longest raw line per column, and
@@ -119,30 +115,24 @@ export default function printTable(
 
   // Apply min/max constraints
   for (const col of columns) {
-    columnWidths[col] = Math.min(
-      Math.max(columnWidths[col], minColumnWidth),
-      maxColumnWidth,
-    );
+    columnWidths[col] = Math.min(Math.max(columnWidths[col], minColumnWidth), maxColumnWidth);
   }
 
   // Use the same newline and word wrapping rules for headers and cells.
   const wrapCell = (value: string, width: number): string[] => {
-    const lines = value.split("\n").flatMap((line) =>
-      splitGraphemes(line).length <= width
-        ? [line]
-        : wrapString(line, width).split("\n")
-    );
+    const lines = value
+      .split("\n")
+      .flatMap((line) =>
+        splitGraphemes(line).length <= width ? [line] : wrapString(line, width).split("\n"),
+      );
     return lines.length > 0 ? lines : [""];
   };
   const wrappedHeaders = columns.map((col) => wrapCell(col, columnWidths[col]));
   const wrappedData = formattedData.map((row) =>
-    Object.fromEntries(columns.map((col, c) => [
-      col,
-      wrapCell(row[c], columnWidths[col]),
-    ]))
+    Object.fromEntries(columns.map((col, c) => [col, wrapCell(row[c], columnWidths[col])])),
   );
 
-  // ANSI color codes (matching Deno's console colors)
+  // ANSI console color codes
   const colors = {
     reset: "\x1b[0m",
     bold: "\x1b[1m",
@@ -155,10 +145,7 @@ export default function printTable(
   };
 
   // Helper function to get color for a value based on its actual JavaScript type
-  const getColorForValue = (
-    value: unknown,
-    isTypeRow: boolean,
-  ): string => {
+  const getColorForValue = (value: unknown, isTypeRow: boolean): string => {
     if (isTypeRow) return colors.grey;
     if (value instanceof LogValue) return colors[value.category];
     if (value === null || value === undefined) return colors.null;
@@ -169,11 +156,7 @@ export default function printTable(
   };
 
   // Helper function to create a horizontal border line with column junctions
-  const createBorderLine = (
-    left: string,
-    middle: string,
-    right: string,
-  ) => {
+  const createBorderLine = (left: string, middle: string, right: string) => {
     const segments = columns.map((col) => "─".repeat(columnWidths[col] + 2));
     return colors.grey + left + segments.join(middle) + right + colors.reset;
   };
@@ -198,14 +181,20 @@ export default function printTable(
   // Print each header line in bold, padding shorter headers to the same height.
   const headerHeight = Math.max(...wrappedHeaders.map((lines) => lines.length));
   for (let lineIdx = 0; lineIdx < headerHeight; lineIdx++) {
-    const headerParts = columns.map((col, c) =>
-      ` ${colors.bold}${
-        pad(wrappedHeaders[c][lineIdx] ?? "", columnWidths[col])
-      }${colors.reset} `
+    const headerParts = columns.map(
+      (col, c) =>
+        ` ${colors.bold}${pad(
+          wrappedHeaders[c][lineIdx] ?? "",
+          columnWidths[col],
+        )}${colors.reset} `,
     );
     console.log(
-      colors.grey + "│" + colors.reset +
-        headerParts.join(colors.grey + "│" + colors.reset) + colors.grey + "│" +
+      colors.grey +
+        "│" +
+        colors.reset +
+        headerParts.join(colors.grey + "│" + colors.reset) +
+        colors.grey +
+        "│" +
         colors.reset,
     );
   }
@@ -251,8 +240,11 @@ export default function printTable(
         return ` ${color}${pad(lineValue, columnWidths[col])}${colors.reset} `;
       });
       console.log(
-        colors.grey + "│" + colors.reset +
-          lineParts.join(colors.grey + "│" + colors.reset) + colors.grey +
+        colors.grey +
+          "│" +
+          colors.reset +
+          lineParts.join(colors.grey + "│" + colors.reset) +
+          colors.grey +
           "│" +
           colors.reset,
       );

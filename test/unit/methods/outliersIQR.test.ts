@@ -1,7 +1,9 @@
-import { assert, assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should fuse with neighboring builder methods", async () => {
+test("should fuse with neighboring builder methods", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("fusedOutliers");
   const queries: string[] = [];
@@ -18,22 +20,22 @@ Deno.test("should fuse with neighboring builder methods", async () => {
     .sort({ age: "asc" })
     .getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { age: 10, isOutlier: false },
     { age: 11, isOutlier: false },
     { age: 12, isOutlier: false },
     { age: 100, isOutlier: true },
   ]);
   const creates = queries.filter((query) =>
-    query.includes('CREATE OR REPLACE TABLE "fusedOutliers"')
+    query.includes('CREATE OR REPLACE TABLE "fusedOutliers"'),
   );
-  assertEquals(creates.length, 1);
+  expect(creates.length).toStrictEqual(1);
   assert(creates[0].includes('"s3"'));
 
   await sdb.close();
 });
 
-Deno.test("should choose the IQR quantile method from each group's row count", async () => {
+test("should choose the IQR quantile method from each group's row count", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -51,7 +53,7 @@ Deno.test("should choose the IQR quantile method from each group's row count", a
     .sort({ group: "asc", value: "asc" })
     .getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { group: "even", value: 0, isOutlier: false },
     { group: "even", value: 10, isOutlier: false },
     { group: "even", value: 20, isOutlier: false },
@@ -64,7 +66,7 @@ Deno.test("should choose the IQR quantile method from each group's row count", a
   await sdb.close();
 });
 
-Deno.test("should ignore nulls when choosing each group's IQR quantile method", async () => {
+test("should ignore nulls when choosing each group's IQR quantile method", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -80,7 +82,7 @@ Deno.test("should ignore nulls when choosing each group's IQR quantile method", 
     .sort({ value: "asc" })
     .getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { group: "even", value: 0, isOutlier: false },
     { group: "even", value: 10, isOutlier: false },
     { group: "even", value: 20, isOutlier: false },
@@ -91,7 +93,7 @@ Deno.test("should ignore nulls when choosing each group's IQR quantile method", 
   await sdb.close();
 });
 
-Deno.test("should add an outliers column based on the IQR method with an even number of rows", async () => {
+test("should add an outliers column based on the IQR method with an even number of rows", async () => {
   const sdb = new SimpleDB();
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
@@ -122,7 +124,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "Evangeline", age: 21, ageOutliers: true },
     { name: "Sonny", age: 57, ageOutliers: true },
     { name: "Frazer", age: 64, ageOutliers: true },
@@ -144,7 +146,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
   await sdb.close();
 });
 
-Deno.test("should add an outliers column based on the IQR method with an odd number of rows", async () => {
+test("should add an outliers column based on the IQR method with an odd number of rows", async () => {
   const sdb = new SimpleDB();
   // comparing against https://dataschool.com/how-to-teach-people-sql/how-to-find-outliers-with-sql/
 
@@ -176,7 +178,7 @@ Deno.test("should add an outliers column based on the IQR method with an odd num
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "Helen", age: 20, ageOutliers: true },
     { name: "Evangeline", age: 21, ageOutliers: true },
     { name: "Sonny", age: 57, ageOutliers: true },
@@ -199,7 +201,7 @@ Deno.test("should add an outliers column based on the IQR method with an odd num
   await sdb.close();
 });
 
-Deno.test("should add an outliers column based on the IQR method with an even number of rows and with a category", async () => {
+test("should add an outliers column based on the IQR method with an even number of rows and with a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -231,7 +233,7 @@ Deno.test("should add an outliers column based on the IQR method with an even nu
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { name: "Philip", age: 125, gender: "Man", ageOutliers: true },
     { name: "Jeremy", age: 34, gender: "Man", ageOutliers: false },
     { name: "Sonny", age: 57, gender: "Man", ageOutliers: false },

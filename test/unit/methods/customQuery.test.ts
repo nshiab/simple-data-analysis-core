@@ -1,17 +1,17 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the results of a custom query", async () => {
+test("should return the results of a custom query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData(["test/data/files/employees.csv"]);
 
-  const data = await sdb.customQuery(
-    "SELECT * FROM employees WHERE Job = 'Clerk'",
-    { returnData: true },
-  );
+  const data = await sdb.customQuery("SELECT * FROM employees WHERE Job = 'Clerk'", {
+    returnData: true,
+  });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -176,29 +176,27 @@ Deno.test("should return the results of a custom query", async () => {
   await sdb.close();
 });
 
-Deno.test("should return non-relational results", async () => {
+test("should return non-relational results", async () => {
   const sdb = new SimpleDB();
   await sdb.customQuery("CREATE TABLE listed(value INTEGER)");
 
-  assertEquals(
+  expect(
     await sdb.customQuery("SHOW TABLES", {
       returnData: true,
     }),
-    [{ name: "listed" }],
-  );
+  ).toStrictEqual([{ name: "listed" }]);
   await sdb.close();
 });
-Deno.test("should work with ==", async () => {
+test("should work with ==", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
-  const data = await sdb.customQuery(
-    "SELECT * FROM employees WHERE Name == 'Patel, Joshua'",
-    { returnData: true },
-  );
+  const data = await sdb.customQuery("SELECT * FROM employees WHERE Name == 'Patel, Joshua'", {
+    returnData: true,
+  });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Patel, Joshua",
       "Hire date": "06-APR-06",
@@ -210,17 +208,16 @@ Deno.test("should work with ==", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with ===", async () => {
+test("should work with ===", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
 
-  const data = await sdb.customQuery(
-    "SELECT * FROM employees WHERE Name === 'Patel, Joshua'",
-    { returnData: true },
-  );
+  const data = await sdb.customQuery("SELECT * FROM employees WHERE Name === 'Patel, Joshua'", {
+    returnData: true,
+  });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Patel, Joshua",
       "Hire date": "06-APR-06",
@@ -232,7 +229,7 @@ Deno.test("should work with ===", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with &&", async () => {
+test("should work with &&", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
@@ -242,7 +239,7 @@ Deno.test("should work with &&", async () => {
     { returnData: true },
   );
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Colmenares, Karen",
       "Hire date": "10-AUG-07",
@@ -254,7 +251,7 @@ Deno.test("should work with &&", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with ||", async () => {
+test("should work with ||", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
@@ -264,7 +261,7 @@ Deno.test("should work with ||", async () => {
     { returnData: true },
   );
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Colmenares, Karen",
       "Hire date": "10-AUG-07",
@@ -292,7 +289,7 @@ Deno.test("should work with ||", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should support JS logical OR alongside concat()", async () => {
+test("should support JS logical OR alongside concat()", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
@@ -302,7 +299,7 @@ Deno.test("should support JS logical OR alongside concat()", async () => {
     { returnData: true },
   );
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Colmenares, Karen",
       "Hire date": "10-AUG-07",
@@ -333,7 +330,7 @@ Deno.test("should support JS logical OR alongside concat()", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with !==", async () => {
+test("should work with !==", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
   table.loadData("test/data/files/employees.csv");
@@ -343,7 +340,7 @@ Deno.test("should work with !==", async () => {
     { returnData: true },
   );
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Fay, Pat",
       "Hire date": "17-AUG-05",
@@ -411,133 +408,113 @@ Deno.test("should work with !==", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should work with === null", async () => {
+test("should work with === null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 === null`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 === null`, {
+    returnData: true,
+  });
 
-  assertEquals(data, [{ key1: null }]);
+  expect(data).toStrictEqual([{ key1: null }]);
   await sdb.close();
 });
-Deno.test("should work with = null", async () => {
+test("should work with = null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 = null`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 = null`, { returnData: true });
 
-  assertEquals(data, [{ key1: null }]);
+  expect(data).toStrictEqual([{ key1: null }]);
   await sdb.close();
 });
-Deno.test("should work with === NULL", async () => {
+test("should work with === NULL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 === NULL`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 === NULL`, {
+    returnData: true,
+  });
 
-  assertEquals(data, [{ key1: null }]);
+  expect(data).toStrictEqual([{ key1: null }]);
   await sdb.close();
 });
-Deno.test("should work with == NULL", async () => {
+test("should work with == NULL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 == NULL`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 == NULL`, { returnData: true });
 
-  assertEquals(data, [{ key1: null }]);
+  expect(data).toStrictEqual([{ key1: null }]);
   await sdb.close();
 });
-Deno.test("should work with = NULL", async () => {
+test("should work with = NULL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 = NULL`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 = NULL`, { returnData: true });
 
-  assertEquals(data, [{ key1: null }]);
+  expect(data).toStrictEqual([{ key1: null }]);
   await sdb.close();
 });
-Deno.test("should work with !== null", async () => {
+test("should work with !== null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 !== null`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 !== null`, {
+    returnData: true,
+  });
 
-  assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 2 }]);
   await sdb.close();
 });
-Deno.test("should work with != null", async () => {
+test("should work with != null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 != null`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 != null`, { returnData: true });
 
-  assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 2 }]);
   await sdb.close();
 });
-Deno.test("should work with !== NULL", async () => {
+test("should work with !== NULL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 !== NULL`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 !== NULL`, {
+    returnData: true,
+  });
 
-  assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 2 }]);
   await sdb.close();
 });
-Deno.test("should work with != NULL", async () => {
+test("should work with != NULL", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 != NULL`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 != NULL`, { returnData: true });
 
-  assertEquals(data, [{ key1: 1 }, { key1: 2 }]);
+  expect(data).toStrictEqual([{ key1: 1 }, { key1: 2 }]);
   await sdb.close();
 });
-Deno.test("should work with === null not at the end of query", async () => {
+test("should work with === null not at the end of query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("test");
   table.loadArray([{ key1: 1 }, { key1: 2 }, { key1: null }]);
 
-  const data = await sdb.customQuery(
-    `SELECT * FROM test WHERE key1 === null || key1 === 2`,
-    { returnData: true },
-  );
+  const data = await sdb.customQuery(`SELECT * FROM test WHERE key1 === null || key1 === 2`, {
+    returnData: true,
+  });
 
-  assertEquals(data, [{ key1: 2 }, { key1: null }]);
+  expect(data).toStrictEqual([{ key1: 2 }, { key1: null }]);
   await sdb.close();
 });

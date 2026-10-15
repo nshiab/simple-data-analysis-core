@@ -36,28 +36,28 @@ export default function normalize(
       assertNewColumns(schema, [newColumn], "normalize()");
 
       const by = options.by ? stringToArray(options.by) : [];
-      const partition = by.length > 0
-        ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`
-        : "";
+      const partition =
+        by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}` : "";
 
-      const normalizedQuery = `(${quoteIdentifier(column)} - MIN(${
-        quoteIdentifier(column)
-      }) OVER(${partition}))
+      const normalizedQuery = `(${quoteIdentifier(column)} - MIN(${quoteIdentifier(
+        column,
+      )}) OVER(${partition}))
     /
-    (MAX(${quoteIdentifier(column)}) OVER(${partition}) - MIN(${
-        quoteIdentifier(column)
-      }) OVER(${partition}))`;
+    (MAX(${quoteIdentifier(column)}) OVER(${partition}) - MIN(${quoteIdentifier(
+      column,
+    )}) OVER(${partition}))`;
       const [rangeMin, rangeMax] = options.range ?? [0, 1];
-      const scaledQuery = options.range === undefined
-        ? normalizedQuery
-        : `${rangeMin} + (${normalizedQuery}) * ${rangeMax - rangeMin}`;
+      const scaledQuery =
+        options.range === undefined
+          ? normalizedQuery
+          : `${rangeMin} + (${normalizedQuery}) * ${rangeMax - rangeMin}`;
 
       return `SELECT *, (
         ${
-        typeof options.decimals === "number"
-          ? `ROUND(${scaledQuery}, ${options.decimals})`
-          : scaledQuery
-      }
+          typeof options.decimals === "number"
+            ? `ROUND(${scaledQuery}, ${options.decimals})`
+            : scaledQuery
+        }
         ) AS ${quoteIdentifier(newColumn)},
     FROM ${input}`;
     },

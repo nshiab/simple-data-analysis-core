@@ -24,18 +24,11 @@ export default function degree(
   if (typeof targetColumn !== "string") {
     throw new TypeError("degree() targetColumn must be a string.");
   }
-  if (
-    options === null || typeof options !== "object" || Array.isArray(options)
-  ) {
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new TypeError("degree() options must be an object.");
   }
-  if (
-    options.count !== undefined &&
-    !["edges", "neighbors"].includes(options.count)
-  ) {
-    throw new TypeError(
-      'degree() options.count must be "edges" or "neighbors".',
-    );
+  if (options.count !== undefined && !["edges", "neighbors"].includes(options.count)) {
+    throw new TypeError('degree() options.count must be "edges" or "neighbors".');
   }
   if (options.weight !== undefined && typeof options.weight !== "string") {
     throw new TypeError("degree() options.weight must be a string.");
@@ -45,9 +38,7 @@ export default function degree(
     typeof options.outputTable !== "string" &&
     typeof options.outputTable !== "boolean"
   ) {
-    throw new TypeError(
-      "degree() options.outputTable must be a string or boolean.",
-    );
+    throw new TypeError("degree() options.outputTable must be a string or boolean.");
   }
   if (options.weight !== undefined && options.count === "neighbors") {
     throw new TypeError(
@@ -71,12 +62,7 @@ export default function degree(
     buildSelect: (input, schema) =>
       degreeSelect(input, schema, sourceColumn, targetColumn, count, weight),
     outputSchema: (schema) => {
-      const validated = validateInputs(
-        schema,
-        sourceColumn,
-        targetColumn,
-        weight,
-      );
+      const validated = validateInputs(schema, sourceColumn, targetColumn, weight);
       return {
         node: validated.idType,
         incoming: validated.degreeType,
@@ -94,9 +80,10 @@ function validateInputs(
   weight: string | undefined,
 ) {
   const endpoints = getGraphEndpointColumns(schema, source, target, "degree()");
-  const degreeType = weight === undefined
-    ? "BIGINT"
-    : sumType(getGraphWeightColumn(schema, weight, "degree()").distanceType);
+  const degreeType =
+    weight === undefined
+      ? "BIGINT"
+      : sumType(getGraphWeightColumn(schema, weight, "degree()").distanceType);
   return { idType: endpoints.idType, degreeType };
 }
 
@@ -114,9 +101,8 @@ function degreeSelect(
   weight: string | undefined,
 ): string {
   const prepared = prepareGraphSql(input, schema, source, target, "degree()");
-  const weightColumn = weight === undefined
-    ? undefined
-    : getGraphWeightColumn(schema, weight, "degree()");
+  const weightColumn =
+    weight === undefined ? undefined : getGraphWeightColumn(schema, weight, "degree()");
   const degreeType = sumType(weightColumn?.distanceType ?? "BIGINT");
   const relations = prepared.relationNames([
     "graph_edges",
@@ -131,30 +117,23 @@ function degreeSelect(
   const incoming = relations.graph_incoming;
   const outgoing = relations.graph_outgoing;
   const q = quoteIdentifier;
-  const edgeWeight = weightColumn === undefined
-    ? undefined
-    : `CAST(${q("edges")}.${q(weightColumn.column)} AS ${degreeType}) AS ${
-      q("__weight")
-    }`;
-  const aggregate = (
-    direction: "incoming" | "outgoing",
-  ) => {
+  const edgeWeight =
+    weightColumn === undefined
+      ? undefined
+      : `CAST(${q("edges")}.${q(weightColumn.column)} AS ${degreeType}) AS ${q("__weight")}`;
+  const aggregate = (direction: "incoming" | "outgoing") => {
     const neighborKey = direction === "incoming" ? "__from_key" : "__to_key";
     if (edgeWeight !== undefined) {
       return `CAST(SUM(${q("__weight")}) AS ${degreeType})`;
     }
-    return count === "neighbors"
-      ? `COUNT(DISTINCT ${q(neighborKey)})`
-      : "COUNT(*)";
+    return count === "neighbors" ? `COUNT(DISTINCT ${q(neighborKey)})` : "COUNT(*)";
   };
   const zero = `CAST(0 AS ${degreeType})`;
   const incomingDegree = `COALESCE(${q("incoming")}.${q("incoming")}, ${zero})`;
   const outgoingDegree = `COALESCE(${q("outgoing")}.${q("outgoing")}, ${zero})`;
 
   return `WITH ${edges} AS (
-      ${
-    prepared.edges("outgoing", edgeWeight === undefined ? [] : [edgeWeight])
-  }
+      ${prepared.edges("outgoing", edgeWeight === undefined ? [] : [edgeWeight])}
     ), ${candidates} AS (
       SELECT ${q("__from")} AS ${q("node")},
         ${q("__from_key")} AS ${q("__key")}
@@ -181,9 +160,7 @@ function degreeSelect(
     SELECT ${q("nodes")}.${q("node")},
       ${incomingDegree} AS ${q("incoming")},
       ${outgoingDegree} AS ${q("outgoing")},
-      CAST(${incomingDegree} + ${outgoingDegree} AS ${degreeType}) AS ${
-    q("total")
-  }
+      CAST(${incomingDegree} + ${outgoingDegree} AS ${degreeType}) AS ${q("total")}
     FROM ${nodes} AS ${q("nodes")}
     LEFT JOIN ${incoming} AS ${q("incoming")}
       ON ${q("nodes")}.${q("__key")} = ${q("incoming")}.${q("__key")}

@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("filter excludes null and empty geometries when the bounds cover every point", async () => {
+test("filter excludes null and empty geometries when the bounds cover every point", async () => {
   const sdb = new SimpleDB({ expressionSyntax: "sql" });
   try {
     await sdb.customQuery(`CREATE TABLE nullableGeometries AS
@@ -13,25 +14,22 @@ Deno.test("filter excludes null and empty geometries when the bounds cover every
 
     // The bounds cover the entire extent recorded in the geometry statistics.
     // DuckDB must still apply the predicate to exclude NULL and empty values.
-    const data = await sdb.newTable("nullableGeometries")
-      .filter(
-        "geom && 'POLYGON((-1 -1, 200 -1, 200 200, -1 200, -1 -1))'::GEOMETRY",
-      )
+    const data = await sdb
+      .newTable("nullableGeometries")
+      .filter("geom && 'POLYGON((-1 -1, 200 -1, 200 200, -1 200, -1 -1))'::GEOMETRY")
       .selectColumns(["id"])
       .sort({ id: "asc" })
       .getData();
 
-    assertEquals(
-      data,
-      Array.from({ length: 1000 }, (_, id) => ({ id }))
-        .filter(({ id }) => id % 10 > 1),
+    expect(data).toStrictEqual(
+      Array.from({ length: 1000 }, (_, id) => ({ id })).filter(({ id }) => id % 10 > 1),
     );
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("should filter the rows based on one condition", async () => {
+test("should filter the rows based on one condition", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
@@ -39,7 +37,7 @@ Deno.test("should filter the rows based on one condition", async () => {
   table.filter(`"Job" = 'Clerk'`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -203,14 +201,14 @@ Deno.test("should filter the rows based on one condition", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should filter the rows based on multiple conditions", async () => {
+test("should filter the rows based on multiple conditions", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
   table.filter(`"Job" = 'Clerk' AND "Department or unit" != '50'`);
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Khoo, Alexander",
       "Hire date": "18-MAY-03",
@@ -262,7 +260,7 @@ Deno.test("should filter the rows based on multiple conditions", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should filter the rows based on booleans", async () => {
+test("should filter the rows based on booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -272,17 +270,17 @@ Deno.test("should filter the rows based on booleans", async () => {
   table.filter(`value = TRUE`);
   const data = await table.getData();
 
-  assertEquals(data, [{ name: "Nael", value: true }]);
+  expect(data).toStrictEqual([{ name: "Nael", value: true }]);
   await sdb.close();
 });
 
-Deno.test("should not throw an error when all data has been filtered out", async () => {
+test("should not throw an error when all data has been filtered out", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/employees.csv"]);
   table.filter(`Name = 'Nael'`);
   const data = await table.getData();
 
-  assertEquals(data, []);
+  expect(data).toStrictEqual([]);
   await sdb.close();
 });

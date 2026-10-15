@@ -1,10 +1,7 @@
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  type Aggregate,
-  aggregateObservations,
-  observationsFromCSV,
-} from "./helpers.ts";
+import { type Aggregate, aggregateObservations, observationsFromCSV } from "./helpers.ts";
 
 const benchmarkDir = dirname(fileURLToPath(import.meta.url));
 
@@ -26,22 +23,17 @@ function versionDetails(row: Aggregate): {
   library: string;
   runtime: string;
 } {
-  const runtimeMatch = row.version.match(/\/(deno|python|R)@([^/]+)$/);
-  const libraryVersion = runtimeMatch?.index === undefined
-    ? row.version
-    : row.version.slice(0, runtimeMatch.index);
+  const runtimeMatch = row.version.match(/\/(node|python|R)@([^/]+)$/);
+  const libraryVersion =
+    runtimeMatch?.index === undefined ? row.version : row.version.slice(0, runtimeMatch.index);
   let library: string;
-  const duckDBMatch = libraryVersion.match(
-    /^(@[^@]+)@([^/]+)\/duckdb@(.+)$/,
-  );
+  const duckDBMatch = libraryVersion.match(/^(@[^@]+)@([^/]+)\/duckdb@(.+)$/);
   if (duckDBMatch !== null) {
     library = `${duckDBMatch[1]} ${duckDBMatch[2]}; DuckDB ${duckDBMatch[3]}`;
   } else {
     const separator = libraryVersion.lastIndexOf("@");
     if (separator <= 0) {
-      library = row.implementation === "local"
-        ? `SDA-core ${libraryVersion}`
-        : libraryVersion;
+      library = row.implementation === "local" ? `SDA-core ${libraryVersion}` : libraryVersion;
     } else {
       const name = libraryVersion.slice(0, separator);
       const version = libraryVersion.slice(separator + 1);
@@ -54,7 +46,7 @@ function versionDetails(row: Aggregate): {
   const name = runtimeMatch[1];
   const version = runtimeMatch[2];
   const runtimeName: { [key: string]: string } = {
-    deno: "Deno",
+    node: "Node.js",
     python: "Python",
     R: "R",
   };
@@ -71,9 +63,7 @@ function table(rows: Aggregate[]): string {
   }
   const baselineDuration = sdaCore?.meanSeconds ?? 1;
   const baselineMemory = sdaCore?.meanPeakMemoryMB ?? 1;
-  const orderedRows = [...rows].sort((left, right) =>
-    left.meanSeconds - right.meanSeconds
-  );
+  const orderedRows = [...rows].sort((left, right) => left.meanSeconds - right.meanSeconds);
   const headers = [
     "Library",
     "Mean duration",
@@ -94,72 +84,56 @@ function table(rows: Aggregate[]): string {
       names[row.implementation] ?? row.implementation,
       `${row.meanSeconds.toFixed(2)} ± ${row.stdDevSeconds.toFixed(2)} s`,
       percentageDifference(row.meanSeconds / baselineDuration),
-      `${Math.round(row.meanPeakMemoryMB).toLocaleString("en-US")} MB`,
-      percentageDifference(
-        row.meanPeakMemoryMB / baselineMemory,
-      ),
+      `${Math.round(row.meanPeakMemoryMB).toLocaleString("en-US")} MiB`,
+      percentageDifference(row.meanPeakMemoryMB / baselineMemory),
     ];
   });
   const widths = headers.map((header, column) =>
-    Math.max(header.length, ...values.map((row) => row[column].length))
+    Math.max(header.length, ...values.map((row) => row[column].length)),
   );
   const formatRow = (row: string[]): string =>
-    `| ${
-      row.map((cell, column) =>
-        column === 0
-          ? cell.padEnd(widths[column])
-          : cell.padStart(widths[column])
-      ).join(" | ")
-    } |`;
+    `| ${row
+      .map((cell, column) =>
+        column === 0 ? cell.padEnd(widths[column]) : cell.padStart(widths[column]),
+      )
+      .join(" | ")} |`;
   const separator = widths.map((width, column) =>
-    column === 0 ? "-".repeat(width) : `${"-".repeat(width - 1)}:`
+    column === 0 ? "-".repeat(width) : `${"-".repeat(width - 1)}:`,
   );
-  return [formatRow(headers), formatRow(separator), ...values.map(formatRow)]
-    .join("\n");
+  return [formatRow(headers), formatRow(separator), ...values.map(formatRow)].join("\n");
 }
 
-function renderVersions(
-  benchmark: Aggregate["benchmark"],
-  rows: Aggregate[],
-): string {
-  const details = rows.filter((row) => row.benchmark === benchmark).map(
-    (row) => {
+function renderVersions(benchmark: Aggregate["benchmark"], rows: Aggregate[]): string {
+  const details = rows
+    .filter((row) => row.benchmark === benchmark)
+    .map((row) => {
       const { library, runtime } = versionDetails(row);
       return runtime === "—" ? library : `${library} (${runtime})`;
-    },
-  );
+    });
   if (!details.length) return "";
   const label = benchmark === "tabular" ? "Tabular" : "Spatial";
   return `**${label} versions:** ${[...new Set(details)].join("; ")}.`;
 }
 
-function renderBenchmarkSection(
-  benchmark: Aggregate["benchmark"],
-  rows: Aggregate[],
-): string {
+function renderBenchmarkSection(benchmark: Aggregate["benchmark"], rows: Aggregate[]): string {
   const benchmarkRows = rows.filter((row) => row.benchmark === benchmark);
-  const description = benchmark === "tabular"
-    ? `Using 22,051,025 temperature records (\`ahccd.csv\`, 1.77 GB, in
+  const description =
+    benchmark === "tabular"
+      ? `Using 22,051,025 temperature records (\`ahccd.csv\`, 1.77 GB, in
 \`benchmarks/data/\`), we remove missing temperatures, convert dates and numbers,
 save the cleaned data, then calculate average temperatures by station and decade
 and export the sorted results.`
-    : `Using 335,024 Montreal public trees (\`arbres-publics.csv\`, 135.5 MB) and 91
+      : `Using 335,024 Montreal public trees (\`arbres-publics.csv\`, 135.5 MB) and 91
 neighbourhood boundaries (\`quartierreferencehabitation.geojson\`, 1.14 MB), both
 in \`benchmarks/data/\`, we remove missing coordinates, create points, join trees
 to neighbourhoods, then count trees per neighbourhood and export the sorted
 results.`;
-  return `### ${benchmarkHeading(benchmark)}\n\n${description}\n\n${
-    table(benchmarkRows)
-  }`;
+  return `### ${benchmarkHeading(benchmark)}\n\n${description}\n\n${table(benchmarkRows)}`;
 }
 
 export function renderBenchmarkResults(rows: Aggregate[]): string {
-  const versions = benchmarkNames.map((benchmark) =>
-    renderVersions(benchmark, rows)
-  );
-  const sections = benchmarkNames.map((benchmark) =>
-    renderBenchmarkSection(benchmark, rows)
-  );
+  const versions = benchmarkNames.map((benchmark) => renderVersions(benchmark, rows));
+  const sections = benchmarkNames.map((benchmark) => renderBenchmarkSection(benchmark, rows));
   return [...versions, ...sections].filter(Boolean).join("\n\n");
 }
 
@@ -170,31 +144,21 @@ function benchmarkResultsBounds(readme: string): {
   const start = readme.indexOf(benchmarkResultsStart);
   const end = readme.indexOf(benchmarkResultsEnd);
   if (start === -1 || end === -1 || end < start) {
-    throw new Error(
-      "README benchmark result markers are missing or out of order.",
-    );
+    throw new Error("README benchmark result markers are missing or out of order.");
   }
   return { contentStart: start + benchmarkResultsStart.length, end };
 }
 
-export function replaceBenchmarkResults(
-  readme: string,
-  results: string,
-): string {
+export function replaceBenchmarkResults(readme: string, results: string): string {
   const { contentStart, end } = benchmarkResultsBounds(readme);
-  return `${readme.slice(0, contentStart)}\n\n${results.trim()}\n\n${
-    readme.slice(end)
-  }`;
+  return `${readme.slice(0, contentStart)}\n\n${results.trim()}\n\n${readme.slice(end)}`;
 }
 
 /**
  * Replaces only workload sections represented in `rows`, preserving published
  * results for workloads omitted by a partial benchmark run.
  */
-export function replaceMeasuredBenchmarkResults(
-  readme: string,
-  rows: Aggregate[],
-): string {
+export function replaceMeasuredBenchmarkResults(readme: string, rows: Aggregate[]): string {
   const measured = new Set(rows.map((row) => row.benchmark));
   if (measured.size === 0) {
     throw new Error("Cannot update benchmark results without measurements.");
@@ -210,13 +174,12 @@ export function replaceMeasuredBenchmarkResults(
     const benchmark = benchmarkNames[i];
     const heading = `### ${benchmarkHeading(benchmark)}`;
     const start = current.indexOf(heading);
-    const nextHeading = benchmarkNames[i + 1] === undefined
-      ? current.length
-      : current.indexOf(`### ${benchmarkHeading(benchmarkNames[i + 1])}`);
+    const nextHeading =
+      benchmarkNames[i + 1] === undefined
+        ? current.length
+        : current.indexOf(`### ${benchmarkHeading(benchmarkNames[i + 1])}`);
     if (start === -1 || nextHeading === -1 || nextHeading < start) {
-      throw new Error(
-        `README benchmark results are missing the ${benchmark} workload section.`,
-      );
+      throw new Error(`README benchmark results are missing the ${benchmark} workload section.`);
     }
     sections.set(benchmark, current.slice(start, nextHeading).trim());
   }
@@ -224,18 +187,18 @@ export function replaceMeasuredBenchmarkResults(
   const versions = benchmarkNames.map((benchmark) => {
     if (measured.has(benchmark)) return renderVersions(benchmark, rows);
     const label = benchmark === "tabular" ? "Tabular" : "Spatial";
-    return current.match(
-      new RegExp(`\\*\\*${label} versions:\\*\\*[\\s\\S]*?(?=\\n\\n|$)`),
-    )?.[0] ?? "";
+    return (
+      current.match(new RegExp(`\\*\\*${label} versions:\\*\\*[\\s\\S]*?(?=\\n\\n|$)`))?.[0] ?? ""
+    );
   });
   const results = [
     ...versions,
     ...benchmarkNames.map((benchmark) =>
-      measured.has(benchmark)
-        ? renderBenchmarkSection(benchmark, rows)
-        : sections.get(benchmark)!
+      measured.has(benchmark) ? renderBenchmarkSection(benchmark, rows) : sections.get(benchmark)!,
     ),
-  ].filter(Boolean).join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   return replaceBenchmarkResults(readme, results);
 }
 
@@ -243,13 +206,8 @@ export async function generateBenchmarkReport(
   resultsPath: string,
   readmePath = join(benchmarkDir, "..", "README.md"),
 ): Promise<void> {
-  const observations = observationsFromCSV(
-    await Deno.readTextFile(resultsPath),
-  );
+  const observations = observationsFromCSV(await readFile(resultsPath, "utf8"));
   const aggregates = aggregateObservations(observations);
-  const readme = await Deno.readTextFile(readmePath);
-  await Deno.writeTextFile(
-    readmePath,
-    replaceMeasuredBenchmarkResults(readme, aggregates),
-  );
+  const readme = await readFile(readmePath, "utf8");
+  await writeFile(readmePath, replaceMeasuredBenchmarkResults(readme, aggregates));
 }

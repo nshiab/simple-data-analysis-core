@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should remove duplicates from a table", async () => {
+test("should remove duplicates from a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -10,7 +11,7 @@ Deno.test("should remove duplicates from a table", async () => {
   table.sort({ Name: "asc" });
   const noDuplicates = await table.getData();
 
-  assertEquals(noDuplicates, [
+  expect(noDuplicates).toStrictEqual([
     {
       Name: "Atkinson, Mozhe",
       "Hire date": "30-OCT-05",
@@ -415,7 +416,7 @@ Deno.test("should remove duplicates from a table", async () => {
   await sdb.close();
 });
 
-Deno.test("should remove duplicates from a table based on a specific column", async () => {
+test("should remove duplicates from a table based on a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -426,7 +427,7 @@ Deno.test("should remove duplicates from a table based on a specific column", as
   table.sort({ Name: "asc" });
   const noDuplicates = await table.getData();
 
-  assertEquals(noDuplicates, [
+  expect(noDuplicates).toStrictEqual([
     {
       Name: "Bissot, Laura",
       "Hire date": "20-AUG-05",
@@ -534,7 +535,7 @@ Deno.test("should remove duplicates from a table based on a specific column", as
   ]);
   await sdb.close();
 });
-Deno.test("should remove duplicates from a table based on a specific column with special characters", async () => {
+test("should remove duplicates from a table based on a specific column with special characters", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -545,7 +546,7 @@ Deno.test("should remove duplicates from a table based on a specific column with
   table.sort({ Name: "asc" });
   const noDuplicates = await table.getData();
 
-  assertEquals(noDuplicates, [
+  expect(noDuplicates).toStrictEqual([
     {
       Name: "Austin, David",
       "Hire date": "NaN",

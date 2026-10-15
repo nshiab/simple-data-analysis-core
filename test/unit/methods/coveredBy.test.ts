@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should check if geometries are covered by other geometries", async () => {
+test("should check if geometries are covered by other geometries", async () => {
   const sdb = new SimpleDB();
 
   const points = sdb.newTable("points");
@@ -25,7 +26,7 @@ Deno.test("should check if geometries are covered by other geometries", async ()
 
   const data = await points.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { points: "pointA", polygon: "container", isCovered: false },
     { points: "pointB", polygon: "container", isCovered: false },
     { points: "pointC", polygon: "container", isCovered: true },

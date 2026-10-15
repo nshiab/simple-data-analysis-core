@@ -1,30 +1,21 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should replace null values in one column", async () => {
+test("should replace null values in one column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { keyA: 1 },
-    { keyA: null },
-    { keyA: 3 },
-    { keyA: null },
-  ]);
+  table.loadArray([{ keyA: 1 }, { keyA: null }, { keyA: 3 }, { keyA: null }]);
   table.replaceNulls("keyA", 0);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { keyA: 1 },
-    { keyA: 0 },
-    { keyA: 3 },
-    { keyA: 0 },
-  ]);
+  expect(data).toStrictEqual([{ keyA: 1 }, { keyA: 0 }, { keyA: 3 }, { keyA: 0 }]);
 
   await sdb.close();
 });
 
-Deno.test("should replace null values in multiple columns", async () => {
+test("should replace null values in multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -37,7 +28,7 @@ Deno.test("should replace null values in multiple columns", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { keyA: 1, keyB: 1 },
     { keyA: 0, keyB: 2 },
     { keyA: 3, keyB: 0 },
@@ -47,7 +38,7 @@ Deno.test("should replace null values in multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should replace null values in all columns with the 'all' option", async () => {
+test("should replace null values in all columns with the 'all' option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -60,7 +51,7 @@ Deno.test("should replace null values in all columns with the 'all' option", asy
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { keyA: 1, keyB: 1, keyC: 1 },
     { keyA: 0, keyB: 2, keyC: 0 },
     { keyA: 3, keyB: 0, keyC: 3 },
@@ -70,7 +61,7 @@ Deno.test("should replace null values in all columns with the 'all' option", asy
   await sdb.close();
 });
 
-Deno.test("should replace nulls with a value typed as unknown", async () => {
+test("should replace nulls with a value typed as unknown", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ id: 1n }, { id: null }]);
@@ -78,6 +69,6 @@ Deno.test("should replace nulls with a value typed as unknown", async () => {
 
   table.replaceNulls("id", value);
 
-  assertEquals(await table.getData(), [{ id: 1 }, { id: 2 }]);
+  expect(await table.getData()).toStrictEqual([{ id: 1 }, { id: 2 }]);
   await sdb.close();
 });

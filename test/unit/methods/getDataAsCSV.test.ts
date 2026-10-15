@@ -1,14 +1,14 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the whole data from a table as CSV", async () => {
+test("should return the whole data from a table as CSV", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
   const csv = await table.getDataAsCSV();
 
-  const expectedCSV =
-    `Name,Hire date,Job,Salary,Department or unit,End-of_year-BONUS?
+  const expectedCSV = `Name,Hire date,Job,Salary,Department or unit,End-of_year-BONUS?
 "OConnell, Donald",21-JUN-07,Clerk,2600,50,"1,94%"
 "OConnell, Donald",21-JUN-07,Clerk,2600,50,"1,94%"
 "Grant, Douglas",13-JAN-08,Clerk,NaN,50,"23,39%"
@@ -61,11 +61,11 @@ undefined,14-JUN-04,Clerk,3300,50,"18,54%"
 "Seo, John",12-FEB-06,Clerk,2700,50,"0,16%"
 "Patel, Joshua",06-APR-06,Clerk,2500,50,"16,19%"`;
 
-  assertEquals(csv, expectedCSV);
+  expect(csv).toStrictEqual(expectedCSV);
   await sdb.close();
 });
 
-Deno.test("should return data from a table based on a condition as CSV", async () => {
+test("should return data from a table based on a condition as CSV", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -73,18 +73,17 @@ Deno.test("should return data from a table based on a condition as CSV", async (
     conditions: "Job = 'Programmer'",
   });
 
-  const expectedCSV =
-    `Name,Hire date,Job,Salary,Department or unit,End-of_year-BONUS?
+  const expectedCSV = `Name,Hire date,Job,Salary,Department or unit,End-of_year-BONUS?
 "Hunold, Alexander",03-JAN-06,Programmer,9000,60,"23,01%"
 "Ernst, Bruce",21-MAY-07,Programmer,6000,60,"25,91%"
 "Austin, David",NaN,Programmer,4800,null,"6,89%"
 "Pataballa, Valli",abc,Programmer,,60,"1,62%"
 "Lorentz, Diana",07-ARB-07,Programmer,4200,60,"13,17%"`;
 
-  assertEquals(csv, expectedCSV);
+  expect(csv).toStrictEqual(expectedCSV);
   await sdb.close();
 });
-Deno.test("should return data from a table based on a condition as CSV with specific columns", async () => {
+test("should return data from a table based on a condition as CSV with specific columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/employees.csv");
@@ -100,6 +99,6 @@ Deno.test("should return data from a table based on a condition as CSV with spec
 "Pataballa, Valli",Programmer,
 "Lorentz, Diana",Programmer,4200`;
 
-  assertEquals(csv, expectedCSV);
+  expect(csv).toStrictEqual(expectedCSV);
   await sdb.close();
 });

@@ -10,10 +10,6 @@ export default async function logBottom(
   const rows = count ?? simpleTable.rowsToLog;
   console.log(`\nTable ${simpleTable.name} (${rows} bottom rows):`);
   const data = await getBottom(simpleTable, rows, options, "logBottom()");
-  logData(
-    null,
-    data,
-    simpleTable.charsToLog,
-  );
+  logData(null, data, simpleTable.charsToLog);
   return;
 }

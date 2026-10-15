@@ -1,13 +1,14 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the columns of a table", async () => {
+test("should return the columns of a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.csv");
 
   const columns = await table.getColumns();
 
-  assertEquals(columns, ["key1", "key2"]);
+  expect(columns).toStrictEqual(["key1", "key2"]);
   await sdb.close();
 });

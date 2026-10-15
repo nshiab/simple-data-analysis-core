@@ -1,8 +1,5 @@
 import type { PreparedGraphTemporalSql } from "./prepareGraphTemporalSql.ts";
-import type {
-  GraphDirection,
-  PreparedGraphSql,
-} from "./prepareGraphTraversal.ts";
+import type { GraphDirection, PreparedGraphSql } from "./prepareGraphTraversal.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 
 export type GraphTemporalCostStateSql = {
@@ -56,20 +53,18 @@ export default function buildGraphTemporalCostStateSql(
   // A steps-only bound must not sum reported weights: discarded routes can
   // overflow even when every optimal route's reported total is representable.
   const firstDistance = minimize === "steps" ? "CAST(1 AS BIGINT)" : edgeCost;
-  const candidateDistance = minimize === "steps"
-    ? candidateSteps
-    : `CAST(${reachedDistance} + ${edgeCost} AS ${distanceType})`;
+  const candidateDistance =
+    minimize === "steps"
+      ? candidateSteps
+      : `CAST(${reachedDistance} + ${edgeCost} AS ${distanceType})`;
   const bestSteps = `${q("best")}.${q("steps")}`;
   const order = (distance: string, steps: string) =>
-    minimize === "steps"
-      ? `ROW(${steps}, ${distance})`
-      : `ROW(${distance}, ${steps})`;
+    minimize === "steps" ? `ROW(${steps}, ${distance})` : `ROW(${distance}, ${steps})`;
   const candidateOrder = order(candidateDistance, candidateSteps);
   const selectedDistance = `arg_min(${candidateDistance}, ${candidateOrder})`;
   const selectedSteps = `arg_min(${candidateSteps}, ${candidateOrder})`;
-  const resolvedStartsSelect = typeof startsSelect === "string"
-    ? startsSelect
-    : startsSelect(edgesRelation);
+  const resolvedStartsSelect =
+    typeof startsSelect === "string" ? startsSelect : startsSelect(edgesRelation);
 
   // Only states for the same start and physical event can dominate each other.
   // Weight optimization orders by cost then steps; step optimization counts
@@ -82,13 +77,11 @@ export default function buildGraphTemporalCostStateSql(
     withClause: `WITH RECURSIVE ${settingsRelation} AS MATERIALIZED (
       SELECT CAST(? AS HUGEINT) AS ${q("__gap")}
     ), ${eventRowsRelation} AS MATERIALIZED (
-      ${
-      prepared.edges(direction, [
+      ${prepared.edges(direction, [
         `${edgeWeight} AS ${q("__weight")}`,
         ...eventSelections,
         ...temporal.eventSelections("edges"),
-      ])
-    }
+      ])}
     ), ${edgesRelation} AS MATERIALIZED (
       SELECT *
       FROM ${eventRowsRelation} AS ${q("events")}
@@ -109,9 +102,7 @@ export default function buildGraphTemporalCostStateSql(
       UNION
       SELECT ${reachedStart}, ${edgeTo}, ${reachedStartKey}, ${edgeToKey},
         ${eventId}, ${eventStart}, ${eventEnd},
-        ${selectedDistance} AS ${q("distance")}, ${selectedSteps} AS ${
-      q("steps")
-    }
+        ${selectedDistance} AS ${q("distance")}, ${selectedSteps} AS ${q("steps")}
       FROM ${costRelation} AS ${q("reached")}
       INNER JOIN ${edgesRelation} AS ${q("edges")}
         ON ${reachedNodeKey} = ${edgeFromKey}
@@ -123,9 +114,7 @@ export default function buildGraphTemporalCostStateSql(
       GROUP BY ${reachedStart}, ${edgeTo}, ${reachedStartKey}, ${edgeToKey},
         ${eventId}, ${eventStart}, ${eventEnd}, ${bestDistance}, ${bestSteps}
       HAVING ${bestDistance} IS NULL OR
-        ${order(selectedDistance, selectedSteps)} < ${
-      order(bestDistance, bestSteps)
-    }
+        ${order(selectedDistance, selectedSteps)} < ${order(bestDistance, bestSteps)}
     )`,
   };
 }

@@ -1,20 +1,21 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return true when the column is in the data", async () => {
+test("should return true when the column is in the data", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.csv");
   const boolean = await table.hasColumn("key1");
-  assertEquals(boolean, true);
+  expect(boolean).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should return false when the column is not in the data", async () => {
+test("should return false when the column is not in the data", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/data.csv");
   const boolean = await table.hasColumn("keyX");
-  assertEquals(boolean, false);
+  expect(boolean).toStrictEqual(false);
   await sdb.close();
 });

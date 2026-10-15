@@ -1,80 +1,86 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("chronological graph integration preserves direct events while constraining transfers", async () => {
+test("chronological graph integration preserves direct events while constraining transfers", async () => {
   const sdb = new SimpleDB();
   try {
-    const isolated = [{
-      flightId: "F0",
-      origin: "Toronto",
-      destination: "Ottawa",
-      departure: new Date("2025-01-01T12:00:00Z"),
-      arrival: new Date("2025-01-01T13:00:00Z"),
-    }];
-    assertEquals(
-      await sdb.newTable().loadArray(isolated)
-        .neighbors("origin", "destination", "Toronto").getData(),
-      [{ start: "Toronto", node: "Ottawa" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(isolated)
-        .degree("origin", "destination").getData(),
-      [
-        { node: "Ottawa", incoming: 1, outgoing: 0, total: 1 },
-        { node: "Toronto", incoming: 0, outgoing: 1, total: 1 },
-      ],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(isolated)
+    const isolated = [
+      {
+        flightId: "F0",
+        origin: "Toronto",
+        destination: "Ottawa",
+        departure: new Date("2025-01-01T12:00:00Z"),
+        arrival: new Date("2025-01-01T13:00:00Z"),
+      },
+    ];
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(isolated)
+        .neighbors("origin", "destination", "Toronto")
+        .getData(),
+    ).toStrictEqual([{ start: "Toronto", node: "Ottawa" }]);
+    expect(
+      await sdb.newTable().loadArray(isolated).degree("origin", "destination").getData(),
+    ).toStrictEqual([
+      { node: "Ottawa", incoming: 1, outgoing: 0, total: 1 },
+      { node: "Toronto", incoming: 0, outgoing: 1, total: 1 },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(isolated)
         .reachable("origin", "destination", "Toronto", {
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
-        }).getData(),
-      [{ start: "Toronto", node: "Ottawa" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(isolated)
+        })
+        .getData(),
+    ).toStrictEqual([{ start: "Toronto", node: "Ottawa" }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(isolated)
         .distances("origin", "destination", "Toronto", {
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
-        }).getData(),
-      [{ start: "Toronto", node: "Ottawa", steps: 1 }],
-    );
-    const isolatedRoute = [{
-      pathId: 0,
-      step: 1,
-      weight: 1,
-      total: 1,
-      flightId: "F0",
-      origin: "Toronto",
-      destination: "Ottawa",
-      departure: new Date("2025-01-01T12:00:00Z"),
-      arrival: new Date("2025-01-01T13:00:00Z"),
-    }];
-    assertEquals(
-      await sdb.newTable().loadArray(isolated)
-        .paths(
-          "origin",
-          "destination",
-          "flightId",
-          "Toronto",
-          "Ottawa",
-          { startTimeColumn: "departure", endTimeColumn: "arrival" },
-        ).getData(),
-      isolatedRoute,
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(isolated)
-        .shortestPath(
-          "origin",
-          "destination",
-          "flightId",
-          "Toronto",
-          "Ottawa",
-          { startTimeColumn: "departure", endTimeColumn: "arrival" },
-        ).getData(),
-      isolatedRoute.map(({ total: _total, ...row }) => row),
-    );
+        })
+        .getData(),
+    ).toStrictEqual([{ start: "Toronto", node: "Ottawa", steps: 1 }]);
+    const isolatedRoute = [
+      {
+        pathId: 0,
+        step: 1,
+        weight: 1,
+        total: 1,
+        flightId: "F0",
+        origin: "Toronto",
+        destination: "Ottawa",
+        departure: new Date("2025-01-01T12:00:00Z"),
+        arrival: new Date("2025-01-01T13:00:00Z"),
+      },
+    ];
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(isolated)
+        .paths("origin", "destination", "flightId", "Toronto", "Ottawa", {
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+        })
+        .getData(),
+    ).toStrictEqual(isolatedRoute);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(isolated)
+        .shortestPath("origin", "destination", "flightId", "Toronto", "Ottawa", {
+          startTimeColumn: "departure",
+          endTimeColumn: "arrival",
+        })
+        .getData(),
+    ).toStrictEqual(isolatedRoute.map(({ total: _total, ...row }) => row));
 
     const flights = [
       {
@@ -99,79 +105,93 @@ Deno.test("chronological graph integration preserves direct events while constra
         arrival: new Date("2025-01-01T12:00:00Z"),
       },
     ];
-    assertEquals(
-      await sdb.newTable().loadArray(flights)
-        .neighbors("origin", "destination", "B").getData(),
-      [{ start: "B", node: "C" }, { start: "B", node: "D" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(flights)
+    expect(
+      await sdb.newTable().loadArray(flights).neighbors("origin", "destination", "B").getData(),
+    ).toStrictEqual([
+      { start: "B", node: "C" },
+      { start: "B", node: "D" },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(flights)
         .degree("origin", "destination")
-        .filter("node = 'B'").getData(),
-      [{ node: "B", incoming: 1, outgoing: 2, total: 3 }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(flights)
+        .filter("node = 'B'")
+        .getData(),
+    ).toStrictEqual([{ node: "B", incoming: 1, outgoing: 2, total: 3 }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(flights)
         .degree("origin", "destination", { count: "neighbors" })
-        .filter("node = 'B'").getData(),
-      [{ node: "B", incoming: 1, outgoing: 2, total: 3 }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(flights)
+        .filter("node = 'B'")
+        .getData(),
+    ).toStrictEqual([{ node: "B", incoming: 1, outgoing: 2, total: 3 }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(flights)
         .reachable("origin", "destination", "A", {
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
           minGapMs: 60 * 60 * 1000,
-        }).getData(),
-      [{ start: "A", node: "B" }, { start: "A", node: "D" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(flights)
+        })
+        .getData(),
+    ).toStrictEqual([
+      { start: "A", node: "B" },
+      { start: "A", node: "D" },
+    ]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(flights)
         .paths("origin", "destination", "flightId", "A", "C", {
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
           minGapMs: 60 * 60 * 1000,
-        }).getData(),
-      [],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(flights)
+        })
+        .getData(),
+    ).toStrictEqual([]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(flights)
         .paths("origin", "destination", "flightId", "A", "D", {
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
           minGapMs: 60 * 60 * 1000,
-        }).getData(),
-      [
-        {
-          pathId: 0,
-          step: 1,
-          weight: 1,
-          total: 1,
-          flightId: "F1",
-          origin: "A",
-          destination: "B",
-          departure: new Date("2025-01-01T08:00:00Z"),
-          arrival: new Date("2025-01-01T10:00:00Z"),
-        },
-        {
-          pathId: 0,
-          step: 2,
-          weight: 1,
-          total: 2,
-          flightId: "F3",
-          origin: "B",
-          destination: "D",
-          departure: new Date("2025-01-01T11:00:00Z"),
-          arrival: new Date("2025-01-01T12:00:00Z"),
-        },
-      ],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([
+      {
+        pathId: 0,
+        step: 1,
+        weight: 1,
+        total: 1,
+        flightId: "F1",
+        origin: "A",
+        destination: "B",
+        departure: new Date("2025-01-01T08:00:00Z"),
+        arrival: new Date("2025-01-01T10:00:00Z"),
+      },
+      {
+        pathId: 0,
+        step: 2,
+        weight: 1,
+        total: 2,
+        flightId: "F3",
+        origin: "B",
+        destination: "D",
+        departure: new Date("2025-01-01T11:00:00Z"),
+        arrival: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("direct graph counts do not multiply parallel events by feasible transfers", async () => {
+test("direct graph counts do not multiply parallel events by feasible transfers", async () => {
   const sdb = new SimpleDB();
   try {
     const parallel = [
@@ -208,56 +228,67 @@ Deno.test("direct graph counts do not multiply parallel events by feasible trans
         weight: 4,
       },
     ];
-    assertEquals(
-      await sdb.newTable().loadArray(parallel)
-        .neighbors("source", "target", "B").getData(),
-      [{ start: "B", node: "C" }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(parallel)
-        .degree("source", "target").filter("node = 'B'").getData(),
-      [{ node: "B", incoming: 2, outgoing: 2, total: 4 }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(parallel)
+    expect(
+      await sdb.newTable().loadArray(parallel).neighbors("source", "target", "B").getData(),
+    ).toStrictEqual([{ start: "B", node: "C" }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(parallel)
+        .degree("source", "target")
+        .filter("node = 'B'")
+        .getData(),
+    ).toStrictEqual([{ node: "B", incoming: 2, outgoing: 2, total: 4 }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(parallel)
         .degree("source", "target", { count: "neighbors" })
-        .filter("node = 'B'").getData(),
-      [{ node: "B", incoming: 1, outgoing: 1, total: 2 }],
-    );
-    assertEquals(
-      await sdb.newTable().loadArray(parallel)
+        .filter("node = 'B'")
+        .getData(),
+    ).toStrictEqual([{ node: "B", incoming: 1, outgoing: 1, total: 2 }]);
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(parallel)
         .degree("source", "target", { weight: "weight" })
-        .filter("node = 'B'").getData(),
-      [{ node: "B", incoming: 3, outgoing: 7, total: 10 }],
-    );
-    assertEquals(
+        .filter("node = 'B'")
+        .getData(),
+    ).toStrictEqual([{ node: "B", incoming: 3, outgoing: 7, total: 10 }]);
+    expect(
       new Set(
-        (await sdb.newTable().loadArray(parallel)
-          .renameColumns({ weight: "cost" })
-          .paths("source", "target", "edgeId", "A", "C", {
-            startTimeColumn: "departure",
-            endTimeColumn: "arrival",
-            minGapMs: 60 * 60 * 1000,
-          }).getData()).map((row) => row.pathId),
+        (
+          await sdb
+            .newTable()
+            .loadArray(parallel)
+            .renameColumns({ weight: "cost" })
+            .paths("source", "target", "edgeId", "A", "C", {
+              startTimeColumn: "departure",
+              endTimeColumn: "arrival",
+              minGapMs: 60 * 60 * 1000,
+            })
+            .getData()
+        ).map((row) => row.pathId),
       ).size,
-      4,
-    );
+    ).toStrictEqual(4);
 
     const standaloneCommon = [
       { source: "X", target: "Z", time: new Date("2025-01-01T15:00:00Z") },
       { source: "Y", target: "Z", time: new Date("2025-01-01T08:00:00Z") },
     ];
-    assertEquals(
-      await sdb.newTable().loadArray(standaloneCommon)
-        .commonNeighbors("source", "target", "X", "Y").getData(),
-      [{ node: "Z" }],
-    );
+    expect(
+      await sdb
+        .newTable()
+        .loadArray(standaloneCommon)
+        .commonNeighbors("source", "target", "X", "Y")
+        .getData(),
+    ).toStrictEqual([{ node: "Z" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("every remaining sequence method rejects explicit non-strict ordering without a time column", async () => {
+test("every remaining sequence method rejects explicit non-strict ordering without a time column", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -280,11 +311,7 @@ Deno.test("every remaining sequence method rejects explicit non-strict ordering 
         }),
     ];
     for (const call of calls) {
-      assertThrows(
-        call,
-        TypeError,
-        "require options.startTimeColumn or options.endTimeColumn",
-      );
+      assertThrows(call, TypeError, "require options.startTimeColumn or options.endTimeColumn");
     }
   } finally {
     await sdb.close();

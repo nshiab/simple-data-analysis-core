@@ -24,13 +24,12 @@ export default function quantiles(
 
       const by = options.by ? stringToArray(options.by) : [];
 
-      const partition = by.length === 0
-        ? ""
-        : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
+      const partition =
+        by.length === 0 ? "" : `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(",")} `;
 
-      return `SELECT *, ntile(${count}) OVER (${partition}ORDER BY ${
-        quoteIdentifier(column)
-      }) AS ${quoteIdentifier(newColumn)}
+      return `SELECT *, ntile(${count}) OVER (${partition}ORDER BY ${quoteIdentifier(
+        column,
+      )}) AS ${quoteIdentifier(newColumn)}
     FROM ${input}`;
     },
   });

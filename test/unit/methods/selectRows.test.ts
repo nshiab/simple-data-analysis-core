@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return the first 5 rows", async () => {
+test("should return the first 5 rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -10,7 +11,7 @@ Deno.test("should return the first 5 rows", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -56,7 +57,7 @@ Deno.test("should return the first 5 rows", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the first 5 rows, with an offset of 5", async () => {
+test("should return the first 5 rows, with an offset of 5", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -65,7 +66,7 @@ Deno.test("should return the first 5 rows, with an offset of 5", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Fay, Pat",
       "Hire date": "17-AUG-05",
@@ -111,7 +112,7 @@ Deno.test("should return the first 5 rows, with an offset of 5", async () => {
   await sdb.close();
 });
 
-Deno.test("should return the first 5 rows and output the results to a new table", async () => {
+test("should return the first 5 rows and output the results to a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -122,7 +123,7 @@ Deno.test("should return the first 5 rows and output the results to a new table"
 
   const data = await newTable.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -168,7 +169,7 @@ Deno.test("should return the first 5 rows and output the results to a new table"
   await sdb.close();
 });
 
-Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table", async () => {
+test("should return the first 5 rows with an offset of 5 and output the results to a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -180,7 +181,7 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
 
   const data = await newTable.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Fay, Pat",
       "Hire date": "17-AUG-05",
@@ -226,7 +227,7 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
   await sdb.close();
 });
 
-Deno.test("should return the first 5 rows with an offset of 5 and output the results to a new table with a specific name", async () => {
+test("should return the first 5 rows with an offset of 5 and output the results to a new table with a specific name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/employees.csv"]);
@@ -240,7 +241,7 @@ Deno.test("should return the first 5 rows with an offset of 5 and output the res
     returnData: true,
   });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "Fay, Pat",
       "Hire date": "17-AUG-05",

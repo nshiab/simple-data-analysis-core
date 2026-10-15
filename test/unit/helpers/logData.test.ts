@@ -1,9 +1,10 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import logData from "../../../src/helpers/logData.ts";
 
 // Capture console.log output to verify the function works without crashing.
 
-Deno.test("logData - null data logs null message", () => {
+test("logData - null data logs null message", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -12,10 +13,10 @@ Deno.test("logData - null data logs null message", () => {
 
   console.log = originalLog;
 
-  assertEquals(logs, ["Data is null"]);
+  expect(logs).toStrictEqual(["Data is null"]);
 });
 
-Deno.test("logData - empty array logs the array", () => {
+test("logData - empty array logs the array", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -24,10 +25,10 @@ Deno.test("logData - empty array logs the array", () => {
 
   console.log = originalLog;
 
-  assertEquals(logs, [""]);
+  expect(logs).toStrictEqual([""]);
 });
 
-Deno.test("logData - basic table renders without error", () => {
+test("logData - basic table renders without error", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -41,14 +42,14 @@ Deno.test("logData - basic table renders without error", () => {
   console.log = originalLog;
 
   // Should have top | header | sep | row1 | row2 | bottom = 6 lines
-  assertEquals(logs.length, 6);
+  expect(logs.length).toStrictEqual(6);
 
   const allOutput = logs.join("\n");
-  assertEquals(allOutput.includes("┌"), true);
-  assertEquals(allOutput.includes("└"), true);
+  expect(allOutput.includes("┌")).toStrictEqual(true);
+  expect(allOutput.includes("└")).toStrictEqual(true);
 });
 
-Deno.test("logData - types parameter adds types row in grey", () => {
+test("logData - types parameter adds types row in grey", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -61,15 +62,15 @@ Deno.test("logData - types parameter adds types row in grey", () => {
 
   // Should have: top | header | types | sep | data | bottom = 6 lines
   // (separator after types row, not after header since typesRowIndex is 0)
-  assertEquals(logs.length, 6);
+  expect(logs.length).toStrictEqual(6);
   // The separator (├) should be at index 3 (after types row at index 2)
-  assertEquals(logs[3].includes("├"), true);
+  expect(logs[3].includes("├")).toStrictEqual(true);
   // Types row should contain the type annotations with type suffixes
-  assertEquals(logs[2].includes("VARCHAR/string"), true);
-  assertEquals(logs[2].includes("INTEGER/number"), true);
+  expect(logs[2].includes("VARCHAR/string")).toStrictEqual(true);
+  expect(logs[2].includes("INTEGER/number")).toStrictEqual(true);
 });
 
-Deno.test("logData - charsToLog truncates strings", () => {
+test("logData - charsToLog truncates strings", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -86,13 +87,13 @@ Deno.test("logData - charsToLog truncates strings", () => {
   console.log = originalLog;
 
   // Should have more than 4 lines due to wrapping
-  assertEquals(logs.length > 4, true);
+  expect(logs.length > 4).toStrictEqual(true);
   // The description should be truncated
   const allOutput = logs.join("\n");
-  assertEquals(allOutput.includes("..."), true);
+  expect(allOutput.includes("...")).toStrictEqual(true);
 });
 
-Deno.test("logData - combines types and charsToLog", () => {
+test("logData - combines types and charsToLog", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -104,15 +105,15 @@ Deno.test("logData - combines types and charsToLog", () => {
   console.log = originalLog;
 
   // Should have: top | header | types | sep | data | bottom = 6 lines
-  assertEquals(logs.length, 6);
+  expect(logs.length).toStrictEqual(6);
   // Types row should be at index 2 with type suffixes
-  assertEquals(logs[2].includes("VARCHAR/string"), true);
-  assertEquals(logs[2].includes("INTEGER/number"), true);
+  expect(logs[2].includes("VARCHAR/string")).toStrictEqual(true);
+  expect(logs[2].includes("INTEGER/number")).toStrictEqual(true);
   // Separator should be after types row
-  assertEquals(logs[3].includes("├"), true);
+  expect(logs[3].includes("├")).toStrictEqual(true);
 });
 
-Deno.test("logData - handles null values in data", () => {
+test("logData - handles null values in data", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -126,12 +127,12 @@ Deno.test("logData - handles null values in data", () => {
   console.log = originalLog;
 
   // Should render without error
-  assertEquals(logs.length >= 4, true);
+  expect(logs.length >= 4).toStrictEqual(true);
   const allOutput = logs.join("\n");
-  assertEquals(allOutput.includes("null"), true);
+  expect(allOutput.includes("null")).toStrictEqual(true);
 });
 
-Deno.test("logData - Date objects are formatted as ISO strings", () => {
+test("logData - Date objects are formatted as ISO strings", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -143,10 +144,10 @@ Deno.test("logData - Date objects are formatted as ISO strings", () => {
 
   const isoString = "1993-01-01T00:00:00.000Z";
   const found = logs.some((log) => log.includes(isoString));
-  assertEquals(found, true);
+  expect(found).toStrictEqual(true);
 });
 
-Deno.test("logData - ANSI color codes are present in output", () => {
+test("logData - ANSI color codes are present in output", () => {
   const logs: string[] = [];
   const originalLog = console.log;
   console.log = (...args: unknown[]) => logs.push(String(args[0]));
@@ -165,10 +166,10 @@ Deno.test("logData - ANSI color codes are present in output", () => {
   console.log = originalLog;
 
   const allOutput = logs.join("\n");
-  assertEquals(allOutput.includes("\x1b["), true);
+  expect(allOutput.includes("\x1b[")).toStrictEqual(true);
 });
 
-Deno.test("logData keeps truncation independent of width and does not mutate annotations", () => {
+test("logData keeps truncation independent of width and does not mutate annotations", () => {
   const originalLog = console.log;
   const lines: string[] = [];
   const types = { value: "VARCHAR" };
@@ -177,10 +178,10 @@ Deno.test("logData keeps truncation independent of width and does not mutate ann
       lines.push(args.map(String).join(" "));
     };
     logData(types, [{ value: "x".repeat(200) }], 150);
-    assertEquals(lines[0].includes("─".repeat(77)), true);
-    assertEquals(lines[0].includes("─".repeat(78)), false);
-    assertEquals(types, { value: "VARCHAR" });
-    assertEquals(lines.join("\n").includes("..."), true);
+    expect(lines[0].includes("─".repeat(77))).toStrictEqual(true);
+    expect(lines[0].includes("─".repeat(78))).toStrictEqual(false);
+    expect(types).toStrictEqual({ value: "VARCHAR" });
+    expect(lines.join("\n").includes("...")).toStrictEqual(true);
   } finally {
     console.log = originalLog;
   }

@@ -1,31 +1,34 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+import { readFile as nodeReadFile, rm as nodeRm } from "node:fs/promises";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import hasGeometryColumn from "../../../src/helpers/hasGeometryColumn.ts";
 
-Deno.test("hasGeometryColumn - returns false when no geometry columns", async () => {
+test("hasGeometryColumn - returns false when no geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", age: "number" });
   table.insertRows([{ name: "Alice", age: 30 }]);
 
   const result = await hasGeometryColumn(table);
-  assertEquals(result, false);
+  expect(result).toStrictEqual(false);
 
   await sdb.close();
 });
 
-Deno.test("hasGeometryColumn - returns true when geometry column exists", async () => {
+test("hasGeometryColumn - returns true when geometry column exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
   const result = await hasGeometryColumn(table);
-  assertEquals(result, true);
+  expect(result).toStrictEqual(true);
 
   await sdb.close();
 });
 
-Deno.test("getData() - throws when table has geometry columns", async () => {
+test("getData() - throws when table has geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
@@ -39,7 +42,7 @@ Deno.test("getData() - throws when table has geometry columns", async () => {
   await sdb.close();
 });
 
-Deno.test("getData() - works normally when no geometry columns", async () => {
+test("getData() - works normally when no geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -48,24 +51,24 @@ Deno.test("getData() - works normally when no geometry columns", async () => {
   ]);
 
   const data = await table.getData();
-  assertEquals(data.length, 2);
-  assertEquals(data[0].name, "Alice");
+  expect(data.length).toStrictEqual(2);
+  expect(data[0].name).toStrictEqual("Alice");
 
   await sdb.close();
 });
 
-Deno.test("getData() - can select non-geometry columns from a spatial table", async () => {
+test("getData() - can select non-geometry columns from a spatial table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
   table.insertRows([{ name: "Alice", geom: null }]);
 
-  assertEquals(await table.getData({ columns: "name" }), [{ name: "Alice" }]);
+  expect(await table.getData({ columns: "name" })).toStrictEqual([{ name: "Alice" }]);
 
   await sdb.close();
 });
 
-Deno.test("getDataAsCSV() - throws when table has geometry columns", async () => {
+test("getDataAsCSV() - throws when table has geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
@@ -79,13 +82,13 @@ Deno.test("getDataAsCSV() - throws when table has geometry columns", async () =>
   await sdb.close();
 });
 
-Deno.test("writeData() - throws when table has geometry columns", async () => {
+test("writeData() - throws when table has geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.setTypes({ name: "string", geom: "geometry('EPSG:4326')" });
 
   await assertRejects(
-    async () => await table.writeData("/tmp/test_output.csv"),
+    async () => await table.writeData("test/output/geometry.csv"),
     Error,
     "Table contains geometry columns. Use writeGeoData() instead.",
   );
@@ -93,7 +96,7 @@ Deno.test("writeData() - throws when table has geometry columns", async () => {
   await sdb.close();
 });
 
-Deno.test("writeData() - works normally when no geometry columns", async () => {
+test("writeData() - works normally when no geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -101,15 +104,15 @@ Deno.test("writeData() - works normally when no geometry columns", async () => {
     { name: "Bob", age: 25 },
   ]);
 
-  const outputPath = "/tmp/test_writeData_no_geo.csv";
+  const outputPath = "test/output/no-geometry.csv";
   await table.writeData(outputPath);
 
   // Verify the file was created
-  const content = await Deno.readTextFile(outputPath);
-  assertEquals(content.includes("Alice"), true);
-  assertEquals(content.includes("Bob"), true);
+  const content = await nodeReadFile(outputPath, "utf8");
+  expect(content.includes("Alice")).toStrictEqual(true);
+  expect(content.includes("Bob")).toStrictEqual(true);
 
   // Cleanup
-  Deno.remove(outputPath);
+  await nodeRm(outputPath);
   await sdb.close();
 });

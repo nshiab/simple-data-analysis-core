@@ -1,60 +1,55 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import wrapString from "../../../src/helpers/wrapString.ts";
 
-Deno.test("wrapString - short string (no wrapping needed)", () => {
+test("wrapString - short string (no wrapping needed)", () => {
   const result = wrapString("Hello", 10);
-  assertEquals(result, "Hello");
+  expect(result).toStrictEqual("Hello");
 });
 
-Deno.test("wrapString - wraps at word boundaries", () => {
-  const result = wrapString(
-    "This is a very long sentence that needs wrapping",
-    20,
-  );
-  assertEquals(result, "This is a very long\nsentence that needs\nwrapping");
+test("wrapString - wraps at word boundaries", () => {
+  const result = wrapString("This is a very long sentence that needs wrapping", 20);
+  expect(result).toStrictEqual("This is a very long\nsentence that needs\nwrapping");
 });
 
-Deno.test("wrapString - breaks long words at character boundary", () => {
+test("wrapString - breaks long words at character boundary", () => {
   const result = wrapString("Thisisaverylongword", 10);
-  assertEquals(result, "Thisisaver\nylongword");
+  expect(result).toStrictEqual("Thisisaver\nylongword");
 });
 
-Deno.test("wrapString - character-based wrapping when wordWrap is false", () => {
+test("wrapString - character-based wrapping when wordWrap is false", () => {
   const result = wrapString("Thisisaverylongword", 10, false);
-  assertEquals(result, "Thisisaver\nylongword");
+  expect(result).toStrictEqual("Thisisaver\nylongword");
 });
 
-Deno.test("wrapString - preserves whitespace", () => {
+test("wrapString - preserves whitespace", () => {
   const result = wrapString("Hello   world   test", 15);
-  assertEquals(result, "Hello   world\n   test");
+  expect(result).toStrictEqual("Hello   world\n   test");
 });
 
-Deno.test("wrapString - empty string", () => {
+test("wrapString - empty string", () => {
   const result = wrapString("", 10);
-  assertEquals(result, "");
+  expect(result).toStrictEqual("");
 });
 
-Deno.test("wrapString - single word longer than maxWidth", () => {
+test("wrapString - single word longer than maxWidth", () => {
   const result = wrapString("superlongword", 5);
-  assertEquals(result, "super\nlongw\nord");
+  expect(result).toStrictEqual("super\nlongw\nord");
 });
 
-Deno.test("wrapString - maxWidth equals string length", () => {
+test("wrapString - maxWidth equals string length", () => {
   const result = wrapString("exactly", 7);
-  assertEquals(result, "exactly");
+  expect(result).toStrictEqual("exactly");
 });
 
-Deno.test("wrapString - combining accents fit within the grapheme budget", () => {
-  assertEquals(wrapString("e\u0301e\u0301", 2), "e\u0301e\u0301");
-  assertEquals(wrapString("cafe\u0301 noir", 5), "cafe\u0301\nnoir");
+test("wrapString - combining accents fit within the grapheme budget", () => {
+  expect(wrapString("e\u0301e\u0301", 2)).toStrictEqual("e\u0301e\u0301");
+  expect(wrapString("cafe\u0301 noir", 5)).toStrictEqual("cafe\u0301\nnoir");
 });
 
-Deno.test("wrapString - long words keep combining accents with their letters", () => {
+test("wrapString - long words keep combining accents with their letters", () => {
   for (const wordWrap of [true, false]) {
-    assertEquals(
-      wrapString("abe\u0301cde\u0301f", 3, wordWrap),
-      "abe\u0301\ncde\u0301\nf",
-    );
-    assertEquals(wrapString("a\u0301\u0327b", 1, wordWrap), "a\u0301\u0327\nb");
+    expect(wrapString("abe\u0301cde\u0301f", 3, wordWrap)).toStrictEqual("abe\u0301\ncde\u0301\nf");
+    expect(wrapString("a\u0301\u0327b", 1, wordWrap)).toStrictEqual("a\u0301\u0327\nb");
   }
 });

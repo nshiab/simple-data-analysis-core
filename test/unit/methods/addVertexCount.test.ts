@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should count the number of vertices and add the result in a new column", async () => {
+test("should count the number of vertices and add the result in a new column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/triangle.json");
@@ -10,11 +11,11 @@ Deno.test("should count the number of vertices and add the result in a new colum
 
   const data = await table.getData();
 
-  assertEquals(data, [{ addVertexCount: 4 }]);
+  expect(data).toStrictEqual([{ addVertexCount: 4 }]);
   await sdb.close();
 });
 
-Deno.test("should count the number of vertices when checking a specific column", async () => {
+test("should count the number of vertices when checking a specific column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("geodata");
   table.loadGeoData("test/geodata/files/triangle.json");
@@ -22,6 +23,6 @@ Deno.test("should count the number of vertices when checking a specific column",
   table.selectColumns(["addVertexCount"]);
   const data = await table.getData();
 
-  assertEquals(data, [{ addVertexCount: 4 }]);
+  expect(data).toStrictEqual([{ addVertexCount: 4 }]);
   await sdb.close();
 });

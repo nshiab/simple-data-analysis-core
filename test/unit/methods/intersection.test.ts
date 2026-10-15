@@ -1,13 +1,12 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should compute the intersection of geometries", async () => {
+test("should compute the intersection of geometries", async () => {
   const sdb = new SimpleDB();
 
   const prov = sdb.newTable("prov");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   prov.renameColumns({ geom: "prov" });
 
   const poly = sdb.newTable("poly");
@@ -20,16 +19,12 @@ Deno.test("should compute the intersection of geometries", async () => {
   joined.intersection("pol", "prov", "intersec");
   joined.area("intersecArea", { column: "intersec" });
   joined.round("intersecArea");
-  joined.addColumn(
-    "intersecPerc",
-    "double",
-    `ROUND(intersecArea/polArea, 4)`,
-  );
+  joined.addColumn("intersecPerc", "double", `ROUND(intersecArea/polArea, 4)`);
 
   joined.selectColumns(["nameEnglish", "name", "intersecPerc"]);
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       nameEnglish: "Newfoundland and Labrador",
       name: "polygonA",
@@ -97,12 +92,10 @@ Deno.test("should compute the intersection of geometries", async () => {
   await sdb.close();
 });
 
-Deno.test("intersection() should overwrite existing column", async () => {
+test("intersection() should overwrite existing column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, inter: "old" },
-  ]);
+  table.loadArray([{ lat: 1, lon: 2, lat2: 1.0001, lon2: 2.0001, inter: "old" }]);
   table.createPoints("lat", "lon", "geom1");
   table.createPoints("lat2", "lon2", "geom2");
 
@@ -110,36 +103,31 @@ Deno.test("intersection() should overwrite existing column", async () => {
   table.intersection("geom1", "geom2", "inter");
 
   const types = await table.getTypes();
-  assertEquals(types.inter, "GEOMETRY('EPSG:4326')");
+  expect(types.inter).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   await sdb.close();
 });
 
-Deno.test("intersection() should overwrite one of the source geometry columns", async () => {
+test("intersection() should overwrite one of the source geometry columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([
-    { lat: 1, lon: 2, lat2: 1, lon2: 2 },
-  ]);
+  table.loadArray([{ lat: 1, lon: 2, lat2: 1, lon2: 2 }]);
   table.createPoints("lat", "lon", "geom1");
   table.createPoints("lat2", "lon2", "geom2");
 
   table.intersection("geom1", "geom2", "geom1");
 
   const types = await table.getTypes();
-  assertEquals(types.geom1, "GEOMETRY('EPSG:4326')");
+  expect(types.geom1).toStrictEqual("GEOMETRY('EPSG:4326')");
 
   const data = await table.getGeoData({ column: "geom1" });
-  assertEquals(data.features.length, 1);
-  assertEquals(
-    (data.features[0] as { geometry: { type: string } }).geometry.type,
-    "Point",
-  );
+  expect(data.features.length).toStrictEqual(1);
+  expect((data.features[0] as { geometry: { type: string } }).geometry.type).toStrictEqual("Point");
 
   await sdb.close();
 });
 
-Deno.test("intersection() should return null if one of the geometries is null", async () => {
+test("intersection() should return null if one of the geometries is null", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("testNull");
 
@@ -161,22 +149,12 @@ Deno.test("intersection() should return null if one of the geometries is null", 
   table.intersection("geom1", "geom2", "inter");
   const data = await table.getGeoData({ column: "inter" });
 
-  assertEquals(
-    (data.features[0] as { geometry: { type: string } }).geometry?.type,
+  expect((data.features[0] as { geometry: { type: string } }).geometry?.type).toStrictEqual(
     "Polygon",
   );
-  assertEquals(
-    (data.features[1] as { geometry: null }).geometry,
-    null,
-  );
-  assertEquals(
-    (data.features[2] as { geometry: null }).geometry,
-    null,
-  );
-  assertEquals(
-    (data.features[3] as { geometry: null }).geometry,
-    null,
-  );
+  expect((data.features[1] as { geometry: null }).geometry).toStrictEqual(null);
+  expect((data.features[2] as { geometry: null }).geometry).toStrictEqual(null);
+  expect((data.features[3] as { geometry: null }).geometry).toStrictEqual(null);
 
   await sdb.close();
 });

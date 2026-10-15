@@ -34,9 +34,7 @@ function makeIntegerConverter(columnName: string, tableName: string | null) {
       return null;
     }
     const bigintValue = value as bigint;
-    if (
-      bigintValue > maxSafeInteger || bigintValue < minSafeInteger
-    ) {
+    if (bigintValue > maxSafeInteger || bigintValue < minSafeInteger) {
       throw new RangeError(
         `SDA: Column ${quoteIdentifier(columnName)}${
           tableName === null ? "" : ` of table ${quoteIdentifier(tableName)}`
@@ -51,19 +49,11 @@ function utcTimestampTzValue(value: DuckDBValue): string | null {
   if (value === null) {
     return null;
   }
-  const timestamp = new DuckDBTimestampValue(
-    (value as DuckDBTimestampTZValue).micros,
-  ).toString();
-  return timestamp === "infinity" || timestamp === "-infinity"
-    ? timestamp
-    : `${timestamp}+00`;
+  const timestamp = new DuckDBTimestampValue((value as DuckDBTimestampTZValue).micros).toString();
+  return timestamp === "infinity" || timestamp === "-infinity" ? timestamp : `${timestamp}+00`;
 }
 
-const utcJsonValueConverter: DuckDBValueConverter<Json> = (
-  value,
-  type,
-  _converter,
-) =>
+const utcJsonValueConverter: DuckDBValueConverter<Json> = (value, type, _converter) =>
   type.typeId === DuckDBTypeId.TIMESTAMP_TZ
     ? utcTimestampTzValue(value)
     : JsonDuckDBValueConverter(value, type, utcJsonValueConverter);
@@ -75,17 +65,13 @@ export function makeConverter(
 ): (value: DuckDBValue) => unknown {
   const typeString = type.toString();
   if (typeString.toLowerCase().includes("geometry")) {
-    const placeholder = `GEOM(${
-      typeString.replace("GEOMETRY('", "").replace("')", "")
-    })`;
+    const placeholder = `GEOM(${typeString.replace("GEOMETRY('", "").replace("')", "")})`;
     return (value) => (value === null ? null : placeholder);
   }
   switch (type.typeId) {
     case DuckDBTypeId.DATE:
       return (value) =>
-        value === null
-          ? null
-          : new Date((value as DuckDBDateValue).days * msPerDay);
+        value === null ? null : new Date((value as DuckDBDateValue).days * msPerDay);
     case DuckDBTypeId.TIMESTAMP:
       return (value) => {
         if (value === null) {
@@ -105,8 +91,7 @@ export function makeConverter(
     case DuckDBTypeId.UHUGEINT:
       return makeIntegerConverter(columnName, tableName);
     default:
-      return (value) =>
-        utcJsonValueConverter(value, type, utcJsonValueConverter);
+      return (value) => utcJsonValueConverter(value, type, utcJsonValueConverter);
   }
 }
 
@@ -117,37 +102,27 @@ export default async function runQuery(
   options: RunQueryOptions,
 ): Promise<
   | {
-    [key: string]: unknown;
-  }[]
+      [key: string]: unknown;
+    }[]
   | null
 > {
   const values = options.values ?? [];
   try {
     await observeQuery(connection, query, values, options);
     if (returnData) {
-      const result = values.length === 0
-        ? await connection.run(query)
-        : await connection.run(query, values);
+      const result =
+        values.length === 0 ? await connection.run(query) : await connection.run(query, values);
       const columnNames = result.deduplicatedColumnNames();
       const columnTypes = result.columnTypes();
       if (
         options.method === "getData()" &&
-        columnTypes.some((type) =>
-          type.toString().toLowerCase().includes("geometry")
-        )
+        columnTypes.some((type) => type.toString().toLowerCase().includes("geometry"))
       ) {
-        throw new Error(
-          "The query returns geometry columns. Use getGeoData() instead.",
-        );
+        throw new Error("The query returns geometry columns. Use getGeoData() instead.");
       }
-      const logging = options.method === "log()" ||
-        options.method === "logBottom()";
+      const logging = options.method === "log()" || options.method === "logBottom()";
       const converters = columnTypes.map((type, i) => {
-        const converter = makeConverter(
-          type,
-          columnNames[i],
-          options.table ?? null,
-        );
+        const converter = makeConverter(type, columnNames[i], options.table ?? null);
         return logging ? makeLogConverter(type, converter) : converter;
       });
       const columnCount = columnNames.length;

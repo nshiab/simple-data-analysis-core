@@ -1,7 +1,9 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { test, expect, vi } from "vite-plus/test";
+import { assertThrows } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should list available samples for an unknown sample", async () => {
+test("should list available samples for an unknown sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -14,7 +16,7 @@ Deno.test("should list available samples for an unknown sample", async () => {
   await sdb.close();
 });
 
-Deno.test("should load the fires sample", async () => {
+test.skipIf(process.env.CI === "true")("should load the fires sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("fires");
@@ -24,11 +26,11 @@ Deno.test("should load the fires sample", async () => {
   tableLocal.loadData("test/geodata/files/firesCanada2023.csv");
   const dataLocal = await tableLocal.getData();
 
-  assertEquals(data, dataLocal);
+  expect(data).toStrictEqual(dataLocal);
   await sdb.close();
 });
 
-Deno.test("should load the recipes sample", async () => {
+test.skipIf(process.env.CI === "true")("should load the recipes sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("recipes");
@@ -38,11 +40,11 @@ Deno.test("should load the recipes sample", async () => {
   tableLocal.loadData("test/data/files/recipes.parquet");
   const dataLocal = await tableLocal.getData();
 
-  assertEquals(data, dataLocal);
+  expect(data).toStrictEqual(dataLocal);
   await sdb.close();
 });
 
-Deno.test("should load the temperatures sample", async () => {
+test.skipIf(process.env.CI === "true")("should load the temperatures sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("temperatures");
@@ -52,11 +54,11 @@ Deno.test("should load the temperatures sample", async () => {
   tableLocal.loadData("test/data/files/dailyTemperatures.csv");
   const dataLocal = await tableLocal.getData();
 
-  assertEquals(data, dataLocal);
+  expect(data).toStrictEqual(dataLocal);
   await sdb.close();
 });
 
-Deno.test("should load the temperaturesCities sample", async () => {
+test.skipIf(process.env.CI === "true")("should load the temperaturesCities sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("temperaturesCities");
@@ -66,27 +68,25 @@ Deno.test("should load the temperaturesCities sample", async () => {
   tableLocal.loadData("test/data/files/cities.csv");
   const dataLocal = await tableLocal.getData();
 
-  assertEquals(data, dataLocal);
+  expect(data).toStrictEqual(dataLocal);
   await sdb.close();
 });
 
-Deno.test("should load the canada sample", async () => {
+test.skipIf(process.env.CI === "true")("should load the canada sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("canada");
   const data = await table.getGeoData();
 
   const tableLocal = sdb.newTable();
-  tableLocal.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  tableLocal.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   const dataLocal = await tableLocal.getGeoData();
 
-  assertEquals(data, dataLocal);
+  expect(data).toStrictEqual(dataLocal);
   await sdb.close();
 });
 
-Deno.test("should load the firesGeo sample", async () => {
+test.skipIf(process.env.CI === "true")("should load the firesGeo sample", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadSample("firesGeo");
@@ -96,6 +96,52 @@ Deno.test("should load the firesGeo sample", async () => {
   tableLocal.loadGeoData("test/geodata/files/firesCanada2023.geojson");
   const dataLocal = await tableLocal.getGeoData();
 
-  assertEquals(data, dataLocal);
+  expect(data).toStrictEqual(dataLocal);
   await sdb.close();
 });
+
+for (const { sample, method, url } of [
+  {
+    sample: "fires",
+    method: "loadData",
+    url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.csv",
+  },
+  {
+    sample: "recipes",
+    method: "loadData",
+    url: "https://github.com/nshiab/simple-data-analysis-core/raw/refs/heads/main/test/data/files/recipes.parquet",
+  },
+  {
+    sample: "temperatures",
+    method: "loadData",
+    url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/dailyTemperatures.csv",
+  },
+  {
+    sample: "temperaturesCities",
+    method: "loadData",
+    url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/data/files/cities.csv",
+  },
+  {
+    sample: "canada",
+    method: "loadGeoData",
+    url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/CanadianProvincesAndTerritories.json",
+  },
+  {
+    sample: "firesGeo",
+    method: "loadGeoData",
+    url: "https://raw.githubusercontent.com/nshiab/simple-data-analysis-core/refs/heads/main/test/geodata/files/firesCanada2023.geojson",
+  },
+] as const) {
+  test(`loadSample routes ${sample} to its matching loader and remains fluent`, async () => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    const loader = vi.spyOn(table, method).mockReturnValue(table);
+    try {
+      expect(table.loadSample(sample)).toBe(table);
+      expect(loader).toHaveBeenCalledExactlyOnceWith(url);
+    } finally {
+      loader.mockRestore();
+      await sdb.close();
+    }
+  });
+}

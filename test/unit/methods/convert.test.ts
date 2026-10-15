@@ -1,19 +1,23 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should bind datetime formats containing apostrophes", async () => {
+test("should bind datetime formats containing apostrophes", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ date: "2010'-01-02" }]);
   table.convert({ date: "date" }, { datetimeFormat: "%Y'-%m-%d" });
 
-  assertEquals(await table.getData(), [{
-    date: new Date("2010-01-02T00:00:00.000Z"),
-  }]);
+  expect(await table.getData()).toStrictEqual([
+    {
+      date: new Date("2010-01-02T00:00:00.000Z"),
+    },
+  ]);
   await sdb.close();
 });
 
-Deno.test("should convert numbers to string", async () => {
+test("should convert numbers to string", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
@@ -21,7 +25,7 @@ Deno.test("should convert numbers to string", async () => {
   table.convert({ key1: "string" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "1.3", key2: 2 },
     { key1: "3.0", key2: 15 },
     { key1: "8.5", key2: 10 },
@@ -29,7 +33,7 @@ Deno.test("should convert numbers to string", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should convert strings with comma as thousand separator to number", async () => {
+test("should convert strings with comma as thousand separator to number", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -42,7 +46,7 @@ Deno.test("should convert strings with comma as thousand separator to number", a
   table.convert({ key1: "number" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1000.3, key2: 2 },
     { key1: 3000000, key2: 15 },
     { key1: 8.5, key2: 10 },
@@ -50,7 +54,7 @@ Deno.test("should convert strings with comma as thousand separator to number", a
   ]);
   await sdb.close();
 });
-Deno.test("should try to convert string to number", async () => {
+test("should try to convert string to number", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/data.csv"], {
@@ -60,7 +64,7 @@ Deno.test("should try to convert string to number", async () => {
   table.convert({ key1: "integer" }, { strict: false });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1, key2: "2" },
     { key1: 3, key2: "coucou" },
     { key1: 8, key2: "10" },
@@ -69,7 +73,7 @@ Deno.test("should try to convert string to number", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert string to float", async () => {
+test("should convert string to float", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
@@ -78,7 +82,7 @@ Deno.test("should convert string to float", async () => {
   table.convert({ key1: "float" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1.3, key2: 2 },
     { key1: 3, key2: 15 },
     { key1: 8.5, key2: 10 },
@@ -87,7 +91,7 @@ Deno.test("should convert string to float", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert string to integer", async () => {
+test("should convert string to integer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
@@ -96,7 +100,7 @@ Deno.test("should convert string to integer", async () => {
   table.convert({ key2: "integer" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1.3, key2: 2 },
     { key1: 3, key2: 15 },
     { key1: 8.5, key2: 10 },
@@ -105,7 +109,7 @@ Deno.test("should convert string to integer", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert multiple columns in multiple types", async () => {
+test("should convert multiple columns in multiple types", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData(["test/data/files/dataJustNumbers.csv"]);
@@ -117,7 +121,7 @@ Deno.test("should convert multiple columns in multiple types", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: 1.3, key2: "2" },
     { key1: 3, key2: "15" },
     { key1: 8.5, key2: "10" },
@@ -126,7 +130,7 @@ Deno.test("should convert multiple columns in multiple types", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert date string to date", async () => {
+test("should convert date string to date", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
@@ -141,7 +145,7 @@ Deno.test("should convert date string to date", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       date: new Date("2010-01-01T00:00:00.000Z"),
       datetime: new Date("2010-01-01T14:01:12.000Z"),
@@ -178,7 +182,7 @@ Deno.test("should convert date string to date", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert date and time strings to dates", async () => {
+test("should convert date and time strings to dates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
@@ -195,7 +199,7 @@ Deno.test("should convert date and time strings to dates", async () => {
 
   const types = await table.getTypes();
 
-  assertEquals(types, {
+  expect(types).toStrictEqual({
     date: "DATE",
     datetime: "TIMESTAMP",
     datetimeWithMs: "TIMESTAMP",
@@ -206,7 +210,7 @@ Deno.test("should convert date and time strings to dates", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert date and time from string to date with a specific format", async () => {
+test("should convert date and time from string to date with a specific format", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
@@ -222,7 +226,7 @@ Deno.test("should convert date and time from string to date with a specific form
   table.selectColumns("weirdDatetime");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       weirdDatetime: new Date("2010-01-01T14:01:12.000Z"),
     },
@@ -239,7 +243,7 @@ Deno.test("should convert date and time from string to date with a specific form
   await sdb.close();
 });
 
-Deno.test("should convert dates to strings", async () => {
+test("should convert dates to strings", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv", {
@@ -270,7 +274,7 @@ Deno.test("should convert dates to strings", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       date: "2010-01-01",
       datetime: "2010-01-01 14:01:12",
@@ -307,7 +311,7 @@ Deno.test("should convert dates to strings", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert dates to strings with a specific format", async () => {
+test("should convert dates to strings with a specific format", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv");
@@ -324,7 +328,7 @@ Deno.test("should convert dates to strings with a specific format", async () => 
   );
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       date: "2010/01/01_00h_00min_00sec",
       datetime: "2010/01/01_14h_01min_12sec",
@@ -361,7 +365,7 @@ Deno.test("should convert dates to strings with a specific format", async () => 
   await sdb.close();
 });
 
-Deno.test("should convert numbers to booleans", async () => {
+test("should convert numbers to booleans", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ key1: 0 }, { key1: 1 }]);
@@ -369,11 +373,11 @@ Deno.test("should convert numbers to booleans", async () => {
   table.convert({ key1: "boolean" });
   const data = await table.getData();
 
-  assertEquals(data, [{ key1: false }, { key1: true }]);
+  expect(data).toStrictEqual([{ key1: false }, { key1: true }]);
   await sdb.close();
 });
 
-Deno.test("should convert booleans to numbers", async () => {
+test("should convert booleans to numbers", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([{ key1: false }, { key1: true }]);
@@ -381,10 +385,10 @@ Deno.test("should convert booleans to numbers", async () => {
   table.convert({ key1: "number" });
   const data = await table.getData();
 
-  assertEquals(data, [{ key1: 0 }, { key1: 1 }]);
+  expect(data).toStrictEqual([{ key1: 0 }, { key1: 1 }]);
   await sdb.close();
 });
-Deno.test("should convert dates and times to numbers (ms)", async () => {
+test("should convert dates and times to numbers (ms)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv");
@@ -401,16 +405,10 @@ Deno.test("should convert dates and times to numbers (ms)", async () => {
     time: "number",
     timeMs: "number",
   });
-  table.selectColumns([
-    "date",
-    "datetime",
-    "datetimeWithMs",
-    "time",
-    "timeMs",
-  ]);
+  table.selectColumns(["date", "datetime", "datetimeWithMs", "time", "timeMs"]);
 
   const data = await table.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       date: 1262304000000,
       datetime: 1262354472000,
@@ -442,7 +440,7 @@ Deno.test("should convert dates and times to numbers (ms)", async () => {
   ]);
   await sdb.close();
 });
-Deno.test("should convert numbers (ms) to dates and time", async () => {
+test("should convert numbers (ms) to dates and time", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadData("test/data/files/dataDates.csv");
@@ -466,17 +464,11 @@ Deno.test("should convert numbers (ms) to dates and time", async () => {
     timeMs: "time",
   });
 
-  table.selectColumns([
-    "date",
-    "datetime",
-    "datetimeWithMs",
-    "time",
-    "timeMs",
-  ]);
+  table.selectColumns(["date", "datetime", "datetimeWithMs", "time", "timeMs"]);
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       date: new Date("2010-01-01T00:00:00.000Z"),
       datetime: new Date("2010-01-01T14:01:12.000Z"),
@@ -509,7 +501,7 @@ Deno.test("should convert numbers (ms) to dates and time", async () => {
   await sdb.close();
 });
 
-Deno.test("should convert a column with $ in its name", async () => {
+test("should convert a column with $ in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ "$ value": 10 }, { "$ value": 20 }]);
@@ -519,38 +511,36 @@ Deno.test("should convert a column with $ in its name", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
-    { "$ value": "10.0" },
-    { "$ value": "20.0" },
-  ]);
+  expect(data).toStrictEqual([{ "$ value": "10.0" }, { "$ value": "20.0" }]);
 
   await sdb.close();
 });
 
-for (
-  const [json, vector, geometry] of [
-    ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
-    ["json", "float[3]", "geometry('EPSG:4326')"],
-  ] as const
-) {
-  Deno.test(`convert parses JSON, vector and WKT geometry text (${json})`, async () => {
+for (const [json, vector, geometry] of [
+  ["JSON", "FLOAT[3]", "GEOMETRY('EPSG:4326')"],
+  ["json", "float[3]", "geometry('EPSG:4326')"],
+] as const) {
+  test(`convert parses JSON, vector and WKT geometry text (${json})`, async () => {
     const sdb = new SimpleDB();
     try {
-      const table = sdb.newTable().loadArray([
-        {
-          details: '{"count":3}',
-          embedding: "[0.25,0.5,0.75]",
-          geom: "POINT (-73 45)",
-        },
-        { details: null, embedding: null, geom: null },
-      ]).convert({ details: json, embedding: vector, geom: geometry });
-      assertEquals(await table.getTypes(), {
+      const table = sdb
+        .newTable()
+        .loadArray([
+          {
+            details: '{"count":3}',
+            embedding: "[0.25,0.5,0.75]",
+            geom: "POINT (-73 45)",
+          },
+          { details: null, embedding: null, geom: null },
+        ])
+        .convert({ details: json, embedding: vector, geom: geometry });
+      expect(await table.getTypes()).toStrictEqual({
         details: "JSON",
         embedding: "FLOAT[3]",
         geom: "GEOMETRY('EPSG:4326')",
       });
       const geo = await table.getGeoData();
-      assertEquals(geo, {
+      expect(geo).toStrictEqual({
         type: "FeatureCollection",
         features: [
           {
@@ -570,33 +560,39 @@ for (
       });
       await table.convert({ embedding: "JSON" }).getTypes();
       table.convert({ details: "string", embedding: "FLOAT[3]" });
-      assertEquals(await table.getGeoData(), geo);
-      assertEquals((await table.getTypes()).details, "VARCHAR");
+      expect(await table.getGeoData()).toStrictEqual(geo);
+      expect((await table.getTypes()).details).toStrictEqual("VARCHAR");
     } finally {
       await sdb.close();
     }
   });
 }
 
-Deno.test("convert replaces invalid JSON, vector and geometry text with null in non-strict mode", async () => {
+test("convert replaces invalid JSON, vector and geometry text with null in non-strict mode", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadArray([
-      { details: "invalid", embedding: "[1,2]", geom: "invalid" },
-    ]).convert({
-      details: "JSON",
-      embedding: "FLOAT[3]",
-      geom: "GEOMETRY('EPSG:4326')",
-    }, { strict: false });
-    assertEquals(await table.getGeoData(), {
+    const table = sdb
+      .newTable()
+      .loadArray([{ details: "invalid", embedding: "[1,2]", geom: "invalid" }])
+      .convert(
+        {
+          details: "JSON",
+          embedding: "FLOAT[3]",
+          geom: "GEOMETRY('EPSG:4326')",
+        },
+        { strict: false },
+      );
+    expect(await table.getGeoData()).toStrictEqual({
       type: "FeatureCollection",
-      features: [{
-        type: "Feature",
-        geometry: null,
-        properties: { details: null, embedding: null },
-      }],
+      features: [
+        {
+          type: "Feature",
+          geometry: null,
+          properties: { details: null, embedding: null },
+        },
+      ],
     });
-    assertEquals(await table.getTypes(), {
+    expect(await table.getTypes()).toStrictEqual({
       details: "JSON",
       embedding: "FLOAT[3]",
       geom: "GEOMETRY('EPSG:4326')",
@@ -606,23 +602,21 @@ Deno.test("convert replaces invalid JSON, vector and geometry text with null in 
   }
 });
 
-for (
-  const [type, value] of [
-    ["JSON", "invalid"],
-    ["FLOAT[3]", "[1,2]"],
-    ["FLOAT[3]", "[1,bad,3]"],
-    ["GEOMETRY('EPSG:4326')", "invalid"],
-  ] as const
-) {
-  Deno.test(`convert rejects invalid ${type} values and preserves existing data (${value})`, async () => {
+for (const [type, value] of [
+  ["JSON", "invalid"],
+  ["FLOAT[3]", "[1,2]"],
+  ["FLOAT[3]", "[1,bad,3]"],
+  ["GEOMETRY('EPSG:4326')", "invalid"],
+] as const) {
+  test(`convert rejects invalid ${type} values and preserves existing data (${value})`, async () => {
     const sdb = new SimpleDB();
     try {
       const table = sdb.newTable().loadArray([{ value }]);
       await table.getData();
       table.convert({ value: type });
       await assertRejects(() => table.getTypes());
-      assertEquals(await table.getData(), [{ value }]);
-      assertEquals(await table.getTypes(), { value: "VARCHAR" });
+      expect(await table.getData()).toStrictEqual([{ value }]);
+      expect(await table.getTypes()).toStrictEqual({ value: "VARCHAR" });
     } finally {
       await sdb.close();
     }

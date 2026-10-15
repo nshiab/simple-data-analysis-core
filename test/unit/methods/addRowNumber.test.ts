@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should return a column with the row number", async () => {
+test("should return a column with the row number", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -12,14 +13,14 @@ Deno.test("should return a column with the row number", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { first: "Nael", last: "Shiab", rowNumber: 0 },
     { first: "Graeme", last: "Bruce", rowNumber: 1 },
   ]);
   await sdb.close();
 });
 
-Deno.test("should return a column with the row number restarting for each category (starting at 0)", async () => {
+test("should return a column with the row number restarting for each category (starting at 0)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
   table.loadArray([
@@ -32,7 +33,7 @@ Deno.test("should return a column with the row number restarting for each catego
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { first: "Nael", last: "Shiab", city: "Montreal", rowNumber: 0 },
     { first: "Graeme", last: "Bruce", city: "Montreal", rowNumber: 1 },
     { first: "John", last: "Doe", city: "Toronto", rowNumber: 0 },

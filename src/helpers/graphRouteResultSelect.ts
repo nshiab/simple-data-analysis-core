@@ -13,10 +13,11 @@ export default function graphRouteResultSelect(
   const q = quoteIdentifier;
   const routeStep = `${q("unnested")}.${q("route_step")}`;
   const originalEdgeId = `${q("original")}.${q(edgeIdColumn.column)}`;
-  const edgeMatch = edgeIdColumn.family === "string"
-    ? `ENCODE(CAST(${originalEdgeId} AS VARCHAR)) =
+  const edgeMatch =
+    edgeIdColumn.family === "string"
+      ? `ENCODE(CAST(${originalEdgeId} AS VARCHAR)) =
         ENCODE(${routeStep}.${q("edgeId")})`
-    : `CAST(${originalEdgeId} AS ${edgeIdColumn.idType}) =
+      : `CAST(${originalEdgeId} AS ${edgeIdColumn.idType}) =
         ${routeStep}.${q("edgeId")}`;
   return `SELECT ${
     includeStart ? `${q("ranked")}.${q("start")},\n      ` : ""
@@ -24,19 +25,15 @@ export default function graphRouteResultSelect(
       CAST(${q("unnested")}.${q("step")} AS BIGINT) AS ${q("step")},
       ${routeStep}.${q("weight")} AS ${q("weight")},
       ${includeTotal ? `${routeStep}.${q("distance")} AS ${q("total")},` : ""}
-      ${
-    elapsedTime
-      ? `${routeStep}.${q("elapsedTimeMs")} AS ${q("elapsedTimeMs")},`
-      : ""
-  }
+      ${elapsedTime ? `${routeStep}.${q("elapsedTimeMs")} AS ${q("elapsedTimeMs")},` : ""}
       ${q("original")}.*
     FROM ${rankedRelation} AS ${q("ranked")},
-      UNNEST(${q("ranked")}.${q("steps")}) WITH ORDINALITY AS ${
-    q("unnested")
-  }(${q("route_step")}, ${q("step")})
+      UNNEST(${q("ranked")}.${q("steps")}) WITH ORDINALITY AS ${q(
+        "unnested",
+      )}(${q("route_step")}, ${q("step")})
     INNER JOIN ${input} AS ${q("original")}
       ON ${edgeMatch}
-    ORDER BY ${includeStart ? `${q("ranked")}.${q("__start_key")}, ` : ""}${
-    q("ranked")
-  }.${q("pathId")}, ${q("unnested")}.${q("step")}`;
+    ORDER BY ${includeStart ? `${q("ranked")}.${q("__start_key")}, ` : ""}${q(
+      "ranked",
+    )}.${q("pathId")}, ${q("unnested")}.${q("step")}`;
 }

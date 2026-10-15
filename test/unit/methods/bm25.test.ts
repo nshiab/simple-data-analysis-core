@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should sucessfully run a search", async () => {
+test("should sucessfully run a search", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -9,7 +10,7 @@ Deno.test("should sucessfully run a search", async () => {
   table.bm25("italian food", "Dish", "Recipe", 5);
 
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.sort(), [
+  expect(dishes.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -17,7 +18,7 @@ Deno.test("should sucessfully run a search", async () => {
     "Tiramisu",
   ]);
 });
-Deno.test("should sucessfully run a search with a specific stemmer", async () => {
+test("should sucessfully run a search with a specific stemmer", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -27,7 +28,7 @@ Deno.test("should sucessfully run a search with a specific stemmer", async () =>
   });
 
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.sort(), [
+  expect(dishes.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -35,7 +36,7 @@ Deno.test("should sucessfully run a search with a specific stemmer", async () =>
     "Tiramisu",
   ]);
 });
-Deno.test("should sucessfully run a search with a specific b and k", async () => {
+test("should sucessfully run a search with a specific b and k", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -46,7 +47,7 @@ Deno.test("should sucessfully run a search with a specific b and k", async () =>
   });
 
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.sort(), [
+  expect(dishes.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -54,7 +55,7 @@ Deno.test("should sucessfully run a search with a specific b and k", async () =>
     "Tiramisu",
   ]);
 });
-Deno.test("should sucessfully run a search with output table", async () => {
+test("should sucessfully run a search with output table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -64,7 +65,7 @@ Deno.test("should sucessfully run a search with output table", async () => {
   });
 
   const dishesItalian = await italian.getValues("Dish");
-  assertEquals(dishesItalian.sort(), [
+  expect(dishesItalian.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -73,9 +74,9 @@ Deno.test("should sucessfully run a search with output table", async () => {
   ]);
 
   const allDishes = await table.getValues("Dish");
-  assertEquals(allDishes.length, 336);
+  expect(allDishes.length).toStrictEqual(336);
 });
-Deno.test("should not recreate index if already exists", async () => {
+test("should not recreate index if already exists", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -90,7 +91,7 @@ Deno.test("should not recreate index if already exists", async () => {
   });
 
   const dishesItalian = await italian.getValues("Dish");
-  assertEquals(dishesItalian.sort(), [
+  expect(dishesItalian.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Carbonara",
     "Escarole Soup",
     "Pizza",
@@ -99,7 +100,7 @@ Deno.test("should not recreate index if already exists", async () => {
   ]);
 
   const dishesFrench = await french.getValues("Dish");
-  assertEquals(dishesFrench.sort(), [
+  expect(dishesFrench.sort((a, b) => String(a).localeCompare(String(b)))).toStrictEqual([
     "Chivito",
     "Crepes",
     "Lomo Saltado",
@@ -108,10 +109,10 @@ Deno.test("should not recreate index if already exists", async () => {
   ]);
 
   const allDishes = await table.getValues("Dish");
-  assertEquals(allDishes.length, 336);
+  expect(allDishes.length).toStrictEqual(336);
 });
 
-Deno.test("should successfully run a search with custom fts options", async () => {
+test("should successfully run a search with custom fts options", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -123,10 +124,10 @@ Deno.test("should successfully run a search with custom fts options", async () =
   });
 
   const dishes = await table.getValues("Dish");
-  assertEquals(dishes.length, 5);
+  expect(dishes.length).toStrictEqual(5);
 });
 
-Deno.test("should recreate index with overwriteIndex option", async () => {
+test("should recreate index with overwriteIndex option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -134,33 +135,35 @@ Deno.test("should recreate index with overwriteIndex option", async () => {
 
   // First search creates the index
   // bm25() queues the operation; run() executes it.
-  await table.bm25("italian food", "Dish", "Recipe", 5, {
-    stemmer: "porter",
-    outputTable: "italian",
-  }).run();
+  await table
+    .bm25("italian food", "Dish", "Recipe", 5, {
+      stemmer: "porter",
+      outputTable: "italian",
+    })
+    .run();
 
-  const indexCountBefore =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
-  assertEquals(indexCountBefore, 1);
+  const indexCountBefore = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  expect(indexCountBefore).toStrictEqual(1);
 
   // Second search with overwriteIndex recreates the index
-  const french = await table.bm25("french food", "Dish", "Recipe", 5, {
-    stemmer: "english",
-    overwriteIndex: true,
-    outputTable: "french",
-    verbose: true,
-  }).run();
+  const french = await table
+    .bm25("french food", "Dish", "Recipe", 5, {
+      stemmer: "english",
+      overwriteIndex: true,
+      outputTable: "french",
+      verbose: true,
+    })
+    .run();
 
-  const indexCountAfter =
-    table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
+  const indexCountAfter = table.indexes.filter((idx) => idx.name.includes("fts_index")).length;
 
   // Should still have only one index
-  assertEquals(indexCountAfter, 1);
+  expect(indexCountAfter).toStrictEqual(1);
 
   const dishesFrench = await french.getValues("Dish");
-  assertEquals(dishesFrench.length, 5);
+  expect(dishesFrench.length).toStrictEqual(5);
 });
-Deno.test("should include the score column when scoreColumn option is provided", async () => {
+test("should include the score column when scoreColumn option is provided", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -172,12 +175,12 @@ Deno.test("should include the score column when scoreColumn option is provided",
   const scores = await table.getValues("bm25_score");
   const dishes = await table.getValues("Dish");
 
-  assertEquals(scores.length, 5);
-  assertEquals(typeof scores[0], "number");
-  assertEquals(dishes.length, 5);
+  expect(scores.length).toStrictEqual(5);
+  expect(typeof scores[0]).toStrictEqual("number");
+  expect(dishes.length).toStrictEqual(5);
 });
 
-Deno.test("should filter out results below minScore", async () => {
+test("should filter out results below minScore", async () => {
   const sdb = new SimpleDB();
 
   // First, run a standard search to get a baseline score to test against
@@ -188,7 +191,7 @@ Deno.test("should filter out results below minScore", async () => {
     scoreColumn: "score",
   });
 
-  const allScores = await baseTable.getValues("score") as number[];
+  const allScores = (await baseTable.getValues("score")) as number[];
 
   // Grab the 3rd highest score to use as our minimum threshold
   // This guarantees the new search should return fewer than 5 results
@@ -202,18 +205,18 @@ Deno.test("should filter out results below minScore", async () => {
     scoreColumn: "filtered_score",
   });
 
-  const filteredScores = await table.getValues("filtered_score") as number[];
+  const filteredScores = (await table.getValues("filtered_score")) as number[];
   const dishes = await table.getValues("Dish");
 
   // It should only return the top 3 items that met or exceeded the threshold
-  assertEquals(filteredScores.length, 3);
-  assertEquals(dishes.length, 3);
+  expect(filteredScores.length).toStrictEqual(3);
+  expect(dishes.length).toStrictEqual(3);
 
   const allValid = filteredScores.every((score) => score >= threshold);
-  assertEquals(allValid, true);
+  expect(allValid).toStrictEqual(true);
 });
 
-Deno.test("should successfully run a search with conjunctive option", async () => {
+test("should successfully run a search with conjunctive option", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/recipes.parquet");
@@ -236,15 +239,15 @@ Deno.test("should successfully run a search with conjunctive option", async () =
 
   // We expect fewer results with conjunctive for "fennel garlic"
   // console.log({ disjunctiveCount, conjunctiveCount });
-  assertEquals(conjunctiveCount < disjunctiveCount, true);
-  assertEquals(conjunctiveCount > 0, true);
+  expect(conjunctiveCount < disjunctiveCount).toStrictEqual(true);
+  expect(conjunctiveCount > 0).toStrictEqual(true);
 
   // Check that one of the results actually has both words (case-insensitive check on content would be ideal but content is not returned by default)
   // Let's just trust DuckDB's fts extension for now if it doesn't throw.
 });
 
 for (const name of ["ranking_probe", "ranking$probe", "Ranking_Épreuve"]) {
-  Deno.test(`bm25 preserves the FTS table name: ${name}`, async () => {
+  test(`bm25 preserves the FTS table name: ${name}`, async () => {
     const sdb = new SimpleDB();
     try {
       const table = sdb.newTable(name).loadArray([
@@ -256,12 +259,9 @@ for (const name of ["ranking_probe", "ranking$probe", "Ranking_Épreuve"]) {
           outputTable: "result",
           overwriteIndex,
         });
-        assertEquals(await result.getValues("id"), ["a"]);
+        expect(await result.getValues("id")).toStrictEqual(["a"]);
         await result.removeTable();
-        assertEquals(
-          table.indexes.filter(({ kind }) => kind === "fts").length,
-          1,
-        );
+        expect(table.indexes.filter(({ kind }) => kind === "fts").length).toStrictEqual(1);
       }
     } finally {
       await sdb.close();

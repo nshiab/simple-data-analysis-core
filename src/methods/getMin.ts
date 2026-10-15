@@ -4,16 +4,13 @@ import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
-export default async function getMin(
-  simpleTable: SimpleTable,
-  column: string,
-) {
+export default async function getMin(simpleTable: SimpleTable, column: string) {
   const qualifiedColumn = quoteQualifiedIdentifier(simpleTable.name, column);
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT MIN(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${
-      quoteIdentifier(simpleTable.name)
-    }`,
+    `SELECT MIN(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${quoteIdentifier(
+      simpleTable.name,
+    )}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,

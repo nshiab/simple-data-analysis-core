@@ -1,10 +1,10 @@
-import {
-  assert,
-  assertAlmostEquals,
-  assertEquals,
-  assertRejects,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { ok as assert } from "node:assert/strict";
+import { assertAlmostEquals, assertRejects, assertThrows } from "../../helpers/assertions.ts";
+import { readFile as nodeReadFile, mkdtemp as nodeMkdtemp, rm as nodeRm } from "node:fs/promises";
+import { join as nodeJoin } from "node:path";
+import { tmpdir as nodeTmpdir } from "node:os";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 type ReferenceFixture = {
@@ -15,8 +15,9 @@ type ReferenceFixture = {
 };
 
 const fixture = JSON.parse(
-  await Deno.readTextFile(
+  await nodeReadFile(
     new URL("../../fixtures/covariance/numpy-2.3.4.json", import.meta.url),
+    "utf8",
   ),
 ) as ReferenceFixture;
 
@@ -25,65 +26,72 @@ function assertClose(
   expected: ArrayLike<number>,
   tolerance = 1e-11,
 ): void {
-  assertEquals(actual.length, expected.length);
+  expect(actual.length).toStrictEqual(expected.length);
   for (let index = 0; index < actual.length; index++) {
     assertAlmostEquals(actual[index], expected[index], tolerance);
   }
 }
 
 async function scratchRelations(sdb: SimpleDB): Promise<string[]> {
-  return (await sdb.connection!.runAndReadAll(
-    `SELECT table_name FROM duckdb_tables()
+  return (
+    await sdb.connection!.runAndReadAll(
+      `SELECT table_name FROM duckdb_tables()
      WHERE table_name LIKE '__sda_features_%'
         OR table_name LIKE '__sda_mahalanobis_%'
      ORDER BY table_name`,
-  )).getRowsJS().map((row) => String(row[0]));
+    )
+  )
+    .getRowsJS()
+    .map((row) => {
+      assert(typeof row[0] === "string");
+      return row[0];
+    });
 }
 
-Deno.test("similarityMahalanobis matches the pinned NumPy 2.3.4 public-method fixture", async () => {
-  assertEquals(fixture.numpyVersion, "2.3.4");
+test("similarityMahalanobis matches the pinned NumPy 2.3.4 public-method fixture", async () => {
+  expect(fixture.numpyVersion).toStrictEqual("2.3.4");
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
-      ${
-      fixture.data.map((row, index) =>
-        `(${index}, ${row[0]}, ${row[1]}, ${row[2]}, 'row-${index}')`
-      ).join(",\n")
-    }
+      ${fixture.data
+        .map((row, index) => `(${index}, ${row[0]}, ${row[1]}, ${row[2]}, 'row-${index}')`)
+        .join(",\n")}
     ) rows(id, observation, feature, value, label)`);
     const table = sdb.newTable("source");
-    assertEquals("mahalanobis" in table, false);
+    expect("mahalanobis" in table).toStrictEqual(false);
     const before = await table.getData();
     const typesBefore = await table.getTypes();
 
-    await table.similarityMahalanobis(
-      ["observation", "feature", "value"],
-      fixture.data[0].map((_, i) =>
-        fixture.data.reduce((sum, row) => sum + row[i], 0) / fixture.data.length
-      ),
-      "distance",
-    ).run();
+    await table
+      .similarityMahalanobis(
+        ["observation", "feature", "value"],
+        fixture.data[0].map(
+          (_, i) => fixture.data.reduce((sum, row) => sum + row[i], 0) / fixture.data.length,
+        ),
+        "distance",
+      )
+      .run();
 
     const data = await table.getData();
-    assertClose(data.map((row) => Number(row.distance)), fixture.distances);
-    assertEquals(data.map(({ distance: _distance, ...row }) => row), before);
-    assertEquals(await table.getTypes(), {
+    assertClose(
+      data.map((row) => Number(row.distance)),
+      fixture.distances,
+    );
+    expect(data.map(({ distance: _distance, ...row }) => row)).toStrictEqual(before);
+    expect(await table.getTypes()).toStrictEqual({
       ...typesBefore,
       distance: "DOUBLE",
     });
-    const squaredSum = data.reduce(
-      (sum, row) => sum + Number(row.distance) ** 2,
-      0,
-    );
+    const squaredSum = data.reduce((sum, row) => sum + Number(row.distance) ** 2, 0);
     assertAlmostEquals(squaredSum, fixture.squaredDistanceSum, 1e-10);
     assertAlmostEquals(squaredSum, (data.length - 1) * 3, 1e-10);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis accepts every numeric scalar type and computes one-dimensional absolute sample z-scores", async () => {
+test("similarityMahalanobis accepts every numeric scalar type and computes one-dimensional absolute sample z-scores", async () => {
   const scalarTypes = [
     "TINYINT",
     "SMALLINT",
@@ -115,16 +123,16 @@ Deno.test("similarityMahalanobis accepts every numeric scalar type and computes 
         [1, 0, 1],
         1e-12,
       );
-      assertEquals((await table.getTypes()).feature, typeBefore);
-      assertEquals((await table.getTypes()).distance, "DOUBLE");
-      assertEquals(await scratchRelations(sdb), []);
+      expect((await table.getTypes()).feature).toStrictEqual(typeBefore);
+      expect((await table.getTypes()).distance).toStrictEqual("DOUBLE");
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis accepts mixed scalar types and numeric ARRAY and LIST vectors", async () => {
+test("similarityMahalanobis accepts mixed scalar types and numeric ARRAY and LIST vectors", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("source");
@@ -139,8 +147,7 @@ Deno.test("similarityMahalanobis accepts mixed scalar types and numeric ARRAY an
       },
       {
         columns: "features" as string | string[],
-        select:
-          "[x::DECIMAL(18,3), (y / 10.0)::DECIMAL(18,3)]::DECIMAL(18,3)[] AS features",
+        select: "[x::DECIMAL(18,3), (y / 10.0)::DECIMAL(18,3)]::DECIMAL(18,3)[] AS features",
       },
     ];
     let reference: number[] | undefined;
@@ -155,30 +162,30 @@ Deno.test("similarityMahalanobis accepts mixed scalar types and numeric ARRAY an
         ) rows(id, x, y, label)`);
       const before = await table.getData();
       const typesBefore = await table.getTypes();
-      await table.similarityMahalanobis(
-        columns,
-        typeof columns === "string"
-          ? [0, 0]
-          : (columns.length ? columns.map(() => 0) : [0]),
-        "distance",
-      ).run();
+      await table
+        .similarityMahalanobis(
+          columns,
+          typeof columns === "string" ? [0, 0] : columns.length ? columns.map(() => 0) : [0],
+          "distance",
+        )
+        .run();
       const data = await table.getData();
       const actual = data.map((row) => Number(row.distance));
       if (reference === undefined) reference = actual;
       else assertClose(actual, reference, 1e-11);
-      assertEquals(data.map(({ distance: _distance, ...row }) => row), before);
-      assertEquals(await table.getTypes(), {
+      expect(data.map(({ distance: _distance, ...row }) => row)).toStrictEqual(before);
+      expect(await table.getTypes()).toStrictEqual({
         ...typesBefore,
         distance: "DOUBLE",
       });
-      assertEquals(await scratchRelations(sdb), []);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis is invariant to translation and independent feature units", async () => {
+test("similarityMahalanobis is invariant to translation and independent feature units", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT *,
@@ -192,28 +199,28 @@ Deno.test("similarityMahalanobis is invariant to translation and independent fea
     const table = sdb.newTable("source");
     await table
       .similarityMahalanobis(["x", "y"], [1, 2], "base")
-      .similarityMahalanobis(
-        ["translated_x", "translated_y"],
-        [1e12 + 1, -1e12 + 2],
-        "translated",
-      )
-      .similarityMahalanobis(
-        ["scaled_x", "scaled_y"],
-        [1e-120, -2e120],
-        "scaled",
-      )
+      .similarityMahalanobis(["translated_x", "translated_y"], [1e12 + 1, -1e12 + 2], "translated")
+      .similarityMahalanobis(["scaled_x", "scaled_y"], [1e-120, -2e120], "scaled")
       .run();
     const data = await table.getData();
     const base = data.map((row) => Number(row.base));
-    assertClose(data.map((row) => Number(row.translated)), base, 1e-10);
-    assertClose(data.map((row) => Number(row.scaled)), base, 1e-10);
-    assertEquals(await scratchRelations(sdb), []);
+    assertClose(
+      data.map((row) => Number(row.translated)),
+      base,
+      1e-10,
+    );
+    assertClose(
+      data.map((row) => Number(row.scaled)),
+      base,
+      1e-10,
+    );
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis rejects invalid scalar and vector rows with actionable diagnostics", async () => {
+test("similarityMahalanobis rejects invalid scalar and vector rows with actionable diagnostics", async () => {
   const invalidCases = [
     {
       sql: `CREATE TABLE source AS SELECT * FROM (VALUES
@@ -262,60 +269,58 @@ Deno.test("similarityMahalanobis rejects invalid scalar and vector rows with act
       const table = sdb.newTable("source");
       const before = await table.getData();
       const error = await assertRejects(() =>
-        table.similarityMahalanobis(
-          columns,
-          typeof columns === "string"
-            ? [0, 0]
-            : (columns.length ? columns.map(() => 0) : [0]),
-          "distance",
-        ).run()
+        table
+          .similarityMahalanobis(
+            columns,
+            typeof columns === "string" ? [0, 0] : columns.length ? columns.map(() => 0) : [0],
+            "distance",
+          )
+          .run(),
       );
       assert(error instanceof Error);
       for (const message of messages) assert(error.message.includes(message));
-      assertEquals(await table.getData(), before);
-      assertEquals(await scratchRelations(sdb), []);
+      expect(await table.getData()).toStrictEqual(before);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     } finally {
       await sdb.close();
     }
   }
 });
 
-Deno.test("similarityMahalanobis rejects missing, duplicate, and nonnumeric feature specifications", async () => {
+test("similarityMahalanobis rejects missing, duplicate, and nonnumeric feature specifications", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
       (1.0, 'a'), (2.0, 'b'), (3.0, 'c')
     ) rows(x, label)`);
     const table = sdb.newTable("source");
-    for (
-      const [columns, message] of [
-        [[], "at least one numeric scalar column"],
-        [["x", "X"], "duplicate input column"],
-        [["missing"], "could not find column"],
-        [["label"], "not numeric scalars"],
-        ["x", "numeric LIST or ARRAY column"],
-      ] as [string | string[], string][]
-    ) {
+    for (const [columns, message] of [
+      [[], "at least one numeric scalar column"],
+      [["x", "X"], "duplicate input column"],
+      [["missing"], "could not find column"],
+      [["label"], "not numeric scalars"],
+      ["x", "numeric LIST or ARRAY column"],
+    ] as [string | string[], string][]) {
       await assertRejects(
         () =>
-          table.similarityMahalanobis(
-            columns,
-            typeof columns === "string"
-              ? [0, 0]
-              : (columns.length ? columns.map(() => 0) : [0]),
-            "distance",
-          ).run(),
+          table
+            .similarityMahalanobis(
+              columns,
+              typeof columns === "string" ? [0, 0] : columns.length ? columns.map(() => 0) : [0],
+              "distance",
+            )
+            .run(),
         Error,
         message,
       );
-      assertEquals(await scratchRelations(sdb), []);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis rejects insufficient, singular, and unrepresentable covariance", async () => {
+test("similarityMahalanobis rejects insufficient, singular, and unrepresentable covariance", async () => {
   const cases = [
     {
       sql: `CREATE TABLE source AS SELECT * FROM (VALUES
@@ -359,25 +364,25 @@ Deno.test("similarityMahalanobis rejects insufficient, singular, and unrepresent
       const typesBefore = await table.getTypes();
       await assertRejects(
         () =>
-          table.similarityMahalanobis(
-            columns,
-            typeof columns === "string"
-              ? [0, 0]
-              : (columns.length ? columns.map(() => 0) : [0]),
-            "distance",
-          ).run(),
+          table
+            .similarityMahalanobis(
+              columns,
+              typeof columns === "string" ? [0, 0] : columns.length ? columns.map(() => 0) : [0],
+              "distance",
+            )
+            .run(),
         Error,
         message,
       );
-      assertEquals(await table.getTypes(), typesBefore);
-      assertEquals(await scratchRelations(sdb), []);
+      expect(await table.getTypes()).toStrictEqual(typesBefore);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     } finally {
       await sdb.close();
     }
   }
 });
 
-Deno.test("similarityMahalanobis rejects output collisions before invalid input preparation using ASCII folding", async () => {
+test("similarityMahalanobis rejects output collisions before invalid input preparation using ASCII folding", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT
@@ -389,8 +394,8 @@ Deno.test("similarityMahalanobis rejects output collisions before invalid input 
       Error,
       "column already exists",
     );
-    assertEquals(await table.getData(), before);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(before);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
 
     await sdb.customQuery(
       `CREATE OR REPLACE TABLE source AS SELECT * FROM (VALUES
@@ -398,13 +403,13 @@ Deno.test("similarityMahalanobis rejects output collisions before invalid input 
     ) rows(x,y,"É")`,
     );
     await table.similarityMahalanobis(["x", "y"], [0, 0], "é").run();
-    assertEquals(Object.keys(await table.getTypes()), ["x", "y", "É", "é"]);
+    expect(Object.keys(await table.getTypes())).toStrictEqual(["x", "y", "É", "é"]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis composes with queued operations and snapshots columns, reference, and options", async () => {
+test("similarityMahalanobis composes with queued operations and snapshots columns, reference, and options", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -415,7 +420,8 @@ Deno.test("similarityMahalanobis composes with queued operations and snapshots c
     const columns = ["x", "y"];
     const reference = [0, 0];
     const options = { similarityColumn: "similarity" };
-    table.filter("keep")
+    table
+      .filter("keep")
       .similarityMahalanobis(columns, reference, "distance", options)
       .selectColumns(["id", "distance", "similarity"]);
     columns[0] = "missing";
@@ -425,26 +431,20 @@ Deno.test("similarityMahalanobis composes with queued operations and snapshots c
     options.similarityColumn = "changed";
 
     const data = await table.getData();
-    assertEquals(data.map((row) => row.id), [1, 2, 3, 4]);
+    expect(data.map((row) => row.id)).toStrictEqual([1, 2, 3, 4]);
     assert(data.every((row) => Number.isFinite(row.distance)));
-    assertEquals(data[0].distance, 0);
-    assertEquals(data[0].similarity, 1);
-    assertEquals(Math.min(...data.map((row) => Number(row.similarity))), 0);
-    assertEquals(Object.keys(await table.getTypes()), [
-      "id",
-      "distance",
-      "similarity",
-    ]);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(data[0].distance).toStrictEqual(0);
+    expect(data[0].similarity).toStrictEqual(1);
+    expect(Math.min(...data.map((row) => Number(row.similarity)))).toStrictEqual(0);
+    expect(Object.keys(await table.getTypes())).toStrictEqual(["id", "distance", "similarity"]);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis preserves a file-backed table, its row order, types, and indexes", async () => {
-  const directory = await Deno.makeTempDir({
-    prefix: "sda-similarityMahalanobis-",
-  });
+test("similarityMahalanobis preserves a file-backed table, its row order, types, and indexes", async () => {
+  const directory = await nodeMkdtemp(nodeJoin(nodeTmpdir(), "sda-similarityMahalanobis-"));
   const sdb = new SimpleDB({ file: `${directory}/analysis.duckdb` });
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -457,36 +457,36 @@ Deno.test("similarityMahalanobis preserves a file-backed table, its row order, t
     const table = sdb.newTable("source");
     const before = await table.getData();
     const typesBefore = await table.getTypes();
-    await table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
-      similarityColumn: "similarity",
-    }).run();
+    await table
+      .similarityMahalanobis(["x", "y"], [0, 0], "distance", {
+        similarityColumn: "similarity",
+      })
+      .run();
     const after = await table.getData();
-    assertEquals(
-      after.map(({ distance: _distance, similarity: _similarity, ...row }) =>
-        row
-      ),
-      before,
-    );
-    assertEquals(after.map((row) => row.id), [30, 10, 20, 40]);
-    assertEquals(await table.getTypes(), {
+    expect(
+      after.map(({ distance: _distance, similarity: _similarity, ...row }) => row),
+    ).toStrictEqual(before);
+    expect(after.map((row) => row.id)).toStrictEqual([30, 10, 20, 40]);
+    expect(await table.getTypes()).toStrictEqual({
       ...typesBefore,
       distance: "DOUBLE",
       similarity: "DOUBLE",
     });
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
-      )).getRowsJS(),
-      [["source_id"]],
-    );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
+        )
+      ).getRowsJS(),
+    ).toStrictEqual([["source_id"]]);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
-    await Deno.remove(directory, { recursive: true });
+    await nodeRm(directory, { recursive: true });
   }
 });
 
-Deno.test("similarityMahalanobis reports index recreation failures and cleans scratch", async () => {
+test("similarityMahalanobis reports index recreation failures and cleans scratch", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -495,7 +495,7 @@ Deno.test("similarityMahalanobis reports index recreation failures and cleans sc
     CREATE UNIQUE INDEX source_id ON source(id)`);
     const table = sdb.newTable("source");
     const connection = sdb.connection!;
-    const original = connection.run;
+    const original = connection.run.bind(connection);
     const failure = new Error("Simulated index recreation failure");
     connection.run = function (...args) {
       if (args[0].startsWith("CREATE UNIQUE INDEX")) {
@@ -506,22 +506,24 @@ Deno.test("similarityMahalanobis reports index recreation failures and cleans sc
     try {
       await assertRejects(
         () =>
-          table.similarityMahalanobis(["x", "y"], [0, 0], "distance", {
-            similarityColumn: "similarity",
-          }).run(),
+          table
+            .similarityMahalanobis(["x", "y"], [0, 0], "distance", {
+              similarityColumn: "similarity",
+            })
+            .run(),
         Error,
         failure.message,
       );
     } finally {
       connection.run = original;
     }
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis preserves quoted vectors, exact typed payloads, and HNSW indexes", async () => {
+test("similarityMahalanobis preserves quoted vectors, exact typed payloads, and HNSW indexes", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT id,
@@ -539,45 +541,39 @@ Deno.test("similarityMahalanobis preserves quoted vectors, exact typed payloads,
     const sourceQuery = `SELECT id, "Feature "" values", row_id::VARCHAR,
       distance::VARCHAR, weight::VARCHAR, origin::VARCHAR, observation
       FROM source`;
-    const before = (await sdb.connection!.runAndReadAll(sourceQuery))
-      .getRowsJS();
-    await table.similarityMahalanobis(
-      'FEATURE " VALUES',
-      [3, 3],
-      'Computed " distance',
-    )
-      .run();
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(sourceQuery)).getRowsJS(),
-      before,
-    );
-    assertEquals(await table.getTypes(), {
+    const before = (await sdb.connection!.runAndReadAll(sourceQuery)).getRowsJS();
+    await table.similarityMahalanobis('FEATURE " VALUES', [3, 3], 'Computed " distance').run();
+    expect((await sdb.connection!.runAndReadAll(sourceQuery)).getRowsJS()).toStrictEqual(before);
+    expect(await table.getTypes()).toStrictEqual({
       ...typesBefore,
       'Computed " distance': "DOUBLE",
     });
-    const distances = (await sdb.connection!.runAndReadAll(
-      'SELECT "Computed "" distance" FROM source',
-    )).getRowsJS().map((row) => Number(row[0]));
+    const distances = (
+      await sdb.connection!.runAndReadAll('SELECT "Computed "" distance" FROM source')
+    )
+      .getRowsJS()
+      .map((row) => Number(row[0]));
     assert(distances.every(Number.isFinite));
     assertAlmostEquals(
       distances.reduce((sum, distance) => sum + distance ** 2, 0),
       6,
       1e-11,
     );
-    assertEquals(table.indexes, indexesBefore);
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
-      )).getRowsJS(),
-      [["vss_cosine_index_source"]],
-    );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(table.indexes).toStrictEqual(indexesBefore);
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
+        )
+      ).getRowsJS(),
+    ).toStrictEqual([["vss_cosine_index_source"]]);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis numerical failure aborts later queued operations and permits retry", async () => {
+test("similarityMahalanobis numerical failure aborts later queued operations and permits retry", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS
@@ -588,26 +584,28 @@ Deno.test("similarityMahalanobis numerical failure aborts later queued operation
     const typesBefore = await table.getTypes();
     await assertRejects(
       () =>
-        table.similarityMahalanobis("features", [0, 0], "distance")
-          .selectColumns(["distance"]).run(),
+        table
+          .similarityMahalanobis("features", [0, 0], "distance")
+          .selectColumns(["distance"])
+          .run(),
       Error,
       "linearly dependent",
     );
-    assertEquals(await table.getData(), before);
-    assertEquals(await table.getTypes(), typesBefore);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(before);
+    expect(await table.getTypes()).toStrictEqual(typesBefore);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
     await table.similarityMahalanobis(["id"], [1.5], "distance").run();
     assertClose(
       (await table.getData()).map((row) => Number(row.distance)),
       [1.5, 0.5, 0.5, 1.5].map((value) => value / Math.sqrt(5 / 3)),
     );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("multivariate chaining preserves physical column order for integer-like identifiers", async () => {
+test("multivariate chaining preserves physical column order for integer-like identifiers", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT * FROM (VALUES
@@ -615,53 +613,53 @@ Deno.test("multivariate chaining preserves physical column order for integer-lik
     ) rows("2","1",payload)`);
     const table = sdb.newTable("source");
     const before = await table.getData();
-    assertEquals(await table.getColumns(), ["2", "1", "payload"]);
-    await table.rowToVector(["2", "1"], "0")
+    expect(await table.getColumns()).toStrictEqual(["2", "1", "payload"]);
+    await table
+      .rowToVector(["2", "1"], "0")
       .normalizeVector("0", "0")
-      .similarityMahalanobis("0", [0.5, 0.5], "3").run();
-    assertEquals(await table.getColumns(), ["2", "1", "payload", "0", "3"]);
+      .similarityMahalanobis("0", [0.5, 0.5], "3")
+      .run();
+    expect(await table.getColumns()).toStrictEqual(["2", "1", "payload", "0", "3"]);
     const data = await table.getData();
-    assertEquals(
-      data.map(({ "0": _vector, "3": _distance, ...row }) => row),
-      before,
-    );
+    expect(data.map(({ "0": _vector, "3": _distance, ...row }) => row)).toStrictEqual(before);
     assertAlmostEquals(
       data.reduce((sum, row) => sum + Number(row["3"]) ** 2, 0),
       6,
       1e-11,
     );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis uses the supplied scalar or vector reference and dataset-relative similarity", async () => {
+test("similarityMahalanobis uses the supplied scalar or vector reference and dataset-relative similarity", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(`CREATE TABLE source AS SELECT i AS id,
       i::DOUBLE AS x, [i::DOUBLE]::DOUBLE[1] AS vector FROM range(3) rows(i)`);
     const table = sdb.newTable("source");
-    await table.similarityMahalanobis(["x"], [0], "distance", {
-      similarityColumn: "score",
-    })
+    await table
+      .similarityMahalanobis(["x"], [0], "distance", {
+        similarityColumn: "score",
+      })
       .similarityMahalanobis("vector", [4], "outside", {
         similarityColumn: "outside_score",
       })
       .run();
     const data = await table.getData();
-    assertEquals(data.map((row) => row.distance), [0, 1, 2]);
-    assertEquals(data.map((row) => row.score), [1, 0.5, 0]);
-    assertEquals(data.map((row) => row.outside), [4, 3, 2]);
-    assertEquals(data.map((row) => row.outside_score), [0, 0.25, 0.5]);
-    assertEquals((await table.getTypes()).score, "DOUBLE");
-    assertEquals((await table.getTypes()).outside_score, "DOUBLE");
+    expect(data.map((row) => row.distance)).toStrictEqual([0, 1, 2]);
+    expect(data.map((row) => row.score)).toStrictEqual([1, 0.5, 0]);
+    expect(data.map((row) => row.outside)).toStrictEqual([4, 3, 2]);
+    expect(data.map((row) => row.outside_score)).toStrictEqual([0, 0.25, 0.5]);
+    expect((await table.getTypes()).score).toStrictEqual("DOUBLE");
+    expect((await table.getTypes()).outside_score).toStrictEqual("DOUBLE");
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis follows reference dimension order with correlated sample covariance", async () => {
+test("similarityMahalanobis follows reference dimension order with correlated sample covariance", async () => {
   const sdb = new SimpleDB();
   try {
     // Sample covariance = [[4/3, 4/3], [4/3, 8/3]].
@@ -670,16 +668,17 @@ Deno.test("similarityMahalanobis follows reference dimension order with correlat
       FROM (VALUES (0,0), (2,0), (2,2), (0,-2)) rows(x,y)`,
     );
     const table = sdb.newTable("source");
-    await table.similarityMahalanobis(["x", "y"], [3, -1], "distance")
-      .similarityMahalanobis("reversed", [-1, 3], "reversed_distance").run();
+    await table
+      .similarityMahalanobis(["x", "y"], [3, -1], "distance")
+      .similarityMahalanobis("reversed", [-1, 3], "reversed_distance")
+      .run();
     for (const row of await table.getData()) {
       // Evaluate using the direct 2x2 inverse to keep the oracle independent.
       const dx = Number(row.x) - 3;
       const dy = Number(row.y) + 1;
       const determinant = (4 / 3) * (8 / 3) - (4 / 3) ** 2;
       const expected = Math.sqrt(
-        ((8 / 3) * dx * dx - (8 / 3) * dx * dy + (4 / 3) * dy * dy) /
-          determinant,
+        ((8 / 3) * dx * dx - (8 / 3) * dx * dy + (4 / 3) * dy * dy) / determinant,
       );
       assertAlmostEquals(Number(row.distance), expected, 1e-12);
       assertAlmostEquals(Number(row.reversed_distance), expected, 1e-12);
@@ -689,29 +688,29 @@ Deno.test("similarityMahalanobis follows reference dimension order with correlat
   }
 });
 
-Deno.test("similarityMahalanobis retains finite extreme distances and tiny reference offsets", async () => {
+test("similarityMahalanobis retains finite extreme distances and tiny reference offsets", async () => {
   const sdb = new SimpleDB();
   try {
-    await sdb.customQuery(
-      "CREATE TABLE source AS SELECT i::DOUBLE AS x FROM range(3) rows(i)",
-    );
+    await sdb.customQuery("CREATE TABLE source AS SELECT i::DOUBLE AS x FROM range(3) rows(i)");
     const table = sdb.newTable("source");
-    await table.similarityMahalanobis(["x"], [1e308], "huge", {
-      similarityColumn: "score",
-    })
-      .similarityMahalanobis(["x"], [1e-200], "tiny").run();
+    await table
+      .similarityMahalanobis(["x"], [1e308], "huge", {
+        similarityColumn: "score",
+      })
+      .similarityMahalanobis(["x"], [1e-200], "tiny")
+      .run();
     const data = await table.getData();
-    assertEquals(data.map((row) => row.huge), [1e308, 1e308, 1e308]);
-    assertEquals(data.map((row) => row.score), [0, 0, 0]);
-    assertEquals(data[0].tiny, 1e-200);
-    assertEquals(data[1].tiny, 1);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(data.map((row) => row.huge)).toStrictEqual([1e308, 1e308, 1e308]);
+    expect(data.map((row) => row.score)).toStrictEqual([0, 0, 0]);
+    expect(data[0].tiny).toStrictEqual(1e-200);
+    expect(data[1].tiny).toStrictEqual(1);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis validates reference values and dimensions without changing the source", async () => {
+test("similarityMahalanobis validates reference values and dimensions without changing the source", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(
@@ -719,21 +718,20 @@ Deno.test("similarityMahalanobis validates reference values and dimensions witho
     );
     const table = sdb.newTable("source");
     const before = await table.getData();
-    for (
-      const reference of [
-        [],
-        [NaN],
-        [Infinity],
-        [-Infinity],
-        ["1"],
-        [null],
-        new Array(1),
-        undefined,
-      ]
-    ) {
+    const sparseReference: unknown[] = [];
+    sparseReference.length = 1;
+    for (const reference of [
+      [],
+      [NaN],
+      [Infinity],
+      [-Infinity],
+      ["1"],
+      [null],
+      sparseReference,
+      undefined,
+    ]) {
       assertThrows(
-        () =>
-          table.similarityMahalanobis(["x"], reference as number[], "distance"),
+        () => table.similarityMahalanobis(["x"], reference as number[], "distance"),
         Error,
         "nonempty array of finite numbers",
       );
@@ -741,26 +739,26 @@ Deno.test("similarityMahalanobis validates reference values and dimensions witho
     for (const columns of [["x"], "vector"] as (string | string[])[]) {
       await assertRejects(
         () =>
-          table.similarityMahalanobis(columns, [1, 2, 3], "distance", {
-            similarityColumn: "score",
-          }).run(),
+          table
+            .similarityMahalanobis(columns, [1, 2, 3], "distance", {
+              similarityColumn: "score",
+            })
+            .run(),
         Error,
         "received 3",
       );
     }
-    assertEquals(await table.getData(), before);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(before);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis validates both output names before preparing invalid features", async () => {
+test("similarityMahalanobis validates both output names before preparing invalid features", async () => {
   const sdb = new SimpleDB();
   try {
-    await sdb.customQuery(
-      "CREATE TABLE source AS SELECT NULL::DOUBLE[1] AS features, 42 AS Score",
-    );
+    await sdb.customQuery("CREATE TABLE source AS SELECT NULL::DOUBLE[1] AS features, 42 AS Score");
     const table = sdb.newTable("source");
     const before = await table.getData();
     const cases = [
@@ -777,21 +775,23 @@ Deno.test("similarityMahalanobis validates both output names before preparing in
     for (const { distance, score, message } of cases) {
       await assertRejects(
         () =>
-          table.similarityMahalanobis("features", [0], distance, {
-            similarityColumn: score,
-          }).run(),
+          table
+            .similarityMahalanobis("features", [0], distance, {
+              similarityColumn: score,
+            })
+            .run(),
         Error,
         message,
       );
-      assertEquals(await table.getData(), before);
-      assertEquals(await scratchRelations(sdb), []);
+      expect(await table.getData()).toStrictEqual(before);
+      expect(await scratchRelations(sdb)).toStrictEqual([]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis leaves both outputs unpublished when a reference produces unrepresentable distances", async () => {
+test("similarityMahalanobis leaves both outputs unpublished when a reference produces unrepresentable distances", async () => {
   const sdb = new SimpleDB();
   try {
     await sdb.customQuery(
@@ -803,27 +803,30 @@ Deno.test("similarityMahalanobis leaves both outputs unpublished when a referenc
     const types = await table.getTypes();
     await assertRejects(
       () =>
-        table.similarityMahalanobis(["x"], [1e308], "distance", {
-          similarityColumn: "score",
-        }).run(),
+        table
+          .similarityMahalanobis(["x"], [1e308], "distance", {
+            similarityColumn: "score",
+          })
+          .run(),
       Error,
       "non-finite",
     );
-    assertEquals(await table.getData(), before);
-    assertEquals(await table.getTypes(), types);
-    assertEquals(
-      (await sdb.connection!.runAndReadAll(
-        "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
-      )).getRowsJS(),
-      [["source_id"]],
-    );
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(before);
+    expect(await table.getTypes()).toStrictEqual(types);
+    expect(
+      (
+        await sdb.connection!.runAndReadAll(
+          "SELECT index_name FROM duckdb_indexes() WHERE table_name = 'source'",
+        )
+      ).getRowsJS(),
+    ).toStrictEqual([["source_id"]]);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis snapshots object references in selected column order and supports boolean scores", async () => {
+test("similarityMahalanobis snapshots object references in selected column order and supports boolean scores", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("profiles").loadArray([
@@ -840,17 +843,21 @@ Deno.test("similarityMahalanobis snapshots object references in selected column 
     reference.y = 100;
     columns.reverse();
     options.similarityColumn = false;
-    await table.similarityMahalanobis(["x", "y"], [1, 2], "arrayDistance", {
-      similarityColumn: "customScore",
-    }).run();
+    await table
+      .similarityMahalanobis(["x", "y"], [1, 2], "arrayDistance", {
+        similarityColumn: "customScore",
+      })
+      .run();
     for (const row of await table.getData()) {
-      assertEquals(row.objectDistance, row.arrayDistance);
-      assertEquals(row.similarity, row.customScore);
+      expect(row.objectDistance).toStrictEqual(row.arrayDistance);
+      expect(row.similarity).toStrictEqual(row.customScore);
     }
-    await table.similarityMahalanobis(["x", "y"], { x: 1, y: 2 }, "noScore", {
-      similarityColumn: false,
-    }).run();
-    assertEquals(await table.getColumns(), [
+    await table
+      .similarityMahalanobis(["x", "y"], { x: 1, y: 2 }, "noScore", {
+        similarityColumn: false,
+      })
+      .run();
+    expect(await table.getColumns()).toStrictEqual([
       "x",
       "y",
       "objectDistance",
@@ -864,12 +871,16 @@ Deno.test("similarityMahalanobis snapshots object references in selected column 
   }
 });
 
-Deno.test("similarityMahalanobis rejects missing and invalid object features without queuing changes", async () => {
+test("similarityMahalanobis rejects missing and invalid object features without queuing changes", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable("profiles").loadArray([{ x: 0 }, { x: 1 }, {
-      x: 2,
-    }]);
+    const table = sdb.newTable("profiles").loadArray([
+      { x: 0 },
+      { x: 1 },
+      {
+        x: 2,
+      },
+    ]);
     const before = await table.getData();
     for (const reference of [{}, Object.create({ x: 1 }) as { x: number }]) {
       assertThrows(
@@ -878,9 +889,7 @@ Deno.test("similarityMahalanobis rejects missing and invalid object features wit
         'missing its own value for feature "x"',
       );
     }
-    for (
-      const x of [null, undefined, "1", true, NaN, Infinity, -Infinity, 1n, [1]]
-    ) {
+    for (const x of [null, undefined, "1", true, NaN, Infinity, -Infinity, 1n, [1]]) {
       assertThrows(
         () => table.similarityMahalanobis(["x"], { x }, "distance"),
         Error,
@@ -892,42 +901,45 @@ Deno.test("similarityMahalanobis rejects missing and invalid object features wit
       Error,
       "object referencePoint requires an array of scalar feature column names",
     );
-    assertEquals(await table.getData(), before);
-    assertEquals(await scratchRelations(sdb), []);
+    expect(await table.getData()).toStrictEqual(before);
+    expect(await scratchRelations(sdb)).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("similarityMahalanobis checks default score name collisions", async () => {
+test("similarityMahalanobis checks default score name collisions", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable("profiles").loadArray([{ x: 0 }, { x: 1 }, {
-      x: 2,
-    }]);
+    const table = sdb.newTable("profiles").loadArray([
+      { x: 0 },
+      { x: 1 },
+      {
+        x: 2,
+      },
+    ]);
     await assertRejects(
       () =>
-        table.similarityMahalanobis(["x"], { x: 1 }, "SIMILARITY", {
-          similarityColumn: true,
-        }).run(),
+        table
+          .similarityMahalanobis(["x"], { x: 1 }, "SIMILARITY", {
+            similarityColumn: true,
+          })
+          .run(),
       Error,
       "different names",
     );
     await table.renameColumns({ x: "Similarity" }).run();
     await assertRejects(
       () =>
-        table.similarityMahalanobis(
-          ["Similarity"],
-          { Similarity: 1 },
-          "distance",
-          {
+        table
+          .similarityMahalanobis(["Similarity"], { Similarity: 1 }, "distance", {
             similarityColumn: true,
-          },
-        ).run(),
+          })
+          .run(),
       Error,
       "column already exists",
     );
-    assertEquals(await table.getColumns(), ["Similarity"]);
+    expect(await table.getColumns()).toStrictEqual(["Similarity"]);
   } finally {
     await sdb.close();
   }

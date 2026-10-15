@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import dataToArrays from "../../../src/helpers/dataToArrays.ts";
 
-Deno.test("dataToArrays - should return an object made of arrays", () => {
+test("dataToArrays - should return an object made of arrays", () => {
   const rawData = [
     { keyA: "a", keyB: 1 },
     { keyA: "b", keyB: 2 },
@@ -9,7 +10,7 @@ Deno.test("dataToArrays - should return an object made of arrays", () => {
   ];
   const data = dataToArrays(rawData);
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     keyA: ["a", "b", "c"],
     keyB: [1, 2, 3],
   });

@@ -6,10 +6,7 @@ import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import toDuckDBValue from "../helpers/toDuckDBValue.ts";
 
-export default function insertRows(
-  simpleTable: SimpleTable,
-  rows: { [key: string]: unknown }[],
-) {
+export default function insertRows(simpleTable: SimpleTable, rows: { [key: string]: unknown }[]) {
   const prepared = prepareArray(rows);
   const statement = insertRowsStatement(simpleTable.name, rows);
   // Whether the rows are inserted or loaded depends on the table existing,
@@ -43,13 +40,9 @@ function insertRowsStatement(
   rows: { [key: string]: unknown }[],
 ): { query: string; values: import("@duckdb/node-api").DuckDBValue[] } {
   const columns = Object.keys(rows[0]);
-  const values = rows.flatMap((row) =>
-    columns.map((column) => toDuckDBValue(row[column]))
-  );
+  const values = rows.flatMap((row) => columns.map((column) => toDuckDBValue(row[column])));
 
-  let query = `INSERT INTO ${quoteIdentifier(table)} (${
-    columns.map(quoteIdentifier).join(", ")
-  })
+  let query = `INSERT INTO ${quoteIdentifier(table)} (${columns.map(quoteIdentifier).join(", ")})
         VALUES`;
 
   for (const _row of rows) {

@@ -47,18 +47,17 @@ export default async function validateGraphTemporalEvents(
 
   const startColumn = temporal.startTimeColumn ?? temporal.endTimeColumn!;
   const endColumn = temporal.endTimeColumn ?? temporal.startTimeColumn!;
-  const message = reason === 1
-    ? `selected start-time column ${q(startColumn)} contains a null timestamp.`
-    : reason === 2
-    ? `selected end-time column ${q(endColumn)} contains a null timestamp.`
-    : reason === 3
-    ? `selected start-time column ${
-      q(startColumn)
-    } contains an infinite timestamp.`
-    : reason === 4
-    ? `selected end-time column ${q(endColumn)} contains an infinite timestamp.`
-    : `selected end-time column ${
-      q(endColumn)
-    } contains a timestamp before its start in ${q(startColumn)}.`;
+  const message =
+    reason === 1
+      ? `selected start-time column ${q(startColumn)} contains a null timestamp.`
+      : reason === 2
+        ? `selected end-time column ${q(endColumn)} contains a null timestamp.`
+        : reason === 3
+          ? `selected start-time column ${q(startColumn)} contains an infinite timestamp.`
+          : reason === 4
+            ? `selected end-time column ${q(endColumn)} contains an infinite timestamp.`
+            : `selected end-time column ${q(
+                endColumn,
+              )} contains a timestamp before its start in ${q(startColumn)}.`;
   throw new TypeError(`${method} ${message}`);
 }

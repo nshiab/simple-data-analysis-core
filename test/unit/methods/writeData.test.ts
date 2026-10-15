@@ -1,5 +1,7 @@
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { assertEquals, assertRejects } from "@std/assert";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
 const output = "./test/output/";
@@ -14,7 +16,7 @@ const expectedData = [
   { key1: "brioche", key2: "croissant" },
 ];
 
-Deno.test("should write a csv file", async () => {
+test("should write a csv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -23,13 +25,13 @@ Deno.test("should write a csv file", async () => {
   // We test the content of the file
   const tableCheck = sdb.newTable();
   tableCheck.loadData([`${output}test.csv`]);
-  const data = await table.getData();
+  const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write a csv file and create the path if it doesn't exist", async () => {
+test("should write a csv file and create the path if it doesn't exist", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -38,13 +40,13 @@ Deno.test("should write a csv file and create the path if it doesn't exist", asy
   // We test the content of the file
   const tableCheck = sdb.newTable();
   tableCheck.loadData([`${output}subfolderData/test.csv`]);
-  const data = await table.getData();
+  const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write a compressed csv file", async () => {
+test("should write a compressed csv file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -57,11 +59,11 @@ Deno.test("should write a compressed csv file", async () => {
   tableCheck.loadData([`${output}test.csv.gz`]);
   const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write a json file", async () => {
+test("should write a json file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -72,45 +74,49 @@ Deno.test("should write a json file", async () => {
   tableCheck.loadData([`${output}test.json`]);
   const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
-Deno.test("should write a json file with dates", async () => {
+test("should write a json file with dates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.loadArray([{ key1: new Date("2025-01-01T01:23:10.987Z") }, {
-    key1: new Date("2025-04-08T14:09:24.155Z"),
-  }]);
+  table.loadArray([
+    { key1: new Date("2025-01-01T01:23:10.987Z") },
+    {
+      key1: new Date("2025-04-08T14:09:24.155Z"),
+    },
+  ]);
 
   await table.writeData(`${output}date-test.json`, { formatDates: true });
 
   // We test the content of the file
-  const tableCheck = JSON.parse(
-    readFileSync(`${output}date-test.json`, "utf-8"),
-  );
+  const tableCheck: unknown = JSON.parse(readFileSync(`${output}date-test.json`, "utf-8"));
 
-  assertEquals(tableCheck, [
-    { "key1": "2025-01-01T01:23:10.987Z" },
-    { "key1": "2025-04-08T14:09:24.155Z" },
+  expect(tableCheck).toStrictEqual([
+    { key1: "2025-01-01T01:23:10.987Z" },
+    { key1: "2025-04-08T14:09:24.155Z" },
   ]);
   await sdb.close();
 });
-Deno.test("should write a json file with dates and keep the original table unchanged", async () => {
+test("should write a json file with dates and keep the original table unchanged", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  const originalData = [{ key1: new Date("2025-01-01T01:23:10.987Z") }, {
-    key1: new Date("2025-04-08T14:09:24.155Z"),
-  }];
+  const originalData = [
+    { key1: new Date("2025-01-01T01:23:10.987Z") },
+    {
+      key1: new Date("2025-04-08T14:09:24.155Z"),
+    },
+  ];
   table.loadArray(originalData);
 
   await table.writeData(`${output}date-test.json`);
 
   const tableData = await table.getData();
 
-  assertEquals(tableData, originalData);
+  expect(tableData).toStrictEqual(originalData);
   await sdb.close();
 });
-Deno.test("should write a compressed json file", async () => {
+test("should write a compressed json file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -123,11 +129,11 @@ Deno.test("should write a compressed json file", async () => {
   tableCheck.loadData([`${output}test.json.gz`]);
   const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write a parquet file", async () => {
+test("should write a parquet file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -138,11 +144,11 @@ Deno.test("should write a parquet file", async () => {
   tableCheck.loadData([`${output}test.parquet`]);
   const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write a compressed parquet file", async () => {
+test("should write a compressed parquet file", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -155,11 +161,11 @@ Deno.test("should write a compressed parquet file", async () => {
   tableCheck.loadData([`${output}testCompressed.parquet`]);
   const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write a file at the root", async () => {
+test("should write a file at the root", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -170,11 +176,11 @@ Deno.test("should write a file at the root", async () => {
   tableCheck.loadData("testRoot.csv");
   const data = await tableCheck.getData();
 
-  assertEquals(data, expectedData);
+  expect(data).toStrictEqual(expectedData);
   await sdb.close();
 });
 
-Deno.test("should write data as arrays", async () => {
+test("should write data as arrays", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/data.csv");
@@ -183,39 +189,36 @@ Deno.test("should write data as arrays", async () => {
   });
 
   // We test the content of the file
-  const data = JSON.parse(
-    readFileSync(`${output}testRootArrays.json`, "utf-8"),
-  );
+  const data: unknown = JSON.parse(readFileSync(`${output}testRootArrays.json`, "utf-8"));
 
-  assertEquals(data, {
+  expect(data).toStrictEqual({
     key1: ["1", "3", "8", "brioche"],
     key2: ["2", "coucou", "10", "croissant"],
   });
   await sdb.close();
 });
-Deno.test("should write data as a db", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/data.csv");
-  await table.writeData(`${output}data.db`);
+for (const extension of ["db", "sqlite"]) {
+  test(`should round-trip exported ${extension} data`, async () => {
+    const source = new SimpleDB();
+    const destination = new SimpleDB();
+    try {
+      const rows = [
+        { id: 1, name: "Alice" },
+        { id: 2, name: null },
+      ];
+      await source.newTable("exported").loadArray(rows).writeData(`${output}data.${extension}`);
+      await source.close();
+      await destination.loadDB(`${output}data.${extension}`);
+      const table = await destination.getTable("exported");
+      expect(await table.sort({ id: "asc" }).getData()).toStrictEqual(rows);
+    } finally {
+      await source.close();
+      await destination.close();
+    }
+  });
+}
 
-  // Just making sure it doesn't throw
-  assertEquals(true, true);
-  await sdb.close();
-});
-
-Deno.test("should write data as a SQLite db", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/data.csv");
-  await table.writeData(`${output}data.sqlite`);
-
-  // Just making sure it doesn't throw
-  assertEquals(true, true);
-  await sdb.close();
-});
-
-Deno.test("writeData should throw an error when there is a geometry column and suggest using writeGeoData", async () => {
+test("writeData should throw an error when there is a geometry column and suggest using writeGeoData", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadGeoData("test/geodata/files/polygons.geojson");

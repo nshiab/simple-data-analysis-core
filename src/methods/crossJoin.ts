@@ -20,9 +20,10 @@ export default function crossJoin(
 
   // The output table instance is created at call time so it can be returned
   // synchronously and chained on right away.
-  const outputTable = typeof options.outputTable === "string"
-    ? simpleTable.sdb.newTable(options.outputTable)
-    : simpleTable;
+  const outputTable =
+    typeof options.outputTable === "string"
+      ? simpleTable.sdb.newTable(options.outputTable)
+      : simpleTable;
 
   queueOp(outputTable, {
     kind: "barrier",
@@ -45,19 +46,19 @@ async function executeCrossJoin(
   );
   if (identicalColumns.length > 0) {
     throw new Error(
-      `The tables have columns with identical names. Rename or remove ${
-        identicalColumns.map((d) => `${quoteIdentifier(d)}`).join(", ")
-      } in one of the two tables before doing the cross join.`,
+      `The tables have columns with identical names. Rename or remove ${identicalColumns
+        .map((d) => `${quoteIdentifier(d)}`)
+        .join(", ")} in one of the two tables before doing the cross join.`,
     );
   }
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS SELECT ${
-      quoteIdentifier(simpleTable.name)
-    }.*, ${quoteIdentifier(rightTable.name)}.* FROM ${
-      quoteIdentifier(simpleTable.name)
-    } CROSS JOIN ${quoteIdentifier(rightTable.name)};`,
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(outputTable.name)} AS SELECT ${quoteIdentifier(
+      simpleTable.name,
+    )}.*, ${quoteIdentifier(rightTable.name)}.* FROM ${quoteIdentifier(
+      simpleTable.name,
+    )} CROSS JOIN ${quoteIdentifier(rightTable.name)};`,
     mergeOptions(simpleTable, {
       table: outputTable.name,
       method: "crossJoin()",

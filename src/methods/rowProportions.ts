@@ -12,13 +12,8 @@ export default function rowProportions(
     decimals?: number;
   } = {},
 ) {
-  if (
-    options.base !== undefined &&
-    (!Number.isFinite(options.base) || options.base <= 0)
-  ) {
-    throw new Error(
-      "rowProportions() options.base must be a finite number greater than 0.",
-    );
+  if (options.base !== undefined && (!Number.isFinite(options.base) || options.base <= 0)) {
+    throw new Error("rowProportions() options.base must be a finite number greater than 0.");
   }
   columns = [...columns];
   options = structuredClone(options);
@@ -38,9 +33,9 @@ export default function rowProportions(
       let query = `SELECT *,`;
 
       for (const col of columns) {
-        const tempQuery = `${quoteIdentifier(col)} / (${
-          columns.map((d) => `${quoteIdentifier(d)}`).join(" + ")
-        }) * ${options.base ?? 1}`;
+        const tempQuery = `${quoteIdentifier(col)} / (${columns
+          .map((d) => `${quoteIdentifier(d)}`)
+          .join(" + ")}) * ${options.base ?? 1}`;
         if (typeof options.decimals === "number") {
           query += ` ROUND(${tempQuery}, ${options.decimals})`;
         } else {

@@ -87,7 +87,7 @@ export const workloads = [
     edit: true,
   },
 ] as const;
-export type WorkloadName = typeof workloads[number]["name"];
+export type WorkloadName = (typeof workloads)[number]["name"];
 type Row = Record<string, unknown>;
 
 export async function prepareWorkload(
@@ -99,9 +99,7 @@ export async function prepareWorkload(
   const workload = workloads.find((candidate) => candidate.name === name)!;
   if (sdb && sdb.getTables().length) await sdb.removeTables("all");
   if ("shape" in workload) {
-    const { default: prepareGeometryWorkload } = await import(
-      "./prepareGeometryWorkload.ts"
-    );
+    const { default: prepareGeometryWorkload } = await import("./prepareGeometryWorkload.ts");
     return prepareGeometryWorkload(
       workload.shape,
       workload.edit,
@@ -123,20 +121,20 @@ export async function prepareWorkload(
       i::DOUBLE AS category, 'group-' || i AS label FROM range(10) t(i)`);
   }
   const table = sdb?.newTable(name === "load-array" ? "result" : "input");
-  const categories = name === "join-aggregate"
-    ? sdb?.newTable("categories")
-    : undefined;
+  const categories = name === "join-aggregate" ? sdb?.newTable("categories") : undefined;
   let data: Row[] | undefined;
 
   async function execute() {
     if (name === "join-aggregate") {
       if (table && categories) {
-        await table.join(categories, {
-          on: "category",
-          type: "inner",
-          outputTable: "result",
-        })
-          .summarize({ columns: "value", by: "label", stats: "sum" }).run();
+        await table
+          .join(categories, {
+            on: "category",
+            type: "inner",
+            outputTable: "result",
+          })
+          .summarize({ columns: "value", by: "label", stats: "sum" })
+          .run();
       } else {
         await connection.run(
           `CREATE OR REPLACE TABLE result AS SELECT label, SUM(value) AS sum
@@ -154,32 +152,29 @@ export async function prepareWorkload(
         ? await table.getData()
         : (await connection.runAndReadAll("FROM input")).getRowObjectsJS();
     } else if (table) {
-      await table.updateWithJS(increment, { batchSize: workload.batchSize })
-        .run();
+      await table.updateWithJS(increment, { batchSize: workload.batchSize }).run();
     } else {
       await createResult(connection);
       for (let offset = 0; offset < rows; offset += workload.batchSize) {
-        const batch = (await connection.runAndReadAll(`SELECT * FROM input
-          WHERE rowid >= ${offset} AND rowid < ${
-          offset + workload.batchSize
-        } ORDER BY rowid`)).getRowObjectsJS();
+        const batch = (
+          await connection.runAndReadAll(`SELECT * FROM input
+          WHERE rowid >= ${offset} AND rowid < ${offset + workload.batchSize} ORDER BY rowid`)
+        ).getRowObjectsJS();
         await appendRows(connection, increment(batch));
       }
     }
   }
 
   async function validate() {
-    const outputTable = name === "get-data" || (workload.batchSize && sdb)
-      ? "input"
-      : "result";
-    const actual = data ??
-      (await connection.runAndReadAll(`FROM ${outputTable}`)).getRowObjectsJS();
+    const outputTable = name === "get-data" || (workload.batchSize && sdb) ? "input" : "result";
+    const actual =
+      data ?? (await connection.runAndReadAll(`FROM ${outputTable}`)).getRowObjectsJS();
     let expected: Row[];
     if (name === "join-aggregate") {
       const sums = Array<number>(10).fill(0);
       for (let i = 0; i < rows; i++) sums[i % 10] += i % 97;
       expected = sums.flatMap((sum, category) =>
-        category < rows ? [{ label: `group-${category}`, sum }] : []
+        category < rows ? [{ label: `group-${category}`, sum }] : [],
       );
     } else {
       expected = makeRows(rows);
@@ -191,18 +186,13 @@ export async function prepareWorkload(
 }
 
 function makeRows(rows: number): Row[] {
-  return Array.from(
-    { length: rows },
-    (_, id) => ({ id, category: id % 10, value: id % 97 }),
-  );
+  return Array.from({ length: rows }, (_, id) => ({ id, category: id % 10, value: id % 97 }));
 }
 function increment(rows: Row[]): Row[] {
   return rows.map((row) => ({ ...row, value: Number(row.value) + 1 }));
 }
 async function createResult(connection: DuckDBConnection) {
-  await connection.run(
-    "CREATE OR REPLACE TABLE result(id DOUBLE, category DOUBLE, value DOUBLE)",
-  );
+  await connection.run("CREATE OR REPLACE TABLE result(id DOUBLE, category DOUBLE, value DOUBLE)");
 }
 async function appendRows(connection: DuckDBConnection, rows: Row[]) {
   const appender = await connection.createAppender("result");
@@ -223,13 +213,13 @@ async function appendRows(connection: DuckDBConnection, rows: Row[]) {
 // Sorting, serialization, and reference generation are all outside the timer.
 export function assertRowsEquivalent(expected: Row[], actual: Row[]) {
   const canonical = (rows: Row[]) =>
-    rows.map((row) =>
-      JSON.stringify(
-        Object.fromEntries(
-          Object.entries(row).sort(([a], [b]) => a.localeCompare(b)),
+    rows
+      .map((row) =>
+        JSON.stringify(
+          Object.fromEntries(Object.entries(row).sort(([a], [b]) => a.localeCompare(b))),
         ),
       )
-    ).sort();
+      .sort();
   const left = canonical(expected);
   const right = canonical(actual);
   if (left.length !== right.length || left.some((row, i) => row !== right[i])) {

@@ -24,9 +24,9 @@ export default async function* stream(
   await flushAllTables(simpleTable.sdb);
 
   const columns = options.columns
-    ? (typeof options.columns === "string"
+    ? typeof options.columns === "string"
       ? [options.columns]
-      : options.columns)
+      : options.columns
     : undefined;
   const query = cleanSQL(
     `SELECT ${
@@ -44,17 +44,11 @@ export default async function* stream(
     const result = await simpleTable.connection.stream(query);
     const columnNames = result.deduplicatedColumnNames();
     const columnTypes = result.columnTypes();
-    if (
-      columnTypes.some((type) =>
-        type.toString().toLowerCase().includes("geometry")
-      )
-    ) {
-      throw new Error(
-        "The query returns geometry columns. Use getGeoData() instead.",
-      );
+    if (columnTypes.some((type) => type.toString().toLowerCase().includes("geometry"))) {
+      throw new Error("The query returns geometry columns. Use getGeoData() instead.");
     }
     const converters = columnTypes.map((type, i) =>
-      makeConverter(type, columnNames[i], simpleTable.name)
+      makeConverter(type, columnNames[i], simpleTable.name),
     );
     const columnCount = columnNames.length;
 

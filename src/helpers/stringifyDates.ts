@@ -13,7 +13,7 @@ export default async function stringifyDates(
     }
   }
   if (Object.keys(toConvert).length > 0) {
-    await simpleTable.convert(toConvert, { datetimeFormat: "%xT%T.%g%z" });
-    await simpleTable.replace(Object.keys(toConvert), { "+00": "Z" });
+    simpleTable.convert(toConvert, { datetimeFormat: "%xT%T.%g%z" });
+    simpleTable.replace(Object.keys(toConvert), { "+00": "Z" });
   }
 }

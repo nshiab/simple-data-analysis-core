@@ -1,24 +1,25 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should log unique values in a column", async () => {
+test("should log unique values in a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.logUniques("Name");
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });
 
-Deno.test("should log stringified unique values in a column", async () => {
+test("should log stringified unique values in a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
   await table.logUniques("Name", { stringify: true });
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });

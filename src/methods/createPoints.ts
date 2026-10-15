@@ -22,16 +22,12 @@ export default function createPoints(
       [newColumn]: `GEOMETRY('${options.projection ?? "EPSG:4326"}')`,
     }),
     buildSelect: (input, types) => {
-      const expression = `ST_Point(${quoteIdentifier(lonColumn)}, ${
-        quoteIdentifier(latColumn)
-      })::GEOMETRY(${parseValue(options.projection ?? "EPSG:4326")})`;
+      const expression = `ST_Point(${quoteIdentifier(lonColumn)}, ${quoteIdentifier(
+        latColumn,
+      )})::GEOMETRY(${parseValue(options.projection ?? "EPSG:4326")})`;
       return Object.keys(types).includes(newColumn)
-        ? `SELECT * REPLACE (${expression} AS ${
-          quoteIdentifier(newColumn)
-        }) FROM ${input}`
-        : `SELECT *, ${expression} AS ${
-          quoteIdentifier(newColumn)
-        } FROM ${input}`;
+        ? `SELECT * REPLACE (${expression} AS ${quoteIdentifier(newColumn)}) FROM ${input}`
+        : `SELECT *, ${expression} AS ${quoteIdentifier(newColumn)} FROM ${input}`;
     },
   });
 }

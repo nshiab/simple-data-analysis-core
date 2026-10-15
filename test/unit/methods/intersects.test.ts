@@ -1,12 +1,11 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should check if geometries intersect", async () => {
+test("should check if geometries intersect", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("data");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   prov.renameColumns({ geom: "prov" });
 
   const poly = sdb.newTable("poly");
@@ -20,7 +19,7 @@ Deno.test("should check if geometries intersect", async () => {
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       nameEnglish: "Newfoundland and Labrador",
       name: "polygonA",
@@ -84,12 +83,10 @@ Deno.test("should check if geometries intersect", async () => {
   await sdb.close();
 });
 
-Deno.test("should check if geometries intersect and the returned booleans could be used to filter", async () => {
+test("should check if geometries intersect and the returned booleans could be used to filter", async () => {
   const sdb = new SimpleDB();
   const prov = sdb.newTable("data");
-  prov.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  prov.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   prov.renameColumns({ geom: "prov" });
 
   const poly = sdb.newTable("poly");
@@ -103,7 +100,7 @@ Deno.test("should check if geometries intersect and the returned booleans could 
 
   const data = await joined.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { nameEnglish: "Quebec", name: "polygonA", intersec: true },
     { nameEnglish: "Ontario", name: "polygonA", intersec: true },
     { nameEnglish: "Manitoba", name: "polygonB", intersec: true },

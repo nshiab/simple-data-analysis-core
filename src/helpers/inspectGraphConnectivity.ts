@@ -9,13 +9,8 @@ export default async function inspectGraphConnectivity(
   edges: string,
   vertexCount: number,
 ): Promise<{ componentCount: number; sizes: number[] }> {
-  if (
-    !Number.isSafeInteger(vertexCount) || vertexCount < 1 ||
-    vertexCount > 2147483647
-  ) {
-    throw new Error(
-      "Graph vertex count must fit a positive INTEGER vertex count.",
-    );
+  if (!Number.isSafeInteger(vertexCount) || vertexCount < 1 || vertexCount > 2147483647) {
+    throw new Error("Graph vertex count must fit a positive INTEGER vertex count.");
   }
   const parent = new Int32Array(vertexCount);
   const sizes = new Int32Array(vertexCount).fill(1);
@@ -39,13 +34,19 @@ export default async function inspectGraphConnectivity(
       const source = Number(sourceValue);
       const target = Number(targetValue);
       if (
-        sourceValue === null || targetValue === null ||
-        !Number.isSafeInteger(source) || source < 0 || source >= vertexCount ||
-        !Number.isSafeInteger(target) || target < 0 || target >= vertexCount
+        sourceValue === null ||
+        targetValue === null ||
+        !Number.isSafeInteger(source) ||
+        source < 0 ||
+        source >= vertexCount ||
+        !Number.isSafeInteger(target) ||
+        target < 0 ||
+        target >= vertexCount
       ) {
         throw new Error("Graph edge contains an invalid vertex id.");
       }
-      let sourceRoot = root(source), targetRoot = root(target);
+      let sourceRoot = root(source),
+        targetRoot = root(target);
       if (sourceRoot === targetRoot) continue;
       if (sizes[sourceRoot] < sizes[targetRoot]) {
         [sourceRoot, targetRoot] = [targetRoot, sourceRoot];

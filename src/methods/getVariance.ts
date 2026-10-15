@@ -15,12 +15,12 @@ export default async function getVariance(
   const queryResult = await queryDB(
     SimpleTable,
     typeof options.decimals === "number"
-      ? `SELECT ROUND(VARIANCE(${qualifiedColumn}), ${options.decimals}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`
-      : `SELECT VARIANCE(${qualifiedColumn}) AS ${
-        quoteIdentifier(column)
-      } FROM ${quoteIdentifier(SimpleTable.name)}`,
+      ? `SELECT ROUND(VARIANCE(${qualifiedColumn}), ${options.decimals}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(SimpleTable.name)}`
+      : `SELECT VARIANCE(${qualifiedColumn}) AS ${quoteIdentifier(
+          column,
+        )} FROM ${quoteIdentifier(SimpleTable.name)}`,
     mergeOptions(SimpleTable, {
       table: SimpleTable.name,
       returnData: true,

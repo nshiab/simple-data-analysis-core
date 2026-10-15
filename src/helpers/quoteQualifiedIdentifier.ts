@@ -18,9 +18,6 @@ import quoteIdentifier from "./quoteIdentifier.ts";
  *
  * @returns The separately quoted relation and identifier joined by a period.
  */
-export default function quoteQualifiedIdentifier(
-  relation: string,
-  identifier: string,
-): string {
+export default function quoteQualifiedIdentifier(relation: string, identifier: string): string {
   return `${quoteIdentifier(relation)}.${quoteIdentifier(identifier)}`;
 }

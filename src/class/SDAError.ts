@@ -50,25 +50,20 @@ export default class SDAError extends Error {
    * @param options.query - The SQL statement that failed.
    * @param options.cause - The original error thrown while executing the query.
    */
-  constructor(
-    options: {
-      method: string | null;
-      parameters: { [key: string]: unknown } | null;
-      query: string;
-      cause: unknown;
-    },
-  ) {
-    let causeMessage = options.cause instanceof Error
-      ? options.cause.message
-      : String(options.cause);
+  constructor(options: {
+    method: string | null;
+    parameters: { [key: string]: unknown } | null;
+    query: string;
+    cause: unknown;
+  }) {
+    let causeMessage =
+      options.cause instanceof Error ? options.cause.message : String(options.cause);
     if (causeMessage.includes("connection disconnected")) {
       causeMessage =
         "Database connection closed before all operations finished. Did you forget to add `await`?";
     }
     super(
-      options.method === null
-        ? causeMessage
-        : `${causeMessage}\nSDA method: ${options.method}`,
+      options.method === null ? causeMessage : `${causeMessage}\nSDA method: ${options.method}`,
       { cause: options.cause },
     );
     this.name = "SDAError";

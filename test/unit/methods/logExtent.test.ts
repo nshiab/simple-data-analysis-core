@@ -1,14 +1,15 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should log the extent", async () => {
+test("should log the extent", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
-  table.convert({ "Salary": "number" }, { strict: false });
+  table.convert({ Salary: "number" }, { strict: false });
   await table.logExtent("Salary");
 
   // How to test?
-  assertEquals(true, true);
+  expect(true).toStrictEqual(true);
   await sdb.close();
 });

@@ -18,8 +18,8 @@ export default function addBoundingBox(
     needsSchema: true,
     needsSpatial: true,
     buildSelect: (input, types) => {
-      const column = options.column ??
-        findGeoColumnFromSchema(types, "addBoundingBox()", simpleTable.name);
+      const column =
+        options.column ?? findGeoColumnFromSchema(types, "addBoundingBox()", simpleTable.name);
       const round = (expression: string) =>
         typeof options.decimals === "number"
           ? `ROUND(${expression}, ${options.decimals})`

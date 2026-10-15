@@ -1,8 +1,9 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import { DuckDBListValue } from "@duckdb/node-api";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should load rapidfuzz and compute pairs in one query", async () => {
+test("should load rapidfuzz and compute pairs in one query", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("singleFuzzyQuery");
   const queries: string[] = [];
@@ -16,42 +17,39 @@ Deno.test("should load rapidfuzz and compute pairs in one query", async () => {
   table.fuzzyClean("name", "name", 80);
   await table.getData();
 
-  const rapidfuzzQueries = queries.filter((query) =>
-    query.includes("INSTALL rapidfuzz")
-  );
-  assertEquals(rapidfuzzQueries.length, 1);
-  assertEquals(rapidfuzzQueries[0].includes("WITH uniques AS"), true);
+  const rapidfuzzQueries = queries.filter((query) => query.includes("INSTALL rapidfuzz"));
+  expect(rapidfuzzQueries.length).toStrictEqual(1);
+  expect(rapidfuzzQueries[0].includes("WITH uniques AS")).toStrictEqual(true);
 
   await sdb.close();
 });
 
-Deno.test("should preserve canonical choices across disconnected clusters for every strategy", async () => {
+test("should preserve canonical choices across disconnected clusters for every strategy", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const strategy of [
-        "mostCommon",
-        "longestString",
-        "shortestString",
-        "mostCentral",
-        "maxScore",
-      ] as const
-    ) {
+    for (const strategy of [
+      "mostCommon",
+      "longestString",
+      "shortestString",
+      "mostCentral",
+      "maxScore",
+    ] as const) {
       const table = sdb.newTable();
       const rows = Array.from({ length: 30 }, (_, i) => {
         const prefix = `${String(i).padStart(3, "0")}:`;
         return [{ name: prefix + "Paris" }, { name: prefix + "Pariss" }];
       }).flat();
-      await table.loadArray([...rows, { name: null }])
+      await table
+        .loadArray([...rows, { name: null }])
         .fuzzyClean("name", "canonical", 90, {
           strategy,
           prefilterPrefixLength: 4,
-        }).run();
-      assertEquals(await table.getData(), [
+        })
+        .run();
+      expect(await table.getData()).toStrictEqual([
         ...rows.map(({ name }) => ({
           name,
-          canonical: name.slice(0, 4) +
-            (strategy === "longestString" ? "Pariss" : "Paris"),
+          canonical: name.slice(0, 4) + (strategy === "longestString" ? "Pariss" : "Paris"),
         })),
         { name: null, canonical: null },
       ]);
@@ -61,7 +59,7 @@ Deno.test("should preserve canonical choices across disconnected clusters for ev
   }
 });
 
-Deno.test("should bind replacement mapping values", async () => {
+test("should bind replacement mapping values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundFuzzyClean");
   const marker = "O'Connor";
@@ -76,16 +74,12 @@ Deno.test("should bind replacement mapping values", async () => {
     return originalRunQuery(query, connection, returnData, options);
   };
 
-  table.insertRows([
-    { name: marker },
-    { name: marker },
-    { name: "OConnor" },
-  ]);
+  table.insertRows([{ name: marker }, { name: marker }, { name: "OConnor" }]);
   table.fuzzyClean("name", "name", 80);
   await table.getData();
 
-  assertEquals(mappingSQL.includes(marker), false);
-  assertEquals(mappingValues, [
+  expect(mappingSQL.includes(marker)).toStrictEqual(false);
+  expect(mappingValues).toStrictEqual([
     new DuckDBListValue(["OConnor"]),
     new DuckDBListValue([marker]),
   ]);
@@ -93,7 +87,7 @@ Deno.test("should bind replacement mapping values", async () => {
   await sdb.close();
 });
 
-Deno.test("should normalize strings in-place with mostCommon strategy", async () => {
+test("should normalize strings in-place with mostCommon strategy", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -110,7 +104,7 @@ Deno.test("should normalize strings in-place with mostCommon strategy", async ()
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { city: "New York" },
     { city: "New York" },
     { city: "New York" },
@@ -123,7 +117,7 @@ Deno.test("should normalize strings in-place with mostCommon strategy", async ()
   await sdb.close();
 });
 
-Deno.test("should keep the longest string in each cluster when strategy is 'longestString'", async () => {
+test("should keep the longest string in each cluster when strategy is 'longestString'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -137,7 +131,7 @@ Deno.test("should keep the longest string in each cluster when strategy is 'long
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { city: "New Yorkk" },
     { city: "New Yorkk" },
     { city: "Pariss" },
@@ -147,7 +141,7 @@ Deno.test("should keep the longest string in each cluster when strategy is 'long
   await sdb.close();
 });
 
-Deno.test("should keep the shortest string in each cluster when strategy is 'shortestString'", async () => {
+test("should keep the shortest string in each cluster when strategy is 'shortestString'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -161,7 +155,7 @@ Deno.test("should keep the shortest string in each cluster when strategy is 'sho
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { city: "New York" },
     { city: "New York" },
     { city: "Paris" },
@@ -171,15 +165,11 @@ Deno.test("should keep the shortest string in each cluster when strategy is 'sho
   await sdb.close();
 });
 
-Deno.test("should keep the most central string when strategy is 'mostCentral'", async () => {
+test("should keep the most central string when strategy is 'mostCentral'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "Alice" has the highest *total* similarity to all other cluster members.
-  table.insertRows([
-    { name: "Alice" },
-    { name: "Alicee" },
-    { name: "Alce" },
-  ]);
+  table.insertRows([{ name: "Alice" }, { name: "Alicee" }, { name: "Alce" }]);
 
   table.fuzzyClean("name", "name", 70, {
     strategy: "mostCentral",
@@ -188,27 +178,19 @@ Deno.test("should keep the most central string when strategy is 'mostCentral'", 
   const data = await table.getData();
 
   // "Alice" has the highest combined similarity to "Alicee" and "Alce"
-  assertEquals(data, [
-    { name: "Alice" },
-    { name: "Alice" },
-    { name: "Alice" },
-  ]);
+  expect(data).toStrictEqual([{ name: "Alice" }, { name: "Alice" }, { name: "Alice" }]);
 
   await sdb.close();
 });
 
-Deno.test("should keep the string with the highest single pairwise score when strategy is 'maxScore'", async () => {
+test("should keep the string with the highest single pairwise score when strategy is 'maxScore'", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "Alice" pairs with both "Alicee" (~91) and "Alce" (~89).
   // "Alicee" and "Alce" also pair with each other (~80).
   // max: Alice=91, Alicee=91, Alce=89 — Alice and Alicee tie.
   // sum tie-break: Alice=91+89=180 > Alicee=91+80=171 — Alice wins.
-  table.insertRows([
-    { name: "Alice" },
-    { name: "Alicee" },
-    { name: "Alce" },
-  ]);
+  table.insertRows([{ name: "Alice" }, { name: "Alicee" }, { name: "Alce" }]);
 
   table.fuzzyClean("name", "name", 70, {
     strategy: "maxScore",
@@ -216,16 +198,12 @@ Deno.test("should keep the string with the highest single pairwise score when st
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { name: "Alice" },
-    { name: "Alice" },
-    { name: "Alice" },
-  ]);
+  expect(data).toStrictEqual([{ name: "Alice" }, { name: "Alice" }, { name: "Alice" }]);
 
   await sdb.close();
 });
 
-Deno.test("should write normalized values to a new column when newColumn is provided", async () => {
+test("should write normalized values to a new column when newColumn is provided", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -239,7 +217,7 @@ Deno.test("should write normalized values to a new column when newColumn is prov
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { city: "New York", cityClean: "New York" },
     { city: "New York", cityClean: "New York" },
     { city: "New Yorkk", cityClean: "New York" },
@@ -249,52 +227,36 @@ Deno.test("should write normalized values to a new column when newColumn is prov
   await sdb.close();
 });
 
-Deno.test("should not change any values when all strings are already unique and below threshold", async () => {
+test("should not change any values when all strings are already unique and below threshold", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.insertRows([
-    { country: "Canada" },
-    { country: "Germany" },
-    { country: "Japan" },
-  ]);
+  table.insertRows([{ country: "Canada" }, { country: "Germany" }, { country: "Japan" }]);
 
   table.fuzzyClean("country", "country", 90);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { country: "Canada" },
-    { country: "Germany" },
-    { country: "Japan" },
-  ]);
+  expect(data).toStrictEqual([{ country: "Canada" }, { country: "Germany" }, { country: "Japan" }]);
 
   await sdb.close();
 });
 
-Deno.test("should ignore NULL values and leave them unchanged", async () => {
+test("should ignore NULL values and leave them unchanged", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
-  table.insertRows([
-    { city: "New York" },
-    { city: "New Yorkk" },
-    { city: null },
-  ]);
+  table.insertRows([{ city: "New York" }, { city: "New Yorkk" }, { city: null }]);
 
   table.fuzzyClean("city", "city", 80);
 
   const data = await table.getData();
 
   // Both counts are equal — alphabetical tie-break picks "New York" over "New Yorkk"
-  assertEquals(data, [
-    { city: "New York" },
-    { city: "New York" },
-    { city: null },
-  ]);
+  expect(data).toStrictEqual([{ city: "New York" }, { city: "New York" }, { city: null }]);
 
   await sdb.close();
 });
 
-Deno.test("should normalize multiple clusters across a larger dataset", async () => {
+test("should normalize multiple clusters across a larger dataset", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.insertRows([
@@ -329,7 +291,7 @@ Deno.test("should normalize multiple clusters across a larger dataset", async ()
   // "Microsoft" (count=2) wins over "Microsft"
   // "Sony" (count=2) wins over "Sonny"
   // "Soni" scores ~75% vs "Sony" — below threshold, stays unchanged
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { brand: "Apple" },
     { brand: "Apple" },
     { brand: "Apple" },
@@ -354,41 +316,29 @@ Deno.test("should normalize multiple clusters across a larger dataset", async ()
   await sdb.close();
 });
 
-Deno.test("should break ties by score when strategy is 'mostCommon' and counts are equal", async () => {
+test("should break ties by score when strategy is 'mostCommon' and counts are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // All count=1 (primary tie). "mouse" scores highest (pairs with both others at threshold);
   // "moose" and "mause" only pair with "mouse", not with each other.
   // Alphabetically "mause" < "moose" < "mouse", so score must win over alphabetical.
-  table.insertRows([
-    { word: "mouse" },
-    { word: "moose" },
-    { word: "mause" },
-  ]);
+  table.insertRows([{ word: "mouse" }, { word: "moose" }, { word: "mause" }]);
 
   table.fuzzyClean("word", "word", 60);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "mouse" },
-    { word: "mouse" },
-    { word: "mouse" },
-  ]);
+  expect(data).toStrictEqual([{ word: "mouse" }, { word: "mouse" }, { word: "mouse" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties by score when strategy is 'longestString' and lengths are equal", async () => {
+test("should break ties by score when strategy is 'longestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // All length=5 (primary tie). "mouse" scores highest; alphabetically it comes last,
   // so score must be checked before alphabetical.
-  table.insertRows([
-    { word: "mouse" },
-    { word: "moose" },
-    { word: "mause" },
-  ]);
+  table.insertRows([{ word: "mouse" }, { word: "moose" }, { word: "mause" }]);
 
   table.fuzzyClean("word", "word", 60, {
     strategy: "longestString",
@@ -396,25 +346,17 @@ Deno.test("should break ties by score when strategy is 'longestString' and lengt
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "mouse" },
-    { word: "mouse" },
-    { word: "mouse" },
-  ]);
+  expect(data).toStrictEqual([{ word: "mouse" }, { word: "mouse" }, { word: "mouse" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties by score when strategy is 'shortestString' and lengths are equal", async () => {
+test("should break ties by score when strategy is 'shortestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // All length=5 (primary tie). "mouse" scores highest; alphabetically it comes last,
   // so score must be checked before alphabetical.
-  table.insertRows([
-    { word: "mouse" },
-    { word: "moose" },
-    { word: "mause" },
-  ]);
+  table.insertRows([{ word: "mouse" }, { word: "moose" }, { word: "mause" }]);
 
   table.fuzzyClean("word", "word", 60, {
     strategy: "shortestString",
@@ -422,37 +364,27 @@ Deno.test("should break ties by score when strategy is 'shortestString' and leng
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "mouse" },
-    { word: "mouse" },
-    { word: "mouse" },
-  ]);
+  expect(data).toStrictEqual([{ word: "mouse" }, { word: "mouse" }, { word: "mouse" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties alphabetically when strategy is 'mostCommon' and counts are equal", async () => {
+test("should break ties alphabetically when strategy is 'mostCommon' and counts are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "color" and "colur" each appear once — equal counts, alphabetical picks "color"
-  table.insertRows([
-    { word: "color" },
-    { word: "colur" },
-  ]);
+  table.insertRows([{ word: "color" }, { word: "colur" }]);
 
   table.fuzzyClean("word", "word", 80);
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "color" },
-    { word: "color" },
-  ]);
+  expect(data).toStrictEqual([{ word: "color" }, { word: "color" }]);
 
   await sdb.close();
 });
 
-Deno.test("should restrict comparisons with prefilterPrefixLength", async () => {
+test("should restrict comparisons with prefilterPrefixLength", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([{ word: "alpha" }, { word: "alphi" }]);
@@ -461,7 +393,7 @@ Deno.test("should restrict comparisons with prefilterPrefixLength", async () => 
     .fuzzyClean("word", "cleanWord", 70, { prefilterPrefixLength: 5 })
     .getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { word: "alpha", cleanWord: "alpha" },
     { word: "alphi", cleanWord: "alphi" },
   ]);
@@ -469,14 +401,11 @@ Deno.test("should restrict comparisons with prefilterPrefixLength", async () => 
   await sdb.close();
 });
 
-Deno.test("should break ties alphabetically when strategy is 'longestString' and lengths are equal", async () => {
+test("should break ties alphabetically when strategy is 'longestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "color" and "colur" are both 5 chars — equal lengths, alphabetical picks "color"
-  table.insertRows([
-    { word: "color" },
-    { word: "colur" },
-  ]);
+  table.insertRows([{ word: "color" }, { word: "colur" }]);
 
   table.fuzzyClean("word", "word", 80, {
     strategy: "longestString",
@@ -484,22 +413,16 @@ Deno.test("should break ties alphabetically when strategy is 'longestString' and
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "color" },
-    { word: "color" },
-  ]);
+  expect(data).toStrictEqual([{ word: "color" }, { word: "color" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties alphabetically when strategy is 'shortestString' and lengths are equal", async () => {
+test("should break ties alphabetically when strategy is 'shortestString' and lengths are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "color" and "colur" are both 5 chars — equal lengths, alphabetical picks "color"
-  table.insertRows([
-    { word: "color" },
-    { word: "colur" },
-  ]);
+  table.insertRows([{ word: "color" }, { word: "colur" }]);
 
   table.fuzzyClean("word", "word", 80, {
     strategy: "shortestString",
@@ -507,23 +430,17 @@ Deno.test("should break ties alphabetically when strategy is 'shortestString' an
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "color" },
-    { word: "color" },
-  ]);
+  expect(data).toStrictEqual([{ word: "color" }, { word: "color" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties alphabetically when strategy is 'mostCentral' and scores are equal", async () => {
+test("should break ties alphabetically when strategy is 'mostCentral' and scores are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // In a 2-element cluster both members have the same total score (each scores against the other once).
   // Alphabetical tie-break picks "color" over "colur".
-  table.insertRows([
-    { word: "color" },
-    { word: "colur" },
-  ]);
+  table.insertRows([{ word: "color" }, { word: "colur" }]);
 
   table.fuzzyClean("word", "word", 80, {
     strategy: "mostCentral",
@@ -531,15 +448,12 @@ Deno.test("should break ties alphabetically when strategy is 'mostCentral' and s
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "color" },
-    { word: "color" },
-  ]);
+  expect(data).toStrictEqual([{ word: "color" }, { word: "color" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties by sum when strategy is 'maxScore' and max scores are equal", async () => {
+test("should break ties by sum when strategy is 'maxScore' and max scores are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "mouse" pairs with both "moose" and "mause"; the other two do not pair with each other.
@@ -547,34 +461,23 @@ Deno.test("should break ties by sum when strategy is 'maxScore' and max scores a
   // and the higher of the two for mouse — but moose's max equals mouse-moose and mause's max equals mouse-mause).
   // Sum tie-break: mouse has the highest total (two scores vs. one each) — mouse wins.
   // Alphabetically "mause" < "moose" < "mouse", so sum must be checked before alphabetical.
-  table.insertRows([
-    { word: "mouse" },
-    { word: "moose" },
-    { word: "mause" },
-  ]);
+  table.insertRows([{ word: "mouse" }, { word: "moose" }, { word: "mause" }]);
 
   table.fuzzyClean("word", "word", 60, { strategy: "maxScore" });
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "mouse" },
-    { word: "mouse" },
-    { word: "mouse" },
-  ]);
+  expect(data).toStrictEqual([{ word: "mouse" }, { word: "mouse" }, { word: "mouse" }]);
 
   await sdb.close();
 });
 
-Deno.test("should break ties alphabetically when strategy is 'maxScore' and max and sum scores are equal", async () => {
+test("should break ties alphabetically when strategy is 'maxScore' and max and sum scores are equal", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // In a 2-element cluster both members have the same max score AND the same sum score.
   // Alphabetical tie-break picks "color" over "colur".
-  table.insertRows([
-    { word: "color" },
-    { word: "colur" },
-  ]);
+  table.insertRows([{ word: "color" }, { word: "colur" }]);
 
   table.fuzzyClean("word", "word", 80, {
     strategy: "maxScore",
@@ -582,15 +485,12 @@ Deno.test("should break ties alphabetically when strategy is 'maxScore' and max 
 
   const data = await table.getData();
 
-  assertEquals(data, [
-    { word: "color" },
-    { word: "color" },
-  ]);
+  expect(data).toStrictEqual([{ word: "color" }, { word: "color" }]);
 
   await sdb.close();
 });
 
-Deno.test("should respect a custom threshold and only normalize strings above it", async () => {
+test("should respect a custom threshold and only normalize strings above it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   // "New York" (count=2) vs "New Yorkk" (count=1) ratio ~94 — should be normalized at threshold 90
@@ -610,7 +510,7 @@ Deno.test("should respect a custom threshold and only normalize strings above it
   // "New York" (count=2) wins over "New Yorkk" (count=1)
   // "Paris" and "Bonjour" are unrelated — unchanged
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { text: "New York" },
     { text: "New York" },
     { text: "New York" },
@@ -621,12 +521,9 @@ Deno.test("should respect a custom threshold and only normalize strings above it
   await sdb.close();
 });
 
-Deno.test("should be lossless for all methods with justNames.csv", async () => {
+test("should be lossless for all methods with justNames.csv", async () => {
   const sdb = new SimpleDB();
-  const methods = [
-    "ratio",
-    "token_sort_ratio",
-  ] as const;
+  const methods = ["ratio", "token_sort_ratio"] as const;
 
   for (const method of methods) {
     const table = sdb.newTable(`table_${method.replace(/_/g, "")}`);
@@ -634,8 +531,7 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
 
     // Every unique row should match itself at threshold 100.
     // In fuzzyClean, this means unique values shouldn't be lost/misidentified.
-    const originalUniques =
-      (await table.getUniques("landlordNames")) as string[];
+    const originalUniques = (await table.getUniques("landlordNames")) as string[];
 
     table.fuzzyClean("landlordNames", "landlordNames", 100, {
       method,
@@ -643,21 +539,19 @@ Deno.test("should be lossless for all methods with justNames.csv", async () => {
 
     const cleanUniques = (await table.getUniques("landlordNames")) as string[];
 
-    assertEquals(
+    expect(
       cleanUniques.length,
-      originalUniques.length,
       `Method ${method} changed unique counts at threshold 100`,
-    );
+    ).toStrictEqual(originalUniques.length);
 
     // Also verify no value was changed to something that wasn't there before
     const data = (await table.getData()) as { landlordNames: string }[];
     for (const row of data) {
       if (row.landlordNames !== null) {
-        assertEquals(
+        expect(
           originalUniques.includes(row.landlordNames),
-          true,
           `Method ${method} produced a value "${row.landlordNames}" not present in original data`,
-        );
+        ).toStrictEqual(true);
       }
     }
   }

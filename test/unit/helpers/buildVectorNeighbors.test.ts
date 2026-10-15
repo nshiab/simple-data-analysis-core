@@ -1,5 +1,7 @@
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { assertEquals, assertRejects } from "@std/assert";
+
 import buildVectorNeighbors from "../../../src/helpers/buildVectorNeighbors.ts";
 
 const names = {
@@ -11,7 +13,7 @@ const names = {
 };
 
 for (const search of ["exact", "hnsw"] as const) {
-  Deno.test(`vector neighbor ${search} search has stable ties and explicit self semantics`, async () => {
+  test(`vector neighbor ${search} search has stable ties and explicit self semantics`, async () => {
     const db = await DuckDBInstance.create(":memory:");
     const connection = await db.connect();
     try {
@@ -26,13 +28,20 @@ for (const search of ["exact", "hnsw"] as const) {
         { metric: "euclidean", search, includeSelf: true },
         names,
       );
-      assertEquals(
-        (await connection.runAndReadAll(
-          `SELECT source,target,rank,distance FROM ${names.neighbors}
+      expect(
+        (
+          await connection.runAndReadAll(
+            `SELECT source,target,rank,distance FROM ${names.neighbors}
             WHERE source=0 ORDER BY rank`,
-        )).getRowsJS().map((row) => row.map(Number)),
-        [[0, 0, 0, 0], [0, 1, 1, 0], [0, 2, 2, 1]],
-      );
+          )
+        )
+          .getRowsJS()
+          .map((row) => row.map(Number)),
+      ).toStrictEqual([
+        [0, 0, 0, 0],
+        [0, 1, 1, 0],
+        [0, 2, 2, 1],
+      ]);
 
       await buildVectorNeighbors(
         connection,
@@ -40,13 +49,19 @@ for (const search of ["exact", "hnsw"] as const) {
         { metric: "euclidean", search, includeSelf: false },
         names,
       );
-      assertEquals(
-        (await connection.runAndReadAll(
-          `SELECT source,target,rank,distance FROM ${names.neighbors}
+      expect(
+        (
+          await connection.runAndReadAll(
+            `SELECT source,target,rank,distance FROM ${names.neighbors}
             WHERE source=0 ORDER BY rank`,
-        )).getRowsJS().map((row) => row.map(Number)),
-        [[0, 1, 0, 0], [0, 2, 1, 1]],
-      );
+          )
+        )
+          .getRowsJS()
+          .map((row) => row.map(Number)),
+      ).toStrictEqual([
+        [0, 1, 0, 0],
+        [0, 2, 1, 1],
+      ]);
     } finally {
       connection.closeSync();
       db.closeSync();
@@ -54,7 +69,7 @@ for (const search of ["exact", "hnsw"] as const) {
   });
 }
 
-Deno.test("vector neighbor search supports the smallest datasets", async () => {
+test("vector neighbor search supports the smallest datasets", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -66,13 +81,19 @@ Deno.test("vector neighbor search supports the smallest datasets", async () => {
       { metric: "euclidean", search: "exact", includeSelf: false },
       names,
     );
-    assertEquals(
-      (await connection.runAndReadAll(
-        `SELECT source,target,rank,distance FROM ${names.neighbors}
+    expect(
+      (
+        await connection.runAndReadAll(
+          `SELECT source,target,rank,distance FROM ${names.neighbors}
           ORDER BY source,rank`,
-      )).getRowsJS().map((row) => row.map(Number)),
-      [[0, 1, 0, 2], [1, 0, 0, 2]],
-    );
+        )
+      )
+        .getRowsJS()
+        .map((row) => row.map(Number)),
+    ).toStrictEqual([
+      [0, 1, 0, 2],
+      [1, 0, 0, 2],
+    ]);
     await assertRejects(
       () =>
         buildVectorNeighbors(
@@ -91,7 +112,7 @@ Deno.test("vector neighbor search supports the smallest datasets", async () => {
 });
 
 for (const search of ["exact", "hnsw"] as const) {
-  Deno.test(`vector neighbor ${search} rejects zero cosine vectors and overflowing Euclidean search`, async () => {
+  test(`vector neighbor ${search} rejects zero cosine vectors and overflowing Euclidean search`, async () => {
     const db = await DuckDBInstance.create(":memory:");
     const connection = await db.connect();
     try {
@@ -129,7 +150,7 @@ for (const search of ["exact", "hnsw"] as const) {
   });
 }
 
-Deno.test("vector neighbor search detects insufficient source rows", async () => {
+test("vector neighbor search detects insufficient source rows", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -153,7 +174,7 @@ Deno.test("vector neighbor search detects insufficient source rows", async () =>
   }
 });
 
-Deno.test("exact neighbors reject overflowing distances even outside the nearest ranks", async () => {
+test("exact neighbors reject overflowing distances even outside the nearest ranks", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -177,7 +198,7 @@ Deno.test("exact neighbors reject overflowing distances even outside the nearest
   }
 });
 
-Deno.test("neighbors reject duplicate or noncontiguous positional identities", async () => {
+test("neighbors reject duplicate or noncontiguous positional identities", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -202,7 +223,7 @@ Deno.test("neighbors reject duplicate or noncontiguous positional identities", a
   }
 });
 
-Deno.test("HNSW supports all-row self-inclusive neighborhoods and restores settings", async () => {
+test("HNSW supports all-row self-inclusive neighborhoods and restores settings", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -215,27 +236,31 @@ Deno.test("HNSW supports all-row self-inclusive neighborhoods and restores setti
       { metric: "euclidean", search: "hnsw", includeSelf: true },
       names,
     );
-    assertEquals(
-      (await connection.runAndReadAll(`SELECT source,target,rank,distance
-      FROM ${names.neighbors} ORDER BY source,rank`)).getRowsJS().map((row) =>
-        row.map(Number)
-      ),
-      [[0, 0, 0, 0], [0, 1, 1, 2], [1, 1, 0, 0], [1, 0, 1, 2]],
-    );
-    assertEquals(
-      (await connection.runAndReadAll(
-        "SELECT current_setting('disabled_optimizers')",
-      ))
-        .getRowsJS()[0][0],
-      "filter_pushdown",
-    );
+    expect(
+      (
+        await connection.runAndReadAll(`SELECT source,target,rank,distance
+      FROM ${names.neighbors} ORDER BY source,rank`)
+      )
+        .getRowsJS()
+        .map((row) => row.map(Number)),
+    ).toStrictEqual([
+      [0, 0, 0, 0],
+      [0, 1, 1, 2],
+      [1, 1, 0, 0],
+      [1, 0, 1, 2],
+    ]);
+    expect(
+      (
+        await connection.runAndReadAll("SELECT current_setting('disabled_optimizers')")
+      ).getRowsJS()[0][0],
+    ).toStrictEqual("filter_pushdown");
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("exact Euclidean neighbors accept a large common coordinate offset", async () => {
+test("exact Euclidean neighbors accept a large common coordinate offset", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -248,18 +273,23 @@ Deno.test("exact Euclidean neighbors accept a large common coordinate offset", a
       { metric: "euclidean", search: "exact", includeSelf: false },
       names,
     );
-    assertEquals(
-      (await connection.runAndReadAll(`SELECT source,target,distance
-      FROM ${names.neighbors} ORDER BY source`)).getRowsJS(),
-      [[0, 1, 1], [1, 0, 1], [2, 1, 3]],
-    );
+    expect(
+      (
+        await connection.runAndReadAll(`SELECT source,target,distance
+      FROM ${names.neighbors} ORDER BY source`)
+      ).getRowsJS(),
+    ).toStrictEqual([
+      [0, 1, 1],
+      [1, 0, 1],
+      [2, 1, 3],
+    ]);
   } finally {
     connection.closeSync();
     db.closeSync();
   }
 });
 
-Deno.test("unit-L2 cosine candidates retain close angular neighbors and restore threads", async () => {
+test("unit-L2 cosine candidates retain close angular neighbors and restore threads", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -267,40 +297,47 @@ Deno.test("unit-L2 cosine candidates retain close angular neighbors and restore 
       CREATE TEMP TABLE ${names.rows} AS SELECT i::INTEGER AS vertex,
         [cos(i*0.000001),sin(i*0.000001)]::DOUBLE[2] AS vec FROM range(256) t(i)`);
     const input = { count: 256, dimensions: 2, neighborCount: 10 };
-    await buildVectorNeighbors(connection, input, {
-      metric: "cosine",
-      search: "exact",
-      includeSelf: false,
-    }, names);
-    const expected = (await connection.runAndReadAll(
-      `SELECT * FROM ${names.neighbors} ORDER BY source,rank`,
-    )).getRowsJS();
-    await buildVectorNeighbors(connection, input, {
-      metric: "cosine",
-      search: "hnsw",
-      includeSelf: false,
-      hnsw: {
-        efConstruction: 256,
-        efSearch: 512,
-        connectivity: 32,
-        candidateCount: 129,
-        singleThreaded: true,
-        cosineAsL2: true,
+    await buildVectorNeighbors(
+      connection,
+      input,
+      {
+        metric: "cosine",
+        search: "exact",
+        includeSelf: false,
       },
-    }, names);
-    assertEquals(
-      (await connection.runAndReadAll(
-        `SELECT * FROM ${names.neighbors} ORDER BY source,rank`,
-      )).getRowsJS(),
-      expected,
+      names,
     );
-    assertEquals(
-      (await connection.runAndReadAll("SELECT current_setting('threads')"))
-        .getRowsJS()[0][0],
-      4n,
+    const expected = (
+      await connection.runAndReadAll(`SELECT * FROM ${names.neighbors} ORDER BY source,rank`)
+    ).getRowsJS();
+    await buildVectorNeighbors(
+      connection,
+      input,
+      {
+        metric: "cosine",
+        search: "hnsw",
+        includeSelf: false,
+        hnsw: {
+          efConstruction: 256,
+          efSearch: 512,
+          connectivity: 32,
+          candidateCount: 129,
+          singleThreaded: true,
+          cosineAsL2: true,
+        },
+      },
+      names,
     );
+    expect(
+      (
+        await connection.runAndReadAll(`SELECT * FROM ${names.neighbors} ORDER BY source,rank`)
+      ).getRowsJS(),
+    ).toStrictEqual(expected);
+    expect(
+      (await connection.runAndReadAll("SELECT current_setting('threads')")).getRowsJS()[0][0],
+    ).toStrictEqual(4n);
     await connection.run(`DROP TABLE ${names.search}`);
-    const original = connection.run;
+    const original = connection.run.bind(connection);
     connection.run = function (...args) {
       if (args[0].includes("CREATE INDEX")) {
         return Promise.reject(new Error("injected index failure"));
@@ -310,30 +347,33 @@ Deno.test("unit-L2 cosine candidates retain close angular neighbors and restore 
     try {
       await assertRejects(
         () =>
-          buildVectorNeighbors(connection, input, {
-            metric: "cosine",
-            search: "hnsw",
-            includeSelf: false,
-            hnsw: {
-              efConstruction: 256,
-              efSearch: 512,
-              connectivity: 32,
-              candidateCount: 129,
-              singleThreaded: true,
-              cosineAsL2: true,
+          buildVectorNeighbors(
+            connection,
+            input,
+            {
+              metric: "cosine",
+              search: "hnsw",
+              includeSelf: false,
+              hnsw: {
+                efConstruction: 256,
+                efSearch: 512,
+                connectivity: 32,
+                candidateCount: 129,
+                singleThreaded: true,
+                cosineAsL2: true,
+              },
             },
-          }, names),
+            names,
+          ),
         Error,
         "injected index failure",
       );
     } finally {
       connection.run = original;
     }
-    assertEquals(
-      (await connection.runAndReadAll("SELECT current_setting('threads')"))
-        .getRowsJS()[0][0],
-      4n,
-    );
+    expect(
+      (await connection.runAndReadAll("SELECT current_setting('threads')")).getRowsJS()[0][0],
+    ).toStrictEqual(4n);
   } finally {
     connection.closeSync();
     db.closeSync();

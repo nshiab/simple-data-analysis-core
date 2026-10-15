@@ -1,10 +1,12 @@
-import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SDAError from "../../../src/class/SDAError.ts";
 import { queueAsyncBarrier } from "../../../src/helpers/index.ts";
 import { peekTableGeneration } from "../../../src/helpers/tableGeneration.ts";
 
-Deno.test("queueAsyncBarrier drains nested builders before later operations", async () => {
+test("queueAsyncBarrier drains nested builders before later operations", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("remoteRows");
   let executed = false;
@@ -20,14 +22,14 @@ Deno.test("queueAsyncBarrier drains nested builders before later operations", as
   });
   table.filter("value > 1");
 
-  assertEquals(executed, false);
-  assertEquals(await table.getData(), [{ value: 2 }]);
-  assertEquals(executed, true);
-  assertEquals(sdb.pendingCount, 0);
+  expect(executed).toStrictEqual(false);
+  expect(await table.getData()).toStrictEqual([{ value: 2 }]);
+  expect(executed).toStrictEqual(true);
+  expect(sdb.pendingCount).toStrictEqual(0);
   await sdb.close();
 });
 
-Deno.test("an observer inside a queued barrier drains its earlier nested builders", async () => {
+test("an observer inside a queued barrier drains its earlier nested builders", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("observedInsideBarrier");
   let rowCountInside = 0;
@@ -43,12 +45,12 @@ Deno.test("an observer inside a queued barrier drains its earlier nested builder
   });
   table.filter("doubled > 2");
 
-  assertEquals(await table.getData(), [{ value: 2, doubled: 4 }]);
-  assertEquals(rowCountInside, 2);
+  expect(await table.getData()).toStrictEqual([{ value: 2, doubled: 4 }]);
+  expect(rowCountInside).toStrictEqual(2);
   await sdb.close();
 });
 
-Deno.test("concurrent observers inside a queued barrier share one nested drain", async () => {
+test("concurrent observers inside a queued barrier share one nested drain", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("concurrentInsideBarrier");
   let observations: [number, string[]] | undefined;
@@ -64,11 +66,11 @@ Deno.test("concurrent observers inside a queued barrier share one nested drain",
   });
 
   await table.run();
-  assertEquals(observations, [2, ["value"]]);
+  expect(observations).toStrictEqual([2, ["value"]]);
   await sdb.close();
 });
 
-Deno.test("operations queued concurrently outside a barrier stay in the top-level queue", async () => {
+test("operations queued concurrently outside a barrier stay in the top-level queue", async () => {
   const sdb = new SimpleDB();
   const first = sdb.newTable("scopedFirst");
   const second = sdb.newTable("scopedSecond");
@@ -112,14 +114,14 @@ Deno.test("operations queued concurrently outside a barrier stay in the top-leve
   releaseBarrier();
 
   await firstObservation;
-  assertEquals(calls, ["nested", "later"]);
-  assertEquals(second.pendingOps.map((op) => op.method), ["updateWithJS()"]);
+  expect(calls).toStrictEqual(["nested", "later"]);
+  expect(second.pendingOps.map((op) => op.method)).toStrictEqual(["updateWithJS()"]);
   await second.getData();
-  assertEquals(calls, ["nested", "later", "external"]);
+  expect(calls).toStrictEqual(["nested", "later", "external"]);
   await sdb.close();
 });
 
-Deno.test("nested operations retain table-generation tracking", async () => {
+test("nested operations retain table-generation tracking", async () => {
   const sdb = new SimpleDB();
   const control = sdb.newTable("generationControl");
   const data = sdb.newTable("generationData");
@@ -136,14 +138,14 @@ Deno.test("nested operations retain table-generation tracking", async () => {
     },
   });
 
-  assertEquals(peekTableGeneration(data), generationBefore);
+  expect(peekTableGeneration(data)).toStrictEqual(generationBefore);
   await control.run();
-  assertNotEquals(peekTableGeneration(data), generationBefore);
-  assertEquals(await data.getData(), [{ value: 2 }]);
+  expect(peekTableGeneration(data)).not.toStrictEqual(generationBefore);
+  expect(await data.getData()).toStrictEqual([{ value: 2 }]);
   await sdb.close();
 });
 
-Deno.test("a nested failure keeps another table's nested work queued", async () => {
+test("a nested failure keeps another table's nested work queued", async () => {
   const sdb = new SimpleDB();
   const failing = sdb.newTable("nestedFailure");
   const unaffected = sdb.newTable("nestedUnaffected");
@@ -162,14 +164,14 @@ Deno.test("a nested failure keeps another table's nested work queued", async () 
   });
 
   const error = await assertRejects(() => failing.run());
-  assertEquals(error instanceof SDAError, true);
-  assertEquals((error as SDAError).method, "filter()");
-  assertEquals(unaffected.pendingOps.map((op) => op.method), ["filter()"]);
-  assertEquals(await unaffected.getData(), [{ value: 2 }]);
+  expect(error instanceof SDAError).toStrictEqual(true);
+  expect((error as SDAError).method).toStrictEqual("filter()");
+  expect(unaffected.pendingOps.map((op) => op.method)).toStrictEqual(["filter()"]);
+  expect(await unaffected.getData()).toStrictEqual([{ value: 2 }]);
   await sdb.close();
 });
 
-Deno.test("a queued output-table barrier reads its source at its call position", async () => {
+test("a queued output-table barrier reads its source at its call position", async () => {
   const sdb = new SimpleDB();
   const source = sdb.newTable("extensionSource");
   source.loadArray([{ value: 1 }, { value: 2 }]);
@@ -185,12 +187,12 @@ Deno.test("a queued output-table barrier reads its source at its call position",
   output.filter("value > 1");
   source.filter("value > 100");
 
-  assertEquals(await output.getData(), [{ value: 2 }]);
-  assertEquals(await source.getData(), []);
+  expect(await output.getData()).toStrictEqual([{ value: 2 }]);
+  expect(await source.getData()).toStrictEqual([]);
   await sdb.close();
 });
 
-Deno.test("a rejected async barrier discards nested builders not yet drained", async () => {
+test("a rejected async barrier discards nested builders not yet drained", async () => {
   const sdb = new SimpleDB();
   const barrierTable = sdb.newTable("rejectedBarrier");
   const nestedTable = sdb.newTable("discardedNestedWork");
@@ -209,13 +211,13 @@ Deno.test("a rejected async barrier discards nested builders not yet drained", a
   });
 
   await assertRejects(() => barrierTable.run(), Error, "Barrier failed");
-  assertEquals(nestedTable.pendingOps, []);
-  assertEquals(sdb.pendingCount, 0);
-  assertEquals(await nestedTable.getData(), [{ value: 1 }, { value: 2 }]);
+  expect(nestedTable.pendingOps).toStrictEqual([]);
+  expect(sdb.pendingCount).toStrictEqual(0);
+  expect(await nestedTable.getData()).toStrictEqual([{ value: 1 }, { value: 2 }]);
   await sdb.close();
 });
 
-Deno.test("a rejected async barrier does not roll back nested builders already drained", async () => {
+test("a rejected async barrier does not roll back nested builders already drained", async () => {
   const sdb = new SimpleDB();
   const barrierTable = sdb.newTable("rejectedAfterDrain");
   const nestedTable = sdb.newTable("appliedNestedWork");
@@ -233,11 +235,7 @@ Deno.test("a rejected async barrier does not roll back nested builders already d
     },
   });
 
-  await assertRejects(
-    () => barrierTable.run(),
-    Error,
-    "Barrier failed after drain",
-  );
-  assertEquals(await nestedTable.getData(), [{ value: 2 }]);
+  await assertRejects(() => barrierTable.run(), Error, "Barrier failed after drain");
+  expect(await nestedTable.getData()).toStrictEqual([{ value: 2 }]);
   await sdb.close();
 });

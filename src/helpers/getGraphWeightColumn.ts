@@ -27,14 +27,12 @@ export default function getGraphWeightColumn(
   method: string,
 ): GraphWeightColumn {
   const folded = foldIdentifier(requestedWeight);
-  const column = Object.keys(schema).find((name) =>
-    foldIdentifier(name) === folded
-  );
+  const column = Object.keys(schema).find((name) => foldIdentifier(name) === folded);
   if (column === undefined) {
     throw new Error(
-      `${method} the column ${
-        quoteIdentifier(requestedWeight)
-      } does not exist. Check for typos, or load the data first.`,
+      `${method} the column ${quoteIdentifier(
+        requestedWeight,
+      )} does not exist. Check for typos, or load the data first.`,
     );
   }
 
@@ -59,8 +57,8 @@ export default function getGraphWeightColumn(
   }
 
   throw new TypeError(
-    `${method} requires a numeric weight column, but column ${
-      quoteIdentifier(column)
-    } has type ${type}.`,
+    `${method} requires a numeric weight column, but column ${quoteIdentifier(
+      column,
+    )} has type ${type}.`,
   );
 }

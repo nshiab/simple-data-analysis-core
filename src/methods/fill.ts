@@ -16,9 +16,7 @@ export default function fill(
 ) {
   // This validation doesn't need the database, so it stays at call time.
   if (options.interpolateBy && options.interpolate === false) {
-    throw new Error(
-      `interpolate cannot be false when interpolateBy is set.`,
-    );
+    throw new Error(`interpolate cannot be false when interpolateBy is set.`);
   }
 
   // The fill order is based on rowid, which only exists on the materialized
@@ -55,51 +53,44 @@ async function executeFill(
     const windowOrder = options.interpolateBy
       ? `${quoteIdentifier(options.interpolateBy)}`
       : "rowid";
-    const overClause = by.length > 0
-      ? `(PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")})`
-      : `()`;
+    const overClause =
+      by.length > 0 ? `(PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")})` : `()`;
     selectList = cols
       .map(
         (col) =>
-          `fill(${
-            quoteIdentifier(col)
-          } ORDER BY ${windowOrder}) OVER ${overClause} as ${
-            quoteIdentifier(col)
-          }`,
+          `fill(${quoteIdentifier(
+            col,
+          )} ORDER BY ${windowOrder}) OVER ${overClause} as ${quoteIdentifier(col)}`,
       )
       .join(", ");
   } else if (by.length > 0) {
-    const partition = `PARTITION BY ${
-      by.map((d) => `${quoteIdentifier(d)}`).join(", ")
-    }`;
+    const partition = `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")}`;
     selectList = cols
       .map(
         (col) =>
-          `COALESCE(${quoteIdentifier(col)}, LAG(${
-            quoteIdentifier(col)
-          } IGNORE NULLS) OVER(${partition} ORDER BY rowid)) as ${
-            quoteIdentifier(col)
-          }`,
+          `COALESCE(${quoteIdentifier(col)}, LAG(${quoteIdentifier(
+            col,
+          )} IGNORE NULLS) OVER(${partition} ORDER BY rowid)) as ${quoteIdentifier(col)}`,
       )
       .join(", ");
   } else {
     selectList = cols
       .map(
         (col) =>
-          `COALESCE(${quoteIdentifier(col)}, LAG(${
-            quoteIdentifier(col)
-          } IGNORE NULLS) OVER(ORDER BY rowid)) as ${quoteIdentifier(col)}`,
+          `COALESCE(${quoteIdentifier(col)}, LAG(${quoteIdentifier(
+            col,
+          )} IGNORE NULLS) OVER(ORDER BY rowid)) as ${quoteIdentifier(col)}`,
       )
       .join(", ");
   }
 
   await queryDB(
     simpleTable,
-    `CREATE OR REPLACE TABLE ${
-      quoteIdentifier(simpleTable.name)
-    } AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM ${
-      quoteIdentifier(simpleTable.name)
-    } ORDER BY rowid;`,
+    `CREATE OR REPLACE TABLE ${quoteIdentifier(
+      simpleTable.name,
+    )} AS SELECT * EXCLUDE(${excludeList}), ${selectList} FROM ${quoteIdentifier(
+      simpleTable.name,
+    )} ORDER BY rowid;`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       method: "fill()",

@@ -6,31 +6,19 @@ import normalizeCacheCode from "./normalizeCacheCode.ts";
  * Converts cache inputs to a deterministic, type-tagged representation.
  * SimpleTable values are represented by their name and current generation.
  */
-export default function serializeCacheInputs(
-  inputs: readonly unknown[],
-): string {
+export default function serializeCacheInputs(inputs: readonly unknown[]): string {
   if (!Array.isArray(inputs)) {
     throw new TypeError("cache() options.inputs must be an array.");
   }
-  return serializeValue(
-    inputs,
-    "inputs",
-    new Set<object>(),
-  );
+  return serializeValue(inputs, "inputs", new Set<object>());
 }
 
 /** Returns a user-facing cache diagnostic label for supported input values. */
 export function getCacheInputLabel(value: unknown): string | undefined {
-  return value instanceof SimpleTable
-    ? `table ${JSON.stringify(value.name)}`
-    : undefined;
+  return value instanceof SimpleTable ? `table ${JSON.stringify(value.name)}` : undefined;
 }
 
-function serializeValue(
-  value: unknown,
-  path: string,
-  ancestors: Set<object>,
-): string {
+function serializeValue(value: unknown, path: string, ancestors: Set<object>): string {
   if (value === null) {
     return JSON.stringify(["null"]);
   }
@@ -56,11 +44,7 @@ function serializeValue(
   }
 
   if (value instanceof SimpleTable) {
-    return JSON.stringify([
-      "SimpleTable",
-      value.name,
-      getTableGeneration(value),
-    ]);
+    return JSON.stringify(["SimpleTable", value.name, getTableGeneration(value)]);
   }
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) {
@@ -77,13 +61,7 @@ function serializeValue(
     if (Array.isArray(value)) {
       const serializedItems: string[] = [];
       for (let i = 0; i < value.length; i++) {
-        serializedItems.push(
-          serializeValue(
-            value[i],
-            `${path}[${i}]`,
-            ancestors,
-          ),
-        );
+        serializedItems.push(serializeValue(value[i], `${path}[${i}]`, ancestors));
       }
       return JSON.stringify(["array", serializedItems]);
     }
@@ -100,14 +78,7 @@ function serializeValue(
     }
     const serializedEntries: [string, string][] = [];
     for (const key of Object.keys(value).sort()) {
-      serializedEntries.push([
-        key,
-        serializeValue(
-          value[key],
-          propertyPath(path, key),
-          ancestors,
-        ),
-      ]);
+      serializedEntries.push([key, serializeValue(value[key], propertyPath(path, key), ancestors)]);
     }
     return JSON.stringify(["object", serializedEntries]);
   } finally {
@@ -131,13 +102,11 @@ function serializeNumber(value: number): string {
   return JSON.stringify(["number", value.toString()]);
 }
 
-function isPlainObject(
-  value: unknown,
-): value is Readonly<Record<string, unknown>> {
+function isPlainObject(value: unknown): value is Readonly<Record<string, unknown>> {
   if (value === null || typeof value !== "object") {
     return false;
   }
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 

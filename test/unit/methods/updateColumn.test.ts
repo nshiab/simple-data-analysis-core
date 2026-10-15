@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should update a column", async () => {
+test("should update a column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData(["test/data/files/cities.csv"]);
@@ -9,7 +11,7 @@ Deno.test("should update a column", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { id: 1108380, city: "VAN" },
     { id: 6158355, city: "TOR" },
     { id: 7024745, city: "MON" },
@@ -18,19 +20,16 @@ Deno.test("should update a column", async () => {
   await sdb.close();
 });
 
-Deno.test("should update a column with a space in its name", async () => {
+test("should update a column with a space in its name", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/employees.csv");
-  table.updateColumn(
-    "Department or unit",
-    `left("Department or unit", 1)`,
-  );
+  table.updateColumn("Department or unit", `left("Department or unit", 1)`);
   table.selectRows(3);
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       Name: "OConnell, Donald",
       "Hire date": "21-JUN-07",
@@ -60,60 +59,66 @@ Deno.test("should update a column with a space in its name", async () => {
   await sdb.close();
 });
 
-Deno.test("updateColumn reads a JSON field with dot notation", async () => {
+test("updateColumn reads a JSON field with dot notation", async () => {
   const sdb = new SimpleDB();
   try {
-    const table = sdb.newTable().loadArray([
-      { count: 0, details: { count: 3 } },
-      { count: 0, details: { other: 4 } },
-      { count: 0, details: null },
-    ], { columnTypes: { details: "JSON" } })
+    const table = sdb
+      .newTable()
+      .loadArray(
+        [
+          { count: 0, details: { count: 3 } },
+          { count: 0, details: { other: 4 } },
+          { count: 0, details: null },
+        ],
+        { columnTypes: { details: "JSON" } },
+      )
       .updateColumn("count", "details.count");
-    assertEquals(await table.getData(), [
+    expect(await table.getData()).toStrictEqual([
       { count: 3, details: '{"count":3}' },
       { count: null, details: '{"other":4}' },
       { count: null, details: null },
     ]);
-    assertEquals(await table.getTypes(), { count: "DOUBLE", details: "JSON" });
+    expect(await table.getTypes()).toStrictEqual({ count: "DOUBLE", details: "JSON" });
   } finally {
     await sdb.close();
   }
 });
 
 for (const materializeBetweenUpdates of [false, true]) {
-  Deno.test(`updateColumn preserves JSON, vector and geometry types and nulls (materialize: ${materializeBetweenUpdates})`, async () => {
+  test(`updateColumn preserves JSON, vector and geometry types and nulls (materialize: ${materializeBetweenUpdates})`, async () => {
     const sdb = new SimpleDB();
     try {
-      const table = sdb.newTable().loadArray([
+      const table = sdb.newTable().loadArray(
+        [
+          {
+            details: { count: 3 },
+            embedding: [0.25, 0.5, 0.75],
+            geom: { type: "Point", coordinates: [-73, 45] },
+          },
+          { details: null, embedding: null, geom: null },
+        ],
         {
-          details: { count: 3 },
-          embedding: [0.25, 0.5, 0.75],
-          geom: { type: "Point", coordinates: [-73, 45] },
+          columnTypes: {
+            details: "JSON",
+            embedding: "FLOAT[3]",
+            geom: "GEOMETRY('EPSG:4326')",
+          },
         },
-        { details: null, embedding: null, geom: null },
-      ], {
-        columnTypes: {
-          details: "JSON",
-          embedding: "FLOAT[3]",
-          geom: "GEOMETRY('EPSG:4326')",
-        },
-      });
+      );
       const types = await table.getTypes();
-      for (
-        const [column, expression] of [
-          [
-            "details",
-            `CASE WHEN details IS NULL THEN NULL ELSE json_merge_patch(details, '{"active":true}') END`,
-          ],
-          ["embedding", "list_transform(embedding, x -> x * 2)"],
-          ["geom", "ST_Point(ST_X(geom) + 1, ST_Y(geom))"],
-        ]
-      ) {
+      for (const [column, expression] of [
+        [
+          "details",
+          `CASE WHEN details IS NULL THEN NULL ELSE json_merge_patch(details, '{"active":true}') END`,
+        ],
+        ["embedding", "list_transform(embedding, x -> x * 2)"],
+        ["geom", "ST_Point(ST_X(geom) + 1, ST_Y(geom))"],
+      ]) {
         table.updateColumn(column, expression);
         if (materializeBetweenUpdates) await table.getTypes();
       }
       const geo = await table.getGeoData();
-      assertEquals(geo, {
+      expect(geo).toStrictEqual({
         type: "FeatureCollection",
         features: [
           {
@@ -131,40 +136,43 @@ for (const materializeBetweenUpdates of [false, true]) {
           },
         ],
       });
-      assertEquals(await table.getTypes(), types);
+      expect(await table.getTypes()).toStrictEqual(types);
     } finally {
       await sdb.close();
     }
   });
 }
 
-for (
-  const [column, expression] of [
-    ["details", "'invalid JSON'"],
-    ["embedding", "[1, 2]"],
-    ["geom", "'invalid geometry'"],
-  ]
-) {
-  Deno.test(`updateColumn rejects invalid ${column} values without changing the table`, async () => {
+for (const [column, expression] of [
+  ["details", "'invalid JSON'"],
+  ["embedding", "[1, 2]"],
+  ["geom", "'invalid geometry'"],
+]) {
+  test(`updateColumn rejects invalid ${column} values without changing the table`, async () => {
     const sdb = new SimpleDB();
     try {
-      const table = sdb.newTable().loadArray([{
-        details: { count: 3 },
-        embedding: [0.25, 0.5, 0.75],
-        geom: { type: "Point", coordinates: [-73, 45] },
-      }], {
-        columnTypes: {
-          details: "JSON",
-          embedding: "FLOAT[3]",
-          geom: "GEOMETRY('EPSG:4326')",
+      const table = sdb.newTable().loadArray(
+        [
+          {
+            details: { count: 3 },
+            embedding: [0.25, 0.5, 0.75],
+            geom: { type: "Point", coordinates: [-73, 45] },
+          },
+        ],
+        {
+          columnTypes: {
+            details: "JSON",
+            embedding: "FLOAT[3]",
+            geom: "GEOMETRY('EPSG:4326')",
+          },
         },
-      });
+      );
       const original = await table.getGeoData();
       const types = await table.getTypes();
       table.updateColumn(column, expression);
       await assertRejects(() => table.getTypes());
-      assertEquals(await table.getGeoData(), original);
-      assertEquals(await table.getTypes(), types);
+      expect(await table.getGeoData()).toStrictEqual(original);
+      expect(await table.getTypes()).toStrictEqual(types);
     } finally {
       await sdb.close();
     }

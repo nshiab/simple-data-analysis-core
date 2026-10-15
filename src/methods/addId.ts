@@ -26,28 +26,23 @@ export default function addId(
     parameters: { newColumn, options },
     execute: async () => {
       const types = await simpleTable.getTypes();
-      const existingColumn = Object.keys(types).find((column) =>
-        foldIdentifier(column) === foldIdentifier(newColumn)
+      const existingColumn = Object.keys(types).find(
+        (column) => foldIdentifier(column) === foldIdentifier(newColumn),
       );
-      assertNewColumns(
-        types,
-        [existingColumn ?? newColumn],
-        "addId()",
-      );
+      assertNewColumns(types, [existingColumn ?? newColumn], "addId()");
 
       // An empty window preserves scan order without referencing rowid, which
       // may be shadowed by a user column.
       const rowNumber = "(ROW_NUMBER() OVER () - 1)";
-      const id = options.prefix === undefined
-        ? rowNumber
-        : `CONCAT(?, CAST(${rowNumber} AS VARCHAR))`;
+      const id =
+        options.prefix === undefined ? rowNumber : `CONCAT(?, CAST(${rowNumber} AS VARCHAR))`;
       await queryDB(
         simpleTable,
-        `CREATE OR REPLACE TABLE ${
-          quoteIdentifier(simpleTable.name)
-        } AS SELECT *, ${id} AS ${quoteIdentifier(newColumn)} FROM ${
-          quoteIdentifier(simpleTable.name)
-        }`,
+        `CREATE OR REPLACE TABLE ${quoteIdentifier(
+          simpleTable.name,
+        )} AS SELECT *, ${id} AS ${quoteIdentifier(newColumn)} FROM ${quoteIdentifier(
+          simpleTable.name,
+        )}`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "addId()",

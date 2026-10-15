@@ -43,9 +43,7 @@ export default function scanSQL(query: string): Token[] {
     } else {
       // DuckDB permits non-ASCII characters in dollar tags, including
       // combining marks and characters outside the Unicode letter categories.
-      const dollar = rest.match(
-        /^\$(?:[A-Za-z_\u0080-\uFFFF][A-Za-z_0-9\u0080-\uFFFF]*)?\$/,
-      )?.[0];
+      const dollar = rest.match(/^\$(?:[A-Za-z_\u0080-\uFFFF][A-Za-z_0-9\u0080-\uFFFF]*)?\$/)?.[0];
       if (dollar) {
         kind = "quoted";
         const end = query.indexOf(dollar, i + dollar.length);

@@ -19,9 +19,5 @@ export default async function findGeoColumn(
   simpleTable: SimpleTable,
   method: string,
 ): Promise<string> {
-  return findGeoColumnFromSchema(
-    await simpleTable.getTypes(),
-    method,
-    simpleTable.name,
-  );
+  return findGeoColumnFromSchema(await simpleTable.getTypes(), method, simpleTable.name);
 }

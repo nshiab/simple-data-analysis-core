@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should nest rows based on a single category", async () => {
+test("should nest rows based on a single category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -20,7 +21,7 @@ Deno.test("should nest rows based on a single category", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       city: "Montreal",
       neighborhoods: "Old Montreal / Chinatown / Griffintown",
@@ -35,7 +36,7 @@ Deno.test("should nest rows based on a single category", async () => {
   await sdb.close();
 });
 
-Deno.test("should nest with multiple category columns", async () => {
+test("should nest with multiple category columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -51,7 +52,7 @@ Deno.test("should nest with multiple category columns", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { country: "Canada", city: "Montreal", tags: "red,blue" },
     { country: "Canada", city: "Toronto", tags: "green,yellow" },
     { country: "USA", city: "New York", tags: "orange,purple" },
@@ -60,7 +61,7 @@ Deno.test("should nest with multiple category columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should work as inverse of unnest (round-trip test)", async () => {
+test("should work as inverse of unnest (round-trip test)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
 
@@ -83,26 +84,28 @@ Deno.test("should work as inverse of unnest (round-trip test)", async () => {
   table.unnest("neighborhoods", " / ");
 
   const unnested = await table.getData();
-  assertEquals(unnested.length, 9); // 3 rows expanded to 9
+  expect(unnested.length).toStrictEqual(9); // 3 rows expanded to 9
 
   // Nest back to original structure
   table.nest("neighborhoods", " / ", "city");
 
   const nested = await table.getData();
-  assertEquals(nested, originalData);
+  expect(nested).toStrictEqual(originalData);
 
   await sdb.close();
 });
 
-Deno.test("should bind a nesting separator containing an apostrophe", async () => {
+test("should bind a nesting separator containing an apostrophe", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("boundNest");
 
-  table.loadArray([
-    { group: "a", value: "rock" },
-    { group: "a", value: "roll" },
-  ]).nest("value", "'n'", "group");
+  table
+    .loadArray([
+      { group: "a", value: "rock" },
+      { group: "a", value: "roll" },
+    ])
+    .nest("value", "'n'", "group");
 
-  assertEquals(await table.getData(), [{ group: "a", value: "rock'n'roll" }]);
+  expect(await table.getData()).toStrictEqual([{ group: "a", value: "rock'n'roll" }]);
   await sdb.close();
 });

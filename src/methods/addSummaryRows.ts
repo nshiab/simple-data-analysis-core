@@ -1,8 +1,5 @@
 import assertColumnsExist from "../helpers/assertColumnsExist.ts";
-import getStatExpression, {
-  allStats,
-  type Stat,
-} from "../helpers/getStatExpression.ts";
+import getStatExpression, { allStats, type Stat } from "../helpers/getStatExpression.ts";
 import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -11,22 +8,18 @@ import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 type StatRowOperation = Exclude<Stat, "count">;
-type StatRow =
-  | StatRowOperation
-  | { stat: StatRowOperation; label?: string };
+type StatRow = StatRowOperation | { stat: StatRowOperation; label?: string };
 type NormalizedStatRow = { stat: StatRowOperation; label: string };
 type AddSummaryRowsOptions = {
   stats?: StatRow | StatRow[];
   position?: "top" | "bottom";
 };
 
-const allStatRowOperations = allStats.filter(
-  (stat): stat is StatRowOperation => stat !== "count",
-);
+const allStatRowOperations = allStats.filter((stat): stat is StatRowOperation => stat !== "count");
 
 export default function addSummaryRows(
   simpleTable: SimpleTable,
-  columns: "all" | string | string[],
+  columns: string | string[],
   labelColumn: string,
   options: AddSummaryRowsOptions = {},
 ) {
@@ -37,20 +30,18 @@ export default function addSummaryRows(
     options.position !== "bottom"
   ) {
     throw new Error(
-      `addSummaryRows() options.position must be "top" or "bottom". Received ${
-        JSON.stringify(options.position)
-      }.`,
+      `addSummaryRows() options.position must be "top" or "bottom". Received ${JSON.stringify(
+        options.position,
+      )}.`,
     );
   }
   const selectedColumns = columns === "all" ? "all" : stringToArray(columns);
   if (selectedColumns !== "all" && selectedColumns.length === 0) {
-    throw new Error(
-      'addSummaryRows() requires at least one column or "all".',
-    );
+    throw new Error('addSummaryRows() requires at least one column or "all".');
   }
   if (selectedColumns !== "all") {
-    const duplicates = selectedColumns.filter((column, index) =>
-      selectedColumns.indexOf(column) !== index
+    const duplicates = selectedColumns.filter(
+      (column, index) => selectedColumns.indexOf(column) !== index,
     );
     if (duplicates.length > 0) {
       throw new Error(
@@ -61,9 +52,7 @@ export default function addSummaryRows(
     }
     if (selectedColumns.includes(labelColumn)) {
       throw new Error(
-        `addSummaryRows() label column ${
-          quoteIdentifier(labelColumn)
-        } cannot also be summarized.`,
+        `addSummaryRows() label column ${quoteIdentifier(labelColumn)} cannot also be summarized.`,
       );
     }
   }
@@ -87,14 +76,9 @@ export default function addSummaryRows(
   });
 }
 
-function normalizeStatRows(
-  stats?: StatRow | StatRow[],
-): NormalizedStatRow[] {
-  const rows = stats === undefined
-    ? [...allStatRowOperations]
-    : Array.isArray(stats)
-    ? stats
-    : [stats];
+function normalizeStatRows(stats?: StatRow | StatRow[]): NormalizedStatRow[] {
+  const rows =
+    stats === undefined ? [...allStatRowOperations] : Array.isArray(stats) ? stats : [stats];
   if (rows.length === 0) {
     throw new Error(
       "addSummaryRows() stats cannot be an empty array. Omit stats to add every supported stat.",
@@ -119,14 +103,12 @@ function normalizeStatRows(
   });
 }
 
-function assertStat(
-  stat: string,
-): asserts stat is StatRowOperation {
+function assertStat(stat: string): asserts stat is StatRowOperation {
   if (!(allStatRowOperations as readonly string[]).includes(stat)) {
     throw new Error(
-      `addSummaryRows() stat ${JSON.stringify(stat)} is not supported. Use ${
-        allStatRowOperations.map((value) => JSON.stringify(value)).join(", ")
-      }.`,
+      `addSummaryRows() stat ${JSON.stringify(stat)} is not supported. Use ${allStatRowOperations
+        .map((value) => JSON.stringify(value))
+        .join(", ")}.`,
     );
   }
 }
@@ -144,9 +126,9 @@ function addSummaryRowsSelect(
   assertColumnsExist(schema, [labelColumn], method);
   if (schema[labelColumn] !== "VARCHAR") {
     throw new Error(
-      `${method} label column ${
-        quoteIdentifier(labelColumn)
-      } must have type VARCHAR, but has type ${schema[labelColumn]}.`,
+      `${method} label column ${quoteIdentifier(
+        labelColumn,
+      )} must have type VARCHAR, but has type ${schema[labelColumn]}.`,
     );
   }
 
@@ -160,16 +142,12 @@ function addSummaryRowsSelect(
   if (columns !== "all") {
     assertColumnsExist(schema, selectedColumns, method);
     const numericalColumnSet = new Set(numericalColumns);
-    const nonNumericalColumns = selectedColumns.filter((column) =>
-      !numericalColumnSet.has(column)
-    );
+    const nonNumericalColumns = selectedColumns.filter((column) => !numericalColumnSet.has(column));
     if (nonNumericalColumns.length > 0) {
       throw new Error(
-        `${method} requires numeric columns, but ${
-          nonNumericalColumns.map((column) =>
-            `${quoteIdentifier(column)} has type ${schema[column]}`
-          ).join(", ")
-        }. Convert ${
+        `${method} requires numeric columns, but ${nonNumericalColumns
+          .map((column) => `${quoteIdentifier(column)} has type ${schema[column]}`)
+          .join(", ")}. Convert ${
           nonNumericalColumns.length === 1 ? "it" : "them"
         } to a numeric type first.`,
       );
@@ -178,17 +156,14 @@ function addSummaryRowsSelect(
 
   const selectedColumnSet = new Set(selectedColumns);
   const kindColumn = unusedColumn(schema, "_sda_stat_kind");
-  const orderColumn = unusedColumn(
-    { ...schema, [kindColumn]: "INTEGER" },
-    "_sda_stat_order",
-  );
+  const orderColumn = unusedColumn({ ...schema, [kindColumn]: "INTEGER" }, "_sda_stat_order");
   const projectedColumns = tableColumns.map(quoteIdentifier).join(", ");
   const dataKind = position === "top" ? 1 : 0;
   const statKind = position === "top" ? 0 : 1;
   const branches = [
-    `SELECT ${projectedColumns}, ${dataKind} AS ${
-      quoteIdentifier(kindColumn)
-    }, ROW_NUMBER() OVER () AS ${quoteIdentifier(orderColumn)} FROM ${input}`,
+    `SELECT ${projectedColumns}, ${dataKind} AS ${quoteIdentifier(
+      kindColumn,
+    )}, ROW_NUMBER() OVER () AS ${quoteIdentifier(orderColumn)} FROM ${input}`,
     ...statRows.map((row, index) => {
       const projections = tableColumns.map((column) => {
         if (column === labelColumn) {
@@ -205,18 +180,18 @@ function addSummaryRowsSelect(
         );
         if (expression === null) {
           throw new Error(
-            `${method} stat ${
-              JSON.stringify(row.stat)
-            } cannot be computed for column ${
-              quoteIdentifier(column)
-            } with type ${schema[column]}.`,
+            `${method} stat ${JSON.stringify(
+              row.stat,
+            )} cannot be computed for column ${quoteIdentifier(
+              column,
+            )} with type ${schema[column]}.`,
           );
         }
         return `${expression} AS ${quoteIdentifier(column)}`;
       });
-      return `SELECT ${projections.join(", ")}, ${statKind} AS ${
-        quoteIdentifier(kindColumn)
-      }, ${index} AS ${quoteIdentifier(orderColumn)} FROM ${input}`;
+      return `SELECT ${projections.join(", ")}, ${statKind} AS ${quoteIdentifier(
+        kindColumn,
+      )}, ${index} AS ${quoteIdentifier(orderColumn)} FROM ${input}`;
     }),
   ];
 

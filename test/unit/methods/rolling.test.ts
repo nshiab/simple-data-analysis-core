@@ -1,7 +1,9 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should compute a rolling average with 3 preceding and 3 following", async () => {
+test("should compute a rolling average with 3 preceding and 3 following", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -21,7 +23,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following", a
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { value: 52, rollingAvg: null },
     { value: 76, rollingAvg: null },
     { value: 36, rollingAvg: null },
@@ -37,7 +39,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following", a
   await sdb.close();
 });
 
-Deno.test("should compute a rolling average with 3 preceding and 3 following, and 4 decimals", async () => {
+test("should compute a rolling average with 3 preceding and 3 following, and 4 decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -59,7 +61,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following, an
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { value: 52, rollingAvg: null },
     { value: 76, rollingAvg: null },
     { value: 36, rollingAvg: null },
@@ -75,7 +77,7 @@ Deno.test("should compute a rolling average with 3 preceding and 3 following, an
   await sdb.close();
 });
 
-Deno.test("should compute a rolling max with 0 preceding and 3 following", async () => {
+test("should compute a rolling max with 0 preceding and 3 following", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -95,7 +97,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following", async
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { value: 52, rollingMax: 95 },
     { value: 76, rollingMax: 95 },
     { value: 36, rollingMax: 95 },
@@ -111,7 +113,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following", async
   await sdb.close();
 });
 
-Deno.test("should compute a rolling max with 0 preceding and 3 following, and a category", async () => {
+test("should compute a rolling max with 0 preceding and 3 following, and a category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -133,7 +135,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
   table.sort({ index: "asc" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { index: 1, groups: "a", value: 52, rollingMax: 95 },
     { index: 2, groups: "a", value: 76, rollingMax: 95 },
     { index: 3, groups: "a", value: 36, rollingMax: null },
@@ -149,7 +151,7 @@ Deno.test("should compute a rolling max with 0 preceding and 3 following, and a 
   await sdb.close();
 });
 
-Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+test("should throw when the new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([

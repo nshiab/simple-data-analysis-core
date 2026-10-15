@@ -9,10 +9,7 @@ import mergeOptions from "../helpers/mergeOptions.ts";
 import queueOp from "../helpers/queueOp.ts";
 import queryDB from "../helpers/queryDB.ts";
 import { loadDataQuery } from "./loadData.ts";
-import {
-  createStatCanCacheId,
-  useStatCanCache,
-} from "../helpers/statCanCache.ts";
+import { createStatCanCacheId, useStatCanCache } from "../helpers/statCanCache.ts";
 
 type LoadStatCanOptions = {
   lang?: "en" | "fr";
@@ -25,8 +22,7 @@ type StatCanDownloadResponse = {
   object?: unknown;
 };
 
-const DOWNLOAD_ENDPOINT =
-  "https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV";
+const DOWNLOAD_ENDPOINT = "https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV";
 
 // Adapted from getStatCanTable() in @nshiab/journalism-web-scraping.
 
@@ -45,8 +41,7 @@ export default function loadStatCanData(
     kind: "barrier",
     method: "loadStatCanData()",
     parameters,
-    execute: () =>
-      executeLoadStatCanData(table, pid, lang, options, parameters),
+    execute: () => executeLoadStatCanData(table, pid, lang, options, parameters),
   });
 }
 
@@ -60,38 +55,31 @@ async function executeLoadStatCanData(
   const cacheEnabled = options.cache ?? true;
   const cacheId = createStatCanCacheId(pid, lang);
   try {
-    await useStatCanCache(
-      table,
-      cacheId,
-      cacheEnabled,
-      options.ttl,
-      parameters,
-      async () => {
-        const downloadUrl = await getDownloadUrl(pid, lang);
-        const temporaryDirectory = ".sda-cache/tmp";
-        mkdirSync(temporaryDirectory, { recursive: true });
-        const prefix = `${cacheId}.${crypto.randomUUID()}`;
-        const archive = `${temporaryDirectory}/${prefix}.zip`;
-        const csv = `${temporaryDirectory}/${prefix}.csv`;
+    await useStatCanCache(table, cacheId, cacheEnabled, options.ttl, parameters, async () => {
+      const downloadUrl = await getDownloadUrl(pid, lang);
+      const temporaryDirectory = ".sda-cache/tmp";
+      mkdirSync(temporaryDirectory, { recursive: true });
+      const prefix = `${cacheId}.${crypto.randomUUID()}`;
+      const archive = `${temporaryDirectory}/${prefix}.zip`;
+      const csv = `${temporaryDirectory}/${prefix}.csv`;
 
-        try {
-          await downloadToFile(downloadUrl, archive);
-          await extractZipEntryToFile(archive, `${pid}.csv`, csv);
-          await queryDB(
-            table,
-            loadDataQuery(table.name, [csv], { fileType: "csv" }),
-            mergeOptions(table, {
-              table: table.name,
-              method: "loadStatCanData()",
-              parameters,
-            }),
-          );
-        } finally {
-          rmSync(archive, { force: true });
-          rmSync(csv, { force: true });
-        }
-      },
-    );
+      try {
+        await downloadToFile(downloadUrl, archive);
+        await extractZipEntryToFile(archive, `${pid}.csv`, csv);
+        await queryDB(
+          table,
+          loadDataQuery(table.name, [csv], { fileType: "csv" }),
+          mergeOptions(table, {
+            table: table.name,
+            method: "loadStatCanData()",
+            parameters,
+          }),
+        );
+      } finally {
+        rmSync(archive, { force: true });
+        rmSync(csv, { force: true });
+      }
+    });
   } catch (error) {
     if (error instanceof SDAError) {
       throw error;
@@ -105,10 +93,7 @@ async function executeLoadStatCanData(
   }
 }
 
-async function getDownloadUrl(
-  pid: string,
-  lang: "en" | "fr",
-): Promise<string> {
+async function getDownloadUrl(pid: string, lang: "en" | "fr"): Promise<string> {
   const url = `${DOWNLOAD_ENDPOINT}/${pid}/${lang}`;
   const response = await fetch(url, {
     headers: {
@@ -117,24 +102,16 @@ async function getDownloadUrl(
     },
   });
   if (!response.ok) {
-    throw await httpError(
-      "retrieve the Statistics Canada download URL",
-      url,
-      response,
-    );
+    throw await httpError("retrieve the Statistics Canada download URL", url, response);
   }
 
-  const result = await response.json() as StatCanDownloadResponse;
+  const result = (await response.json()) as StatCanDownloadResponse;
   if (result.status !== "SUCCESS" || typeof result.object !== "string") {
-    throw new Error(
-      `Statistics Canada did not return a CSV download URL for PID ${pid}.`,
-    );
+    throw new Error(`Statistics Canada did not return a CSV download URL for PID ${pid}.`);
   }
   const downloadUrl = new URL(result.object);
   if (downloadUrl.protocol !== "http:" && downloadUrl.protocol !== "https:") {
-    throw new Error(
-      `Statistics Canada returned an invalid CSV download URL for PID ${pid}.`,
-    );
+    throw new Error(`Statistics Canada returned an invalid CSV download URL for PID ${pid}.`);
   }
   return downloadUrl.href;
 }
@@ -151,9 +128,9 @@ async function downloadToFile(url: string, file: string): Promise<void> {
   }
   if (response.body === null) {
     throw new Error(
-      `Could not download Statistics Canada data from ${
-        JSON.stringify(url)
-      }: the response body is empty.`,
+      `Could not download Statistics Canada data from ${JSON.stringify(
+        url,
+      )}: the response body is empty.`,
     );
   }
   try {
@@ -167,16 +144,12 @@ async function downloadToFile(url: string, file: string): Promise<void> {
   }
 }
 
-async function httpError(
-  action: string,
-  url: string,
-  response: Response,
-): Promise<Error> {
+async function httpError(action: string, url: string, response: Response): Promise<Error> {
   const responseText = (await response.text()).slice(0, 500).trim();
   return new Error(
-    `Could not ${action} from ${
-      JSON.stringify(url)
-    }: HTTP ${response.status} ${response.statusText}${
+    `Could not ${action} from ${JSON.stringify(
+      url,
+    )}: HTTP ${response.status} ${response.statusText}${
       responseText.length > 0 ? `\n${responseText}` : ""
     }`,
   );
@@ -196,18 +169,13 @@ export function normalizeStatCanPid(pid: string): string {
 }
 
 function assertOptions(options: LoadStatCanOptions): void {
-  if (
-    options.lang !== undefined && options.lang !== "en" && options.lang !== "fr"
-  ) {
+  if (options.lang !== undefined && options.lang !== "en" && options.lang !== "fr") {
     throw new Error('loadStatCanData() options.lang must be "en" or "fr".');
   }
   if (options.cache !== undefined && typeof options.cache !== "boolean") {
     throw new TypeError("loadStatCanData() options.cache must be a boolean.");
   }
-  if (
-    options.ttl !== undefined &&
-    (!Number.isFinite(options.ttl) || options.ttl < 0)
-  ) {
+  if (options.ttl !== undefined && (!Number.isFinite(options.ttl) || options.ttl < 0)) {
     throw new Error(
       "loadStatCanData() options.ttl must be a finite, non-negative number of seconds.",
     );

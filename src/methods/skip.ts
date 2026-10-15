@@ -1,10 +1,7 @@
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function skip(
-  simpleTable: SimpleTable,
-  count: number,
-) {
+export default function skip(simpleTable: SimpleTable, count: number) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "skip()",

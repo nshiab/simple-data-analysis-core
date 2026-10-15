@@ -1,15 +1,16 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import SimpleTable from "../../../src/class/SimpleTable.ts";
 
-Deno.test("tableClass defaults to SimpleTable", async () => {
+test("tableClass defaults to SimpleTable", async () => {
   const sdb = new SimpleDB();
-  assertEquals(sdb.tableClass, SimpleTable);
+  expect(sdb.tableClass).toStrictEqual(SimpleTable);
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("newTable() respects tableClass", async () => {
+test("newTable() respects tableClass", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -27,13 +28,13 @@ Deno.test("newTable() respects tableClass", async () => {
   // newTable() now correctly returns MyTable without a cast
   const table = sdb.newTable("myTable");
 
-  assertEquals(table instanceof MyTable, true);
-  assertEquals(table.customMethod(), "hello");
+  expect(table instanceof MyTable).toStrictEqual(true);
+  expect(table.customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("getTable() returns correct generic type", async () => {
+test("getTable() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -53,13 +54,13 @@ Deno.test("getTable() returns correct generic type", async () => {
   // getTable() now correctly returns Promise<MyTable>
   const table = await sdb.getTable("myTable");
 
-  assertEquals(table instanceof MyTable, true);
-  assertEquals(table.customMethod(), "hello");
+  expect(table instanceof MyTable).toStrictEqual(true);
+  expect(table.customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("getTables() returns correct generic type", async () => {
+test("getTables() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -80,13 +81,13 @@ Deno.test("getTables() returns correct generic type", async () => {
   // getTables() preserves the custom table type.
   const tables = sdb.getTables();
 
-  assertEquals(tables.length, 2);
-  assertEquals(tables.every((t) => t instanceof MyTable), true);
+  expect(tables.length).toStrictEqual(2);
+  expect(tables.every((t) => t instanceof MyTable)).toStrictEqual(true);
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("clone() returns correct generic type", async () => {
+test("clone() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -107,18 +108,18 @@ Deno.test("clone() returns correct generic type", async () => {
   // clone() returns this, inferred as MyTable.
   const cloned = original.clone("cloned");
 
-  assertEquals(cloned instanceof MyTable, true);
+  expect(cloned instanceof MyTable).toStrictEqual(true);
   // No cast needed - TypeScript knows cloned is MyTable
-  assertEquals(cloned.customMethod(), "hello");
+  expect(cloned.customMethod()).toStrictEqual("hello");
 
   // Verify data was actually cloned
   const data = await cloned.getData();
-  assertEquals(data, [{ a: 1 }, { a: 2 }]);
+  expect(data).toStrictEqual([{ a: 1 }, { a: 2 }]);
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("clone() with default name returns correct generic type", async () => {
+test("clone() with default name returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -138,13 +139,13 @@ Deno.test("clone() with default name returns correct generic type", async () => 
 
   const cloned = original.clone();
 
-  assertEquals(cloned instanceof MyTable, true);
-  assertEquals(cloned.defaultTableName, true);
+  expect(cloned instanceof MyTable).toStrictEqual(true);
+  expect(cloned.defaultTableName).toStrictEqual(true);
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("getTables() returns a snapshot of the table registry", async () => {
+test("getTables() returns a snapshot of the table registry", async () => {
   class MyTable extends SimpleTable {}
 
   class MyDB extends SimpleDB<MyTable> {
@@ -160,14 +161,14 @@ Deno.test("getTables() returns a snapshot of the table registry", async () => {
 
   (tables as MyTable[]).push(new MyTable("notRegistered", sdb));
 
-  assertEquals(tables.length, 2);
-  assertEquals(sdb.getTables().map((table) => table.name), ["registered"]);
+  expect(tables.length).toStrictEqual(2);
+  expect(sdb.getTables().map((table) => table.name)).toStrictEqual(["registered"]);
 
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("sdb.newTable() from table returns correct type", async () => {
+test("sdb.newTable() from table returns correct type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -187,14 +188,14 @@ Deno.test("sdb.newTable() from table returns correct type", async () => {
   // table.sdb.newTable() should return MyTable (typed as SimpleTable, but runtime is MyTable)
   const newTable = table.sdb.newTable("another");
 
-  assertEquals(newTable instanceof MyTable, true);
+  expect(newTable instanceof MyTable).toStrictEqual(true);
   // Type assertion needed because sdb is typed as SimpleDB (non-generic)
-  assertEquals((newTable as MyTable).customMethod(), "hello");
+  expect((newTable as MyTable).customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("crossJoin() returns correct generic type", async () => {
+test("crossJoin() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -217,14 +218,14 @@ Deno.test("crossJoin() returns correct generic type", async () => {
 
   const result = tableA.crossJoin(tableB, { outputTable: "joined" });
 
-  assertEquals(result instanceof MyTable, true);
+  expect(result instanceof MyTable).toStrictEqual(true);
   // No cast needed - TypeScript knows result is MyTable via Promise<this>
-  assertEquals(result.customMethod(), "hello");
+  expect(result.customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("selectRows() returns correct generic type", async () => {
+test("selectRows() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -244,15 +245,15 @@ Deno.test("selectRows() returns correct generic type", async () => {
 
   const result = table.selectRows(2, { outputTable: "selected" });
 
-  assertEquals(result instanceof MyTable, true);
-  assertEquals(result.customMethod(), "hello");
+  expect(result instanceof MyTable).toStrictEqual(true);
+  expect(result.customMethod()).toStrictEqual("hello");
   const rowCount = await result.getRowCount();
-  assertEquals(rowCount, 2);
+  expect(rowCount).toStrictEqual(2);
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("summarize() returns correct generic type", async () => {
+test("summarize() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -276,13 +277,13 @@ Deno.test("summarize() returns correct generic type", async () => {
     outputTable: "summary",
   });
 
-  assertEquals(result instanceof MyTable, true);
-  assertEquals(result.customMethod(), "hello");
+  expect(result instanceof MyTable).toStrictEqual(true);
+  expect(result.customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("join() returns correct generic type", async () => {
+test("join() returns correct generic type", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -298,23 +299,29 @@ Deno.test("join() returns correct generic type", async () => {
 
   const sdb = new MyDB();
   const tableA = sdb.newTable("tableA");
-  tableA.loadArray([{ id: 1, a: "x" }, { id: 2, a: "y" }]);
+  tableA.loadArray([
+    { id: 1, a: "x" },
+    { id: 2, a: "y" },
+  ]);
 
   const tableB = sdb.newTable("tableB");
-  tableB.loadArray([{ id: 1, b: 100 }, { id: 2, b: 200 }]);
+  tableB.loadArray([
+    { id: 1, b: 100 },
+    { id: 2, b: 200 },
+  ]);
 
   const result = tableA.join(tableB, {
     on: "id",
     outputTable: "joined",
   });
 
-  assertEquals(result instanceof MyTable, true);
-  assertEquals(result.customMethod(), "hello");
+  expect(result instanceof MyTable).toStrictEqual(true);
+  expect(result.customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("removeTables() accepts generic table type", async () => {
+test("removeTables() accepts generic table type", async () => {
   class MyTable extends SimpleTable {}
 
   class MyDB extends SimpleDB<MyTable> {
@@ -334,13 +341,13 @@ Deno.test("removeTables() accepts generic table type", async () => {
   await sdb.removeTables(table1);
 
   const remaining = sdb.getTables();
-  assertEquals(remaining.length, 1);
-  assertEquals(remaining[0].name, "table2");
+  expect(remaining.length).toStrictEqual(1);
+  expect(remaining[0].name).toStrictEqual("table2");
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("hasTable() accepts generic table type", async () => {
+test("hasTable() accepts generic table type", async () => {
   class MyTable extends SimpleTable {}
 
   class MyDB extends SimpleDB<MyTable> {
@@ -356,12 +363,12 @@ Deno.test("hasTable() accepts generic table type", async () => {
 
   // hasTable() accepts MyTable instances
   const exists = await sdb.hasTable(table);
-  assertEquals(exists, true);
+  expect(exists).toStrictEqual(true);
   await sdb.run();
   await sdb.close();
 });
 
-Deno.test("loadArray() returns this type for chaining", async () => {
+test("loadArray() returns this type for chaining", async () => {
   class MyTable extends SimpleTable {
     customMethod(): string {
       return "hello";
@@ -381,9 +388,9 @@ Deno.test("loadArray() returns this type for chaining", async () => {
   // loadArray() returns Promise<this>, inferred as MyTable
   const loaded = table.loadArray([{ a: 1 }, { a: 2 }]);
 
-  assertEquals(loaded instanceof MyTable, true);
+  expect(loaded instanceof MyTable).toStrictEqual(true);
   // No cast needed - TypeScript knows loaded is MyTable
-  assertEquals(loaded.customMethod(), "hello");
+  expect(loaded.customMethod()).toStrictEqual("hello");
   await sdb.run();
   await sdb.close();
 });

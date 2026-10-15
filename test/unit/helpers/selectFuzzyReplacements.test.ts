@@ -1,4 +1,5 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import selectFuzzyReplacements, {
   type FuzzyPair,
   type FuzzyStrategy,
@@ -20,12 +21,10 @@ function reference(pairs: FuzzyPair[], strategy: FuzzyStrategy) {
   for (const pair of pairs) {
     counts.set(pair.left_value, pair.left_cnt);
     counts.set(pair.right_value, pair.right_cnt);
-    for (
-      const [a, b] of [[pair.left_value, pair.right_value], [
-        pair.right_value,
-        pair.left_value,
-      ]]
-    ) {
+    for (const [a, b] of [
+      [pair.left_value, pair.right_value],
+      [pair.right_value, pair.left_value],
+    ]) {
       if (!neighbors.has(a)) neighbors.set(a, new Set());
       neighbors.get(a)!.add(b);
     }
@@ -40,25 +39,30 @@ function reference(pairs: FuzzyPair[], strategy: FuzzyStrategy) {
         if (unseen.delete(neighbor)) members.push(neighbor);
       }
     }
-    const ranked = members.map((value) => {
-      const scores = pairs.filter((p) =>
-        p.left_value === value || p.right_value === value
-      ).map((p) => p.score);
-      const sum = scores.reduce((a, b) => a + b, 0);
-      const primary = strategy === "mostCommon"
-        ? counts.get(value)!
-        : strategy === "longestString"
-        ? value.length
-        : strategy === "shortestString"
-        ? -value.length
-        : strategy === "maxScore"
-        ? Math.max(...scores)
-        : sum;
-      return { value, primary, sum };
-    }).sort((a, b) =>
-      b.primary - a.primary || b.sum - a.sum ||
-      (a.value < b.value ? -1 : a.value > b.value ? 1 : 0)
-    );
+    const ranked = members
+      .map((value) => {
+        const scores = pairs
+          .filter((p) => p.left_value === value || p.right_value === value)
+          .map((p) => p.score);
+        const sum = scores.reduce((a, b) => a + b, 0);
+        const primary =
+          strategy === "mostCommon"
+            ? counts.get(value)!
+            : strategy === "longestString"
+              ? value.length
+              : strategy === "shortestString"
+                ? -value.length
+                : strategy === "maxScore"
+                  ? Math.max(...scores)
+                  : sum;
+        return { value, primary, sum };
+      })
+      .sort(
+        (a, b) =>
+          b.primary - a.primary ||
+          b.sum - a.sum ||
+          (a.value < b.value ? -1 : a.value > b.value ? 1 : 0),
+      );
     for (const value of members) {
       if (value !== ranked[0].value) replacements.set(value, ranked[0].value);
     }
@@ -66,7 +70,7 @@ function reference(pairs: FuzzyPair[], strategy: FuzzyStrategy) {
   return replacements;
 }
 
-Deno.test("selectFuzzyReplacements preserves transitive clusters and score tie-breaks", () => {
+test("selectFuzzyReplacements preserves transitive clusters and score tie-breaks", () => {
   const pairs: FuzzyPair[] = [
     {
       left_value: "A",
@@ -98,13 +102,9 @@ Deno.test("selectFuzzyReplacements preserves transitive clusters and score tie-b
     },
   ];
   for (const strategy of strategies) {
-    assertEquals(
-      selectFuzzyReplacements(pairs, strategy),
-      reference(pairs, strategy),
-    );
+    expect(selectFuzzyReplacements(pairs, strategy)).toStrictEqual(reference(pairs, strategy));
   }
-  assertEquals(
-    selectFuzzyReplacements(pairs, "mostCentral"),
+  expect(selectFuzzyReplacements(pairs, "mostCentral")).toStrictEqual(
     new Map([
       ["A", "BB"],
       ["CC", "BB"],
@@ -114,24 +114,13 @@ Deno.test("selectFuzzyReplacements preserves transitive clusters and score tie-b
   );
 });
 
-Deno.test("selectFuzzyReplacements agrees with a graph reference across all strategies", () => {
+test("selectFuzzyReplacements agrees with a graph reference across all strategies", () => {
   let state = 179;
   const random = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
     return state / 2 ** 32;
   };
-  const names = [
-    "a",
-    "bb",
-    "cc",
-    "ddd",
-    "é",
-    "😀",
-    "\uE000",
-    "zz",
-    "long name",
-    "O'Connor",
-  ];
+  const names = ["a", "bb", "cc", "ddd", "é", "😀", "\uE000", "zz", "long name", "O'Connor"];
   for (let run = 0; run < 120; run++) {
     const counts = names.map(() => 1 + Math.floor(random() * 3));
     const pairs: FuzzyPair[] = [];
@@ -149,14 +138,11 @@ Deno.test("selectFuzzyReplacements agrees with a graph reference across all stra
       }
     }
     for (const strategy of strategies) {
-      assertEquals(
-        selectFuzzyReplacements(pairs, strategy),
+      expect(selectFuzzyReplacements(pairs, strategy), `run ${run}, ${strategy}`).toStrictEqual(
         reference(pairs, strategy),
-        `run ${run}, ${strategy}`,
       );
       const reversed = [...pairs].reverse();
-      assertEquals(
-        selectFuzzyReplacements(reversed, strategy),
+      expect(selectFuzzyReplacements(reversed, strategy)).toStrictEqual(
         reference(reversed, strategy),
       );
     }

@@ -3,9 +3,7 @@ import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
-export default async function getSchema(
-  simpleTable: SimpleTable,
-) {
+export default async function getSchema(simpleTable: SimpleTable) {
   return (await queryDB(
     simpleTable,
     `DESCRIBE ${quoteIdentifier(simpleTable.name)}`,

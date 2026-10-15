@@ -1,14 +1,16 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertRejects } from "../../helpers/assertions.ts";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should add a column with the quantiles", async () => {
+test("should add a column with the quantiles", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
   table.quantiles("Mark", 4, "quantiles");
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "Isabella", Subject: "Maths", Mark: 50, quantiles: 1 },
     { Name: "Olivia", Subject: "Maths", Mark: 55, quantiles: 1 },
     { Name: "Olivia", Subject: "Science", Mark: 60, quantiles: 1 },
@@ -23,7 +25,7 @@ Deno.test("should add a column with the quantiles", async () => {
   await sdb.close();
 });
 
-Deno.test("should add a column with the quantiles after grouping", async () => {
+test("should add a column with the quantiles after grouping", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataRank.csv");
@@ -38,7 +40,7 @@ Deno.test("should add a column with the quantiles after grouping", async () => {
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { Name: "Lily", Subject: "English", Mark: 70, quantiles: 1 },
     { Name: "Olivia", Subject: "English", Mark: 89, quantiles: 1 },
     { Name: "Isabella", Subject: "English", Mark: 90, quantiles: 2 },
@@ -53,7 +55,7 @@ Deno.test("should add a column with the quantiles after grouping", async () => {
   await sdb.close();
 });
 
-Deno.test("should throw when the new column name already exists, instead of silently renaming it", async () => {
+test("should throw when the new column name already exists, instead of silently renaming it", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([

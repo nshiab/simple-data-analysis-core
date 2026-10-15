@@ -1,20 +1,13 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStrictEquals,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
 
-function loadScenario(
-  sdb: SimpleDB,
-  name: string,
-  scenario: string,
-): SimpleTable {
-  return sdb.newTable(name)
+function loadScenario(sdb: SimpleDB, name: string, scenario: string): SimpleTable {
+  return sdb
+    .newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(["source", "target"]);
@@ -24,13 +17,10 @@ async function expectedCase(
   oracle: SimpleTable,
   caseName: string,
 ): Promise<Record<string, unknown>[]> {
-  return await oracle.clone()
-    .filter(`"case" = '${caseName}'`)
-    .removeColumns("case")
-    .getData();
+  return await oracle.clone().filter(`"case" = '${caseName}'`).removeColumns("case").getData();
 }
 
-Deno.test("commonNeighbors matches every shared fixture oracle case", async () => {
+test("commonNeighbors matches every shared fixture oracle case", async () => {
   const cases = [
     ["baseline-B-C-outgoing", "baseline", "B", "C", "outgoing"],
     ["baseline-B-C-incoming", "baseline", "B", "C", "incoming"],
@@ -40,167 +30,159 @@ Deno.test("commonNeighbors matches every shared fixture oracle case", async () =
   ] as const;
   const sdb = new SimpleDB();
   try {
-    const oracle = sdb.newTable("commonNeighborsOracle")
+    const oracle = sdb
+      .newTable("commonNeighborsOracle")
       .loadData("test/data/graphs/expected/common_neighbors.csv");
-    for (
-      const [index, [caseName, scenario, nodeA, nodeB, direction]] of cases
-        .entries()
-    ) {
-      const input = loadScenario(
-        sdb,
-        `commonNeighborsOracleInput${index}`,
-        scenario,
-      );
-      const actual = direction === "outgoing"
-        ? input.commonNeighbors("source", "target", nodeA, nodeB)
-        : input.commonNeighbors("source", "target", nodeA, nodeB, {
-          direction,
-        });
-      assertEquals(
-        await actual.getData(),
-        await expectedCase(oracle, caseName),
-        caseName,
-      );
-      assertEquals(await actual.getColumns(), ["node"]);
+    for (const [index, [caseName, scenario, nodeA, nodeB, direction]] of cases.entries()) {
+      const input = loadScenario(sdb, `commonNeighborsOracleInput${index}`, scenario);
+      const actual =
+        direction === "outgoing"
+          ? input.commonNeighbors("source", "target", nodeA, nodeB)
+          : input.commonNeighbors("source", "target", nodeA, nodeB, {
+              direction,
+            });
+      expect(await actual.getData(), caseName).toStrictEqual(await expectedCase(oracle, caseName));
+      expect(await actual.getColumns()).toStrictEqual(["node"]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors defaults to outgoing and supports every direction", async () => {
+test("commonNeighbors defaults to outgoing and supports every direction", async () => {
   const sdb = new SimpleDB();
   try {
-    assertEquals(
+    expect(
       await loadScenario(sdb, "commonDefault", "baseline")
-        .commonNeighbors("source", "target", "B", "C").getData(),
-      [{ node: "D" }],
-    );
-    assertEquals(
+        .commonNeighbors("source", "target", "B", "C")
+        .getData(),
+    ).toStrictEqual([{ node: "D" }]);
+    expect(
       await loadScenario(sdb, "commonOutgoing", "baseline")
         .commonNeighbors("source", "target", "B", "C", {
           direction: "outgoing",
-        }).getData(),
-      [{ node: "D" }],
-    );
-    assertEquals(
+        })
+        .getData(),
+    ).toStrictEqual([{ node: "D" }]);
+    expect(
       await loadScenario(sdb, "commonIncoming", "baseline")
         .commonNeighbors("source", "target", "B", "C", {
           direction: "incoming",
-        }).getData(),
-      [{ node: "A" }],
-    );
-    assertEquals(
+        })
+        .getData(),
+    ).toStrictEqual([{ node: "A" }]);
+    expect(
       await loadScenario(sdb, "commonBoth", "baseline")
         .commonNeighbors("source", "target", "B", "C", {
           direction: "both",
-        }).getData(),
-      [{ node: "A" }, { node: "D" }],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([{ node: "A" }, { node: "D" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors deduplicates memberships and includes requested endpoints", async () => {
+test("commonNeighbors deduplicates memberships and includes requested endpoints", async () => {
   const sdb = new SimpleDB();
   try {
     const source = loadScenario(sdb, "commonMembership", "common");
-    assertEquals(
-      await source.commonNeighbors("source", "target", "A", "B", {
-        outputTable: true,
-      }).getData(),
-      [{ node: "A" }, { node: "C" }],
-    );
-    assertEquals(
-      await source.commonNeighbors("source", "target", "A", "B", {
-        direction: "incoming",
-        outputTable: true,
-      }).getData(),
-      [],
-    );
-    assertEquals(
-      await source.commonNeighbors("source", "target", "A", "B", {
-        direction: "both",
-        outputTable: true,
-      }).getData(),
-      [{ node: "A" }, { node: "C" }],
-    );
+    expect(
+      await source
+        .commonNeighbors("source", "target", "A", "B", {
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([{ node: "A" }, { node: "C" }]);
+    expect(
+      await source
+        .commonNeighbors("source", "target", "A", "B", {
+          direction: "incoming",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([]);
+    expect(
+      await source
+        .commonNeighbors("source", "target", "A", "B", {
+          direction: "both",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([{ node: "A" }, { node: "C" }]);
 
     const neitherEndpoint = sdb.newTable("commonNeitherEndpoint").loadArray([
       { source: "A", target: "C" },
       { source: "B", target: "C" },
     ]);
-    assertEquals(
-      await neitherEndpoint.commonNeighbors(
-        "source",
-        "target",
-        "A",
-        "B",
-      ).getData(),
-      [{ node: "C" }],
-    );
+    expect(
+      await neitherEndpoint.commonNeighbors("source", "target", "A", "B").getData(),
+    ).toStrictEqual([{ node: "C" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors returns typed empty results for no match and unknown nodes", async () => {
+test("commonNeighbors returns typed empty results for no match and unknown nodes", async () => {
   const sdb = new SimpleDB();
   try {
-    const noMatch = loadScenario(sdb, "commonNoMatch", "single")
-      .commonNeighbors("source", "target", "A", "B");
-    assertEquals(await noMatch.getData(), []);
-    assertEquals(await noMatch.getTypes(), { node: "VARCHAR" });
+    const noMatch = loadScenario(sdb, "commonNoMatch", "single").commonNeighbors(
+      "source",
+      "target",
+      "A",
+      "B",
+    );
+    expect(await noMatch.getData()).toStrictEqual([]);
+    expect(await noMatch.getTypes()).toStrictEqual({ node: "VARCHAR" });
 
-    for (
-      const [index, nodes] of [
-        ["unknown", "B"],
-        ["A", "unknown"],
-        ["unknownA", "unknownB"],
-      ].entries()
-    ) {
-      const unknown = loadScenario(sdb, `commonUnknown${index}`, "baseline")
-        .commonNeighbors("source", "target", nodes[0], nodes[1]);
-      assertEquals(await unknown.getData(), []);
-      assertEquals(await unknown.getTypes(), { node: "VARCHAR" });
+    for (const [index, nodes] of [
+      ["unknown", "B"],
+      ["A", "unknown"],
+      ["unknownA", "unknownB"],
+    ].entries()) {
+      const unknown = loadScenario(sdb, `commonUnknown${index}`, "baseline").commonNeighbors(
+        "source",
+        "target",
+        nodes[0],
+        nodes[1],
+      );
+      expect(await unknown.getData()).toStrictEqual([]);
+      expect(await unknown.getTypes()).toStrictEqual({ node: "VARCHAR" });
     }
 
     const empty = sdb.newTable("emptyCommonNeighbors");
-    await sdb.customQuery(
-      'CREATE TABLE "emptyCommonNeighbors" (source VARCHAR, target VARCHAR)',
-    );
+    await sdb.customQuery('CREATE TABLE "emptyCommonNeighbors" (source VARCHAR, target VARCHAR)');
     empty.commonNeighbors("source", "target", "A", "B");
-    assertEquals(await empty.getData(), []);
-    assertEquals(await empty.getTypes(), { node: "VARCHAR" });
+    expect(await empty.getData()).toStrictEqual([]);
+    expect(await empty.getTypes()).toStrictEqual({ node: "VARCHAR" });
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors preserves exact numeric IDs and numeric ordering", async () => {
+test("commonNeighbors preserves exact numeric IDs and numeric ordering", async () => {
   const sdb = new SimpleDB();
   try {
-    const numeric = sdb.newTable("commonNumeric")
+    const numeric = sdb
+      .newTable("commonNumeric")
       .loadData("test/data/graphs/numeric.csv")
       .commonNeighbors("source", "target", 0, 2);
-    assertEquals(await numeric.getData(), [{ node: 10 }]);
-    assertEquals(await numeric.getTypes(), { node: "BIGINT" });
+    expect(await numeric.getData()).toStrictEqual([{ node: 10 }]);
+    expect(await numeric.getTypes()).toStrictEqual({ node: "BIGINT" });
 
-    const ordered = sdb.newTable("commonNumericOrder").loadArray([
-      { source: 1, target: 10 },
-      { source: 0, target: 2 },
-      { source: 1, target: 0 },
-      { source: 0, target: 10 },
-      { source: 1, target: 2 },
-      { source: 0, target: -3 },
-      { source: 1, target: -3 },
-    ]).commonNeighbors("source", "target", 0, 1);
-    assertEquals(await ordered.getData(), [
-      { node: -3 },
-      { node: 2 },
-      { node: 10 },
-    ]);
+    const ordered = sdb
+      .newTable("commonNumericOrder")
+      .loadArray([
+        { source: 1, target: 10 },
+        { source: 0, target: 2 },
+        { source: 1, target: 0 },
+        { source: 0, target: 10 },
+        { source: 1, target: 2 },
+        { source: 0, target: -3 },
+        { source: 1, target: -3 },
+      ])
+      .commonNeighbors("source", "target", 0, 1);
+    expect(await ordered.getData()).toStrictEqual([{ node: -3 }, { node: 2 }, { node: 10 }]);
 
     const wide = sdb.newTable("commonWideIntegers");
     await sdb.customQuery(`CREATE TABLE "commonWideIntegers" AS
@@ -208,10 +190,9 @@ Deno.test("commonNeighbors preserves exact numeric IDs and numeric ordering", as
         (1::INTEGER, 9007199254740993::BIGINT),
         (2::INTEGER, 9007199254740993::BIGINT)
       ) edges(source, target)`);
-    wide.commonNeighbors("source", "target", 1, 2)
-      .convert({ node: "string" });
-    assertEquals(await wide.getData(), [{ node: "9007199254740993" }]);
-    assertEquals(await wide.getTypes(), { node: "VARCHAR" });
+    wide.commonNeighbors("source", "target", 1, 2).convert({ node: "string" });
+    expect(await wide.getData()).toStrictEqual([{ node: "9007199254740993" }]);
+    expect(await wide.getTypes()).toStrictEqual({ node: "VARCHAR" });
 
     const decimals = sdb.newTable("commonDecimalIds");
     await sdb.customQuery(`CREATE TABLE "commonDecimalIds" AS
@@ -219,9 +200,8 @@ Deno.test("commonNeighbors preserves exact numeric IDs and numeric ordering", as
         (1::INTEGER, 12345678901234567890::DECIMAL(20,0)),
         (2::INTEGER, 12345678901234567890::DECIMAL(20,0))
       ) edges(source, target)`);
-    decimals.commonNeighbors("source", "target", 1, 2)
-      .convert({ node: "string" });
-    assertEquals(await decimals.getData(), [{ node: "12345678901234567890" }]);
+    decimals.commonNeighbors("source", "target", 1, 2).convert({ node: "string" });
+    expect(await decimals.getData()).toStrictEqual([{ node: "12345678901234567890" }]);
 
     const huge = 2n ** 200n;
     const bignum = sdb.newTable("commonBignumArguments");
@@ -230,29 +210,20 @@ Deno.test("commonNeighbors preserves exact numeric IDs and numeric ordering", as
         ('${huge}'::BIGNUM, 0::BIGNUM),
         ('${huge + 1n}'::BIGNUM, 0::BIGNUM)
       ) edges(source, target)`);
-    assertEquals(
-      await bignum.commonNeighbors(
-        "source",
-        "target",
-        huge,
-        huge + 1n,
-      ).getData(),
-      [{ node: "0" }],
-    );
+    expect(
+      await bignum.commonNeighbors("source", "target", huge, huge + 1n).getData(),
+    ).toStrictEqual([{ node: "0" }]);
 
     const bounded = sdb.newTable("commonBoundedUnknowns");
     await sdb.customQuery(`CREATE TABLE "commonBoundedUnknowns" AS SELECT
       0::TINYINT AS source, 1::TINYINT AS target`);
-    assertEquals(
-      await bounded.commonNeighbors("source", "target", 128, 129).getData(),
-      [],
-    );
+    expect(await bounded.commonNeighbors("source", "target", 128, 129).getData()).toStrictEqual([]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors uses binary string membership under collations", async () => {
+test("commonNeighbors uses binary string membership under collations", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("collatedCommonNeighbors");
@@ -260,85 +231,70 @@ Deno.test("commonNeighbors uses binary string membership under collations", asyn
       source VARCHAR COLLATE NOCASE, target VARCHAR COLLATE NOCASE
     ); INSERT INTO "collatedCommonNeighbors" VALUES
       ('A', 'B'), ('A', 'b'), ('a', 'B'), ('a', 'b')`);
-    assertEquals(
-      await table.commonNeighbors("source", "target", "A", "a").getData(),
-      [{ node: "B" }, { node: "b" }],
-    );
+    expect(await table.commonNeighbors("source", "target", "A", "a").getData()).toStrictEqual([
+      { node: "B" },
+      { node: "b" },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors supports every output destination and chaining", async () => {
+test("commonNeighbors supports every output destination and chaining", async () => {
   const sdb = new SimpleDB();
   try {
-    const defaultOverwrite = loadScenario(
-      sdb,
-      "defaultCommonNeighbors",
-      "baseline",
-    );
-    assertStrictEquals(
-      defaultOverwrite.commonNeighbors("source", "target", "B", "C"),
-      defaultOverwrite,
-    );
-    assertEquals(await defaultOverwrite.getData(), [{ node: "D" }]);
+    const defaultOverwrite = loadScenario(sdb, "defaultCommonNeighbors", "baseline");
+    expect(defaultOverwrite.commonNeighbors("source", "target", "B", "C")).toBe(defaultOverwrite);
+    expect(await defaultOverwrite.getData()).toStrictEqual([{ node: "D" }]);
 
-    const explicitOverwrite = loadScenario(
-      sdb,
-      "explicitCommonNeighbors",
-      "baseline",
-    );
-    assertStrictEquals(
+    const explicitOverwrite = loadScenario(sdb, "explicitCommonNeighbors", "baseline");
+    expect(
       explicitOverwrite.commonNeighbors("source", "target", "B", "C", {
         outputTable: false,
       }),
-      explicitOverwrite,
-    );
-    assertEquals(await explicitOverwrite.getColumns(), ["node"]);
+    ).toBe(explicitOverwrite);
+    expect(await explicitOverwrite.getColumns()).toStrictEqual(["node"]);
 
     const source = loadScenario(sdb, "preservedCommonNeighbors", "baseline");
-    const named = source.commonNeighbors("source", "target", "B", "C", {
-      direction: "both",
-      outputTable: "namedCommonNeighbors",
-    }).filter("node = 'D'");
-    assertEquals(named.name, "namedCommonNeighbors");
-    assertEquals(await named.getData(), [{ node: "D" }]);
-    assertEquals(await source.getRowCount(), 6);
-    assertEquals(await source.getColumns(), ["source", "target"]);
+    const named = source
+      .commonNeighbors("source", "target", "B", "C", {
+        direction: "both",
+        outputTable: "namedCommonNeighbors",
+      })
+      .filter("node = 'D'");
+    expect(named.name).toStrictEqual("namedCommonNeighbors");
+    expect(await named.getData()).toStrictEqual([{ node: "D" }]);
+    expect(await source.getRowCount()).toStrictEqual(6);
+    expect(await source.getColumns()).toStrictEqual(["source", "target"]);
 
-    const generated = source.commonNeighbors(
-      "source",
-      "target",
-      "B",
-      "C",
-      { outputTable: true },
-    );
-    assertEquals(generated.name.startsWith("table"), true);
-    assertEquals(generated.name === source.name, false);
-    assertEquals(await generated.getData(), [{ node: "D" }]);
-    assertEquals(await source.getRowCount(), 6);
+    const generated = source.commonNeighbors("source", "target", "B", "C", { outputTable: true });
+    expect(generated.name.startsWith("table")).toStrictEqual(true);
+    expect(generated.name === source.name).toStrictEqual(false);
+    expect(await generated.getData()).toStrictEqual([{ node: "D" }]);
+    expect(await source.getRowCount()).toStrictEqual(6);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors snapshots options and preserves queued source order", async () => {
+test("commonNeighbors snapshots options and preserves queued source order", async () => {
   const sdb = new SimpleDB();
   try {
     const options: {
       direction: "incoming" | "outgoing";
       outputTable: string;
     } = { direction: "incoming", outputTable: "commonNeighborsSnapshot" };
-    const snapshot = loadScenario(
-      sdb,
-      "commonNeighborsSnapshotSource",
-      "baseline",
-    )
-      .commonNeighbors("source", "target", "B", "C", options);
+    const snapshot = loadScenario(sdb, "commonNeighborsSnapshotSource", "baseline").commonNeighbors(
+      "source",
+      "target",
+      "B",
+      "C",
+      options,
+    );
     options.direction = "outgoing";
     options.outputTable = "changed";
-    assertEquals(snapshot.name, "commonNeighborsSnapshot");
-    assertEquals(await snapshot.getData(), [{ node: "A" }]);
+    expect(snapshot.name).toStrictEqual("commonNeighborsSnapshot");
+    expect(await snapshot.getData()).toStrictEqual([{ node: "A" }]);
 
     const source = sdb.newTable("changingCommonNeighborsSource").loadArray([
       { source: "A", target: "C" },
@@ -351,8 +307,8 @@ Deno.test("commonNeighbors snapshots options and preserves queued source order",
       { source: "A", target: "D" },
       { source: "B", target: "D" },
     ]);
-    assertEquals(await result.getData(), [{ node: "C" }]);
-    assertEquals(await source.getData(), [
+    expect(await result.getData()).toStrictEqual([{ node: "C" }]);
+    expect(await source.getData()).toStrictEqual([
       { source: "A", target: "D" },
       { source: "B", target: "D" },
     ]);
@@ -361,7 +317,7 @@ Deno.test("commonNeighbors snapshots options and preserves queued source order",
   }
 });
 
-Deno.test("commonNeighbors validates scalar arguments and options before queuing", async () => {
+test("commonNeighbors validates scalar arguments and options before queuing", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -427,48 +383,37 @@ Deno.test("commonNeighbors validates scalar arguments and options before queuing
       "commonNeighbors() nodeA and nodeB must be different.",
     );
     assertThrows(
-      () =>
-        table.commonNeighbors(
-          "source",
-          "target",
-          Number.MAX_SAFE_INTEGER + 1,
-          0,
-        ),
+      () => table.commonNeighbors("source", "target", Number.MAX_SAFE_INTEGER + 1, 0),
       TypeError,
       "is not a safe whole number",
     );
-    assertEquals(table.pendingOps.length, 0);
+    expect(table.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors rejects schema and supplied-ID type errors", async () => {
+test("commonNeighbors rejects schema and supplied-ID type errors", async () => {
   const sdb = new SimpleDB();
   try {
-    const missing = sdb.newTable("missingCommonNeighborColumn")
-      .loadArray([{ source: "A" }]);
+    const missing = sdb.newTable("missingCommonNeighborColumn").loadArray([{ source: "A" }]);
     await assertRejects(
       () => missing.commonNeighbors("source", "target", "A", "B").run(),
       Error,
       'commonNeighbors() the column "target" does not exist',
     );
 
-    const unsupported = sdb.newTable("unsupportedCommonNeighbors")
+    const unsupported = sdb
+      .newTable("unsupportedCommonNeighbors")
       .loadData("test/data/graphs/unsupported-types.csv");
     await assertRejects(
-      () =>
-        unsupported.commonNeighbors(
-          "dateSource",
-          "stringTarget",
-          "A",
-          "B",
-        ).run(),
+      () => unsupported.commonNeighbors("dateSource", "stringTarget", "A", "B").run(),
       TypeError,
       'column "dateSource" has type DATE',
     );
 
-    const incompatible = sdb.newTable("incompatibleCommonNeighbors")
+    const incompatible = sdb
+      .newTable("incompatibleCommonNeighbors")
       .loadArray([{ source: 1, target: "1" }]);
     await assertRejects(
       () => incompatible.commonNeighbors("source", "target", 1, 2).run(),
@@ -476,7 +421,8 @@ Deno.test("commonNeighbors rejects schema and supplied-ID type errors", async ()
       "requires compatible source and target ID types",
     );
 
-    const numeric = sdb.newTable("commonNeighborsNumericMismatch")
+    const numeric = sdb
+      .newTable("commonNeighborsNumericMismatch")
       .loadData("test/data/graphs/numeric.csv");
     await assertRejects(
       () => numeric.commonNeighbors("source", "target", "0", "2").run(),
@@ -485,9 +431,7 @@ Deno.test("commonNeighbors rejects schema and supplied-ID type errors", async ()
     );
 
     const lossy = sdb.newTable("commonNeighborsLossy");
-    await sdb.customQuery(
-      'CREATE TABLE "commonNeighborsLossy" (source BIGINT, target DOUBLE)',
-    );
+    await sdb.customQuery('CREATE TABLE "commonNeighborsLossy" (source BIGINT, target DOUBLE)');
     await assertRejects(
       () => lossy.commonNeighbors("source", "target", 1, 2).run(),
       TypeError,
@@ -510,31 +454,35 @@ Deno.test("commonNeighbors rejects schema and supplied-ID type errors", async ()
   }
 });
 
-Deno.test("commonNeighbors uses one membership computation without validation scans", async () => {
+test("commonNeighbors uses one membership computation without validation scans", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
-    const table = sdb.newTable("commonNeighborsPlan").loadArray([
-      { source: "A", target: "C" },
-      { source: "B", target: "C" },
-    ]).commonNeighbors("source", "target", "A", "B");
+    const table = sdb
+      .newTable("commonNeighborsPlan")
+      .loadArray([
+        { source: "A", target: "C" },
+        { source: "B", target: "C" },
+      ])
+      .commonNeighbors("source", "target", "A", "B");
     await table.run();
-    const query = observer.queries.find((entry) =>
-      entry.query.includes("graph_neighbor_memberships")
-    )?.query ?? "";
-    assertStringIncludes(query, "INNER JOIN");
-    assertStringIncludes(query, "COUNT(DISTINCT");
-    assertEquals(query.includes("IS NULL"), false);
+    const query =
+      observer.queries.find((entry) => entry.query.includes("graph_neighbor_memberships"))?.query ??
+      "";
+    expect(query).toContain("INNER JOIN");
+    expect(query).toContain("COUNT(DISTINCT");
+    expect(query.includes("IS NULL")).toStrictEqual(false);
   } finally {
     observer.restore();
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors rejects output collisions before queuing graph work", async () => {
+test("commonNeighbors rejects output collisions before queuing graph work", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("commonNeighborsCollisionSource")
+    const source = sdb
+      .newTable("commonNeighborsCollisionSource")
       .loadArray([{ source: "A", target: "B" }]);
     await source.run();
     sdb.newTable("namedCommonNeighborsCollision");
@@ -546,13 +494,13 @@ Deno.test("commonNeighbors rejects output collisions before queuing graph work",
       Error,
       "Table NAMEDCOMMONNEIGHBORSCOLLISION already exists.",
     );
-    assertEquals(source.pendingOps.length, 0);
+    expect(source.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors output records its source as a cache dependency", async () => {
+test("commonNeighbors output records its source as a cache dependency", async () => {
   let computationRuns = 0;
   const unique = crypto.randomUUID().replaceAll("-", "");
   const outputName = `commonNeighborsCacheOutput${unique}`;
@@ -574,7 +522,7 @@ Deno.test("commonNeighbors output records its source as a cache dependency", asy
     ]);
     const output = firstSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(await output.getData(), [{ node: "C" }]);
+    expect(await output.getData()).toStrictEqual([{ node: "C" }]);
   } finally {
     await firstSdb.close();
   }
@@ -587,40 +535,37 @@ Deno.test("commonNeighbors output records its source as a cache dependency", asy
     ]);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals(await output.getData(), [{ node: "D" }]);
+    expect(computationRuns).toStrictEqual(2);
+    expect(await output.getData()).toStrictEqual([{ node: "D" }]);
   } finally {
     await secondSdb.close();
   }
 });
 
-Deno.test("commonNeighbors internal relations do not shadow input table names", async () => {
+test("commonNeighbors internal relations do not shadow input table names", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const name of [
-        "graph_requested_nodes",
-        "GRAPH_EDGES",
-        "graph_neighbor_memberships",
-        "GRAPH_COMMON_NEIGHBORS",
-      ]
-    ) {
+    for (const name of [
+      "graph_requested_nodes",
+      "GRAPH_EDGES",
+      "graph_neighbor_memberships",
+      "GRAPH_COMMON_NEIGHBORS",
+    ]) {
       const table = sdb.newTable(name).loadArray([
         { source: "A", target: "C" },
         { source: "B", target: "C" },
       ]);
       await table.run();
-      assertEquals(
-        await table.commonNeighbors("source", "target", "A", "B").getData(),
-        [{ node: "C" }],
-      );
+      expect(await table.commonNeighbors("source", "target", "A", "B").getData()).toStrictEqual([
+        { node: "C" },
+      ]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors JSDoc examples execute their exact chains and displayed outputs", async () => {
+test("commonNeighbors JSDoc examples execute their exact chains and displayed outputs", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -633,11 +578,9 @@ Deno.test("commonNeighbors JSDoc examples execute their exact chains and display
     ];
     {
       const connections = sdb.newTable().loadArray(rows);
-      await connections
-        .commonNeighbors("origin", "destination", "A", "B")
-        .log();
-      assertEquals(await connections.getData(), [{ node: "C" }]);
-      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+      await connections.commonNeighbors("origin", "destination", "A", "B").log();
+      expect(await connections.getData()).toStrictEqual([{ node: "C" }]);
+      expect(await connections.getTypes()).toStrictEqual({ node: "VARCHAR" });
     }
     {
       const connections = sdb.newTable().loadArray(rows);
@@ -646,8 +589,8 @@ Deno.test("commonNeighbors JSDoc examples execute their exact chains and display
           direction: "incoming",
         })
         .log();
-      assertEquals(await connections.getData(), [{ node: "D" }]);
-      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+      expect(await connections.getData()).toStrictEqual([{ node: "D" }]);
+      expect(await connections.getTypes()).toStrictEqual({ node: "VARCHAR" });
     }
     {
       const connections = sdb.newTable().loadArray(rows);
@@ -656,26 +599,24 @@ Deno.test("commonNeighbors JSDoc examples execute their exact chains and display
           direction: "both",
         })
         .log();
-      assertEquals(await connections.getData(), [{ node: "C" }, { node: "D" }]);
-      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+      expect(await connections.getData()).toStrictEqual([{ node: "C" }, { node: "D" }]);
+      expect(await connections.getTypes()).toStrictEqual({ node: "VARCHAR" });
     }
     {
       const connections = sdb.newTable().loadArray([
         { source: "A", target: "A" },
         { source: "B", target: "A" },
       ]);
-      await connections
-        .commonNeighbors("source", "target", "A", "B")
-        .log();
-      assertEquals(await connections.getData(), [{ node: "A" }]);
-      assertEquals(await connections.getTypes(), { node: "VARCHAR" });
+      await connections.commonNeighbors("source", "target", "A", "B").log();
+      expect(await connections.getData()).toStrictEqual([{ node: "A" }]);
+      expect(await connections.getTypes()).toStrictEqual({ node: "VARCHAR" });
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("commonNeighbors intersects mixed orientations and preserves both endpoint memberships", async () => {
+test("commonNeighbors intersects mixed orientations and preserves both endpoint memberships", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -687,15 +628,18 @@ Deno.test("commonNeighbors intersects mixed orientations and preserves both endp
       { source: "C", target: "B" },
     ];
     for (const reversed of [false, true]) {
-      const input = sdb.newTable().loadArray(
-        reversed ? [...rows, ...rows].reverse() : [...rows, ...rows],
-      );
+      const input = sdb
+        .newTable()
+        .loadArray(reversed ? [...rows, ...rows].reverse() : [...rows, ...rows]);
       for (const direction of ["outgoing", "incoming", "both"] as const) {
-        assertEquals(
-          await input.commonNeighbors("source", "target", "A", "B", {
-            direction,
-            outputTable: true,
-          }).getData(),
+        expect(
+          await input
+            .commonNeighbors("source", "target", "A", "B", {
+              direction,
+              outputTable: true,
+            })
+            .getData(),
+        ).toStrictEqual(
           direction === "both"
             ? [{ node: "A" }, { node: "B" }, { node: "C" }]
             : [{ node: "A" }, { node: "B" }],

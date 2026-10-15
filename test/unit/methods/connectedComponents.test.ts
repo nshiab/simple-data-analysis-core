@@ -1,10 +1,6 @@
-import {
-  assertEquals,
-  assertRejects,
-  assertStrictEquals,
-  assertStringIncludes,
-  assertThrows,
-} from "@std/assert";
+import { test, expect } from "vite-plus/test";
+import { assertThrows, assertRejects } from "../../helpers/assertions.ts";
+
 import { observeSdaQueries } from "../../../benchmarks/queryProfile.ts";
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 import type SimpleTable from "../../../src/class/SimpleTable.ts";
@@ -13,20 +9,18 @@ import {
   type ReferenceChronologicalEvent,
 } from "../../helpers/enumerateChronologicalRoutes.ts";
 
-function loadScenario(
-  sdb: SimpleDB,
-  name: string,
-  scenario: string,
-): SimpleTable {
-  return sdb.newTable(name)
+function loadScenario(sdb: SimpleDB, name: string, scenario: string): SimpleTable {
+  return sdb
+    .newTable(name)
     .loadData("test/data/graphs/edges.csv")
     .filter(`scenario = '${scenario}'`)
     .selectColumns(["source", "target"]);
 }
 
 function partitions(rows: Record<string, unknown>[]) {
-  return [...Map.groupBy(rows, (row) => row.componentId).values()]
-    .map((group) => group.map((row) => row.node));
+  return [...Map.groupBy(rows, (row) => row.componentId).values()].map((group) =>
+    group.map((row) => row.node),
+  );
 }
 
 function referenceTemporalComponents(
@@ -36,24 +30,21 @@ function referenceTemporalComponents(
   const nodes = [
     ...new Set(
       events.flatMap((event) =>
-        event.startTime !== null && event.endTime !== null &&
-          event.endTime >= event.startTime
+        event.startTime !== null && event.endTime !== null && event.endTime >= event.startTime
           ? [event.source, event.target]
-          : []
+          : [],
       ),
     ),
   ].sort(compareBinaryStrings);
   const reachable = new Map<string, Set<string>>();
   for (const node of nodes) {
     const reached = new Set([node]);
-    for (
-      const route of enumerateChronologicalRoutes(events, node, {
-        maxSteps: Math.max(events.length, 1),
-        minGap: options.minGap,
-        simpleNodes: false,
-        strictOrdering: options.strictOrdering,
-      })
-    ) {
+    for (const route of enumerateChronologicalRoutes(events, node, {
+      maxSteps: Math.max(events.length, 1),
+      minGap: options.minGap,
+      simpleNodes: false,
+      strictOrdering: options.strictOrdering,
+    })) {
       reached.add(route.at(-1)!.target);
     }
     reachable.set(node, reached);
@@ -61,27 +52,26 @@ function referenceTemporalComponents(
 
   const cliques: string[][] = [];
   for (let mask = 1; mask < 2 ** nodes.length; mask++) {
-    const members = nodes.filter((_, index) => (mask & 2 ** index) !== 0);
+    const members = nodes.filter((_, index) => (mask & (2 ** index)) !== 0);
     const clique = members.every((left) =>
-      members.every((right) =>
-        left === right ||
-        (reachable.get(left)!.has(right) && reachable.get(right)!.has(left))
-      )
+      members.every(
+        (right) =>
+          left === right || (reachable.get(left)!.has(right) && reachable.get(right)!.has(left)),
+      ),
     );
     if (!clique) continue;
-    const maximal = nodes.every((candidate) =>
-      members.includes(candidate) ||
-      members.some((member) =>
-        !reachable.get(candidate)!.has(member) ||
-        !reachable.get(member)!.has(candidate)
-      )
+    const maximal = nodes.every(
+      (candidate) =>
+        members.includes(candidate) ||
+        members.some(
+          (member) =>
+            !reachable.get(candidate)!.has(member) || !reachable.get(member)!.has(candidate),
+        ),
     );
     if (maximal) cliques.push(members);
   }
   cliques.sort(compareMemberLists);
-  return cliques.flatMap((members, componentId) =>
-    members.map((node) => ({ node, componentId }))
-  );
+  return cliques.flatMap((members, componentId) => members.map((node) => ({ node, componentId })));
 }
 
 function compareBinaryStrings(left: string, right: string): number {
@@ -106,7 +96,7 @@ function compareMemberLists(left: string[], right: string[]): number {
   return left.length - right.length;
 }
 
-Deno.test("connectedComponents defaults to weak and finds baseline groups", async () => {
+test("connectedComponents defaults to weak and finds baseline groups", async () => {
   const sdb = new SimpleDB();
   try {
     const expected = [
@@ -118,27 +108,30 @@ Deno.test("connectedComponents defaults to weak and finds baseline groups", asyn
       { node: "F", componentId: 1 },
       { node: "G", componentId: 1 },
     ];
-    assertEquals(
+    expect(
       await loadScenario(sdb, "defaultWeak", "baseline")
-        .connectedComponents("source", "target").getData(),
-      expected,
-    );
-    assertEquals(
+        .connectedComponents("source", "target")
+        .getData(),
+    ).toStrictEqual(expected);
+    expect(
       await loadScenario(sdb, "explicitWeak", "baseline")
-        .connectedComponents("source", "target", { mode: "weak" }).getData(),
-      expected,
-    );
+        .connectedComponents("source", "target", { mode: "weak" })
+        .getData(),
+    ).toStrictEqual(expected);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents strong mode requires mutual directed reachability", async () => {
+test("connectedComponents strong mode requires mutual directed reachability", async () => {
   const sdb = new SimpleDB();
   try {
-    const baseline = loadScenario(sdb, "baselineStrong", "baseline")
-      .connectedComponents("source", "target", { mode: "strong" });
-    assertEquals(await baseline.getData(), [
+    const baseline = loadScenario(sdb, "baselineStrong", "baseline").connectedComponents(
+      "source",
+      "target",
+      { mode: "strong" },
+    );
+    expect(await baseline.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 1 },
       { node: "C", componentId: 2 },
@@ -148,9 +141,12 @@ Deno.test("connectedComponents strong mode requires mutual directed reachability
       { node: "G", componentId: 6 },
     ]);
 
-    const cycle = loadScenario(sdb, "cycleStrong", "cycle")
-      .connectedComponents("source", "target", { mode: "strong" });
-    assertEquals(await cycle.getData(), [
+    const cycle = loadScenario(sdb, "cycleStrong", "cycle").connectedComponents(
+      "source",
+      "target",
+      { mode: "strong" },
+    );
+    expect(await cycle.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "C", componentId: 0 },
@@ -164,7 +160,7 @@ Deno.test("connectedComponents strong mode requires mutual directed reachability
   }
 });
 
-Deno.test("connectedComponents keeps queued and SQL column order aligned in every mode", async () => {
+test("connectedComponents keeps queued and SQL column order aligned in every mode", async () => {
   const sdb = new SimpleDB();
   try {
     const rows = [
@@ -189,41 +185,38 @@ Deno.test("connectedComponents keeps queued and SQL column order aligned in ever
     ];
 
     for (const { name, options } of cases) {
-      const result = sdb.newTable(`${name}ColumnOrder`).loadArray(rows)
+      const result = sdb
+        .newTable(`${name}ColumnOrder`)
+        .loadArray(rows)
         .connectedComponents("source", "target", options);
-      const componentOp = result.pendingOps.findLast((operation) =>
-        operation.kind === "fusable" &&
-        operation.method === "connectedComponents()"
+      const componentOp = result.pendingOps.findLast(
+        (operation) => operation.kind === "fusable" && operation.method === "connectedComponents()",
       );
-      if (
-        componentOp?.kind !== "fusable" ||
-        componentOp.outputSchema === undefined
-      ) {
-        throw new Error(
-          `Missing queued connectedComponents() schema for ${name}`,
-        );
+      if (componentOp?.kind !== "fusable" || componentOp.outputSchema === undefined) {
+        throw new Error(`Missing queued connectedComponents() schema for ${name}`);
       }
-      assertEquals(
-        Object.keys(componentOp.outputSchema({
-          source: "VARCHAR",
-          target: "VARCHAR",
-          time: "TIMESTAMP",
-        })),
-        ["componentId", "node"],
-      );
+      expect(
+        Object.keys(
+          componentOp.outputSchema({
+            source: "VARCHAR",
+            target: "VARCHAR",
+            time: "TIMESTAMP",
+          }),
+        ),
+      ).toStrictEqual(["componentId", "node"]);
 
       result.filter("node = 'B'").convert({ node: "string" });
       const data = await result.getData();
-      assertEquals(await result.getColumns(), ["componentId", "node"]);
-      assertEquals(Object.keys(data[0]), ["componentId", "node"]);
-      assertEquals(data, [{ componentId: 0, node: "B" }]);
+      expect(await result.getColumns()).toStrictEqual(["componentId", "node"]);
+      expect(Object.keys(data[0])).toStrictEqual(["componentId", "node"]);
+      expect(data).toStrictEqual([{ componentId: 0, node: "B" }]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents matches every shared fixture oracle case", async () => {
+test("connectedComponents matches every shared fixture oracle case", async () => {
   const cases = [
     ["baseline-weak", "baseline", "weak"],
     ["baseline-strong", "baseline", "strong"],
@@ -236,22 +229,24 @@ Deno.test("connectedComponents matches every shared fixture oracle case", async 
   ] as const;
   const sdb = new SimpleDB();
   try {
-    const oracle = sdb.newTable("componentOracle")
+    const oracle = sdb
+      .newTable("componentOracle")
       .loadData("test/data/graphs/expected/connected_components.csv");
     for (const [index, [caseName, scenario, mode]] of cases.entries()) {
-      const expected = oracle.clone()
-        .filter(`"case" = '${caseName}'`)
-        .removeColumns("case");
-      const actual = loadScenario(sdb, `oracleActual${index}`, scenario)
-        .connectedComponents("source", "target", { mode });
-      assertEquals(await actual.getData(), await expected.getData(), caseName);
+      const expected = oracle.clone().filter(`"case" = '${caseName}'`).removeColumns("case");
+      const actual = loadScenario(sdb, `oracleActual${index}`, scenario).connectedComponents(
+        "source",
+        "target",
+        { mode },
+      );
+      expect(await actual.getData(), caseName).toStrictEqual(await expected.getData());
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents partitions are independent of edge orientation, duplicates, and rows", async () => {
+test("connectedComponents partitions are independent of edge orientation, duplicates, and rows", async () => {
   const rows = [
     { source: "D", target: "C" },
     { source: "A", target: "B" },
@@ -266,11 +261,17 @@ Deno.test("connectedComponents partitions are independent of edge orientation, d
   const sdb = new SimpleDB();
   try {
     for (const [index, edges] of [rows, reversed].entries()) {
-      const result = await sdb.newTable(`weakOrientation${index}`)
+      const result = await sdb
+        .newTable(`weakOrientation${index}`)
         .loadArray(edges)
-        .connectedComponents("source", "target").getData();
-      assertEquals(partitions(result), [["A", "B"], ["C", "D"], ["X", "Y"]]);
-      assertEquals(result, [
+        .connectedComponents("source", "target")
+        .getData();
+      expect(partitions(result)).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+        ["X", "Y"],
+      ]);
+      expect(result).toStrictEqual([
         { node: "A", componentId: 0 },
         { node: "B", componentId: 0 },
         { node: "C", componentId: 1 },
@@ -284,7 +285,7 @@ Deno.test("connectedComponents partitions are independent of edge orientation, d
   }
 });
 
-Deno.test("connectedComponents labels and rows stay deterministic across permutations", async () => {
+test("connectedComponents labels and rows stay deterministic across permutations", async () => {
   const rows = [
     { source: "D", target: "C" },
     { source: "C", target: "D" },
@@ -298,12 +299,15 @@ Deno.test("connectedComponents labels and rows stay deterministic across permuta
       const outputs = [];
       for (const [index, edges] of [rows, rows.toReversed()].entries()) {
         outputs.push(
-          await sdb.newTable(`${mode}Permutation${index}`).loadArray(edges)
-            .connectedComponents("source", "target", { mode }).getData(),
+          await sdb
+            .newTable(`${mode}Permutation${index}`)
+            .loadArray(edges)
+            .connectedComponents("source", "target", { mode })
+            .getData(),
         );
       }
-      assertEquals(outputs[0], outputs[1]);
-      assertEquals(outputs[0], [
+      expect(outputs[0]).toStrictEqual(outputs[1]);
+      expect(outputs[0]).toStrictEqual([
         { node: "A", componentId: 0 },
         { node: "B", componentId: 0 },
         { node: "C", componentId: 1 },
@@ -311,10 +315,13 @@ Deno.test("connectedComponents labels and rows stay deterministic across permuta
         { node: "Y", componentId: 2 },
         { node: "Z", componentId: mode === "weak" ? 2 : 3 },
       ]);
-      assertEquals(
-        partitions(outputs[0]),
+      expect(partitions(outputs[0])).toStrictEqual(
         mode === "weak"
-          ? [["A", "B"], ["C", "D"], ["Y", "Z"]]
+          ? [
+              ["A", "B"],
+              ["C", "D"],
+              ["Y", "Z"],
+            ]
           : [["A", "B"], ["C", "D"], ["Y"], ["Z"]],
       );
     }
@@ -323,7 +330,7 @@ Deno.test("connectedComponents labels and rows stay deterministic across permuta
   }
 });
 
-Deno.test("connectedComponents preserves exact numeric IDs and numeric ordering", async () => {
+test("connectedComponents preserves exact numeric IDs and numeric ordering", async () => {
   const sdb = new SimpleDB();
   try {
     const numeric = sdb.newTable("numericComponents");
@@ -334,14 +341,14 @@ Deno.test("connectedComponents preserves exact numeric IDs and numeric ordering"
         (2::BIGINT, 0::BIGINT)
       ) edges(source, target)`);
     numeric.connectedComponents("source", "target", { mode: "strong" });
-    assertEquals(await numeric.getData(), [
+    expect(await numeric.getData()).toStrictEqual([
       { node: 0, componentId: 0 },
       { node: 2, componentId: 0 },
       { node: 10, componentId: 1 },
       { node: 20, componentId: 2 },
     ]);
-    assertEquals(await numeric.getColumns(), ["componentId", "node"]);
-    assertEquals(await numeric.getTypes(), {
+    expect(await numeric.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await numeric.getTypes()).toStrictEqual({
       componentId: "BIGINT",
       node: "BIGINT",
     });
@@ -353,9 +360,8 @@ Deno.test("connectedComponents preserves exact numeric IDs and numeric ordering"
         (9007199254740993::BIGINT, 9007199254740995::BIGINT),
         (0::BIGINT, 1::BIGINT)
       ) edges(source, target)`);
-    wide.connectedComponents("source", "target", { mode: "strong" })
-      .convert({ node: "string" });
-    assertEquals(await wide.getData(), [
+    wide.connectedComponents("source", "target", { mode: "strong" }).convert({ node: "string" });
+    expect(await wide.getData()).toStrictEqual([
       { node: "0", componentId: 0 },
       { node: "1", componentId: 1 },
       { node: "9007199254740993", componentId: 2 },
@@ -366,7 +372,7 @@ Deno.test("connectedComponents preserves exact numeric IDs and numeric ordering"
   }
 });
 
-Deno.test("connectedComponents uses byte-sensitive string identity despite collations", async () => {
+test("connectedComponents uses byte-sensitive string identity despite collations", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("collatedComponents");
@@ -374,41 +380,37 @@ Deno.test("connectedComponents uses byte-sensitive string identity despite colla
       source VARCHAR COLLATE NOCASE, target VARCHAR COLLATE NOCASE
     ); INSERT INTO "collatedComponents" VALUES
       ('a', 'b'), ('A', 'B')`);
-    assertEquals(
-      await table.connectedComponents("source", "target").getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 0 },
-        { node: "a", componentId: 1 },
-        { node: "b", componentId: 1 },
-      ],
-    );
+    expect(await table.connectedComponents("source", "target").getData()).toStrictEqual([
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "a", componentId: 1 },
+      { node: "b", componentId: 1 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents uses fixed names for custom columns and preserves empty schemas", async () => {
+test("connectedComponents uses fixed names for custom columns and preserves empty schemas", async () => {
   const sdb = new SimpleDB();
   try {
-    const custom = sdb.newTable("customComponents")
+    const custom = sdb
+      .newTable("customComponents")
       .loadData("test/data/graphs/custom-columns.csv")
       .connectedComponents("ORIGIN", "Destination");
-    assertEquals(await custom.getData(), [
+    expect(await custom.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "C", componentId: 0 },
     ]);
-    assertEquals(await custom.getColumns(), ["componentId", "node"]);
+    expect(await custom.getColumns()).toStrictEqual(["componentId", "node"]);
 
     const empty = sdb.newTable("emptyComponents");
-    await sdb.customQuery(
-      'CREATE TABLE "emptyComponents" (source VARCHAR, target VARCHAR)',
-    );
+    await sdb.customQuery('CREATE TABLE "emptyComponents" (source VARCHAR, target VARCHAR)');
     empty.connectedComponents("source", "target");
-    assertEquals(await empty.getData(), []);
-    assertEquals(await empty.getColumns(), ["componentId", "node"]);
-    assertEquals(await empty.getTypes(), {
+    expect(await empty.getData()).toStrictEqual([]);
+    expect(await empty.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await empty.getTypes()).toStrictEqual({
       componentId: "BIGINT",
       node: "VARCHAR",
     });
@@ -417,66 +419,66 @@ Deno.test("connectedComponents uses fixed names for custom columns and preserves
   }
 });
 
-Deno.test("connectedComponents supports overwrite and source-preserving outputs", async () => {
+test("connectedComponents supports overwrite and source-preserving outputs", async () => {
   const sdb = new SimpleDB();
   try {
-    const defaultOverwrite = sdb.newTable("defaultOverwrite")
+    const defaultOverwrite = sdb
+      .newTable("defaultOverwrite")
       .loadArray([{ source: "A", target: "B" }]);
-    assertStrictEquals(
-      defaultOverwrite.connectedComponents("source", "target"),
-      defaultOverwrite,
-    );
-    assertEquals(await defaultOverwrite.getColumns(), ["componentId", "node"]);
+    expect(defaultOverwrite.connectedComponents("source", "target")).toBe(defaultOverwrite);
+    expect(await defaultOverwrite.getColumns()).toStrictEqual(["componentId", "node"]);
 
-    const explicitOverwrite = sdb.newTable("explicitOverwrite")
+    const explicitOverwrite = sdb
+      .newTable("explicitOverwrite")
       .loadArray([{ source: "A", target: "B" }]);
-    assertStrictEquals(
+    expect(
       explicitOverwrite.connectedComponents("source", "target", {
         outputTable: false,
       }),
-      explicitOverwrite,
-    );
-    assertEquals(await explicitOverwrite.getRowCount(), 2);
-    assertEquals(await explicitOverwrite.getColumns(), ["componentId", "node"]);
+    ).toBe(explicitOverwrite);
+    expect(await explicitOverwrite.getRowCount()).toStrictEqual(2);
+    expect(await explicitOverwrite.getColumns()).toStrictEqual(["componentId", "node"]);
 
-    const source = sdb.newTable("preservedComponents")
-      .loadArray([{ source: "A", target: "B" }]);
-    const named = source.connectedComponents("source", "target", {
-      outputTable: "namedComponents",
-    }).filter("node = 'B'");
-    assertEquals(named.name, "namedComponents");
-    assertEquals(await named.getData(), [{ node: "B", componentId: 0 }]);
-    assertEquals(await named.getColumns(), ["componentId", "node"]);
-    assertEquals(await source.getData(), [{ source: "A", target: "B" }]);
+    const source = sdb.newTable("preservedComponents").loadArray([{ source: "A", target: "B" }]);
+    const named = source
+      .connectedComponents("source", "target", {
+        outputTable: "namedComponents",
+      })
+      .filter("node = 'B'");
+    expect(named.name).toStrictEqual("namedComponents");
+    expect(await named.getData()).toStrictEqual([{ node: "B", componentId: 0 }]);
+    expect(await named.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await source.getData()).toStrictEqual([{ source: "A", target: "B" }]);
 
     const generated = source.connectedComponents("source", "target", {
       mode: "strong",
       outputTable: true,
     });
-    assertEquals(generated.name.startsWith("table"), true);
-    assertEquals(generated.name === source.name, false);
-    assertEquals(await generated.getRowCount(), 2);
-    assertEquals(await generated.getColumns(), ["componentId", "node"]);
-    assertEquals(await source.getColumns(), ["source", "target"]);
+    expect(generated.name.startsWith("table")).toStrictEqual(true);
+    expect(generated.name === source.name).toStrictEqual(false);
+    expect(await generated.getRowCount()).toStrictEqual(2);
+    expect(await generated.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await source.getColumns()).toStrictEqual(["source", "target"]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents snapshots options before queued execution", async () => {
+test("connectedComponents snapshots options before queued execution", async () => {
   const sdb = new SimpleDB();
   try {
     const options: {
       mode: "weak" | "strong";
       outputTable: string;
     } = { mode: "strong", outputTable: "componentSnapshot" };
-    const result = sdb.newTable("snapshotSource")
+    const result = sdb
+      .newTable("snapshotSource")
       .loadArray([{ source: "A", target: "B" }])
       .connectedComponents("source", "target", options);
     options.mode = "weak";
     options.outputTable = "changed";
-    assertEquals(result.name, "componentSnapshot");
-    assertEquals(await result.getData(), [
+    expect(result.name).toStrictEqual("componentSnapshot");
+    expect(await result.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 1 },
     ]);
@@ -485,7 +487,7 @@ Deno.test("connectedComponents snapshots options before queued execution", async
   }
 });
 
-Deno.test("connectedComponents validates arguments before queuing", async () => {
+test("connectedComponents validates arguments before queuing", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -500,12 +502,7 @@ Deno.test("connectedComponents validates arguments before queuing", async () => 
       "connectedComponents() targetColumn must be a string.",
     );
     assertThrows(
-      () =>
-        table.connectedComponents(
-          "source",
-          "target",
-          null as unknown as Record<string, never>,
-        ),
+      () => table.connectedComponents("source", "target", null as unknown as Record<string, never>),
       TypeError,
       "connectedComponents() options must be an object.",
     );
@@ -525,24 +522,24 @@ Deno.test("connectedComponents validates arguments before queuing", async () => 
       TypeError,
       "connectedComponents() options.outputTable must be a string or boolean.",
     );
-    assertEquals(table.pendingOps.length, 0);
+    expect(table.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents rejects schema errors without data validation scans", async () => {
+test("connectedComponents rejects schema errors without data validation scans", async () => {
   const sdb = new SimpleDB();
   try {
-    const missing = sdb.newTable("missingComponentColumn")
-      .loadArray([{ source: "A" }]);
+    const missing = sdb.newTable("missingComponentColumn").loadArray([{ source: "A" }]);
     await assertRejects(
       () => missing.connectedComponents("source", "target").run(),
       Error,
       'connectedComponents() the column "target" does not exist',
     );
 
-    const unsupported = sdb.newTable("unsupportedComponents")
+    const unsupported = sdb
+      .newTable("unsupportedComponents")
       .loadData("test/data/graphs/unsupported-types.csv");
     await assertRejects(
       () => unsupported.connectedComponents("dateSource", "stringTarget").run(),
@@ -550,7 +547,8 @@ Deno.test("connectedComponents rejects schema errors without data validation sca
       'column "dateSource" has type DATE',
     );
 
-    const incompatible = sdb.newTable("incompatibleComponents")
+    const incompatible = sdb
+      .newTable("incompatibleComponents")
       .loadArray([{ source: 1, target: "1" }]);
     await assertRejects(
       () => incompatible.connectedComponents("source", "target").run(),
@@ -559,9 +557,7 @@ Deno.test("connectedComponents rejects schema errors without data validation sca
     );
 
     const lossy = sdb.newTable("lossyComponents");
-    await sdb.customQuery(
-      'CREATE TABLE "lossyComponents" (source BIGINT, target DOUBLE)',
-    );
+    await sdb.customQuery('CREATE TABLE "lossyComponents" (source BIGINT, target DOUBLE)');
     await assertRejects(
       () => lossy.connectedComponents("source", "target").run(),
       TypeError,
@@ -572,11 +568,10 @@ Deno.test("connectedComponents rejects schema errors without data validation sca
   }
 });
 
-Deno.test("connectedComponents rejects output collisions before queuing graph work", async () => {
+test("connectedComponents rejects output collisions before queuing graph work", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("componentSource")
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = sdb.newTable("componentSource").loadArray([{ source: "A", target: "B" }]);
     await source.run();
     sdb.newTable("namedComponents");
     assertThrows(
@@ -587,32 +582,33 @@ Deno.test("connectedComponents rejects output collisions before queuing graph wo
       Error,
       "Table NAMEDCOMPONENTS already exists.",
     );
-    assertEquals(source.pendingOps.length, 0);
+    expect(source.pendingOps.length).toStrictEqual(0);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents preserves queued source and output operation order", async () => {
+test("connectedComponents preserves queued source and output operation order", async () => {
   const sdb = new SimpleDB();
   try {
-    const source = sdb.newTable("changingComponentSource")
+    const source = sdb
+      .newTable("changingComponentSource")
       .loadArray([{ source: "A", target: "B" }]);
     const result = source.connectedComponents("source", "target", {
       outputTable: true,
     });
     source.loadArray([{ source: "A", target: "C" }]);
-    assertEquals(await result.getData(), [
+    expect(await result.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
     ]);
-    assertEquals(await source.getData(), [{ source: "A", target: "C" }]);
+    expect(await source.getData()).toStrictEqual([{ source: "A", target: "C" }]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents output records its source as a cache dependency", async () => {
+test("connectedComponents output records its source as a cache dependency", async () => {
   let computationRuns = 0;
   const unique = crypto.randomUUID().replaceAll("-", "");
   const outputName = `componentsCacheOutput${unique}`;
@@ -628,8 +624,7 @@ Deno.test("connectedComponents output records its source as a cache dependency",
 
   const firstSdb = new SimpleDB();
   try {
-    const source = firstSdb.newTable(sourceName)
-      .loadArray([{ source: "A", target: "B" }]);
+    const source = firstSdb.newTable(sourceName).loadArray([{ source: "A", target: "B" }]);
     await firstSdb.newTable(outputName).cache(compute(source));
   } finally {
     await firstSdb.close();
@@ -642,37 +637,44 @@ Deno.test("connectedComponents output records its source as a cache dependency",
     ]);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals(await output.getColumns(), ["componentId", "node"]);
-    assertEquals(partitions(await output.getData()), [["A", "B"], ["C", "D"]]);
+    expect(computationRuns).toStrictEqual(2);
+    expect(await output.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(partitions(await output.getData())).toStrictEqual([
+      ["A", "B"],
+      ["C", "D"],
+    ]);
   } finally {
     await secondSdb.close();
   }
 });
 
-Deno.test("connectedComponents uses native recursion without path enumeration", async () => {
+test("connectedComponents uses native recursion without path enumeration", async () => {
   const sdb = new SimpleDB();
   const observer = observeSdaQueries(sdb);
   try {
     const source = loadScenario(sdb, "componentQueryShape", "cycle");
-    await source.connectedComponents("source", "target", {
-      outputTable: true,
-    }).run();
-    await source.connectedComponents("source", "target", {
-      mode: "strong",
-      outputTable: true,
-    }).run();
-    const queries = observer.queries.filter((entry) =>
-      entry.query.includes("graph_component_roots")
-    ).map((entry) => entry.query);
-    assertEquals(queries.length, 2);
-    assertStringIncludes(queries[0], "WITH RECURSIVE");
-    assertStringIncludes(queries[0], "USING KEY");
-    assertStringIncludes(queries[0], "recurring.");
-    assertStringIncludes(queries[1], "graph_reachable");
+    await source
+      .connectedComponents("source", "target", {
+        outputTable: true,
+      })
+      .run();
+    await source
+      .connectedComponents("source", "target", {
+        mode: "strong",
+        outputTable: true,
+      })
+      .run();
+    const queries = observer.queries
+      .filter((entry) => entry.query.includes("graph_component_roots"))
+      .map((entry) => entry.query);
+    expect(queries.length).toStrictEqual(2);
+    expect(queries[0]).toContain("WITH RECURSIVE");
+    expect(queries[0]).toContain("USING KEY");
+    expect(queries[0]).toContain("recurring.");
+    expect(queries[1]).toContain("graph_reachable");
     for (const query of queries) {
-      assertEquals(query.includes("list_contains"), false);
-      assertEquals(query.includes("pathId"), false);
+      expect(query.includes("list_contains")).toStrictEqual(false);
+      expect(query.includes("pathId")).toStrictEqual(false);
     }
   } finally {
     observer.restore();
@@ -680,65 +682,63 @@ Deno.test("connectedComponents uses native recursion without path enumeration", 
   }
 });
 
-Deno.test("connectedComponents internal relations do not shadow input table names", async () => {
+test("connectedComponents internal relations do not shadow input table names", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const [index, name] of [
-        "graph_edges",
-        "GRAPH_NODES",
-        "graph_component_labels",
-        "GRAPH_REACHABLE",
-        "graph_component_members",
-        "GRAPH_COMPONENT_ROOTS",
-      ].entries()
-    ) {
-      const table = sdb.newTable(name)
-        .loadArray([{ source: "A", target: "B" }]);
+    for (const [index, name] of [
+      "graph_edges",
+      "GRAPH_NODES",
+      "graph_component_labels",
+      "GRAPH_REACHABLE",
+      "graph_component_members",
+      "GRAPH_COMPONENT_ROOTS",
+    ].entries()) {
+      const table = sdb.newTable(name).loadArray([{ source: "A", target: "B" }]);
       await table.run();
-      assertEquals(
-        await table.connectedComponents("source", "target", {
-          mode: index % 2 === 0 ? "weak" : "strong",
-        }).getRowCount(),
-        2,
-      );
+      expect(
+        await table
+          .connectedComponents("source", "target", {
+            mode: index % 2 === 0 ? "weak" : "strong",
+          })
+          .getRowCount(),
+      ).toStrictEqual(2);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents weak mode scales through a deep chain", async () => {
+test("connectedComponents weak mode scales through a deep chain", async () => {
   const length = 300;
   const sdb = new SimpleDB();
   try {
-    const rows = await sdb.newTable("deepComponents")
+    const rows = await sdb
+      .newTable("deepComponents")
       .loadArray(
         Array.from({ length }, (_, source) => ({
           source,
           target: source + 1,
         })),
       )
-      .connectedComponents("source", "target").getData();
-    assertEquals(rows.length, length + 1);
-    assertEquals(rows.at(0), { node: 0, componentId: 0 });
-    assertEquals(rows.at(-1), { node: length, componentId: 0 });
+      .connectedComponents("source", "target")
+      .getData();
+    expect(rows.length).toStrictEqual(length + 1);
+    expect(rows.at(0)).toStrictEqual({ node: 0, componentId: 0 });
+    expect(rows.at(-1)).toStrictEqual({ node: length, componentId: 0 });
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents executes all four complete JSDoc examples", async () => {
+test("connectedComponents executes all four complete JSDoc examples", async () => {
   const firstDb = new SimpleDB();
   try {
     const table = firstDb.newTable().loadArray([
       { origin: "A", destination: "B" },
       { origin: "C", destination: "D" },
     ]);
-    await table
-      .connectedComponents("origin", "destination")
-      .log();
-    assertEquals(await table.getData(), [
+    await table.connectedComponents("origin", "destination").log();
+    expect(await table.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "C", componentId: 1 },
@@ -754,10 +754,8 @@ Deno.test("connectedComponents executes all four complete JSDoc examples", async
       { source: "A", target: "B" },
       { source: "B", target: "C" },
     ]);
-    await graph
-      .connectedComponents("source", "target")
-      .log();
-    assertEquals(await graph.getData(), [
+    await graph.connectedComponents("source", "target").log();
+    expect(await graph.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "C", componentId: 0 },
@@ -777,7 +775,7 @@ Deno.test("connectedComponents executes all four complete JSDoc examples", async
         mode: "strong",
       })
       .log();
-    assertEquals(await graph.getData(), [
+    expect(await graph.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 1 },
       { node: "C", componentId: 2 },
@@ -800,7 +798,7 @@ Deno.test("connectedComponents executes all four complete JSDoc examples", async
         startTimeColumn: "time",
       })
       .log();
-    assertEquals(await transactions.getData(), [
+    expect(await transactions.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "B", componentId: 1 },
@@ -811,21 +809,19 @@ Deno.test("connectedComponents executes all four complete JSDoc examples", async
   }
 });
 
-Deno.test("connectedComponents preserves empty numeric schemas in both modes", async () => {
+test("connectedComponents preserves empty numeric schemas in both modes", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("emptyNumericComponents");
-    await sdb.customQuery(
-      'CREATE TABLE "emptyNumericComponents" (source BIGINT, target BIGINT)',
-    );
+    await sdb.customQuery('CREATE TABLE "emptyNumericComponents" (source BIGINT, target BIGINT)');
     for (const mode of ["weak", "strong"] as const) {
       const result = table.connectedComponents("source", "target", {
         mode,
         outputTable: true,
       });
-      assertEquals(await result.getData(), []);
-      assertEquals(await result.getColumns(), ["componentId", "node"]);
-      assertEquals(await result.getTypes(), {
+      expect(await result.getData()).toStrictEqual([]);
+      expect(await result.getColumns()).toStrictEqual(["componentId", "node"]);
+      expect(await result.getTypes()).toStrictEqual({
         componentId: "BIGINT",
         node: "BIGINT",
       });
@@ -835,7 +831,7 @@ Deno.test("connectedComponents preserves empty numeric schemas in both modes", a
   }
 });
 
-Deno.test("connectedComponents preserves exact decimal identity and labels in both modes", async () => {
+test("connectedComponents preserves exact decimal identity and labels in both modes", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("decimalComponents");
@@ -851,12 +847,12 @@ Deno.test("connectedComponents preserves exact decimal identity and labels in bo
         mode,
         outputTable: true,
       });
-      assertEquals(await result.getColumns(), ["componentId", "node"]);
-      assertEquals(await result.getTypes(), {
+      expect(await result.getColumns()).toStrictEqual(["componentId", "node"]);
+      expect(await result.getTypes()).toStrictEqual({
         componentId: "BIGINT",
         node: "DECIMAL(38,0)",
       });
-      assertEquals(await result.convert({ node: "string" }).getData(), [
+      expect(await result.convert({ node: "string" }).getData()).toStrictEqual([
         { node: "-10", componentId: 0 },
         { node: "0", componentId: 0 },
         { node: "2", componentId: 1 },
@@ -869,7 +865,7 @@ Deno.test("connectedComponents preserves exact decimal identity and labels in bo
   }
 });
 
-Deno.test("connectedComponents preserves strict string labels in both modes", async () => {
+test("connectedComponents preserves strict string labels in both modes", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("strictStringComponents");
@@ -879,37 +875,42 @@ Deno.test("connectedComponents preserves strict string labels in both modes", as
       ('a', 'b'), ('b', 'a'), ('A', 'B'), ('B', 'A'),
       ('001', '1'), ('1', '001'), (' A', ' A'), ('é', 'é')`);
     for (const mode of ["weak", "strong"] as const) {
-      assertEquals(
-        await table.connectedComponents("source", "target", {
-          mode,
-          outputTable: true,
-        }).getData(),
-        [
-          { node: " A", componentId: 0 },
-          { node: "001", componentId: 1 },
-          { node: "1", componentId: 1 },
-          { node: "A", componentId: 2 },
-          { node: "B", componentId: 2 },
-          { node: "a", componentId: 3 },
-          { node: "b", componentId: 3 },
-          { node: "é", componentId: 4 },
-        ],
-      );
+      expect(
+        await table
+          .connectedComponents("source", "target", {
+            mode,
+            outputTable: true,
+          })
+          .getData(),
+      ).toStrictEqual([
+        { node: " A", componentId: 0 },
+        { node: "001", componentId: 1 },
+        { node: "1", componentId: 1 },
+        { node: "A", componentId: 2 },
+        { node: "B", componentId: 2 },
+        { node: "a", componentId: 3 },
+        { node: "b", componentId: 3 },
+        { node: "é", componentId: 4 },
+      ]);
     }
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents closes the documented chain into one strong group", async () => {
+test("connectedComponents closes the documented chain into one strong group", async () => {
   const sdb = new SimpleDB();
   try {
-    const rows = await sdb.newTable().loadArray([
-      { source: "A", target: "B" },
-      { source: "B", target: "C" },
-      { source: "C", target: "A" },
-    ]).connectedComponents("source", "target", { mode: "strong" }).getData();
-    assertEquals(rows, [
+    const rows = await sdb
+      .newTable()
+      .loadArray([
+        { source: "A", target: "B" },
+        { source: "B", target: "C" },
+        { source: "C", target: "A" },
+      ])
+      .connectedComponents("source", "target", { mode: "strong" })
+      .getData();
+    expect(rows).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "C", componentId: 0 },
@@ -919,7 +920,7 @@ Deno.test("connectedComponents closes the documented chain into one strong group
   }
 });
 
-Deno.test("connectedComponents preserves compatible numeric endpoint types and quoted names", async () => {
+test("connectedComponents preserves compatible numeric endpoint types and quoted names", async () => {
   const cases = [
     ["TINYINT", "SMALLINT", "SMALLINT"],
     ["INTEGER", "UINTEGER", "BIGINT"],
@@ -929,9 +930,7 @@ Deno.test("connectedComponents preserves compatible numeric endpoint types and q
   ];
   const sdb = new SimpleDB();
   try {
-    for (
-      const [index, [sourceType, targetType, outputType]] of cases.entries()
-    ) {
+    for (const [index, [sourceType, targetType, outputType]] of cases.entries()) {
       const table = sdb.newTable(`compatibleComponentTypes${index}`);
       await sdb.customQuery(`CREATE TABLE "${table.name}" AS
         SELECT source::${sourceType} AS "From Node",
@@ -943,11 +942,11 @@ Deno.test("connectedComponents preserves compatible numeric endpoint types and q
           mode,
           outputTable: true,
         });
-        assertEquals(await result.getTypes(), {
+        expect(await result.getTypes()).toStrictEqual({
           node: outputType,
           componentId: "BIGINT",
         });
-        assertEquals(await result.convert({ node: "number" }).getData(), [
+        expect(await result.convert({ node: "number" }).getData()).toStrictEqual([
           { node: -2, componentId: 0 },
           { node: 0, componentId: mode === "weak" ? 0 : 1 },
           { node: 10, componentId: mode === "weak" ? 1 : 2 },
@@ -960,7 +959,7 @@ Deno.test("connectedComponents preserves compatible numeric endpoint types and q
   }
 });
 
-Deno.test("connectedComponents keeps one-way bridges between strong groups separate", async () => {
+test("connectedComponents keeps one-way bridges between strong groups separate", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadArray([
@@ -978,7 +977,7 @@ Deno.test("connectedComponents keeps one-way bridges between strong groups separ
       mode: "strong",
       outputTable: true,
     });
-    assertEquals(await strong.getData(), [
+    expect(await strong.getData()).toStrictEqual([
       { node: -1, componentId: 0 },
       { node: 2, componentId: 1 },
       { node: 10, componentId: 1 },
@@ -987,8 +986,7 @@ Deno.test("connectedComponents keeps one-way bridges between strong groups separ
       { node: 40, componentId: 3 },
       { node: 100, componentId: 4 },
     ]);
-    assertEquals(
-      await table.connectedComponents("source", "target").getData(),
+    expect(await table.connectedComponents("source", "target").getData()).toStrictEqual(
       [-1, 2, 10, 20, 30, 40, 100].map((node) => ({
         node,
         componentId: node === 100 ? 1 : 0,
@@ -999,7 +997,7 @@ Deno.test("connectedComponents keeps one-way bridges between strong groups separ
   }
 });
 
-Deno.test("connectedComponents returns the documented overlapping chronological groups", async () => {
+test("connectedComponents returns the documented overlapping chronological groups", async () => {
   const sdb = new SimpleDB();
   try {
     const transactions = sdb.newTable("temporalComponentExample").loadArray([
@@ -1008,25 +1006,26 @@ Deno.test("connectedComponents returns the documented overlapping chronological 
       { source: "A", target: "B", time: new Date("2025-01-01T10:00:00Z") },
       { source: "B", target: "A", time: new Date("2025-01-01T11:00:00Z") },
     ]);
-    assertEquals(
-      await transactions.connectedComponents("source", "target", {
-        mode: "strong",
-        startTimeColumn: "time",
-        outputTable: true,
-      }).getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 0 },
-        { node: "B", componentId: 1 },
-        { node: "C", componentId: 1 },
-      ],
-    );
+    expect(
+      await transactions
+        .connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "B", componentId: 1 },
+      { node: "C", componentId: 1 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents allows chronological journeys through outside nodes", async () => {
+test("connectedComponents allows chronological journeys through outside nodes", async () => {
   const sdb = new SimpleDB();
   try {
     const events = sdb.newTable("outsideComponentIntermediary").loadArray([
@@ -1034,25 +1033,26 @@ Deno.test("connectedComponents allows chronological journeys through outside nod
       { source: "A", target: "X", time: new Date("2025-01-01T10:00:00Z") },
       { source: "X", target: "B", time: new Date("2025-01-01T11:00:00Z") },
     ]);
-    assertEquals(
-      await events.connectedComponents("source", "target", {
-        mode: "strong",
-        startTimeColumn: "time",
-        outputTable: true,
-      }).getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 0 },
-        { node: "B", componentId: 1 },
-        { node: "X", componentId: 1 },
-      ],
-    );
+    expect(
+      await events
+        .connectedComponents("source", "target", {
+          mode: "strong",
+          startTimeColumn: "time",
+          outputTable: true,
+        })
+        .getData(),
+    ).toStrictEqual([
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 0 },
+      { node: "B", componentId: 1 },
+      { node: "X", componentId: 1 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents enforces chronological mode and option activation", () => {
+test("connectedComponents enforces chronological mode and option activation", () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable();
@@ -1096,7 +1096,7 @@ Deno.test("connectedComponents enforces chronological mode and option activation
   }
 });
 
-Deno.test("connectedComponents applies strict ordering and inclusive gaps", async () => {
+test("connectedComponents applies strict ordering and inclusive gaps", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("componentGapBoundaries");
@@ -1112,68 +1112,82 @@ Deno.test("connectedComponents applies strict ordering and inclusive gaps", asyn
       endTimeColumn: "arrival",
       outputTable: true,
     };
-    assertEquals(
+    expect(
       partitions(
-        await table.connectedComponents("source", "target", {
-          ...base,
-          minGapMs: 60 * 60 * 1000,
-        }).getData(),
+        await table
+          .connectedComponents("source", "target", {
+            ...base,
+            minGapMs: 60 * 60 * 1000,
+          })
+          .getData(),
       ),
-      [["A", "B"], ["B", "X"]],
-    );
-    assertEquals(
+    ).toStrictEqual([
+      ["A", "B"],
+      ["B", "X"],
+    ]);
+    expect(
       partitions(
-        await table.connectedComponents("source", "target", {
-          ...base,
-          minGapMs: 60 * 60 * 1000 + 1,
-        }).getData(),
+        await table
+          .connectedComponents("source", "target", {
+            ...base,
+            minGapMs: 60 * 60 * 1000 + 1,
+          })
+          .getData(),
       ),
-      [["A"], ["B"], ["X"]],
-    );
-    assertEquals(
+    ).toStrictEqual([["A"], ["B"], ["X"]]);
+    expect(
       partitions(
-        await table.connectedComponents("source", "target", {
-          mode: "strong",
-          endTimeColumn: "arrival",
-          minGapMs: 60 * 60 * 1000,
-          outputTable: true,
-        }).getData(),
+        await table
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            endTimeColumn: "arrival",
+            minGapMs: 60 * 60 * 1000,
+            outputTable: true,
+          })
+          .getData(),
       ),
-      [["A", "B"], ["B", "X"]],
-    );
+    ).toStrictEqual([
+      ["A", "B"],
+      ["B", "X"],
+    ]);
 
     const equal = sdb.newTable("componentStrictOrdering").loadArray([
       { source: "A", target: "X", time: new Date("2025-01-01T10:00:00Z") },
       { source: "X", target: "B", time: new Date("2025-01-01T10:00:00Z") },
       { source: "B", target: "A", time: new Date("2025-01-01T09:00:00Z") },
     ]);
-    assertEquals(
+    expect(
       partitions(
-        await equal.connectedComponents("source", "target", {
-          mode: "strong",
-          startTimeColumn: "time",
-          outputTable: true,
-        }).getData(),
+        await equal
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+            outputTable: true,
+          })
+          .getData(),
       ),
-      [["A"], ["B", "X"]],
-    );
-    assertEquals(
+    ).toStrictEqual([["A"], ["B", "X"]]);
+    expect(
       partitions(
-        await equal.connectedComponents("source", "target", {
-          mode: "strong",
-          startTimeColumn: "time",
-          strictOrdering: false,
-          outputTable: true,
-        }).getData(),
+        await equal
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+            strictOrdering: false,
+            outputTable: true,
+          })
+          .getData(),
       ),
-      [["A", "B"], ["B", "X"]],
-    );
+    ).toStrictEqual([
+      ["A", "B"],
+      ["B", "X"],
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents rejects invalid events and preserves valid empty inputs", async () => {
+test("connectedComponents rejects invalid events and preserves valid empty inputs", async () => {
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable("componentValidEvents");
@@ -1186,31 +1200,32 @@ Deno.test("connectedComponents rejects invalid events and preserves valid empty 
       ) events(source, target, departure, arrival)`);
     await assertRejects(
       () =>
-        table.connectedComponents("source", "target", {
+        table
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "departure",
+            endTimeColumn: "arrival",
+            outputTable: true,
+          })
+          .getData(),
+      TypeError,
+      'selected start-time column "departure" contains a null timestamp',
+    );
+    table.filter("departure IS NOT NULL AND arrival IS NOT NULL AND arrival >= departure");
+    expect(
+      await table
+        .connectedComponents("source", "target", {
           mode: "strong",
           startTimeColumn: "departure",
           endTimeColumn: "arrival",
           outputTable: true,
-        }).getData(),
-      TypeError,
-      'selected start-time column "departure" contains a null timestamp',
-    );
-    table.filter(
-      "departure IS NOT NULL AND arrival IS NOT NULL AND arrival >= departure",
-    );
-    assertEquals(
-      await table.connectedComponents("source", "target", {
-        mode: "strong",
-        startTimeColumn: "departure",
-        endTimeColumn: "arrival",
-        outputTable: true,
-      }).getData(),
-      [
-        { node: "A", componentId: 0 },
-        { node: "B", componentId: 1 },
-        { node: "S", componentId: 2 },
-      ],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([
+      { node: "A", componentId: 0 },
+      { node: "B", componentId: 1 },
+      { node: "S", componentId: 2 },
+    ]);
 
     const empty = sdb.newTable("emptyTemporalComponents");
     await sdb.customQuery(`CREATE TABLE "emptyTemporalComponents" (
@@ -1219,9 +1234,9 @@ Deno.test("connectedComponents rejects invalid events and preserves valid empty 
       mode: "strong",
       startTimeColumn: "time",
     });
-    assertEquals(await emptyResult.getData(), []);
-    assertEquals(await emptyResult.getColumns(), ["componentId", "node"]);
-    assertEquals(await emptyResult.getTypes(), {
+    expect(await emptyResult.getData()).toStrictEqual([]);
+    expect(await emptyResult.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await emptyResult.getTypes()).toStrictEqual({
       componentId: "BIGINT",
       node: "VARCHAR",
     });
@@ -1234,10 +1249,12 @@ Deno.test("connectedComponents rejects invalid events and preserves valid empty 
       ) events(source, target, time)`);
     await assertRejects(
       () =>
-        invalid.connectedComponents("source", "target", {
-          mode: "strong",
-          startTimeColumn: "time",
-        }).getData(),
+        invalid
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+          })
+          .getData(),
       TypeError,
       'selected start-time column "time" contains a null timestamp',
     );
@@ -1246,7 +1263,7 @@ Deno.test("connectedComponents rejects invalid events and preserves valid empty 
   }
 });
 
-Deno.test("connectedComponents matches independent exhaustive temporal components", async () => {
+test("connectedComponents matches independent exhaustive temporal components", async () => {
   let state = 0x206199;
   const random = () => {
     state ^= state << 13;
@@ -1262,8 +1279,8 @@ Deno.test("connectedComponents matches independent exhaustive temporal component
         const startTime = BigInt(random() % 5);
         return {
           edgeId,
-          source: String.fromCharCode(65 + random() % 5),
-          target: String.fromCharCode(65 + random() % 5),
+          source: String.fromCharCode(65 + (random() % 5)),
+          target: String.fromCharCode(65 + (random() % 5)),
           startTime,
           endTime: startTime + BigInt(random() % 2),
         } satisfies ReferenceChronologicalEvent<string, number>;
@@ -1272,28 +1289,24 @@ Deno.test("connectedComponents matches independent exhaustive temporal component
         const expected = referenceTemporalComponents(events, {
           strictOrdering,
         });
-        for (
-          const [order, ordered] of [events, events.toReversed()].entries()
-        ) {
+        for (const [order, ordered] of [events, events.toReversed()].entries()) {
           const rows = ordered.map((event) => ({
             source: event.source,
             target: event.target,
             departure: new Date(baseTime + Number(event.startTime) * 1000),
             arrival: new Date(baseTime + Number(event.endTime) * 1000),
           }));
-          const actual = await sdb.newTable(
-            `referenceComponents${fixture}_${strictOrdering}_${order}`,
-          ).loadArray(rows).connectedComponents("source", "target", {
-            mode: "strong",
-            startTimeColumn: "departure",
-            endTimeColumn: "arrival",
-            strictOrdering,
-          }).getData();
-          assertEquals(
-            actual,
-            expected,
-            `${fixture}/${strictOrdering}/${order}`,
-          );
+          const actual = await sdb
+            .newTable(`referenceComponents${fixture}_${strictOrdering}_${order}`)
+            .loadArray(rows)
+            .connectedComponents("source", "target", {
+              mode: "strong",
+              startTimeColumn: "departure",
+              endTimeColumn: "arrival",
+              strictOrdering,
+            })
+            .getData();
+          expect(actual, `${fixture}/${strictOrdering}/${order}`).toStrictEqual(expected);
         }
       }
     }
@@ -1302,10 +1315,10 @@ Deno.test("connectedComponents matches independent exhaustive temporal component
   }
 });
 
-Deno.test("connectedComponents enumerates every four-node mutual graph", async () => {
+test("connectedComponents enumerates every four-node mutual graph", async () => {
   const nodes = ["A", "B", "C", "D"];
   const pairs = nodes.flatMap((left, index) =>
-    nodes.slice(index + 1).map((right) => [left, right])
+    nodes.slice(index + 1).map((right) => [left, right]),
   );
   const sdb = new SimpleDB();
   try {
@@ -1315,7 +1328,7 @@ Deno.test("connectedComponents enumerates every four-node mutual graph", async (
     for (let mask = 0; mask < 2 ** pairs.length; mask++) {
       const endpoints = nodes.map((node) => [node, node]);
       for (const [index, [left, right]] of pairs.entries()) {
-        if ((mask & 2 ** index) !== 0) {
+        if ((mask & (2 ** index)) !== 0) {
           endpoints.push([left, right], [right, left]);
         }
       }
@@ -1333,14 +1346,15 @@ Deno.test("connectedComponents enumerates every four-node mutual graph", async (
           time: new Date("2025-01-01T00:00:00Z"),
         })),
       );
-      assertEquals(
-        await table.connectedComponents("source", "target", {
-          mode: "strong",
-          startTimeColumn: "time",
-        }).getData(),
-        referenceTemporalComponents(events),
+      expect(
+        await table
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+          })
+          .getData(),
         `mutual graph ${mask}`,
-      );
+      ).toStrictEqual(referenceTemporalComponents(events));
       await table.removeTable();
     }
   } finally {
@@ -1348,7 +1362,7 @@ Deno.test("connectedComponents enumerates every four-node mutual graph", async (
   }
 });
 
-Deno.test("connectedComponents temporal IDs use exact typed key order", async () => {
+test("connectedComponents temporal IDs use exact typed key order", async () => {
   const sdb = new SimpleDB();
   try {
     const values = [
@@ -1364,19 +1378,20 @@ Deno.test("connectedComponents temporal IDs use exact typed key order", async ()
         time TIMESTAMP
       ); INSERT INTO "${strings.name}" VALUES
         ${ordered.join(",\n        ")}`);
-      assertEquals(
-        await strings.connectedComponents("source", "target", {
-          mode: "strong",
-          startTimeColumn: "time",
-          outputTable: true,
-        }).getData(),
-        [
-          { node: "A", componentId: 0 },
-          { node: "b", componentId: 0 },
-          { node: "B", componentId: 1 },
-          { node: "a", componentId: 1 },
-        ],
-      );
+      expect(
+        await strings
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+            outputTable: true,
+          })
+          .getData(),
+      ).toStrictEqual([
+        { node: "A", componentId: 0 },
+        { node: "b", componentId: 0 },
+        { node: "B", componentId: 1 },
+        { node: "a", componentId: 1 },
+      ]);
     }
 
     const wide = sdb.newTable("wideTemporalComponents");
@@ -1387,11 +1402,13 @@ Deno.test("connectedComponents temporal IDs use exact typed key order", async ()
         ('9007199254740993', '9007199254740995', TIMESTAMP '2025-01-01'),
         ('0', '1', TIMESTAMP '2025-01-01')
       ) events(source, target, time)`);
-    const wideResult = wide.connectedComponents("source", "target", {
-      mode: "strong",
-      startTimeColumn: "time",
-    }).convert({ node: "string" });
-    assertEquals(await wideResult.getData(), [
+    const wideResult = wide
+      .connectedComponents("source", "target", {
+        mode: "strong",
+        startTimeColumn: "time",
+      })
+      .convert({ node: "string" });
+    expect(await wideResult.getData()).toStrictEqual([
       { node: "0", componentId: 0 },
       { node: "1", componentId: 1 },
       { node: "9007199254740993", componentId: 2 },
@@ -1402,7 +1419,7 @@ Deno.test("connectedComponents temporal IDs use exact typed key order", async ()
   }
 });
 
-Deno.test("connectedComponents preserves temporal queues, outputs, and option snapshots", async () => {
+test("connectedComponents preserves temporal queues, outputs, and option snapshots", async () => {
   const sdb = new SimpleDB();
   try {
     const options: {
@@ -1416,22 +1433,22 @@ Deno.test("connectedComponents preserves temporal queues, outputs, and option sn
       startTimeColumn: "time",
       strictOrdering: false,
     };
-    const source = sdb.newTable("temporalComponentQueue").loadArray([
-      { source: "A", target: "B", time: "2025-01-01T00:00:00Z" },
-      { source: "B", target: "A", time: "2025-01-01T00:00:00Z" },
-    ]).convert({ time: "timestamp" });
-    const result = source.connectedComponents("source", "target", options)
-      .filter("node = 'B'");
+    const source = sdb
+      .newTable("temporalComponentQueue")
+      .loadArray([
+        { source: "A", target: "B", time: "2025-01-01T00:00:00Z" },
+        { source: "B", target: "A", time: "2025-01-01T00:00:00Z" },
+      ])
+      .convert({ time: "timestamp" });
+    const result = source.connectedComponents("source", "target", options).filter("node = 'B'");
     options.startTimeColumn = "changed";
     options.strictOrdering = true;
     options.outputTable = "changedOutput";
-    source.loadArray([
-      { source: "X", target: "Y", time: "2025-01-02T00:00:00Z" },
-    ]);
-    assertEquals(result.name, "temporalComponentOutput");
-    assertEquals(await result.getData(), [{ node: "B", componentId: 0 }]);
-    assertEquals(await result.getColumns(), ["componentId", "node"]);
-    assertEquals(await source.getData(), [
+    source.loadArray([{ source: "X", target: "Y", time: "2025-01-02T00:00:00Z" }]);
+    expect(result.name).toStrictEqual("temporalComponentOutput");
+    expect(await result.getData()).toStrictEqual([{ node: "B", componentId: 0 }]);
+    expect(await result.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await source.getData()).toStrictEqual([
       { source: "X", target: "Y", time: "2025-01-02T00:00:00Z" },
     ]);
   } finally {
@@ -1439,7 +1456,7 @@ Deno.test("connectedComponents preserves temporal queues, outputs, and option sn
   }
 });
 
-Deno.test("connectedComponents temporal output records its source cache dependency", async () => {
+test("connectedComponents temporal output records its source cache dependency", async () => {
   let computationRuns = 0;
   const unique = crypto.randomUUID().replaceAll("-", "");
   const outputName = `temporalComponentsCacheOutput${unique}`;
@@ -1462,23 +1479,25 @@ Deno.test("connectedComponents temporal output records its source cache dependen
 
   const firstSdb = new SimpleDB();
   try {
-    await firstSdb.newTable(outputName).cache(
-      compute(firstSdb.newTable(sourceName).loadArray(firstRows)),
-    );
+    await firstSdb
+      .newTable(outputName)
+      .cache(compute(firstSdb.newTable(sourceName).loadArray(firstRows)));
   } finally {
     await firstSdb.close();
   }
   const secondSdb = new SimpleDB();
   try {
-    const source = secondSdb.newTable(sourceName).loadArray([
-      ...firstRows,
-      { source: "C", target: "C", time: new Date("2025-01-01T00:00:00Z") },
-    ]);
+    const source = secondSdb
+      .newTable(sourceName)
+      .loadArray([
+        ...firstRows,
+        { source: "C", target: "C", time: new Date("2025-01-01T00:00:00Z") },
+      ]);
     const output = secondSdb.newTable(outputName);
     await output.cache(compute(source));
-    assertEquals(computationRuns, 2);
-    assertEquals(await output.getColumns(), ["componentId", "node"]);
-    assertEquals(await output.getData(), [
+    expect(computationRuns).toStrictEqual(2);
+    expect(await output.getColumns()).toStrictEqual(["componentId", "node"]);
+    expect(await output.getData()).toStrictEqual([
       { node: "A", componentId: 0 },
       { node: "B", componentId: 0 },
       { node: "C", componentId: 1 },
@@ -1488,22 +1507,20 @@ Deno.test("connectedComponents temporal output records its source cache dependen
   }
 });
 
-Deno.test("connectedComponents validates chronological columns from the queued schema", async () => {
+test("connectedComponents validates chronological columns from the queued schema", async () => {
   const sdb = new SimpleDB();
   try {
-    const missing = sdb.newTable("missingComponentTime")
+    const missing = sdb
+      .newTable("missingComponentTime")
       .loadArray([{ source: "A", target: "B" }])
       .connectedComponents("source", "target", {
         mode: "strong",
         startTimeColumn: "time",
       });
-    await assertRejects(
-      () => missing.run(),
-      Error,
-      'the column "time" does not exist',
-    );
+    await assertRejects(() => missing.run(), Error, 'the column "time" does not exist');
 
-    const wrongType = sdb.newTable("wrongComponentTime")
+    const wrongType = sdb
+      .newTable("wrongComponentTime")
       .loadArray([{ source: "A", target: "B", time: 1 }])
       .connectedComponents("source", "target", {
         mode: "strong",
@@ -1519,8 +1536,12 @@ Deno.test("connectedComponents validates chronological columns from the queued s
   }
 });
 
-Deno.test("connectedComponents clique siblings retain earlier noncandidate vertices", async () => {
-  const undirectedEdges = [[0, 1], [0, 3], [1, 2]] as const;
+test("connectedComponents clique siblings retain earlier noncandidate vertices", async () => {
+  const undirectedEdges = [
+    [0, 1],
+    [0, 3],
+    [1, 2],
+  ] as const;
   const time = new Date("2025-01-01T00:00:00Z");
   const rows = undirectedEdges.flatMap(([left, right]) => [
     { source: left, target: right, time },
@@ -1528,27 +1549,29 @@ Deno.test("connectedComponents clique siblings retain earlier noncandidate verti
   ]);
   const sdb = new SimpleDB();
   try {
-    assertEquals(
-      await sdb.newTable("componentSiblingCandidates").loadArray(rows)
+    expect(
+      await sdb
+        .newTable("componentSiblingCandidates")
+        .loadArray(rows)
         .connectedComponents("source", "target", {
           mode: "strong",
           startTimeColumn: "time",
-        }).getData(),
-      [
-        { node: 0, componentId: 0 },
-        { node: 1, componentId: 0 },
-        { node: 0, componentId: 1 },
-        { node: 3, componentId: 1 },
-        { node: 1, componentId: 2 },
-        { node: 2, componentId: 2 },
-      ],
-    );
+        })
+        .getData(),
+    ).toStrictEqual([
+      { node: 0, componentId: 0 },
+      { node: 1, componentId: 0 },
+      { node: 0, componentId: 1 },
+      { node: 3, componentId: 1 },
+      { node: 1, componentId: 2 },
+      { node: 2, componentId: 2 },
+    ]);
   } finally {
     await sdb.close();
   }
 });
 
-Deno.test("connectedComponents preserves nanosecond gap boundaries", async () => {
+test("connectedComponents preserves nanosecond gap boundaries", async () => {
   const sdb = new SimpleDB();
   try {
     for (const offset of [999_999, 1_000_000, 1_000_001]) {
@@ -1556,21 +1579,27 @@ Deno.test("connectedComponents preserves nanosecond gap boundaries", async () =>
       await sdb.customQuery(`CREATE TABLE "${table.name}" AS
         SELECT * FROM (VALUES
           ('A', 'X', TIMESTAMP_NS '2025-01-01 00:00:00.000000000'),
-          ('X', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.${
-        offset.toString().padStart(9, "0")
-      }'),
+          ('X', 'B', TIMESTAMP_NS '2025-01-01 00:00:00.${offset.toString().padStart(9, "0")}'),
           ('B', 'A', TIMESTAMP_NS '2024-12-31 23:59:59.999000000')
         ) events(source, target, time)`);
-      assertEquals(
+      expect(
         partitions(
-          await table.connectedComponents("source", "target", {
-            mode: "strong",
-            startTimeColumn: "time",
-            minGapMs: 1,
-            outputTable: true,
-          }).getData(),
+          await table
+            .connectedComponents("source", "target", {
+              mode: "strong",
+              startTimeColumn: "time",
+              minGapMs: 1,
+              outputTable: true,
+            })
+            .getData(),
         ),
-        offset < 1_000_000 ? [["A"], ["B", "X"]] : [["A", "B"], ["B", "X"]],
+      ).toStrictEqual(
+        offset < 1_000_000
+          ? [["A"], ["B", "X"]]
+          : [
+              ["A", "B"],
+              ["B", "X"],
+            ],
       );
     }
   } finally {
@@ -1578,35 +1607,34 @@ Deno.test("connectedComponents preserves nanosecond gap boundaries", async () =>
   }
 });
 
-Deno.test("connectedComponents temporal relations do not shadow the input", async () => {
+test("connectedComponents temporal relations do not shadow the input", async () => {
   const sdb = new SimpleDB();
   try {
-    for (
-      const [index, name] of [
-        "graph_starts",
-        "GRAPH_EDGES",
-        "graph_component_nodes",
-        "GRAPH_MUTUAL_ADJACENCY",
-        "graph_clique_search",
-      ].entries()
-    ) {
+    for (const [index, name] of [
+      "graph_starts",
+      "GRAPH_EDGES",
+      "graph_component_nodes",
+      "GRAPH_MUTUAL_ADJACENCY",
+      "graph_clique_search",
+    ].entries()) {
       const time = new Date("2025-01-01T00:00:00Z");
       const table = sdb.newTable(name).loadArray([
         { source: "A", target: "B", time },
         { source: "B", target: "A", time },
       ]);
       await table.run();
-      assertEquals(
-        await table.connectedComponents("source", "target", {
-          mode: "strong",
-          startTimeColumn: "time",
-          outputTable: `temporalCollisionOutput${index}`,
-        }).getData(),
-        [
-          { node: "A", componentId: 0 },
-          { node: "B", componentId: 0 },
-        ],
-      );
+      expect(
+        await table
+          .connectedComponents("source", "target", {
+            mode: "strong",
+            startTimeColumn: "time",
+            outputTable: `temporalCollisionOutput${index}`,
+          })
+          .getData(),
+      ).toStrictEqual([
+        { node: "A", componentId: 0 },
+        { node: "B", componentId: 0 },
+      ]);
     }
   } finally {
     await sdb.close();

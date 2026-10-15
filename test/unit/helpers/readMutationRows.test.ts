@@ -1,8 +1,9 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import { DuckDBInstance } from "@duckdb/node-api";
 import readMutationRows from "../../../src/helpers/readMutationRows.ts";
 
-Deno.test("mutation reads keep the final cursor separate across DuckDB chunks", async () => {
+test("mutation reads keep the final cursor separate across DuckDB chunks", async () => {
   const db = await DuckDBInstance.create(":memory:");
   const connection = await db.connect();
   try {
@@ -13,34 +14,30 @@ Deno.test("mutation reads keep the final cursor separate across DuckDB chunks", 
        FROM range(5003) t(i) ORDER BY i`,
       "cursor",
     );
-    assertEquals(result.lastCursorValue, 5002n);
-    assertEquals(
-      result.rows,
+    expect(result.lastCursorValue).toStrictEqual(5002n);
+    expect(result.rows).toStrictEqual(
       Array.from({ length: 5003 }, (_, i) => ({
         value: i % 7,
         label: i % 2 === 0 ? null : "label",
       })),
     );
-    assertEquals(
-      [...result.types].map(([name, type]) => [name, String(type)]),
-      [["value", "INTEGER"], ["label", "VARCHAR"]],
-    );
+    expect([...result.types].map(([name, type]) => [name, String(type)])).toStrictEqual([
+      ["value", "INTEGER"],
+      ["label", "VARCHAR"],
+    ]);
 
     const empty = await readMutationRows(
       connection,
       "SELECT 1::BIGINT AS cursor, 2 AS value WHERE false",
       "cursor",
     );
-    assertEquals(empty.rows, []);
-    assertEquals(empty.lastCursorValue, undefined);
-    assertEquals([...empty.types.keys()], ["value"]);
+    expect(empty.rows).toStrictEqual([]);
+    expect(empty.lastCursorValue).toStrictEqual(undefined);
+    expect([...empty.types.keys()]).toStrictEqual(["value"]);
 
-    const ordinary = await readMutationRows(
-      connection,
-      "SELECT 1::BIGINT AS cursor, 2 AS value",
-    );
-    assertEquals(ordinary.rows, [{ cursor: 1n, value: 2 }]);
-    assertEquals([...ordinary.types.keys()], ["cursor", "value"]);
+    const ordinary = await readMutationRows(connection, "SELECT 1::BIGINT AS cursor, 2 AS value");
+    expect(ordinary.rows).toStrictEqual([{ cursor: 1n, value: 2 }]);
+    expect([...ordinary.types.keys()]).toStrictEqual(["cursor", "value"]);
   } finally {
     connection.closeSync();
     db.closeSync();

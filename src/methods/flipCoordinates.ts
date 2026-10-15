@@ -3,10 +3,7 @@ import findGeoColumnFromSchema from "../helpers/findGeoColumnFromSchema.ts";
 import queueOp from "../helpers/queueOp.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function flipCoordinates(
-  simpleTable: SimpleTable,
-  column?: string,
-) {
+export default function flipCoordinates(simpleTable: SimpleTable, column?: string) {
   queueOp(simpleTable, {
     kind: "fusable",
     method: "flipCoordinates()",
@@ -17,8 +14,7 @@ export default function flipCoordinates(
     // schema is unchanged.
     preservesSchema: true,
     buildSelect: (input, types) => {
-      const col = column ??
-        findGeoColumnFromSchema(types, "flipCoordinates()", simpleTable.name);
+      const col = column ?? findGeoColumnFromSchema(types, "flipCoordinates()", simpleTable.name);
       // The schema type carries the projection (e.g. GEOMETRY('EPSG:4326')),
       // so the cast keeps it on the new geometries.
       return `SELECT * REPLACE (ST_FlipCoordinates(${quoteIdentifier(col)})::${

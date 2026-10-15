@@ -1,15 +1,9 @@
 /** Validates and snapshots a JavaScript JSON value without dropping information. */
-export default function prepareJSON(
-  value: unknown,
-  column: string,
-  row: number,
-): string | null {
+export default function prepareJSON(value: unknown, column: string, row: number): string | null {
   if (value === null || value === undefined) return null;
   const active = new Set<object>();
   const fail = (path: string, message: string): never => {
-    throw new Error(
-      `Column ${JSON.stringify(column)}, row ${row}, ${path}: ${message}`,
-    );
+    throw new Error(`Column ${JSON.stringify(column)}, row ${row}, ${path}: ${message}`);
   };
   function serialize(value: unknown, path: string): string {
     if (value === null) return "null";
@@ -33,7 +27,8 @@ export default function prepareJSON(
     }
     const array = Array.isArray(value);
     if (
-      !array && Object.getPrototypeOf(value) !== Object.prototype &&
+      !array &&
+      Object.getPrototypeOf(value) !== Object.prototype &&
       Object.getPrototypeOf(value) !== null
     ) {
       return fail(
@@ -48,23 +43,18 @@ export default function prepareJSON(
     try {
       if (array) {
         if (Object.keys(value).length !== value.length) {
-          return fail(
-            path,
-            "JSON arrays must be dense and have no extra properties.",
-          );
+          return fail(path, "JSON arrays must be dense and have no extra properties.");
         }
-        return `[${
-          Array.from(value, (item: unknown, i) =>
-            serialize(item, `${path}[${i}]`)).join(",")
-        }]`;
+        return `[${Array.from(value, (item: unknown, i) => serialize(item, `${path}[${i}]`)).join(
+          ",",
+        )}]`;
       }
-      return `{${
-        Object.entries(value).map(([key, item]: [string, unknown]) =>
-          `${JSON.stringify(key)}:${
-            serialize(item, `${path}[${JSON.stringify(key)}]`)
-          }`
-        ).join(",")
-      }}`;
+      return `{${Object.entries(value)
+        .map(
+          ([key, item]: [string, unknown]) =>
+            `${JSON.stringify(key)}:${serialize(item, `${path}[${JSON.stringify(key)}]`)}`,
+        )
+        .join(",")}}`;
     } finally {
       active.delete(value);
     }

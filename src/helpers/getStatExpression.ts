@@ -45,9 +45,7 @@ const temporalStatTypes: readonly string[] = [
 ];
 
 /** Returns whether a DuckDB type is temporal for statistic compatibility. */
-export function isTemporalStatType(
-  type: string | undefined,
-): boolean {
+export function isTemporalStatType(type: string | undefined): boolean {
   return typeof type === "string" && temporalStatTypes.includes(type);
 }
 
@@ -76,10 +74,7 @@ export default function getStatExpression(
   if (type === "VARCHAR") {
     return null;
   }
-  if (
-    isTemporalStatType(type) &&
-    ["mean", "sum", "skew", "stdDev", "variance"].includes(stat)
-  ) {
+  if (isTemporalStatType(type) && ["mean", "sum", "skew", "stdDev", "variance"].includes(stat)) {
     return null;
   }
   const aggregateFunction = aggregateFunctions[stat];
@@ -88,14 +83,8 @@ export default function getStatExpression(
   }
   const aggregate = `${aggregateFunction}(${reference})`;
   return typeof decimals === "number" &&
-      typeof type === "string" &&
-      ![
-        "VARCHAR",
-        "DATE",
-        "TIME",
-        "TIMESTAMP",
-        "TIMESTAMP WITH TIME ZONE",
-      ].includes(type)
+    typeof type === "string" &&
+    !["VARCHAR", "DATE", "TIME", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE"].includes(type)
     ? `ROUND(${aggregate}, ${decimals})`
     : aggregate;
 }

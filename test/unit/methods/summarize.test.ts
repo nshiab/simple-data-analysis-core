@@ -1,7 +1,8 @@
-import { assertEquals } from "@std/assert";
+import { test, expect } from "vite-plus/test";
+
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
-Deno.test("should quote statistic aliases and bind column labels", async () => {
+test("should quote statistic aliases and bind column labels", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -14,23 +15,23 @@ Deno.test("should quote statistic aliases and bind column labels", async () => {
     outputTable: true,
   });
 
-  assertEquals(await result.getData(), [
+  expect(await result.getData()).toStrictEqual([
     { column: "cost", "average's": 2 },
     { column: "sales'net", "average's": 3 },
   ]);
   await sdb.close();
 });
 
-Deno.test("should summarize all rows (no option columns)", async () => {
+test("should summarize all rows (no option columns)", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize();
   const data = await table.getData();
-  assertEquals(data, [{ count: 6 }]);
+  expect(data).toStrictEqual([{ count: 6 }]);
   await sdb.close();
 });
-Deno.test("should summarize all rows into a new table", async () => {
+test("should summarize all rows into a new table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -39,21 +40,21 @@ Deno.test("should summarize all rows into a new table", async () => {
     outputTable: "summaryAllRows",
   });
   const data = await summaryAllRows.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Banane", count: 2 },
     { key1: "Fraise", count: 2 },
     { key1: "Rubarbe", count: 2 },
   ]);
   await sdb.close();
 });
-Deno.test("should summarize all rows into a new table, even if column names have spaces", async () => {
+test("should summarize all rows into a new table, even if column names have spaces", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.renameColumns({
-    "key1": "key 1",
-    "key2": "key 2",
-    "key3": "key 3",
+    key1: "key 1",
+    key2: "key 2",
+    key3: "key 3",
   });
 
   const summaryAllRows = table.summarize({
@@ -63,7 +64,7 @@ Deno.test("should summarize all rows into a new table, even if column names have
   });
 
   const data = await summaryAllRows.getData();
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       "key 1": "Banane",
       count: 2,
@@ -109,7 +110,7 @@ Deno.test("should summarize all rows into a new table, even if column names have
   ]);
   await sdb.close();
 });
-Deno.test("should summarize all rows into a new table and the original table shouldn't be modified", async () => {
+test("should summarize all rows into a new table and the original table shouldn't be modified", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -119,18 +120,18 @@ Deno.test("should summarize all rows into a new table and the original table sho
     outputTable: "summaryAllRows",
   });
   const afterData = await table.getData();
-  assertEquals(beforeData, afterData);
+  expect(beforeData).toStrictEqual(afterData);
   await sdb.close();
 });
 
-Deno.test("should summarize all columns in a table and overwrite the table", async () => {
+test("should summarize all columns in a table and overwrite the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({ columns: await table.getColumns() });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "key1",
       count: 6,
@@ -177,14 +178,14 @@ Deno.test("should summarize all columns in a table and overwrite the table", asy
   await sdb.close();
 });
 
-Deno.test("should summarize with 2 decimals all columns in a table and overwrite the table", async () => {
+test("should summarize with 2 decimals all columns in a table and overwrite the table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({ columns: await table.getColumns(), decimals: 2 });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "key1",
       count: 6,
@@ -231,7 +232,7 @@ Deno.test("should summarize with 2 decimals all columns in a table and overwrite
   await sdb.close();
 });
 
-Deno.test("should summarize all columns in a table and output the results in another table", async () => {
+test("should summarize all columns in a table and output the results in another table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -242,7 +243,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
   });
   const data = await newTable.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "key1",
       count: 6,
@@ -289,7 +290,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
   await sdb.close();
 });
 
-Deno.test("should summarize all columns in a table and output the results in another table with a specific name in the DB", async () => {
+test("should summarize all columns in a table and output the results in another table with a specific name in the DB", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -302,7 +303,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
     returnData: true,
   });
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "key1",
       count: 6,
@@ -349,7 +350,7 @@ Deno.test("should summarize all columns in a table and output the results in ano
   await sdb.close();
 });
 
-Deno.test("should summarize specific columns in a table", async () => {
+test("should summarize specific columns in a table", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -359,7 +360,7 @@ Deno.test("should summarize specific columns in a table", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       count: 6,
       countDistinct: 4,
@@ -377,7 +378,7 @@ Deno.test("should summarize specific columns in a table", async () => {
   await sdb.close();
 });
 
-Deno.test("should summarize specific columns in a table with a specific number of decimals", async () => {
+test("should summarize specific columns in a table with a specific number of decimals", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -387,7 +388,7 @@ Deno.test("should summarize specific columns in a table with a specific number o
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       count: 6,
       countDistinct: 4,
@@ -404,34 +405,7 @@ Deno.test("should summarize specific columns in a table with a specific number o
   ]);
   await sdb.close();
 });
-Deno.test("should summarize a single column without adding a `column` output column", async () => {
-  const sdb = new SimpleDB();
-  const table = sdb.newTable();
-  table.loadData("test/data/files/dataSummarize.json");
-  table.summarize({
-    columns: "key2",
-    decimals: 4,
-  });
-  const data = await table.getData();
-
-  assertEquals(data, [
-    {
-      count: 6,
-      countDistinct: 4,
-      countNull: 2,
-      min: 1,
-      max: 22,
-      mean: 9,
-      median: 6.5,
-      sum: 36,
-      skew: 0.9669,
-      stdDev: 9.7639,
-      variance: 95.3333,
-    },
-  ]);
-  await sdb.close();
-});
-Deno.test("should summarize a grouped single column without adding a `column` output column", async () => {
+test("should summarize a grouped single column without adding a `column` output column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -442,7 +416,7 @@ Deno.test("should summarize a grouped single column without adding a `column` ou
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       key1: "Banane",
       count: 2,
@@ -488,7 +462,7 @@ Deno.test("should summarize a grouped single column without adding a `column` ou
   ]);
   await sdb.close();
 });
-Deno.test("should not add a `column` output column when summarizing a single column", async () => {
+test("should not add a `column` output column when summarizing a single column", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -498,10 +472,10 @@ Deno.test("should not add a `column` output column when summarizing a single col
   });
   const columns = await table.getColumns();
 
-  assertEquals(columns, ["count", "mean"]);
+  expect(columns).toStrictEqual(["count", "mean"]);
   await sdb.close();
 });
-Deno.test("should add a `column` output column when summarizing multiple columns", async () => {
+test("should add a `column` output column when summarizing multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -511,10 +485,10 @@ Deno.test("should add a `column` output column when summarizing multiple columns
   });
   const columns = await table.getColumns();
 
-  assertEquals(columns, ["column", "count", "mean"]);
+  expect(columns).toStrictEqual(["column", "count", "mean"]);
   await sdb.close();
 });
-Deno.test("should deduplicate input columns and omit the `column` output column when one remains", async () => {
+test("should deduplicate input columns and omit the `column` output column when one remains", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -524,10 +498,10 @@ Deno.test("should deduplicate input columns and omit the `column` output column 
   });
   const data = await table.getData();
 
-  assertEquals(data, [{ count: 6, mean: 9 }]);
+  expect(data).toStrictEqual([{ count: 6, mean: 9 }]);
   await sdb.close();
 });
-Deno.test("should count rows when all selected columns are also grouping columns", async () => {
+test("should count rows when all selected columns are also grouping columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -537,7 +511,7 @@ Deno.test("should count rows when all selected columns are also grouping columns
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Banane", count: 2 },
     { key1: "Fraise", count: 2 },
     { key1: "Rubarbe", count: 2 },
@@ -545,7 +519,7 @@ Deno.test("should count rows when all selected columns are also grouping columns
   await sdb.close();
 });
 
-Deno.test("should summarize all columns in a table with a non numeric category", async () => {
+test("should summarize all columns in a table with a non numeric category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -557,7 +531,7 @@ Deno.test("should summarize all columns in a table with a non numeric category",
 
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "key2",
       key1: "Banane",
@@ -651,7 +625,7 @@ Deno.test("should summarize all columns in a table with a non numeric category",
   ]);
   await sdb.close();
 });
-Deno.test("should summarize all columns in a table with a numeric category", async () => {
+test("should summarize all columns in a table with a numeric category", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -662,7 +636,7 @@ Deno.test("should summarize all columns in a table with a numeric category", asy
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "key1",
       key2: 1,
@@ -817,7 +791,7 @@ Deno.test("should summarize all columns in a table with a numeric category", asy
   await sdb.close();
 });
 
-Deno.test("should summarize all columns in a table with specific stats", async () => {
+test("should summarize all columns in a table with specific stats", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -828,32 +802,32 @@ Deno.test("should summarize all columns in a table with specific stats", async (
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { column: "key1", mean: null, count: 6 },
     { column: "key2", mean: 9, count: 6 },
     { column: "key3", mean: 7.44, count: 6 },
   ]);
   await sdb.close();
 });
-Deno.test("should summarize all columns in a table with specific stats in specific new columns", async () => {
+test("should summarize all columns in a table with specific stats in specific new columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
   table.summarize({
     columns: await table.getColumns(),
     decimals: 2,
-    stats: { "average": "mean", "total": "count" },
+    stats: { average: "mean", total: "count" },
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { column: "key1", average: null, total: 6 },
     { column: "key2", average: 9, total: 6 },
     { column: "key3", average: 7.44, total: 6 },
   ]);
   await sdb.close();
 });
-Deno.test("should summarize all columns in a table with specific stats and grouping", async () => {
+test("should summarize all columns in a table with specific stats and grouping", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -865,7 +839,7 @@ Deno.test("should summarize all columns in a table with specific stats and group
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { column: "key2", key1: "Banane", mean: null, count: 2 },
     { column: "key2", key1: "Fraise", mean: 16.5, count: 2 },
     { column: "key2", key1: "Rubarbe", mean: 1.5, count: 2 },
@@ -875,7 +849,7 @@ Deno.test("should summarize all columns in a table with specific stats and group
   ]);
   await sdb.close();
 });
-Deno.test("should summarize all columns in a table with specific named stats and grouping", async () => {
+test("should summarize all columns in a table with specific named stats and grouping", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -883,11 +857,11 @@ Deno.test("should summarize all columns in a table with specific named stats and
     columns: await table.getColumns(),
     decimals: 2,
     by: "key1",
-    stats: { "average": "mean", "total": "count" },
+    stats: { average: "mean", total: "count" },
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { column: "key2", key1: "Banane", average: null, total: 2 },
     { column: "key2", key1: "Fraise", average: 16.5, total: 2 },
     { column: "key2", key1: "Rubarbe", average: 1.5, total: 2 },
@@ -897,7 +871,7 @@ Deno.test("should summarize all columns in a table with specific named stats and
   ]);
   await sdb.close();
 });
-Deno.test("should summarize specific columns in a table with specific stats and grouping", async () => {
+test("should summarize specific columns in a table with specific stats and grouping", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -908,14 +882,14 @@ Deno.test("should summarize specific columns in a table with specific stats and 
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Banane", mean: null, count: 2 },
     { key1: "Fraise", mean: 16.5, count: 2 },
     { key1: "Rubarbe", mean: 1.5, count: 2 },
   ]);
   await sdb.close();
 });
-Deno.test("should summarize by multiple columns", async () => {
+test("should summarize by multiple columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/dataSummarize.json");
@@ -927,7 +901,7 @@ Deno.test("should summarize by multiple columns", async () => {
   });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     { key1: "Banane", key2: null, mean: null, count: 2 },
     { key1: "Fraise", key2: 11, mean: 2.35, count: 1 },
     { key1: "Fraise", key2: 22, mean: 12.34, count: 1 },
@@ -937,7 +911,7 @@ Deno.test("should summarize by multiple columns", async () => {
   await sdb.close();
 });
 
-Deno.test("should summarize with dates", async () => {
+test("should summarize with dates", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -951,7 +925,7 @@ Deno.test("should summarize with dates", async () => {
   table.summarize({ columns: "keyA" });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       count: 5,
       countDistinct: 3,
@@ -969,7 +943,7 @@ Deno.test("should summarize with dates", async () => {
   await sdb.close();
 });
 
-Deno.test("should summarize with dates converted to milliseconds", async () => {
+test("should summarize with dates converted to milliseconds", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -983,7 +957,7 @@ Deno.test("should summarize with dates converted to milliseconds", async () => {
   table.summarize({ columns: "keyA", datesToMs: true });
   const data = await table.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       count: 5,
       countDistinct: 3,
@@ -1001,17 +975,15 @@ Deno.test("should summarize with dates converted to milliseconds", async () => {
   await sdb.close();
 });
 
-Deno.test("should summarize even with geometries", async () => {
+test("should summarize even with geometries", async () => {
   const sdb = new SimpleDB();
   const provinces = sdb.newTable();
-  provinces.loadGeoData(
-    "test/geodata/files/CanadianProvincesAndTerritories.json",
-  );
+  provinces.loadGeoData("test/geodata/files/CanadianProvincesAndTerritories.json");
   provinces.summarize({ columns: await provinces.getColumns() });
 
   const data = await provinces.getData();
 
-  assertEquals(data, [
+  expect(data).toStrictEqual([
     {
       column: "geom",
       count: null,

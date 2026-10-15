@@ -1,18 +1,7 @@
 import crypto from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import type SimpleTable from "../class/SimpleTable.ts";
-import {
-  cacheEntryExpired,
-  cacheLoadMessage,
-  cacheTtlMessage,
-} from "./cacheDiagnostics.ts";
+import { cacheEntryExpired, cacheLoadMessage, cacheTtlMessage } from "./cacheDiagnostics.ts";
 import prettyDuration from "./prettyDuration.ts";
 
 type FileCacheSource = {
@@ -25,9 +14,7 @@ type FileCacheSource = {
 type FileCacheSources = { [id: string]: FileCacheSource };
 
 export function createFileCacheId(prefix: string, identity: unknown): string {
-  const hash = crypto.createHash("sha256")
-    .update(JSON.stringify(identity))
-    .digest("hex");
+  const hash = crypto.createHash("sha256").update(JSON.stringify(identity)).digest("hex");
   return `${prefix}.${hash}`;
 }
 
@@ -93,16 +80,17 @@ async function loadFileCache(
     logCacheMiss(table, "The cached file is missing.");
     return false;
   }
-  if (
-    options.ttl !== undefined &&
-    cacheEntryExpired(source.creation, options.ttl, now)
-  ) {
-    table.sdb.cacheVerbose &&
+  if (options.ttl !== undefined && cacheEntryExpired(source.creation, options.ttl, now)) {
+    if (table.sdb.cacheVerbose) {
       console.log(
-        `Cache entry is stale.\n${
-          cacheTtlMessage(source.creation, options.ttl, now, true)
-        }\nFetching fresh data and refreshing the cache entry.`,
+        `Cache entry is stale.\n${cacheTtlMessage(
+          source.creation,
+          options.ttl,
+          now,
+          true,
+        )}\nFetching fresh data and refreshing the cache entry.`,
       );
+    }
     return false;
   }
 
@@ -120,8 +108,9 @@ async function loadFileCache(
     rmSync(source.file, { force: true });
     delete sources[options.id];
     writeFileCacheSources(options.directory, sourcesFile, sources);
-    table.sdb.cacheVerbose &&
+    if (table.sdb.cacheVerbose) {
       console.log("Could not load cached data. Fetching fresh data...");
+    }
     return false;
   }
   const end = Date.now();
@@ -147,13 +136,11 @@ async function writeFileCache(
 ): Promise<void> {
   mkdirSync(options.directory, { recursive: true });
   const file = `${options.directory}/${options.id}.${options.extension}`;
-  const temporaryFile =
-    `${file}.${crypto.randomUUID()}.tmp.${options.extension}`;
+  const temporaryFile = `${file}.${crypto.randomUUID()}.tmp.${options.extension}`;
 
-  table.sdb.cacheVerbose &&
-    console.log(
-      `Computations done in ${prettyDuration(0, { end: options.duration })}.`,
-    );
+  if (table.sdb.cacheVerbose) {
+    console.log(`Computations done in ${prettyDuration(0, { end: options.duration })}.`);
+  }
   const start = Date.now();
   try {
     await options.write(temporaryFile);
@@ -176,28 +163,23 @@ async function writeFileCache(
   writeFileCacheSources(options.directory, sourcesFile, sources);
 
   if (table.sdb.cacheVerbose) {
-    console.log(
-      `Wrote in cache in ${prettyDuration(start, { end })}.\n`,
-    );
+    console.log(`Wrote in cache in ${prettyDuration(start, { end })}.\n`);
     table.sdb.cacheTimeWriting += end - start;
   }
 }
 
-function logFileCacheDisabled(
-  table: SimpleTable,
-  method: string,
-): void {
-  table.sdb.cacheVerbose &&
+function logFileCacheDisabled(table: SimpleTable, method: string): void {
+  if (table.sdb.cacheVerbose) {
     console.log(
       `\n${method} cache for ${table.name}\nCache disabled.\nFetching fresh data without storing a cache entry.`,
     );
+  }
 }
 
 function logCacheMiss(table: SimpleTable, reason: string): void {
-  table.sdb.cacheVerbose &&
-    console.log(
-      `Cache miss.\n${reason}\nFetching fresh data and storing a new cache entry.`,
-    );
+  if (table.sdb.cacheVerbose) {
+    console.log(`Cache miss.\n${reason}\nFetching fresh data and storing a new cache entry.`);
+  }
 }
 
 function readFileCacheSources(sourcesFile: string): FileCacheSources {

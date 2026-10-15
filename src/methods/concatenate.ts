@@ -18,21 +18,16 @@ export default function concatenate(
     method: "concatenate()",
     parameters: { columns, newColumn, options },
     needsSchema: true,
-    values: typeof options.separator === "string"
-      ? [options.separator]
-      : undefined,
+    values: typeof options.separator === "string" ? [options.separator] : undefined,
     buildSelect: (input, types) => {
       assertNewColumns(types, [newColumn], "concatenate()");
-      const expression = typeof options.separator === "string"
-        ? `CONCAT_WS(?, ${
-          columns
-            .map((d) => `${quoteIdentifier(d)}`)
-            .join(", ")
-        })`
-        : `CONCAT(${columns.map((d) => `${quoteIdentifier(d)}`).join(", ")})`;
-      return `SELECT *, CAST(${expression} AS VARCHAR) AS ${
-        quoteIdentifier(newColumn)
-      } FROM ${input}`;
+      const expression =
+        typeof options.separator === "string"
+          ? `CONCAT_WS(?, ${columns.map((d) => `${quoteIdentifier(d)}`).join(", ")})`
+          : `CONCAT(${columns.map((d) => `${quoteIdentifier(d)}`).join(", ")})`;
+      return `SELECT *, CAST(${expression} AS VARCHAR) AS ${quoteIdentifier(
+        newColumn,
+      )} FROM ${input}`;
     },
   });
 }
