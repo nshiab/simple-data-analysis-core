@@ -52,8 +52,9 @@ Run formatting, lint, type checks, tests, the package build, and documentation:
 npm run all-tests
 ```
 
-Use `npm run fix` to apply formatting and lint fixes. Tests run serially because
-they share native DuckDB and filesystem resources. Local test runs may load
+Use `npm run fix` to apply formatting and lint fixes. Tests run with two workers,
+each test file using a temporary working directory for outputs and caches.
+Fixtures are shared and must remain read-only. Local test runs may load
 `.env`; CI does not load it. `CI=true` skips tests that contact public services,
 while local HTTP tests and DuckDB extension tests still run. DuckDB may download
 native extensions during these tests.

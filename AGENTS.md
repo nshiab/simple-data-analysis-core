@@ -89,9 +89,10 @@
 - **Testing:**
   - Update existing tests in `test/unit/` or create a new `.test.ts` file if
     none exists. The `test/unit/` folder should mirror the `src/` folder.
-  - Run focused tests with `npx vp test <test-file>`. Tests run serially because
-    native DuckDB and filesystem fixtures share resources. `CI=true` skips
-    public-network tests while retaining local HTTP and native extension tests.
+  - Run focused tests with `npx vp test <test-file>`. Each test file runs in
+    its own temporary working directory. Write outputs and caches there; treat
+    the shared fixture directories as read-only. `CI=true` skips public-network
+    tests while retaining local HTTP and native extension tests.
 - **Documentation Integrity:** Ensure JSDoc remains accurate if you have to
   modify the code to pass the tests.
 

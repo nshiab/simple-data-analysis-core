@@ -27,9 +27,10 @@ export default defineConfig({
     ],
   },
   test: {
-    fileParallelism: false,
+    pool: "forks",
+    // DuckDB also uses native threads, so bound concurrent test processes.
+    maxWorkers: 2,
     setupFiles: ["./test/setup.ts"],
-    globalSetup: ["./test/globalSetup.ts"],
     testTimeout: 120000,
   },
   pack: {
