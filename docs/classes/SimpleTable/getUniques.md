@@ -1,0 +1,34 @@
+[**Simple Data Analysis Core v2.1.14**](../../index.md)
+
+***
+
+[Simple Data Analysis Core](../../globals.md) / [SimpleTable](../SimpleTable.md) / getUniques
+
+# Method: getUniques()
+
+> **getUniques**(`column`): `Promise`\<`unknown`[]\>
+
+Returns unique values from a specific column. The values are returned in ascending order.
+Temporal values use the same JavaScript representations as `getData()`.
+
+## Parameters
+
+### column
+
+`string`
+
+The name of the column from which to retrieve unique values.
+
+## Returns
+
+`Promise`\<`unknown`[]\>
+
+A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
+
+## Example
+
+```ts
+// Get unique values from the 'category' column
+const uniqueCategories = await table.getUniques("category");
+console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
+```

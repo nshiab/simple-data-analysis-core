@@ -1,0 +1,44 @@
+[**Simple Data Analysis Core v2.1.14**](../../index.md)
+
+***
+
+[Simple Data Analysis Core](../../globals.md) / [SimpleTable](../SimpleTable.md) / getRowCount
+
+# Method: getRowCount()
+
+> **getRowCount**(`options?`): `Promise`\<`number`\>
+
+Returns the number of rows in the table.
+With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+
+## Parameters
+
+### options?
+
+An optional object with configuration options:
+
+#### conditions?
+
+`string`
+
+The filtering conditions specified as a SQL `WHERE` clause (e.g., `"category = 'Book'"`).
+
+## Returns
+
+`Promise`\<`number`\>
+
+A promise that resolves to a number representing the total count of rows.
+
+## Examples
+
+```ts
+// Get the number of rows in the table
+const rowCount = await table.getRowCount();
+console.log(rowCount); // e.g., 100
+```
+
+```ts
+// Get the number of rows where 'category' is 'Book'
+const bookCount = await table.getRowCount({ conditions: "category = 'Book'" });
+console.log(bookCount);
+```

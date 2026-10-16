@@ -1,0 +1,25 @@
+[**Simple Data Analysis Core v2.1.14**](../../index.md)
+
+***
+
+[Simple Data Analysis Core](../../globals.md) / [SimpleTable](../SimpleTable.md) / getSchema
+
+# Method: getSchema()
+
+> **getSchema**(): `Promise`\<`object`[]\>
+
+Returns the schema of the table, including column names and their data types.
+
+## Returns
+
+`Promise`\<`object`[]\>
+
+A promise that resolves to an array of objects, where each object represents a column with its name and data type.
+
+## Example
+
+```ts
+// Get the schema of the table
+const schema = await table.getSchema();
+console.table(schema); // Log the schema in a readable table format
+```
