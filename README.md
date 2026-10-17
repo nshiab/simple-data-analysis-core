@@ -2,7 +2,7 @@
 
 SDA-core is a lightweight DuckDB-powered TypeScript library for tabular, SQL,
 CSV, Parquet, and geospatial data analysis on Node.js. It has one runtime dependency: DuckDB.
-It requires Node.js 24.21.0 or newer and uses ECMAScript modules (ESM).
+It uses ECMAScript modules (ESM).
 
 Choose this package for core data loading, cleaning, joining, statistics, and
 geospatial operations. For AI, vector search, Google Sheets, and data
