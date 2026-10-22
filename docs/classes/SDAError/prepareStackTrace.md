@@ -8,6 +8,8 @@
 
 > `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
 
+Defined in: node\_modules/@types/node/globals.d.ts:56
+
 ## Parameters
 
 ### err

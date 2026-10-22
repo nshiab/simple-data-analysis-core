@@ -8,6 +8,8 @@
 
 > **newTable**(`name?`): `Table`
 
+Defined in: [src/class/SimpleDB.ts:574](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L574)
+
 Creates a new SimpleTable instance within the database.
 The name must be unique among registered tables, ignoring ASCII letter case.
 

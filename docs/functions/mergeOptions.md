@@ -8,6 +8,8 @@
 
 > **mergeOptions**(`simple`, `options`): `object`
 
+Defined in: [src/helpers/mergeOptions.ts:47](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/helpers/mergeOptions.ts#L47)
+
 Combines a table or database's logging defaults with query-specific options.
 Use this helper with `queryDB()` when implementing an extension.
 

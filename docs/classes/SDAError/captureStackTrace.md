@@ -8,6 +8,8 @@
 
 > `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
 
+Defined in: node\_modules/@types/node/globals.d.ts:52
+
 Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
 `Error.captureStackTrace()` was called.

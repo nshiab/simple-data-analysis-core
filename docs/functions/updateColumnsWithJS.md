@@ -8,6 +8,8 @@
 
 > **updateColumnsWithJS**(`table`, `inputColumns`, `outputColumns`, `generate`, `options?`): `Promise`\<`void`\>
 
+Defined in: [src/helpers/updateColumnsWithJS.ts:52](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/helpers/updateColumnsWithJS.ts#L52)
+
 Generates columns from selected input columns, keeping other SQL values in
 DuckDB. Call from an asynchronous extension barrier. The callback must return
 one row per input row in the same order; only the declared output columns are

@@ -8,6 +8,8 @@
 
 > **quoteIdentifier**(`identifier`): `string`
 
+Defined in: [src/helpers/quoteIdentifier.ts:16](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/helpers/quoteIdentifier.ts#L16)
+
 Quotes one SQL identifier and escapes embedded double quotes.
 Use this for library-generated table, column, schema, database, and alias
 names. User-authored SQL expressions must remain unmodified.

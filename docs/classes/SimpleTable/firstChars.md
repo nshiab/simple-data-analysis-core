@@ -8,6 +8,8 @@
 
 > **firstChars**(`column`, `count`): `this`
 
+Defined in: [src/class/SimpleTable.ts:5142](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleTable.ts#L5142)
+
 Extracts a specific number of characters from the beginning (left side) of string values in the specified column.
 
 ## Parameters

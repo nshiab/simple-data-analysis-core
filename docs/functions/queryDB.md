@@ -8,6 +8,8 @@
 
 > **queryDB**(`simple`, `query`, `options`): `Promise`\<`object`[] \| `null`\>
 
+Defined in: [src/helpers/queryDB.ts:55](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/helpers/queryDB.ts#L55)
+
 Executes SQL for a table or database after flushing all queued operations.
 Starts the database on first use and applies its SQL logging settings.
 Extension authors can construct `options` with `mergeOptions()`.
