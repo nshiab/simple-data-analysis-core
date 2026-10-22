@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.16**](../index.md)
+[**Simple Data Analysis Core v2.1.17**](../index.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: SimpleDB\<Table\>
 
-Defined in: [src/class/SimpleDB.ts:69](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L69)
+Defined in: [src/class/SimpleDB.ts:69](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L69)
 
 Manages a DuckDB database instance, providing a simplified interface for database operations.
 
@@ -56,7 +56,7 @@ const sdb = new SimpleDB({
 
 > **new SimpleDB**\<`Table`\>(`options?`): `SimpleDB`\<`Table`\>
 
-Defined in: [src/class/SimpleDB.ts:396](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L396)
+Defined in: [src/class/SimpleDB.ts:396](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L396)
 
 Creates a new SimpleDB instance.
 
@@ -201,7 +201,7 @@ const sdb = new SimpleDB({
 
 > **charsToLog**: `number` \| `undefined`
 
-Defined in: [src/class/Simple.ts:32](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L32)
+Defined in: [src/class/Simple.ts:32](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L32)
 
 The maximum number of characters to display for text and stringified nested cells, including the truncation marker. This does not control column width. Set to Infinity to show the entire text.
 
@@ -226,7 +226,7 @@ await sdb.newTable().loadArray([{ text: "x".repeat(200) }]).log();
 
 > **connection**: `DuckDBConnection`
 
-Defined in: [src/class/Simple.ts:40](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L40)
+Defined in: [src/class/Simple.ts:40](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L40)
 
 A connection to a DuckDB database.
 
@@ -240,7 +240,7 @@ A connection to a DuckDB database.
 
 > **db**: `DuckDBInstance`
 
-Defined in: [src/class/Simple.ts:36](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L36)
+Defined in: [src/class/Simple.ts:36](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L36)
 
 A DuckDB database instance.
 
@@ -254,7 +254,7 @@ A DuckDB database instance.
 
 > **defaultTableName**: `boolean`
 
-Defined in: [src/class/Simple.ts:46](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L46)
+Defined in: [src/class/Simple.ts:46](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L46)
 
 A flag indicating if the table name was assigned by default.
 
@@ -272,7 +272,7 @@ A flag indicating if the table name was assigned by default.
 
 > **rowsToLog**: `number`
 
-Defined in: [src/class/Simple.ts:14](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L14)
+Defined in: [src/class/Simple.ts:14](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L14)
 
 The number of rows to display when logging a table.
 
@@ -290,7 +290,7 @@ The number of rows to display when logging a table.
 
 > **runQuery**: (`query`, `connection`, `returnData`, `options`) => `Promise`\<`object`[] \| `null`\>
 
-Defined in: [src/class/Simple.ts:73](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L73)
+Defined in: [src/class/Simple.ts:73](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L73)
 
 A function for running SQL queries. Subclasses can wrap this seam to observe
 execution while forwarding every argument. To run custom SQL, use
@@ -382,7 +382,7 @@ table.runQuery = (query, connection, returnData, options) => {
 
 > **typesToLog**: `boolean`
 
-Defined in: [src/class/Simple.ts:20](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/Simple.ts#L20)
+Defined in: [src/class/Simple.ts:20](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L20)
 
 A flag indicating whether to include data types when logging a table.
 
@@ -400,7 +400,7 @@ A flag indicating whether to include data types when logging a table.
 
 > **cacheSourcesUsed**: `string`[]
 
-Defined in: [src/class/SimpleDB.ts:168](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L168)
+Defined in: [src/class/SimpleDB.ts:168](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L168)
 
 An array of paths to the data sources used in the cache.
 
@@ -414,7 +414,7 @@ An array of paths to the data sources used in the cache.
 
 > **cacheTimeSaved**: `number`
 
-Defined in: [src/class/SimpleDB.ts:204](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L204)
+Defined in: [src/class/SimpleDB.ts:204](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L204)
 
 The total time saved by using the cache, in milliseconds.
 
@@ -428,7 +428,7 @@ The total time saved by using the cache, in milliseconds.
 
 > **cacheTimeWriting**: `number`
 
-Defined in: [src/class/SimpleDB.ts:211](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L211)
+Defined in: [src/class/SimpleDB.ts:211](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L211)
 
 The total time spent writing to the cache, in milliseconds.
 
@@ -442,7 +442,7 @@ The total time spent writing to the cache, in milliseconds.
 
 > **cacheVerbose**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:197](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L197)
+Defined in: [src/class/SimpleDB.ts:197](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L197)
 
 Whether to log cache hits and misses, code and input changes, TTL status,
 and cache read/write timing.
@@ -457,7 +457,7 @@ and cache read/write timing.
 
 > **duckDbCache**: `boolean` \| `null`
 
-Defined in: [src/class/SimpleDB.ts:269](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L269)
+Defined in: [src/class/SimpleDB.ts:269](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L269)
 
 A flag indicating whether to use DuckDB's external file cache.
 
@@ -471,7 +471,7 @@ A flag indicating whether to use DuckDB's external file cache.
 
 > **durationStart**: `number` \| `undefined`
 
-Defined in: [src/class/SimpleDB.ts:175](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L175)
+Defined in: [src/class/SimpleDB.ts:175](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L175)
 
 A timestamp marking the start of a duration measurement.
 
@@ -485,7 +485,7 @@ A timestamp marking the start of a duration measurement.
 
 > **explainSQL**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:161](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L161)
+Defined in: [src/class/SimpleDB.ts:161](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L161)
 
 Whether to log DuckDB query plans before supported statements execute.
 
@@ -505,7 +505,7 @@ const sdb = new SimpleDB({ explainSQL: true });
 
 > `readonly` **expressionSyntax**: `"sql"` \| `"js"`
 
-Defined in: [src/class/SimpleDB.ts:137](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L137)
+Defined in: [src/class/SimpleDB.ts:137](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L137)
 
 The operator syntax used by expressions and custom queries in this database.
 `"js"` translates JavaScript-style operators (`&&`, `||`, `==`, `===`,
@@ -581,7 +581,7 @@ await sdb.newTable().loadArray([{ active: true, age: 18, admin: false }])
 
 > **file**: `string`
 
-Defined in: [src/class/SimpleDB.ts:291](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L291)
+Defined in: [src/class/SimpleDB.ts:291](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L291)
 
 The path to the persistent DuckDB database, opened or created on first use.
 If not provided, an in-memory database is used. Imports and exports do not change this path.
@@ -596,7 +596,7 @@ If not provided, an in-memory database is used. Imports and exports do not chang
 
 > **logDuration**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:189](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L189)
+Defined in: [src/class/SimpleDB.ts:189](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L189)
 
 A flag indicating whether to log the total execution duration.
 
@@ -610,7 +610,7 @@ A flag indicating whether to log the total execution duration.
 
 > **logSQL**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:149](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L149)
+Defined in: [src/class/SimpleDB.ts:149](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L149)
 
 Whether to log each SQL statement immediately before execution.
 
@@ -630,7 +630,7 @@ const sdb = new SimpleDB({ logSQL: true });
 
 > **memoryLimit**: `string` \| `undefined`
 
-Defined in: [src/class/SimpleDB.ts:276](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L276)
+Defined in: [src/class/SimpleDB.ts:276](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L276)
 
 The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults to 80% of system RAM.
 
@@ -644,7 +644,7 @@ The maximum amount of memory DuckDB is allowed to use (e.g., `'4GB'`). Defaults 
 
 > **overwrite**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:298](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L298)
+Defined in: [src/class/SimpleDB.ts:298](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L298)
 
 Whether to replace an existing DuckDB file on first use instead of opening it.
 
@@ -658,7 +658,7 @@ Whether to replace an existing DuckDB file on first use instead of opening it.
 
 > **progressBar**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:218](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L218)
+Defined in: [src/class/SimpleDB.ts:218](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L218)
 
 A flag indicating whether to display a progress bar for long-running operations.
 
@@ -672,7 +672,7 @@ A flag indicating whether to display a progress bar for long-running operations.
 
 > **readOnly**: `boolean`
 
-Defined in: [src/class/SimpleDB.ts:314](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L314)
+Defined in: [src/class/SimpleDB.ts:314](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L314)
 
 Whether the persistent DuckDB file is opened read-only. Requires an existing
 file and cannot be combined with `overwrite`. DuckDB rejects writes to it.
@@ -696,7 +696,7 @@ await sdb.close();
 
 > **tableClass**: (`name`, `sdb`, `options?`) => `Table`
 
-Defined in: [src/class/SimpleDB.ts:342](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L342)
+Defined in: [src/class/SimpleDB.ts:342](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L342)
 
 The class used to create table instances. Defaults to `SimpleTable`.
 Override this property when subclassing to ensure all table-creating
@@ -788,7 +788,7 @@ console.log(table.customMethod()); // "hello"
 
 > **tableIncrement**: `number`
 
-Defined in: [src/class/SimpleDB.ts:182](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L182)
+Defined in: [src/class/SimpleDB.ts:182](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L182)
 
 A counter for incrementing default table names.
 
@@ -802,7 +802,7 @@ A counter for incrementing default table names.
 
 > **tempDir**: `string` \| `undefined`
 
-Defined in: [src/class/SimpleDB.ts:283](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L283)
+Defined in: [src/class/SimpleDB.ts:283](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L283)
 
 The path to the directory used for temporary files when data exceeds the memory limit (e.g., `'/tmp/duckdb_swap'`). Defaults to `.tmp` for in-memory databases or `<file>.tmp` for file-based databases. Temporary directories are automatically removed when calling `close()`.
 

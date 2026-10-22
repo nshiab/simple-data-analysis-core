@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.16**](../../index.md)
+[**Simple Data Analysis Core v2.1.17**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **createFtsIndex**(`idColumn`, `textColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:981](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleTable.ts#L981)
+Defined in: [src/class/SimpleTable.ts:981](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L981)
 
 Creates a full-text search (FTS) index on a specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
 

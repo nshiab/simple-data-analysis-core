@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.16**](../index.md)
+[**Simple Data Analysis Core v2.1.17**](../index.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: SDAError
 
-Defined in: [src/class/SDAError.ts:19](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SDAError.ts#L19)
+Defined in: [src/class/SDAError.ts:19](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SDAError.ts#L19)
 
 An error thrown when a SQL query fails. It carries the SDA method that
 triggered the query, the parameters passed to it, the SQL query itself,
@@ -36,7 +36,7 @@ try {
 
 > **new SDAError**(`options`): `SDAError`
 
-Defined in: [src/class/SDAError.ts:53](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SDAError.ts#L53)
+Defined in: [src/class/SDAError.ts:53](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SDAError.ts#L53)
 
 Creates an error that preserves the failing query and its original cause.
 
@@ -120,7 +120,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
 
 > **method**: `string` \| `null`
 
-Defined in: [src/class/SDAError.ts:23](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SDAError.ts#L23)
+Defined in: [src/class/SDAError.ts:23](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SDAError.ts#L23)
 
 The SDA method that triggered the failing query.
 
@@ -142,7 +142,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
 
 > **parameters**: \{\[`key`: `string`\]: `unknown`; \} \| `null`
 
-Defined in: [src/class/SDAError.ts:27](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SDAError.ts#L27)
+Defined in: [src/class/SDAError.ts:27](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SDAError.ts#L27)
 
 The parameters passed to the method.
 
@@ -152,7 +152,7 @@ The parameters passed to the method.
 
 > **query**: `string`
 
-Defined in: [src/class/SDAError.ts:31](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SDAError.ts#L31)
+Defined in: [src/class/SDAError.ts:31](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SDAError.ts#L31)
 
 The SQL query that failed.
 

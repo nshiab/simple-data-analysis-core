@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.16**](../../index.md)
+[**Simple Data Analysis Core v2.1.17**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **intersection**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8253](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleTable.ts#L8253)
+Defined in: [src/class/SimpleTable.ts:8253](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L8253)
 
 Computes the intersection of two sets of geometries, creating new geometries where they overlap.
 

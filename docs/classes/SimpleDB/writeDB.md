@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.16**](../../index.md)
+[**Simple Data Analysis Core v2.1.17**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **writeDB**(`file`, `options?`): `Promise`\<[`SimpleDB`](../SimpleDB.md)\<`Table`\>\>
 
-Defined in: [src/class/SimpleDB.ts:970](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/class/SimpleDB.ts#L970)
+Defined in: [src/class/SimpleDB.ts:970](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L970)
 
 Exports a snapshot of the current database after executing pending work.
 Does not change the working database or where subsequent changes persist.

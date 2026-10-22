@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.16**](../index.md)
+[**Simple Data Analysis Core v2.1.17**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **parseValue**(`value`): `string` \| `number` \| `boolean`
 
-Defined in: [src/helpers/parseValue.ts:20](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.16/src/helpers/parseValue.ts#L20)
+Defined in: [src/helpers/parseValue.ts:20](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/helpers/parseValue.ts#L20)
 
 Converts a JavaScript value to a SQL literal. Strings are quoted with embedded
 quotes escaped, dates become quoted ISO strings, and null, undefined, or NaN
