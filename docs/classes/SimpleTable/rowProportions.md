@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../../index.md)
+[**Simple Data Analysis Core v2.1.18**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **rowProportions**(`columns`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5854](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L5854)
+Defined in: [src/class/SimpleTable.ts:5854](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L5854)
 
 Computes proportions horizontally across specified columns for each row.
 

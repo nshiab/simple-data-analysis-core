@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../../index.md)
+[**Simple Data Analysis Core v2.1.18**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **join**(`rightTable`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:4697](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L4697)
+Defined in: [src/class/SimpleTable.ts:4697](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L4697)
 
 Merges the data of this table (considered the left table) with another table (the right table) based on a common column or multiple columns.
 Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.

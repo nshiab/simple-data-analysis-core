@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../../index.md)
+[**Simple Data Analysis Core v2.1.18**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **loadStatCanData**(`pid`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:681](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L681)
+Defined in: [src/class/SimpleTable.ts:681](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L681)
 
 Downloads a complete Statistics Canada table and loads it into this table.
 

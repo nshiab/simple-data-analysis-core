@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../index.md)
+[**Simple Data Analysis Core v2.1.18**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **queryDB**(`simple`, `query`, `options`): `Promise`\<`object`[] \| `null`\>
 
-Defined in: [src/helpers/queryDB.ts:55](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/helpers/queryDB.ts#L55)
+Defined in: [src/helpers/queryDB.ts:55](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/helpers/queryDB.ts#L55)
 
 Executes SQL for a table or database after flushing all queued operations.
 Starts the database on first use and applies its SQL logging settings.

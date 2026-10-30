@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../index.md)
+[**Simple Data Analysis Core v2.1.18**](../index.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: SimpleTable
 
-Defined in: [src/class/SimpleTable.ts:216](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L216)
+Defined in: [src/class/SimpleTable.ts:216](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L216)
 
 IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
 create new tables instead of `new SimpleTable(...)` directly. This ensures
@@ -57,7 +57,7 @@ await sdb.close();
 
 > **new SimpleTable**(`name`, `simpleDB`, `options?`): `SimpleTable`
 
-Defined in: [src/class/SimpleTable.ts:294](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L294)
+Defined in: [src/class/SimpleTable.ts:294](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L294)
 
 Creates an instance of SimpleTable.
 
@@ -258,7 +258,7 @@ A boolean indicating whether to include data types when logging a table.
 
 > **charsToLog**: `number` \| `undefined`
 
-Defined in: [src/class/Simple.ts:32](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L32)
+Defined in: [src/class/Simple.ts:32](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L32)
 
 The maximum number of characters to display for text and stringified nested cells, including the truncation marker. This does not control column width. Set to Infinity to show the entire text.
 
@@ -283,7 +283,7 @@ await sdb.newTable().loadArray([{ text: "x".repeat(200) }]).log();
 
 > **connection**: `DuckDBConnection`
 
-Defined in: [src/class/Simple.ts:40](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L40)
+Defined in: [src/class/Simple.ts:40](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L40)
 
 A connection to a DuckDB database.
 
@@ -297,7 +297,7 @@ A connection to a DuckDB database.
 
 > **db**: `DuckDBInstance`
 
-Defined in: [src/class/Simple.ts:36](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L36)
+Defined in: [src/class/Simple.ts:36](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L36)
 
 A DuckDB database instance.
 
@@ -311,7 +311,7 @@ A DuckDB database instance.
 
 > **defaultTableName**: `boolean`
 
-Defined in: [src/class/Simple.ts:46](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L46)
+Defined in: [src/class/Simple.ts:46](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L46)
 
 A flag indicating if the table name was assigned by default.
 
@@ -329,7 +329,7 @@ A flag indicating if the table name was assigned by default.
 
 > **rowsToLog**: `number`
 
-Defined in: [src/class/Simple.ts:14](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L14)
+Defined in: [src/class/Simple.ts:14](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L14)
 
 The number of rows to display when logging a table.
 
@@ -347,7 +347,7 @@ The number of rows to display when logging a table.
 
 > **runQuery**: (`query`, `connection`, `returnData`, `options`) => `Promise`\<`object`[] \| `null`\>
 
-Defined in: [src/class/Simple.ts:73](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L73)
+Defined in: [src/class/Simple.ts:73](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L73)
 
 A function for running SQL queries. Subclasses can wrap this seam to observe
 execution while forwarding every argument. To run custom SQL, use
@@ -439,7 +439,7 @@ table.runQuery = (query, connection, returnData, options) => {
 
 > **typesToLog**: `boolean`
 
-Defined in: [src/class/Simple.ts:20](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/Simple.ts#L20)
+Defined in: [src/class/Simple.ts:20](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/Simple.ts#L20)
 
 A flag indicating whether to include data types when logging a table.
 
@@ -457,7 +457,7 @@ A flag indicating whether to include data types when logging a table.
 
 > **indexes**: (\{ `column`: `string`; `kind`: `"vss"`; `name`: `string`; `options`: \{ `efConstruction?`: `number`; `efSearch?`: `number`; `M?`: `number`; \}; \} \| \{ `idColumn`: `string`; `kind`: `"fts"`; `name`: `string`; `options`: \{ `ignore?`: `string`; `lower?`: `boolean`; `stemmer?`: `string`; `stopwords?`: `string`; `stripAccents?`: `boolean`; \}; `textColumn`: `string`; \})[]
 
-Defined in: [src/class/SimpleTable.ts:243](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L243)
+Defined in: [src/class/SimpleTable.ts:243](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L243)
 
 The definitions of the indexes belonging to the table, if any. Do not
 mutate this array directly.
@@ -479,7 +479,7 @@ console.log(table.indexes);
 
 > **sdb**: [`SimpleDB`](SimpleDB.md)
 
-Defined in: [src/class/SimpleTable.ts:281](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L281)
+Defined in: [src/class/SimpleTable.ts:281](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L281)
 
 The SimpleDB instance that created this table.
 

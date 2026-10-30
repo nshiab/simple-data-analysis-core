@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../../index.md)
+[**Simple Data Analysis Core v2.1.18**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getExtensions**(): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleDB.ts:810](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L810)
+Defined in: [src/class/SimpleDB.ts:810](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleDB.ts#L810)
 
 Returns a list of installed DuckDB extensions.
 

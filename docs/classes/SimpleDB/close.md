@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.17**](../../index.md)
+[**Simple Data Analysis Core v2.1.18**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **close**(): `Promise`\<[`SimpleDB`](../SimpleDB.md)\<[`SimpleTable`](../SimpleTable.md)\>\>
 
-Defined in: [src/class/SimpleDB.ts:1025](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleDB.ts#L1025)
+Defined in: [src/class/SimpleDB.ts:1025](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleDB.ts#L1025)
 
 Executes pending transformations, saves SDA metadata for writable persistent
 databases, and closes the connection and instance. Also cleans up temporary
