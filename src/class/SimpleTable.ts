@@ -6316,9 +6316,9 @@ export default class SimpleTable extends Simple {
    * Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
    * For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
    * For this method to work properly, ensure your data is sorted by the relevant column(s) first.
-   * Windows count rows, not calendar days: missing dates do not change the window size.
-   * Use `customQuery()` for calendar-based windows or seasonal pooling across years,
-   * with explicit rules for leap days and wrapping December into January.
+   * Windows count rows, not calendar days.
+   * For daily windows, first prepare one row per consecutive date within each group.
+   * A window containing `NULL` values returns `NULL`.
    *
    * @example
    * ```ts
