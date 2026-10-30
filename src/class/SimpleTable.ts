@@ -6316,10 +6316,13 @@ export default class SimpleTable extends Simple {
    * Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
    * For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
    * For this method to work properly, ensure your data is sorted by the relevant column(s) first.
+   * Windows count rows, not calendar days.
+   * For daily windows, first prepare one row per consecutive date within each group.
+   * A window containing `NULL` values returns `NULL`.
    *
    * @example
    * ```ts
-   * // Compute a 7-day rolling average of 'sales' with 3 preceding and 3 following rows
+   * // Compute a 7-row rolling average of 'sales' with 3 preceding and 3 following rows
    * // (total window size of 7: 3 preceding + current + 3 following)
    * await table.rolling("sales", "rollingAvgSales", "mean", 3, 3).log();
    * ```
@@ -8707,6 +8710,7 @@ export default class SimpleTable extends Simple {
    * Writes the table's data to a file in various formats (CSV, JSON, Parquet, DuckDB, SQLite).
    * Tables with geometry columns must use `writeGeoData()` instead.
    * If the specified path does not exist, it will be created.
+   * In CSV files, `NULL` values become empty fields, while numeric zero remains numeric (e.g., `0.0`).
    *
    * @example
    * ```ts

@@ -8,7 +8,7 @@
 
 > **getSchema**(): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:6805](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6805)
+Defined in: [src/class/SimpleTable.ts:6808](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6808)
 
 Returns the schema of the table, including column names and their data types.
 

@@ -8,7 +8,7 @@
 
 > **logColumns**(`options?`): `Promise`\<[`SimpleTable`](../SimpleTable.md)\>
 
-Defined in: [src/class/SimpleTable.ts:9182](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L9182)
+Defined in: [src/class/SimpleTable.ts:9186](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L9186)
 
 Logs the columns in the table to the console. You can optionally include their data types.
 

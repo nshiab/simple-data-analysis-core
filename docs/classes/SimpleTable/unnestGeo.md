@@ -8,7 +8,7 @@
 
 > **unnestGeo**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8538](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L8538)
+Defined in: [src/class/SimpleTable.ts:8541](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L8541)
 
 Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
 
