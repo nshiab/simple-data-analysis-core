@@ -8,11 +8,14 @@
 
 > **rolling**(`column`, `newColumn`, `stat`, `preceding`, `following`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6349](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6349)
+Defined in: [src/class/SimpleTable.ts:6352](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6352)
 
 Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
 For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
 For this method to work properly, ensure your data is sorted by the relevant column(s) first.
+Windows count rows, not calendar days: missing dates do not change the window size.
+Use `customQuery()` for calendar-based windows or seasonal pooling across years,
+with explicit rules for leap days and wrapping December into January.
 
 ## Parameters
 
@@ -71,7 +74,7 @@ The table, so methods can be chained.
 ## Examples
 
 ```ts
-// Compute a 7-day rolling average of 'sales' with 3 preceding and 3 following rows
+// Compute a 7-row rolling average of 'sales' with 3 preceding and 3 following rows
 // (total window size of 7: 3 preceding + current + 3 following)
 await table.rolling("sales", "rollingAvgSales", "mean", 3, 3).log();
 ```

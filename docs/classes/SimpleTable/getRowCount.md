@@ -8,7 +8,7 @@
 
 > **getRowCount**(`options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7005](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L7005)
+Defined in: [src/class/SimpleTable.ts:7008](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L7008)
 
 Returns the number of rows in the table.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

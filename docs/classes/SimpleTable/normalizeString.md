@@ -8,7 +8,7 @@
 
 > **normalizeString**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6900](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6900)
+Defined in: [src/class/SimpleTable.ts:6903](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6903)
 
 Normalizes string values in a column by:
 1. Stripping accents

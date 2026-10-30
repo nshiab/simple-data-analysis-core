@@ -8,7 +8,7 @@
 
 > **indexValues**(`column`, `newColumn`, `reference`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6649](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6649)
+Defined in: [src/class/SimpleTable.ts:6652](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L6652)
 
 Indexes a numeric column by dividing each value by a reference value and multiplying the result by a base value.
 

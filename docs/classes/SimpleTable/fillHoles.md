@@ -8,7 +8,7 @@
 
 > **fillHoles**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8295](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L8295)
+Defined in: [src/class/SimpleTable.ts:8298](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.17/src/class/SimpleTable.ts#L8298)
 
 Fills holes in polygon geometries.
 

@@ -31,6 +31,24 @@ test("should write a csv file", async () => {
   await sdb.close();
 });
 
+test("should distinguish null from numeric zero in csv output", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const file = `${output}missing.csv`;
+    await sdb
+      .newTable()
+      .loadArray([
+        { date: "2001-01-01", precipitation: null },
+        { date: "2001-01-02", precipitation: 0 },
+      ])
+      .writeData(file);
+
+    expect(readFileSync(file, "utf8")).toBe("date,precipitation\n2001-01-01,\n2001-01-02,0.0\n");
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("should write a csv file and create the path if it doesn't exist", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

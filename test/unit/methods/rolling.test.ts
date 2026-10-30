@@ -3,6 +3,30 @@ import { assertRejects } from "../../helpers/assertions.ts";
 
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+test("should count rows rather than calendar days when dates are missing", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const data = await sdb
+      .newTable()
+      .loadArray([
+        { date: "2001-01-11", value: 30 },
+        { date: "2001-01-01", value: 10 },
+        { date: "2001-01-10", value: 20 },
+      ])
+      .sort({ date: "asc" })
+      .rolling("value", "mean3", "mean", 1, 1)
+      .getData();
+
+    expect(data).toStrictEqual([
+      { date: "2001-01-01", value: 10, mean3: null },
+      { date: "2001-01-10", value: 20, mean3: 20 },
+      { date: "2001-01-11", value: 30, mean3: null },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("should compute a rolling average with 3 preceding and 3 following", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
