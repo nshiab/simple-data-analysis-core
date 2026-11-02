@@ -14,6 +14,7 @@ export default async function log(
         types?: boolean;
         conditions?: string;
       } = {},
+  source?: { query: string; title: string },
 ) {
   if (simpleTable.connection === undefined) {
     await simpleTable.sdb.start();
@@ -24,14 +25,14 @@ export default async function log(
     throw new Error("simpleTable.connection is undefined");
   }
 
-  let count: number;
+  let count: number | undefined;
   if (typeof options === "number") {
     count = options;
   } else if (options === "all") {
-    count = await simpleTable.getRowCount();
+    count = undefined;
   } else if (typeof options === "object") {
     if (options.count === "all") {
-      count = await simpleTable.getRowCount();
+      count = undefined;
     } else if (typeof options.count === "number") {
       count = options.count;
     } else {
@@ -45,28 +46,37 @@ export default async function log(
       ? (options.types ?? simpleTable.typesToLog)
       : simpleTable.typesToLog;
   const conditions = typeof options === "object" ? (options.conditions ?? undefined) : undefined;
+  const relation = source
+    ? `(${source.query}) AS ${quoteIdentifier(simpleTable.name)}`
+    : quoteIdentifier(simpleTable.name);
 
   if (simpleTable.connection === undefined || !(await simpleTable.sdb.hasTable(simpleTable.name))) {
     console.log(`\nTable ${simpleTable.name}: no data`);
   } else {
-    console.log(`\nTable ${simpleTable.name}:`);
+    console.log(source?.title ?? `\nTable ${simpleTable.name}:`);
     if (conditions) {
       console.log(`Conditions: ${conditions}`);
     }
-    const data = await getData(simpleTable, { limit: count, conditions }, "log()");
-    logData(types ? await simpleTable.getTypes() : null, data, simpleTable.charsToLog);
-    const rowCount = conditions
-      ? parseInt(
-          (
-            (await simpleTable.sdb.customQuery(
-              `select count(*) as count from ${quoteIdentifier(
-                simpleTable.name,
-              )} where ${conditions}`,
-              { returnData: true },
-            )) as { count: string }[]
-          )[0].count,
-        )
-      : await simpleTable.getRowCount();
+    const data = await getData(simpleTable, { limit: count, conditions }, "log()", relation);
+    const columnTypes = types ? await simpleTable.getTypes() : null;
+    logData(
+      columnTypes && source
+        ? Object.fromEntries(Object.keys(data[0] ?? {}).map((key) => [key, columnTypes[key]]))
+        : columnTypes,
+      data,
+      simpleTable.charsToLog,
+    );
+    const rowCount =
+      conditions || source
+        ? parseInt(
+            (
+              (await simpleTable.sdb.customQuery(
+                `select count(*) as count from ${relation}${conditions ? ` where ${conditions}` : ""}`,
+                { returnData: true },
+              )) as { count: string }[]
+            )[0].count,
+          )
+        : await simpleTable.getRowCount();
     const displayedRows = data.length;
     const showing =
       displayedRows < rowCount ? ` / showing ${formatNumber(displayedRows)} rows` : "";

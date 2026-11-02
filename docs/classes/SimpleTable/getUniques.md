@@ -25,7 +25,7 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 `string`
 
-A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved.
 
 ### Returns
 
@@ -66,7 +66,7 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 `string`[]
 
-A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved.
 
 ### Returns
 
@@ -107,7 +107,7 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 `string` \| `string`[]
 
-A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved.
 
 ### Returns
 

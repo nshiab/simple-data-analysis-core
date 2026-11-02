@@ -5368,7 +5368,7 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 `string`
 
-A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved.
 
 ###### Returns
 
@@ -5409,7 +5409,7 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 `string`[]
 
-A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved.
 
 ###### Returns
 
@@ -5450,7 +5450,7 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 `string` \| `string`[]
 
-A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved.
 
 ###### Returns
 
@@ -8656,7 +8656,7 @@ await table.log({ conditions: `status === 'active'` });
 
 > **logBottom**(`count?`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9272](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9272)
+Defined in: [src/class/SimpleTable.ts:9317](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9317)
 
 Logs the bottom `n` rows of the table to the console. By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
 
@@ -8709,7 +8709,7 @@ await table.logBottom(5, { originalOrder: true });
 
 > **logColumns**(`options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9214](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9214)
+Defined in: [src/class/SimpleTable.ts:9259](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9259)
 
 Logs the columns in the table to the console. You can optionally include their data types.
 
@@ -8769,7 +8769,7 @@ await table.logDescription();
 
 > **logExtent**(`column`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9289](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9289)
+Defined in: [src/class/SimpleTable.ts:9334](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9334)
 
 Logs the extent (minimum and maximum values) of a numeric column to the console.
 
@@ -8819,7 +8819,7 @@ await table.logProjections();
 
 > **logRowCount**(): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9236](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9236)
+Defined in: [src/class/SimpleTable.ts:9281](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9281)
 
 Logs the total number of rows in the table to the console.
 
@@ -8859,24 +8859,24 @@ await table.logTypes();
 
 ##### logUniques()
 
+###### Call Signature
+
 > **logUniques**(`column`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9187](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9187)
+Defined in: [src/class/SimpleTable.ts:9173](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9173)
 
-Logs sorted unique values or combinations without modifying the table.
-A column name logs an array of values, which may be truncated by your runtime
-(typically after 100 values). An array of column names logs all unique combinations
-as a table, sorted in ascending order by those columns in the order provided.
-Table cells use the table's `charsToLog` setting.
-You can optionally stringify the results to log them as complete formatted JSON.
+Logs a column's sorted unique values as an array without modifying the table.
+If your terminal's runtime truncates the array, use `stringify` to see every value.
+Pass an array of column names to display unique combinations as a table with
+the same options and defaults as `log()` instead.
 
 ###### Parameters
 
 ###### column
 
-`string` \| `string`[]
+`string`
 
-A column name, or a non-empty array of column names whose unique combinations will be logged. Repeated column names are included only once.
+The name of the column whose unique values will be logged.
 
 ###### options?
 
@@ -8886,13 +8886,13 @@ An optional object with configuration options:
 
 `boolean`
 
-If `true`, converts the unique values or combinations to a JSON string before logging. Defaults to `false`.
+If `true`, logs the values as complete formatted JSON. Defaults to `false`. Only available with a column name, not an array of column names.
 
 ###### Returns
 
 `Promise`\<[`SimpleTable`](#simpletable)\>
 
-A promise that resolves to the SimpleTable instance after logging the unique values or combinations.
+A promise that resolves to the SimpleTable instance after logging the unique values.
 
 ###### Examples
 
@@ -8906,14 +8906,91 @@ await table.logUniques("name");
 await table.logUniques("name", { stringify: true });
 ```
 
+###### Call Signature
+
+> **logUniques**(`column`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
+
+Defined in: [src/class/SimpleTable.ts:9213](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L9213)
+
+Logs unique combinations as a table without modifying the source table.
+Combinations are sorted in ascending order by the columns in the order provided.
+An array containing one column also produces a table.
+Accepts the same options and defaults as `log()`, including a default of 10 rows
+unless configured otherwise. The `stringify` option is only available when
+passing a column name as a string.
+
+With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+
+###### Parameters
+
+###### column
+
+`string`[]
+
+A non-empty array of column names whose unique combinations will be logged.
+
+###### options?
+
+`number` \| `"all"` \| \{ `conditions?`: `string`; `count?`: `number` \| `"all"`; `types?`: `boolean`; \}
+
+The number of rows to log, `"all"`, or an object with the same configuration options as `log()`:
+
+`number`
+
+***
+
+`"all"`
+
+***
+
+###### Type Literal
+
+\{ `conditions?`: `string`; `count?`: `number` \| `"all"`; `types?`: `boolean`; \}
+
+The number of rows to log, `"all"`, or an object with the same configuration options as `log()`:
+
+###### conditions?
+
+`string`
+
+A SQL `WHERE` clause condition using the selected columns to filter the combinations before logging.
+
+###### count?
+
+`number` \| `"all"`
+
+The maximum number of combinations to log. Defaults to 10 or the table's `rowsToLog` setting. Use `"all"` to log all combinations.
+
+###### types?
+
+`boolean`
+
+Whether to include column types. Defaults to the table's `typesToLog` setting.
+
+###### Returns
+
+`Promise`\<[`SimpleTable`](#simpletable)\>
+
+A promise that resolves to the SimpleTable instance after logging the unique combinations.
+
+###### Examples
+
 ```ts
 // Log unique combinations of start and end years as a table
 await table.logUniques(["yearStart", "yearEnd"]);
 ```
 
 ```ts
-// Log unique combinations as complete formatted JSON
-await table.logUniques(["yearStart", "yearEnd"], { stringify: true });
+// Log up to 20 combinations with their column types
+await table.logUniques(["yearStart", "yearEnd"], { count: 20, types: true });
+```
+
+```ts
+// Log all combinations where the start year is at least 2020
+await table.logUniques(["yearStart", "yearEnd"], {
+  count: "all",
+  conditions: "yearStart >= 2020",
+});
 ```
 
 #### Other
