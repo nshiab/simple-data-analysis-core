@@ -8,7 +8,7 @@
 
 > **filter**(`conditions`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2058](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L2058)
+Defined in: [src/class/SimpleTable.ts:2059](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L2059)
 
 Filters rows from this table based on SQL conditions. Note that it's often faster to use the `removeRows` method for simple removals.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

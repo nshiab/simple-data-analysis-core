@@ -8,7 +8,7 @@
 
 > **loadSample**(`sample`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1495](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L1495)
+Defined in: [src/class/SimpleTable.ts:1496](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L1496)
 
 Fetches sample data from the simple-data-analysis-core GitHub repository.
 

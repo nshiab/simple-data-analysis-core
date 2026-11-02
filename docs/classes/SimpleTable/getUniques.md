@@ -6,31 +6,125 @@
 
 # Method: getUniques()
 
+## Call Signature
+
 > **getUniques**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7354](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L7354)
+Defined in: [src/class/SimpleTable.ts:7366](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L7366)
 
-Returns unique values from a specific column. The values are returned in ascending order.
+Returns unique values from a column, or unique combinations from an array of columns,
+without modifying the table. Results are sorted in ascending order by the supplied
+columns, in the order provided.
+A column name returns an array of values. An array of column names returns an array
+of row objects, even when the array contains only one column.
 Temporal values use the same JavaScript representations as `getData()`.
 
-## Parameters
+### Parameters
 
-### column
+#### column
 
 `string`
 
-The name of the column from which to retrieve unique values.
+A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
 
-## Returns
+### Returns
 
 `Promise`\<`unknown`[]\>
 
-A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
+A promise that resolves to sorted unique values for a column name, or sorted unique row objects for an array of column names.
 
-## Example
+### Examples
 
 ```ts
 // Get unique values from the 'category' column
 const uniqueCategories = await table.getUniques("category");
 console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
+```
+
+```ts
+// Get unique pairs of start and end years, sorted by start year then end year
+const uniqueYears = await table.getUniques(["yearStart", "yearEnd"]);
+console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearStart: 2020, yearEnd: 2022 }]
+```
+
+## Call Signature
+
+> **getUniques**(`column`): `Promise`\<`object`[]\>
+
+Defined in: [src/class/SimpleTable.ts:7367](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L7367)
+
+Returns unique values from a column, or unique combinations from an array of columns,
+without modifying the table. Results are sorted in ascending order by the supplied
+columns, in the order provided.
+A column name returns an array of values. An array of column names returns an array
+of row objects, even when the array contains only one column.
+Temporal values use the same JavaScript representations as `getData()`.
+
+### Parameters
+
+#### column
+
+`string`[]
+
+A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+
+### Returns
+
+`Promise`\<`object`[]\>
+
+A promise that resolves to sorted unique values for a column name, or sorted unique row objects for an array of column names.
+
+### Examples
+
+```ts
+// Get unique values from the 'category' column
+const uniqueCategories = await table.getUniques("category");
+console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
+```
+
+```ts
+// Get unique pairs of start and end years, sorted by start year then end year
+const uniqueYears = await table.getUniques(["yearStart", "yearEnd"]);
+console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearStart: 2020, yearEnd: 2022 }]
+```
+
+## Call Signature
+
+> **getUniques**(`column`): `Promise`\<`unknown`[]\>
+
+Defined in: [src/class/SimpleTable.ts:7368](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L7368)
+
+Returns unique values from a column, or unique combinations from an array of columns,
+without modifying the table. Results are sorted in ascending order by the supplied
+columns, in the order provided.
+A column name returns an array of values. An array of column names returns an array
+of row objects, even when the array contains only one column.
+Temporal values use the same JavaScript representations as `getData()`.
+
+### Parameters
+
+#### column
+
+`string` \| `string`[]
+
+A column name, or a non-empty array of column names whose unique combinations will be retrieved. Repeated column names are included only once.
+
+### Returns
+
+`Promise`\<`unknown`[]\>
+
+A promise that resolves to sorted unique values for a column name, or sorted unique row objects for an array of column names.
+
+### Examples
+
+```ts
+// Get unique values from the 'category' column
+const uniqueCategories = await table.getUniques("category");
+console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
+```
+
+```ts
+// Get unique pairs of start and end years, sorted by start year then end year
+const uniqueYears = await table.getUniques(["yearStart", "yearEnd"]);
+console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearStart: 2020, yearEnd: 2022 }]
 ```

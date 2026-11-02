@@ -6,7 +6,7 @@
 
 # Class: SimpleTable
 
-Defined in: [src/class/SimpleTable.ts:216](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L216)
+Defined in: [src/class/SimpleTable.ts:217](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L217)
 
 IMPORTANT: When extending this class, always use `this.sdb.newTable()` to
 create new tables instead of `new SimpleTable(...)` directly. This ensures
@@ -57,7 +57,7 @@ await sdb.close();
 
 > **new SimpleTable**(`name`, `simpleDB`, `options?`): `SimpleTable`
 
-Defined in: [src/class/SimpleTable.ts:294](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L294)
+Defined in: [src/class/SimpleTable.ts:295](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L295)
 
 Creates an instance of SimpleTable.
 
@@ -457,7 +457,7 @@ A flag indicating whether to include data types when logging a table.
 
 > **indexes**: (\{ `column`: `string`; `kind`: `"vss"`; `name`: `string`; `options`: \{ `efConstruction?`: `number`; `efSearch?`: `number`; `M?`: `number`; \}; \} \| \{ `idColumn`: `string`; `kind`: `"fts"`; `name`: `string`; `options`: \{ `ignore?`: `string`; `lower?`: `boolean`; `stemmer?`: `string`; `stopwords?`: `string`; `stripAccents?`: `boolean`; \}; `textColumn`: `string`; \})[]
 
-Defined in: [src/class/SimpleTable.ts:243](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L243)
+Defined in: [src/class/SimpleTable.ts:244](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L244)
 
 The definitions of the indexes belonging to the table, if any. Do not
 mutate this array directly.
@@ -479,7 +479,7 @@ console.log(table.indexes);
 
 > **sdb**: [`SimpleDB`](SimpleDB.md)
 
-Defined in: [src/class/SimpleTable.ts:281](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L281)
+Defined in: [src/class/SimpleTable.ts:282](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L282)
 
 The SimpleDB instance that created this table.
 
