@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.18**](../../index.md)
+[**Simple Data Analysis Core v2.1.19**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getVariance**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7301](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L7301)
+Defined in: [src/class/SimpleTable.ts:7301](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L7301)
 
 Returns the variance of values from a specific numeric column.
 

@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.18**](../../index.md)
+[**Simple Data Analysis Core v2.1.19**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **centroid**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8442](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L8442)
+Defined in: [src/class/SimpleTable.ts:8442](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L8442)
 
 Computes the centroid of geometries.
 The values are returned in the SRS unit of the input geometries.

@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.18**](../../index.md)
+[**Simple Data Analysis Core v2.1.19**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **accumulate**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6305](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L6305)
+Defined in: [src/class/SimpleTable.ts:6305](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L6305)
 
 Computes the cumulative sum of values in a column. For this method to work properly, ensure your data is sorted first.
 

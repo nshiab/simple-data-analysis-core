@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.18**](../../index.md)
+[**Simple Data Analysis Core v2.1.19**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getValueCount**(): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7025](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L7025)
+Defined in: [src/class/SimpleTable.ts:7025](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L7025)
 
 Returns the total number of values in the table (number of columns multiplied by the number of rows).
 
