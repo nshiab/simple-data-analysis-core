@@ -1,16 +1,12 @@
-import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
+import getUniquesQuery from "./getUniquesQuery.ts";
 
-export default async function getUniques(simpleTable: SimpleTable, column: string) {
-  const qualifiedColumn = quoteQualifiedIdentifier(simpleTable.name, column);
+export default async function getUniques(simpleTable: SimpleTable, column: string | string[]) {
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT DISTINCT ${qualifiedColumn} FROM ${quoteIdentifier(
-      simpleTable.name,
-    )} ORDER BY ${qualifiedColumn} ASC`,
+    getUniquesQuery(simpleTable, column),
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,
@@ -23,7 +19,5 @@ export default async function getUniques(simpleTable: SimpleTable, column: strin
     throw new Error("The query did not return a result.");
   }
 
-  const uniques = queryResult.map((d) => d[column]);
-
-  return uniques;
+  return typeof column === "string" ? queryResult.map((d) => d[column]) : queryResult;
 }

@@ -16,6 +16,7 @@ import getTypes from "../methods/getTypes.ts";
 import getHash from "../methods/getHash.ts";
 import getValues from "../methods/getValues.ts";
 import getUniques from "../methods/getUniques.ts";
+import logUniques from "../methods/logUniques.ts";
 import getFirstRow from "../methods/getFirstRow.ts";
 import getLastRow from "../methods/getLastRow.ts";
 import getTop from "../methods/getTop.ts";
@@ -7338,7 +7339,11 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Returns unique values from a specific column. The values are returned in ascending order.
+   * Returns unique values from a column, or unique combinations from an array of columns,
+   * without modifying the table. Results are sorted in ascending order by the supplied
+   * columns, in the order provided.
+   * A column name returns an array of values. An array of column names returns an array
+   * of row objects, even when the array contains only one column.
    * Temporal values use the same JavaScript representations as `getData()`.
    *
    * @example
@@ -7347,11 +7352,21 @@ export default class SimpleTable extends Simple {
    * const uniqueCategories = await table.getUniques("category");
    * console.log(uniqueCategories); // e.g., ["Books", "Clothing", "Electronics"]
    * ```
-   * @param column - The name of the column from which to retrieve unique values.
-   * @returns A promise that resolves to an array containing the unique values from the specified column, sorted in ascending order.
+   *
+   * @example
+   * ```ts
+   * // Get unique pairs of start and end years, sorted by start year then end year
+   * const uniqueYears = await table.getUniques(["yearStart", "yearEnd"]);
+   * console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearStart: 2020, yearEnd: 2022 }]
+   * ```
+   * @param column - A column name, or a non-empty array of column names whose unique combinations will be retrieved.
+   * @returns A promise that resolves to sorted unique values for a column name, or sorted unique row objects for an array of column names.
    * @category Getting Data
    */
-  async getUniques(column: string): Promise<unknown[]> {
+  getUniques(column: string): Promise<unknown[]>;
+  getUniques(column: string[]): Promise<{ [key: string]: unknown }[]>;
+  getUniques(column: string | string[]): Promise<unknown[]>;
+  async getUniques(column: string | string[]): Promise<unknown[]> {
     return await getUniques(this, column);
   }
 
@@ -9133,8 +9148,10 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Logs unique values for a specified column to the console. By default, a maximum of 100 values are logged (depending on your runtime).
-   * You can optionally stringify the values to see them all.
+   * Logs a column's sorted unique values as an array without modifying the table.
+   * If your terminal's runtime truncates the array, use `stringify` to see every value.
+   * Pass an array of column names to display unique combinations as a table with
+   * the same options and defaults as `log()` instead.
    *
    * @example
    * ```ts
@@ -9147,20 +9164,76 @@ export default class SimpleTable extends Simple {
    * // Logs unique values for the column "name" and stringifies them
    * await table.logUniques("name", { stringify: true });
    * ```
-   * @param column - The name of the column from which to retrieve and log unique values.
+   * @param column - The name of the column whose unique values will be logged.
    * @param options - An optional object with configuration options:
-   * @param options.stringify - If `true`, converts the unique values to a JSON string before logging. Defaults to `false`.
+   * @param options.stringify - If `true`, logs the values as complete formatted JSON. Defaults to `false`. Only available with a column name, not an array of column names.
    * @returns A promise that resolves to the SimpleTable instance after logging the unique values.
    * @category Logging
    */
-  async logUniques(column: string, options: { stringify?: boolean } = {}): Promise<this> {
-    const values = await this.getUniques(column);
-    console.log(`\nTable ${this.name} — unique values in ${column}:`);
-    if (options.stringify) {
-      console.log(JSON.stringify(values, null, 2));
-    } else {
-      console.log(values);
-    }
+  logUniques(column: string, options?: { stringify?: boolean }): Promise<this>;
+
+  /**
+   * Logs unique combinations as a table without modifying the source table.
+   * Combinations are sorted in ascending order by the columns in the order provided.
+   * An array containing one column also produces a table.
+   * Accepts the same options and defaults as `log()`, including a default of 10 rows
+   * unless configured otherwise. The `stringify` option is only available when
+   * passing a column name as a string.
+   *
+   * With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+   *
+   * @example
+   * ```ts
+   * // Log unique combinations of start and end years as a table
+   * await table.logUniques(["yearStart", "yearEnd"]);
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Log up to 20 combinations with their column types
+   * await table.logUniques(["yearStart", "yearEnd"], { count: 20, types: true });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Log all combinations where the start year is at least 2020
+   * await table.logUniques(["yearStart", "yearEnd"], {
+   *   count: "all",
+   *   conditions: "yearStart >= 2020",
+   * });
+   * ```
+   * @param column - A non-empty array of column names whose unique combinations will be logged.
+   * @param options - The number of rows to log, `"all"`, or an object with the same configuration options as `log()`:
+   * @param options.count - The maximum number of combinations to log. Defaults to 10 or the table's `rowsToLog` setting. Use `"all"` to log all combinations.
+   * @param options.types - Whether to include column types. Defaults to the table's `typesToLog` setting.
+   * @param options.conditions - A SQL `WHERE` clause condition using the selected columns to filter the combinations before logging.
+   * @returns A promise that resolves to the SimpleTable instance after logging the unique combinations.
+   * @category Logging
+   */
+  logUniques(
+    column: string[],
+    options?:
+      | "all"
+      | number
+      | {
+          count?: number | "all";
+          types?: boolean;
+          conditions?: string;
+        },
+  ): Promise<this>;
+  async logUniques(
+    column: string | string[],
+    options:
+      | { stringify?: boolean }
+      | "all"
+      | number
+      | {
+          count?: number | "all";
+          types?: boolean;
+          conditions?: string;
+        } = {},
+  ): Promise<this> {
+    await logUniques(this, column, options);
     return this;
   }
 

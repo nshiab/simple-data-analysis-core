@@ -8,7 +8,7 @@
 
 > **fuzzyJoin**(`rightTable`, `leftColumn`, `rightColumn`, `threshold`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:4772](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L4772)
+Defined in: [src/class/SimpleTable.ts:4773](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.18/src/class/SimpleTable.ts#L4773)
 
 Performs a fuzzy left join between this table (considered the left table) and another table
 (the right table) based on string similarity between two text columns. Uses the
