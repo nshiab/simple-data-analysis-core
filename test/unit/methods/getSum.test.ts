@@ -17,3 +17,14 @@ test("should return the sum even when there are spaces in the column name", asyn
   expect(await table.getSum("key 1")).toStrictEqual(10);
   await sdb.close();
 });
+
+test("should round the completed sum to the requested decimal places", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sales");
+  table.loadArray([{ "sale amount": 0.264 }, { "sale amount": 0.264 }]);
+
+  expect(await table.getSum("sale amount", { decimals: 2 })).toStrictEqual(0.53);
+  expect(await table.getSum("sale amount", { decimals: 0 })).toStrictEqual(1);
+
+  await sdb.close();
+});

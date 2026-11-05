@@ -117,6 +117,50 @@ test("addSummaryRows() computes every row from the original input", async () => 
   await sdb.close();
 });
 
+test("addSummaryRows() rounds computed statistics and leaves detail rows and counts alone", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sales");
+  table.loadArray([
+    { region: "North", sales: 17.1234 },
+    { region: "South", sales: 25.5678 },
+    { region: "East", sales: null },
+  ]);
+  table.addSummaryRows("sales", "region", {
+    stats: ["sum", "mean", "countDistinct", "countNull"],
+    decimals: -1,
+  });
+
+  expect(await table.getData()).toStrictEqual([
+    { region: "North", sales: 17.1234 },
+    { region: "South", sales: 25.5678 },
+    { region: "East", sales: null },
+    { region: "sum", sales: 40 },
+    { region: "mean", sales: 20 },
+    { region: "countDistinct", sales: 2 },
+    { region: "countNull", sales: 1 },
+  ]);
+
+  await sdb.close();
+});
+
+test("addSummaryRows() preserves detail DECIMAL scale when rounding summary rows", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("sales");
+  await sdb.customQuery(`CREATE TABLE sales AS
+    SELECT region, CAST(amount AS DECIMAL(6,4)) AS amount
+    FROM (VALUES ('North', 1.2345), ('South', 99.9950)) AS t(region, amount)`);
+  table.addSummaryRows("amount", "region", { stats: ["sum", "max"], decimals: 2 });
+
+  expect(await table.getData()).toStrictEqual([
+    { region: "North", amount: "1.2345" },
+    { region: "South", amount: "99.9950" },
+    { region: "sum", amount: "101.2300" },
+    { region: "max", amount: "100.0000" },
+  ]);
+
+  await sdb.close();
+});
+
 test("addSummaryRows() binds custom labels", async () => {
   const sdb = new SimpleDB({ logSQL: true });
   const table = sdb.newTable("boundLabels");
