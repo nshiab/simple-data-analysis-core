@@ -6295,10 +6295,17 @@ export default class SimpleTable extends Simple {
    * // Compute the cumulative sum of 'revenue' by 'region' and 'product_category'
    * await table.accumulate("revenue", "cumulativeRevenue", { by: ["region", "product_category"] }).log();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Round cumulative sales to 2 decimal places
+   * await table.accumulate("sales", "cumulativeSales", { decimals: 2 }).log();
+   * ```
    * @param column - The name of the column storing the values to be accumulated.
    * @param newColumn - The name of the new column in which the computed cumulative values will be stored.
    * @param options - An optional object with configuration options:
    * @param options.by - The column name or an array of column names to partition by. Accumulation is performed independently within each group.
+   * @param options.decimals - The number of decimal places to round each cumulative sum to. Defaults to `undefined` (no rounding).
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
@@ -6307,6 +6314,7 @@ export default class SimpleTable extends Simple {
     newColumn: string,
     options: {
       by?: string | string[];
+      decimals?: number;
     } = {},
   ): this {
     accumulate(this, column, newColumn, options);

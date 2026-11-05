@@ -12,6 +12,7 @@ export default function accumulate(
   newColumn: string,
   options: {
     by?: string | string[];
+    decimals?: number;
   } = {},
 ) {
   // The accumulation order is based on rowid, which only exists on the
@@ -46,17 +47,21 @@ function accumulateQuery(
   newColumn: string,
   options: {
     by?: string | string[];
+    decimals?: number;
   } = {},
 ) {
   const by = options.by ? stringToArray(options.by) : [];
   const partition =
     by.length > 0 ? `PARTITION BY ${by.map((d) => `${quoteIdentifier(d)}`).join(", ")} ` : "";
+  const cumulativeSum = `SUM(${quoteIdentifier(column)}) OVER (${partition}ORDER BY rowid)`;
+  const result =
+    typeof options.decimals === "number"
+      ? `ROUND(${cumulativeSum}, ${options.decimals})`
+      : cumulativeSum;
 
   const query = `CREATE OR REPLACE TABLE ${quoteIdentifier(
     table,
-  )} AS SELECT *, SUM(${quoteIdentifier(
-    column,
-  )}) OVER (${partition}ORDER BY rowid) AS ${quoteIdentifier(newColumn)}
+  )} AS SELECT *, ${result} AS ${quoteIdentifier(newColumn)}
     FROM ${quoteIdentifier(table)}
     ORDER BY rowid;`;
 

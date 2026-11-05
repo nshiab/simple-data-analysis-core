@@ -16,6 +16,36 @@ test("should add the cumulative sum in a new column", async () => {
   ]);
   await sdb.close();
 });
+
+test("should round the cumulative sums after adding the original values", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ amount: 1.234 }, { amount: 0.234 }]);
+  table.accumulate("amount", "cumulative", { decimals: 2 });
+  expect(await table.getData()).toStrictEqual([
+    { amount: 1.234, cumulative: 1.23 },
+    { amount: 0.234, cumulative: 1.47 },
+  ]);
+  await sdb.close();
+});
+
+test("should round grouped cumulative sums to whole numbers with zero decimals", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([
+    { amount: 1.4, category: "a" },
+    { amount: 2.6, category: "b" },
+    { amount: 1.4, category: "a" },
+  ]);
+  table.accumulate("amount", "cumulative", { by: "category", decimals: 0 });
+  expect(await table.getData()).toStrictEqual([
+    { amount: 1.4, category: "a", cumulative: 1 },
+    { amount: 2.6, category: "b", cumulative: 3 },
+    { amount: 1.4, category: "a", cumulative: 3 },
+  ]);
+  await sdb.close();
+});
+
 test("should add the cumulative sum in a new column without reordering the rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("data");
