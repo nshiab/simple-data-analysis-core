@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **addSummaryRows**(`columns`, `labelColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6214](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L6214)
+Defined in: [src/class/SimpleTable.ts:6214](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L6214)
 
 Adds one or more summary rows to the table. Each row is calculated from
 the original rows before any summary rows are added. This is useful for

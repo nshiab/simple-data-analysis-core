@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **aggregateGeo**(`method`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8621](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L8621)
+Defined in: [src/class/SimpleTable.ts:8629](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L8629)
 
 Aggregates geometries in a specified column based on a chosen aggregation method.
 

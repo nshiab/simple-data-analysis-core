@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../index.md)
+[**Simple Data Analysis Core v2.1.20**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **queueAsyncBarrier**(`simpleTable`, `operation`): `void`
 
-Defined in: [src/helpers/queueAsyncBarrier.ts:51](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/helpers/queueAsyncBarrier.ts#L51)
+Defined in: [src/helpers/queueAsyncBarrier.ts:51](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/helpers/queueAsyncBarrier.ts#L51)
 
 Queues asynchronous extension work as one ordered table-builder step.
 Builder operations queued by `execute` are scoped to the barrier and drain

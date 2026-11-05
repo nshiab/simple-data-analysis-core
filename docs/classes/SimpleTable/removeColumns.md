@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **removeColumns**(`columns`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2445](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L2445)
+Defined in: [src/class/SimpleTable.ts:2445](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L2445)
 
 Removes one or more columns from this table.
 

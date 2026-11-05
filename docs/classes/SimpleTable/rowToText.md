@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **rowToText**(`columns`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5284](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L5284)
+Defined in: [src/class/SimpleTable.ts:5284](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L5284)
 
 Concatenates values from multiple columns into a new column with labeled rows.
 

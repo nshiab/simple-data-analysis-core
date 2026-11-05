@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **capitalize**(`columns`): `this`
 
-Defined in: [src/class/SimpleTable.ts:4979](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L4979)
+Defined in: [src/class/SimpleTable.ts:4979](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L4979)
 
 Capitalizes the first letter of each string in the specified columns and converts the rest of the string to lowercase.
 

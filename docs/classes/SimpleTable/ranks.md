@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **ranks**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5704](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L5704)
+Defined in: [src/class/SimpleTable.ts:5704](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L5704)
 
 Assigns ranks to rows in a new column based on the values of a specified column.
 

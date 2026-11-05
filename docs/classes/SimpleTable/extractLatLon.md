@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **extractLatLon**(`column`, `latColumn`, `lonColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8390](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L8390)
+Defined in: [src/class/SimpleTable.ts:8398](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L8398)
 
 Extracts the latitude (y) and longitude (x) coordinates from point geometries.
 The input geometry is assumed to be in EPSG:4326 (WGS84).

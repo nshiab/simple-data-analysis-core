@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **addVertexCount**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7810](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L7810)
+Defined in: [src/class/SimpleTable.ts:7818](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L7818)
 
 Adds a column with the number of vertices (points) in each geometry.
 

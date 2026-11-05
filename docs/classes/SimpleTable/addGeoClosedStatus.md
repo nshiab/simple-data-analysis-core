@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.19**](../../index.md)
+[**Simple Data Analysis Core v2.1.20**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **addGeoClosedStatus**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7858](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.19/src/class/SimpleTable.ts#L7858)
+Defined in: [src/class/SimpleTable.ts:7866](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L7866)
 
 Adds a column with boolean values indicating whether geometries are closed (e.g., polygons) or open (e.g., linestrings).
 
