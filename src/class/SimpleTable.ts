@@ -6035,13 +6035,19 @@ export default class SimpleTable extends Simple {
    * a null result.
    *
    * A reference can be another numeric column on the same row or a statistic
-   * computed over the whole table or within groups. The statistic ignores null
-   * values in its source column.
+   * computed from `column` over the whole table or within groups. The statistic
+   * ignores null values.
    *
    * @example
    * ```ts
-   * // Calculate the percent change from the median stored on each row.
-   * await table.percentChange("C1_COUNT_TOTAL", "median", "percVar", { base: 100 }).log();
+   * // Each row contains an employee's salary for this year and last year.
+   * // Calculate the year-over-year percent change in salary for each employee.
+   * await table.percentChange(
+   *   "salary",
+   *   "previousYearSalary",
+   *   "salaryPercentChange",
+   *   { base: 100 },
+   * ).log();
    * ```
    *
    * @example
@@ -6057,18 +6063,17 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Calculate fractional change from the median budgeted salary across the whole table.
+   * // Calculate fractional change from the median salary for each department and country pair.
    * await table.percentChange(
    *   "salary",
-   *   { stat: "median", column: "budgetedSalary" },
-   *   "changeFromMedianBudget",
+   *   { stat: "median", by: ["department", "country"] },
+   *   "changeFromDepartmentCountryMedian",
    * ).log();
    * ```
    *
    * @param column - The numeric column containing the values to compare.
    * @param reference - A numeric column name or an object describing the reference statistic.
-   * @param reference.stat - The statistic to use as the reference, one of `"mean"`, `"median"`, `"min"`, or `"max"`.
-   * @param reference.column - The numeric column to summarize. Defaults to `column`.
+   * @param reference.stat - The statistic to compute from `column`, one of `"mean"`, `"median"`, `"min"`, or `"max"`.
    * @param reference.by - A column name or array of column names to group by. Defaults to the whole table.
    * @param newColumn - The name of the new column where the results will be stored.
    * @param options - Optional settings for scaling and rounding the results.
@@ -6083,7 +6088,6 @@ export default class SimpleTable extends Simple {
       | string
       | {
           stat: "mean" | "median" | "min" | "max";
-          column?: string;
           by?: string | string[];
         },
     newColumn: string,

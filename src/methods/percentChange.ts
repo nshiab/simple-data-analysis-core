@@ -17,7 +17,6 @@ export default function percentChange(
     | string
     | {
         stat: (typeof stats)[number];
-        column?: string;
         by?: string | string[];
       },
   newColumn: string,
@@ -42,7 +41,7 @@ export default function percentChange(
     throw new Error(`${method} options.decimals must be a nonnegative integer.`);
   }
 
-  const referenceColumn = typeof reference === "string" ? reference : (reference.column ?? column);
+  const referenceColumn = typeof reference === "string" ? reference : column;
   const stat = typeof reference === "string" ? undefined : reference.stat;
   const by = typeof reference === "string" ? [] : [...stringToArray(reference.by ?? [])];
 

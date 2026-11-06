@@ -43,28 +43,23 @@ test("compares each row to its group mean and rounds after scaling", async () =>
   await sdb.close();
 });
 
-test("can use another column's median across multiple grouping columns", async () => {
+test("compares values with their median within each combination of grouping columns", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table
     .loadArray([
-      { id: 1, region: "A", year: 2025, salary: 15, budget: 6 },
-      { id: 2, region: "A", year: 2025, salary: 10, budget: 14 },
-      { id: 3, region: "A", year: 2026, salary: 20, budget: 25 },
-      { id: 4, region: "B", year: 2025, salary: 20, budget: 0 },
-      { id: 5, region: "B", year: 2026, salary: 20, budget: null },
+      { id: 1, department: "A", country: "Canada", salary: 15 },
+      { id: 2, department: "A", country: "Canada", salary: 10 },
+      { id: 3, department: "A", country: "Mexico", salary: 20 },
+      { id: 4, department: "B", country: "Canada", salary: 0 },
+      { id: 5, department: "B", country: "Mexico", salary: null },
     ])
-    .percentChange(
-      "salary",
-      { stat: "median", column: "budget", by: ["region", "year"] },
-      "change",
-      {
-        base: 1000,
-      },
-    )
+    .percentChange("salary", { stat: "median", by: ["department", "country"] }, "change", {
+      base: 1000,
+    })
     .sort({ id: "asc" });
 
-  expect(await table.getValues("change")).toStrictEqual([500, 0, -200, null, null]);
+  expect(await table.getValues("change")).toStrictEqual([200, -200, 0, null, null]);
   await sdb.close();
 });
 
