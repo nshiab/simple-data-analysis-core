@@ -67,6 +67,7 @@ import zScore from "../methods/zScore.ts";
 import rolling from "../methods/rolling.ts";
 import accumulate from "../methods/accumulate.ts";
 import columnProportions from "../methods/columnProportions.ts";
+import percentChange from "../methods/percentChange.ts";
 import rowProportions from "../methods/rowProportions.ts";
 import rowRanks from "../methods/rowRanks.ts";
 import quantiles from "../methods/quantiles.ts";
@@ -6024,6 +6025,71 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     columnProportions(this, column, newColumn, options);
+    return this;
+  }
+
+  /**
+   * Adds a column with the relative change from a reference value for each row.
+   * The result is `(value - reference) / reference * base`, calculated in double
+   * precision. A null input value, a null reference, or a zero reference gives
+   * a null result.
+   *
+   * A reference can be another numeric column on the same row or a statistic
+   * computed over the whole table or within groups. The statistic ignores null
+   * values in its source column.
+   *
+   * @example
+   * ```ts
+   * await table.percentChange("C1_COUNT_TOTAL", "median", "percVar", { base: 100 }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table.percentChange(
+   *   "salary",
+   *   { stat: "mean", by: "department" },
+   *   "changeFromDepartmentMean",
+   *   { base: 100, decimals: 1 },
+   * ).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table.percentChange(
+   *   "salary",
+   *   { stat: "median", column: "budgetedSalary" },
+   *   "changeFromMedianBudget",
+   * ).log();
+   * ```
+   *
+   * @param column - The numeric column containing the values to compare.
+   * @param reference - A numeric column name or an object describing the reference statistic.
+   * @param reference.stat - The statistic to use as the reference, one of `"mean"`, `"median"`, `"min"`, or `"max"`.
+   * @param reference.column - The numeric column to summarize. Defaults to `column`.
+   * @param reference.by - A column name or array of column names to group by. Defaults to the whole table.
+   * @param newColumn - The name of the new column where the results will be stored.
+   * @param options - Optional settings for scaling and rounding the results.
+   * @param options.base - A finite positive multiplier. Defaults to `1` for fractional change. Use `100` for percent units.
+   * @param options.decimals - A nonnegative integer giving the number of decimal places to round to after scaling. Defaults to no rounding.
+   * @returns The table, so methods can be chained.
+   * @category Analyzing Data
+   */
+  percentChange(
+    column: string,
+    reference:
+      | string
+      | {
+          stat: "mean" | "median" | "min" | "max";
+          column?: string;
+          by?: string | string[];
+        },
+    newColumn: string,
+    options: {
+      base?: number;
+      decimals?: number;
+    } = {},
+  ): this {
+    percentChange(this, column, reference, newColumn, options);
     return this;
   }
 
