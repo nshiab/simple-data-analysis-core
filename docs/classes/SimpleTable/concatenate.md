@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.20**](../../index.md)
+[**Simple Data Analysis Core v2.1.21**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **concatenate**(`columns`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5225](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L5225)
+Defined in: [src/class/SimpleTable.ts:5226](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5226)
 
 Concatenates values from specified columns into a new column.
 

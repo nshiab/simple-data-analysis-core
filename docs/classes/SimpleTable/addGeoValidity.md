@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.20**](../../index.md)
+[**Simple Data Analysis Core v2.1.21**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **addGeoValidity**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7792](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L7792)
+Defined in: [src/class/SimpleTable.ts:7866](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7866)
 
 Adds a column with boolean values indicating the validity of geometries.
 

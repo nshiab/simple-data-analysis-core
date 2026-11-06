@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.20**](../../index.md)
+[**Simple Data Analysis Core v2.1.21**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **fixGeo**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7841](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L7841)
+Defined in: [src/class/SimpleTable.ts:7915](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7915)
 
 Attempts to make invalid geometries valid without removing any vertices.
 
