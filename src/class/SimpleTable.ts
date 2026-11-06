@@ -6040,11 +6040,13 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Calculate the percent change from the median stored on each row.
    * await table.percentChange("C1_COUNT_TOTAL", "median", "percVar", { base: 100 }).log();
    * ```
    *
    * @example
    * ```ts
+   * // Show the percent change from each department's mean salary, rounded to one decimal.
    * await table.percentChange(
    *   "salary",
    *   { stat: "mean", by: "department" },
@@ -6055,6 +6057,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Calculate fractional change from the median budgeted salary across the whole table.
    * await table.percentChange(
    *   "salary",
    *   { stat: "median", column: "budgetedSalary" },
