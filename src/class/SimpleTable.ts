@@ -6063,7 +6063,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Calculate fractional change from the median salary for each department and country pair.
+   * // Compare each salary with the median for its department and country.
+   * // A result of 0.25 means the salary is 25% above that median.
    * await table.percentChange(
    *   "salary",
    *   { stat: "median", by: ["department", "country"] },
