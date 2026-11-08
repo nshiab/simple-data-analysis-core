@@ -7,6 +7,7 @@ import queueGraphResult from "../helpers/queueGraphResult.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 
 type DegreeOptions = {
+  decimals?: number;
   count?: "edges" | "neighbors";
   weight?: string;
   outputTable?: string | boolean;
@@ -55,6 +56,8 @@ export default function degree(
     method: "degree()",
     parameters,
     outputTable: options.outputTable,
+    decimals: options.decimals,
+    roundedColumns: options.weight === undefined ? [] : ["incoming", "outgoing", "total"],
     values: (schema) => {
       validateInputs(schema, sourceColumn, targetColumn, weight);
       return [];

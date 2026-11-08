@@ -8,7 +8,7 @@
 
 > **loadOpenStreetMap**(`source`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:903](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L903)
+Defined in: [src/class/SimpleTable.ts:904](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L904)
 
 Loads OpenStreetMap data into the table from a local `.osm` or `.osm.pbf` file, a remote file URL, or an Overpass bounding-box query. Pass a path or URL string to load an existing file, or pass a bounding box with `filters` to download matching features.
 

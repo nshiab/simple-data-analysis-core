@@ -8,7 +8,7 @@
 
 > **intersects**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8414](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8414)
+Defined in: [src/class/SimpleTable.ts:8501](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8501)
 
 Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE` otherwise.
 

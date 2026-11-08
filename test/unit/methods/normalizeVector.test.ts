@@ -592,3 +592,44 @@ test("normalizeVector captures queued normalization options and rejects invalid 
     await sdb.close();
   }
 });
+
+test("normalizeVector rounds final components for both normalization modes and preserves ARRAY types", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb
+      .newTable()
+      .loadArray([{ vector: [0, 0] }, { vector: [1, 1] }, { vector: [3, 3] }], {
+        columnTypes: { vector: "FLOAT[2]" },
+      });
+    await table.normalizeVector("vector", "scaled", { decimals: 2 }).run();
+    expect((await table.getData()).map((row) => row.scaled)).toEqual([
+      [0, 0],
+      [0.33, 0.33],
+      [1, 1],
+    ]);
+    expect((await table.getTypes()).scaled).toBe("DOUBLE[2]");
+    await table.normalizeVector("vector", "vector", { normalization: "rowL2", decimals: 2 }).run();
+    expect((await table.getData()).map((row) => row.vector)).toEqual([
+      [0, 0],
+      [0.71, 0.71],
+      [0.71, 0.71],
+    ]);
+    expect((await table.getTypes()).vector).toBe("DOUBLE[2]");
+    const whole = sdb
+      .newTable()
+      .loadArray([{ vector: [1, 1] }], { columnTypes: { vector: "FLOAT[2]" } });
+    expect(
+      (
+        await whole
+          .normalizeVector("vector", "scaled", { normalization: "rowL2", decimals: 0 })
+          .getData()
+      )[0].scaled,
+    ).toEqual([1, 1]);
+    expect(await scratchRelations(sdb)).toEqual([]);
+    expect(() => table.normalizeVector("vector", "bad", { decimals: Infinity })).toThrow(
+      /options\.decimals/,
+    );
+  } finally {
+    await sdb.close();
+  }
+});

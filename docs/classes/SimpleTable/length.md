@@ -8,7 +8,7 @@
 
 > **length**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8168](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8168)
+Defined in: [src/class/SimpleTable.ts:8255](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8255)
 
 Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
 The input geometry is assumed to be in EPSG:4326 (WGS84).

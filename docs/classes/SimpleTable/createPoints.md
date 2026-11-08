@@ -8,7 +8,7 @@
 
 > **createPoints**(`latColumn`, `lonColumn`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7835](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7835)
+Defined in: [src/class/SimpleTable.ts:7922](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7922)
 
 Creates point geometries from latitude (y) and longitude (x) columns.
 

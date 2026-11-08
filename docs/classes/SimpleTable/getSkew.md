@@ -8,7 +8,7 @@
 
 > **getSkew**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7321](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7321)
+Defined in: [src/class/SimpleTable.ts:7408](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7408)
 
 Returns the skewness of values from a specific numeric column.
 

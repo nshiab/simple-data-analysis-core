@@ -8,7 +8,7 @@
 
 > **hdbscan**(`columns`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1247](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1247)
+Defined in: [src/class/SimpleTable.ts:1261](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1261)
 
 Groups rows with similar numeric features using HDBSCAN, without requiring
 a predefined number of clusters. Adds a VARCHAR column containing
@@ -55,6 +55,12 @@ favor one broad group, even when there is little meaningful structure.
 `boolean`
 
 Use approximate clustering. Defaults to `false`.
+
+#### decimals?
+
+`number`
+
+A non-negative integer up to 2147483647 specifying decimal places. Rounds optional membership and outlier scores after clustering. Cluster labels are unchanged. Defaults to `undefined` (no rounding).
 
 #### membershipScoreColumn?
 
@@ -123,4 +129,8 @@ await table
   .normalizeVector("features", "scaledFeatures")
   .hdbscan("scaledFeatures", "cluster")
   .log();
+```
+
+```ts
+await table.hdbscan("features", "cluster", { membershipScoreColumn: "membership", outlierScoreColumn: "outlier", decimals: 2 }).log();
 ```

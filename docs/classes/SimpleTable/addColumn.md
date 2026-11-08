@@ -8,7 +8,7 @@
 
 > **addColumn**(`newColumn`, `type`, `definition`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2491](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2491)
+Defined in: [src/class/SimpleTable.ts:2512](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2512)
 
 Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
 With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

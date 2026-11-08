@@ -8,7 +8,7 @@
 
 > **addCharacterCount**(`column`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7027](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7027)
+Defined in: [src/class/SimpleTable.ts:7090](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7090)
 
 Adds a new column containing the number of characters in each string in the specified column.
 Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.

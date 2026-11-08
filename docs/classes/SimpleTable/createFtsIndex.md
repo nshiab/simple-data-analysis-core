@@ -8,7 +8,7 @@
 
 > **createFtsIndex**(`idColumn`, `textColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:983](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L983)
+Defined in: [src/class/SimpleTable.ts:984](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L984)
 
 Creates a full-text search (FTS) index on a specified text column using DuckDB's [FTS extension](https://duckdb.org/docs/stable/core_extensions/full_text_search).
 

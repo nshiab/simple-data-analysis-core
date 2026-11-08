@@ -8,7 +8,7 @@
 
 > **cloneColumn**(`column`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1599](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1599)
+Defined in: [src/class/SimpleTable.ts:1614](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1614)
 
 Clones an existing column in this table, creating a new column with identical values.
 

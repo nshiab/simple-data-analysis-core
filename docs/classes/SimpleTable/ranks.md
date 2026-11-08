@@ -8,7 +8,7 @@
 
 > **ranks**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5705](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5705)
+Defined in: [src/class/SimpleTable.ts:5768](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5768)
 
 Assigns ranks to rows in a new column based on the values of a specified column.
 

@@ -8,7 +8,7 @@
 
 > **joinGeo**(`rightTable`, `method`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8317](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8317)
+Defined in: [src/class/SimpleTable.ts:8404](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8404)
 
 Merges the data of this table (considered the left table) with another table (the right table) based on a spatial relationship.
 Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.

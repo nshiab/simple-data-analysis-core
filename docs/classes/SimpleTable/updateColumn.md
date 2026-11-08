@@ -8,7 +8,7 @@
 
 > **updateColumn**(`column`, `definition`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5665](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5665)
+Defined in: [src/class/SimpleTable.ts:5728](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5728)
 
 Updates values in a specified column using a SQL expression.
 With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

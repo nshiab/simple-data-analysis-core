@@ -8,7 +8,7 @@
 
 > **degree**(`sourceColumn`, `targetColumn`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: [src/class/SimpleTable.ts:2759](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2759)
+Defined in: [src/class/SimpleTable.ts:2785](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2785)
 
 Counts the incoming and outgoing connections for every node found in the
 source and target columns. By default, each input row is counted separately,
@@ -60,6 +60,12 @@ An optional object with counting and result configuration.
 `"neighbors"` \| `"edges"`
 
 Whether to count connection rows (`"edges"`) or distinct adjacent nodes (`"neighbors"`). Defaults to `"edges"`.
+
+#### decimals?
+
+`number`
+
+A non-negative integer up to 2147483647 specifying decimal places. Rounds weighted incoming, outgoing, and total sums independently after aggregation; ordering uses unrounded totals. Counts are unchanged. Defaults to `undefined` (no rounding).
 
 #### outputTable?
 
@@ -140,3 +146,7 @@ await connections
 | --- | ---: | ---: | ---: |
 | A | 1 | 2 | 3 |
 | B | 1 | 0 | 1 |
+
+```ts
+await table.degree("from", "to", { weight: "cost", decimals: 2 }).log();
+```

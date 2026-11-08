@@ -880,3 +880,60 @@ test("degree supports quoted columns and one column serving both endpoints", asy
     await sdb.close();
   }
 });
+
+test("degree rounds weighted sums independently and preserves its source and counts", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const rows = [
+      { source: "A", target: "B", cost: 0.264 },
+      { source: "B", target: "A", cost: 0.264 },
+    ];
+    const table = sdb.newTable().loadArray(rows);
+    const result = table.degree("source", "target", {
+      weight: "cost",
+      decimals: 2,
+      outputTable: true,
+    });
+    expect(await result.getData()).toEqual([
+      { node: "A", incoming: 0.26, outgoing: 0.26, total: 0.53 },
+      { node: "B", incoming: 0.26, outgoing: 0.26, total: 0.53 },
+    ]);
+    expect(await table.getData()).toEqual(rows);
+    expect(await table.degree("source", "target", { decimals: 0 }).getData()).toEqual([
+      { node: "A", incoming: 1, outgoing: 1, total: 2 },
+      { node: "B", incoming: 1, outgoing: 1, total: 2 },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("degree retains exact numeric types when rounding and supports subsequent fused aggregates", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery(`CREATE TABLE decimal_edges AS SELECT * FROM (VALUES
+      ('A', 'B', 0.264::DECIMAL(6,3)), ('B', 'A', 0.264::DECIMAL(6,3))
+    ) edges(source,target,cost)`);
+    const table = sdb.newTable("decimal_edges");
+    const result = table.degree("source", "target", {
+      weight: "cost",
+      decimals: 2,
+      outputTable: true,
+    });
+    expect(await result.summarize({ columns: "total", stats: "sum" }).getData()).toEqual([
+      { sum: "1.06" },
+    ]);
+    expect((await table.getData()).map((row) => row.cost)).toEqual(["0.264", "0.264"]);
+    const exact = "123456789012345678901234567890123456789";
+    await sdb.customQuery(
+      `CREATE TABLE integer_edges AS SELECT 'A' AS source, 'B' AS target, '${exact}'::BIGNUM AS cost`,
+    );
+    const rows = await sdb
+      .newTable("integer_edges")
+      .degree("source", "target", { weight: "cost", decimals: 2 })
+      .getData();
+    expect(rows.map((row) => row.total)).toEqual([exact, exact]);
+  } finally {
+    await sdb.close();
+  }
+});

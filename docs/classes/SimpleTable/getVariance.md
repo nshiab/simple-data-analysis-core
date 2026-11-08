@@ -8,7 +8,7 @@
 
 > **getVariance**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7383](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7383)
+Defined in: [src/class/SimpleTable.ts:7470](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7470)
 
 Returns the variance of values from a specific numeric column.
 

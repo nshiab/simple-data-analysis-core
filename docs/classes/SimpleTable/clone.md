@@ -8,7 +8,7 @@
 
 > **clone**(`nameOrOptions?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1572](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1572)
+Defined in: [src/class/SimpleTable.ts:1587](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1587)
 
 Returns a new table with the same structure and data as this table. The data can be optionally filtered, limited to a specific number of rows, and offset.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

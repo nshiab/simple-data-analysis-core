@@ -1001,3 +1001,44 @@ test("hdbscan Euclidean preserves results under a large common offset", async ()
     await sdb.close();
   }
 });
+
+test("hdbscan rounds published scores without changing clustering or source values", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const sample = fixture.cases.find((sample) =>
+      sample.probabilities.some((value) => value > 0 && value < 1),
+    )!;
+    const columns = sample.vectors[0].map((_, index) => `feature${index}`);
+    const input = sample.vectors.map((vector, id) => ({
+      id,
+      ...Object.fromEntries(columns.map((column, index) => [column, vector[index]])),
+    }));
+    const settings = {
+      minClusterSize: sample.minClusterSize,
+      minSamples: sample.minSamples,
+      metric: sample.metric,
+      membershipScoreColumn: "membership",
+      outlierScoreColumn: "outlier",
+    };
+    const baseline = await sdb
+      .newTable()
+      .loadArray(input)
+      .hdbscan(columns, "cluster", settings)
+      .getData();
+    for (const decimals of [0, 2]) {
+      const table = sdb.newTable().loadArray(input);
+      const actual = await table.hdbscan(columns, "cluster", { ...settings, decimals }).getData();
+      expect(actual).toEqual(
+        baseline.map((row) => ({
+          ...row,
+          membership: Number(Number(row.membership).toFixed(decimals)),
+          outlier: Number(Number(row.outlier).toFixed(decimals)),
+        })),
+      );
+      expect((await table.getTypes()).membership).toBe("DOUBLE");
+    }
+    expect(await scratchRelations(sdb)).toEqual([]);
+  } finally {
+    await sdb.close();
+  }
+});

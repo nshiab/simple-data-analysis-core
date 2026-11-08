@@ -8,7 +8,7 @@
 
 > **round**(`columns`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5583](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5583)
+Defined in: [src/class/SimpleTable.ts:5646](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5646)
 
 Rounds numeric values in specified columns.
 

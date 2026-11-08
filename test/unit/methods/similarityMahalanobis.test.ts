@@ -944,3 +944,36 @@ test("similarityMahalanobis checks default score name collisions", async () => {
     await sdb.close();
   }
 });
+
+test("similarityMahalanobis rounds distances and scores independently after computing covariance", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const input = [0, 1, 4, 8].map((value) => ({ value }));
+    const baseline = await sdb
+      .newTable()
+      .loadArray(input)
+      .similarityMahalanobis(["value"], [0], "distance", { similarityColumn: true })
+      .getData();
+    for (const decimals of [0, 2]) {
+      const table = sdb.newTable().loadArray(input);
+      const actual = await table
+        .similarityMahalanobis(["value"], [0], "distance", { similarityColumn: true, decimals })
+        .getData();
+      expect(actual).toEqual(
+        baseline.map((row) => ({
+          ...row,
+          distance: Number(Number(row.distance).toFixed(decimals)),
+          similarity: Number(Number(row.similarity).toFixed(decimals)),
+        })),
+      );
+      expect(await table.getTypes()).toEqual({
+        value: "DOUBLE",
+        distance: "DOUBLE",
+        similarity: "DOUBLE",
+      });
+    }
+    expect(await scratchRelations(sdb)).toEqual([]);
+  } finally {
+    await sdb.close();
+  }
+});

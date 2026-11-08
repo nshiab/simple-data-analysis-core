@@ -8,7 +8,7 @@
 
 > **removeValues**(`columnsAndValues`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2118](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2118)
+Defined in: [src/class/SimpleTable.ts:2133](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2133)
 
 Removes rows from this table that have specific values in specified columns.
 

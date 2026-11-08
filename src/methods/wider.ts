@@ -1,3 +1,6 @@
+import roundExpression from "../helpers/roundExpression.ts";
+import { isNumericScalarType } from "../helpers/prepareNumericFeatures.ts";
+import foldIdentifier from "../helpers/foldIdentifier.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -9,6 +12,7 @@ export default function wider(
   namesFrom: string,
   valuesFrom: string,
   options: {
+    decimals?: number;
     stat?: "sum" | "count" | "min" | "max" | "mean" | "median" | "first";
   } = {},
 ) {
@@ -23,13 +27,32 @@ export default function wider(
     method: "wider()",
     parameters: { namesFrom, valuesFrom, options },
     execute: async () => {
+      const type =
+        options.decimals === undefined
+          ? undefined
+          : Object.entries(await simpleTable.getTypes()).find(
+              ([name]) => foldIdentifier(name) === foldIdentifier(valuesFrom),
+            )?.[1];
+      const outputType =
+        stat === "count"
+          ? "BIGINT"
+          : (stat === "mean" || stat === "median") &&
+              type !== undefined &&
+              isNumericScalarType(type)
+            ? "DOUBLE"
+            : type;
+      const expression = roundExpression(
+        `${aggregateFunction}(${quoteIdentifier(valuesFrom)})`,
+        options.decimals,
+        outputType,
+      );
       await queryDB(
         simpleTable,
         `CREATE OR REPLACE TABLE ${quoteIdentifier(
           simpleTable.name,
         )} AS SELECT * FROM (PIVOT ${quoteIdentifier(simpleTable.name)} ON ${quoteIdentifier(
           namesFrom,
-        )} USING ${aggregateFunction}(${quoteIdentifier(valuesFrom)}));`,
+        )} USING ${expression});`,
         mergeOptions(simpleTable, {
           table: simpleTable.name,
           method: "wider()",

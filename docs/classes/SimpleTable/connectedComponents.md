@@ -8,7 +8,7 @@
 
 > **connectedComponents**(`sourceColumn`, `targetColumn`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: [src/class/SimpleTable.ts:3174](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L3174)
+Defined in: [src/class/SimpleTable.ts:3201](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L3201)
 
 Groups nodes that are connected to one another, directly or through other
 nodes. By default, connection direction is ignored. With the `mode`

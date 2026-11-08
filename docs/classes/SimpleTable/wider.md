@@ -8,7 +8,7 @@
 
 > **wider**(`namesFrom`, `valuesFrom`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2296](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2296)
+Defined in: [src/class/SimpleTable.ts:2316](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2316)
 
 Restructures this table by unstacking (pivoting) values, transforming data from a long format to a wide format.
 
@@ -43,6 +43,12 @@ The name of the column containing the values to be spread across the new columns
 
 An optional object with configuration options:
 
+#### decimals?
+
+`number`
+
+A non-negative integer up to 2147483647 specifying decimal places. Rounds computed pivot values, leaving grouping columns, counts, and nonnumeric values unchanged. Defaults to `undefined` (no rounding).
+
 #### stat?
 
 `"count"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"first"`
@@ -55,7 +61,7 @@ The stat function applied when multiple rows share the same `namesFrom`/grouping
 
 The table, so methods can be chained.
 
-## Example
+## Examples
 
 ```ts
 // Restructure the table by pivoting 'Year' into new columns with 'Employees' as values
@@ -70,3 +76,7 @@ The table will then look like this:
 | Sales      | 52   | 75   | 98   |
 
 When multiple rows share the same `namesFrom`/grouping combination, their `valuesFrom` values are combined with the `options.stat` function (`"sum"` by default).
+
+```ts
+await table.wider("year", "sales", { stat: "mean", decimals: 2 }).log();
+```

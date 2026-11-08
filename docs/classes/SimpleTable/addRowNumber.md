@@ -8,7 +8,7 @@
 
 > **addRowNumber**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:4627](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L4627)
+Defined in: [src/class/SimpleTable.ts:4678](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L4678)
 
 Adds a new column to the table containing the row number, starting at 0 (like an index).
 
