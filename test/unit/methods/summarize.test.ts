@@ -2,6 +2,231 @@ import { test, expect } from "vite-plus/test";
 
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+test("should join grouped statistics to every original row including duplicates and null keys", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  const rows = [
+    { department: "A", salary: 10 },
+    { department: "A", salary: 10 },
+    { department: "A", salary: 20 },
+    { department: null, salary: 30 },
+    { department: null, salary: null },
+  ];
+  table.loadArray(rows);
+  const result = table.summarize({
+    columns: "salary",
+    by: "department",
+    stats: { departmentMean: "mean", departmentTotal: "sum", rows: "count", missing: "countNull" },
+    decimals: 2,
+    join: true,
+  });
+  expect(result).toBe(table);
+  expect(await result.sort({ salary: "asc" }).getData()).toStrictEqual([
+    ...rows
+      .slice(0, 3)
+      .map((row) => ({ ...row, departmentMean: 13.33, departmentTotal: 40, rows: 3, missing: 0 })),
+    ...rows
+      .slice(3)
+      .map((row) => ({ ...row, departmentMean: 30, departmentTotal: 30, rows: 2, missing: 1 })),
+  ]);
+  expect(sdb.getTables()).toHaveLength(1);
+  await sdb.close();
+});
+
+test.each([true, "enriched"])(
+  "should join statistics into outputTable %s and preserve source rows",
+  async (outputTable) => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    const rows = [{ salary: 10 }, { salary: 20 }];
+    table.loadArray(rows);
+    const result = table.summarize({
+      columns: "salary",
+      stats: { average: "mean" },
+      join: true,
+      outputTable,
+    });
+    expect(result).not.toBe(table);
+    if (typeof outputTable === "string") expect(result.name).toBe(outputTable);
+    expect(await result.filter("salary > average").getData()).toStrictEqual([
+      { salary: 20, average: 15 },
+    ]);
+    expect(await table.getData()).toStrictEqual(rows);
+    expect(sdb.getTables()).toHaveLength(2);
+    await sdb.close();
+  },
+);
+
+test("should join counts using multiple quoted grouping columns and null combinations", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  const rows = [
+    { 'group"name': "A", region: null },
+    { 'group"name': "A", region: null },
+    { 'group"name': "A", region: "B" },
+    { 'group"name': null, region: null },
+  ];
+  table
+    .loadArray(rows)
+    .summarize({ by: ['group"name', "region"], stats: { 'group"count': "count" }, join: true });
+  const data = await table.getData();
+  expect(data).toHaveLength(4);
+  expect(data).toEqual(
+    expect.arrayContaining(rows.map((row, i) => ({ ...row, 'group"count': i < 2 ? 2 : 1 }))),
+  );
+  await sdb.close();
+});
+
+test("should join whole-table counts by default without changing original columns", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ value: 1 }, { value: 2 }]).summarize({ join: true });
+  expect(await table.getData()).toStrictEqual([
+    { value: 1, count: 2 },
+    { value: 2, count: 2 },
+  ]);
+  await sdb.close();
+});
+
+test.each([undefined, []] as const)(
+  "should join the same default statistics as a standalone summary (%s)",
+  async (stats) => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    const rows = [{ value: 1 }, { value: 2 }, { value: 4 }, { value: null }];
+    table.loadArray(rows);
+    const summary = table.summarize({
+      columns: "value",
+      stats: stats === undefined ? undefined : [...stats],
+      outputTable: true,
+    });
+    const [expected] = await summary.getData();
+    table.summarize({
+      columns: "value",
+      stats: stats === undefined ? undefined : [...stats],
+      join: true,
+    });
+    expect(await table.getData()).toStrictEqual(rows.map((row) => ({ ...row, ...expected })));
+    await sdb.close();
+  },
+);
+
+test("should join unsupported statistics as null without dropping rows", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table
+    .loadArray([{ label: "a" }, { label: "b" }])
+    .summarize({ columns: "label", stats: "mean", join: true });
+  expect(await table.getData()).toStrictEqual([
+    { label: "a", mean: null },
+    { label: "b", mean: null },
+  ]);
+  await sdb.close();
+});
+
+test("should convert dates only inside joined statistics", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  const rows = [
+    { timestamp: new Date("2020-01-01T00:00:00Z") },
+    { timestamp: new Date("2020-01-03T00:00:00Z") },
+  ];
+  table
+    .loadArray(rows)
+    .summarize({ columns: "timestamp", datesToMs: true, stats: "mean", join: true });
+  expect(await table.getData()).toStrictEqual(
+    rows.map((row) => ({ ...row, mean: Date.parse("2020-01-02T00:00:00Z") })),
+  );
+  await sdb.close();
+});
+
+test.each([undefined, "group"])(
+  "should retain zero rows for an empty input grouped by %s",
+  async (by) => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    table
+      .loadArray([{ group: "A", value: 1 }])
+      .filter("FALSE")
+      .summarize({ columns: "value", by, stats: "sum", join: true });
+    expect(await table.getData()).toStrictEqual([]);
+    expect(await table.getColumns()).toStrictEqual(["group", "value", "sum"]);
+    await sdb.close();
+  },
+);
+
+test("should compose joined summaries with preceding and following operations", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table
+    .loadArray([{ value: 1 }, { value: 2 }, { value: 3 }])
+    .filter("value > 1")
+    .summarize({ columns: "value", stats: { average: "mean" }, join: true })
+    .summarize({ columns: "value", stats: { total: "sum" }, join: true })
+    .filter("value > average");
+  expect(await table.getData()).toStrictEqual([{ value: 3, average: 2.5, total: 5 }]);
+  await sdb.close();
+});
+
+test("should capture source rows before subsequent mutations when joining into a new table", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ value: 1 }, { value: 3 }]);
+  const output = table.summarize({
+    columns: "value",
+    stats: "mean",
+    join: true,
+    outputTable: true,
+  });
+  table.filter("value > 1");
+  expect(await output.sort({ value: "asc" }).getData()).toStrictEqual([
+    { value: 1, mean: 2 },
+    { value: 3, mean: 2 },
+  ]);
+  expect(await table.getData()).toStrictEqual([{ value: 3 }]);
+  await sdb.close();
+});
+
+test("should reject joining more than one summarized column before creating an output table", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ value: 1, other: 2 }]);
+  expect(() =>
+    table.summarize({ columns: ["value", "other"], join: true, outputTable: true }),
+  ).toThrow("at most one summarized column");
+  expect(sdb.getTables()).toHaveLength(1);
+  await sdb.close();
+});
+
+test.each(["value", "VALUE"])(
+  "should reject joined column names colliding with input column %s",
+  async (name) => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    table
+      .loadArray([{ value: 1 }])
+      .summarize({ columns: "value", stats: { [name]: "sum" }, join: true });
+    await expect(table.getData()).rejects.toThrow(/already exists|duplicate column/);
+    await sdb.close();
+  },
+);
+
+test.each<{ [key: string]: "sum" | "mean" } | ("sum" | "mean")[]>([
+  { total: "sum", TOTAL: "mean" },
+  ["mean", "mean"],
+  {},
+])("should reject duplicate or empty joined statistics (%j)", async (stats) => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable();
+  table.loadArray([{ value: 1 }]).summarize({
+    columns: "value",
+    stats,
+    join: true,
+  });
+  await expect(table.getData()).rejects.toThrow(/duplicate column|at least one statistic/);
+  await sdb.close();
+});
+
 test("should quote statistic aliases and bind column labels", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

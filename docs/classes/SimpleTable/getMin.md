@@ -8,7 +8,7 @@
 
 > **getMin**(`column`): `Promise`\<`unknown`\>
 
-Defined in: [src/class/SimpleTable.ts:7180](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7180)
+Defined in: [src/class/SimpleTable.ts:7207](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7207)
 
 Returns the minimum value from a specific column.
 Temporal values use the same JavaScript representations as `getData()`.

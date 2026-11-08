@@ -8,7 +8,7 @@
 
 > `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
 
-Defined in: node\_modules/@types/node/globals.d.ts:52
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/@types/node/globals.d.ts:52](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/@types/node/globals.d.ts#L52)
 
 Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
