@@ -21,7 +21,7 @@ type SummarizeOptions = {
   stats?: Stat | Stat[] | { [key: string]: Stat };
   decimals?: number;
   datesToMs?: boolean;
-  join?: boolean;
+  keepRows?: boolean;
 };
 
 export default function summarize(
@@ -30,9 +30,9 @@ export default function summarize(
 ): SimpleTable {
   options = structuredClone(options);
   const columns = getSummarizeColumns(options);
-  if (options.join === true && columns.length > 1) {
+  if (options.keepRows === true && columns.length > 1) {
     throw new Error(
-      "summarize() with join: true supports at most one summarized column. Summarize each column in a separate call.",
+      "summarize() with keepRows: true supports at most one summarized column. Summarize each column in a separate call.",
     );
   }
   options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
@@ -119,7 +119,7 @@ function joinedSummarizeSelect(
   const names = outputColumns ?? stats;
   if (names.length === 0) {
     throw new Error(
-      "summarize() with join: true requires at least one statistic in options.stats.",
+      "summarize() with keepRows: true requires at least one statistic in options.stats.",
     );
   }
   assertNewColumns(types, names, "summarize()");
@@ -137,7 +137,7 @@ function joinedSummarizeSelect(
 
   const source = quoteIdentifier("summarize_source");
   const summary = quoteIdentifier("summarize_summary");
-  const summaryQuery = summarizeSelect(input, types, { ...options, join: false });
+  const summaryQuery = summarizeSelect(input, types, { ...options, keepRows: false });
   const condition =
     by.length === 0
       ? "TRUE"
@@ -153,7 +153,7 @@ LEFT JOIN (${summaryQuery}) AS ${summary} ON ${condition}`;
 }
 
 function summarizeSelect(input: string, types: TableSchema, options: SummarizeOptions): string {
-  if (options.join === true) {
+  if (options.keepRows === true) {
     return joinedSummarizeSelect(input, types, options);
   }
   const by = options.by ? stringToArray(options.by) : [];

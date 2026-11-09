@@ -6104,7 +6104,7 @@ export default class SimpleTable extends Simple {
   /**
    * Creates a summary table from selected columns, optionally grouped by other columns.
    * This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
-   * With `join: true`, every original row is retained and the statistics are added as new columns.
+   * With `keepRows: true`, every original row is retained and the statistics are added as new columns.
    * Statistics are calculated within each group, including groups with null keys, or over the whole table when `by` is omitted.
    * This mode supports at most one summarized column (or no column for row counts). New column names must be unique and must not already exist in the input, ignoring case.
    *
@@ -6190,7 +6190,7 @@ export default class SimpleTable extends Simple {
    *   columns: "salary",
    *   by: "department",
    *   stats: { departmentMean: "mean", departmentTotal: "sum" },
-   *   join: true,
+   *   keepRows: true,
    * }).log();
    * ```
    *
@@ -6200,7 +6200,7 @@ export default class SimpleTable extends Simple {
    * const enriched = await table.summarize({
    *   by: "department",
    *   stats: { departmentCount: "count" },
-   *   join: true,
+   *   keepRows: true,
    *   outputTable: true,
    * }).log();
    * ```
@@ -6211,8 +6211,8 @@ export default class SimpleTable extends Simple {
    * @param options.decimals - The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as columns must be of the same type for aggregation.
-   * @param options.join - If `true`, adds the statistics to every original row instead of returning only the summary. Supports at most one summarized column. With `outputTable`, the new table contains the original rows plus statistics. Defaults to `false`.
-   * @returns A table instance containing the summarized data, or the original rows plus statistics when `join` is `true` (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+   * @param options.keepRows - If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. With `outputTable`, the new table contains the original rows plus statistics. Defaults to `false`.
+   * @returns A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true` (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
    * @category Analyzing Data
    */
   summarize(
@@ -6263,7 +6263,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
       datesToMs?: boolean;
-      join?: boolean;
+      keepRows?: boolean;
     } = {},
   ): this {
     return summarize(this, options) as this;

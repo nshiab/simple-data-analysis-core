@@ -12,7 +12,7 @@ Defined in: [src/class/SimpleTable.ts:6218](https://github.com/nshiab/simple-dat
 
 Creates a summary table from selected columns, optionally grouped by other columns.
 This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
-With `join: true`, every original row is retained and the statistics are added as new columns.
+With `keepRows: true`, every original row is retained and the statistics are added as new columns.
 Statistics are calculated within each group, including groups with null keys, or over the whole table when `by` is omitted.
 This mode supports at most one summarized column (or no column for row counts). New column names must be unique and must not already exist in the input, ignoring case.
 
@@ -46,11 +46,11 @@ If `true`, timestamps, dates, and times will be converted to milliseconds before
 
 The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
 
-#### join?
+#### keepRows?
 
 `boolean`
 
-If `true`, adds the statistics to every original row instead of returning only the summary. Supports at most one summarized column. With `outputTable`, the new table contains the original rows plus statistics. Defaults to `false`.
+If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. With `outputTable`, the new table contains the original rows plus statistics. Defaults to `false`.
 
 #### outputTable?
 
@@ -68,7 +68,7 @@ The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array 
 
 `this`
 
-A table instance containing the summarized data, or the original rows plus statistics when `join` is `true` (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true` (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
 
 ## Examples
 
@@ -141,7 +141,7 @@ await table.summarize({
   columns: "salary",
   by: "department",
   stats: { departmentMean: "mean", departmentTotal: "sum" },
-  join: true,
+  keepRows: true,
 }).log();
 ```
 
@@ -150,7 +150,7 @@ await table.summarize({
 const enriched = await table.summarize({
   by: "department",
   stats: { departmentCount: "count" },
-  join: true,
+  keepRows: true,
   outputTable: true,
 }).log();
 ```
