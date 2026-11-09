@@ -2120,6 +2120,8 @@ export default class SimpleTable extends Simple {
    *
    * **Rows kept** (order may vary)
    *
+   * The Parks rows for 2022 and 2023 tie at 120, so the method keeps both.
+   *
    * | division | year | spending |
    * | --- | ---: | ---: |
    * | Parks | 2022 | 120 |
