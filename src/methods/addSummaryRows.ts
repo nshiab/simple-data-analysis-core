@@ -4,6 +4,7 @@ import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import { validateDecimals } from "../helpers/roundExpression.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -25,6 +26,7 @@ export default function addSummaryRows(
   options: AddSummaryRowsOptions = {},
 ) {
   options = structuredClone(options);
+  validateDecimals(options.decimals);
   if (
     options.position !== undefined &&
     options.position !== "top" &&

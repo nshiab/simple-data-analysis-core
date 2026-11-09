@@ -127,18 +127,21 @@ test("addSummaryRows() rounds computed statistics and leaves detail rows and cou
   ]);
   table.addSummaryRows("sales", "region", {
     stats: ["sum", "mean", "countDistinct", "countNull"],
-    decimals: -1,
+    decimals: 2,
   });
 
   expect(await table.getData()).toStrictEqual([
     { region: "North", sales: 17.1234 },
     { region: "South", sales: 25.5678 },
     { region: "East", sales: null },
-    { region: "sum", sales: 40 },
-    { region: "mean", sales: 20 },
+    { region: "sum", sales: 42.69 },
+    { region: "mean", sales: 21.35 },
     { region: "countDistinct", sales: 2 },
     { region: "countNull", sales: 1 },
   ]);
+  expect(() => table.addSummaryRows("sales", "region", { decimals: 0.5 })).toThrow(
+    /options\.decimals/,
+  );
 
   await sdb.close();
 });

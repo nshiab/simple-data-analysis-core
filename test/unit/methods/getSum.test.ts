@@ -25,6 +25,20 @@ test("should round the completed sum to the requested decimal places", async () 
 
   expect(await table.getSum("sale amount", { decimals: 2 })).toStrictEqual(0.53);
   expect(await table.getSum("sale amount", { decimals: 0 })).toStrictEqual(1);
+  await expect(table.getSum("sale amount", { decimals: -1 })).rejects.toThrow(/options\.decimals/);
+
+  await sdb.close();
+});
+
+test("getSum preserves an exact BIGNUM sum when decimals is set", async () => {
+  const sdb = new SimpleDB();
+  const table = sdb.newTable("exact_sum");
+  await sdb.customQuery(`CREATE TABLE exact_sum AS
+    SELECT v::BIGNUM AS amount FROM (VALUES ('123456789012345678901234567890123456789'), ('1')) t(v)`);
+
+  expect(await table.getSum("amount", { decimals: 2 })).toBe(
+    "123456789012345678901234567890123456790",
+  );
 
   await sdb.close();
 });

@@ -199,14 +199,56 @@ test("should untidy data by expanding mutiple columns with spaces in their names
   await sdb.close();
 });
 
-test("should sum values by default when namesFrom/grouping has duplicate combinations", async () => {
+test.each([{}, { decimals: 2 }])(
+  "wider requires a stat for duplicate cells (%j)",
+  async (options) => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadArray(
+        [
+          { Department: "accounting", year: 2015, employees: null },
+          { Department: "accounting", year: 2015, employees: null },
+          { Department: "sales", year: 2015, employees: 5 },
+        ],
+        { columnTypes: { year: "integer" } },
+      );
+      await expect(table.wider("Year", "Employees", options).run()).rejects.toThrow(
+        /pivot cell \{"Department":"accounting","year":"2015"\}\. Pass options\.stat.*or remove the duplicate rows/,
+      );
+    } finally {
+      await sdb.close();
+    }
+  },
+);
+
+test("wider preserves text and null cells when stat is omitted", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray(
+      [
+        { region: "east", year: 2024, name: "Alice" },
+        { region: "east", year: 2025, name: null },
+        { region: "west", year: 2024, name: "Bob" },
+      ],
+      { columnTypes: { year: "integer" } },
+    );
+    expect(await table.wider("year", "name").sort({ region: "asc" }).getData()).toEqual([
+      { region: "east", 2024: "Alice", 2025: null },
+      { region: "west", 2024: "Bob", 2025: null },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("wider sums duplicate values when stat is sum", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
     { Department: "accounting", year: "2015", employees: 10 },
     { Department: "accounting", year: "2015", employees: 5 },
   ]);
-  table.wider("year", "employees");
+  table.wider("year", "employees", { stat: "sum" });
 
   const data = await table.getData();
 
@@ -215,7 +257,7 @@ test("should sum values by default when namesFrom/grouping has duplicate combina
   await sdb.close();
 });
 
-test("should use the stat option instead of the default sum", async () => {
+test("wider averages duplicate values when stat is mean", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadArray([
@@ -269,16 +311,13 @@ test("wider rounds finished aggregates without rounding grouping columns or coun
     expect(
       await dates.wider("category", "value", { stat: "median", decimals: 2 }).getData(),
     ).toEqual([{ a: new Date("2020-01-01") }]);
-    const whole = sdb.newTable().loadArray([
-      { category: "a", value: 0.264 },
-      { category: "a", value: 0.264 },
-    ]);
+    const whole = sdb.newTable().loadArray([{ category: "a", value: 0.528 }]);
     expect(await whole.wider("category", "value", { decimals: 0 }).getData()).toEqual([{ a: 1 }]);
     const exact = sdb.newTable("exact_pivot");
     await sdb.customQuery(
       "CREATE TABLE exact_pivot AS SELECT * FROM (VALUES ('a', 0.264::DECIMAL(6,3)), ('a', 0.264::DECIMAL(6,3))) t(category,value)",
     );
-    expect(await exact.wider("category", "value", { decimals: 2 }).getData()).toEqual([
+    expect(await exact.wider("category", "value", { stat: "sum", decimals: 2 }).getData()).toEqual([
       { a: "0.53" },
     ]);
     const invalid = sdb.newTable().loadArray([{ category: "a", value: 1 }]);
