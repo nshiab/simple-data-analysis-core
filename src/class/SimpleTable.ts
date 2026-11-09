@@ -648,9 +648,13 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Loads the absolute paths of local files that match one or more DuckDB glob
-   * patterns into a single `path` column. Relative patterns are resolved against
-   * the working directory when this method is called.
+   * Loads the absolute paths of local files that match one or more glob patterns
+   * into a single `path` column. Use `*` to match within one folder and `**` to
+   * search at any depth.
+   *
+   * Relative patterns start from the current working directory when you call
+   * this method. For example, if you run your script from `/project`,
+   * `./documents/*.pdf` searches `/project/documents`.
    *
    * Matching runs when the queued operation executes. Each matching path appears
    * once, even if multiple patterns match it. File contents are never read.
@@ -663,10 +667,8 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * await table
-   *   .loadFilePaths([`./documents/${"**"}/*.pdf`, `./photos/${"**"}/*.jpg`])
-   *   .sort({ path: "asc" })
-   *   .log();
+   * // Find all files under documents and JPGs directly inside photos.
+   * await table.loadFilePaths(["./documents/**", "./photos/*.jpg"]).log();
    * ```
    *
    * @param patterns - A local glob pattern or an array of local glob patterns.
