@@ -656,10 +656,6 @@ export default class SimpleTable extends Simple {
    * this method. For example, if you run your script from `/project`,
    * `./documents/*.pdf` searches `/project/documents`.
    *
-   * Matching runs when the queued operation executes. Each matching path appears
-   * once, even if multiple patterns match it. File contents are never read.
-   * If no files match, the table is empty and still has a `path` column.
-   *
    * @example
    * ```ts
    * await table.loadFilePaths("./documents/*.pdf").log();
