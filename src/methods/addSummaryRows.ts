@@ -4,6 +4,7 @@ import keepNumericalColumns from "../helpers/keepNumericalColumns.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import { validateDecimals } from "../helpers/roundExpression.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -13,6 +14,7 @@ type NormalizedStatRow = { stat: StatRowOperation; label: string };
 type AddSummaryRowsOptions = {
   stats?: StatRow | StatRow[];
   position?: "top" | "bottom";
+  decimals?: number;
 };
 
 const allStatRowOperations = allStats.filter((stat): stat is StatRowOperation => stat !== "count");
@@ -24,6 +26,7 @@ export default function addSummaryRows(
   options: AddSummaryRowsOptions = {},
 ) {
   options = structuredClone(options);
+  validateDecimals(options.decimals);
   if (
     options.position !== undefined &&
     options.position !== "top" &&
@@ -72,6 +75,7 @@ export default function addSummaryRows(
         labelColumn,
         statRows,
         options.position ?? "bottom",
+        options.decimals,
       ),
   });
 }
@@ -120,6 +124,7 @@ function addSummaryRowsSelect(
   labelColumn: string,
   statRows: NormalizedStatRow[],
   position: "top" | "bottom",
+  decimals: number | undefined,
 ): string {
   const method = "addSummaryRows()";
   const tableColumns = Object.keys(schema);
@@ -172,11 +177,11 @@ function addSummaryRowsSelect(
         if (!selectedColumnSet.has(column)) {
           return `NULL AS ${quoteIdentifier(column)}`;
         }
-        const expression = getStatExpression(
+        const expression = getSummaryRowExpression(
           row.stat,
           schema[column],
           quoteIdentifier(column),
-          undefined,
+          decimals,
         );
         if (expression === null) {
           throw new Error(
@@ -198,6 +203,31 @@ function addSummaryRowsSelect(
   return `SELECT ${projectedColumns}
 FROM (${branches.join("\nUNION ALL\n")}) AS ${quoteIdentifier("stats")}
 ORDER BY ${quoteIdentifier(kindColumn)}, ${quoteIdentifier(orderColumn)}`;
+}
+
+function getSummaryRowExpression(
+  stat: StatRowOperation,
+  type: string,
+  reference: string,
+  decimals: number | undefined,
+): string | null {
+  const expression = getStatExpression(stat, type, reference, decimals);
+  if (
+    expression === null ||
+    decimals === undefined ||
+    !["sum", "min", "max", "median"].includes(stat)
+  ) {
+    return expression;
+  }
+  const decimalType = /^DECIMAL\((\d+),(\d+)\)$/.exec(type);
+  if (decimalType === null || decimals >= Number(decimalType[2])) {
+    return expression;
+  }
+
+  // ROUND reduces the scale of DECIMAL results. Keep the original scale so
+  // UNION ALL does not round detail rows, and allow a carry into a new digit.
+  const width = stat === "sum" ? 38 : Math.min(38, Number(decimalType[1]) + 1);
+  return `CAST(${expression} AS DECIMAL(${width},${decimalType[2]}))`;
 }
 
 function unusedColumn(schema: TableSchema, base: string): string {

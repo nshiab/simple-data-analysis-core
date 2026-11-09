@@ -2326,31 +2326,32 @@ export default class SimpleTable extends Simple {
    * | Sales      | 2022 | 75        |
    * | Sales      | 2023 | 98        |
    *
-   * We can restructure it by creating new columns for each year, with the associated employee counts as values.
-   *
-   * @example
-   * ```ts
-   * // Restructure the table by pivoting 'Year' into new columns with 'Employees' as values
-   * await table.wider("Year", "Employees").log();
-   * ```
-   *
-   * The table will then look like this:
+   * Pivoting `Year` creates one column per year with the associated employee counts:
    *
    * | Department | 2021 | 2022 | 2023 |
    * | :--------- | :--- | :--- | :--- |
    * | Accounting | 10   | 9    | 15   |
    * | Sales      | 52   | 75   | 98   |
    *
-   * When multiple rows share the same `namesFrom`/grouping combination, their `valuesFrom` values are combined with the `options.stat` function (`"sum"` by default).
+   * Each combination of the pivot value and the remaining grouping columns
+   * must identify at most one row. If several rows map to the same output
+   * cell, pass `options.stat` to combine them or remove the duplicate rows.
+   * A `NULL` pivot value does not create a column.
    *
    * @example
    * ```ts
+   * await table.wider("Year", "Employees").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Average sales when several rows map to the same cell, then round the result.
    * await table.wider("year", "sales", { stat: "mean", decimals: 2 }).log();
    * ```
    * @param namesFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
    * @param options - An optional object with configuration options:
-   * @param options.stat - The stat function applied when multiple rows share the same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`, `"max"`, `"mean"`, `"median"`, or `"first"`. Defaults to `"sum"`.
+   * @param options.stat - The function applied to the rows for each pivot cell: `"sum"`, `"count"`, `"min"`, `"max"`, `"mean"`, `"median"`, or `"first"`. If omitted, each cell uses its source value and multiple rows for the same cell cause an error.
    * @param options.decimals - Nonnegative decimal places for numeric pivot values. Defaults to no rounding.
    * @returns The table, so methods can be chained.
    * @category Restructuring Data
@@ -6370,11 +6371,18 @@ export default class SimpleTable extends Simple {
    *   ],
    * }).log();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Round the total and average in the summary rows to two decimal places.
+   * await table.addSummaryRows("sales", "region", { stats: ["sum", "mean"], decimals: 2 }).log();
+   * ```
    * @param columns - The numeric column name, an array of numeric column names, or `"all"` to summarize every numeric column.
    * @param labelColumn - The existing string column in which stat row labels will be written.
    * @param options - An optional object with configuration options:
    * @param options.stats - A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
    * @param options.position - Whether to add the summary rows at the `"top"` or `"bottom"` of the table. Defaults to `"bottom"`.
+   * @param options.decimals - A nonnegative integer giving the number of decimal places to round to. Rounding applies only to summary rows and skips counts. Defaults to no rounding.
    * @returns The table, so methods can be chained.
    * @category Analyzing Data
    */
@@ -6434,6 +6442,7 @@ export default class SimpleTable extends Simple {
               }
           )[];
       position?: "top" | "bottom";
+      decimals?: number;
     } = {},
   ): this {
     addSummaryRows(this, columns, labelColumn, options);
@@ -7381,12 +7390,21 @@ export default class SimpleTable extends Simple {
    * const totalQuantity = await table.getSum("quantity");
    * console.log(totalQuantity); // e.g., 1250
    * ```
+   *
+   * @example
+   * ```ts
+   * // Round the total to two decimal places.
+   * const totalSales = await table.getSum("sales", { decimals: 2 });
+   * console.log(totalSales);
+   * ```
    * @param column - The name of the numeric column from which to retrieve the sum.
+   * @param options - An optional object with configuration options:
+   * @param options.decimals - A nonnegative integer giving the number of decimal places to round the sum to. Defaults to no rounding.
    * @returns A promise that resolves to the sum of values in the specified column.
    * @category Getting Data
    */
-  async getSum(column: string): Promise<number> {
-    return await getSum(this, column);
+  async getSum(column: string, options: { decimals?: number } = {}): Promise<number> {
+    return await getSum(this, column, options);
   }
 
   /**
