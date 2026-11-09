@@ -89,6 +89,7 @@ import wider from "../methods/wider.ts";
 import removeRows from "../methods/removeRows.ts";
 import removeValues from "../methods/removeValues.ts";
 import keepValues from "../methods/keepValues.ts";
+import keepValuesStat from "../methods/keepValuesStat.ts";
 import filter from "../methods/filter.ts";
 import removeDuplicates from "../methods/removeDuplicates.ts";
 import sample from "../methods/sample.ts";
@@ -2088,6 +2089,61 @@ export default class SimpleTable extends Simple {
    */
   keepValues(columnsAndValues: { [key: string]: unknown }): this {
     keepValues(this, columnsAndValues);
+    return this;
+  }
+
+  /**
+   * Keeps the full rows whose value in a column matches its minimum or maximum.
+   * All tied rows are kept. Null values are ignored, so a group with only null
+   * values in the target column contributes no rows.
+   *
+   * @example
+   * ```ts
+   * // Keep the rows with the lowest price across the whole table.
+   * await table.keepValuesStat("price", "min").log();
+   * ```
+   *
+   * @example
+   * Keep the highest-spending year or tied years in each division.
+   *
+   * **Input**
+   *
+   * | division | year | spending |
+   * | --- | ---: | ---: |
+   * | Parks | 2022 | 120 |
+   * | Parks | 2023 | 120 |
+   * | Parks | 2024 | 95 |
+   * | Transit | 2024 | 85 |
+   *
+   * ```ts
+   * await table.keepValuesStat("spending", "max", { by: "division" }).log();
+   * ```
+   *
+   * **Rows kept** (order may vary)
+   *
+   * The Parks rows for 2022 and 2023 tie at 120, so the method keeps both.
+   *
+   * | division | year | spending |
+   * | --- | ---: | ---: |
+   * | Parks | 2022 | 120 |
+   * | Parks | 2023 | 120 |
+   * | Transit | 2024 | 85 |
+   *
+   * @param column - The column whose values are compared with the statistic.
+   * @param stat - Use `"min"` to keep the lowest values or `"max"` to keep the highest values.
+   * @param options - Optional configuration for grouping rows.
+   * @param options.by - A column name or an array of column names to group by. If omitted, the statistic is computed across the whole table.
+   * @returns The table, so methods can be chained.
+   * @category Selecting or Filtering Data
+   */
+  keepValuesStat(
+    column: string,
+    stat: "min" | "max",
+    options: {
+      by?: string | string[];
+    } = {},
+  ): this {
+    keepValuesStat(this, column, stat, options);
     return this;
   }
 
