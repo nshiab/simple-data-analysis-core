@@ -1,3 +1,4 @@
+import readRoundedExtrema from "../helpers/readRoundedExtrema.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 export default async function getExtent(
@@ -5,5 +6,13 @@ export default async function getExtent(
   column: string,
   options: { decimals?: number } = {},
 ): Promise<[unknown, unknown]> {
-  return [await simpleTable.getMin(column, options), await simpleTable.getMax(column, options)];
+  const { decimals } = options;
+  if (decimals === undefined) {
+    return [await simpleTable.getMin(column), await simpleTable.getMax(column)];
+  }
+  const [min, max] = await readRoundedExtrema(simpleTable, column, decimals, "getExtent()", [
+    "MIN",
+    "MAX",
+  ]);
+  return [min, max];
 }

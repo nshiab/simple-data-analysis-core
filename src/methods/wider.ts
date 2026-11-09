@@ -36,7 +36,7 @@ export default function wider(
       const outputType =
         stat === "count"
           ? "BIGINT"
-          : (stat === "mean" || stat === "median") &&
+          : (stat === "mean" || (stat === "median" && type !== "BIGNUM")) &&
               type !== undefined &&
               isNumericScalarType(type)
             ? "DOUBLE"

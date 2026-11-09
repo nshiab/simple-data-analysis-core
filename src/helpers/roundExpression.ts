@@ -8,6 +8,11 @@ export function validateDecimals(decimals: number | undefined): void {
   }
 }
 
+/** Returns whether rounding can change a value of this DuckDB type. */
+export function isFractionalType(type: string): boolean {
+  return /^(FLOAT|REAL|DOUBLE|DECIMAL\(\d+,\d+\))$/.test(type);
+}
+
 /** Rounds a final numeric expression, leaving integers and nonnumeric types unchanged. */
 export default function roundExpression(
   expression: string,
@@ -15,10 +20,7 @@ export default function roundExpression(
   type?: string,
 ): string {
   validateDecimals(decimals);
-  if (
-    decimals === undefined ||
-    (type !== undefined && !/^(FLOAT|REAL|DOUBLE|DECIMAL\(\d+,\d+\))$/.test(type))
-  ) {
+  if (decimals === undefined || (type !== undefined && !isFractionalType(type))) {
     return expression;
   }
   return `ROUND(${expression}, ${decimals})`;

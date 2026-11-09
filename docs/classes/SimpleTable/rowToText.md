@@ -8,7 +8,7 @@
 
 > **rowToText**(`columns`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5336](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5336)
+Defined in: [src/class/SimpleTable.ts:5285](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5285)
 
 Concatenates values from multiple columns into a new column with labeled rows.
 

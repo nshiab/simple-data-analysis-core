@@ -8,7 +8,7 @@
 
 > **sample**(`count`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1867](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1867)
+Defined in: [src/class/SimpleTable.ts:1852](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1852)
 
 Selects random rows from the table, removing all others. You can optionally specify a seed to ensure repeatable sampling.
 

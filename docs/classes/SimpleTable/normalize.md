@@ -8,7 +8,7 @@
 
 > **normalize**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6729](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6729)
+Defined in: [src/class/SimpleTable.ts:6666](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6666)
 
 Normalizes the values in a column using min-max normalization.
 

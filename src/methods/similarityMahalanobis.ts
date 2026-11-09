@@ -1,4 +1,3 @@
-import roundExpression, { validateDecimals } from "../helpers/roundExpression.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import computeCovariance from "../helpers/computeCovariance.ts";
 import computeMahalanobisDistances from "../helpers/computeMahalanobisDistances.ts";
@@ -58,7 +57,6 @@ export default function similarityMahalanobis(
     );
   }
   const reference = [...referencePoint];
-  validateDecimals(options.decimals);
   const settings = { ...options };
   queueOp(table, {
     kind: "barrier",
@@ -143,16 +141,11 @@ async function execute(
     );
     try {
       const distance = `r.${quoteIdentifier(distances.distanceColumn)}`;
-      const outputs = [
-        { name: newColumn, expression: roundExpression(distance, options.decimals) },
-      ];
+      const outputs = [{ name: newColumn, expression: distance }];
       if (scoreColumn !== undefined) {
         outputs.push({
           name: scoreColumn,
-          expression: roundExpression(
-            `CASE WHEN max(${distance}) OVER () = 0 THEN 1::DOUBLE ELSE 1 - ${distance} / max(${distance}) OVER () END`,
-            options.decimals,
-          ),
+          expression: `CASE WHEN max(${distance}) OVER () = 0 THEN 1::DOUBLE ELSE 1 - ${distance} / max(${distance}) OVER () END`,
         });
       }
       await publishPreparedColumns(table, prepared, {

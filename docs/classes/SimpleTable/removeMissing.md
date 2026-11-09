@@ -8,7 +8,7 @@
 
 > **removeMissing**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1986](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1986)
+Defined in: [src/class/SimpleTable.ts:1971](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1971)
 
 Removes rows with missing values from this table.
 By default, missing values include SQL `NULL`, as well as string representations like `"NULL"`, `"null"`, `"NaN"`, `"undefined"`, and empty strings `""`.

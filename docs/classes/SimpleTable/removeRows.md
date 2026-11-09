@@ -8,7 +8,7 @@
 
 > **removeRows**(`conditions`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2169](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2169)
+Defined in: [src/class/SimpleTable.ts:2154](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2154)
 
 Removes rows from this table based on SQL conditions. This method is similar to `filter()`, but removes rows instead of keeping them.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

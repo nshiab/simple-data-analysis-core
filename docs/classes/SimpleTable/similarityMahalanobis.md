@@ -8,7 +8,7 @@
 
 > **similarityMahalanobis**(`columns`, `referencePoint`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5500](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5500)
+Defined in: [src/class/SimpleTable.ts:5437](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5437)
 
 Measures numeric profile similarity using each row's Mahalanobis distance
 from a supplied reference point and stores it in a new DOUBLE column.
@@ -56,12 +56,6 @@ The name of the new DOUBLE distance column.
 
 Optional output settings.
 
-#### decimals?
-
-`number`
-
-A non-negative integer up to 2147483647 specifying decimal places. Rounds final distances and similarity scores independently; scores use unrounded distances. Defaults to `undefined` (no rounding).
-
 #### similarityColumn?
 
 `string` \| `boolean`
@@ -102,8 +96,4 @@ await table
     similarityColumn: true,
   })
   .log();
-```
-
-```ts
-await table.similarityMahalanobis(["height", "weight"], [175, 70], "distance", { similarityColumn: true, decimals: 2 }).log();
 ```

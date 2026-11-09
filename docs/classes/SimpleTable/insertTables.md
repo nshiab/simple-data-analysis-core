@@ -8,7 +8,7 @@
 
 > **insertTables**(`tables`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1482](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1482)
+Defined in: [src/class/SimpleTable.ts:1467](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1467)
 
 Inserts all rows from one or more other tables into this table. If tables do not have the same columns, an error will be thrown unless the `unifyColumns` option is set to `true`.
 

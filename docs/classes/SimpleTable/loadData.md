@@ -8,7 +8,7 @@
 
 > **loadData**(`files`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:618](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L618)
+Defined in: [src/class/SimpleTable.ts:617](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L617)
 
 Loads data from one or more local or remote files into the table.
 Supported file formats include CSV, JSON, Parquet, and Excel.

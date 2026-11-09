@@ -480,30 +480,3 @@ for (const [columns, expression, options, message] of [
     }
   });
 }
-
-test("umap rounds final coordinates without changing optimization or source rows", async () => {
-  const sdb = new SimpleDB();
-  try {
-    const settings = { seed: 17, epochs: 20, neighbors: 3 };
-    const baseline = await sdb
-      .newTable()
-      .loadArray(data, { columnTypes: { vector: "FLOAT[2]" } })
-      .umap("vector", settings)
-      .getData();
-    for (const decimals of [0, 2]) {
-      const table = sdb.newTable().loadArray(data, { columnTypes: { vector: "FLOAT[2]" } });
-      const actual = await table.umap("vector", { ...settings, decimals }).getData();
-      expect(actual).toEqual(
-        baseline.map((row) => ({
-          ...row,
-          umapX: Number(Number(row.umapX).toFixed(decimals)),
-          umapY: Number(Number(row.umapY).toFixed(decimals)),
-        })),
-      );
-      expect((await table.getTypes()).umapX).toBe("DOUBLE");
-    }
-    await noScratch(sdb);
-  } finally {
-    await sdb.close();
-  }
-});

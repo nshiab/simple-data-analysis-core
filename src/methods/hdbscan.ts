@@ -1,4 +1,3 @@
-import roundExpression, { validateDecimals } from "../helpers/roundExpression.ts";
 import { DOUBLE, INTEGER, VARCHAR } from "@duckdb/node-api";
 import type SimpleTable from "../class/SimpleTable.ts";
 import appendColumnBatches from "../helpers/appendColumnBatches.ts";
@@ -20,7 +19,6 @@ export default function hdbscan(
   options: Options = {},
 ): void {
   const selected = typeof columns === "string" ? columns : [...columns];
-  validateDecimals(options.decimals);
   const settings = structuredClone(options);
   queueOp(table, {
     kind: "barrier",
@@ -225,13 +223,13 @@ async function execute(
     if (membershipScoreColumn !== undefined) {
       publicationOutputs.push({
         name: membershipScoreColumn,
-        expression: roundExpression(`r.${q(membershipColumn)}`, options.decimals),
+        expression: `r.${q(membershipColumn)}`,
       });
     }
     if (outlierScoreColumn !== undefined) {
       publicationOutputs.push({
         name: outlierScoreColumn,
-        expression: roundExpression(`r.${q(gloshColumn)}`, options.decimals),
+        expression: `r.${q(gloshColumn)}`,
       });
     }
     await publishPreparedColumns(table, prepared, {

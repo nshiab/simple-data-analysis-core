@@ -8,12 +8,12 @@
 
 > **normalizeVector**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5424](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5424)
+Defined in: [src/class/SimpleTable.ts:5367](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5367)
 
 Normalizes a numeric vector column. By default, each dimension is scaled
 independently to `[0, 1]` across rows: all first elements together, all
 second elements together, and so on. With `normalization: "rowL2"`, each
-row is scaled to Euclidean unit length while preserving its direction before rounding;
+row is scaled to Euclidean unit length while preserving its direction;
 zero vectors remain zero.
 
 The input may be a numeric LIST or fixed-size ARRAY. The output is a
@@ -39,12 +39,6 @@ replace the source column with the normalized DOUBLE vector.
 ### options?
 
 Normalization settings.
-
-#### decimals?
-
-`number`
-
-A non-negative integer up to 2147483647 specifying decimal places. Rounds final vector components. Rounded rowL2 vectors may no longer have unit length. Defaults to `undefined` (no rounding).
 
 #### normalization?
 
@@ -74,8 +68,4 @@ await table
 await table
   .normalizeVector("features", "features", { normalization: "rowL2" })
   .log();
-```
-
-```ts
-await table.normalizeVector("features", "scaled", { decimals: 2 }).log();
 ```

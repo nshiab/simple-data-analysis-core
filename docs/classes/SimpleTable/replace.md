@@ -8,7 +8,7 @@
 
 > **replace**(`columns`, `replacements`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:4955](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L4955)
+Defined in: [src/class/SimpleTable.ts:4904](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L4904)
 
 Replaces specified strings in the selected columns.
 Use `["all"]` to target a column literally named `all`.

@@ -27,3 +27,22 @@ test("getExtent forwards rounding to both extrema and preserves dates", async ()
     await sdb.close();
   }
 });
+
+test("getExtent captures both bounds and precision before a later table change", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("exact_extent");
+    await sdb.customQuery(`CREATE TABLE exact_extent AS SELECT v::DECIMAL(25,3) AS value FROM
+      (VALUES ('12345678901234567890.123'), ('12345678901234567890.678')) t(v)`);
+    expect((await table.getTypes()).value).toBe("DECIMAL(25,3)");
+    const options = { decimals: 2 };
+    const extent = table.getExtent("value", options);
+    options.decimals = 0;
+    table.convert({ value: "string" });
+
+    expect(await extent).toEqual(["12345678901234567890.12", "12345678901234567890.68"]);
+    expect((await table.getTypes()).value).toBe("VARCHAR");
+  } finally {
+    await sdb.close();
+  }
+});

@@ -1,4 +1,3 @@
-import roundExpression, { validateDecimals } from "../helpers/roundExpression.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import foldIdentifier from "../helpers/foldIdentifier.ts";
 import prepareNumericFeatures from "../helpers/prepareNumericFeatures.ts";
@@ -23,7 +22,6 @@ export default function normalizeVector(
       'normalizeVector() options.normalization must be "dimensionMinMax" or "rowL2".',
     );
   }
-  validateDecimals(options.decimals);
   const settings = structuredClone(options);
   queueOp(table, {
     kind: "barrier",
@@ -191,10 +189,7 @@ async function execute(
       outputs: [
         {
           name: overwrite ? sourceColumn : newColumn,
-          expression:
-            options.decimals === undefined
-              ? `r.${q(normalized)}`
-              : `list_transform(r.${q(normalized)}, value -> ${roundExpression("value", options.decimals)})::DOUBLE[${prepared.dimensions}]`,
+          expression: `r.${q(normalized)}`,
           replace: overwrite ? sourceColumn : undefined,
         },
       ],

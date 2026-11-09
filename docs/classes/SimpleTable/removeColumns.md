@@ -8,7 +8,7 @@
 
 > **removeColumns**(`columns`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2467](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2467)
+Defined in: [src/class/SimpleTable.ts:2446](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2446)
 
 Removes one or more columns from this table.
 

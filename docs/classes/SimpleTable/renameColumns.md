@@ -8,7 +8,7 @@
 
 > **renameColumns**(`names`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2201](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2201)
+Defined in: [src/class/SimpleTable.ts:2186](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2186)
 
 Renames one or more columns in the table. Throws if a source column does
 not exist, so a typo fails loudly instead of being silently ignored.

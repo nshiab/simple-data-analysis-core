@@ -8,7 +8,7 @@
 
 > **selectColumns**(`columns`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1801](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1801)
+Defined in: [src/class/SimpleTable.ts:1786](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1786)
 
 Selects specific columns in the table, removing all others.
 

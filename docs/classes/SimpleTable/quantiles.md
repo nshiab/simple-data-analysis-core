@@ -8,7 +8,7 @@
 
 > **quantiles**(`column`, `count`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5809](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5809)
+Defined in: [src/class/SimpleTable.ts:5746](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5746)
 
 Assigns quantiles to rows in a new column based on specified column values.
 

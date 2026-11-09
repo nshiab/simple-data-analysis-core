@@ -1,4 +1,3 @@
-import roundExpression, { validateDecimals } from "../helpers/roundExpression.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import queueOp from "../helpers/queueOp.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
@@ -21,7 +20,6 @@ export default function umap(
   options: Options = {},
 ) {
   const selected = typeof columns === "string" ? columns : [...columns];
-  validateDecimals(options.decimals);
   const settings = structuredClone(options);
   queueOp(table, {
     kind: "barrier",
@@ -168,9 +166,7 @@ async function execute(table: SimpleTable, columns: string | string[], options: 
       `CREATE OR REPLACE ${sourceTemporary ? "TEMP " : ""}TABLE ${source} AS
       SELECT ${prepared.sourceColumns
         .map((c) => `s.${q(c)}`)
-        .join(
-          ",",
-        )}, ${roundExpression("l.x", options.decimals)} AS "umapX", ${roundExpression("l.y", options.decimals)} AS "umapY"
+        .join(",")}, l.x AS "umapX", l.y AS "umapY"
       FROM ${snapshot} s JOIN ${names.rows} r ON s.${ordinal}=r.ordinal
       JOIN ${layout} l ON r.vertex=l.vertex ORDER BY s.${ordinal}`,
       mergeOptions(table, {

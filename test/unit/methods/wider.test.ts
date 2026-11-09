@@ -289,3 +289,21 @@ test("wider rounds finished aggregates without rounding grouping columns or coun
     await sdb.close();
   }
 });
+
+test("wider preserves an exact BIGNUM median when decimals is set", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("exact_median");
+    const lower = "12345678901234567890123456789012345678901234567890";
+    const upper = "12345678901234567890123456789012345678901234567891";
+    await sdb.customQuery(`CREATE TABLE exact_median AS SELECT 'a' AS category, v::BIGNUM AS value
+      FROM (VALUES ('${lower}'), ('${upper}')) t(v)`);
+
+    expect(
+      await table.wider("category", "value", { stat: "median", decimals: 2 }).getData(),
+    ).toEqual([{ a: lower }]);
+    expect((await table.getTypes()).a).toBe("BIGNUM");
+  } finally {
+    await sdb.close();
+  }
+});

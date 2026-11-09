@@ -6,9 +6,9 @@
 
 # Method: getBoundingBox()
 
-> **getBoundingBox**(`column?`, `options?`): `Promise`\<\[`number`, `number`, `number`, `number`\]\>
+> **getBoundingBox**(`column?`): `Promise`\<\[`number`, `number`, `number`, `number`\]\>
 
-Defined in: [src/class/SimpleTable.ts:8852](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8852)
+Defined in: [src/class/SimpleTable.ts:8758](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8758)
 
 Returns the bounding box of geometries in `[minLon, minLat, maxLon, maxLat]` order.
 By default, the method will try to find the column with the geometries. The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -20,16 +20,6 @@ By default, the method will try to find the column with the geometries. The inpu
 `string`
 
 The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
-
-### options?
-
-Optional output rounding settings.
-
-#### decimals?
-
-`number`
-
-A non-negative integer up to 2147483647 specifying decimal places. Rounds final bounding-box coordinates. Defaults to `undefined` (no rounding).
 
 ## Returns
 
@@ -49,8 +39,4 @@ console.log(bbox); // e.g., [-75.0, 45.0, -73.0, 46.0]
 // Get the bounding box of geometries in a specific column named 'areaGeom'
 const areaBbox = await table.getBoundingBox("areaGeom");
 console.log(areaBbox);
-```
-
-```ts
-console.log(await table.getBoundingBox(undefined, { decimals: 2 }));
 ```

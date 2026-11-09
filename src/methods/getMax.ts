@@ -1,5 +1,4 @@
-import roundExpression from "../helpers/roundExpression.ts";
-import foldIdentifier from "../helpers/foldIdentifier.ts";
+import readRoundedExtrema from "../helpers/readRoundedExtrema.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
@@ -11,22 +10,22 @@ export default async function getMax(
   column: string,
   options: { decimals?: number } = {},
 ) {
+  const { decimals } = options;
+  if (decimals !== undefined) {
+    const [value] = await readRoundedExtrema(simpleTable, column, decimals, "getMax()", ["MAX"]);
+    return value;
+  }
   const qualifiedColumn = quoteQualifiedIdentifier(simpleTable.name, column);
-  const type =
-    options.decimals === undefined
-      ? undefined
-      : Object.entries(await simpleTable.getTypes()).find(
-          ([name]) => foldIdentifier(name) === foldIdentifier(column),
-        )?.[1];
-  const expression = roundExpression(`MAX(${qualifiedColumn})`, options.decimals, type);
   const queryResult = await queryDB(
     simpleTable,
-    `SELECT ${expression} AS ${quoteIdentifier(column)} FROM ${quoteIdentifier(simpleTable.name)}`,
+    `SELECT MAX(${qualifiedColumn}) AS ${quoteIdentifier(column)} FROM ${quoteIdentifier(
+      simpleTable.name,
+    )}`,
     mergeOptions(simpleTable, {
       table: simpleTable.name,
       returnData: true,
       method: "getMax()",
-      parameters: { column, options },
+      parameters: { column },
     }),
   );
 

@@ -8,7 +8,7 @@
 
 > **distances**(`sourceColumn`, `targetColumn`, `startNodes`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: [src/class/SimpleTable.ts:3608](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L3608)
+Defined in: [src/class/SimpleTable.ts:3576](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L3576)
 
 Finds the shortest routes from each starting node to every reachable
 node. Without options, shortest means the fewest connections. Use `weight`
@@ -63,12 +63,6 @@ One starting node ID or a non-empty array of distinct IDs. Unknown IDs and start
 ### options?
 
 An optional object with direction, time, and result configuration.
-
-#### decimals?
-
-`number`
-
-A non-negative integer up to 2147483647 specifying decimal places. Rounds reported total costs after route selection. Step counts and elapsed times are unchanged. Defaults to `undefined` (no rounding).
 
 #### direction?
 
@@ -372,7 +366,3 @@ await connections
 | --- | --- | ---: | ---: |
 | A | C | 2 | 50 |
 | A | C | 2 | 80 |
-
-```ts
-await table.distances("from", "to", "A", { weight: "cost", decimals: 2 }).log();
-```

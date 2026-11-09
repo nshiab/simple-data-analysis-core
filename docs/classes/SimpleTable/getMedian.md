@@ -8,7 +8,7 @@
 
 > **getMedian**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7360](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7360)
+Defined in: [src/class/SimpleTable.ts:7273](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7273)
 
 Returns the median value from a specific numeric column.
 

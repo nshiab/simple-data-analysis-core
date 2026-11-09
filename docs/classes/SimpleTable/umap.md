@@ -8,7 +8,7 @@
 
 > **umap**(`columns`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1176](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1176)
+Defined in: [src/class/SimpleTable.ts:1169](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L1169)
 
 Reduces numeric features, such as embeddings, to a two-dimensional UMAP
 projection. The resulting coordinates are added as `umapX` and `umapY`,
@@ -62,12 +62,6 @@ A numeric vector column name, or a nonempty array of numeric scalar column names
 ### options?
 
 Optional projection settings.
-
-#### decimals?
-
-`number`
-
-A non-negative integer up to 2147483647 specifying decimal places. Rounds final umapX and umapY coordinates after optimizing the projection. Defaults to `undefined` (no rounding).
 
 #### epochs?
 
@@ -137,8 +131,4 @@ await table.umap("embedding", {
 await table
   .umap(["height", "weight", "age"], { seed: 42 })
   .log();
-```
-
-```ts
-await table.umap("features", { decimals: 2 }).log();
 ```

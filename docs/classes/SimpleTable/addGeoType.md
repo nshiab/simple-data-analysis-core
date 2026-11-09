@@ -8,7 +8,7 @@
 
 > **addGeoType**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8052](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8052)
+Defined in: [src/class/SimpleTable.ts:7965](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7965)
 
 Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`, `"POLYGON"`) for each geometry.
 

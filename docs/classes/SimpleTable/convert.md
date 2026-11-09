@@ -8,7 +8,7 @@
 
 > **convert**(`types`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2400](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2400)
+Defined in: [src/class/SimpleTable.ts:2379](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2379)
 
 Converts data types of specified columns to target types (JavaScript or SQL types).
 

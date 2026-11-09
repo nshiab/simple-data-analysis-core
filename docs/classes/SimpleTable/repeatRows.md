@@ -8,7 +8,7 @@
 
 > **repeatRows**(`column`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5568](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5568)
+Defined in: [src/class/SimpleTable.ts:5505](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L5505)
 
 Repeats rows based on the values in a column.
 
