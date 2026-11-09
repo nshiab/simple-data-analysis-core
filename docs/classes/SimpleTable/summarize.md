@@ -11,10 +11,10 @@
 Defined in: [src/class/SimpleTable.ts:6218](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6218)
 
 Creates a summary table from selected columns, optionally grouped by other columns.
-This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
-With `keepRows: true`, every original row is retained and the statistics are added as new columns.
-Statistics are calculated within each group, including groups with null keys, or over the whole table when `by` is omitted.
-This mode supports at most one summarized column (or no column for row counts). New column names must be unique and must not already exist in the input, ignoring case.
+This method allows you to aggregate data, calculate statistics (e.g., count,
+mean, sum), and group results by categorical columns.
+With `keepRows: true`, every original row is retained and the statistics
+are added as new columns.
 
 ## Parameters
 
@@ -50,7 +50,7 @@ The number of decimal places to round the summarized columns. Defaults to `undef
 
 `boolean`
 
-If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. With `outputTable`, the new table contains the original rows plus statistics. Defaults to `false`.
+If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. Defaults to `false`.
 
 #### outputTable?
 
