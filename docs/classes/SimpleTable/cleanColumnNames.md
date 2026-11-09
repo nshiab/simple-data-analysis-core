@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.20**](../../index.md)
+[**Simple Data Analysis Core v2.1.21**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **cleanColumnNames**(): `this`
 
-Defined in: [src/class/SimpleTable.ts:2202](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/class/SimpleTable.ts#L2202)
+Defined in: [src/class/SimpleTable.ts:2203](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L2203)
 
 Cleans column names by removing non-alphanumeric characters and formatting them to camel case.
 

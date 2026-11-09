@@ -1,10 +1,20 @@
+import readRoundedExtrema from "../helpers/readRoundedExtrema.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
 import queryDB from "../helpers/queryDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import quoteQualifiedIdentifier from "../helpers/quoteQualifiedIdentifier.ts";
 
-export default async function getMin(simpleTable: SimpleTable, column: string) {
+export default async function getMin(
+  simpleTable: SimpleTable,
+  column: string,
+  options: { decimals?: number } = {},
+) {
+  const { decimals } = options;
+  if (decimals !== undefined) {
+    const [value] = await readRoundedExtrema(simpleTable, column, decimals, "getMin()", ["MIN"]);
+    return value;
+  }
   const qualifiedColumn = quoteQualifiedIdentifier(simpleTable.name, column);
   const queryResult = await queryDB(
     simpleTable,

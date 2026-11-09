@@ -24,6 +24,7 @@ import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.
 import validateGraphRouteResultSchema from "../helpers/validateGraphRouteResultSchema.ts";
 
 type FindCyclesOptions = GraphTemporalOptions & {
+  decimals?: number;
   elapsedTime?: boolean;
   direction?: GraphDirection;
   outputTable?: string | boolean;
@@ -86,6 +87,8 @@ export default function findCycles(
     method: "findCycles()",
     parameters,
     outputTable: options.outputTable,
+    decimals: options.decimals,
+    roundedColumns: ["total"],
     preflight:
       temporalOptions === undefined
         ? undefined

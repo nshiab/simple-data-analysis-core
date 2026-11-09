@@ -230,3 +230,80 @@ test("should use the stat option instead of the default sum", async () => {
 
   await sdb.close();
 });
+
+test("wider rounds finished aggregates without rounding grouping columns or counts", async () => {
+  const sdb = new SimpleDB();
+  try {
+    for (const [stat, expected] of [
+      ["sum", 0.53],
+      ["mean", 0.26],
+      ["median", 0.26],
+      ["min", 0.26],
+      ["max", 0.26],
+      ["first", 0.26],
+      ["count", 2],
+    ] as const) {
+      const table = sdb.newTable().loadArray([
+        { group: 1.2345, category: 'a"b', value: 0.264 },
+        { group: 1.2345, category: 'a"b', value: 0.264 },
+      ]);
+      expect(
+        await table
+          .wider("category", "value", { stat, decimals: stat === "count" ? 0 : 2 })
+          .getData(),
+      ).toEqual([{ group: 1.2345, 'a"b': expected }]);
+    }
+    const integers = sdb.newTable().loadArray([
+      { category: "a", value: 1 },
+      { category: "a", value: 2 },
+      { category: "a", value: 2 },
+    ]);
+    expect(
+      await integers.wider("category", "value", { stat: "mean", decimals: 2 }).getData(),
+    ).toEqual([{ a: 1.67 }]);
+    const strings = sdb.newTable().loadArray([{ category: "a", value: "hello" }]);
+    expect(
+      await strings.wider("category", "value", { stat: "first", decimals: 2 }).getData(),
+    ).toEqual([{ a: "hello" }]);
+    const dates = sdb.newTable().loadArray([{ category: "a", value: new Date("2020-01-01") }]);
+    expect(
+      await dates.wider("category", "value", { stat: "median", decimals: 2 }).getData(),
+    ).toEqual([{ a: new Date("2020-01-01") }]);
+    const whole = sdb.newTable().loadArray([
+      { category: "a", value: 0.264 },
+      { category: "a", value: 0.264 },
+    ]);
+    expect(await whole.wider("category", "value", { decimals: 0 }).getData()).toEqual([{ a: 1 }]);
+    const exact = sdb.newTable("exact_pivot");
+    await sdb.customQuery(
+      "CREATE TABLE exact_pivot AS SELECT * FROM (VALUES ('a', 0.264::DECIMAL(6,3)), ('a', 0.264::DECIMAL(6,3))) t(category,value)",
+    );
+    expect(await exact.wider("category", "value", { decimals: 2 }).getData()).toEqual([
+      { a: "0.53" },
+    ]);
+    const invalid = sdb.newTable().loadArray([{ category: "a", value: 1 }]);
+    await expect(invalid.wider("category", "value", { decimals: 0.5 }).run()).rejects.toThrow(
+      /options\.decimals/,
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("wider preserves an exact BIGNUM median when decimals is set", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("exact_median");
+    const lower = "12345678901234567890123456789012345678901234567890";
+    const upper = "12345678901234567890123456789012345678901234567891";
+    await sdb.customQuery(`CREATE TABLE exact_median AS SELECT 'a' AS category, v::BIGNUM AS value
+      FROM (VALUES ('${lower}'), ('${upper}')) t(v)`);
+
+    expect(
+      await table.wider("category", "value", { stat: "median", decimals: 2 }).getData(),
+    ).toEqual([{ a: lower }]);
+    expect((await table.getTypes()).a).toBe("BIGNUM");
+  } finally {
+    await sdb.close();
+  }
+});

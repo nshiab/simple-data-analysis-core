@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.20**](../index.md)
+[**Simple Data Analysis Core v2.1.21**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **stringToArray**(`argument`): `string`[]
 
-Defined in: [src/helpers/stringToArray.ts:16](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.20/src/helpers/stringToArray.ts#L16)
+Defined in: [src/helpers/stringToArray.ts:16](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/helpers/stringToArray.ts#L16)
 
 Normalizes a string or array of strings to a new array.
 Existing arrays are copied so callers can change the result independently.

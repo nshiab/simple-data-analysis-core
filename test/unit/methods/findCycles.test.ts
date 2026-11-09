@@ -2133,3 +2133,25 @@ test("findCycles elapsed time includes self-cycles and zero-duration events with
     await sdb.close();
   }
 });
+
+test("findCycles rounds cumulative totals after finding cycles and preserves edge weights", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { id: 1, source: "A", target: "B", cost: 0.264 },
+      { id: 2, source: "B", target: "A", cost: 0.264 },
+    ]);
+    const rows = await table
+      .findCycles("source", "target", "id", "A", { weight: "cost", decimals: 2, outputTable: true })
+      .getData();
+    expect(rows.map((row) => row.total)).toEqual([0.26, 0.53]);
+    expect(rows.map((row) => row.weight)).toEqual([0.264, 0.264]);
+    expect(rows.map((row) => row.step)).toEqual([1, 2]);
+    const whole = await table
+      .findCycles("source", "target", "id", "A", { weight: "cost", decimals: 0 })
+      .getData();
+    expect(whole.map((row) => row.total)).toEqual([0, 1]);
+  } finally {
+    await sdb.close();
+  }
+});

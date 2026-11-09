@@ -1764,3 +1764,31 @@ test("paths reserves elapsedTimeMs only when reporting is enabled", async () => 
     await sdb.close();
   }
 });
+
+test("paths rounds final cumulative costs without changing weights or route selection", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { id: 1, source: "A", target: "C", cost: 0.264 },
+      { id: 2, source: "C", target: "B", cost: 0.264 },
+      { id: 3, source: "A", target: "B", cost: 0.529 },
+    ]);
+    const result = table.paths("source", "target", "id", "A", "B", {
+      weight: "cost",
+      decimals: 2,
+      outputTable: true,
+    });
+    const rows = await result.getData();
+    const indirect = rows.filter((row) => row.id !== 3);
+    expect(indirect.map((row) => row.total)).toEqual([0.26, 0.53]);
+    expect(indirect.map((row) => row.weight)).toEqual([0.264, 0.264]);
+    expect(indirect.map((row) => row.cost)).toEqual([0.264, 0.264]);
+    expect(rows).toHaveLength(3);
+    const whole = await table
+      .paths("source", "target", "id", "A", "B", { weight: "cost", decimals: 0 })
+      .getData();
+    expect(whole.filter((row) => row.id !== 3).map((row) => row.total)).toEqual([0, 1]);
+  } finally {
+    await sdb.close();
+  }
+});
